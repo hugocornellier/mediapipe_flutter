@@ -20,7 +20,7 @@ mode, with tests against Google's Python reference outputs. Native builds use
 pinned upstream source and static OpenCV; no task pipeline or model is patched.
 
 This is a development baseline. GenAI inference and mobile platforms still need
-validation, and the new vision runtime needs a published prebuilt artifact.
+validation. A public prebuilt runtime is available for macOS arm64 face detection.
 
 ## Packages and platform status
 
@@ -40,8 +40,8 @@ Unsupported native targets fail with an explicit build error.
 
 ## Packaging
 
-Depend on the task packages you use. At build time, the text and GenAI packages download
-its native library for the target platform, verifies SHA-256, and lets Dart or
+Depend on the task packages you use. At build time, each implemented task package
+downloads its native library for the target platform, verifies SHA-256, and lets Dart or
 Flutter bundle it with the application. Verified downloads are cached under
 the hook's shared output directory. Partial or mismatched downloads are rejected.
 
@@ -55,37 +55,42 @@ existing headers. This tooling migration does not upgrade the native runtime.
 The shared `native_assets.dart` helpers are imported by hooks, not by task runtime
 entry points.
 
-Vision currently bundles a locally built Face Detector library. `make native_vision`
-builds the pinned MediaPipe v1.0.0 source with static OpenCV 4.12.0 and prepares a
-release archive with its SHA-256 manifest and notices. The library is about
-11.4 MB, plus a separate 224 KB model. Publishing that archive and configuring a
-verified build-time download is still pending; consumers do not yet have a
-download-only installation path for vision.
+Vision downloads a 4.2 MB archive from the public
+[native runtime repository](https://github.com/hugocornellier/mediapipe_flutter_native/releases).
+The unpacked library is about 11.4 MB, plus a separate 224 KB model. Both archive
+and library digests are pinned. The hook extracts the runtime using Dart and
+requires no Bazel, CMake, Ninja, or GitHub credentials. The Dart/Flutter source
+repository remains private; obtaining the package still requires source access.
+
+`make native_vision` optionally builds pinned MediaPipe v1.0.0 and static OpenCV
+4.12.0. The hook uses that verified local build when present. `make release_vision`
+prepares a deterministic public archive with provenance, checksums, and notices.
+See the vision package's [release instructions](packages/mediapipe-task-vision/tool/RELEASING.md).
 
 ## Local development
 
-Install Xcode and `brew install bazelisk cmake ninja` for the native vision build.
-From the repository root:
+Install Xcode. From the repository root:
 
 ```sh
 make get
 make models
-make native_vision
 make analyze
 make test_only
 make build_text
 make test_vision_flutter
 ```
 
-Or run the entire macOS CI sequence with `make ci`. To launch the text example,
-run `make example_text`.
+The full source-build CI sequence, `make ci`, additionally requires Python 3 and
+`brew install bazelisk cmake ninja`. To launch the text example, run `make example_text`.
 
 Other targets:
 
-- `make test`: fetch models, build the vision runtime, and run the tests.
+- `make test`: fetch models and run the tests, downloading runtimes as needed.
 - `make format` / `make check_format`: apply / check Dart formatting.
 - `make generate`: regenerate all implemented task bindings from checked-in headers.
 - `make test_vision_flutter`: generate a macOS host and verify debug/release bundling.
+- `make test_vision_prebuilt`: test a fresh app against the public native download
+  with native build tools blocked.
 - `make headers`: maintainer-only header import from a local MediaPipe checkout.
 - `make sdks`: legacy Google bucket discovery, requiring Google access; writes
   candidate manifests without replacing the reviewed runtime pins.
@@ -100,7 +105,6 @@ are deferred with its runtime recovery.
 
 ## Remaining work
 
-- Publish the reviewed Face Detector native artifact and pin its download URL.
 - Add VIDEO/LIVE_STREAM modes and a camera demo; camera capture remains an app
   dependency rather than a requirement for still-image inference.
 - Audit inherited text isolate error propagation and native-result ownership
@@ -111,8 +115,7 @@ are deferred with its runtime recovery.
   cover Dart state, not LLM inference. Current `.litertlm` support is not implied.
 - Validate loading multiple task libraries together. The inherited standalone
   libraries may duplicate native registrations.
-- Establish a maintainable native build/release source beyond the inherited
-  Google-hosted artifacts.
+- Extend the pinned native build/release process to additional tasks and platforms.
 
 ## Upstream and license
 

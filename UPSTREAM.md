@@ -81,5 +81,7 @@ Fixtures come from `face_detection_tflite` at
 `50c784adaa9f40c722affb1d4412674f25e1fe0c`. Reference detections are generated
 independently through Google's `mediapipe==1.0.0` Python API. The vision package
 records model, fixture, and reference-library digests and provides native ABI,
-inference, and Flutter bundling checks. Its runtime is currently source-built;
-prebuilt releases and additional platforms/modes remain pending.
+inference, and Flutter bundling checks. A prebuilt runtime is published separately
+in the public `hugocornellier/mediapipe_flutter_native` repository. The hook pins
+both archive and library digests and caches verified downloads; the source
+repository remains private. Additional platforms/modes remain pending.

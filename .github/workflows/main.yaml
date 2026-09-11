@@ -30,3 +30,23 @@ jobs:
           name: mediapipe-face-detector-1.0.0-macos-arm64
           path: packages/mediapipe-task-vision/build/native/mediapipe-face-detector-1.0.0-macos-arm64.tar.gz
           if-no-files-found: error
+
+  prebuilt-consumer:
+    name: Fresh Flutter consumer / public runtime download
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - name: Download the test model
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_model.dart
+      - name: Test public download and debug/release inference without native build tools
+        working-directory: packages/mediapipe-task-vision
+        run: python3 tool/test_prebuilt_macos.py

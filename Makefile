@@ -4,7 +4,7 @@ FLUTTER_PACKAGES := packages/mediapipe-task-text/example packages/mediapipe-task
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 VISION_NATIVE_ARGS ?=
 
-.PHONY: get models native_vision analyze format check_format generate generate_core generate_text generate_genai generate_vision test test_only test_core test_text test_vision test_vision_flutter test_examples build_text example_text ci headers sdks
+.PHONY: get models native_vision release_vision analyze format check_format generate generate_core generate_text generate_genai generate_vision test test_only test_core test_text test_vision test_vision_flutter test_vision_prebuilt test_examples build_text example_text ci headers sdks
 
 get:
 	@for package in $(DART_PACKAGES); do (cd "$$package" && dart pub get) || exit $$?; done
@@ -17,9 +17,13 @@ models:
 	cd tool/builder && dart bin/main.dart model -m languagedetection
 	cd packages/mediapipe-task-vision && dart tool/download_model.dart
 
-# Temporary maintainer bootstrap until a reviewed native artifact is released.
+# Optional maintainer build; consumers download the pinned prebuilt runtime.
 native_vision:
 	cd packages/mediapipe-task-vision && python3 tool/build_native.py $(VISION_NATIVE_ARGS)
+
+# Prepare a reviewable public archive from an already tested native build.
+release_vision:
+	cd packages/mediapipe-task-vision && python3 tool/prepare_native_release.py
 
 analyze:
 	@for package in $(ALL_PACKAGES); do (cd "$$package" && dart analyze --fatal-infos) || exit $$?; done
@@ -51,7 +55,6 @@ generate_vision:
 
 test:
 	$(MAKE) models
-	$(MAKE) native_vision
 	$(MAKE) test_only
 
 test_only:
@@ -71,6 +74,9 @@ test_vision:
 
 test_vision_flutter:
 	cd packages/mediapipe-task-vision && python3 tool/test_flutter_macos.py
+
+test_vision_prebuilt:
+	cd packages/mediapipe-task-vision && python3 tool/test_prebuilt_macos.py
 
 # GenAI example tests cover Dart state only; they do not validate LLM inference.
 test_examples:

@@ -12,27 +12,30 @@ projection. The Dart wrapper copies results and owns native resource cleanup.
 
 ## Run locally
 
-Use Flutter 3.44.8 / Dart 3.12.2, Xcode, Python 3, and
-`brew install bazelisk cmake ninja`. From this directory:
+Use Flutter 3.44.8 / Dart 3.12.2 and Xcode. From this directory:
 
 ```sh
 dart pub get
 dart tool/download_model.dart
-python3 tool/build_native.py
 dart test --reporter expanded
 dart run example/face_detection.dart models/blaze_face_short_range.tflite test/fixtures/face_detection/landmark-ex1.jpg
 ```
 
-The first native build downloads pinned MediaPipe/OpenCV sources and their build
-dependencies; allow several minutes and several GB of build space. Later builds
-reuse the Bazel/CMake caches. No Python package is needed for inference.
+The first build downloads a 4.2 MB native archive from the public
+[native runtime release](https://github.com/hugocornellier/mediapipe_flutter_native/releases/tag/face-detector-v1.0.0-1).
+The hook verifies the archive and library against pinned SHA-256 digests, checks
+the upstream revisions and architecture, and caches the extracted runtime under
+Dart/Flutter's shared hook output directory. Warm builds reuse the verified
+download. Bazel, CMake, Ninja, Python, and GitHub credentials are not required
+for consumer installation or inference. Flutter applications still need the
+normal Xcode toolchain to build the app.
 
-This is currently a **maintainer source-build bootstrap**, not a published
-download-on-build SDK. The build hook bundles `build/native/libface_detector.dylib`
-with the app and rejects unsupported targets. The native builder also prepares
-`build/native/mediapipe-face-detector-1.0.0-macos-arm64.tar.gz`, including checksums,
-build metadata, and notices. Publishing a reviewed artifact and pinning its URL
-in the hook is the remaining step before consumers can skip native compilation.
+The public repository contains native artifacts and provenance. This Dart/Flutter
+source repository remains private; access to it is still required to obtain the
+package. No package from this fork has been published to pub.dev.
+
+The archive includes upstream licenses and notices; retain the applicable
+notices when redistributing the native library. Models are downloaded separately.
 Generated native libraries and models are ignored by Git.
 
 Flutter macOS release builds default to universal binaries. For this arm64-only
@@ -95,6 +98,42 @@ results, initialization failures, and resource lifecycle.
 macOS integration test, then builds and launches a release app that verifies
 inference with bundled assets. The generated host is outside the package's
 source tree, under the repository's ignored `build/` directory.
+
+`python3 tool/test_prebuilt_macos.py` creates a fresh package copy with no native
+source, local library, or build cache. It tests the actual public download and
+debug/release inference while blocking Bazel, Bazelisk, CMake, and Ninja. This
+also runs in its own CI job. Download tests cover offline cache reuse, corruption
+recovery, concurrent installation, checksum failures, and invalid archives.
+
+## Native builds and releases
+
+Maintainers can still build the official runtime with Python 3, Xcode, and
+`brew install bazelisk cmake ninja`:
+
+```sh
+python3 tool/build_native.py
+```
+
+The first native build downloads pinned MediaPipe/OpenCV sources and build
+dependencies; allow several minutes and several GB of build space. Later builds
+reuse the Bazel/CMake caches. The hook prefers a verified package-local
+`build/native/libface_detector.dylib` when present, preserving source-build tests.
+To force the public runtime in a maintainer checkout, add this to the root app's
+`pubspec.yaml`:
+
+```yaml
+hooks:
+  user_defines:
+    mediapipe_flutter_vision:
+      prebuilt: true
+```
+
+`python3 tool/prepare_native_release.py` repackages a tested native build into
+`build/releases/face-detector-v1.0.0-1/`, with deterministic archive metadata,
+checksums, a public build manifest, a repository README, and release notes.
+It does not upload anything. See [tool/RELEASING.md](tool/RELEASING.md) for the
+release process. Every rebuild must get a new tag and reviewed digests in
+`sdk_downloads.dart`; never replace the bytes behind an existing download URL.
 
 The wide group fixture contains four people but the official short-range model
 returns zero detections at the default threshold. The test preserves that
