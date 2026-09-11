@@ -12,6 +12,7 @@ platforms:
   macos:
 
 dependencies:
+  archive: ^4.2.0
   code_assets: ^1.2.1
   crypto: ^3.0.6
   ffi: ^2.1.4

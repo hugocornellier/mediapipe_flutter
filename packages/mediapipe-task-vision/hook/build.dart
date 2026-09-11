@@ -1,9 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
-import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
+import 'package:mediapipe_flutter_vision/src/native_assets/face_detector_library.dart';
+
+import '../sdk_downloads.dart';
 
 void main(List<String> arguments) async {
   await build(arguments, (input, output) async {
@@ -19,34 +20,33 @@ void main(List<String> arguments) async {
     if (code.linkModePreference == LinkModePreference.static) {
       throw UnsupportedError('MediaPipe requires dynamic library bundling.');
     }
-    final library = File.fromUri(
-      input.packageRoot.resolve('build/native/libface_detector.dylib'),
-    );
-    if (!await library.exists()) {
-      throw StateError(
-        'Build the pinned MediaPipe runtime first: '
-        'python3 tool/build_native.py (from the mediapipe-task-vision directory). '
-        'Prebuilt release artifacts have not been published yet.',
+    final local = Directory.fromUri(input.packageRoot.resolve('build/native/'));
+    final usePrebuilt = input.userDefines['prebuilt'];
+    if (usePrebuilt != null && usePrebuilt is! bool) {
+      throw const FormatException(
+        'mediapipe_flutter_vision.prebuilt must be a boolean.',
       );
     }
-    final manifestFile = File.fromUri(
-      input.packageRoot.resolve('build/native/manifest.json'),
-    );
-    final manifest =
-        jsonDecode(await manifestFile.readAsString()) as Map<String, dynamic>;
-    if (manifest['revision'] != '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120' ||
-        manifest['opencv_revision'] !=
-            '49486f61fb25722cbcf586b7f4320921d46fb38e' ||
-        manifest['platform'] != 'macos' ||
-        manifest['architecture'] != 'arm64' ||
-        (await sha256.bind(library.openRead()).first).toString() !=
-            manifest['sha256']) {
-      throw StateError(
-        'Native artifact provenance/hash mismatch; rebuild with tool/build_native.py.',
+    final File library;
+    if (usePrebuilt != true &&
+        await File.fromUri(
+          local.uri.resolve('libface_detector.dylib'),
+        ).exists()) {
+      // Maintainers can continue testing builds made by tool/build_native.py.
+      // A normal dependency installation has no package-local build directory.
+      library = await validateFaceDetectorLibrary(local);
+    } else {
+      library = await downloadFaceDetectorLibrary(
+        asset: faceDetectorArchive,
+        librarySha256: faceDetectorLibrarySha256,
+        cache: Directory.fromUri(
+          input.outputDirectoryShared.resolve('macos/arm64/'),
+        ),
       );
     }
+    output.dependencies.add(input.packageRoot.resolve('sdk_downloads.dart'));
     output.dependencies.add(library.uri);
-    output.dependencies.add(manifestFile.uri);
+    output.dependencies.add(library.parent.uri.resolve('manifest.json'));
     output.assets.code.add(
       CodeAsset(
         package: input.packageName,
