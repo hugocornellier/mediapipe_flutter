@@ -1,0 +1,596 @@
+{
+  "runtime": "mediapipe==1.0.0",
+  "source_revision": "6d31f1ebc3284db74d211d62bdc4f0a0c29ea120",
+  "library_sha256": "aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f",
+  "model_sha256": "b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f",
+  "platform": "macOS arm64",
+  "delegate": "CPU",
+  "running_mode": "IMAGE",
+  "min_detection_confidence": 0.5,
+  "min_suppression_threshold": 0.3,
+  "raw_derivation": "mesh-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
+  "cases": [
+    {
+      "name": "landmark-ex1.jpg",
+      "width": 1280,
+      "height": 853,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 401,
+            "origin_y": 212,
+            "width": 461,
+            "height": 461
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.7983752489089966,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.39825353026390076,
+              "y": 0.4312652349472046,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5460397601127625,
+              "y": 0.3959404230117798,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.4736906588077545,
+              "y": 0.5591029524803162,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.4901996850967407,
+              "y": 0.6572102308273315,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3424203097820282,
+              "y": 0.4776706099510193,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6490329504013062,
+              "y": 0.4052637815475464,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "file": "landmark-ex1.jpg",
+      "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
+    },
+    {
+      "name": "mesh-ex1.jpeg",
+      "width": 6010,
+      "height": 4180,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 2205,
+            "origin_y": 1075,
+            "width": 1658,
+            "height": 1658
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9670019149780273,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.45176851749420166,
+              "y": 0.36959055066108704,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.563674807548523,
+              "y": 0.3700411021709442,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5085383653640747,
+              "y": 0.4688583314418793,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5066781044006348,
+              "y": 0.5432016849517822,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.38656866550445557,
+              "y": 0.3995230495929718,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.623420774936676,
+              "y": 0.4051143229007721,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "file": "mesh-ex1.jpeg",
+      "sha256": "c2ba880b592ddc41c57d9534c989be5db274e5c150c0c16d4a2b62cddcca6048"
+    },
+    {
+      "name": "iris-detection-ex1.jpg",
+      "width": 761,
+      "height": 764,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 254,
+            "origin_y": 269,
+            "width": 257,
+            "height": 257
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9383193850517273,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.4448278248310089,
+              "y": 0.44052496552467346,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5914474129676819,
+              "y": 0.4281054139137268,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5406385064125061,
+              "y": 0.5045691728591919,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.540338397026062,
+              "y": 0.5811580419540405,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3420456349849701,
+              "y": 0.4952261447906494,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6509507894515991,
+              "y": 0.4678117036819458,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "file": "iris-detection-ex1.jpg",
+      "sha256": "91a31661e74701c2e5df36f123564cbf757a7c206978982160af46a69fc8c215"
+    },
+    {
+      "name": "iris-detection-ex2.jpg",
+      "width": 853,
+      "height": 928,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 196,
+            "origin_y": 343,
+            "width": 413,
+            "height": 413
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9196192622184753,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.40035539865493774,
+              "y": 0.48917356133461,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5964006185531616,
+              "y": 0.5005512833595276,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5086814165115356,
+              "y": 0.6066853404045105,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.4937722682952881,
+              "y": 0.6946219205856323,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.26322585344314575,
+              "y": 0.5197768807411194,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6707929372787476,
+              "y": 0.5429330468177795,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "file": "iris-detection-ex2.jpg",
+      "sha256": "bd105c9a11822ef4a6d96ef6dce6e56b1fc314aaad4d413fc997dd135cc35c72"
+    },
+    {
+      "name": "group-shot-bounding-box-ex1.jpeg",
+      "width": 3840,
+      "height": 2160,
+      "rotation_degrees": 0,
+      "detections": [],
+      "file": "group-shot-bounding-box-ex1.jpeg",
+      "sha256": "71793e5a129e35541f937904039b722981b9ba40db09bbe24419dc0e0fc086f1"
+    },
+    {
+      "name": "rgb",
+      "width": 301,
+      "height": 209,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 111,
+            "origin_y": 54,
+            "width": 82,
+            "height": 82
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9663498997688293,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.45319950580596924,
+              "y": 0.3705691695213318,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.564267098903656,
+              "y": 0.3677328824996948,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5099766254425049,
+              "y": 0.4658888578414917,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5091457962989807,
+              "y": 0.5415833592414856,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.38916704058647156,
+              "y": 0.4040936827659607,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.625067949295044,
+              "y": 0.40347665548324585,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgba",
+      "width": 301,
+      "height": 209,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 111,
+            "origin_y": 54,
+            "width": 82,
+            "height": 82
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9663498997688293,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.45319950580596924,
+              "y": 0.3705691695213318,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.564267098903656,
+              "y": 0.3677328824996948,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5099766254425049,
+              "y": 0.4658888578414917,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5091457962989807,
+              "y": 0.5415833592414856,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.38916704058647156,
+              "y": 0.4040936827659607,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.625067949295044,
+              "y": 0.40347665548324585,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgb-pair",
+      "width": 360,
+      "height": 209,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 232,
+            "origin_y": 54,
+            "width": 79,
+            "height": 79
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9445754289627075,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.708608865737915,
+              "y": 0.3749806582927704,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.8009393215179443,
+              "y": 0.3687717020511627,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.7550222873687744,
+              "y": 0.4658338725566864,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.7578676342964172,
+              "y": 0.5364937782287598,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6598785519599915,
+              "y": 0.4017147719860077,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.8569744229316711,
+              "y": 0.38742443919181824,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "bounding_box": {
+            "origin_x": 52,
+            "origin_y": 54,
+            "width": 79,
+            "height": 79
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9385784864425659,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.20879557728767395,
+              "y": 0.3746504485607147,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3007446825504303,
+              "y": 0.36695006489753723,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.254489928483963,
+              "y": 0.4641423523426056,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.2577495872974396,
+              "y": 0.5356738567352295,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.16128161549568176,
+              "y": 0.4033034145832062,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.35771751403808594,
+              "y": 0.38678255677223206,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgb-rotated",
+      "width": 209,
+      "height": 301,
+      "rotation_degrees": 90,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 53,
+            "origin_y": 106,
+            "width": 84,
+            "height": 84
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9611864686012268,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.37056154012680054,
+              "y": 0.5470353364944458,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3675847053527832,
+              "y": 0.43416088819503784,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.47073352336883545,
+              "y": 0.4888190031051636,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5451279282569885,
+              "y": 0.48911595344543457,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.4009631276130676,
+              "y": 0.610543966293335,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.39867061376571655,
+              "y": 0.37202513217926025,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "blank",
+      "width": 640,
+      "height": 480,
+      "rotation_degrees": 0,
+      "detections": []
+    }
+  ]
+}

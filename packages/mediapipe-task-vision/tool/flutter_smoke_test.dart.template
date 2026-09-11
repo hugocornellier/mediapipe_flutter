@@ -1,0 +1,30 @@
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets('bundled runtime detects a real portrait', (tester) async {
+    final model = await rootBundle.load('assets/model.tflite');
+    final pixels = await rootBundle.load('assets/portrait.rgb');
+    final detector = await FaceDetector.create(
+      FaceDetectorOptions(modelBytes: model.buffer.asUint8List(
+        model.offsetInBytes, model.lengthInBytes,
+      )),
+    );
+    try {
+      final result = await detector.detectImage(VisionImage.fromPixels(
+        pixels: pixels.buffer.asUint8List(pixels.offsetInBytes, pixels.lengthInBytes),
+        width: 301, height: 209, format: VisionPixelFormat.rgb,
+      ));
+      expect(result.imageWidth, 301);
+      expect(result.imageHeight, 209);
+      expect(result.detections, hasLength(1));
+      expect(result.detections.single.keypoints, hasLength(6));
+      expect(result.detections.single.categories.single.score, greaterThan(0.9));
+    } finally {
+      await detector.dispose();
+    }
+  });
+}

@@ -1,35 +1,32 @@
-name: Main Branch CI
+name: macOS tasks
 
-# Declare default permissions as read only.
-permissions: read-all
+permissions:
+  contents: read
 
 on:
   pull_request:
-    branches: []
+    branches: [main]
   push:
-    branches: [main, ffi-wrapper, ffi-wrapper-text-pkg]
-
-defaults:
-  run:
-    shell: bash
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  flutter-tests:
-    name: Test mediapipe_flutter_core against ${{ matrix.flutter_version }}
-    runs-on: ${{ matrix.os }}
-    # Skip running job on forks
-    if: github.repository == 'google/flutter-mediapipe'
-    strategy:
-      fail-fast: false
-      matrix:
-        flutter_version: [master]
-        # TODO(craiglabenz): reverse once CI works
-        # flutter_version: [stable, beta, master]
-        # TODO(craiglabenz): Add `ubuntu-latest` and `windows-latest` when those artifacts exist
-        os: [macos-latest]
+  native-tasks:
+    name: Stable Flutter / macOS arm64
+    runs-on: macos-15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          channel: ${{ matrix.flutter_version }}
-      - run: ./tool/mediapipe_ci_script_${{ matrix.flutter_version }}.sh
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - run: flutter --version
+      - run: brew install bazelisk cmake ninja
+      - run: make ci
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mediapipe-face-detector-1.0.0-macos-arm64
+          path: packages/mediapipe-task-vision/build/native/mediapipe-face-detector-1.0.0-macos-arm64.tar.gz
+          if-no-files-found: error

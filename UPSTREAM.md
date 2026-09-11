@@ -54,3 +54,32 @@ Checked with Dart 3.12.2 on macOS arm64:
 
 Native inference and the unfinished vision scaffold were not validated by this
 rename. Their implementation and runtime modernization remain separate work.
+
+## Stable SDK recovery
+
+The subsequent cleanup targets Flutter 3.44.8 stable / Dart 3.12.2. It migrates
+the text and GenAI hooks to `hooks` / `code_assets`, pins native downloads with
+SHA-256, and regenerates FFI bindings with ffigen 21 from the existing headers.
+The native runtime remains the April/May 2024 upstream builds. Header filters
+exclude unrelated host SDK declarations from generated bindings.
+
+Text executor and public API tests now exercise real macOS arm64 inference;
+the text example builds and its widget tests pass. The GenAI example resolves
+dependencies and passes its Dart state tests, but LLM inference is unvalidated.
+CI now runs on this fork. See the root README for commands and remaining work.
+
+## Modern Face Detector
+
+Vision now uses MediaPipe v1.0.0, commit
+`6d31f1ebc3284db74d211d62bdc4f0a0c29ea120`, with unchanged C API headers and
+the official BlazeFace short-range float16 version-1 model. Its ABI is separate
+from the legacy core/text/GenAI structs. The native build keeps the official task
+graph and calculators intact, statically links OpenCV 4.12.0 for CPU preprocessing,
+and adjusts linking to retain C entry points and permit Dart/Flutter relocation.
+
+Fixtures come from `face_detection_tflite` at
+`50c784adaa9f40c722affb1d4412674f25e1fe0c`. Reference detections are generated
+independently through Google's `mediapipe==1.0.0` Python API. The vision package
+records model, fixture, and reference-library digests and provides native ABI,
+inference, and Flutter bundling checks. Its runtime is currently source-built;
+prebuilt releases and additional platforms/modes remain pending.

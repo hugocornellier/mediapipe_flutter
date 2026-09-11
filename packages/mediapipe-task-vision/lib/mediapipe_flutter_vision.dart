@@ -3,8 +3,7 @@
 // found in the LICENSE file.
 
 /// Package containing MediaPipe's vision-specific tasks.
-library mediapipe_flutter_vision;
+library;
 
-export 'universal_mediapipe_flutter_vision.dart'
-    if (dart.library.html) 'src/web/mediapipe_flutter_vision.dart'
-    if (dart.library.io) 'src/io/mediapipe_flutter_vision.dart';
+export 'src/interface/face_detector_types.dart';
+export 'src/io/face_detector.dart';
