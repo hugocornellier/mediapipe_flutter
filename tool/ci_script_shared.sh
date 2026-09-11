@@ -34,7 +34,7 @@ function ci_package () {
         # Run the formatter on all the dart files to make sure everything's linted.
         dart format --output none --set-exit-if-changed .
         
-        # Turn on the native-assets feature required by flutter-mediapipe
+        # Turn on the native-assets feature required by mediapipe_flutter
         flutter config --enable-native-assets
 
         # Run the actual tests if they exist.

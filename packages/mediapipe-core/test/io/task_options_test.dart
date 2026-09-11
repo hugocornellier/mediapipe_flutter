@@ -6,8 +6,8 @@ import 'dart:ffi';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
     as bindings;
 import 'package:test/test.dart';
 

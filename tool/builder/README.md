@@ -1,6 +1,6 @@
 # Flutter MediaPipe builder
 
-Helper utility which performs build or CI/CD step operations necessary to develop, release, and use `flutter-mediapipe`.
+Helper utility which performs build or CI/CD step operations necessary to develop, release, and use `mediapipe_flutter`.
 
 ### Usage:
 
@@ -8,7 +8,7 @@ Usage depends on which task you need to accomplish. All supported workflows are 
 
 #### Header aggregation
 
-Header files across all tasks in `google/flutter-mediapipe` have to stay in sync with their origin, `google/mediapipe`. To
+Header files across all tasks in `hugocornellier/mediapipe_flutter` have to stay in sync with their origin, `google/mediapipe`. To
 resync these files, check out both repositories on the same machine (ideally next to each other on the file system) and run:
 
 ```sh

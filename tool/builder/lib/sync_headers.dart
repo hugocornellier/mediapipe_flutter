@@ -22,13 +22,13 @@ final te = 'mediapipe/tasks/c/text/text_embedder';
 final ld = 'mediapipe/tasks/c/text/language_detector';
 final inference = 'mediapipe/tasks/cc/genai/inference/c';
 
-/// google/flutter-mediapipe package paths
+/// hugocornellier/mediapipe_flutter package paths
 final corePackage = 'packages/mediapipe-core/third_party';
 final textPackage = 'packages/mediapipe-task-text/third_party';
 final inferencePackage = 'packages/mediapipe-task-genai/third_party';
 
 /// First string is its relative location in both repositories,
-/// Second string is its package location in `google/flutter-mediapipe`,
+/// Second string is its package location in `hugocornellier/mediapipe_flutter`,
 /// Third string is the file name
 /// Fourth param is an optional function to modify the file
 List<(String, String, String, Function(io.File)?)> headerPaths = [
@@ -56,7 +56,7 @@ List<(String, String, String, Function(io.File)?)> headerPaths = [
 /// disrupted by the move.
 class SyncHeadersCommand extends Command with RepoFinderMixin {
   @override
-  String description = 'Syncs header files to google/flutter-mediapipe.';
+  String description = 'Syncs header files to hugocornellier/mediapipe_flutter.';
   @override
   String name = 'headers';
 

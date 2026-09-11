@@ -8,8 +8,8 @@
 
 import 'dart:io' as io;
 import 'package:path/path.dart' as path;
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/io.dart';
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_text/io.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -1,9 +1,10 @@
-name: mediapipe_text
+name: mediapipe_flutter_text
+publish_to: none
 description: An implementation of MediaPipe text-based Tasks.
 version: 0.0.1
 
-repository: https://github.com/google/flutter-mediapipe/tree/main/packages/mediapipe-task-text
-issue_tracker: https://github.com/google/flutter-mediapipe/issues/
+repository: https://github.com/hugocornellier/mediapipe_flutter/tree/main/packages/mediapipe-task-text
+issue_tracker: https://github.com/hugocornellier/mediapipe_flutter/issues/
 
 platforms:
   android:
@@ -23,7 +24,8 @@ dependencies:
   ffi: ^2.1.2
   http: ^1.1.0
   logging: ^1.2.0
-  mediapipe_core: ^0.0.1
+  mediapipe_flutter_core:
+    path: ../mediapipe-core
   native_assets_cli: ^0.6.0
   native_toolchain_c: ^0.4.2
   path: ^1.8.3

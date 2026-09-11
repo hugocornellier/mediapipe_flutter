@@ -1,13 +1,13 @@
 name: "MediaPipeVisionBindings"
 description: "Bindings for MediaPipe structs for vision-related tasks"
 output:
-  bindings: "lib/third_party/mediapipe/mediapipe_vision_bindings.dart"
+  bindings: "lib/third_party/mediapipe/mediapipe_flutter_vision_bindings.dart"
 headers:
   entry-points:
     - "third_party/mediapipe/tasks/c/**"
 import:
   symbol-files:
-    - "package:mediapipe_core/generated/core_symbols.yaml"
+    - "package:mediapipe_flutter_core/generated/core_symbols.yaml"
 preamble: |
   /* Copyright 2023 The MediaPipe Authors.
   Licensed under the Apache License, Version 2.0 (the "License");

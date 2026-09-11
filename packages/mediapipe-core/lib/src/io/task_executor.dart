@@ -4,7 +4,7 @@
 
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/io.dart';
+import 'package:mediapipe_flutter_core/io.dart';
 import 'package:logging/logging.dart';
 
 final _log = Logger('TaskExecutor');

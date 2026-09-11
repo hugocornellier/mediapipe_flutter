@@ -6,7 +6,7 @@ import 'dart:ffi';
 import 'dart:typed_data';
 import 'package:test/test.dart';
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/src/io/ffi_utils.dart';
+import 'package:mediapipe_flutter_core/src/io/ffi_utils.dart';
 
 void main() {
   group('NullAwarePtr should', () {

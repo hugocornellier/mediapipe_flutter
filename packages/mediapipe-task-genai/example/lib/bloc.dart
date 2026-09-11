@@ -8,7 +8,7 @@ import 'package:example/models/models.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_genai/mediapipe_genai.dart';
+import 'package:mediapipe_flutter_genai/mediapipe_flutter_genai.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 
 part 'bloc.freezed.dart';

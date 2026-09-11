@@ -15,7 +15,7 @@ defaults:
 
 jobs:
   flutter-tests:
-    name: Test mediapipe_core against ${{ matrix.flutter_version }}
+    name: Test mediapipe_flutter_core against ${{ matrix.flutter_version }}
     runs-on: ${{ matrix.os }}
     # Skip running job on forks
     if: github.repository == 'google/flutter-mediapipe'

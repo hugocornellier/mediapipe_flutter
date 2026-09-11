@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
+import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 import 'package:example/language_detection_demo.dart';
 import 'package:example/text_classification_demo.dart';
 

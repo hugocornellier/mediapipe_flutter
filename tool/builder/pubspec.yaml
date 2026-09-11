@@ -1,5 +1,5 @@
 name: builder
-description: Performs build operations for google/flutter-mediapipe.
+description: Performs build operations for hugocornellier/mediapipe_flutter.
 
 publish_to: none
 

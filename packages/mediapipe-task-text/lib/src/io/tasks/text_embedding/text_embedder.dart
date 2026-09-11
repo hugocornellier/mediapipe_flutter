@@ -7,10 +7,10 @@ import 'dart:io' as io;
 import 'dart:isolate';
 import 'package:async/async.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_core/io.dart' as core_io;
-import 'package:mediapipe_text/interface.dart';
-import 'package:mediapipe_text/io.dart';
+import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
+import 'package:mediapipe_flutter_core/io.dart' as core_io;
+import 'package:mediapipe_flutter_text/interface.dart';
+import 'package:mediapipe_flutter_text/io.dart';
 
 final _log = Logger('TextEmbedder');
 

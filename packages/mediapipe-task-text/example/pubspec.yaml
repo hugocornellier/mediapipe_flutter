@@ -11,8 +11,9 @@ dependencies:
     sdk: flutter
   getwidget: ^4.0.0
   logging: ^1.2.0
-  mediapipe_core: ^0.0.1
-  mediapipe_text:
+  mediapipe_flutter_core:
+    path: ../../mediapipe-core
+  mediapipe_flutter_text:
     path: ../
   path: ^1.8.3
   path_provider: ^2.1.1

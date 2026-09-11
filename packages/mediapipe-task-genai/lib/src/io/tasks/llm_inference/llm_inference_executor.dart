@@ -6,9 +6,9 @@ import 'dart:async';
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_genai/io.dart';
-import 'package:mediapipe_genai/src/io/third_party/mediapipe/generated/mediapipe_genai_bindings.dart'
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_genai/io.dart';
+import 'package:mediapipe_flutter_genai/src/io/third_party/mediapipe/generated/mediapipe_flutter_genai_bindings.dart'
     as bindings;
 
 final _log = Logger('LlmInferenceExecutor');

@@ -1,93 +1,77 @@
-# Flutter-MediaPipe
+# mediapipe_flutter
 
-This repository will be home to the source code for the `mediapipe_vision`, `mediapipe_audio`, `mediapipe_text`, and `mediapipe_genai` plugins for Flutter.
+MediaPipe Tasks for Flutter.
+
+Private development fork of [google/flutter-mediapipe](https://github.com/google/flutter-mediapipe),
+maintained by [Hugo Cornellier](https://github.com/hugocornellier). This repository
+preserves the upstream Git history and license. It is an independent project and
+is not an official Google package.
+
+## Current status
+
+This initial fork establishes the `mediapipe_flutter` name and local package
+dependencies. The inherited native SDK downloads and build tooling still need
+modernization. The four target tasks below are planned work, not implemented
+features of this fork yet.
+
+No packages from this fork have been published to pub.dev. Each package has
+`publish_to: none` while the private development baseline is being established.
 
 ## Packages
 
-| Package | Description | Version |
+This is a monorepo with separate task packages; there is no umbrella Dart package
+yet. Package directories retain their upstream layout to preserve native header
+paths and build-tool compatibility.
+
+| Package | Directory | Inherited implementation |
 | --- | --- | --- |
-| [mediapipe_core](packages/mediapipe-core/) | Shared logic and utilities required by other MediaPipe Task packages. | ![pub package](https://img.shields.io/pub/v/mediapipe_core) |
-| [mediapipe_text](packages/mediapipe-task-text/) | An implementation of the MediaPipe Text APIs | ![pub package](https://img.shields.io/pub/v/mediapipe_text) |
-| [mediapipe_genai](packages/mediapipe-task-genai/) | An implementation of the MediaPipe GenAI APIs | ![pub package](https://img.shields.io/pub/v/mediapipe_genai) |
+| `mediapipe_flutter_core` | [packages/mediapipe-core](packages/mediapipe-core/) | Shared task types, FFI helpers, and utilities |
+| `mediapipe_flutter_text` | [packages/mediapipe-task-text](packages/mediapipe-task-text/) | Text classification, embedding, and language detection |
+| `mediapipe_flutter_genai` | [packages/mediapipe-task-genai](packages/mediapipe-task-genai/) | Earlier MediaPipe LLM inference API |
+| `mediapipe_flutter_vision` | [packages/mediapipe-task-vision](packages/mediapipe-task-vision/) | Incomplete scaffold |
+| Audio | [packages/mediapipe-task-audio](packages/mediapipe-task-audio/) | Placeholder; no Dart package yet |
 
-## Supported Tasks
+The upstream support table listed Android, iOS, and macOS for its implemented
+text and GenAI tasks. Those platforms have not yet been revalidated for this
+renamed fork, and the existing GenAI wrapper does not establish support for
+current `.litertlm` models.
 
-<table>
-    <tr>
-        <th>Task</th>
-        <th>Android</th>
-        <th>iOS</th>
-        <th>Web</th>
-        <th>Windows</th>
-        <th>macOS</th>
-        <th>Linux</th>
-    </tr>
-    <tr>
-        <td colspan="7" align="center"><strong>Text</strong></td>
-    </tr>
-    <tr>
-        <td>Classification</td>
-        <td align="center">✅</td>
-        <td align="center">✅</td>
-        <td align="center">-</td>
-        <td align="center">-</td>
-        <td align="center">✅</td>
-        <td align="center">-</td>
-    </tr>
-    <tr>
-        <td>Embedding</td>
-        <td align="center">✅</td>
-        <td align="center">✅</td>
-        <td align="center">-</td>
-        <td align="center">-</td>
-        <td align="center">✅</td>
-        <td align="center">-</td>
-    </tr>
-    <tr>
-        <td>Language Detection</td>
-        <td align="center">✅</td>
-        <td align="center">✅</td>
-        <td align="center">-</td>
-        <td align="center">-</td>
-        <td align="center">✅</td>
-        <td align="center">-</td>
-    </tr>
-    <tr>
-        <td colspan="7" align="center"><strong>GenAI</strong></td>
-    </tr>
-    <tr>
-        <td>Inference</td>
-        <td align="center">✅</td>
-        <td align="center">✅</td>
-        <td align="center">-</td>
-        <td align="center">-</td>
-        <td align="center">✅</td>
-        <td align="center">-</td>
-    </tr>
-    <tr>
-        <td colspan="7" align="center"><strong>Audio</strong></td>
-    </tr>
-    <tr>
-        <td colspan="7" align="center"><strong>Vision</strong></td>
-    </tr>
-</table>
+## Local development
 
-## Releasing
+Clone this private repository using an authenticated GitHub account. Dependencies
+between the packages and their examples point to sibling directories, so they
+resolve the renamed code from this checkout rather than upstream pub.dev releases.
 
-### Updating MediaPipe SDKs
+For example, to work on the shared Dart package:
 
-Anytime MediaPipe releases new versions of their SDKs, this package will need to be updated to incorporate those latest builds. SDK versions are pinned in the `sdk_downloads.dart` files in each package, which are updated by running the following command from the root of the repository:
-
-```
-$ make sdks
+```sh
+cd packages/mediapipe-core
+dart pub get
+dart analyze
+dart test
 ```
 
-The Google Cloud Storage bucket in question only gives read-list access to a specific list of Googlers' accounts, so this command must be run from such a Googler's corp machines.
+Package-specific READMEs retain upstream API examples. Their native-assets and
+SDK setup instructions describe the inherited implementation and require review
+as the runtime is modernized.
 
-After this, create and merge a PR with the changes and then proceed to `Releasing to pub.dev`.
+## Initial development targets
 
-<!--
-### Releasing to pub.dev
+- Modernize the build hooks and establish reproducible, versioned native SDKs.
+- Add the stateful MagicTouch Interactive Segmenter API.
+- Add Holistic Landmarker and its combined face, hand, and pose results.
+- Add Text Summarizer and Text Proofreader with their current native backends.
+- Validate each task against official MediaPipe reference outputs on the target
+  platforms before publishing.
 
-TODO
--->
+The checked-in SDK manifests currently reference April/May 2024 artifacts. The
+inherited `make sdks` command discovers builds through a bucket whose listing
+requires Google access; a maintainable public artifact source or build process
+is needed for future updates. Upstream native CI remains gated to the upstream
+repository until its build process is modernized.
+
+## Upstream and license
+
+See [UPSTREAM.md](UPSTREAM.md) for the source revision, remotes, and rename map.
+The original [Apache-2.0 license](LICENSE), [AUTHORS](AUTHORS), and source copyright
+notices are retained.

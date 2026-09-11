@@ -4,10 +4,10 @@
 
 import 'dart:typed_data';
 
-import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_core/interface.dart';
-export 'package:mediapipe_core/interface.dart' show EmbeddingType;
-import 'package:mediapipe_text/interface.dart';
+import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
+import 'package:mediapipe_flutter_core/interface.dart';
+export 'package:mediapipe_flutter_core/interface.dart' show EmbeddingType;
+import 'package:mediapipe_flutter_text/interface.dart';
 
 /// {@macro TextClassifier}
 class TextClassifier extends BaseTextClassifier {

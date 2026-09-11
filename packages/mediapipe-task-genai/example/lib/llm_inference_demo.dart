@@ -7,7 +7,7 @@ import 'package:example/model_selection_screen.dart';
 import 'package:example/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mediapipe_genai/mediapipe_genai.dart';
+import 'package:mediapipe_flutter_genai/mediapipe_flutter_genai.dart';
 // import 'fake_inference_engine.dart';
 import 'widgets/widgets.dart';
 

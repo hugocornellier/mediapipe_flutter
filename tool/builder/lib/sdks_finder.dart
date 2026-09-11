@@ -78,7 +78,7 @@ enum MediaPipeSdk {
 ///
 /// Usage:
 /// ```sh
-///   $ cd path/to/flutter-mediapipe
+///   $ cd path/to/mediapipe_flutter
 ///   $ dart tool/builder/bin/main.dart sdks [-v]
 /// ```
 class SdksFinderCommand extends Command with RepoFinderMixin {

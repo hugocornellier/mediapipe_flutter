@@ -1,6 +1,11 @@
 # MediaPipe GenAI for Flutter
 
-![pub package](https://img.shields.io/pub/v/mediapipe_genai)
+This package is now `mediapipe_flutter_genai`, part of the private
+[mediapipe_flutter](../../README.md) development fork. Use the local package paths
+in this checkout. The upstream setup and API examples below describe the older
+LLM inference API, not the new Summarizer or Proofreader tasks. The renamed package
+is not on pub.dev.
+
 
 A Flutter plugin to use the MediaPipe GenAI API, which contains multiple generative AI-based Mediapipe tasks.
 
@@ -24,12 +29,12 @@ To get started with MediaPipe, please [see the documentation](https://developers
     </tr>
     <tr>
         <td>Inference</td>
-        <td align="center"><img height="16" width="16" src="https://raw.githubusercontent.com/google/flutter-mediapipe/main/assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="https://raw.githubusercontent.com/google/flutter-mediapipe/main/assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="https://raw.githubusercontent.com/google/flutter-mediapipe/main/assets/no.png"/></td>
-        <td align="center"><img height="16" width="16" src="https://raw.githubusercontent.com/google/flutter-mediapipe/main/assets/no.png"/></td>
-        <td align="center"><img height="16" width="16" src="https://raw.githubusercontent.com/google/flutter-mediapipe/main/assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="https://raw.githubusercontent.com/google/flutter-mediapipe/main/assets/no.png"/></td>
+        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
+        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
+        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
+        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
+        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
+        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
     </tr>
 </table>
 
@@ -64,14 +69,14 @@ $ flutter config --no-enable-native-assets
 
 ### Add dependencies
 
-Add `mediapipe_genai` and `mediapipe_core` to your `pubspec.yaml` file:
+Add `mediapipe_flutter_genai` and `mediapipe_flutter_core` to your `pubspec.yaml` file:
 
 ```
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_core: latest
-  mediapipe_genai: latest
+  mediapipe_flutter_core: latest
+  mediapipe_flutter_genai: latest
 ```
 
 ### Add tflite models
@@ -97,7 +102,7 @@ CPU vs GPU variants and be sure to invoke the appropriate options constructor.
 Inference example:
 
 ```dart
-import 'package:mediapipe_genai/mediapipe_genai.dart';
+import 'package:mediapipe_flutter_genai/mediapipe_flutter_genai.dart';
 
 // Location where you downloaded the file at runtime, or
 // placed the model yourself in advance (using `adb push`
@@ -131,10 +136,10 @@ await for (final String responseChunk in responseStream) {
 
 ## Issues and feedback
 
-Please file Flutter-MediaPipe specific issues, bugs, or feature requests in our [issue tracker](https://github.com/google/flutter-mediapipe/issues/new).
+Please file mediapipe_flutter specific issues, bugs, or feature requests in our [issue tracker](https://github.com/hugocornellier/mediapipe_flutter/issues/new).
 
 Issues that are specific to Flutter can be filed in the [Flutter issue tracker](https://github.com/flutter/flutter/issues/new).
 
 To contribute a change to this plugin,
-please review our [contribution guide](https://github.com/google/flutter-mediapipe/blob/master/CONTRIBUTING.md)
-and open a [pull request](https://github.com/google/flutter-mediapipe/pulls).
+please review our [contribution guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/CONTRIBUTING.md)
+and open a [pull request](https://github.com/hugocornellier/mediapipe_flutter/pulls).

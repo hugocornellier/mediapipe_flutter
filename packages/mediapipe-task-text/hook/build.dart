@@ -55,9 +55,9 @@ Future<void> main(List<String> args) async {
     );
     buildOutput.addAsset(
       NativeCodeAsset(
-        package: 'mediapipe_text',
+        package: 'mediapipe_flutter_text',
         name:
-            'src/io/third_party/mediapipe/generated/mediapipe_text_bindings.dart',
+            'src/io/third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart',
         linkMode: DynamicLoadingBundled(),
         os: buildConfig.targetOS,
         architecture: buildConfig.targetArchitecture,

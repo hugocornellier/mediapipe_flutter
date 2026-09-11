@@ -9,7 +9,7 @@ import 'package:builder/sync_headers.dart';
 
 final runner = CommandRunner(
   'build',
-  'Performs build operations for google/flutter-mediapipe that '
+  'Performs build operations for hugocornellier/mediapipe_flutter that '
       'depend on contents in this repository.',
 )
   ..addCommand(DownloadModelCommand())

@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 import 'dart:ffi';
-import 'package:mediapipe_core/interface.dart';
-import 'package:mediapipe_core/io.dart';
+import 'package:mediapipe_flutter_core/interface.dart';
+import 'package:mediapipe_flutter_core/io.dart';
 import 'third_party/mediapipe/generated/mediapipe_common_bindings.dart'
     as bindings;
 

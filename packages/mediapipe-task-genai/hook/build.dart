@@ -79,9 +79,9 @@ Future<void> main(List<String> args) async {
       );
       buildOutput.addAsset(
         NativeCodeAsset(
-          package: 'mediapipe_genai',
+          package: 'mediapipe_flutter_genai',
           name:
-              'src/io/third_party/mediapipe/generated/mediapipe_genai_bindings.dart',
+              'src/io/third_party/mediapipe/generated/mediapipe_flutter_genai_bindings.dart',
           linkMode: DynamicLoadingBundled(),
           os: buildConfig.targetOS,
           architecture: buildConfig.targetArchitecture,

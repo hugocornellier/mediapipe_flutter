@@ -7,7 +7,7 @@ import 'dart:typed_data';
 import 'package:example/keyboard_hider.dart';
 import 'package:flutter/material.dart';
 import 'package:getwidget/getwidget.dart';
-import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 import 'enumerate.dart';
 
 class LanguageDetectionDemo extends StatefulWidget {
