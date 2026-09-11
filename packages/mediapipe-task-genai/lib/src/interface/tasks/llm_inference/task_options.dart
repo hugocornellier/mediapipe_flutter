@@ -47,19 +47,20 @@ abstract class BaseLlmInferenceOptions extends Options {
 
   @override
   List<Object?> get props => [
-        modelPath,
-        cacheDir,
-        loraPath,
-        sequenceBatchSize,
-        decodeStepsPerSync,
-        maxTokens,
-        randomSeed,
-        temperature,
-        topK,
-      ];
+    modelPath,
+    cacheDir,
+    loraPath,
+    sequenceBatchSize,
+    decodeStepsPerSync,
+    maxTokens,
+    randomSeed,
+    temperature,
+    topK,
+  ];
 
   @override
-  String toString() => '$runtimeType('
+  String toString() =>
+      '$runtimeType('
       'modelPath: $modelPath, '
       'cacheDir: $cacheDir, '
       'loraPath: $loraPath, '

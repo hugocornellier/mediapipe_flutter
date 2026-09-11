@@ -27,10 +27,10 @@ class LlmInferenceOptions extends BaseLlmInferenceOptions
     required this.temperature,
     required this.topK,
     int? randomSeed,
-  })  : loraPath = '',
-        sequenceBatchSize = 0,
-        decodeStepsPerSync = 0,
-        randomSeed = randomSeed ?? Random().nextInt(1 << 32);
+  }) : loraPath = '',
+       sequenceBatchSize = 0,
+       decodeStepsPerSync = 0,
+       randomSeed = randomSeed ?? Random().nextInt(1 << 32);
 
   /// {@macro LlmInferenceOptions.gpu}
   LlmInferenceOptions.gpu({
@@ -41,9 +41,9 @@ class LlmInferenceOptions extends BaseLlmInferenceOptions
     required this.topK,
     this.decodeStepsPerSync = 3,
     int? randomSeed,
-  })  : cacheDir = '',
-        loraPath = '',
-        randomSeed = randomSeed ?? Random().nextInt(1 << 32);
+  }) : cacheDir = '',
+       loraPath = '',
+       randomSeed = randomSeed ?? Random().nextInt(1 << 32);
 
   Pointer<bindings.LlmSessionConfig>? _pointer;
 
@@ -75,6 +75,7 @@ class LlmInferenceOptions extends BaseLlmInferenceOptions
   final int topK;
 
   /// Copies this options object into native memory for use by an engine.
+  @override
   Pointer<bindings.LlmSessionConfig> copyToNative() {
     _pointer = malloc<bindings.LlmSessionConfig>();
     _pointer!.ref.model_path = modelPath.copyToNative();
@@ -95,6 +96,7 @@ class LlmInferenceOptions extends BaseLlmInferenceOptions
   bool get isClosed => _isClosed;
 
   /// Releases the native memory behind this options object.
+  @override
   void dispose() {
     assert(() {
       if (isClosed) {

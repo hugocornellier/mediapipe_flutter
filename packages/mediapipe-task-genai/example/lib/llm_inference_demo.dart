@@ -44,9 +44,9 @@ class _LlmInferenceDemoState extends State<LlmInferenceDemo>
           bloc: bloc,
           listener: (context, TranscriptState state) {
             if (state.error != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.error!)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.error!)));
             }
           },
         ),

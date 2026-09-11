@@ -1,83 +1,23 @@
 # MediaPipe GenAI for Flutter
 
-This package is now `mediapipe_flutter_genai`, part of the private
-[mediapipe_flutter](../../README.md) development fork. Use the local package paths
-in this checkout. The upstream setup and API examples below describe the older
-LLM inference API, not the new Summarizer or Proofreader tasks. The renamed package
-is not on pub.dev.
+`mediapipe_flutter_genai` is the legacy LLM wrapper in the private
+[mediapipe_flutter](../../README.md) fork. It is not published to pub.dev.
 
+Build tooling and dependencies have been updated for Flutter 3.44.8 stable /
+Dart 3.12.2. The native hook downloads pinned, checksum-verified 2024 binaries.
+No experimental flags are required.
 
-A Flutter plugin to use the MediaPipe GenAI API, which contains multiple generative AI-based Mediapipe tasks.
+**LLM inference remains unvalidated.** The example's tests cover Dart state only.
+The API below is historical; it does not implement current Summarizer, Proofreader,
+or `.litertlm` support. Recovery of this backend is separate from the text baseline.
 
-To learn more about MediaPipe, please visit the [MediaPipe website](https://developers.google.com/mediapipe)
+Runtime artifacts exist for macOS arm64, Android arm64, and iOS arm64 devices.
+There are no simulator, Intel macOS, Windows, Linux, or web artifacts for this
+package. Use the local path dependencies in `example/pubspec.yaml`.
 
-## Getting Started
+## Inherited API examples
 
-To get started with MediaPipe, please [see the documentation](https://developers.google.com/mediapipe/solutions/guide).
-
-## Supported Tasks
-
-<table>
-    <tr>
-        <th>Task</th>
-        <th>Android</th>
-        <th>iOS</th>
-        <th>Web</th>
-        <th>Windows</th>
-        <th>macOS</th>
-        <th>Linux</th>
-    </tr>
-    <tr>
-        <td>Inference</td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-    </tr>
-</table>
-
-## Selecting a device
-
-On-device inference is a demanding task, and as such is recommended to run on
-Pixel 7 or newer (or other comprable Android devices) or iPhone 13's or newer
-for iOS.
-
-Mobile emulators are not supported.
-
-For desktop, macOS is supported and Windows / Linux are coming soon.
-
-## Usage
-
-To get started with this plugin, you must be on the `master` channel.
-Second, you will need to opt-in to the `native-assets` experiment,
-using the `--enable-experiment=native-assets` flag whenever you run any commands
-using the `$ dart` command line tool.
-
-To enable this globally in Flutter, run:
-
-```sh
-$ flutter config --enable-native-assets
-```
-
-To disable this globally in Flutter, run:
-
-```sh
-$ flutter config --no-enable-native-assets
-```
-
-### Add dependencies
-
-Add `mediapipe_flutter_genai` and `mediapipe_flutter_core` to your `pubspec.yaml` file:
-
-```
-dependencies:
-  flutter:
-    sdk: flutter
-  mediapipe_flutter_core: latest
-  mediapipe_flutter_genai: latest
-```
+The following describes the old model and engine API, pending runtime recovery.
 
 ### Add tflite models
 
@@ -88,8 +28,8 @@ accept the Terms of Service, download whichever models you want to use in your
 app, self-host those models at a location of your choosing, and then configure
 your app to download them at runtime.
 
-See the example directory for a working implementation and directions on how
-to get MediaPipe's inference task working.
+See the example directory for the inherited implementation; it has not been
+validated for native LLM inference on the current baseline.
 
 ### CPU vs GPU models
 

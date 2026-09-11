@@ -93,8 +93,11 @@ Iterable<int> _genInts(int count, {required Random rnd}) sync* {
   }
 }
 
-Iterable<double> _genFloats(int count,
-    {required bool l2Normalize, required Random rnd}) sync* {
+Iterable<double> _genFloats(
+  int count, {
+  required bool l2Normalize,
+  required Random rnd,
+}) sync* {
   int index = 0;
   while (index < count) {
     final dbl = rnd.nextDouble();

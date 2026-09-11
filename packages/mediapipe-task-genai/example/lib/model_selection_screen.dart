@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:example/models/llm_model.dart';
 import 'package:flutter/material.dart';
-import 'package:getwidget/getwidget.dart';
 
 class ModelSelectionScreen extends StatelessWidget {
   const ModelSelectionScreen({
@@ -95,32 +94,40 @@ class ModelSelectionTile extends StatelessWidget {
             // style: const TextStyle(fontSize: 12),
           ),
           leading: switch (modelInfo.state) {
-            ModelState.downloaded =>
-              const Icon(Icons.check, color: Colors.green),
+            ModelState.downloaded => const Icon(
+              Icons.check,
+              color: Colors.green,
+            ),
             ModelState.downloading => const Icon(Icons.downloading),
             ModelState.empty => SizedBox.fromSize(size: const Size.square(1)),
           },
           subtitle: switch (modelInfo.state) {
             ModelState.downloaded => Text(
-                humanize(modelInfo.downloadedBytes!),
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]!),
-              ),
-            ModelState.downloading =>
-              _DownloadingBar(downloadPercent: modelInfo.downloadPercent!),
-            ModelState.empty => ready && modelInfo.remoteLocation == null
-                ? const Text('Configure URL to download',
-                    style: TextStyle(color: Colors.red))
-                : Container(), // const Icon(Icons.download),
+              humanize(modelInfo.downloadedBytes!),
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]!),
+            ),
+            ModelState.downloading => _DownloadingBar(
+              downloadPercent: modelInfo.downloadPercent!,
+            ),
+            ModelState.empty =>
+              ready && modelInfo.remoteLocation == null
+                  ? const Text(
+                      'Configure URL to download',
+                      style: TextStyle(color: Colors.red),
+                    )
+                  : Container(), // const Icon(Icons.download),
           },
           trailing: GestureDetector(
             onTap: () => _launchModal(context),
             child: switch (modelInfo.state) {
               ModelState.downloaded => const Icon(Icons.delete),
-              ModelState.downloading =>
-                SizedBox.fromSize(size: const Size.square(1)),
-              ModelState.empty => modelInfo.remoteLocation == null
-                  ? SizedBox.fromSize(size: const Size.square(1))
-                  : const Icon(Icons.download),
+              ModelState.downloading => SizedBox.fromSize(
+                size: const Size.square(1),
+              ),
+              ModelState.empty =>
+                modelInfo.remoteLocation == null
+                    ? SizedBox.fromSize(size: const Size.square(1))
+                    : const Icon(Icons.download),
             },
           ),
         ),
@@ -196,11 +203,11 @@ class _DownloadingBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GFProgressBar(
-      percentage: (downloadPercent / 100).toDouble().clamp(0, 1.0),
-      lineHeight: 8,
+    return LinearProgressIndicator(
+      value: (downloadPercent / 100).clamp(0, 1.0),
+      minHeight: 8,
       backgroundColor: Colors.green[100]!,
-      progressBarColor: Colors.green[700]!,
+      color: Colors.green[700]!,
     );
   }
 }

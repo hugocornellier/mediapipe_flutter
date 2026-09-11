@@ -72,21 +72,18 @@ class BaseOptions extends BaseBaseOptions
     this.modelAssetBuffer,
     this.modelAssetPath,
     required this.type,
-  })  : assert(
-          !(modelAssetBuffer == null && modelAssetPath == null),
-          'You must supply either `modelAssetBuffer` or `modelAssetPath`',
-        ),
-        assert(
-          !(modelAssetBuffer != null && modelAssetPath != null),
-          'You must only supply one of `modelAssetBuffer` and `modelAssetPath`',
-        );
+  }) : assert(
+         !(modelAssetBuffer == null && modelAssetPath == null),
+         'You must supply either `modelAssetBuffer` or `modelAssetPath`',
+       ),
+       assert(
+         !(modelAssetBuffer != null && modelAssetPath != null),
+         'You must only supply one of `modelAssetBuffer` and `modelAssetPath`',
+       );
 
   /// {@macro BaseOptions.path}
   factory BaseOptions.path(String path) {
-    return BaseOptions._(
-      modelAssetPath: path,
-      type: BaseOptionsType.path,
-    );
+    return BaseOptions._(modelAssetPath: path, type: BaseOptionsType.path);
   }
 
   /// {@macro BaseOptions.memory}
@@ -217,10 +214,7 @@ class ClassifierOptions extends BaseClassifierOptions
 class EmbedderOptions extends BaseEmbedderOptions
     with InnerTaskOptions<bindings.EmbedderOptions> {
   /// {@macro EmbedderOptions}
-  const EmbedderOptions({
-    this.l2Normalize = false,
-    this.quantize = false,
-  });
+  const EmbedderOptions({this.l2Normalize = false, this.quantize = false});
 
   @override
   final bool l2Normalize;

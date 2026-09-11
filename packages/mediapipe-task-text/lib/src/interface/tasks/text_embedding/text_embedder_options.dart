@@ -19,7 +19,8 @@ abstract class BaseTextEmbedderOptions extends BaseTaskOptions {
   BaseEmbedderOptions get embedderOptions;
 
   @override
-  String toString() => 'TextEmbedderOptions(baseOptions: $baseOptions, '
+  String toString() =>
+      'TextEmbedderOptions(baseOptions: $baseOptions, '
       'embedderOptions: $embedderOptions)';
 
   @override

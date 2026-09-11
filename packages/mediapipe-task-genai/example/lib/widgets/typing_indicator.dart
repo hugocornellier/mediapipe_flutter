@@ -41,9 +41,8 @@ class _TypingIndicatorState extends State<TypingIndicator>
   void initState() {
     super.initState();
 
-    _appearanceController = AnimationController(
-      vsync: this,
-    )..addListener(() {
+    _appearanceController = AnimationController(vsync: this)
+      ..addListener(() {
         setState(() {});
       });
 
@@ -51,10 +50,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
       parent: _appearanceController,
       curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
       reverseCurve: const Interval(0.0, 1.0, curve: Curves.easeOut),
-    ).drive(Tween<double>(
-      begin: 0.0,
-      end: 60.0,
-    ));
+    ).drive(Tween<double>(begin: 0.0, end: 60.0));
 
     _smallBubbleAnimation = CurvedAnimation(
       parent: _appearanceController,
@@ -121,10 +117,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
     return AnimatedBuilder(
       animation: _indicatorSpaceAnimation,
       builder: (context, child) {
-        return SizedBox(
-          height: _indicatorSpaceAnimation.value,
-          child: child,
-        );
+        return SizedBox(height: _indicatorSpaceAnimation.value, child: child);
       },
       child: Stack(
         children: [
@@ -132,19 +125,13 @@ class _TypingIndicatorState extends State<TypingIndicator>
             animation: _smallBubbleAnimation,
             left: 8,
             bottom: 8,
-            bubble: CircleBubble(
-              size: 8,
-              bubbleColor: widget.bubbleColor,
-            ),
+            bubble: CircleBubble(size: 8, bubbleColor: widget.bubbleColor),
           ),
           AnimatedBubble(
             animation: _mediumBubbleAnimation,
             left: 10,
             bottom: 10,
-            bubble: CircleBubble(
-              size: 16,
-              bubbleColor: widget.bubbleColor,
-            ),
+            bubble: CircleBubble(size: 16, bubbleColor: widget.bubbleColor),
           ),
           AnimatedBubble(
             animation: _largeBubbleAnimation,
@@ -179,10 +166,7 @@ class CircleBubble extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: bubbleColor,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: bubbleColor),
     );
   }
 }

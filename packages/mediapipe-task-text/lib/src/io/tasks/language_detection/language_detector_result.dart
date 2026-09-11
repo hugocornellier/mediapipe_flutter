@@ -13,9 +13,8 @@ class LanguageDetectorResult extends BaseLanguageDetectorResult
     with IOTaskResult {
   /// {@macro LanguageDetectionResult}
   LanguageDetectorResult({
-    required Iterable<LanguagePrediction> predictions,
-  })  : _predictions = predictions,
-        _pointer = null;
+    required Iterable<LanguagePrediction> this._predictions,
+  }) : _pointer = null;
 
   /// {@template LanguageDetectorResult.native}
   /// Initializes a [LanguageDetectorResult] instance as a wrapper around native
@@ -49,11 +48,9 @@ class LanguageDetectorResult extends BaseLanguageDetectorResult
 class LanguagePrediction extends BaseLanguagePrediction {
   /// {@macro LanguagePrediction}
   LanguagePrediction({
-    required String languageCode,
-    required double probability,
-  })  : _languageCode = languageCode,
-        _probability = probability,
-        _pointer = null;
+    required String this._languageCode,
+    required double this._probability,
+  }) : _pointer = null;
 
   /// Initializes a [LanguagePrediction] instance as a wrapper around native
   /// memory.

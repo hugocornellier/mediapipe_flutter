@@ -4,7 +4,7 @@
 
 /// Package containing core dependencies for MediaPipe's text, vision, and
 /// audio-based tasks.
-library mediapipe_flutter_core;
+library;
 
 export 'src/extensions.dart';
 export 'src/ffi_utils.dart';

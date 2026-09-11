@@ -39,11 +39,10 @@ class TextEmbedderOptions extends BaseTextEmbedderOptions
   factory TextEmbedderOptions.fromAssetBuffer(
     Uint8List assetBuffer, {
     EmbedderOptions embedderOptions = const EmbedderOptions(),
-  }) =>
-      TextEmbedderOptions(
-        baseOptions: BaseOptions.memory(assetBuffer),
-        embedderOptions: embedderOptions,
-      );
+  }) => TextEmbedderOptions(
+    baseOptions: BaseOptions.memory(assetBuffer),
+    embedderOptions: embedderOptions,
+  );
 
   @override
   final BaseOptions baseOptions;

@@ -12,7 +12,8 @@ part of 'llm_model.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 /// @nodoc
 mixin _$ModelInfo {
@@ -41,11 +42,12 @@ abstract class $ModelInfoCopyWith<$Res> {
   factory $ModelInfoCopyWith(ModelInfo value, $Res Function(ModelInfo) then) =
       _$ModelInfoCopyWithImpl<$Res, ModelInfo>;
   @useResult
-  $Res call(
-      {int? downloadedBytes,
-      int? downloadPercent,
-      String? path,
-      Uri? remoteLocation});
+  $Res call({
+    int? downloadedBytes,
+    int? downloadPercent,
+    String? path,
+    Uri? remoteLocation,
+  });
 }
 
 /// @nodoc
@@ -66,24 +68,27 @@ class _$ModelInfoCopyWithImpl<$Res, $Val extends ModelInfo>
     Object? path = freezed,
     Object? remoteLocation = freezed,
   }) {
-    return _then(_value.copyWith(
-      downloadedBytes: freezed == downloadedBytes
-          ? _value.downloadedBytes
-          : downloadedBytes // ignore: cast_nullable_to_non_nullable
-              as int?,
-      downloadPercent: freezed == downloadPercent
-          ? _value.downloadPercent
-          : downloadPercent // ignore: cast_nullable_to_non_nullable
-              as int?,
-      path: freezed == path
-          ? _value.path
-          : path // ignore: cast_nullable_to_non_nullable
-              as String?,
-      remoteLocation: freezed == remoteLocation
-          ? _value.remoteLocation
-          : remoteLocation // ignore: cast_nullable_to_non_nullable
-              as Uri?,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            downloadedBytes: freezed == downloadedBytes
+                ? _value.downloadedBytes
+                : downloadedBytes // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            downloadPercent: freezed == downloadPercent
+                ? _value.downloadPercent
+                : downloadPercent // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            path: freezed == path
+                ? _value.path
+                : path // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            remoteLocation: freezed == remoteLocation
+                ? _value.remoteLocation
+                : remoteLocation // ignore: cast_nullable_to_non_nullable
+                      as Uri?,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -91,15 +96,17 @@ class _$ModelInfoCopyWithImpl<$Res, $Val extends ModelInfo>
 abstract class _$$ModelInfoImplCopyWith<$Res>
     implements $ModelInfoCopyWith<$Res> {
   factory _$$ModelInfoImplCopyWith(
-          _$ModelInfoImpl value, $Res Function(_$ModelInfoImpl) then) =
-      __$$ModelInfoImplCopyWithImpl<$Res>;
+    _$ModelInfoImpl value,
+    $Res Function(_$ModelInfoImpl) then,
+  ) = __$$ModelInfoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {int? downloadedBytes,
-      int? downloadPercent,
-      String? path,
-      Uri? remoteLocation});
+  $Res call({
+    int? downloadedBytes,
+    int? downloadPercent,
+    String? path,
+    Uri? remoteLocation,
+  });
 }
 
 /// @nodoc
@@ -107,8 +114,9 @@ class __$$ModelInfoImplCopyWithImpl<$Res>
     extends _$ModelInfoCopyWithImpl<$Res, _$ModelInfoImpl>
     implements _$$ModelInfoImplCopyWith<$Res> {
   __$$ModelInfoImplCopyWithImpl(
-      _$ModelInfoImpl _value, $Res Function(_$ModelInfoImpl) _then)
-      : super(_value, _then);
+    _$ModelInfoImpl _value,
+    $Res Function(_$ModelInfoImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -118,36 +126,38 @@ class __$$ModelInfoImplCopyWithImpl<$Res>
     Object? path = freezed,
     Object? remoteLocation = freezed,
   }) {
-    return _then(_$ModelInfoImpl(
-      downloadedBytes: freezed == downloadedBytes
-          ? _value.downloadedBytes
-          : downloadedBytes // ignore: cast_nullable_to_non_nullable
-              as int?,
-      downloadPercent: freezed == downloadPercent
-          ? _value.downloadPercent
-          : downloadPercent // ignore: cast_nullable_to_non_nullable
-              as int?,
-      path: freezed == path
-          ? _value.path
-          : path // ignore: cast_nullable_to_non_nullable
-              as String?,
-      remoteLocation: freezed == remoteLocation
-          ? _value.remoteLocation
-          : remoteLocation // ignore: cast_nullable_to_non_nullable
-              as Uri?,
-    ));
+    return _then(
+      _$ModelInfoImpl(
+        downloadedBytes: freezed == downloadedBytes
+            ? _value.downloadedBytes
+            : downloadedBytes // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        downloadPercent: freezed == downloadPercent
+            ? _value.downloadPercent
+            : downloadPercent // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        path: freezed == path
+            ? _value.path
+            : path // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        remoteLocation: freezed == remoteLocation
+            ? _value.remoteLocation
+            : remoteLocation // ignore: cast_nullable_to_non_nullable
+                  as Uri?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
 class _$ModelInfoImpl extends _ModelInfo {
-  const _$ModelInfoImpl(
-      {this.downloadedBytes,
-      this.downloadPercent,
-      this.path,
-      this.remoteLocation})
-      : super._();
+  const _$ModelInfoImpl({
+    this.downloadedBytes,
+    this.downloadPercent,
+    this.path,
+    this.remoteLocation,
+  }) : super._();
 
   /// Size of the on-disk location of this model. A null value here either
   /// means that the model is currently downloading or completely missing.
@@ -189,7 +199,12 @@ class _$ModelInfoImpl extends _ModelInfo {
 
   @override
   int get hashCode => Object.hash(
-      runtimeType, downloadedBytes, downloadPercent, path, remoteLocation);
+    runtimeType,
+    downloadedBytes,
+    downloadPercent,
+    path,
+    remoteLocation,
+  );
 
   @JsonKey(ignore: true)
   @override
@@ -199,29 +214,26 @@ class _$ModelInfoImpl extends _ModelInfo {
 }
 
 abstract class _ModelInfo extends ModelInfo {
-  const factory _ModelInfo(
-      {final int? downloadedBytes,
-      final int? downloadPercent,
-      final String? path,
-      final Uri? remoteLocation}) = _$ModelInfoImpl;
+  const factory _ModelInfo({
+    final int? downloadedBytes,
+    final int? downloadPercent,
+    final String? path,
+    final Uri? remoteLocation,
+  }) = _$ModelInfoImpl;
   const _ModelInfo._() : super._();
 
   @override
-
   /// Size of the on-disk location of this model. A null value here either
   /// means that the model is currently downloading or completely missing.
   int? get downloadedBytes;
   @override
-
   /// 0-100 if a model is being downloaded. A null value here means no
   /// download is in progress for the given model.
   int? get downloadPercent;
   @override
-
   /// Location of the model if it is available on disk.
   String? get path;
   @override
-
   /// Location from which the model can be downloaded if it is not already
   /// available.
   Uri? get remoteLocation;

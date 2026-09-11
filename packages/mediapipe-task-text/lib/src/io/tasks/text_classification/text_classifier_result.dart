@@ -12,9 +12,9 @@ import '../../third_party/mediapipe/generated/mediapipe_flutter_text_bindings.da
 /// {@macro TextClassifierResult}
 class TextClassifierResult extends BaseTextClassifierResult with IOTaskResult {
   /// {@macro TextClassifierResult.fake}
-  TextClassifierResult({required Iterable<Classifications> classifications})
-      : _classifications = classifications,
-        _pointer = null;
+  TextClassifierResult({
+    required Iterable<Classifications> this._classifications,
+  }) : _pointer = null;
 
   /// {@template TextClassifierResult.native}
   /// Initializes a [TextClassifierResult] instance as a wrapper around native

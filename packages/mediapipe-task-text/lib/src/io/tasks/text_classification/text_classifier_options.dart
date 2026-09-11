@@ -39,11 +39,10 @@ class TextClassifierOptions extends BaseTextClassifierOptions
   factory TextClassifierOptions.fromAssetBuffer(
     Uint8List assetBuffer, {
     ClassifierOptions classifierOptions = const ClassifierOptions(),
-  }) =>
-      TextClassifierOptions(
-        baseOptions: BaseOptions.memory(assetBuffer),
-        classifierOptions: classifierOptions,
-      );
+  }) => TextClassifierOptions(
+    baseOptions: BaseOptions.memory(assetBuffer),
+    classifierOptions: classifierOptions,
+  );
 
   @override
   final BaseOptions baseOptions;

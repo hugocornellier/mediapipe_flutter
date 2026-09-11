@@ -45,8 +45,9 @@ abstract class BaseClassifierResult extends TaskResult {
 
   @override
   String toString() {
-    final classificationStrings =
-        classifications.map((cat) => cat.toString()).join(', ');
+    final classificationStrings = classifications
+        .map((cat) => cat.toString())
+        .join(', ');
     return '$runtimeType(classifications=[$classificationStrings])';
   }
 }
@@ -91,8 +92,10 @@ abstract class BaseEmbedderResult extends TaskResult {
   /// A [toString] variant that calls the full [toString] on each child
   /// embedding. Use with caution - this can produce a long value.
   String toStringVerbose() {
-    final embeddingStrings =
-        embeddings.map<String>((emb) => emb.toString()).toList().join(', ');
+    final embeddingStrings = embeddings
+        .map<String>((emb) => emb.toString())
+        .toList()
+        .join(', ');
     return '$runtimeType(embeddings=[$embeddingStrings])';
   }
 }

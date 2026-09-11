@@ -47,7 +47,7 @@ enum BaseOptionsType {
   path,
 
   /// Raw MediaPipe model bytes. Suitable for io or web.
-  memory
+  memory,
 }
 
 /// {@template BaseOptions}
@@ -77,11 +77,11 @@ abstract class BaseBaseOptions extends BaseInnerTaskOptions {
 
   @override
   List<Object?> get props => [
-        modelAssetBuffer,
-        modelAssetBuffer?.lengthInBytes,
-        modelAssetPath,
-        type,
-      ];
+    modelAssetBuffer,
+    modelAssetBuffer?.lengthInBytes,
+    modelAssetPath,
+    type,
+  ];
 }
 
 /// {@template ClassifierOptions}
@@ -125,12 +125,12 @@ abstract class BaseClassifierOptions extends BaseInnerTaskOptions {
 
   @override
   List<Object?> get props => [
-        displayNamesLocale,
-        maxResults,
-        scoreThreshold,
-        ...(categoryAllowlist ?? []),
-        ...(categoryDenylist ?? []),
-      ];
+    displayNamesLocale,
+    maxResults,
+    scoreThreshold,
+    ...(categoryAllowlist ?? []),
+    ...(categoryDenylist ?? []),
+  ];
 }
 
 /// {@template EmbedderOptions}

@@ -58,13 +58,11 @@ class LanguageDetector extends BaseLanguageDetector {
 }
 
 Future<(StreamQueue<dynamic>, SendPort)> _createIsolate(
-    LanguageDetectorOptions options) async {
+  LanguageDetectorOptions options,
+) async {
   final p = ReceivePort();
   await Isolate.spawn(
-    (SendPort port) => _languageDetectionService(
-      port,
-      options,
-    ),
+    (SendPort port) => _languageDetectionService(port, options),
     p.sendPort,
   );
 
@@ -82,13 +80,15 @@ Future<void> _languageDetectionService(
 
   Logger.root.level = Level.FINEST;
   Logger.root.onRecord.listen((record) {
-    io.stdout.writeln('${record.level.name} [${record.loggerName}]'
-        '['
-        '${record.time.hour.toString()}:'
-        '${record.time.minute.toString().padLeft(2, "0")}:'
-        '${record.time.second.toString().padLeft(2, "0")}.'
-        '${record.time.millisecond.toString().padRight(3, "0")}'
-        '] ${record.message}');
+    io.stdout.writeln(
+      '${record.level.name} [${record.loggerName}]'
+      '['
+      '${record.time.hour.toString()}:'
+      '${record.time.minute.toString().padLeft(2, "0")}:'
+      '${record.time.second.toString().padLeft(2, "0")}.'
+      '${record.time.millisecond.toString().padRight(3, "0")}'
+      '] ${record.message}',
+    );
   });
 
   final executor = LanguageDetectorExecutor(options);

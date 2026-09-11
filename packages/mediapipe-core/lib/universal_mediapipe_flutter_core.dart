@@ -180,10 +180,7 @@ class ClassifierOptions extends BaseClassifierOptions {
 /// {@macro EmbedderOptions}
 class EmbedderOptions extends BaseEmbedderOptions {
   /// {@macro EmbedderOptions}
-  const EmbedderOptions({
-    bool l2Normalize = false,
-    bool quantize = false,
-  });
+  const EmbedderOptions({bool l2Normalize = false, bool quantize = false});
 
   @override
   bool get l2Normalize => throw UnimplementedError();

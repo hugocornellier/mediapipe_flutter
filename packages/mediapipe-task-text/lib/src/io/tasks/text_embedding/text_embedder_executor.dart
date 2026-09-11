@@ -19,8 +19,14 @@ final _log = Logger('TextTaskExecutor');
 /// Executes MediaPipe's "embedText" task.
 ///
 /// {@macro TaskExecutor}
-class TextEmbedderExecutor extends TaskExecutor<bindings.TextEmbedderOptions,
-    TextEmbedderOptions, bindings.TextEmbedderResult, TextEmbedderResult> {
+class TextEmbedderExecutor
+    extends
+        TaskExecutor<
+          bindings.TextEmbedderOptions,
+          TextEmbedderOptions,
+          bindings.TextEmbedderResult,
+          TextEmbedderResult
+        > {
   /// {@macro TextEmbedderExecutor}
   TextEmbedderExecutor(super.options);
 

@@ -48,10 +48,7 @@ Future<(StreamQueue<dynamic>, SendPort)> _createIsolate(
 ) async {
   final p = ReceivePort();
   await Isolate.spawn(
-    (SendPort port) => _classificationService(
-      port,
-      options,
-    ),
+    (SendPort port) => _classificationService(port, options),
     p.sendPort,
   );
 

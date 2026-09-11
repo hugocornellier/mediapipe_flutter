@@ -5,6 +5,7 @@
 // `native-assets` tag allows test runs to opt in or out of running integration
 // tests via `flutter test -x native-assets` or `flutter test -t native-assets`
 @Tags(['native-assets'])
+library;
 
 import 'dart:io' as io;
 import 'package:path/path.dart' as path;
@@ -59,9 +60,7 @@ void main() {
       final executor = TextClassifierExecutor(
         TextClassifierOptions.fromAssetBuffer(
           modelBytes,
-          classifierOptions: ClassifierOptions(
-            categoryDenylist: ['positive'],
-          ),
+          classifierOptions: ClassifierOptions(categoryDenylist: ['positive']),
         ),
       );
       final TextClassifierResult result = executor.classify('Hello, world!');
@@ -77,9 +76,7 @@ void main() {
       final executor = TextClassifierExecutor(
         TextClassifierOptions.fromAssetBuffer(
           modelBytes,
-          classifierOptions: ClassifierOptions(
-            categoryAllowlist: ['positive'],
-          ),
+          classifierOptions: ClassifierOptions(categoryAllowlist: ['positive']),
         ),
       );
       final TextClassifierResult result = executor.classify('Hello, world!');

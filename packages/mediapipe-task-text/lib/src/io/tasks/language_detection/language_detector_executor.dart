@@ -15,11 +15,14 @@ final _log = Logger('LanguageDetectorExecutor');
 /// Executes MediaPipe's "detect language" task.
 ///
 /// {@macro TaskExecutor}
-class LanguageDetectorExecutor extends TaskExecutor<
-    bindings.LanguageDetectorOptions,
-    LanguageDetectorOptions,
-    bindings.LanguageDetectorResult,
-    LanguageDetectorResult> {
+class LanguageDetectorExecutor
+    extends
+        TaskExecutor<
+          bindings.LanguageDetectorOptions,
+          LanguageDetectorOptions,
+          bindings.LanguageDetectorResult,
+          LanguageDetectorResult
+        > {
   /// {@macro LanguageDetectorExecutor}
   LanguageDetectorExecutor(super.options);
 
