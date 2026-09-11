@@ -56,7 +56,8 @@ List<(String, String, String, Function(io.File)?)> headerPaths = [
 /// disrupted by the move.
 class SyncHeadersCommand extends Command with RepoFinderMixin {
   @override
-  String description = 'Syncs header files to hugocornellier/mediapipe_flutter.';
+  String description =
+      'Syncs header files to hugocornellier/mediapipe_flutter.';
   @override
   String name = 'headers';
 
