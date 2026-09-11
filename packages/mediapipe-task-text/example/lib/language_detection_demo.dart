@@ -6,8 +6,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:example/keyboard_hider.dart';
 import 'package:flutter/material.dart';
-import 'package:getwidget/getwidget.dart';
-import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 import 'enumerate.dart';
 
 class LanguageDetectionDemo extends StatefulWidget {
@@ -38,13 +37,12 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
       return _completer.complete(widget.detector!);
     }
 
-    ByteData? bytes = await DefaultAssetBundle.of(context)
-        .load('assets/language_detector.tflite');
+    ByteData? bytes = await DefaultAssetBundle.of(
+      context,
+    ).load('assets/language_detector.tflite');
 
     final detector = LanguageDetector(
-      LanguageDetectorOptions.fromAssetBuffer(
-        bytes.buffer.asUint8List(),
-      ),
+      LanguageDetectorOptions.fromAssetBuffer(bytes.buffer.asUint8List()),
     );
     _completer.complete(detector);
     bytes = null;
@@ -67,43 +65,39 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
   }
 
   void _showDetectionResults(LanguageDetectorResult result) {
-    setState(
-      () {
-        results.last = KeyboardHider(
-          child: Card(
-            key: Key('prediction-"$_isProcessing" ${results.length}'),
-            margin: const EdgeInsets.all(10),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Text(_isProcessing!),
+    setState(() {
+      results.last = KeyboardHider(
+        child: Card(
+          key: Key('prediction-"$_isProcessing" ${results.length}'),
+          margin: const EdgeInsets.all(10),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Text(_isProcessing!),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Wrap(
+                  children: <Widget>[
+                    ...result.predictions.enumerate<Widget>(
+                      (prediction, index) => _languagePrediction(
+                        prediction,
+                        predictionColors[index],
+                      ),
+                      // Take first 4 because the model spits out dozens of
+                      // astronomically low probability language predictions
+                      max: predictionColors.length,
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Wrap(
-                    children: <Widget>[
-                      ...result.predictions
-                          .enumerate<Widget>(
-                            (prediction, index) => _languagePrediction(
-                              prediction,
-                              predictionColors[index],
-                            ),
-                            // Take first 4 because the model spits out dozens of
-                            // astronomically low probability language predictions
-                            max: predictionColors.length,
-                          )
-                          .toList(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-        _isProcessing = null;
-      },
-    );
+        ),
+      );
+      _isProcessing = null;
+    });
   }
 
   static final predictionColors = <Color>[
@@ -116,12 +110,12 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
   Widget _languagePrediction(LanguagePrediction prediction, Color color) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: GFButton(
-        onPressed: null,
-        text: '${prediction.languageCode} :: '
-            '${prediction.probability.roundTo(8)}',
-        shape: GFButtonShape.pills,
-        color: color,
+      child: Chip(
+        label: Text(
+          '${prediction.languageCode} :: '
+          '${prediction.probability.roundTo(8)}',
+        ),
+        backgroundColor: color,
       ),
     );
   }
@@ -144,8 +138,9 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed:
-            _isProcessing != null && _controller.text != '' ? null : _detect,
+        onPressed: _isProcessing != null && _controller.text != ''
+            ? null
+            : _detect,
         child: const Icon(Icons.search),
       ),
     );

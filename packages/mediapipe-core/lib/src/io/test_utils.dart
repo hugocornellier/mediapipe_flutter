@@ -7,8 +7,8 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 
-import 'package:mediapipe_core/src/io/mediapipe_core.dart';
-import 'package:mediapipe_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
+import 'package:mediapipe_flutter_core/src/io/mediapipe_flutter_core.dart';
+import 'package:mediapipe_flutter_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
     as core_bindings;
 
 /// Hydrates a faked [core_bindings.Category] object.
@@ -93,8 +93,11 @@ Iterable<int> _genInts(int count, {required Random rnd}) sync* {
   }
 }
 
-Iterable<double> _genFloats(int count,
-    {required bool l2Normalize, required Random rnd}) sync* {
+Iterable<double> _genFloats(
+  int count, {
+  required bool l2Normalize,
+  required Random rnd,
+}) sync* {
   int index = 0;
   while (index < count) {
     final dbl = rnd.nextDouble();

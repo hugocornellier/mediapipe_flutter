@@ -4,17 +4,17 @@
 
 import 'dart:ffi';
 
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/interface.dart';
-import '../../third_party/mediapipe/generated/mediapipe_text_bindings.dart'
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_text/interface.dart';
+import '../../third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
     as bindings;
 
 /// {@macro TextClassifierResult}
 class TextClassifierResult extends BaseTextClassifierResult with IOTaskResult {
   /// {@macro TextClassifierResult.fake}
-  TextClassifierResult({required Iterable<Classifications> classifications})
-      : _classifications = classifications,
-        _pointer = null;
+  TextClassifierResult({
+    required Iterable<Classifications> this._classifications,
+  }) : _pointer = null;
 
   /// {@template TextClassifierResult.native}
   /// Initializes a [TextClassifierResult] instance as a wrapper around native

@@ -1,8 +1,8 @@
-name: mediapipe_vision
+name: mediapipe_flutter_vision
 description: "A new Flutter package project."
 version: 0.0.1
-repository: https://github.com/google/flutter-mediapipe
-issue_tracker: https://github.com/google/flutter-mediapipe/issues
+repository: https://github.com/hugocornellier/mediapipe_flutter
+issue_tracker: https://github.com/hugocornellier/mediapipe_flutter/issues
 publish_to: none
 
 environment:
@@ -14,7 +14,7 @@ dependencies:
   flutter:
     sdk: flutter
   logging: ^1.2.0
-  mediapipe_core:
+  mediapipe_flutter_core:
     path: ../mediapipe-core
 
 dev_dependencies:

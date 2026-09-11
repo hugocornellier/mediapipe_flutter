@@ -7,21 +7,19 @@ import 'dart:io' as io;
 import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
+import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:path/path.dart' as path;
 
 import 'repo_finder.dart';
 
 final _log = Logger('DownloadModelCommand');
 
-enum Model {
-  textclassification,
-  textembedding,
-  languagedetection,
-}
+enum Model { textclassification, textembedding, languagedetection }
 
 class DownloadModelCommand extends Command with RepoFinderMixin {
   @override
-  String description = 'Downloads a given MediaPipe model and places it in '
+  String description =
+      'Downloads a given MediaPipe model and places it in '
       'the designated location.';
   @override
   String name = 'model';
@@ -38,7 +36,8 @@ class DownloadModelCommand extends Command with RepoFinderMixin {
           Model.textembedding.name,
           Model.languagedetection.name,
         ],
-        help: 'The desired model to download. Use this option if you want the '
+        help:
+            'The desired model to download. Use this option if you want the '
             'standard model for a given task. Using this option also removes any '
             'need to use the `destination` option, as a value here implies a '
             'destination. However, you still can specify a destination to '
@@ -50,7 +49,8 @@ class DownloadModelCommand extends Command with RepoFinderMixin {
       ..addOption(
         'custommodel',
         abbr: 'c',
-        help: 'The desired model to download. Use this option if you want to '
+        help:
+            'The desired model to download. Use this option if you want to '
             'specify a specific and nonstandard model. Using this option means '
             'you *must* use the `destination` option.\n'
             '\n'
@@ -69,21 +69,19 @@ class DownloadModelCommand extends Command with RepoFinderMixin {
   }
 
   String getModelSource() => switch (model) {
-        Model.textclassification =>
-          'https://storage.googleapis.com/mediapipe-models/text_classifier/bert_classifier/float32/latest/bert_classifier.tflite',
-        Model.textembedding =>
-          'https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/latest/universal_sentence_encoder.tflite',
-        Model.languagedetection =>
-          'https://storage.googleapis.com/mediapipe-models/language_detector/language_detector/float32/latest/language_detector.tflite',
-      };
+    Model.textclassification =>
+      'https://storage.googleapis.com/mediapipe-models/text_classifier/bert_classifier/float32/1/bert_classifier.tflite',
+    Model.textembedding =>
+      'https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/1/universal_sentence_encoder.tflite',
+    Model.languagedetection =>
+      'https://storage.googleapis.com/mediapipe-models/language_detector/language_detector/float32/1/language_detector.tflite',
+  };
 
   String getModelDestination() => switch (model) {
-        Model.textclassification =>
-          'packages/mediapipe-task-text/example/assets/',
-        Model.textembedding => 'packages/mediapipe-task-text/example/assets/',
-        Model.languagedetection =>
-          'packages/mediapipe-task-text/example/assets/',
-      };
+    Model.textclassification => 'packages/mediapipe-task-text/example/assets/',
+    Model.textembedding => 'packages/mediapipe-task-text/example/assets/',
+    Model.languagedetection => 'packages/mediapipe-task-text/example/assets/',
+  };
 
   Model get model {
     final value = Model.values.asNameMap()[argResults!['model']];
@@ -130,7 +128,21 @@ class DownloadModelCommand extends Command with RepoFinderMixin {
       ]),
     );
     ensureFolders(destinationFile);
-    await downloadModel(modelSource, destinationFile);
+    if (argResults!['model'] != null) {
+      await downloadVerified((
+        url: modelSource,
+        sha256: switch (model) {
+          Model.textclassification =>
+            '9b45012ab143d88d61e10ea501d6c8763f7202b86fa987711519d89bfa2a88b1',
+          Model.textembedding =>
+            '89ad3c74175dd8caa398cc22b657296d94302d20c525c12b58b29420f7249749',
+          Model.languagedetection =>
+            '7db4f23dfe1ad8966b050b419a865da451143fd43eb6b606a256aadeeb1e5417',
+        },
+      ), destinationFile);
+    } else {
+      await downloadModel(modelSource, destinationFile);
+    }
   }
 
   Future<void> downloadModel(
@@ -143,8 +155,10 @@ class DownloadModelCommand extends Command with RepoFinderMixin {
     final response = await http.get(Uri.parse(modelSource));
 
     if (response.statusCode != 200) {
-      throw Exception('${response.statusCode} ${response.reasonPhrase} :: '
-          '$modelSource');
+      throw Exception(
+        '${response.statusCode} ${response.reasonPhrase} :: '
+        '$modelSource',
+      );
     }
 
     if (!(await destinationFile.exists())) {

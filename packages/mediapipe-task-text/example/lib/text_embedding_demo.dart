@@ -7,8 +7,8 @@ import 'dart:typed_data';
 import 'package:example/keyboard_hider.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
+import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 import 'enumerate.dart';
 
 final _log = Logger('TextEmbeddingDemo');
@@ -86,8 +86,9 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
     _embedder?.dispose();
     _completer = Completer<TextEmbedder>();
 
-    ByteData? embedderBytes = await DefaultAssetBundle.of(context)
-        .load('assets/universal_sentence_encoder.tflite');
+    ByteData? embedderBytes = await DefaultAssetBundle.of(
+      context,
+    ).load('assets/universal_sentence_encoder.tflite');
 
     _embedder = TextEmbedder(
       TextEmbedderOptions.fromAssetBuffer(
@@ -148,8 +149,9 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
       feed.length >= 2 &&
       feed.last._type == _EmbeddingFeedItemType.result &&
       feed[feed.length - 2]._type == _EmbeddingFeedItemType.result &&
-      feed.last.embeddingResult!
-          .canComputeSimilarity(feed[feed.length - 2].embeddingResult!);
+      feed.last.embeddingResult!.canComputeSimilarity(
+        feed[feed.length - 2].embeddingResult!,
+      );
 
   /// True if the last two feed items are both results but have different
   /// metadata. This is different than two feed items which are NOT both results
@@ -159,8 +161,9 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
       feed.length >= 2 &&
       feed.last._type == _EmbeddingFeedItemType.result &&
       feed[feed.length - 2]._type == _EmbeddingFeedItemType.result &&
-      !feed.last.embeddingResult!
-          .canComputeSimilarity(feed[feed.length - 2].embeddingResult!);
+      !feed.last.embeddingResult!.canComputeSimilarity(
+        feed[feed.length - 2].embeddingResult!,
+      );
 
   Future<void> _compare(int index) async {
     int lowIndex = index - 1;
@@ -240,34 +243,37 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
                 ),
                 // Float checkbox
                 TextField(controller: _controller),
-                ...feed.reversed.toList().enumerate<Widget>(
-                  (EmbeddingFeedItem feedItem, index) {
-                    return KeyboardHider(
-                      child: switch (feedItem._type) {
-                        _EmbeddingFeedItemType.result =>
-                          TextEmbedderResultDisplay(
-                            embeddedText: feedItem.embeddingResult!,
-                            index: index,
+                ...feed.reversed.toList().enumerate<Widget>((
+                  EmbeddingFeedItem feedItem,
+                  index,
+                ) {
+                  return KeyboardHider(
+                    child: switch (feedItem._type) {
+                      _EmbeddingFeedItemType.result =>
+                        TextEmbedderResultDisplay(
+                          embeddedText: feedItem.embeddingResult!,
+                          index: index,
+                        ),
+                      _EmbeddingFeedItemType.emptyComparison => TextButton(
+                        // Subtract `index` from `feed.length` because we
+                        // are looping through the list in reverse order
+                        onPressed: () => _compare(feed.length - index - 1),
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.all(
+                            Colors.purple[100],
                           ),
-                        _EmbeddingFeedItemType.emptyComparison => TextButton(
-                            // Subtract `index` from `feed.length` because we
-                            // are looping through the list in reverse order
-                            onPressed: () => _compare(feed.length - index - 1),
-                            style: ButtonStyle(
-                              backgroundColor: WidgetStateProperty.all(
-                                Colors.purple[100],
-                              ),
-                            ),
-                            child: const Text('Compare'),
-                          ),
-                        _EmbeddingFeedItemType.comparison =>
-                          ComparisonDisplay(similarity: feedItem.similarity!),
-                        _EmbeddingFeedItemType.incomparable => const Text(
-                            'Embeddings of different types cannot be compared'),
-                      },
-                    );
-                  },
-                ),
+                        ),
+                        child: const Text('Compare'),
+                      ),
+                      _EmbeddingFeedItemType.comparison => ComparisonDisplay(
+                        similarity: feedItem.similarity!,
+                      ),
+                      _EmbeddingFeedItemType.incomparable => const Text(
+                        'Embeddings of different types cannot be compared',
+                      ),
+                    },
+                  );
+                }),
               ],
             ),
           ),
@@ -325,8 +331,10 @@ class TextEmbedderResultDisplay extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text('"${embeddedText.value}"',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              '"${embeddedText.value}"',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             Text(embeddingDisplay),
             Wrap(
               spacing: 4,
@@ -337,8 +345,10 @@ class TextEmbedderResultDisplay extends StatelessWidget {
                   _embeddingAttribute('Quantized', Colors.orange[600]!),
                 if (embeddedText.l2Normalized)
                   _embeddingAttribute('L2 Normalized', Colors.green[600]!),
-                _embeddingAttribute(embeddedText.computedAt.toIso8601String(),
-                    Colors.grey[600]!),
+                _embeddingAttribute(
+                  embeddedText.computedAt.toIso8601String(),
+                  Colors.grey[600]!,
+                ),
               ],
             ),
           ],
@@ -384,11 +394,11 @@ class TextWithEmbedding {
   final DateTime computedAt;
 
   TextWithEmbedding complete(TextEmbedderResult result) => TextWithEmbedding._(
-        computedAt: computedAt,
-        l2Normalized: l2Normalized,
-        result: result,
-        value: value,
-      );
+    computedAt: computedAt,
+    l2Normalized: l2Normalized,
+    result: result,
+    value: value,
+  );
 
   bool canComputeSimilarity(TextWithEmbedding other) =>
       result != null &&
@@ -410,8 +420,8 @@ class EmbeddingFeedItem {
   const EmbeddingFeedItem._({
     required this.similarity,
     required this.embeddingResult,
-    required _EmbeddingFeedItemType type,
-  }) : _type = type;
+    required this._type,
+  });
 
   factory EmbeddingFeedItem.comparison(double similarity) =>
       EmbeddingFeedItem._(
@@ -428,16 +438,16 @@ class EmbeddingFeedItem {
       );
 
   factory EmbeddingFeedItem.emptyComparison() => const EmbeddingFeedItem._(
-        similarity: null,
-        embeddingResult: null,
-        type: _EmbeddingFeedItemType.emptyComparison,
-      );
+    similarity: null,
+    embeddingResult: null,
+    type: _EmbeddingFeedItemType.emptyComparison,
+  );
 
   factory EmbeddingFeedItem.incomparable() => const EmbeddingFeedItem._(
-        similarity: null,
-        embeddingResult: null,
-        type: _EmbeddingFeedItemType.incomparable,
-      );
+    similarity: null,
+    embeddingResult: null,
+    type: _EmbeddingFeedItemType.incomparable,
+  );
 
   EmbeddingFeedItem complete(TextEmbedderResult result) {
     assert(_type == _EmbeddingFeedItemType.result);
@@ -453,5 +463,5 @@ enum _EmbeddingFeedItemType {
   result,
   comparison,
   emptyComparison,
-  incomparable
+  incomparable,
 }

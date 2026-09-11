@@ -6,9 +6,9 @@ import 'dart:typed_data';
 
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/interface.dart';
-import '../../third_party/mediapipe/generated/mediapipe_text_bindings.dart'
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_text/interface.dart';
+import '../../third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
     as bindings;
 
 /// {@macro TextClassifierOptions}
@@ -39,11 +39,10 @@ class TextClassifierOptions extends BaseTextClassifierOptions
   factory TextClassifierOptions.fromAssetBuffer(
     Uint8List assetBuffer, {
     ClassifierOptions classifierOptions = const ClassifierOptions(),
-  }) =>
-      TextClassifierOptions(
-        baseOptions: BaseOptions.memory(assetBuffer),
-        classifierOptions: classifierOptions,
-      );
+  }) => TextClassifierOptions(
+    baseOptions: BaseOptions.memory(assetBuffer),
+    classifierOptions: classifierOptions,
+  );
 
   @override
   final BaseOptions baseOptions;

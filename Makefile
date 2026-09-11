@@ -31,11 +31,11 @@ analyze:
 get_core:
 	cd packages/mediapipe-core && dart pub get
 
-# Runs `ffigen` for `mediapipe_core`
+# Runs `ffigen` for `mediapipe_flutter_core`
 generate_core:
 	cd packages/mediapipe-core && dart run ffigen --config=ffigen.yaml
 
-# Runs unit tests for `mediapipe_core`
+# Runs unit tests for `mediapipe_flutter_core`
 test_core:
 	cd packages/mediapipe-core && dart test
 
@@ -43,7 +43,7 @@ core: get_core generate_core test_core
 
 # Text ---
 
-# Runs `ffigen` for `mediapipe_text`
+# Runs `ffigen` for `mediapipe_flutter_text`
 generate_text:
 	cd packages/mediapipe-task-text && dart --enable-experiment=native-assets run ffigen --config=ffigen.yaml
 

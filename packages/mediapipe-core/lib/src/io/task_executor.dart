@@ -4,7 +4,7 @@
 
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/io.dart';
+import 'package:mediapipe_flutter_core/io.dart';
 import 'package:logging/logging.dart';
 
 final _log = Logger('TaskExecutor');
@@ -27,10 +27,11 @@ final _log = Logger('TaskExecutor');
 /// for Flutter apps to await the results of MediaPipe tasks.
 /// {@endtemplate}
 abstract class TaskExecutor<
-    NativeOptions extends Struct,
-    Options extends TaskOptions<NativeOptions>,
-    NativeResult extends Struct,
-    Result extends IOTaskResult> {
+  NativeOptions extends Struct,
+  Options extends TaskOptions<NativeOptions>,
+  NativeResult extends Struct,
+  Result extends IOTaskResult
+> {
   /// {@macro TaskExecutor}
   TaskExecutor(this.options);
 
@@ -53,10 +54,7 @@ abstract class TaskExecutor<
     if (_worker.isNullOrNullPointer) {
       final errorMessageMemory = calloc<Pointer<Char>>();
       _log.fine('Creating $taskName worker');
-      _worker = createWorker(
-        options.copyToNative(),
-        errorMessageMemory,
-      );
+      _worker = createWorker(options.copyToNative(), errorMessageMemory);
       handleErrorMessage(errorMessageMemory);
       errorMessageMemory.free(1);
       options.dispose();

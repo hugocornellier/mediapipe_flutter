@@ -3,4 +3,4 @@
 // found in the LICENSE file.
 
 export 'src/interface/containers.dart' show EmbeddingType;
-export 'src/io/mediapipe_core.dart';
+export 'src/io/mediapipe_flutter_core.dart';

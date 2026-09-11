@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 /// Package containing MediaPipe's text-specific tasks.
-library mediapipe_text;
+library;
 
-export 'universal_mediapipe_text.dart'
-    if (dart.library.html) 'src/web/mediapipe_text.dart'
-    if (dart.library.io) 'src/io/mediapipe_text.dart';
+export 'universal_mediapipe_flutter_text.dart'
+    if (dart.library.html) 'src/web/mediapipe_flutter_text.dart'
+    if (dart.library.io) 'src/io/mediapipe_flutter_text.dart';

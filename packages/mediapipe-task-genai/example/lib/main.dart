@@ -90,9 +90,7 @@ class _MainAppState extends State<MainApp> {
     return Scaffold(
       body: PageView(
         controller: controller,
-        children: const <Widget>[
-          LlmInferenceDemo(),
-        ],
+        children: const <Widget>[LlmInferenceDemo()],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: titleIndex,

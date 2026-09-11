@@ -7,7 +7,7 @@
 // import 'dart:math';
 
 // import 'package:logging/logging.dart';
-// import 'package:mediapipe_genai/mediapipe_genai.dart';
+// import 'package:mediapipe_flutter_genai/mediapipe_flutter_genai.dart';
 
 // final _log = Logger('FakeInferenceEngine');
 

@@ -1,8 +1,10 @@
 name: "MediaPipeGenAiBindings"
 description: "Bindings for MediaPipe GenAI tasks"
 output:
-  bindings: "lib/src/io/third_party/mediapipe/generated/mediapipe_genai_bindings.dart"
+  bindings: "lib/src/io/third_party/mediapipe/generated/mediapipe_flutter_genai_bindings.dart"
 headers:
+  include-directives:
+    - "**/mediapipe/tasks/cc/**.h"
   entry-points:
     - "third_party/mediapipe/tasks/cc/**.h"
 preamble: |

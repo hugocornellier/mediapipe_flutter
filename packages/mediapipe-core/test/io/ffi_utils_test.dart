@@ -6,7 +6,7 @@ import 'dart:ffi';
 import 'dart:typed_data';
 import 'package:test/test.dart';
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/src/io/ffi_utils.dart';
+import 'package:mediapipe_flutter_core/src/io/ffi_utils.dart';
 
 void main() {
   group('NullAwarePtr should', () {
@@ -104,16 +104,20 @@ void main() {
 
   group('Float32List should', () {
     test('be convertable to Pointer<Char>', () {
-      final Pointer<Float> ptr =
-          Float32List.fromList([1.0, 2.0, 3.1]).copyToNative();
+      final Pointer<Float> ptr = Float32List.fromList([
+        1.0,
+        2.0,
+        3.1,
+      ]).copyToNative();
       calloc.free(ptr);
     });
 
     test('be round-trippable', () {
-      final doubles = Float32List.fromList([1.1, 2.2, 3.3])
-          .copyToNative()
-          .toFloat32List(3)
-          .toList();
+      final doubles = Float32List.fromList([
+        1.1,
+        2.2,
+        3.3,
+      ]).copyToNative().toFloat32List(3).toList();
       expect(doubles[0], closeTo(1.1, 0.0001));
       expect(doubles[1], closeTo(2.2, 0.0001));
       expect(doubles[2], closeTo(3.3, 0.0001));

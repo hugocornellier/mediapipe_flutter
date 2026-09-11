@@ -11,28 +11,29 @@ import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
 
 /// Mixin to help [Command] subclasses locate both `google/mediapipe` and
-/// the root of `google/flutter-mediapipe` (this repository).
+/// the root of `hugocornellier/mediapipe_flutter` (this repository).
 ///
 /// The primary methods are [findFlutterMediaPipeRoot] and [findMediaPipeRoot].
 ///
-/// By default, the root for `google/flutter-mediapipe` is determined by the
-/// firest ancestor directory which contains a `.flutter-mediapipe-root` file
+/// By default, the root for `hugocornellier/mediapipe_flutter` is determined by the
+/// firest ancestor directory which contains a `.mediapipe_flutter-root` file
 /// (whose contents are irrelevant), and the root of `google/mediapipe` is
 /// expected to be a sibling of that. However, the `--source` flag can overwrite
 /// this expectation and specify an absolute path where to find `google/mediapipe`.
 ///
 /// Note that it is not possible to override the method of locating the root of
-/// `google/flutter-mediapipe`.
+/// `hugocornellier/mediapipe_flutter`.
 mixin RepoFinderMixin on Command {
   /// Name of the file which, when found, indicates the root of this repository.
-  static String sentinelFileName = '.flutter-mediapipe-root';
+  static String sentinelFileName = '.mediapipe_flutter-root';
 
   void addSourceOption(ArgParser argParser) {
     argParser.addOption(
       'source',
       abbr: 's',
-      help: 'The location of google/mediapipe. Defaults to being '
-          'adjacent to google/flutter-mediapipe.',
+      help:
+          'The location of google/mediapipe. Defaults to being '
+          'adjacent to hugocornellier/mediapipe_flutter.',
     );
   }
 
@@ -44,7 +45,8 @@ mixin RepoFinderMixin on Command {
     Logger.root.level = verbose ? Level.FINEST : Level.INFO;
     Logger.root.onRecord.listen((LogRecord record) {
       io.stdout.writeln(
-          '[${record.loggerName}][${record.level.name}] ${record.message}');
+        '[${record.loggerName}][${record.level.name}] ${record.message}',
+      );
     });
   }
 
@@ -64,7 +66,7 @@ mixin RepoFinderMixin on Command {
       if (dir.parent.path == dir.path) {
         io.stderr.writeln(
           wrapWith(
-            'Failed to find google/flutter-mediapipe root directory. '
+            'Failed to find hugocornellier/mediapipe_flutter root directory. '
             'Did you execute this command from within the repository?\n'
             'Looked in:',
             [red],
@@ -113,9 +115,7 @@ mixin RepoFinderMixin on Command {
   /// operations.
   bool _isFlutterMediaPipeRoot(io.Directory dir) {
     return io.File(
-      path.joinAll(
-        [dir.absolute.path, sentinelFileName],
-      ),
+      path.joinAll([dir.absolute.path, sentinelFileName]),
     ).existsSync();
   }
 

@@ -12,7 +12,8 @@ part of 'bloc.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 /// @nodoc
 mixin _$TranscriptState {
@@ -58,20 +59,22 @@ mixin _$TranscriptState {
 /// @nodoc
 abstract class $TranscriptStateCopyWith<$Res> {
   factory $TranscriptStateCopyWith(
-          TranscriptState value, $Res Function(TranscriptState) then) =
-      _$TranscriptStateCopyWithImpl<$Res, TranscriptState>;
+    TranscriptState value,
+    $Res Function(TranscriptState) then,
+  ) = _$TranscriptStateCopyWithImpl<$Res, TranscriptState>;
   @useResult
-  $Res call(
-      {Map<LlmModel, List<ChatMessage>> transcript,
-      bool modelsReady,
-      LlmInferenceEngine? engine,
-      dynamic isLlmTyping,
-      Map<LlmModel, ModelInfo> modelInfoMap,
-      double temperature,
-      int topK,
-      int maxTokens,
-      int randomSeed,
-      String? error});
+  $Res call({
+    Map<LlmModel, List<ChatMessage>> transcript,
+    bool modelsReady,
+    LlmInferenceEngine? engine,
+    dynamic isLlmTyping,
+    Map<LlmModel, ModelInfo> modelInfoMap,
+    double temperature,
+    int topK,
+    int maxTokens,
+    int randomSeed,
+    String? error,
+  });
 }
 
 /// @nodoc
@@ -98,70 +101,75 @@ class _$TranscriptStateCopyWithImpl<$Res, $Val extends TranscriptState>
     Object? randomSeed = null,
     Object? error = freezed,
   }) {
-    return _then(_value.copyWith(
-      transcript: null == transcript
-          ? _value.transcript
-          : transcript // ignore: cast_nullable_to_non_nullable
-              as Map<LlmModel, List<ChatMessage>>,
-      modelsReady: null == modelsReady
-          ? _value.modelsReady
-          : modelsReady // ignore: cast_nullable_to_non_nullable
-              as bool,
-      engine: freezed == engine
-          ? _value.engine
-          : engine // ignore: cast_nullable_to_non_nullable
-              as LlmInferenceEngine?,
-      isLlmTyping: freezed == isLlmTyping
-          ? _value.isLlmTyping
-          : isLlmTyping // ignore: cast_nullable_to_non_nullable
-              as dynamic,
-      modelInfoMap: null == modelInfoMap
-          ? _value.modelInfoMap
-          : modelInfoMap // ignore: cast_nullable_to_non_nullable
-              as Map<LlmModel, ModelInfo>,
-      temperature: null == temperature
-          ? _value.temperature
-          : temperature // ignore: cast_nullable_to_non_nullable
-              as double,
-      topK: null == topK
-          ? _value.topK
-          : topK // ignore: cast_nullable_to_non_nullable
-              as int,
-      maxTokens: null == maxTokens
-          ? _value.maxTokens
-          : maxTokens // ignore: cast_nullable_to_non_nullable
-              as int,
-      randomSeed: null == randomSeed
-          ? _value.randomSeed
-          : randomSeed // ignore: cast_nullable_to_non_nullable
-              as int,
-      error: freezed == error
-          ? _value.error
-          : error // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            transcript: null == transcript
+                ? _value.transcript
+                : transcript // ignore: cast_nullable_to_non_nullable
+                      as Map<LlmModel, List<ChatMessage>>,
+            modelsReady: null == modelsReady
+                ? _value.modelsReady
+                : modelsReady // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            engine: freezed == engine
+                ? _value.engine
+                : engine // ignore: cast_nullable_to_non_nullable
+                      as LlmInferenceEngine?,
+            isLlmTyping: freezed == isLlmTyping
+                ? _value.isLlmTyping
+                : isLlmTyping // ignore: cast_nullable_to_non_nullable
+                      as dynamic,
+            modelInfoMap: null == modelInfoMap
+                ? _value.modelInfoMap
+                : modelInfoMap // ignore: cast_nullable_to_non_nullable
+                      as Map<LlmModel, ModelInfo>,
+            temperature: null == temperature
+                ? _value.temperature
+                : temperature // ignore: cast_nullable_to_non_nullable
+                      as double,
+            topK: null == topK
+                ? _value.topK
+                : topK // ignore: cast_nullable_to_non_nullable
+                      as int,
+            maxTokens: null == maxTokens
+                ? _value.maxTokens
+                : maxTokens // ignore: cast_nullable_to_non_nullable
+                      as int,
+            randomSeed: null == randomSeed
+                ? _value.randomSeed
+                : randomSeed // ignore: cast_nullable_to_non_nullable
+                      as int,
+            error: freezed == error
+                ? _value.error
+                : error // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
   }
 }
 
 /// @nodoc
 abstract class _$$TranscriptStateImplCopyWith<$Res>
     implements $TranscriptStateCopyWith<$Res> {
-  factory _$$TranscriptStateImplCopyWith(_$TranscriptStateImpl value,
-          $Res Function(_$TranscriptStateImpl) then) =
-      __$$TranscriptStateImplCopyWithImpl<$Res>;
+  factory _$$TranscriptStateImplCopyWith(
+    _$TranscriptStateImpl value,
+    $Res Function(_$TranscriptStateImpl) then,
+  ) = __$$TranscriptStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {Map<LlmModel, List<ChatMessage>> transcript,
-      bool modelsReady,
-      LlmInferenceEngine? engine,
-      dynamic isLlmTyping,
-      Map<LlmModel, ModelInfo> modelInfoMap,
-      double temperature,
-      int topK,
-      int maxTokens,
-      int randomSeed,
-      String? error});
+  $Res call({
+    Map<LlmModel, List<ChatMessage>> transcript,
+    bool modelsReady,
+    LlmInferenceEngine? engine,
+    dynamic isLlmTyping,
+    Map<LlmModel, ModelInfo> modelInfoMap,
+    double temperature,
+    int topK,
+    int maxTokens,
+    int randomSeed,
+    String? error,
+  });
 }
 
 /// @nodoc
@@ -169,8 +177,9 @@ class __$$TranscriptStateImplCopyWithImpl<$Res>
     extends _$TranscriptStateCopyWithImpl<$Res, _$TranscriptStateImpl>
     implements _$$TranscriptStateImplCopyWith<$Res> {
   __$$TranscriptStateImplCopyWithImpl(
-      _$TranscriptStateImpl _value, $Res Function(_$TranscriptStateImpl) _then)
-      : super(_value, _then);
+    _$TranscriptStateImpl _value,
+    $Res Function(_$TranscriptStateImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -186,63 +195,65 @@ class __$$TranscriptStateImplCopyWithImpl<$Res>
     Object? randomSeed = null,
     Object? error = freezed,
   }) {
-    return _then(_$TranscriptStateImpl(
-      transcript: null == transcript
-          ? _value.transcript
-          : transcript // ignore: cast_nullable_to_non_nullable
-              as Map<LlmModel, List<ChatMessage>>,
-      modelsReady: null == modelsReady
-          ? _value.modelsReady
-          : modelsReady // ignore: cast_nullable_to_non_nullable
-              as bool,
-      engine: freezed == engine
-          ? _value.engine
-          : engine // ignore: cast_nullable_to_non_nullable
-              as LlmInferenceEngine?,
-      isLlmTyping: freezed == isLlmTyping ? _value.isLlmTyping! : isLlmTyping,
-      modelInfoMap: null == modelInfoMap
-          ? _value.modelInfoMap
-          : modelInfoMap // ignore: cast_nullable_to_non_nullable
-              as Map<LlmModel, ModelInfo>,
-      temperature: null == temperature
-          ? _value.temperature
-          : temperature // ignore: cast_nullable_to_non_nullable
-              as double,
-      topK: null == topK
-          ? _value.topK
-          : topK // ignore: cast_nullable_to_non_nullable
-              as int,
-      maxTokens: null == maxTokens
-          ? _value.maxTokens
-          : maxTokens // ignore: cast_nullable_to_non_nullable
-              as int,
-      randomSeed: null == randomSeed
-          ? _value.randomSeed
-          : randomSeed // ignore: cast_nullable_to_non_nullable
-              as int,
-      error: freezed == error
-          ? _value.error
-          : error // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
+    return _then(
+      _$TranscriptStateImpl(
+        transcript: null == transcript
+            ? _value.transcript
+            : transcript // ignore: cast_nullable_to_non_nullable
+                  as Map<LlmModel, List<ChatMessage>>,
+        modelsReady: null == modelsReady
+            ? _value.modelsReady
+            : modelsReady // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        engine: freezed == engine
+            ? _value.engine
+            : engine // ignore: cast_nullable_to_non_nullable
+                  as LlmInferenceEngine?,
+        isLlmTyping: freezed == isLlmTyping ? _value.isLlmTyping! : isLlmTyping,
+        modelInfoMap: null == modelInfoMap
+            ? _value.modelInfoMap
+            : modelInfoMap // ignore: cast_nullable_to_non_nullable
+                  as Map<LlmModel, ModelInfo>,
+        temperature: null == temperature
+            ? _value.temperature
+            : temperature // ignore: cast_nullable_to_non_nullable
+                  as double,
+        topK: null == topK
+            ? _value.topK
+            : topK // ignore: cast_nullable_to_non_nullable
+                  as int,
+        maxTokens: null == maxTokens
+            ? _value.maxTokens
+            : maxTokens // ignore: cast_nullable_to_non_nullable
+                  as int,
+        randomSeed: null == randomSeed
+            ? _value.randomSeed
+            : randomSeed // ignore: cast_nullable_to_non_nullable
+                  as int,
+        error: freezed == error
+            ? _value.error
+            : error // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
 class _$TranscriptStateImpl extends _TranscriptState {
-  _$TranscriptStateImpl(
-      {required this.transcript,
-      this.modelsReady = false,
-      this.engine,
-      this.isLlmTyping = false,
-      required this.modelInfoMap,
-      this.temperature = 0.8,
-      this.topK = 40,
-      this.maxTokens = 1024,
-      required this.randomSeed,
-      this.error})
-      : super._();
+  _$TranscriptStateImpl({
+    required this.transcript,
+    this.modelsReady = false,
+    this.engine,
+    this.isLlmTyping = false,
+    required this.modelInfoMap,
+    this.temperature = 0.8,
+    this.topK = 40,
+    this.maxTokens = 1024,
+    required this.randomSeed,
+    this.error,
+  }) : super._();
 
   /// Log of messages for the [selectedModel]. Other models may have other
   /// message logs found on the [TranscriptBloc].
@@ -301,15 +312,21 @@ class _$TranscriptStateImpl extends _TranscriptState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$TranscriptStateImpl &&
-            const DeepCollectionEquality()
-                .equals(other.transcript, transcript) &&
+            const DeepCollectionEquality().equals(
+              other.transcript,
+              transcript,
+            ) &&
             (identical(other.modelsReady, modelsReady) ||
                 other.modelsReady == modelsReady) &&
             (identical(other.engine, engine) || other.engine == engine) &&
-            const DeepCollectionEquality()
-                .equals(other.isLlmTyping, isLlmTyping) &&
-            const DeepCollectionEquality()
-                .equals(other.modelInfoMap, modelInfoMap) &&
+            const DeepCollectionEquality().equals(
+              other.isLlmTyping,
+              isLlmTyping,
+            ) &&
+            const DeepCollectionEquality().equals(
+              other.modelInfoMap,
+              modelInfoMap,
+            ) &&
             (identical(other.temperature, temperature) ||
                 other.temperature == temperature) &&
             (identical(other.topK, topK) || other.topK == topK) &&
@@ -322,80 +339,74 @@ class _$TranscriptStateImpl extends _TranscriptState {
 
   @override
   int get hashCode => Object.hash(
-      runtimeType,
-      const DeepCollectionEquality().hash(transcript),
-      modelsReady,
-      engine,
-      const DeepCollectionEquality().hash(isLlmTyping),
-      const DeepCollectionEquality().hash(modelInfoMap),
-      temperature,
-      topK,
-      maxTokens,
-      randomSeed,
-      error);
+    runtimeType,
+    const DeepCollectionEquality().hash(transcript),
+    modelsReady,
+    engine,
+    const DeepCollectionEquality().hash(isLlmTyping),
+    const DeepCollectionEquality().hash(modelInfoMap),
+    temperature,
+    topK,
+    maxTokens,
+    randomSeed,
+    error,
+  );
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$TranscriptStateImplCopyWith<_$TranscriptStateImpl> get copyWith =>
       __$$TranscriptStateImplCopyWithImpl<_$TranscriptStateImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 }
 
 abstract class _TranscriptState extends TranscriptState {
-  factory _TranscriptState(
-      {required final Map<LlmModel, List<ChatMessage>> transcript,
-      final bool modelsReady,
-      final LlmInferenceEngine? engine,
-      final dynamic isLlmTyping,
-      required final Map<LlmModel, ModelInfo> modelInfoMap,
-      final double temperature,
-      final int topK,
-      final int maxTokens,
-      required final int randomSeed,
-      final String? error}) = _$TranscriptStateImpl;
+  factory _TranscriptState({
+    required final Map<LlmModel, List<ChatMessage>> transcript,
+    final bool modelsReady,
+    final LlmInferenceEngine? engine,
+    final dynamic isLlmTyping,
+    required final Map<LlmModel, ModelInfo> modelInfoMap,
+    final double temperature,
+    final int topK,
+    final int maxTokens,
+    required final int randomSeed,
+    final String? error,
+  }) = _$TranscriptStateImpl;
   _TranscriptState._() : super._();
 
   @override
-
   /// Log of messages for the [selectedModel]. Other models may have other
   /// message logs found on the [TranscriptBloc].
   Map<LlmModel, List<ChatMessage>> get transcript;
   @override
-
   /// True only after the [ModelLocationProvider] has sorted out the initial
   /// state.
   bool get modelsReady;
   @override
-
   /// Engine for the current [selectedModel].
   LlmInferenceEngine? get engine;
   @override
-
   /// True if the model is in the process of composing its response.
   dynamic get isLlmTyping;
   @override
-
   /// Meta download information about each [LlmModel].
   Map<LlmModel, ModelInfo> get modelInfoMap;
   @override
-
   /// Randomness during token sampling selection.
   double get temperature;
   @override
-
   /// Top K number of tokens to be sampled from for each decoding step.
   int get topK;
   @override
-
   /// The LLM's maximum context window.
   int get maxTokens;
   @override
-
   /// Randomness seed.
   int get randomSeed;
   @override
-
   /// Error message to show in a toast.
   String? get error;
   @override
@@ -411,7 +422,7 @@ mixin _$TranscriptEvent {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -420,17 +431,21 @@ mixin _$TranscriptEvent {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -439,17 +454,21 @@ mixin _$TranscriptEvent {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -458,12 +477,16 @@ mixin _$TranscriptEvent {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(CheckForModel value) checkForModel,
@@ -478,8 +501,7 @@ mixin _$TranscriptEvent {
     required TResult Function(AddMessage value) addMessage,
     required TResult Function(ExtendMessage value) extendMessage,
     required TResult Function(CompleteResponse value) completeResponse,
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(CheckForModel value)? checkForModel,
@@ -494,8 +516,7 @@ mixin _$TranscriptEvent {
     TResult? Function(AddMessage value)? addMessage,
     TResult? Function(ExtendMessage value)? extendMessage,
     TResult? Function(CompleteResponse value)? completeResponse,
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(CheckForModel value)? checkForModel,
@@ -511,15 +532,15 @@ mixin _$TranscriptEvent {
     TResult Function(ExtendMessage value)? extendMessage,
     TResult Function(CompleteResponse value)? completeResponse,
     required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
 abstract class $TranscriptEventCopyWith<$Res> {
   factory $TranscriptEventCopyWith(
-          TranscriptEvent value, $Res Function(TranscriptEvent) then) =
-      _$TranscriptEventCopyWithImpl<$Res, TranscriptEvent>;
+    TranscriptEvent value,
+    $Res Function(TranscriptEvent) then,
+  ) = _$TranscriptEventCopyWithImpl<$Res, TranscriptEvent>;
 }
 
 /// @nodoc
@@ -536,8 +557,9 @@ class _$TranscriptEventCopyWithImpl<$Res, $Val extends TranscriptEvent>
 /// @nodoc
 abstract class _$$CheckForModelImplCopyWith<$Res> {
   factory _$$CheckForModelImplCopyWith(
-          _$CheckForModelImpl value, $Res Function(_$CheckForModelImpl) then) =
-      __$$CheckForModelImplCopyWithImpl<$Res>;
+    _$CheckForModelImpl value,
+    $Res Function(_$CheckForModelImpl) then,
+  ) = __$$CheckForModelImplCopyWithImpl<$Res>;
   @useResult
   $Res call({LlmModel model});
 }
@@ -547,20 +569,21 @@ class __$$CheckForModelImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$CheckForModelImpl>
     implements _$$CheckForModelImplCopyWith<$Res> {
   __$$CheckForModelImplCopyWithImpl(
-      _$CheckForModelImpl _value, $Res Function(_$CheckForModelImpl) _then)
-      : super(_value, _then);
+    _$CheckForModelImpl _value,
+    $Res Function(_$CheckForModelImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? model = null,
-  }) {
-    return _then(_$CheckForModelImpl(
-      null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
-              as LlmModel,
-    ));
+  $Res call({Object? model = null}) {
+    return _then(
+      _$CheckForModelImpl(
+        null == model
+            ? _value.model
+            : model // ignore: cast_nullable_to_non_nullable
+                  as LlmModel,
+      ),
+    );
   }
 }
 
@@ -600,7 +623,7 @@ class _$CheckForModelImpl implements CheckForModel {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -609,8 +632,13 @@ class _$CheckForModelImpl implements CheckForModel {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return checkForModel(model);
@@ -622,7 +650,7 @@ class _$CheckForModelImpl implements CheckForModel {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -631,8 +659,13 @@ class _$CheckForModelImpl implements CheckForModel {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return checkForModel?.call(model);
@@ -644,7 +677,7 @@ class _$CheckForModelImpl implements CheckForModel {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -653,8 +686,13 @@ class _$CheckForModelImpl implements CheckForModel {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -738,8 +776,9 @@ abstract class CheckForModel implements TranscriptEvent {
 /// @nodoc
 abstract class _$$DownloadModelImplCopyWith<$Res> {
   factory _$$DownloadModelImplCopyWith(
-          _$DownloadModelImpl value, $Res Function(_$DownloadModelImpl) then) =
-      __$$DownloadModelImplCopyWithImpl<$Res>;
+    _$DownloadModelImpl value,
+    $Res Function(_$DownloadModelImpl) then,
+  ) = __$$DownloadModelImplCopyWithImpl<$Res>;
   @useResult
   $Res call({LlmModel model});
 }
@@ -749,20 +788,21 @@ class __$$DownloadModelImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$DownloadModelImpl>
     implements _$$DownloadModelImplCopyWith<$Res> {
   __$$DownloadModelImplCopyWithImpl(
-      _$DownloadModelImpl _value, $Res Function(_$DownloadModelImpl) _then)
-      : super(_value, _then);
+    _$DownloadModelImpl _value,
+    $Res Function(_$DownloadModelImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? model = null,
-  }) {
-    return _then(_$DownloadModelImpl(
-      null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
-              as LlmModel,
-    ));
+  $Res call({Object? model = null}) {
+    return _then(
+      _$DownloadModelImpl(
+        null == model
+            ? _value.model
+            : model // ignore: cast_nullable_to_non_nullable
+                  as LlmModel,
+      ),
+    );
   }
 }
 
@@ -802,7 +842,7 @@ class _$DownloadModelImpl implements DownloadModel {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -811,8 +851,13 @@ class _$DownloadModelImpl implements DownloadModel {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return downloadModel(model);
@@ -824,7 +869,7 @@ class _$DownloadModelImpl implements DownloadModel {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -833,8 +878,13 @@ class _$DownloadModelImpl implements DownloadModel {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return downloadModel?.call(model);
@@ -846,7 +896,7 @@ class _$DownloadModelImpl implements DownloadModel {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -855,8 +905,13 @@ class _$DownloadModelImpl implements DownloadModel {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -939,9 +994,10 @@ abstract class DownloadModel implements TranscriptEvent {
 
 /// @nodoc
 abstract class _$$SetPercentDownloadedImplCopyWith<$Res> {
-  factory _$$SetPercentDownloadedImplCopyWith(_$SetPercentDownloadedImpl value,
-          $Res Function(_$SetPercentDownloadedImpl) then) =
-      __$$SetPercentDownloadedImplCopyWithImpl<$Res>;
+  factory _$$SetPercentDownloadedImplCopyWith(
+    _$SetPercentDownloadedImpl value,
+    $Res Function(_$SetPercentDownloadedImpl) then,
+  ) = __$$SetPercentDownloadedImplCopyWithImpl<$Res>;
   @useResult
   $Res call({LlmModel model, int percentDownloaded});
 }
@@ -950,26 +1006,26 @@ abstract class _$$SetPercentDownloadedImplCopyWith<$Res> {
 class __$$SetPercentDownloadedImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$SetPercentDownloadedImpl>
     implements _$$SetPercentDownloadedImplCopyWith<$Res> {
-  __$$SetPercentDownloadedImplCopyWithImpl(_$SetPercentDownloadedImpl _value,
-      $Res Function(_$SetPercentDownloadedImpl) _then)
-      : super(_value, _then);
+  __$$SetPercentDownloadedImplCopyWithImpl(
+    _$SetPercentDownloadedImpl _value,
+    $Res Function(_$SetPercentDownloadedImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? model = null,
-    Object? percentDownloaded = null,
-  }) {
-    return _then(_$SetPercentDownloadedImpl(
-      null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
-              as LlmModel,
-      null == percentDownloaded
-          ? _value.percentDownloaded
-          : percentDownloaded // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
+  $Res call({Object? model = null, Object? percentDownloaded = null}) {
+    return _then(
+      _$SetPercentDownloadedImpl(
+        null == model
+            ? _value.model
+            : model // ignore: cast_nullable_to_non_nullable
+                  as LlmModel,
+        null == percentDownloaded
+            ? _value.percentDownloaded
+            : percentDownloaded // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
   }
 }
 
@@ -1005,9 +1061,11 @@ class _$SetPercentDownloadedImpl implements SetPercentDownloaded {
   @override
   @pragma('vm:prefer-inline')
   _$$SetPercentDownloadedImplCopyWith<_$SetPercentDownloadedImpl>
-      get copyWith =>
-          __$$SetPercentDownloadedImplCopyWithImpl<_$SetPercentDownloadedImpl>(
-              this, _$identity);
+  get copyWith =>
+      __$$SetPercentDownloadedImplCopyWithImpl<_$SetPercentDownloadedImpl>(
+        this,
+        _$identity,
+      );
 
   @override
   @optionalTypeArgs
@@ -1015,7 +1073,7 @@ class _$SetPercentDownloadedImpl implements SetPercentDownloaded {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -1024,8 +1082,13 @@ class _$SetPercentDownloadedImpl implements SetPercentDownloaded {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return setPercentDownloaded(model, percentDownloaded);
@@ -1037,7 +1100,7 @@ class _$SetPercentDownloadedImpl implements SetPercentDownloaded {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -1046,8 +1109,13 @@ class _$SetPercentDownloadedImpl implements SetPercentDownloaded {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return setPercentDownloaded?.call(model, percentDownloaded);
@@ -1059,7 +1127,7 @@ class _$SetPercentDownloadedImpl implements SetPercentDownloaded {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -1068,8 +1136,13 @@ class _$SetPercentDownloadedImpl implements SetPercentDownloaded {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -1143,21 +1216,23 @@ class _$SetPercentDownloadedImpl implements SetPercentDownloaded {
 
 abstract class SetPercentDownloaded implements TranscriptEvent {
   const factory SetPercentDownloaded(
-          final LlmModel model, final int percentDownloaded) =
-      _$SetPercentDownloadedImpl;
+    final LlmModel model,
+    final int percentDownloaded,
+  ) = _$SetPercentDownloadedImpl;
 
   LlmModel get model;
   int get percentDownloaded;
   @JsonKey(ignore: true)
   _$$SetPercentDownloadedImplCopyWith<_$SetPercentDownloadedImpl>
-      get copyWith => throw _privateConstructorUsedError;
+  get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
 abstract class _$$DeleteModelImplCopyWith<$Res> {
   factory _$$DeleteModelImplCopyWith(
-          _$DeleteModelImpl value, $Res Function(_$DeleteModelImpl) then) =
-      __$$DeleteModelImplCopyWithImpl<$Res>;
+    _$DeleteModelImpl value,
+    $Res Function(_$DeleteModelImpl) then,
+  ) = __$$DeleteModelImplCopyWithImpl<$Res>;
   @useResult
   $Res call({LlmModel model});
 }
@@ -1167,20 +1242,21 @@ class __$$DeleteModelImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$DeleteModelImpl>
     implements _$$DeleteModelImplCopyWith<$Res> {
   __$$DeleteModelImplCopyWithImpl(
-      _$DeleteModelImpl _value, $Res Function(_$DeleteModelImpl) _then)
-      : super(_value, _then);
+    _$DeleteModelImpl _value,
+    $Res Function(_$DeleteModelImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? model = null,
-  }) {
-    return _then(_$DeleteModelImpl(
-      null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
-              as LlmModel,
-    ));
+  $Res call({Object? model = null}) {
+    return _then(
+      _$DeleteModelImpl(
+        null == model
+            ? _value.model
+            : model // ignore: cast_nullable_to_non_nullable
+                  as LlmModel,
+      ),
+    );
   }
 }
 
@@ -1220,7 +1296,7 @@ class _$DeleteModelImpl implements DeleteModel {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -1229,8 +1305,13 @@ class _$DeleteModelImpl implements DeleteModel {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return deleteModel(model);
@@ -1242,7 +1323,7 @@ class _$DeleteModelImpl implements DeleteModel {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -1251,8 +1332,13 @@ class _$DeleteModelImpl implements DeleteModel {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return deleteModel?.call(model);
@@ -1264,7 +1350,7 @@ class _$DeleteModelImpl implements DeleteModel {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -1273,8 +1359,13 @@ class _$DeleteModelImpl implements DeleteModel {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -1358,8 +1449,9 @@ abstract class DeleteModel implements TranscriptEvent {
 /// @nodoc
 abstract class _$$InitEngineImplCopyWith<$Res> {
   factory _$$InitEngineImplCopyWith(
-          _$InitEngineImpl value, $Res Function(_$InitEngineImpl) then) =
-      __$$InitEngineImplCopyWithImpl<$Res>;
+    _$InitEngineImpl value,
+    $Res Function(_$InitEngineImpl) then,
+  ) = __$$InitEngineImplCopyWithImpl<$Res>;
   @useResult
   $Res call({LlmModel model});
 }
@@ -1369,20 +1461,21 @@ class __$$InitEngineImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$InitEngineImpl>
     implements _$$InitEngineImplCopyWith<$Res> {
   __$$InitEngineImplCopyWithImpl(
-      _$InitEngineImpl _value, $Res Function(_$InitEngineImpl) _then)
-      : super(_value, _then);
+    _$InitEngineImpl _value,
+    $Res Function(_$InitEngineImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? model = null,
-  }) {
-    return _then(_$InitEngineImpl(
-      null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
-              as LlmModel,
-    ));
+  $Res call({Object? model = null}) {
+    return _then(
+      _$InitEngineImpl(
+        null == model
+            ? _value.model
+            : model // ignore: cast_nullable_to_non_nullable
+                  as LlmModel,
+      ),
+    );
   }
 }
 
@@ -1422,7 +1515,7 @@ class _$InitEngineImpl implements InitEngine {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -1431,8 +1524,13 @@ class _$InitEngineImpl implements InitEngine {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return initEngine(model);
@@ -1444,7 +1542,7 @@ class _$InitEngineImpl implements InitEngine {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -1453,8 +1551,13 @@ class _$InitEngineImpl implements InitEngine {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return initEngine?.call(model);
@@ -1466,7 +1569,7 @@ class _$InitEngineImpl implements InitEngine {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -1475,8 +1578,13 @@ class _$InitEngineImpl implements InitEngine {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -1559,18 +1667,20 @@ abstract class InitEngine implements TranscriptEvent {
 
 /// @nodoc
 abstract class _$$InitializeModelInfoImplCopyWith<$Res> {
-  factory _$$InitializeModelInfoImplCopyWith(_$InitializeModelInfoImpl value,
-          $Res Function(_$InitializeModelInfoImpl) then) =
-      __$$InitializeModelInfoImplCopyWithImpl<$Res>;
+  factory _$$InitializeModelInfoImplCopyWith(
+    _$InitializeModelInfoImpl value,
+    $Res Function(_$InitializeModelInfoImpl) then,
+  ) = __$$InitializeModelInfoImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
 class __$$InitializeModelInfoImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$InitializeModelInfoImpl>
     implements _$$InitializeModelInfoImplCopyWith<$Res> {
-  __$$InitializeModelInfoImplCopyWithImpl(_$InitializeModelInfoImpl _value,
-      $Res Function(_$InitializeModelInfoImpl) _then)
-      : super(_value, _then);
+  __$$InitializeModelInfoImplCopyWithImpl(
+    _$InitializeModelInfoImpl _value,
+    $Res Function(_$InitializeModelInfoImpl) _then,
+  ) : super(_value, _then);
 }
 
 /// @nodoc
@@ -1599,7 +1709,7 @@ class _$InitializeModelInfoImpl implements InitializeModelInfo {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -1608,8 +1718,13 @@ class _$InitializeModelInfoImpl implements InitializeModelInfo {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return initializeModelInfo();
@@ -1621,7 +1736,7 @@ class _$InitializeModelInfoImpl implements InitializeModelInfo {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -1630,8 +1745,13 @@ class _$InitializeModelInfoImpl implements InitializeModelInfo {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return initializeModelInfo?.call();
@@ -1643,7 +1763,7 @@ class _$InitializeModelInfoImpl implements InitializeModelInfo {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -1652,8 +1772,13 @@ class _$InitializeModelInfoImpl implements InitializeModelInfo {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -1731,9 +1856,10 @@ abstract class InitializeModelInfo implements TranscriptEvent {
 
 /// @nodoc
 abstract class _$$UpdateTemperatureImplCopyWith<$Res> {
-  factory _$$UpdateTemperatureImplCopyWith(_$UpdateTemperatureImpl value,
-          $Res Function(_$UpdateTemperatureImpl) then) =
-      __$$UpdateTemperatureImplCopyWithImpl<$Res>;
+  factory _$$UpdateTemperatureImplCopyWith(
+    _$UpdateTemperatureImpl value,
+    $Res Function(_$UpdateTemperatureImpl) then,
+  ) = __$$UpdateTemperatureImplCopyWithImpl<$Res>;
   @useResult
   $Res call({double value});
 }
@@ -1742,21 +1868,22 @@ abstract class _$$UpdateTemperatureImplCopyWith<$Res> {
 class __$$UpdateTemperatureImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$UpdateTemperatureImpl>
     implements _$$UpdateTemperatureImplCopyWith<$Res> {
-  __$$UpdateTemperatureImplCopyWithImpl(_$UpdateTemperatureImpl _value,
-      $Res Function(_$UpdateTemperatureImpl) _then)
-      : super(_value, _then);
+  __$$UpdateTemperatureImplCopyWithImpl(
+    _$UpdateTemperatureImpl _value,
+    $Res Function(_$UpdateTemperatureImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? value = null,
-  }) {
-    return _then(_$UpdateTemperatureImpl(
-      null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as double,
-    ));
+  $Res call({Object? value = null}) {
+    return _then(
+      _$UpdateTemperatureImpl(
+        null == value
+            ? _value.value
+            : value // ignore: cast_nullable_to_non_nullable
+                  as double,
+      ),
+    );
   }
 }
 
@@ -1789,7 +1916,9 @@ class _$UpdateTemperatureImpl implements UpdateTemperature {
   @pragma('vm:prefer-inline')
   _$$UpdateTemperatureImplCopyWith<_$UpdateTemperatureImpl> get copyWith =>
       __$$UpdateTemperatureImplCopyWithImpl<_$UpdateTemperatureImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   @optionalTypeArgs
@@ -1797,7 +1926,7 @@ class _$UpdateTemperatureImpl implements UpdateTemperature {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -1806,8 +1935,13 @@ class _$UpdateTemperatureImpl implements UpdateTemperature {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return updateTemperature(value);
@@ -1819,7 +1953,7 @@ class _$UpdateTemperatureImpl implements UpdateTemperature {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -1828,8 +1962,13 @@ class _$UpdateTemperatureImpl implements UpdateTemperature {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return updateTemperature?.call(value);
@@ -1841,7 +1980,7 @@ class _$UpdateTemperatureImpl implements UpdateTemperature {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -1850,8 +1989,13 @@ class _$UpdateTemperatureImpl implements UpdateTemperature {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -1935,8 +2079,9 @@ abstract class UpdateTemperature implements TranscriptEvent {
 /// @nodoc
 abstract class _$$UpdateTopKImplCopyWith<$Res> {
   factory _$$UpdateTopKImplCopyWith(
-          _$UpdateTopKImpl value, $Res Function(_$UpdateTopKImpl) then) =
-      __$$UpdateTopKImplCopyWithImpl<$Res>;
+    _$UpdateTopKImpl value,
+    $Res Function(_$UpdateTopKImpl) then,
+  ) = __$$UpdateTopKImplCopyWithImpl<$Res>;
   @useResult
   $Res call({int value});
 }
@@ -1946,20 +2091,21 @@ class __$$UpdateTopKImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$UpdateTopKImpl>
     implements _$$UpdateTopKImplCopyWith<$Res> {
   __$$UpdateTopKImplCopyWithImpl(
-      _$UpdateTopKImpl _value, $Res Function(_$UpdateTopKImpl) _then)
-      : super(_value, _then);
+    _$UpdateTopKImpl _value,
+    $Res Function(_$UpdateTopKImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? value = null,
-  }) {
-    return _then(_$UpdateTopKImpl(
-      null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
+  $Res call({Object? value = null}) {
+    return _then(
+      _$UpdateTopKImpl(
+        null == value
+            ? _value.value
+            : value // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
   }
 }
 
@@ -1999,7 +2145,7 @@ class _$UpdateTopKImpl implements UpdateTopK {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -2008,8 +2154,13 @@ class _$UpdateTopKImpl implements UpdateTopK {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return updateTopK(value);
@@ -2021,7 +2172,7 @@ class _$UpdateTopKImpl implements UpdateTopK {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -2030,8 +2181,13 @@ class _$UpdateTopKImpl implements UpdateTopK {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return updateTopK?.call(value);
@@ -2043,7 +2199,7 @@ class _$UpdateTopKImpl implements UpdateTopK {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -2052,8 +2208,13 @@ class _$UpdateTopKImpl implements UpdateTopK {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -2136,9 +2297,10 @@ abstract class UpdateTopK implements TranscriptEvent {
 
 /// @nodoc
 abstract class _$$UpdateMaxTokensImplCopyWith<$Res> {
-  factory _$$UpdateMaxTokensImplCopyWith(_$UpdateMaxTokensImpl value,
-          $Res Function(_$UpdateMaxTokensImpl) then) =
-      __$$UpdateMaxTokensImplCopyWithImpl<$Res>;
+  factory _$$UpdateMaxTokensImplCopyWith(
+    _$UpdateMaxTokensImpl value,
+    $Res Function(_$UpdateMaxTokensImpl) then,
+  ) = __$$UpdateMaxTokensImplCopyWithImpl<$Res>;
   @useResult
   $Res call({int value});
 }
@@ -2148,20 +2310,21 @@ class __$$UpdateMaxTokensImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$UpdateMaxTokensImpl>
     implements _$$UpdateMaxTokensImplCopyWith<$Res> {
   __$$UpdateMaxTokensImplCopyWithImpl(
-      _$UpdateMaxTokensImpl _value, $Res Function(_$UpdateMaxTokensImpl) _then)
-      : super(_value, _then);
+    _$UpdateMaxTokensImpl _value,
+    $Res Function(_$UpdateMaxTokensImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? value = null,
-  }) {
-    return _then(_$UpdateMaxTokensImpl(
-      null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
+  $Res call({Object? value = null}) {
+    return _then(
+      _$UpdateMaxTokensImpl(
+        null == value
+            ? _value.value
+            : value // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
   }
 }
 
@@ -2194,7 +2357,9 @@ class _$UpdateMaxTokensImpl implements UpdateMaxTokens {
   @pragma('vm:prefer-inline')
   _$$UpdateMaxTokensImplCopyWith<_$UpdateMaxTokensImpl> get copyWith =>
       __$$UpdateMaxTokensImplCopyWithImpl<_$UpdateMaxTokensImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   @optionalTypeArgs
@@ -2202,7 +2367,7 @@ class _$UpdateMaxTokensImpl implements UpdateMaxTokens {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -2211,8 +2376,13 @@ class _$UpdateMaxTokensImpl implements UpdateMaxTokens {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return updateMaxTokens(value);
@@ -2224,7 +2394,7 @@ class _$UpdateMaxTokensImpl implements UpdateMaxTokens {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -2233,8 +2403,13 @@ class _$UpdateMaxTokensImpl implements UpdateMaxTokens {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return updateMaxTokens?.call(value);
@@ -2246,7 +2421,7 @@ class _$UpdateMaxTokensImpl implements UpdateMaxTokens {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -2255,8 +2430,13 @@ class _$UpdateMaxTokensImpl implements UpdateMaxTokens {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -2340,8 +2520,9 @@ abstract class UpdateMaxTokens implements TranscriptEvent {
 /// @nodoc
 abstract class _$$AddMessageImplCopyWith<$Res> {
   factory _$$AddMessageImplCopyWith(
-          _$AddMessageImpl value, $Res Function(_$AddMessageImpl) then) =
-      __$$AddMessageImplCopyWithImpl<$Res>;
+    _$AddMessageImpl value,
+    $Res Function(_$AddMessageImpl) then,
+  ) = __$$AddMessageImplCopyWithImpl<$Res>;
   @useResult
   $Res call({ChatMessage message, LlmModel model});
 
@@ -2353,25 +2534,25 @@ class __$$AddMessageImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$AddMessageImpl>
     implements _$$AddMessageImplCopyWith<$Res> {
   __$$AddMessageImplCopyWithImpl(
-      _$AddMessageImpl _value, $Res Function(_$AddMessageImpl) _then)
-      : super(_value, _then);
+    _$AddMessageImpl _value,
+    $Res Function(_$AddMessageImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? message = null,
-    Object? model = null,
-  }) {
-    return _then(_$AddMessageImpl(
-      null == message
-          ? _value.message
-          : message // ignore: cast_nullable_to_non_nullable
-              as ChatMessage,
-      null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
-              as LlmModel,
-    ));
+  $Res call({Object? message = null, Object? model = null}) {
+    return _then(
+      _$AddMessageImpl(
+        null == message
+            ? _value.message
+            : message // ignore: cast_nullable_to_non_nullable
+                  as ChatMessage,
+        null == model
+            ? _value.model
+            : model // ignore: cast_nullable_to_non_nullable
+                  as LlmModel,
+      ),
+    );
   }
 
   @override
@@ -2422,7 +2603,7 @@ class _$AddMessageImpl implements AddMessage {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -2431,8 +2612,13 @@ class _$AddMessageImpl implements AddMessage {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return addMessage(message, model);
@@ -2444,7 +2630,7 @@ class _$AddMessageImpl implements AddMessage {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -2453,8 +2639,13 @@ class _$AddMessageImpl implements AddMessage {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return addMessage?.call(message, model);
@@ -2466,7 +2657,7 @@ class _$AddMessageImpl implements AddMessage {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -2475,8 +2666,13 @@ class _$AddMessageImpl implements AddMessage {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -2562,8 +2758,9 @@ abstract class AddMessage implements TranscriptEvent {
 /// @nodoc
 abstract class _$$ExtendMessageImplCopyWith<$Res> {
   factory _$$ExtendMessageImplCopyWith(
-          _$ExtendMessageImpl value, $Res Function(_$ExtendMessageImpl) then) =
-      __$$ExtendMessageImplCopyWithImpl<$Res>;
+    _$ExtendMessageImpl value,
+    $Res Function(_$ExtendMessageImpl) then,
+  ) = __$$ExtendMessageImplCopyWithImpl<$Res>;
   @useResult
   $Res call({String chunk, int index, LlmModel model, bool first, bool last});
 }
@@ -2573,8 +2770,9 @@ class __$$ExtendMessageImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$ExtendMessageImpl>
     implements _$$ExtendMessageImplCopyWith<$Res> {
   __$$ExtendMessageImplCopyWithImpl(
-      _$ExtendMessageImpl _value, $Res Function(_$ExtendMessageImpl) _then)
-      : super(_value, _then);
+    _$ExtendMessageImpl _value,
+    $Res Function(_$ExtendMessageImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -2585,40 +2783,43 @@ class __$$ExtendMessageImplCopyWithImpl<$Res>
     Object? first = null,
     Object? last = null,
   }) {
-    return _then(_$ExtendMessageImpl(
-      chunk: null == chunk
-          ? _value.chunk
-          : chunk // ignore: cast_nullable_to_non_nullable
-              as String,
-      index: null == index
-          ? _value.index
-          : index // ignore: cast_nullable_to_non_nullable
-              as int,
-      model: null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
-              as LlmModel,
-      first: null == first
-          ? _value.first
-          : first // ignore: cast_nullable_to_non_nullable
-              as bool,
-      last: null == last
-          ? _value.last
-          : last // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
+    return _then(
+      _$ExtendMessageImpl(
+        chunk: null == chunk
+            ? _value.chunk
+            : chunk // ignore: cast_nullable_to_non_nullable
+                  as String,
+        index: null == index
+            ? _value.index
+            : index // ignore: cast_nullable_to_non_nullable
+                  as int,
+        model: null == model
+            ? _value.model
+            : model // ignore: cast_nullable_to_non_nullable
+                  as LlmModel,
+        first: null == first
+            ? _value.first
+            : first // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        last: null == last
+            ? _value.last
+            : last // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
 class _$ExtendMessageImpl implements ExtendMessage {
-  const _$ExtendMessageImpl(
-      {required this.chunk,
-      required this.index,
-      required this.model,
-      required this.first,
-      required this.last});
+  const _$ExtendMessageImpl({
+    required this.chunk,
+    required this.index,
+    required this.model,
+    required this.first,
+    required this.last,
+  });
 
   @override
   final String chunk;
@@ -2664,7 +2865,7 @@ class _$ExtendMessageImpl implements ExtendMessage {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -2673,8 +2874,13 @@ class _$ExtendMessageImpl implements ExtendMessage {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return extendMessage(chunk, index, model, first, last);
@@ -2686,7 +2892,7 @@ class _$ExtendMessageImpl implements ExtendMessage {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -2695,8 +2901,13 @@ class _$ExtendMessageImpl implements ExtendMessage {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return extendMessage?.call(chunk, index, model, first, last);
@@ -2708,7 +2919,7 @@ class _$ExtendMessageImpl implements ExtendMessage {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -2717,8 +2928,13 @@ class _$ExtendMessageImpl implements ExtendMessage {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {
@@ -2791,12 +3007,13 @@ class _$ExtendMessageImpl implements ExtendMessage {
 }
 
 abstract class ExtendMessage implements TranscriptEvent {
-  const factory ExtendMessage(
-      {required final String chunk,
-      required final int index,
-      required final LlmModel model,
-      required final bool first,
-      required final bool last}) = _$ExtendMessageImpl;
+  const factory ExtendMessage({
+    required final String chunk,
+    required final int index,
+    required final LlmModel model,
+    required final bool first,
+    required final bool last,
+  }) = _$ExtendMessageImpl;
 
   String get chunk;
   int get index;
@@ -2810,9 +3027,10 @@ abstract class ExtendMessage implements TranscriptEvent {
 
 /// @nodoc
 abstract class _$$CompleteResponseImplCopyWith<$Res> {
-  factory _$$CompleteResponseImplCopyWith(_$CompleteResponseImpl value,
-          $Res Function(_$CompleteResponseImpl) then) =
-      __$$CompleteResponseImplCopyWithImpl<$Res>;
+  factory _$$CompleteResponseImplCopyWith(
+    _$CompleteResponseImpl value,
+    $Res Function(_$CompleteResponseImpl) then,
+  ) = __$$CompleteResponseImplCopyWithImpl<$Res>;
   @useResult
   $Res call({LlmModel model});
 }
@@ -2821,21 +3039,22 @@ abstract class _$$CompleteResponseImplCopyWith<$Res> {
 class __$$CompleteResponseImplCopyWithImpl<$Res>
     extends _$TranscriptEventCopyWithImpl<$Res, _$CompleteResponseImpl>
     implements _$$CompleteResponseImplCopyWith<$Res> {
-  __$$CompleteResponseImplCopyWithImpl(_$CompleteResponseImpl _value,
-      $Res Function(_$CompleteResponseImpl) _then)
-      : super(_value, _then);
+  __$$CompleteResponseImplCopyWithImpl(
+    _$CompleteResponseImpl _value,
+    $Res Function(_$CompleteResponseImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? model = null,
-  }) {
-    return _then(_$CompleteResponseImpl(
-      null == model
-          ? _value.model
-          : model // ignore: cast_nullable_to_non_nullable
-              as LlmModel,
-    ));
+  $Res call({Object? model = null}) {
+    return _then(
+      _$CompleteResponseImpl(
+        null == model
+            ? _value.model
+            : model // ignore: cast_nullable_to_non_nullable
+                  as LlmModel,
+      ),
+    );
   }
 }
 
@@ -2868,7 +3087,9 @@ class _$CompleteResponseImpl implements CompleteResponse {
   @pragma('vm:prefer-inline')
   _$$CompleteResponseImplCopyWith<_$CompleteResponseImpl> get copyWith =>
       __$$CompleteResponseImplCopyWithImpl<_$CompleteResponseImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   @optionalTypeArgs
@@ -2876,7 +3097,7 @@ class _$CompleteResponseImpl implements CompleteResponse {
     required TResult Function(LlmModel model) checkForModel,
     required TResult Function(LlmModel model) downloadModel,
     required TResult Function(LlmModel model, int percentDownloaded)
-        setPercentDownloaded,
+    setPercentDownloaded,
     required TResult Function(LlmModel model) deleteModel,
     required TResult Function(LlmModel model) initEngine,
     required TResult Function() initializeModelInfo,
@@ -2885,8 +3106,13 @@ class _$CompleteResponseImpl implements CompleteResponse {
     required TResult Function(int value) updateMaxTokens,
     required TResult Function(ChatMessage message, LlmModel model) addMessage,
     required TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )
+    extendMessage,
     required TResult Function(LlmModel model) completeResponse,
   }) {
     return completeResponse(model);
@@ -2898,7 +3124,7 @@ class _$CompleteResponseImpl implements CompleteResponse {
     TResult? Function(LlmModel model)? checkForModel,
     TResult? Function(LlmModel model)? downloadModel,
     TResult? Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult? Function(LlmModel model)? deleteModel,
     TResult? Function(LlmModel model)? initEngine,
     TResult? Function()? initializeModelInfo,
@@ -2907,8 +3133,13 @@ class _$CompleteResponseImpl implements CompleteResponse {
     TResult? Function(int value)? updateMaxTokens,
     TResult? Function(ChatMessage message, LlmModel model)? addMessage,
     TResult? Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult? Function(LlmModel model)? completeResponse,
   }) {
     return completeResponse?.call(model);
@@ -2920,7 +3151,7 @@ class _$CompleteResponseImpl implements CompleteResponse {
     TResult Function(LlmModel model)? checkForModel,
     TResult Function(LlmModel model)? downloadModel,
     TResult Function(LlmModel model, int percentDownloaded)?
-        setPercentDownloaded,
+    setPercentDownloaded,
     TResult Function(LlmModel model)? deleteModel,
     TResult Function(LlmModel model)? initEngine,
     TResult Function()? initializeModelInfo,
@@ -2929,8 +3160,13 @@ class _$CompleteResponseImpl implements CompleteResponse {
     TResult Function(int value)? updateMaxTokens,
     TResult Function(ChatMessage message, LlmModel model)? addMessage,
     TResult Function(
-            String chunk, int index, LlmModel model, bool first, bool last)?
-        extendMessage,
+      String chunk,
+      int index,
+      LlmModel model,
+      bool first,
+      bool last,
+    )?
+    extendMessage,
     TResult Function(LlmModel model)? completeResponse,
     required TResult orElse(),
   }) {

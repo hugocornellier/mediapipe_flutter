@@ -3,16 +3,15 @@
 // found in the LICENSE file.
 
 import 'dart:ffi';
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_core/interface.dart';
-import '../../third_party/mediapipe/generated/mediapipe_text_bindings.dart'
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_core/interface.dart';
+import '../../third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
     as bindings;
 
 /// {@macro TextEmbedderResult}
 class TextEmbedderResult extends BaseEmbedderResult with IOTaskResult {
   /// {@macro TextEmbedderResult.fake}
-  TextEmbedderResult({required Iterable<Embedding> embeddings})
-      : _embeddings = embeddings;
+  TextEmbedderResult({required Iterable<Embedding> this._embeddings});
 
   /// {@template TextEmbedderResult.native}
   /// Initializes a [TextEmbedderResult] instance as a wrapper around native
@@ -30,9 +29,7 @@ class TextEmbedderResult extends BaseEmbedderResult with IOTaskResult {
   Iterable<Embedding> get embeddings => _embeddings ??= _getEmbeddings();
   Iterable<Embedding> _getEmbeddings() {
     if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'No native memory for TextEmbedderResult.embeddings',
-      );
+      throw Exception('No native memory for TextEmbedderResult.embeddings');
     }
     return Embedding.fromNativeArray(
       _pointer!.ref.embeddings,

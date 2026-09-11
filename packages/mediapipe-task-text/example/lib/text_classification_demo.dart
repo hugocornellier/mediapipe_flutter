@@ -6,9 +6,8 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:example/keyboard_hider.dart';
 import 'package:flutter/material.dart';
-import 'package:getwidget/getwidget.dart';
-import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
+import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 import 'enumerate.dart';
 
 class TextClassificationDemo extends StatefulWidget {
@@ -39,8 +38,9 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
       return _completer.complete(widget.classifier!);
     }
 
-    ByteData? classifierBytes = await DefaultAssetBundle.of(context)
-        .load('assets/bert_classifier.tflite');
+    ByteData? classifierBytes = await DefaultAssetBundle.of(
+      context,
+    ).load('assets/bert_classifier.tflite');
 
     final classifier = TextClassifier(
       TextClassifierOptions.fromAssetBuffer(
@@ -64,33 +64,27 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
       categoryWidgets.addAll(_textClassifications(classifications));
     }
 
-    setState(
-      () {
-        results.last = KeyboardHider(
-          child: Card(
-            key: Key('Classification::"$_isProcessing" ${results.length}'),
-            margin: const EdgeInsets.all(10),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Text(_isProcessing!),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Wrap(
-                    children: <Widget>[
-                      ...categoryWidgets,
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    setState(() {
+      results.last = KeyboardHider(
+        child: Card(
+          key: Key('Classification::"$_isProcessing" ${results.length}'),
+          margin: const EdgeInsets.all(10),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Text(_isProcessing!),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Wrap(children: <Widget>[...categoryWidgets]),
+              ),
+            ],
           ),
-        );
-        _isProcessing = null;
-      },
-    );
+        ),
+      );
+      _isProcessing = null;
+    });
   }
 
   static final categoryColors = <Color>[
@@ -102,20 +96,22 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
 
   List<Widget> _textClassifications(Classifications classifications) {
     return classifications.categories
-        .enumerate<Widget>((category, index) =>
-            _textClassification(category, categoryColors[index]))
+        .enumerate<Widget>(
+          (category, index) =>
+              _textClassification(category, categoryColors[index]),
+        )
         .toList();
   }
 
   Widget _textClassification(Category category, Color color) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: GFButton(
-        onPressed: null,
-        text: '${category.displayName ?? category.categoryName} :: '
-            '${category.score.roundTo(4)}',
-        shape: GFButtonShape.pills,
-        color: color,
+      child: Chip(
+        label: Text(
+          '${category.displayName ?? category.categoryName} :: '
+          '${category.score.roundTo(4)}',
+        ),
+        backgroundColor: color,
       ),
     );
   }
@@ -144,8 +140,9 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed:
-            _isProcessing != null && _controller.text != '' ? null : _classify,
+        onPressed: _isProcessing != null && _controller.text != ''
+            ? null
+            : _classify,
         child: const Icon(Icons.search),
       ),
     );

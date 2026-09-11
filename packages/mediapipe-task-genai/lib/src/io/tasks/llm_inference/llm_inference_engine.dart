@@ -7,9 +7,9 @@ import 'dart:io' as io;
 import 'dart:isolate';
 import 'package:async/async.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_genai/interface.dart';
-import 'package:mediapipe_genai/io.dart';
+import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
+import 'package:mediapipe_flutter_genai/interface.dart';
+import 'package:mediapipe_flutter_genai/io.dart';
 
 final _log = Logger('LlmInferenceEngine');
 
@@ -151,8 +151,10 @@ class LlmInferenceEngine extends BaseLlmInferenceEngine {
   /// controller which we must reuse, because whoever originally called
   /// [generateResponse] already has its stream and is waiting for a response.
   void restart(void Function() callback) {
-    _log.shout('RESTARTING INFERENCE EXECUTOR - REACHED TIMEOUT OF '
-        '${timeout.inSeconds} seconds');
+    _log.shout(
+      'RESTARTING INFERENCE EXECUTOR - REACHED TIMEOUT OF '
+      '${timeout.inSeconds} seconds',
+    );
     _sendPort.send(null);
     if (_numRetries == maxRetries) {
       throw Exception('Reached retry limit of $maxRetries.');
@@ -162,15 +164,13 @@ class LlmInferenceEngine extends BaseLlmInferenceEngine {
       _readyCompleter.complete(false);
     }
     _readyCompleter = Completer<bool>();
-    _initializeIsolate().then(
-      (bool success) {
-        if (!success) {
-          _log.shout('Failed to initialize isolate during restart');
-          return;
-        }
-        callback();
-      },
-    );
+    _initializeIsolate().then((bool success) {
+      if (!success) {
+        _log.shout('Failed to initialize isolate during restart');
+        return;
+      }
+      callback();
+    });
   }
 
   @override
@@ -198,10 +198,7 @@ Future<(StreamQueue<dynamic>, SendPort)> _createIsolate(
 ) async {
   final p = ReceivePort();
   await Isolate.spawn(
-    (SendPort port) => _inferenceService(
-      port,
-      options,
-    ),
+    (SendPort port) => _inferenceService(port, options),
     p.sendPort,
   );
 
@@ -210,22 +207,21 @@ Future<(StreamQueue<dynamic>, SendPort)> _createIsolate(
   return (events, sendPort);
 }
 
-Future<void> _inferenceService(
-  SendPort p,
-  LlmInferenceOptions options,
-) async {
+Future<void> _inferenceService(SendPort p, LlmInferenceOptions options) async {
   final commandPort = ReceivePort();
   p.send(commandPort.sendPort);
 
   Logger.root.level = Level.FINEST;
   Logger.root.onRecord.listen((record) {
-    io.stdout.writeln('${record.level.name} [${record.loggerName}]'
-        '['
-        '${record.time.hour.toString()}:'
-        '${record.time.minute.toString().padLeft(2, "0")}:'
-        '${record.time.second.toString().padLeft(2, "0")}.'
-        '${record.time.millisecond.toString().padRight(3, "0")}'
-        '] ${record.message}');
+    io.stdout.writeln(
+      '${record.level.name} [${record.loggerName}]'
+      '['
+      '${record.time.hour.toString()}:'
+      '${record.time.minute.toString().padLeft(2, "0")}:'
+      '${record.time.second.toString().padLeft(2, "0")}.'
+      '${record.time.millisecond.toString().padRight(3, "0")}'
+      '] ${record.message}',
+    );
   });
 
   final executor = LlmInferenceExecutor(options);
@@ -234,8 +230,9 @@ Future<void> _inferenceService(
     if (message != null) {
       switch (message.type) {
         case _LlmInferenceTaskType._respond:
-          await for (final response
-              in executor.generateResponse(message.text)) {
+          await for (final response in executor.generateResponse(
+            message.text,
+          )) {
             p.send(response);
           }
         case _LlmInferenceTaskType._countTokens:
@@ -252,20 +249,13 @@ Future<void> _inferenceService(
 enum _LlmInferenceTaskType { _respond, _countTokens }
 
 class _LlmInferenceTask {
-  _LlmInferenceTask._({
-    required this.type,
-    required this.text,
-  });
+  _LlmInferenceTask._({required this.type, required this.text});
 
-  factory _LlmInferenceTask.respond(String text) => _LlmInferenceTask._(
-        type: _LlmInferenceTaskType._respond,
-        text: text,
-      );
+  factory _LlmInferenceTask.respond(String text) =>
+      _LlmInferenceTask._(type: _LlmInferenceTaskType._respond, text: text);
 
-  factory _LlmInferenceTask.countTokens(String text) => _LlmInferenceTask._(
-        type: _LlmInferenceTaskType._respond,
-        text: text,
-      );
+  factory _LlmInferenceTask.countTokens(String text) =>
+      _LlmInferenceTask._(type: _LlmInferenceTaskType._respond, text: text);
 
   final _LlmInferenceTaskType type;
   final String text;

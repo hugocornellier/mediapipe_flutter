@@ -5,11 +5,12 @@
 // `native-assets` tag allows test runs to opt in or out of running integration
 // tests via `flutter test -x native-assets` or `flutter test -t native-assets`
 @Tags(['native-assets'])
+library;
 
 import 'dart:io' as io;
 import 'package:path/path.dart' as path;
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/io.dart';
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_text/io.dart';
 import 'package:test/test.dart';
 
 void main() {

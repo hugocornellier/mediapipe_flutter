@@ -3,9 +3,9 @@
 // found in the LICENSE file.
 
 import 'dart:ffi';
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/interface.dart';
-import '../../third_party/mediapipe/generated/mediapipe_text_bindings.dart'
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_text/interface.dart';
+import '../../third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
     as bindings;
 
 /// {@macro LanguageDetectionResult}
@@ -13,9 +13,8 @@ class LanguageDetectorResult extends BaseLanguageDetectorResult
     with IOTaskResult {
   /// {@macro LanguageDetectionResult}
   LanguageDetectorResult({
-    required Iterable<LanguagePrediction> predictions,
-  })  : _predictions = predictions,
-        _pointer = null;
+    required Iterable<LanguagePrediction> this._predictions,
+  }) : _pointer = null;
 
   /// {@template LanguageDetectorResult.native}
   /// Initializes a [LanguageDetectorResult] instance as a wrapper around native
@@ -49,11 +48,9 @@ class LanguageDetectorResult extends BaseLanguageDetectorResult
 class LanguagePrediction extends BaseLanguagePrediction {
   /// {@macro LanguagePrediction}
   LanguagePrediction({
-    required String languageCode,
-    required double probability,
-  })  : _languageCode = languageCode,
-        _probability = probability,
-        _pointer = null;
+    required String this._languageCode,
+    required double this._probability,
+  }) : _pointer = null;
 
   /// Initializes a [LanguagePrediction] instance as a wrapper around native
   /// memory.

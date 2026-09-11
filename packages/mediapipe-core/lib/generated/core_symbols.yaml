@@ -1,6 +1,6 @@
 format_version: 1.0.0
 files:
-  package:mediapipe_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart:
+  package:mediapipe_flutter_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart:
     used-config:
       ffi-native: false
     symbols:
@@ -22,25 +22,3 @@ files:
         name: Embedding
       c:@S@EmbeddingResult:
         name: EmbeddingResult
-      c:@S@__darwin_pthread_handler_rec:
-        name: __darwin_pthread_handler_rec
-      c:@S@_opaque_pthread_attr_t:
-        name: _opaque_pthread_attr_t
-      c:@S@_opaque_pthread_cond_t:
-        name: _opaque_pthread_cond_t
-      c:@S@_opaque_pthread_condattr_t:
-        name: _opaque_pthread_condattr_t
-      c:@S@_opaque_pthread_mutex_t:
-        name: _opaque_pthread_mutex_t
-      c:@S@_opaque_pthread_mutexattr_t:
-        name: _opaque_pthread_mutexattr_t
-      c:@S@_opaque_pthread_once_t:
-        name: _opaque_pthread_once_t
-      c:@S@_opaque_pthread_rwlock_t:
-        name: _opaque_pthread_rwlock_t
-      c:@S@_opaque_pthread_rwlockattr_t:
-        name: _opaque_pthread_rwlockattr_t
-      c:@S@_opaque_pthread_t:
-        name: _opaque_pthread_t
-      c:@UA@__mbstate_t:
-        name: __mbstate_t

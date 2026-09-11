@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:mediapipe_core/interface.dart';
+import 'package:mediapipe_flutter_core/interface.dart';
 
 /// {@template TextEmbedderOptions}
 /// Configuration object for a MediaPipe text embedder.
@@ -19,7 +19,8 @@ abstract class BaseTextEmbedderOptions extends BaseTaskOptions {
   BaseEmbedderOptions get embedderOptions;
 
   @override
-  String toString() => 'TextEmbedderOptions(baseOptions: $baseOptions, '
+  String toString() =>
+      'TextEmbedderOptions(baseOptions: $baseOptions, '
       'embedderOptions: $embedderOptions)';
 
   @override

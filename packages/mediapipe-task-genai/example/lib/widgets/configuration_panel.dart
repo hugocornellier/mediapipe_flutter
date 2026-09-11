@@ -40,8 +40,10 @@ class InferenceConfigurationPanel extends StatelessWidget {
     return ListView(
       children: <Widget>[
         Text('Top K', style: Theme.of(context).textTheme.bodyLarge),
-        Text('Number of tokens to be sampled from for each decoding step.',
-            style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          'Number of tokens to be sampled from for each decoding step.',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
         Slider(
           value: topK.toDouble(),
           min: 1,
@@ -51,34 +53,30 @@ class InferenceConfigurationPanel extends StatelessWidget {
         ),
         Text(
           topK.toString(),
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall!
-              .copyWith(color: Colors.grey),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall!.copyWith(color: Colors.grey),
         ),
         const Divider(),
         Text('Temperature', style: Theme.of(context).textTheme.bodyLarge),
-        Text('Randomness when decoding the next token.',
-            style: Theme.of(context).textTheme.bodySmall),
-        Slider(
-          value: temp,
-          min: 0,
-          max: 1,
-          onChanged: updateTemp,
+        Text(
+          'Randomness when decoding the next token.',
+          style: Theme.of(context).textTheme.bodySmall,
         ),
+        Slider(value: temp, min: 0, max: 1, onChanged: updateTemp),
         Text(
           temp.roundTo(3).toString(),
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall!
-              .copyWith(color: Colors.grey),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall!.copyWith(color: Colors.grey),
         ),
         const Divider(),
         Text('Max Tokens', style: Theme.of(context).textTheme.bodyLarge),
         Text(
-            'Maximum context window for the LLM. Larger windows can tax '
-            'certain devices.',
-            style: Theme.of(context).textTheme.bodySmall),
+          'Maximum context window for the LLM. Larger windows can tax '
+          'certain devices.',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
         Slider(
           value: maxTokens.toDouble(),
           min: 512,
@@ -87,10 +85,9 @@ class InferenceConfigurationPanel extends StatelessWidget {
         ),
         Text(
           maxTokens.toString(),
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall!
-              .copyWith(color: Colors.grey),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall!.copyWith(color: Colors.grey),
         ),
         const Divider(),
         GestureDetector(

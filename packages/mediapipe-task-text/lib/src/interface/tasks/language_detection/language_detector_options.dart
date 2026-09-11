@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:mediapipe_core/interface.dart';
+import 'package:mediapipe_flutter_core/interface.dart';
 
 /// {@template TextClassifierOptions}
 /// Configuration object for a MediaPipe text classifier.
@@ -23,7 +23,8 @@ abstract class BaseLanguageDetectorOptions extends BaseTaskOptions {
   BaseClassifierOptions get classifierOptions;
 
   @override
-  String toString() => 'LanguageDetectorOptions(baseOptions: $baseOptions, '
+  String toString() =>
+      'LanguageDetectorOptions(baseOptions: $baseOptions, '
       'classifierOptions: $classifierOptions)';
 
   @override

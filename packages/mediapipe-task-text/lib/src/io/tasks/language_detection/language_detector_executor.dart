@@ -5,9 +5,9 @@
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/io.dart';
-import 'package:mediapipe_text/src/io/third_party/mediapipe/generated/mediapipe_text_bindings.dart'
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_text/io.dart';
+import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
     as bindings;
 
 final _log = Logger('LanguageDetectorExecutor');
@@ -15,11 +15,14 @@ final _log = Logger('LanguageDetectorExecutor');
 /// Executes MediaPipe's "detect language" task.
 ///
 /// {@macro TaskExecutor}
-class LanguageDetectorExecutor extends TaskExecutor<
-    bindings.LanguageDetectorOptions,
-    LanguageDetectorOptions,
-    bindings.LanguageDetectorResult,
-    LanguageDetectorResult> {
+class LanguageDetectorExecutor
+    extends
+        TaskExecutor<
+          bindings.LanguageDetectorOptions,
+          LanguageDetectorOptions,
+          bindings.LanguageDetectorResult,
+          LanguageDetectorResult
+        > {
   /// {@macro LanguageDetectorExecutor}
   LanguageDetectorExecutor(super.options);
 

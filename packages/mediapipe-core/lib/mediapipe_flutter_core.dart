@@ -4,11 +4,11 @@
 
 /// Package containing core dependencies for MediaPipe's text, vision, and
 /// audio-based tasks.
-library mediapipe_core;
+library;
 
 export 'src/extensions.dart';
 export 'src/ffi_utils.dart';
 export 'src/interface/containers.dart' show EmbeddingType;
-export 'universal_mediapipe_core.dart'
-    if (dart.library.html) 'src/web/mediapipe_core.dart'
-    if (dart.library.io) 'src/io/mediapipe_core.dart';
+export 'universal_mediapipe_flutter_core.dart'
+    if (dart.library.html) 'src/web/mediapipe_flutter_core.dart'
+    if (dart.library.io) 'src/io/mediapipe_flutter_core.dart';

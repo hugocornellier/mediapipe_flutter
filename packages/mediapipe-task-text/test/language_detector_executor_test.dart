@@ -5,11 +5,12 @@
 // `native-assets` tag allows test runs to opt in or out of running integration
 // tests via `flutter test -x native-assets` or `flutter test -t native-assets`
 @Tags(['native-assets'])
+library;
 
 import 'dart:io' as io;
 import 'package:path/path.dart' as path;
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/io.dart';
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_text/io.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -36,8 +37,9 @@ void main() {
       );
       final LanguageDetectorResult result = executor.detect('Hello, world!');
       expect(result.predictions, isNotEmpty);
-      final LanguageDetectorResult result2 =
-          executor.detect('Hello, world, again!');
+      final LanguageDetectorResult result2 = executor.detect(
+        'Hello, world, again!',
+      );
       expect(result2.predictions, isNotEmpty);
       result.dispose();
       executor.dispose();
@@ -71,9 +73,7 @@ void main() {
       final executor = LanguageDetectorExecutor(
         LanguageDetectorOptions.fromAssetBuffer(
           modelBytes,
-          classifierOptions: ClassifierOptions(
-            categoryDenylist: ['en'],
-          ),
+          classifierOptions: ClassifierOptions(categoryDenylist: ['en']),
         ),
       );
       final LanguageDetectorResult result = executor.detect('Hello, world!');
@@ -88,9 +88,7 @@ void main() {
       final executor = LanguageDetectorExecutor(
         LanguageDetectorOptions.fromAssetBuffer(
           modelBytes,
-          classifierOptions: ClassifierOptions(
-            categoryAllowlist: ['en'],
-          ),
+          classifierOptions: ClassifierOptions(categoryAllowlist: ['en']),
         ),
       );
       final LanguageDetectorResult result = executor.detect('Hello, world!');

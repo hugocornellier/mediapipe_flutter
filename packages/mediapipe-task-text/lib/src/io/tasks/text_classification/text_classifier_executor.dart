@@ -5,9 +5,9 @@
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/io.dart';
-import 'package:mediapipe_text/src/io/third_party/mediapipe/generated/mediapipe_text_bindings.dart'
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_text/io.dart';
+import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
     as bindings;
 
 final _log = Logger('TextTaskExecutor');
@@ -17,11 +17,14 @@ final _log = Logger('TextTaskExecutor');
 ///
 /// {@macro TaskExecutor}
 /// {@endtemplate}
-class TextClassifierExecutor extends TaskExecutor<
-    bindings.TextClassifierOptions,
-    TextClassifierOptions,
-    bindings.TextClassifierResult,
-    TextClassifierResult> {
+class TextClassifierExecutor
+    extends
+        TaskExecutor<
+          bindings.TextClassifierOptions,
+          TextClassifierOptions,
+          bindings.TextClassifierResult,
+          TextClassifierResult
+        > {
   /// {macro TextClassifierExecutor}
   TextClassifierExecutor(super.options);
 

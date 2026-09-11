@@ -12,8 +12,12 @@ extension EasyOutput on Process {
 
   Future<List<String>> _process(Stream<List<int>> stream) async {
     return utf8.decoder
-        .convert((await stream.toList())
-            .fold<List<int>>([], (arr, el) => arr..addAll(el)))
+        .convert(
+          (await stream.toList()).fold<List<int>>(
+            [],
+            (arr, el) => arr..addAll(el),
+          ),
+        )
         .split('\n');
   }
 }

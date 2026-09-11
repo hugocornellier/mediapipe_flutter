@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:mediapipe_core/interface.dart';
-import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_flutter_core/interface.dart';
+import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
 
 /// {@template TextEmbedder}
 /// Utility to convert text into an embedding suitable for other MediaPipe tasks.

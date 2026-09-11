@@ -33,11 +33,9 @@ final _log = Logger('ModelLocationProvider');
 class ModelLocationProvider {
   ModelLocationProvider._({required ModelPaths modelLocations}) {
     storage = ModelStorage()
-      ..setInitialModelLocations(modelLocations).then(
-        (_) {
-          _ready.complete();
-        },
-      );
+      ..setInitialModelLocations(modelLocations).then((_) {
+        _ready.complete();
+      });
   }
   factory ModelLocationProvider.fromEnvironment() {
     return ModelLocationProvider._(
@@ -57,7 +55,8 @@ class ModelLocationProvider {
   static ModelPaths _getModelLocationsFromEnvironment() {
     final locations = <LlmModel, String>{};
     for (final model in LlmModel.values) {
-      String location = hardcodedLocations[model] ??
+      String location =
+          hardcodedLocations[model] ??
           Platform.environment[model.environmentVariableUriName] ??
           model.dartDefine;
 
@@ -154,12 +153,12 @@ class ModelLocationProvider {
     if (!_downloadControllers.containsKey(model)) {
       return (
         Future.value(downloadDestination),
-        await _downloadFile(model, url, downloadDestination)
+        await _downloadFile(model, url, downloadDestination),
       );
     }
     return (
       Future.value(downloadDestination),
-      _downloadControllers[model]!.stream
+      _downloadControllers[model]!.stream,
     );
   }
 
@@ -175,9 +174,11 @@ class ModelLocationProvider {
   ) async {
     // Prepare a place for the file to be downloaded.
     if (await storage.downloadExists(downloadDestination)) {
-      throw Exception('File exists at LLM model location in _downloadFile, '
-          'which expects to only be called when said model location is empty. '
-          'Unexpectedly occupied file location was ${location.path}');
+      throw Exception(
+        'File exists at LLM model location in _downloadFile, '
+        'which expects to only be called when said model location is empty. '
+        'Unexpectedly occupied file location was ${location.path}',
+      );
     }
     final downloadSink = await storage.create(downloadDestination);
 

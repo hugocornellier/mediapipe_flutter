@@ -7,10 +7,10 @@ import 'dart:io' as io;
 import 'dart:isolate';
 import 'package:async/async.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_core/io.dart' as core_io;
-import 'package:mediapipe_text/interface.dart';
-import 'package:mediapipe_text/io.dart';
+import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
+import 'package:mediapipe_flutter_core/io.dart' as core_io;
+import 'package:mediapipe_flutter_text/interface.dart';
+import 'package:mediapipe_flutter_text/io.dart';
 
 final _log = Logger('TextEmbedder');
 
@@ -77,13 +77,11 @@ class TextEmbedder extends BaseTextEmbedder {
 }
 
 Future<(StreamQueue<dynamic>, SendPort)> _createIsolate(
-    TextEmbedderOptions options) async {
+  TextEmbedderOptions options,
+) async {
   final p = ReceivePort();
   await Isolate.spawn(
-    (SendPort port) => _embedderService(
-      port,
-      options,
-    ),
+    (SendPort port) => _embedderService(port, options),
     p.sendPort,
   );
 
@@ -92,22 +90,21 @@ Future<(StreamQueue<dynamic>, SendPort)> _createIsolate(
   return (events, sendPort);
 }
 
-Future<void> _embedderService(
-  SendPort p,
-  TextEmbedderOptions options,
-) async {
+Future<void> _embedderService(SendPort p, TextEmbedderOptions options) async {
   final commandPort = ReceivePort();
   p.send(commandPort.sendPort);
 
   Logger.root.level = Level.FINEST;
   Logger.root.onRecord.listen((record) {
-    io.stdout.writeln('${record.level.name} [${record.loggerName}]'
-        '['
-        '${record.time.hour.toString()}:'
-        '${record.time.minute.toString().padLeft(2, "0")}:'
-        '${record.time.second.toString().padLeft(2, "0")}.'
-        '${record.time.millisecond.toString().padRight(3, "0")}'
-        '] ${record.message}');
+    io.stdout.writeln(
+      '${record.level.name} [${record.loggerName}]'
+      '['
+      '${record.time.hour.toString()}:'
+      '${record.time.minute.toString().padLeft(2, "0")}:'
+      '${record.time.second.toString().padLeft(2, "0")}.'
+      '${record.time.millisecond.toString().padRight(3, "0")}'
+      '] ${record.message}',
+    );
   });
 
   final executor = TextEmbedderExecutor(options);
@@ -144,11 +141,11 @@ class _EmbedderTask {
   });
 
   factory _EmbedderTask.embed(String text) => _EmbedderTask._(
-        type: _EmbedderTaskType._embed,
-        text: text,
-        a: null,
-        b: null,
-      );
+    type: _EmbedderTaskType._embed,
+    text: text,
+    a: null,
+    b: null,
+  );
 
   factory _EmbedderTask.cosineSimilarity(Embedding a, Embedding b) =>
       _EmbedderTask._(

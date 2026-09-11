@@ -41,8 +41,8 @@ String? toDartString(Pointer<Char> val) {
 ///  * [toDartString]
 List<String?> toDartStrings(Pointer<Pointer<Char>> val, [int? length]) =>
     length != null
-        ? _toDartStringsWithCount(val, length)
-        : _toStartStringsUntilNull(val);
+    ? _toDartStringsWithCount(val, length)
+    : _toStartStringsUntilNull(val);
 
 List<String?> _toStartStringsUntilNull(Pointer<Pointer<Char>> val) {
   final dartStrings = <String?>[];

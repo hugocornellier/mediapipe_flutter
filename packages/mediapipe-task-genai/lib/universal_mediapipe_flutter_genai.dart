@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:mediapipe_genai/interface.dart';
+import 'package:mediapipe_flutter_genai/interface.dart';
 
 /// {@macro LlmInferenceEngine}
 class LlmInferenceEngine extends BaseLlmInferenceEngine {
@@ -33,8 +33,7 @@ class LlmInferenceOptions extends BaseLlmInferenceOptions {
     required double temperature,
     required int topK,
     int? randomSeed,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 
   /// {@template LLmInferenceOptions.gpu}
   /// {@macro LlmInferenceOptions}
@@ -49,8 +48,7 @@ class LlmInferenceOptions extends BaseLlmInferenceOptions {
     required int topK,
     int decodeStepsPerSync = 3,
     int? randomSeed,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 
   @override
   String get modelPath => throw UnimplementedError();

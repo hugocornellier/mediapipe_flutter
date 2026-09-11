@@ -8,7 +8,7 @@ import 'package:example/models/models.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_genai/mediapipe_genai.dart';
+import 'package:mediapipe_flutter_genai/mediapipe_flutter_genai.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 
 part 'bloc.freezed.dart';
@@ -18,26 +18,24 @@ final _log = Logger('TranscriptBloc');
 
 class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
   TranscriptBloc({required this.engineBuilder})
-      : modelProvider = ModelLocationProvider.fromEnvironment(),
-        super(TranscriptState.initial()) {
-    on<TranscriptEvent>(
-      (event, emit) {
-        event.map(
-          addMessage: (e) => _addMessage(e, emit),
-          extendMessage: (e) => _extendMessage(e, emit),
-          checkForModel: (e) => _checkForModel(e, emit),
-          completeResponse: (e) => _completeResponse(e, emit),
-          downloadModel: (e) => _downloadModel(e, emit),
-          deleteModel: (e) => _deleteModel(e, emit),
-          setPercentDownloaded: (e) => _setPercentDownloaded(e, emit),
-          updateTemperature: (e) => _updateTemperature(e, emit),
-          updateTopK: (e) => _updateTopK(e, emit),
-          updateMaxTokens: (e) => _updateMaxTokens(e, emit),
-          initEngine: (e) => _initEngine(e, emit),
-          initializeModelInfo: (e) => _initializeModelInfo(e, emit),
-        );
-      },
-    );
+    : modelProvider = ModelLocationProvider.fromEnvironment(),
+      super(TranscriptState.initial()) {
+    on<TranscriptEvent>((event, emit) {
+      event.map(
+        addMessage: (e) => _addMessage(e, emit),
+        extendMessage: (e) => _extendMessage(e, emit),
+        checkForModel: (e) => _checkForModel(e, emit),
+        completeResponse: (e) => _completeResponse(e, emit),
+        downloadModel: (e) => _downloadModel(e, emit),
+        deleteModel: (e) => _deleteModel(e, emit),
+        setPercentDownloaded: (e) => _setPercentDownloaded(e, emit),
+        updateTemperature: (e) => _updateTemperature(e, emit),
+        updateTopK: (e) => _updateTopK(e, emit),
+        updateMaxTokens: (e) => _updateMaxTokens(e, emit),
+        initEngine: (e) => _initEngine(e, emit),
+        initializeModelInfo: (e) => _initializeModelInfo(e, emit),
+      );
+    });
     final cacheDirFuture = path_provider.getApplicationCacheDirectory();
     modelProvider.ready.then((_) async {
       cacheDir = (await cacheDirFuture).absolute.path;
@@ -149,19 +147,19 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
     }
     final options = switch (event.model.hardware) {
       Hardware.gpu => LlmInferenceOptions.gpu(
-          modelPath: modelPath,
-          maxTokens: state.maxTokens,
-          temperature: state.temperature,
-          topK: state.topK,
-          sequenceBatchSize: state.sequenceBatchSize,
-        ),
+        modelPath: modelPath,
+        maxTokens: state.maxTokens,
+        temperature: state.temperature,
+        topK: state.topK,
+        sequenceBatchSize: state.sequenceBatchSize,
+      ),
       Hardware.cpu => LlmInferenceOptions.cpu(
-          modelPath: modelPath,
-          cacheDir: cacheDir,
-          maxTokens: state.maxTokens,
-          temperature: state.temperature,
-          topK: state.topK,
-        ),
+        modelPath: modelPath,
+        cacheDir: cacheDir,
+        maxTokens: state.maxTokens,
+        temperature: state.temperature,
+        topK: state.topK,
+      ),
     };
     _log.fine('Initializing inference engine with $options');
     final engine = engineBuilder(options);
@@ -190,8 +188,8 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
     try {
       // Request the model download and, once a string value is returned,
       // mark that the model is available and that the download is complete.
-      (modelLocationFuture, downloadStream) =
-          await modelProvider.getModelLocation(modelToDownload);
+      (modelLocationFuture, downloadStream) = await modelProvider
+          .getModelLocation(modelToDownload);
     } on Exception catch (e, s) {
       _log.severe('Error: $e');
       _log.severe('Stack trace: $s');
@@ -242,12 +240,10 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
 
   AddMessage? _queuedMessageForEngine;
 
-  Future<void> _sendMessageToLlm(
-    AddMessage event,
-    Emit emit,
-  ) async {
-    final formattedChatHistory =
-        _formatChatHistoryForLlm(state.transcript[event.model]!);
+  Future<void> _sendMessageToLlm(AddMessage event, Emit emit) async {
+    final formattedChatHistory = _formatChatHistoryForLlm(
+      state.transcript[event.model]!,
+    );
     final responseStream = state.engine!.generateResponse(formattedChatHistory);
 
     // Add a blank response for the LLM into which we can write its answer.
@@ -286,14 +282,14 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
   }
 
   void _extendMessage(ExtendMessage event, Emit emit) => emit(
-        state.extendMessage(
-          event.chunk,
-          model: event.model,
-          index: event.index,
-          first: event.first,
-          last: event.last,
-        ),
-      );
+    state.extendMessage(
+      event.chunk,
+      model: event.model,
+      index: event.index,
+      first: event.first,
+      last: event.last,
+    ),
+  );
 
   static const _begin = '<begin_transmission>';
   static const _end = '<end_transmission>';
@@ -306,7 +302,8 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
 
     final formattedHistory = transcript
         .map<String>(
-          (message) => '$_begin\n'
+          (message) =>
+              '$_begin\n'
               '${message.origin.transcriptName}: ${message.body}\n'
               '$_end\n',
         )
@@ -402,8 +399,10 @@ class TranscriptState with _$TranscriptState {
     final newTranscript = _copyTranscript();
     assert(() {
       if (newTranscript[model]!.length < index + 1) {
-        throw Exception('Tried to add to index $index, but length is '
-            'only ${newTranscript[model]!.length} for $model');
+        throw Exception(
+          'Tried to add to index $index, but length is '
+          'only ${newTranscript[model]!.length} for $model',
+        );
       }
       return true;
     }());
@@ -417,8 +416,9 @@ class TranscriptState with _$TranscriptState {
 
   TranscriptState completeMessage(LlmModel model) {
     final newTranscript = _copyTranscript();
-    newTranscript[model]!.last =
-        newTranscript[model]!.last.copyWith(isComplete: true);
+    newTranscript[model]!.last = newTranscript[model]!.last.copyWith(
+      isComplete: true,
+    );
     return copyWith(transcript: newTranscript);
   }
 }
@@ -439,7 +439,9 @@ class TranscriptEvent with _$TranscriptEvent {
   const factory TranscriptEvent.updateTopK(int value) = UpdateTopK;
   const factory TranscriptEvent.updateMaxTokens(int value) = UpdateMaxTokens;
   const factory TranscriptEvent.addMessage(
-      ChatMessage message, LlmModel model) = AddMessage;
+    ChatMessage message,
+    LlmModel model,
+  ) = AddMessage;
   const factory TranscriptEvent.extendMessage({
     required String chunk,
     required int index,
@@ -465,9 +467,7 @@ extension on String {
     String val = sanitizeBeginning(
       invalidSubstrings..addAll(first ? firstOrLast : []),
     );
-    return val.sanitizeEnd(
-      invalidSubstrings..addAll(last ? firstOrLast : []),
-    );
+    return val.sanitizeEnd(invalidSubstrings..addAll(last ? firstOrLast : []));
   }
 
   String sanitizeBeginning(List<String> invalidSubstrings) {

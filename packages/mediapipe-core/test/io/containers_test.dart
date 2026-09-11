@@ -4,11 +4,11 @@
 
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/src/io/mediapipe_core.dart';
+import 'package:mediapipe_flutter_core/src/io/mediapipe_flutter_core.dart';
 import 'package:test/test.dart';
-import 'package:mediapipe_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
+import 'package:mediapipe_flutter_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
     as core_bindings;
-import 'package:mediapipe_core/src/io/test_utils.dart';
+import 'package:mediapipe_flutter_core/src/io/test_utils.dart';
 
 void main() {
   group('Category.native should', () {

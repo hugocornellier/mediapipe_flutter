@@ -4,7 +4,7 @@
 
 import 'dart:typed_data';
 
-import 'package:mediapipe_core/interface.dart';
+import 'package:mediapipe_flutter_core/interface.dart';
 
 /// {@macro ClassifierResult}
 class ClassifierResult extends BaseClassifierResult {
@@ -180,10 +180,7 @@ class ClassifierOptions extends BaseClassifierOptions {
 /// {@macro EmbedderOptions}
 class EmbedderOptions extends BaseEmbedderOptions {
   /// {@macro EmbedderOptions}
-  const EmbedderOptions({
-    bool l2Normalize = false,
-    bool quantize = false,
-  });
+  const EmbedderOptions({bool l2Normalize = false, bool quantize = false});
 
   @override
   bool get l2Normalize => throw UnimplementedError();

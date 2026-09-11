@@ -6,8 +6,8 @@ import 'dart:ffi';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:test/test.dart';
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
+import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_flutter_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
     as bindings;
 
 void main() {
@@ -31,8 +31,11 @@ void main() {
 
     test('represent a quantized embedding pointer correctly', () {
       final ptr = malloc<bindings.Embedding>();
-      ptr.ref.quantized_embedding =
-          Uint8List.fromList([3, 2, 1]).copyToNative();
+      ptr.ref.quantized_embedding = Uint8List.fromList([
+        3,
+        2,
+        1,
+      ]).copyToNative();
       ptr.ref.values_count = 3;
       ptr.ref.head_index = 999;
       ptr.ref.head_name = 'Tail Name'.copyToNative();
