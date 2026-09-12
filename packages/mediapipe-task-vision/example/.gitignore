@@ -31,6 +31,7 @@ migrate_working_dir/
 .pub-cache/
 /assets/*.tflite
 /assets/*.task
+/assets/fixtures/
 .pub/
 /build/
 /coverage/
