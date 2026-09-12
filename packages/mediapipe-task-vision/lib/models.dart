@@ -16,3 +16,12 @@ const faceLandmarkerUrl =
 /// SHA-256 of [faceLandmarkerUrl].
 const faceLandmarkerSha256 =
     '64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff';
+
+/// Official stateful MagicTouch int8 encoder/decoder bundle, version 1.
+const interactiveSegmenterModelUrl =
+    'https://storage.googleapis.com/mediapipe-models/'
+    'interactive_segmenter_v2/magic_touch/int8/1/interactive_segmentation.task';
+
+/// SHA-256 of [interactiveSegmenterModelUrl].
+const interactiveSegmenterModelSha256 =
+    '38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03';

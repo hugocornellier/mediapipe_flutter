@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
+import 'package:mediapipe_flutter_vision/src/native_assets/interactive_segmenter_library.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
 
 import '../sdk_downloads.dart';
@@ -38,28 +39,50 @@ void main(List<String> arguments) async {
     if (selection is! List ||
         selection.isEmpty ||
         selection.any(
-          (task) => task != 'face_detector' && task != 'face_landmarker',
+          (task) =>
+              task != 'face_detector' &&
+              task != 'face_landmarker' &&
+              task != 'interactive_segmenter',
         )) {
       throw const FormatException(
         'mediapipe_flutter_vision.tasks must be a nonempty list of '
-        'face_detector and/or face_landmarker.',
+        'face_detector, face_landmarker and/or interactive_segmenter.',
       );
     }
     output.dependencies.add(input.packageRoot.resolve('sdk_downloads.dart'));
     for (final task in selection.toSet()) {
       final landmarker = task == 'face_landmarker';
+      final segmenter = task == 'interactive_segmenter';
+      if (segmenter && simulator) {
+        throw UnsupportedError(
+          'Interactive Segmenter currently supports macOS arm64 only.',
+        );
+      }
       final local = Directory.fromUri(
         input.packageRoot.resolve(
           simulator
               ? 'build/native/ios-simulator/arm64/$task/'
-              : landmarker
-              ? 'build/native/face_landmarker/'
+              : landmarker || segmenter
+              ? 'build/native/$task/'
               : 'build/native/',
         ),
       );
       final libraryName = 'lib$task.dylib';
       final File library;
-      if (simulator) {
+      if (segmenter) {
+        library =
+            usePrebuilt != true &&
+                await File.fromUri(local.uri.resolve(libraryName)).exists()
+            ? await validateInteractiveSegmenterLibrary(local)
+            : await downloadInteractiveSegmenterLibrary(
+                asset: interactiveSegmenterArchive,
+                cache: Directory.fromUri(
+                  input.outputDirectoryShared.resolve(
+                    'macos/arm64/interactive_segmenter/',
+                  ),
+                ),
+              );
+      } else if (simulator) {
         if (usePrebuilt == true ||
             !await File.fromUri(local.uri.resolve(libraryName)).exists()) {
           throw StateError(

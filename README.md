@@ -22,8 +22,16 @@ pinned upstream source and static OpenCV; no task pipeline or model is patched.
 Both tasks accept `delegate: VisionDelegate.cpu` (default) or `VisionDelegate.gpu`.
 The camera demo exposes the same choice; each task download contains both backends.
 
+The optional **MagicTouch Interactive Segmenter** uses Google's official 1.0.1
+stateful image/stroke pipeline on macOS arm64, macOS 14+, CPU. A separate image
+editor supports positive, negative and lasso strokes, undo and mask overlays.
+Run `make example_segmenter`; see the
+[segmenter guide](packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md).
+
 This is a development baseline. GenAI inference and mobile platforms still need
-validation. Public prebuilt runtimes are available for both macOS arm64 face tasks.
+validation. Public prebuilt runtimes are available for both macOS arm64 face
+tasks and the optional segmenter. The face tasks also have a validated local
+arm64 iOS simulator CPU target; simulator archives are not yet published.
 
 ## Packages and platform status
 
@@ -32,13 +40,13 @@ validation. Public prebuilt runtimes are available for both macOS arm64 face tas
 | `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
 | `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Three text tasks validated on macOS arm64 |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
-| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Face Detector + Face Landmarker: macOS arm64, CPU/Metal images/video, live mesh demo |
+| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Face tasks: macOS CPU/Metal + local iOS simulator CPU; optional macOS CPU MagicTouch editor |
 | Audio | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Placeholder, no Dart package |
 
 Text runtime artifacts exist for macOS arm64/x64, Android arm64, and iOS arm64
 devices. GenAI artifacts exist for macOS arm64, Android arm64, and iOS arm64
 devices. Artifact availability does not establish tested platform support.
-There are no iOS simulator, Windows, Linux, or web task runtimes in this baseline.
+There are no published iOS simulator, Windows, Linux, or web task runtimes in this baseline.
 Unsupported native targets fail with an explicit build error.
 
 ## Packaging
@@ -51,7 +59,7 @@ the hook's shared output directory. Partial or mismatched downloads are rejected
 Model files remain separate. Applications bundle or download only the models they
 need; runtime hooks do not fetch models. `make models` downloads the three pinned
 text models, BlazeFace short-range, and the complete Face Landmarker float16
-version-1 bundle (FaceMesh V2).
+version-1 bundle (FaceMesh V2), plus the MagicTouch int8 version-1 task bundle.
 
 Text/GenAI native libraries remain the inherited April/May 2024 Google-hosted builds.
 Their URLs and hashes are checked in, and FFI bindings are regenerated from the
@@ -64,10 +72,14 @@ Vision downloads separate 5.0 MB Face Detector and 5.5 MB Face Landmarker archiv
 The unpacked libraries are about 13.7 MB and 15.9 MB, with separate 224 KB and
 3.8 MB models. Both tasks are enabled by default; apps can select a subset with
 `hooks.user_defines.mediapipe_flutter_vision.tasks` in their pubspec. The camera
-demo selects only Face Landmarker. Both archive
+demo selects both face tasks. Both archive
 and library digests are pinned. The hook extracts the runtime using Dart and
 requires no Bazel, CMake, Ninja, or GitHub credentials. The Dart/Flutter source
 repository is public; no packages from this fork are published to pub.dev yet.
+
+Interactive Segmenter is **opt-in** with `tasks: [interactive_segmenter]`.
+Its official full runtime adds a 32.6 MB download / 100.9 MB native library;
+the separate model is 30.5 MB. Face-only apps do not download or bundle it.
 
 `make native_vision` optionally builds pinned MediaPipe v1.0.0 and static OpenCV
 4.12.0. The hook uses that verified local build when present. `make release_vision`
@@ -100,6 +112,9 @@ Other targets:
   with native build tools blocked.
 - `make example_vision`: download the model and launch the macOS live camera demo.
 - `make build_vision_camera`: build the camera demo in release mode, without opening a camera.
+- `make example_segmenter`: prepare the MagicTouch assets and open the macOS image editor.
+- `make test_segmenter_prebuilt`: validate an isolated public-download consumer
+  in debug/release and record CPU timings.
 - `make headers`: maintainer-only header import from a local MediaPipe checkout.
 - `make sdks`: legacy Google bucket discovery, requiring Google access; writes
   candidate manifests without replacing the reviewed runtime pins.

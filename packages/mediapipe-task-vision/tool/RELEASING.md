@@ -55,3 +55,25 @@ Commit the reviewed pins and documentation on the feature branch.
 CI has two independent paths: the full native source build and a fresh consumer
 of the published archive. CI artifacts from a source build are review candidates;
 uploading a CI artifact does not automatically publish a GitHub Release.
+
+## Interactive Segmenter
+
+This task uses the full pinned official 1.0.1 macOS wheel runtime because its
+modern stateful C API is not available in the public source build. See
+[the provenance and API guide](INTERACTIVE_SEGMENTER.md).
+
+1. Run `python3 -B tool/prepare_interactive_segmenter.py`. It verifies the wheel,
+   extracts the runtime and complete upstream notices, adjusts only loader and
+   signing metadata, and verifies unchanged native code/data.
+2. Review the generated archive, manifest, checksums and release notes in
+   `build/releases/interactive-segmenter-v1.0.1-1/`. Keep the original upstream
+   digests separate from prepared artifact digests.
+3. Run the Dart reference and artifact tests, the editor tests, and
+   `python3 -B tool/test_segmenter_macos.py --local-release build/releases/interactive-segmenter-v1.0.1-1`.
+4. Publish the tar.gz, `SHA256SUMS` and `manifest.json` to a new prerelease in the
+   public native repository using the generated notes. Do not upload the wheel,
+   wrapper source, models, fixtures or local validation logs.
+5. Run `python3 -B tool/test_segmenter_macos.py` against the public URL. Commit
+   the resulting validation/benchmark report and keep existing release assets
+   immutable. A rebuild requires a new tag and updated pins in
+   `sdk_downloads.dart` and `interactive_segmenter_library.dart`.
