@@ -31,7 +31,8 @@ mixin RepoFinderMixin on Command {
     argParser.addOption(
       'source',
       abbr: 's',
-      help: 'The location of google/mediapipe. Defaults to being '
+      help:
+          'The location of google/mediapipe. Defaults to being '
           'adjacent to hugocornellier/mediapipe_flutter.',
     );
   }
@@ -44,7 +45,8 @@ mixin RepoFinderMixin on Command {
     Logger.root.level = verbose ? Level.FINEST : Level.INFO;
     Logger.root.onRecord.listen((LogRecord record) {
       io.stdout.writeln(
-          '[${record.loggerName}][${record.level.name}] ${record.message}');
+        '[${record.loggerName}][${record.level.name}] ${record.message}',
+      );
     });
   }
 
@@ -113,9 +115,7 @@ mixin RepoFinderMixin on Command {
   /// operations.
   bool _isFlutterMediaPipeRoot(io.Directory dir) {
     return io.File(
-      path.joinAll(
-        [dir.absolute.path, sentinelFileName],
-      ),
+      path.joinAll([dir.absolute.path, sentinelFileName]),
     ).existsSync();
   }
 

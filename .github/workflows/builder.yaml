@@ -1,36 +1,35 @@
-name: builder
+name: Dart tooling
 
-# Declare default permissions as read only.
-permissions: read-all
+permissions:
+  contents: read
 
 on:
   pull_request:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  build:
+  tooling:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tool/builder
-    strategy:
-      fail-fast: false
-      matrix:
-        sdk: [stable]
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: ${{ matrix.sdk }}
-
-      - run: dart pub get
-
-      - run: dart analyze --fatal-infos
-
-      - run: dart format --output=none --set-exit-if-changed .
-        if: ${{ matrix.sdk == 'stable' }}
-
-      # Ensure the tool can run without errors.
-      - run: dart bin/main.dart -h
+          sdk: '3.12.2'
+      - name: Test shared types and download integrity
+        working-directory: packages/mediapipe-core
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+          dart format --output=none --set-exit-if-changed .
+          dart test --reporter expanded
+      - name: Check maintainer tools
+        working-directory: tool/builder
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+          dart format --output=none --set-exit-if-changed .
+          dart bin/main.dart -h

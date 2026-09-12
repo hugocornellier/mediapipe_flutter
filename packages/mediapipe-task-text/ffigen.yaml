@@ -3,6 +3,8 @@ description: "Bindings for MediaPipe structs for text-related tasks"
 output:
   bindings: "lib/src/io/third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart"
 headers:
+  include-directives:
+    - "**/mediapipe/tasks/c/**.h"
   entry-points:
     - "third_party/mediapipe/tasks/c/**.h"
 import:

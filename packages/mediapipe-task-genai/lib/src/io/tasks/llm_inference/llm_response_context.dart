@@ -14,10 +14,10 @@ final _log = Logger('LlmResponseContext');
 /// {@macro LlmResponseContext}
 class LlmResponseContext extends BaseLlmResponseContext with IOTaskResult {
   /// {@macro LlmResponseContext.fake}
-  LlmResponseContext(
-      {required List<String> responseArray, required bool isDone})
-      : _responseArray = responseArray,
-        _isDone = isDone;
+  LlmResponseContext({
+    required List<String> this._responseArray,
+    required bool this._isDone,
+  });
 
   /// {@template LlmResponseContext.native}
   /// Initializes a [LlmResponseContext] instance as a wrapper around native
@@ -35,9 +35,7 @@ class LlmResponseContext extends BaseLlmResponseContext with IOTaskResult {
   List<String> get responseArray => _responseArray ??= _getResponseArray();
   List<String> _getResponseArray() {
     if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'No native memory for LlmResponseContext.responseArray',
-      );
+      throw Exception('No native memory for LlmResponseContext.responseArray');
     }
     // Should be able to be removed after b/339661277
     if (_pointer!.ref.response_array == nullptr) {
@@ -54,9 +52,7 @@ class LlmResponseContext extends BaseLlmResponseContext with IOTaskResult {
   bool get isDone => _isDone ??= _getIsDone();
   bool _getIsDone() {
     if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'No native memory for LlmResponseContext.isDone',
-      );
+      throw Exception('No native memory for LlmResponseContext.isDone');
     }
     return _pointer!.ref.done;
   }

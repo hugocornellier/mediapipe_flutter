@@ -6,6 +6,8 @@ output:
     output: "package:mediapipe_flutter_core/generated/core_symbols.yaml"
     import-path: "package:mediapipe_flutter_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart"
 headers:
+  include-directives:
+    - "**/mediapipe/tasks/c/**.h"
   entry-points:
     - "third_party/mediapipe/tasks/c/**.h"
 preamble: |

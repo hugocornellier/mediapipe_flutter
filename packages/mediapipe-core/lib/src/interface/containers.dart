@@ -31,7 +31,8 @@ abstract class BaseCategory extends Equatable {
   String? get displayName;
 
   @override
-  String toString() => 'Category(index=$index, score=$score, '
+  String toString() =>
+      'Category(index=$index, score=$score, '
       'categoryName=$categoryName, displayName=$displayName)';
 
   @override
@@ -87,9 +88,9 @@ enum EmbeddingType {
 
   /// Returns the opposite type.
   EmbeddingType get opposite => switch (this) {
-        EmbeddingType.float => EmbeddingType.quantized,
-        EmbeddingType.quantized => EmbeddingType.float,
-      };
+    EmbeddingType.float => EmbeddingType.quantized,
+    EmbeddingType.quantized => EmbeddingType.float,
+  };
 }
 
 /// {@template Embedding}
@@ -138,9 +139,9 @@ abstract class BaseEmbedding extends Equatable {
 
   @override
   List<Object?> get props => [
-        quantizedEmbedding,
-        floatEmbedding,
-        headIndex,
-        headName,
-      ];
+    quantizedEmbedding,
+    floatEmbedding,
+    headIndex,
+    headName,
+  ];
 }

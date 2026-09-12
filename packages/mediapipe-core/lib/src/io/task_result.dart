@@ -14,9 +14,8 @@ mixin IOTaskResult {}
 /// {@macro ClassifierResult}
 abstract class ClassifierResult extends BaseClassifierResult with IOTaskResult {
   /// {@macro ClassifierResult.fake}
-  ClassifierResult({required Iterable<Classifications> classifications})
-      : _classifications = classifications,
-        _pointer = null;
+  ClassifierResult({required Iterable<Classifications> this._classifications})
+    : _pointer = null;
 
   final Pointer<bindings.ClassificationResult>? _pointer;
 
@@ -32,9 +31,7 @@ abstract class ClassifierResult extends BaseClassifierResult with IOTaskResult {
   /// memory has not yet been read.
   Iterable<Classifications> _getClassifications() {
     if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'No native memory for ClassifierResult.classifications',
-      );
+      throw Exception('No native memory for ClassifierResult.classifications');
     }
     return Classifications.fromNativeArray(
       _pointer!.ref.classifications,
@@ -48,19 +45,16 @@ abstract class TimestampedClassifierResult extends ClassifierResult
     with TimestampedResult {
   /// {@macro TimestampedClassifierResult}
   TimestampedClassifierResult({
-    required Iterable<Classifications> classifications,
-    required Duration? timestamp,
-  })  : _timestamp = timestamp,
-        super(classifications: classifications);
+    required super.classifications,
+    required this._timestamp,
+  });
 
   Duration? _timestamp;
   @override
   Duration? get timestamp => _timestamp ??= _getTimestamp();
   Duration? _getTimestamp() {
     if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'No native memory for ClassifierResult.timestamp',
-      );
+      throw Exception('No native memory for ClassifierResult.timestamp');
     }
     return _pointer!.ref.has_timestamp_ms
         ? Duration(milliseconds: _pointer.ref.timestamp_ms)
@@ -69,8 +63,9 @@ abstract class TimestampedClassifierResult extends ClassifierResult
 
   @override
   String toString() {
-    final classificationStrings =
-        classifications.map((cat) => cat.toString()).join(', ');
+    final classificationStrings = classifications
+        .map((cat) => cat.toString())
+        .join(', ');
     return '$runtimeType(classifications=[$classificationStrings], '
         'timestamp=$timestamp)';
   }

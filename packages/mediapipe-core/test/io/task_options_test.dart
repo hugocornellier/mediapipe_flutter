@@ -85,20 +85,19 @@ void main() {
         expect(ptr.ref.score_threshold, greaterThan(0.8999));
         expect(ptr.ref.score_threshold, lessThan(0.90001));
         expect(ptr.ref.category_allowlist_count, 3);
-        expect(
-          ptr.ref.category_allowlist.toDartStrings(
-            3,
-          ),
-          ['good', 'great', 'best'],
-        );
+        expect(ptr.ref.category_allowlist.toDartStrings(3), [
+          'good',
+          'great',
+          'best',
+        ]);
 
         expect(ptr.ref.category_denylist_count, 4);
-        expect(
-          ptr.ref.category_denylist.toDartStrings(
-            4,
-          ),
-          ['bad', 'terrible', 'worst', 'honestly come on'],
-        );
+        expect(ptr.ref.category_denylist.toDartStrings(4), [
+          'bad',
+          'terrible',
+          'worst',
+          'honestly come on',
+        ]);
       });
     });
   });

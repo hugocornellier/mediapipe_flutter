@@ -24,25 +24,25 @@ class ChatMessage with _$ChatMessage {
 
   factory ChatMessage.origin(String body, MessageOrigin origin) =>
       origin == MessageOrigin.user
-          ? ChatMessage.user(body)
-          : ChatMessage.llm(body);
+      ? ChatMessage.user(body)
+      : ChatMessage.llm(body);
 
   factory ChatMessage.llm(String body, {int? cursorPosition}) => ChatMessage(
-        // Sometimes the LLM starts a response with multiple empty newlines
-        body: body,
-        origin: MessageOrigin.llm,
-        cursorPosition: cursorPosition ?? 0,
-        isComplete: false,
-        id: const Uuid().v4(),
-      );
+    // Sometimes the LLM starts a response with multiple empty newlines
+    body: body,
+    origin: MessageOrigin.llm,
+    cursorPosition: cursorPosition ?? 0,
+    isComplete: false,
+    id: const Uuid().v4(),
+  );
 
   factory ChatMessage.user(String body) => ChatMessage(
-        body: body,
-        origin: MessageOrigin.user,
-        cursorPosition: body.length,
-        isComplete: true,
-        id: const Uuid().v4(),
-      );
+    body: body,
+    origin: MessageOrigin.user,
+    cursorPosition: body.length,
+    isComplete: true,
+    id: const Uuid().v4(),
+  );
 
   ChatMessage complete() {
     assert(() {
@@ -70,25 +70,24 @@ enum MessageOrigin {
   llm;
 
   bool get isUser => switch (this) {
-        MessageOrigin.user => true,
-        MessageOrigin.llm => false,
-      };
+    MessageOrigin.user => true,
+    MessageOrigin.llm => false,
+  };
 
   bool get isLlm => switch (this) {
-        MessageOrigin.user => false,
-        MessageOrigin.llm => true,
-      };
+    MessageOrigin.user => false,
+    MessageOrigin.llm => true,
+  };
 
   String get transcriptName => switch (this) {
-        MessageOrigin.user => 'USER',
-        MessageOrigin.llm => 'LLM',
-      };
+    MessageOrigin.user => 'USER',
+    MessageOrigin.llm => 'LLM',
+  };
 
-  Alignment alignmentFromTextDirection(TextDirection textDirection) =>
-      switch (textDirection) {
-        TextDirection.ltr =>
-          isUser ? Alignment.centerRight : Alignment.centerLeft,
-        TextDirection.rtl =>
-          isUser ? Alignment.centerLeft : Alignment.centerRight,
-      };
+  Alignment alignmentFromTextDirection(
+    TextDirection textDirection,
+  ) => switch (textDirection) {
+    TextDirection.ltr => isUser ? Alignment.centerRight : Alignment.centerLeft,
+    TextDirection.rtl => isUser ? Alignment.centerLeft : Alignment.centerRight,
+  };
 }

@@ -1,193 +1,75 @@
 # MediaPipe Text for Flutter
 
-This package is now `mediapipe_flutter_text`, part of the private
-[mediapipe_flutter](../../README.md) development fork. Use the local package paths
-in this checkout. The upstream setup and API examples below have not yet been
-revalidated with modern native SDKs; the renamed package is not on pub.dev.
+`mediapipe_flutter_text` provides text classification, embedding, and language
+detection through MediaPipe's native task pipelines. It is part of the private
+[mediapipe_flutter](../../README.md) fork and is not published to pub.dev.
 
+## Baseline and platforms
 
-A Flutter plugin to use the MediaPipe Text API, which contains multiple text-based Mediapipe tasks.
+Use Flutter 3.44.8 stable / Dart 3.12.2. Native libraries download automatically
+during builds, with caching and SHA-256 verification. No experimental flags are
+needed.
 
-To learn more about MediaPipe, please visit the [MediaPipe website](https://developers.google.com/mediapipe)
+All three tasks have executor and public API inference tests on macOS arm64.
+Artifacts also exist for macOS x64, Android arm64, and iOS arm64 devices, but
+those targets have not been revalidated. iOS simulators, Windows, Linux, and web
+have no task runtime here.
 
-## Getting Started
+The native libraries are the pinned 2024 upstream builds. Updating build tooling
+has not changed the MediaPipe runtime or models.
 
-To get started with MediaPipe, please [see the documentation](https://developers.google.com/mediapipe/solutions/guide).
+## Models and local dependencies
 
-## Supported Tasks
+Use the local dependencies in `example/pubspec.yaml`. There is no pub.dev release
+of these renamed packages yet.
 
-<table>
-    <tr>
-        <th>Task</th>
-        <th>Android</th>
-        <th>iOS</th>
-        <th>Web</th>
-        <th>Windows</th>
-        <th>macOS</th>
-        <th>Linux</th>
-    </tr>
-    <tr>
-        <td>Classification</td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-    </tr>
-    <tr>
-        <td>Embedding</td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-    </tr>
-    <tr>
-        <td>Language Detection</td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-        <td align="center"><img height="16" width="16" src="../../assets/yes.png" /></td>
-        <td align="center"><img height="16" width="16" src="../../assets/no.png"/></td>
-    </tr>
-</table>
+Applications supply model files separately, either as Flutter assets or as local
+files. Include only the models your application uses. From the repository root,
+`make get models` installs the dependencies and downloads the pinned models used
+by the tests and example:
+
+- [BERT classifier, version 1](https://storage.googleapis.com/mediapipe-models/text_classifier/bert_classifier/float32/1/bert_classifier.tflite)
+- [Language detector, version 1](https://storage.googleapis.com/mediapipe-models/language_detector/language_detector/float32/1/language_detector.tflite)
+- [Universal Sentence Encoder, version 1](https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/1/universal_sentence_encoder.tflite)
+
+Declare bundled models under `flutter.assets` in the application's pubspec, as
+the example does. A model's Flutter asset key is not a filesystem path: load its
+bytes and use `fromAssetBuffer`, or pass a real file path to `fromAssetPath`.
 
 ## Usage
 
-To get started with this plugin, you must be on the `master` channel.
-Second, you will need to opt-in to the `native-assets` experiment,
-using the `--enable-experiment=native-assets` flag whenever you run any commands
-using the `$ dart` command line tool.
-
-To enable this globally in Flutter, run:
-
-```sh
-$ flutter config --enable-native-assets
-```
-
-To disable this globally in Flutter, run:
-
-```sh
-$ flutter config --no-enable-native-assets
-```
-
-### Add dependencies
-
-Add `mediapipe_flutter_text` and `mediapipe_flutter_core` to your `pubspec.yaml` file:
-
-```
-dependencies:
-  flutter:
-    sdk: flutter
-  mediapipe_flutter_core: latest
-  mediapipe_flutter_text: latest
-```
-
-### Add tflite models
-
-Add the necessary models to your `assets` directory for each task you
-intend to use:
-
-```
-flutter:
-  assets:
-    - assets/bert_classifier.tflite
-    - assets/language_detector.tflite
-    - assets/universal_sentence_encoder.tflite
-```
-
-These models can be downloaded at the following locations:
-
-* [`bert_classifier.tflife`](https://storage.googleapis.com/mediapipe-models/text_classifier/bert_classifier/float32/latest/bert_classifier.tflite) (for Text Classification)
-* [`language_detector.tflite`](language_detector/language_detector/float32/latest/language_detector.tflite) (for Language Detection)
-* [`universal_sentence_encoder.tflife`](text_embedder/universal_sentence_encoder/float32/latest/universal_sentence_encoder.tflite) (for Text Embedding)
-
-### Initialize your task worker
-
-Text classification example:
-
 ```dart
+import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 
-// Load your text classifier tflite model into memory
-ByteData? classifierBytes = await DefaultAssetBundle.of(context)
-    .load('assets/bert_classifier.tflite');
-
-// Create a `TextClassifier`
+final data = await rootBundle.load('assets/bert_classifier.tflite');
 final classifier = TextClassifier(
   TextClassifierOptions.fromAssetBuffer(
-    classifierBytes.buffer.asUint8List(),
+    data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
   ),
 );
-
-// Classify some text!
 final result = await classifier.classify('Hello, world!');
 print(result.classifications.first);
+result.dispose();
+classifier.dispose();
 ```
 
-Language detection example:
+`LanguageDetector.detect` and `TextEmbedder.embed` follow the same pattern.
+`TextEmbedder.cosineSimilarity` compares native embeddings; keep both source
+results alive until that future completes, then dispose of them.
 
-```dart
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
+This baseline validates successful inference. Inherited isolate error propagation
+and native-memory lifecycle edge cases still need an audit before publishing.
 
-// Load your language detection tflite model into memory
-ByteData? bytes = await DefaultAssetBundle.of(context)
-    .load('assets/language_detector.tflite');
+## Example and tests
 
-// Create a `LanguageDetector`
-final detector = LanguageDetector(
-  LanguageDetectorOptions.fromAssetBuffer(
-    bytes.buffer.asUint8List(),
-  ),
-);
+From the repository root:
 
-// Language-detect some text!
-final result = await detector.detect('Hello, world!');
-print(result.predictions.first);
+```sh
+make get
+make models
+make test_text
+make example_text
 ```
 
-Text embedding example:
-
-```dart
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
-
-// Load your text embedding tflite model into memory
-ByteData? embedderBytes = await DefaultAssetBundle.of(context)
-    .load('assets/universal_sentence_encoder.tflite');
-
-// Create a `TextEmbedder`
-final embedder = TextEmbedder(
-  TextEmbedderOptions.fromAssetBuffer(
-    embedderBytes.buffer.asUint8List(),
-  ),
-);
-
-// Embed some text!
-final result = await embedder.embed('Hello, world!');
-final result2 = await embedder.embed('Hello, moon!');
-
-// Compare the results
-final similarity = embedder.cosineSimilarity(
-  result.embeddings.first,
-  result2.embeddings.first,
-);
-```
-
-## Running the example
-
-To run the example project, download the models associated with whatever tasks
-you want to explore, place them in the `packages/mediapipe_task_text/example/assets`
-directory, and run the project on one of the supported platforms.
-
-## Issues and feedback
-
-Please file mediapipe_flutter specific issues, bugs, or feature requests in our [issue tracker](https://github.com/hugocornellier/mediapipe_flutter/issues/new).
-
-Issues that are specific to Flutter can be filed in the [Flutter issue tracker](https://github.com/flutter/flutter/issues/new).
-
-To contribute a change to this plugin,
-please review our [contribution guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/CONTRIBUTING.md)
-and open a [pull request](https://github.com/hugocornellier/mediapipe_flutter/pulls).
+`make ci` runs analysis, formatting checks, tests, and a macOS example build.

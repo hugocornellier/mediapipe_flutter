@@ -12,7 +12,8 @@ part of 'chat_message.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 /// @nodoc
 mixin _$ChatMessage {
@@ -33,15 +34,17 @@ mixin _$ChatMessage {
 /// @nodoc
 abstract class $ChatMessageCopyWith<$Res> {
   factory $ChatMessageCopyWith(
-          ChatMessage value, $Res Function(ChatMessage) then) =
-      _$ChatMessageCopyWithImpl<$Res, ChatMessage>;
+    ChatMessage value,
+    $Res Function(ChatMessage) then,
+  ) = _$ChatMessageCopyWithImpl<$Res, ChatMessage>;
   @useResult
-  $Res call(
-      {String id,
-      String body,
-      MessageOrigin origin,
-      int cursorPosition,
-      bool isComplete});
+  $Res call({
+    String id,
+    String body,
+    MessageOrigin origin,
+    int cursorPosition,
+    bool isComplete,
+  });
 }
 
 /// @nodoc
@@ -63,28 +66,31 @@ class _$ChatMessageCopyWithImpl<$Res, $Val extends ChatMessage>
     Object? cursorPosition = null,
     Object? isComplete = null,
   }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      body: null == body
-          ? _value.body
-          : body // ignore: cast_nullable_to_non_nullable
-              as String,
-      origin: null == origin
-          ? _value.origin
-          : origin // ignore: cast_nullable_to_non_nullable
-              as MessageOrigin,
-      cursorPosition: null == cursorPosition
-          ? _value.cursorPosition
-          : cursorPosition // ignore: cast_nullable_to_non_nullable
-              as int,
-      isComplete: null == isComplete
-          ? _value.isComplete
-          : isComplete // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            body: null == body
+                ? _value.body
+                : body // ignore: cast_nullable_to_non_nullable
+                      as String,
+            origin: null == origin
+                ? _value.origin
+                : origin // ignore: cast_nullable_to_non_nullable
+                      as MessageOrigin,
+            cursorPosition: null == cursorPosition
+                ? _value.cursorPosition
+                : cursorPosition // ignore: cast_nullable_to_non_nullable
+                      as int,
+            isComplete: null == isComplete
+                ? _value.isComplete
+                : isComplete // ignore: cast_nullable_to_non_nullable
+                      as bool,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -92,16 +98,18 @@ class _$ChatMessageCopyWithImpl<$Res, $Val extends ChatMessage>
 abstract class _$$ChatMessageImplCopyWith<$Res>
     implements $ChatMessageCopyWith<$Res> {
   factory _$$ChatMessageImplCopyWith(
-          _$ChatMessageImpl value, $Res Function(_$ChatMessageImpl) then) =
-      __$$ChatMessageImplCopyWithImpl<$Res>;
+    _$ChatMessageImpl value,
+    $Res Function(_$ChatMessageImpl) then,
+  ) = __$$ChatMessageImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {String id,
-      String body,
-      MessageOrigin origin,
-      int cursorPosition,
-      bool isComplete});
+  $Res call({
+    String id,
+    String body,
+    MessageOrigin origin,
+    int cursorPosition,
+    bool isComplete,
+  });
 }
 
 /// @nodoc
@@ -109,8 +117,9 @@ class __$$ChatMessageImplCopyWithImpl<$Res>
     extends _$ChatMessageCopyWithImpl<$Res, _$ChatMessageImpl>
     implements _$$ChatMessageImplCopyWith<$Res> {
   __$$ChatMessageImplCopyWithImpl(
-      _$ChatMessageImpl _value, $Res Function(_$ChatMessageImpl) _then)
-      : super(_value, _then);
+    _$ChatMessageImpl _value,
+    $Res Function(_$ChatMessageImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -121,41 +130,43 @@ class __$$ChatMessageImplCopyWithImpl<$Res>
     Object? cursorPosition = null,
     Object? isComplete = null,
   }) {
-    return _then(_$ChatMessageImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      body: null == body
-          ? _value.body
-          : body // ignore: cast_nullable_to_non_nullable
-              as String,
-      origin: null == origin
-          ? _value.origin
-          : origin // ignore: cast_nullable_to_non_nullable
-              as MessageOrigin,
-      cursorPosition: null == cursorPosition
-          ? _value.cursorPosition
-          : cursorPosition // ignore: cast_nullable_to_non_nullable
-              as int,
-      isComplete: null == isComplete
-          ? _value.isComplete
-          : isComplete // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
+    return _then(
+      _$ChatMessageImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        body: null == body
+            ? _value.body
+            : body // ignore: cast_nullable_to_non_nullable
+                  as String,
+        origin: null == origin
+            ? _value.origin
+            : origin // ignore: cast_nullable_to_non_nullable
+                  as MessageOrigin,
+        cursorPosition: null == cursorPosition
+            ? _value.cursorPosition
+            : cursorPosition // ignore: cast_nullable_to_non_nullable
+                  as int,
+        isComplete: null == isComplete
+            ? _value.isComplete
+            : isComplete // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
 class _$ChatMessageImpl extends _ChatMessage {
-  const _$ChatMessageImpl(
-      {required this.id,
-      required this.body,
-      required this.origin,
-      required this.cursorPosition,
-      required this.isComplete})
-      : super._();
+  const _$ChatMessageImpl({
+    required this.id,
+    required this.body,
+    required this.origin,
+    required this.cursorPosition,
+    required this.isComplete,
+  }) : super._();
 
   @override
   final String id;
@@ -202,12 +213,13 @@ class _$ChatMessageImpl extends _ChatMessage {
 }
 
 abstract class _ChatMessage extends ChatMessage {
-  const factory _ChatMessage(
-      {required final String id,
-      required final String body,
-      required final MessageOrigin origin,
-      required final int cursorPosition,
-      required final bool isComplete}) = _$ChatMessageImpl;
+  const factory _ChatMessage({
+    required final String id,
+    required final String body,
+    required final MessageOrigin origin,
+    required final int cursorPosition,
+    required final bool isComplete,
+  }) = _$ChatMessageImpl;
   const _ChatMessage._() : super._();
 
   @override
@@ -219,7 +231,6 @@ abstract class _ChatMessage extends ChatMessage {
   @override
   int get cursorPosition;
   @override
-
   /// Always true for a user's message, but only true for the LLM once it has
   /// finished composing its reply.
   bool get isComplete;

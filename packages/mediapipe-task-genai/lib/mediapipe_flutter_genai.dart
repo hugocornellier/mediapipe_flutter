@@ -4,7 +4,7 @@
 
 /// Package containing core dependencies for MediaPipe's text, vision, and
 /// audio-based tasks.
-library mediapipe_flutter_genai;
+library;
 
 export 'universal_mediapipe_flutter_genai.dart'
     if (dart.library.html) 'src/web/mediapipe_flutter_genai.dart'

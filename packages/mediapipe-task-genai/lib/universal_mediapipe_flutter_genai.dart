@@ -33,8 +33,7 @@ class LlmInferenceOptions extends BaseLlmInferenceOptions {
     required double temperature,
     required int topK,
     int? randomSeed,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 
   /// {@template LLmInferenceOptions.gpu}
   /// {@macro LlmInferenceOptions}
@@ -49,8 +48,7 @@ class LlmInferenceOptions extends BaseLlmInferenceOptions {
     required int topK,
     int decodeStepsPerSync = 3,
     int? randomSeed,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 
   @override
   String get modelPath => throw UnimplementedError();

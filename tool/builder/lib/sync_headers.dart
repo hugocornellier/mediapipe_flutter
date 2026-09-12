@@ -66,7 +66,8 @@ class SyncHeadersCommand extends Command with RepoFinderMixin {
       'overwrite',
       abbr: 'o',
       defaultsTo: true,
-      help: 'If true, will overwrite existing header files '
+      help:
+          'If true, will overwrite existing header files '
           'at destination locations.',
     );
     addSourceOption(argParser);
@@ -97,9 +98,9 @@ class SyncHeadersCommand extends Command with RepoFinderMixin {
   Future<void> copyHeaders(Options config) async {
     final mgr = LocalProcessManager();
     for (final tup in headerPaths) {
-      final headerFile = io.File(path.joinAll(
-        [config.mediaPipeDir.absolute.path, tup.$1, tup.$3],
-      ));
+      final headerFile = io.File(
+        path.joinAll([config.mediaPipeDir.absolute.path, tup.$1, tup.$3]),
+      );
       if (!headerFile.existsSync()) {
         io.stderr.writeln(
           'Expected to find ${headerFile.path}, but '
@@ -107,17 +108,18 @@ class SyncHeadersCommand extends Command with RepoFinderMixin {
         );
         io.exit(1);
       }
-      final destinationPath = path.joinAll(
-        [config.flutterMediaPipeDir.absolute.path, tup.$2, tup.$1, tup.$3],
-      );
+      final destinationPath = path.joinAll([
+        config.flutterMediaPipeDir.absolute.path,
+        tup.$2,
+        tup.$1,
+        tup.$3,
+      ]);
       final destinationFile = io.File(destinationPath);
       if (destinationFile.existsSync() && !config.allowOverwrite) {
-        io.stdout.writeAll(
-          [
-            'Warning: Not overwriting existing file at $destinationPath\n',
-            wrapWith('Skipping ${tup.$3}.\n', [cyan]),
-          ],
-        );
+        io.stdout.writeAll([
+          'Warning: Not overwriting existing file at $destinationPath\n',
+          wrapWith('Skipping ${tup.$3}.\n', [cyan]),
+        ]);
         continue;
       }
 
@@ -129,13 +131,19 @@ class SyncHeadersCommand extends Command with RepoFinderMixin {
       int processExitCode = await process.exitCode;
       if (processExitCode != 0) {
         final processStdErr = utf8.decoder.convert(
-            (await process.stderr.toList())
-                .fold<List<int>>([], (arr, el) => arr..addAll(el)));
+          (await process.stderr.toList()).fold<List<int>>(
+            [],
+            (arr, el) => arr..addAll(el),
+          ),
+        );
         io.stderr.write(wrapWith(processStdErr, [red]));
 
         final processStdOut = utf8.decoder.convert(
-            (await process.stdout.toList())
-                .fold<List<int>>([], (arr, el) => arr..addAll(el)));
+          (await process.stdout.toList()).fold<List<int>>(
+            [],
+            (arr, el) => arr..addAll(el),
+          ),
+        );
         io.stderr.write(wrapWith(processStdOut, [red]));
         io.exit(processExitCode);
       } else {

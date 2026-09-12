@@ -39,11 +39,10 @@ class LanguageDetectorOptions extends BaseLanguageDetectorOptions
   factory LanguageDetectorOptions.fromAssetBuffer(
     Uint8List assetBuffer, {
     ClassifierOptions classifierOptions = const ClassifierOptions(),
-  }) =>
-      LanguageDetectorOptions(
-        baseOptions: BaseOptions.memory(assetBuffer),
-        classifierOptions: classifierOptions,
-      );
+  }) => LanguageDetectorOptions(
+    baseOptions: BaseOptions.memory(assetBuffer),
+    classifierOptions: classifierOptions,
+  );
 
   @override
   final BaseOptions baseOptions;

@@ -1,0 +1,34 @@
+name: mediapipe_face_camera
+description: Live macOS camera demo for the official MediaPipe Face Landmarker.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  camera: ^0.12.1
+  camera_desktop: ^1.2.1
+  mediapipe_flutter_vision:
+    path: ..
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  camera_platform_interface: ^2.13.1
+  integration_test:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/face_landmarker.task
+
+hooks:
+  user_defines:
+    mediapipe_flutter_vision:
+      prebuilt: true
+      tasks: [face_landmarker]

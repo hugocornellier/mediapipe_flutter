@@ -6,7 +6,7 @@ import 'package:example/language_detection_demo.dart';
 import 'package:example/text_classification_demo.dart';
 
 class FakeTextClassifier extends TextClassifier {
-  FakeTextClassifier(TextClassifierOptions options) : super(options);
+  FakeTextClassifier(super.options);
 
   @override
   Future<TextClassifierResult> classify(String text) {
@@ -32,21 +32,15 @@ class FakeTextClassifier extends TextClassifier {
 }
 
 class FakeLanguageDetector extends LanguageDetector {
-  FakeLanguageDetector(LanguageDetectorOptions options) : super(options);
+  FakeLanguageDetector(super.options);
 
   @override
   Future<LanguageDetectorResult> detect(String text) {
     return Future.value(
       LanguageDetectorResult(
         predictions: <LanguagePrediction>[
-          LanguagePrediction(
-            languageCode: 'es',
-            probability: 0.99,
-          ),
-          LanguagePrediction(
-            languageCode: 'en',
-            probability: 0.01,
-          ),
+          LanguagePrediction(languageCode: 'es', probability: 0.99),
+          LanguagePrediction(languageCode: 'en', probability: 0.01),
         ],
       ),
     );

@@ -23,7 +23,8 @@ abstract class BaseTextClassifierOptions extends BaseTaskOptions {
   BaseClassifierOptions get classifierOptions;
 
   @override
-  String toString() => 'TextClassifierOptions(baseOptions: $baseOptions, '
+  String toString() =>
+      'TextClassifierOptions(baseOptions: $baseOptions, '
       'classifierOptions: $classifierOptions)';
 
   @override

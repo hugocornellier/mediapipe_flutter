@@ -17,15 +17,11 @@ import 'third_party/mediapipe/generated/mediapipe_common_bindings.dart'
 class Category extends BaseCategory {
   /// {@macro Category.fake}
   Category({
-    required int index,
-    required double score,
-    required String? categoryName,
-    required String? displayName,
-  })  : _index = index,
-        _score = score,
-        _categoryName = categoryName,
-        _displayName = displayName,
-        _pointer = null;
+    required int this._index,
+    required double this._score,
+    required this._categoryName,
+    required this._displayName,
+  }) : _pointer = null;
 
   /// Instantiates a [Category] object as a wrapper around native memory.
   ///
@@ -105,13 +101,10 @@ class Category extends BaseCategory {
 class Classifications extends BaseClassifications {
   /// {@macro Classifications.fake}
   Classifications({
-    required Iterable<Category> categories,
-    required int headIndex,
-    required String? headName,
-  })  : _categories = categories,
-        _headIndex = headIndex,
-        _headName = headName,
-        _pointer = null;
+    required Iterable<Category> this._categories,
+    required int this._headIndex,
+    required this._headName,
+  }) : _pointer = null;
 
   /// Instatiates a [Classifications] object as a wrapper around native memory.
   ///
@@ -180,34 +173,30 @@ class Embedding extends BaseEmbedding {
   /// {@macro Embedding.fakeQuantized}
   Embedding.quantized(
     Uint8List quantizedEmbedding, {
-    required int headIndex,
-    String? headName,
-  })  : _floatEmbedding = null,
-        _headIndex = headIndex,
-        _headName = headName,
-        _quantizedEmbedding = quantizedEmbedding,
-        _pointer = null,
-        type = EmbeddingType.quantized;
+    required int this._headIndex,
+    this._headName,
+  }) : _floatEmbedding = null,
+       _quantizedEmbedding = quantizedEmbedding,
+       _pointer = null,
+       type = EmbeddingType.quantized;
 
   /// {@macro Embedding.fakeFloat}
   Embedding.float(
     Float32List floatEmbedding, {
-    required int headIndex,
-    String? headName,
-  })  : _floatEmbedding = floatEmbedding,
-        _headIndex = headIndex,
-        _headName = headName,
-        _quantizedEmbedding = null,
-        _pointer = null,
-        type = EmbeddingType.float;
+    required int this._headIndex,
+    this._headName,
+  }) : _floatEmbedding = floatEmbedding,
+       _quantizedEmbedding = null,
+       _pointer = null,
+       type = EmbeddingType.float;
 
   /// Instatiates a [Classifications] object as a wrapper around native memory.
   ///
   /// {@macro Container.memoryManagement}
   Embedding.native(this._pointer)
-      : type = _pointer!.ref.float_embedding.isNotNullAndIsNotNullPointer
-            ? EmbeddingType.float
-            : EmbeddingType.quantized;
+    : type = _pointer!.ref.float_embedding.isNotNullAndIsNotNullPointer
+          ? EmbeddingType.float
+          : EmbeddingType.quantized;
 
   final Pointer<bindings.Embedding>? _pointer;
 
@@ -222,9 +211,7 @@ class Embedding extends BaseEmbedding {
   int get headIndex => _headIndex ??= _getHeadIndex();
   int _getHeadIndex() {
     if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'Could not determine value for Embedding.headIndex',
-      );
+      throw Exception('Could not determine value for Embedding.headIndex');
     }
     return _pointer!.ref.head_index;
   }
@@ -257,8 +244,9 @@ class Embedding extends BaseEmbedding {
       );
     }
     return _pointer!.ref.quantized_embedding.isNotNullPointer
-        ? _pointer.ref.quantized_embedding
-            .toUint8List(_pointer.ref.values_count)
+        ? _pointer.ref.quantized_embedding.toUint8List(
+            _pointer.ref.values_count,
+          )
         : null;
   }
 

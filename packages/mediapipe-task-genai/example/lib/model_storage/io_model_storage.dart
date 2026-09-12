@@ -12,8 +12,10 @@ class ModelStorage extends ModelStorageInterface {
   int binarySize(String location) {
     final file = File(location);
     if (!file.existsSync()) {
-      throw Exception('Unexpectedly asked for binary size of non-existent '
-          'file at $location');
+      throw Exception(
+        'Unexpectedly asked for binary size of non-existent '
+        'file at $location',
+      );
     }
     return file.lengthSync();
   }
@@ -24,9 +26,9 @@ class ModelStorage extends ModelStorageInterface {
 
   @override
   Future<String> urlToDownloadDestination(Uri location) async => path.join(
-        (await _getDownloadFolder()).absolute.path,
-        location.pathSegments.last,
-      );
+    (await _getDownloadFolder()).absolute.path,
+    location.pathSegments.last,
+  );
 
   Directory? _downloadFolder;
   Future<Directory> _getDownloadFolder() async {
@@ -37,8 +39,10 @@ class ModelStorage extends ModelStorageInterface {
   @override
   Future<void> abort(String location) async {
     if (!_downloadCache.containsKey(location)) {
-      throw Exception('Abort called for location $location, which is not the '
-          'site of an ongoing donwload.');
+      throw Exception(
+        'Abort called for location $location, which is not the '
+        'site of an ongoing donwload.',
+      );
     }
     final file = File(location);
     if (await file.exists()) {
@@ -51,8 +55,10 @@ class ModelStorage extends ModelStorageInterface {
   @override
   Future<void> close(String location) async {
     if (!_downloadCache.containsKey(location)) {
-      throw Exception('Abort called for location $location, which is not the '
-          'site of an ongoing donwload.');
+      throw Exception(
+        'Abort called for location $location, which is not the '
+        'site of an ongoing donwload.',
+      );
     }
     _downloadCache[location]!.close();
     _downloadCache.remove(location);
@@ -64,8 +70,10 @@ class ModelStorage extends ModelStorageInterface {
   Future<StreamSink<List<int>>> create(String location) async {
     final file = File(location);
     if (await file.exists()) {
-      throw Exception('Attempted to download on top of existing file at '
-          '$location. Delete that file before proceeding.');
+      throw Exception(
+        'Attempted to download on top of existing file at '
+        '$location. Delete that file before proceeding.',
+      );
     }
     _downloadCache[location] = file.openWrite();
     return _downloadCache[location]!;

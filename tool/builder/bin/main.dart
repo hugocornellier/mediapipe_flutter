@@ -7,13 +7,14 @@ import 'package:builder/download_model.dart';
 import 'package:builder/sdks_finder.dart';
 import 'package:builder/sync_headers.dart';
 
-final runner = CommandRunner(
-  'build',
-  'Performs build operations for hugocornellier/mediapipe_flutter that '
-      'depend on contents in this repository.',
-)
-  ..addCommand(DownloadModelCommand())
-  ..addCommand(SdksFinderCommand())
-  ..addCommand(SyncHeadersCommand());
+final runner =
+    CommandRunner(
+        'build',
+        'Performs build operations for hugocornellier/mediapipe_flutter that '
+            'depend on contents in this repository.',
+      )
+      ..addCommand(DownloadModelCommand())
+      ..addCommand(SdksFinderCommand())
+      ..addCommand(SyncHeadersCommand());
 
 void main(List<String> arguments) => runner.run(arguments);

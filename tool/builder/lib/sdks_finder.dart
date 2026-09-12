@@ -7,9 +7,9 @@ import 'dart:io' as io;
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:code_assets/code_assets.dart';
 import 'package:io/ansi.dart';
 import 'package:logging/logging.dart';
-import 'package:native_assets_cli/native_assets_cli.dart';
 import 'package:path/path.dart' as path;
 
 import 'extensions.dart';
@@ -19,6 +19,7 @@ final _log = Logger('SDKsFinder');
 
 /// Structure of flattened build locations suitable for JSON serialization.
 /// Format is:
+/// ```text
 ///   {
 ///     <os>: {
 ///       <sdk>: {
@@ -28,6 +29,7 @@ final _log = Logger('SDKsFinder');
 ///     },
 ///     ...
 ///   }
+/// ```
 typedef _FlatResults = Map<String, Map<String, Map<String, String>>>;
 
 /// Container for the three flavors of MediaPipe tasks.
@@ -38,18 +40,18 @@ enum MediaPipeSdk {
   libvision;
 
   String toPackageDir() => switch (this) {
-        MediaPipeSdk.genai => 'mediapipe-task-genai',
-        MediaPipeSdk.libaudio => 'mediapipe-task-audio',
-        MediaPipeSdk.libtext => 'mediapipe-task-text',
-        MediaPipeSdk.libvision => 'mediapipe-task-vision',
-      };
+    MediaPipeSdk.genai => 'mediapipe-task-genai',
+    MediaPipeSdk.libaudio => 'mediapipe-task-audio',
+    MediaPipeSdk.libtext => 'mediapipe-task-text',
+    MediaPipeSdk.libvision => 'mediapipe-task-vision',
+  };
 
   String binaryName() => switch (this) {
-        MediaPipeSdk.genai => 'libllm_inference_engine',
-        MediaPipeSdk.libaudio => MediaPipeSdk.libaudio.name,
-        MediaPipeSdk.libtext => MediaPipeSdk.libtext.name,
-        MediaPipeSdk.libvision => MediaPipeSdk.libvision.name,
-      };
+    MediaPipeSdk.genai => 'libllm_inference_engine',
+    MediaPipeSdk.libaudio => MediaPipeSdk.libaudio.name,
+    MediaPipeSdk.libtext => MediaPipeSdk.libtext.name,
+    MediaPipeSdk.libvision => MediaPipeSdk.libvision.name,
+  };
 }
 
 /// Scans the GCS buckets where MediaPipe SDKs are stored, identifies the latest
@@ -63,13 +65,9 @@ enum MediaPipeSdk {
 /// fully automating this portion of the MediaPipe release process, so this
 /// command helps by automating a portion of the task.
 ///
-/// The cache-busting mechanism of Flutter's native assets feature is a hash
-/// of the contents of any build dependencies. The output files of this command
-/// are included in the build dependencies (as specified by the contents of each
-/// package's `build.dart` file), so if this command generates new SDK locations
-/// in those files, Flutter's CLI will have a cache miss, will re-run
-/// `build.dart` during the build phase, and in turn will download the newest
-/// versions of the MediaPipe SDKs onto the developer's machine.
+/// Writes `sdk_downloads.candidate.dart` for review. Candidates are not consumed
+/// by build hooks. Updating the active manifest also requires matching headers,
+/// verified SHA-256 digests, and native inference validation.
 ///
 /// Operationally, [SdksFinderCommand]'s implementation involves orchestrating
 /// one [_OsFinder] instance for each supported [OS] value, which in turn
@@ -87,7 +85,7 @@ class SdksFinderCommand extends Command with RepoFinderMixin {
   }
   @override
   String description =
-      'Updates MediaPipe SDK manifest files for the current build target.';
+      'Discovers legacy MediaPipe SDK URLs and writes candidate manifests.';
 
   @override
   String name = 'sdks';
@@ -107,7 +105,7 @@ class SdksFinderCommand extends Command with RepoFinderMixin {
   @override
   Future<void> run() async {
     setUpLogging();
-    _checkGsUtil();
+    await _checkGsUtil();
     final results = _SdkLocations();
 
     for (final finder in _finders) {
@@ -117,20 +115,22 @@ class SdksFinderCommand extends Command with RepoFinderMixin {
     }
     for (final MediaPipeSdk sdk in MediaPipeSdk.values) {
       _log.info('Saving locations for ${sdk.name}');
-      _writeResults(sdk, results.toMap(sdk));
+      await _writeResults(sdk, results.toMap(sdk));
     }
   }
 
-  void _writeResults(MediaPipeSdk sdk, _FlatResults results) {
+  Future<void> _writeResults(MediaPipeSdk sdk, _FlatResults results) async {
     final file = _getOutputFile(sdk);
     _log.fine('Writing data to "${file.absolute.path}"');
     var encoder = JsonEncoder.withIndent('  ');
     file.writeAsStringSync('''// Generated file. Do not manually edit.
-// Used by the flutter toolchain (via build.dart) during compilation of any
-// Flutter app using this package.
+// Candidates only: review matching headers and SHA-256 before updating pins.
 final Map<String, Map<String, Map<String, String>>> sdkDownloadUrls = ${encoder.convert(results).replaceAll('"', "'")};
 ''');
-    io.Process.start('dart', ['format', file.absolute.path]);
+    final format = await io.Process.run('dart', ['format', file.absolute.path]);
+    if (format.exitCode != 0) {
+      throw StateError('Formatting SDK candidates failed: ${format.stderr}');
+    }
   }
 
   File _getOutputFile(MediaPipeSdk sdk) {
@@ -138,12 +138,12 @@ final Map<String, Map<String, Map<String, String>>> sdkDownloadUrls = ${encoder.
       path.joinAll([
         findFlutterMediaPipeRoot().absolute.path,
         'packages/${sdk.toPackageDir()}',
-        'sdk_downloads.dart',
+        'sdk_downloads.candidate.dart',
       ]),
     );
   }
 
-  void _checkGsUtil() async {
+  Future<void> _checkGsUtil() async {
     if (!io.Platform.isMacOS && !io.Platform.isLinux) {
       // `which` is not available on Windows, so allow the command to attempt
       // to run on Windows
@@ -192,28 +192,24 @@ class _OsFinder {
 
   /// OS-specific upload directories located immediately inside
   /// [SdksFinderCommand._bucketName].
-  static const _gcsFolderPaths = <OS, String?>{
+  static final _gcsFolderPaths = <OS, String?>{
     OS.android: 'gcp_ubuntu_flutter',
     OS.iOS: 'macos_flutter',
     OS.macOS: 'macos_flutter',
   };
 
   /// File extensions for OS-specific SDKs.
-  static const _sdkExtensions = <OS, String?>{
+  static final _sdkExtensions = <OS, String?>{
     OS.android: 'so',
     OS.iOS: 'dylib',
     OS.macOS: 'dylib',
   };
 
-  /// Folders for specific [Target] values, where a Target is an OS/architecture
+  /// Folders for specific target values, where a target is an OS/architecture
   /// combination.
-  static const targetFolders = <OS, Map<String, Architecture>>{
-    OS.android: {
-      'android_arm64': Architecture.arm64,
-    },
-    OS.iOS: {
-      'ios_arm64': Architecture.arm64,
-    },
+  static final targetFolders = <OS, Map<String, Architecture>>{
+    OS.android: {'android_arm64': Architecture.arm64},
+    OS.iOS: {'ios_arm64': Architecture.arm64},
     OS.macOS: {
       'darwin_arm64': Architecture.arm64,
       'darwin_x86_64': Architecture.x64,
@@ -264,11 +260,15 @@ class _OsFinder {
   Future<String> _getDateOfBuildNumber(String path) async {
     final foldersInBuild = await _gsUtil(path);
     if (foldersInBuild.isEmpty || foldersInBuild.length > 2) {
-      final paths =
-          foldersInBuild.map<String>((path) => ' • $path').toList().join('\n');
-      _log.warning('Unexpectedly found ${foldersInBuild.length} entries inside '
-          'build folder: $path. Expected 1 or 2, of formats "/[date]/" and '
-          'optionally "/[date]_\$folder\$". Found:\n\n$paths\n');
+      final paths = foldersInBuild
+          .map<String>((path) => ' • $path')
+          .toList()
+          .join('\n');
+      _log.warning(
+        'Unexpectedly found ${foldersInBuild.length} entries inside '
+        'build folder: $path. Expected 1 or 2, of formats "/[date]/" and '
+        'optionally "/[date]_\$folder\$". Found:\n\n$paths\n',
+      );
     }
     for (final folderPath in foldersInBuild) {
       if (folderPath.endsWith('/')) {
@@ -341,7 +341,8 @@ class _OsFinder {
               os: os,
               arch: targetFolders[os]![archPath]!,
               sdk: sdk,
-              fullPath: '${SdksFinderCommand._gcsPrefix}/'
+              fullPath:
+                  '${SdksFinderCommand._gcsPrefix}/'
                   '${SdksFinderCommand._bucketName}/$maybeFinalPath',
             );
           }
@@ -401,7 +402,8 @@ class _SdkLocation {
   final String fullPath;
 
   @override
-  String toString() => '_SdkLocation(os: $os, arch: $arch, sdk: $sdk, '
+  String toString() =>
+      '_SdkLocation(os: $os, arch: $arch, sdk: $sdk, '
       'fullPath: $fullPath)';
 }
 

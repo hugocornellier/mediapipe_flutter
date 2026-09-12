@@ -23,7 +23,8 @@ abstract class BaseLanguageDetectorOptions extends BaseTaskOptions {
   BaseClassifierOptions get classifierOptions;
 
   @override
-  String toString() => 'LanguageDetectorOptions(baseOptions: $baseOptions, '
+  String toString() =>
+      'LanguageDetectorOptions(baseOptions: $baseOptions, '
       'classifierOptions: $classifierOptions)';
 
   @override

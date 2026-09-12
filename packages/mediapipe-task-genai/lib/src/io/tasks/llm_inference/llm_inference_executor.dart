@@ -15,18 +15,22 @@ final _log = Logger('LlmInferenceExecutor');
 
 /// Shape of the function MediaPipe calls with each additional response chunk
 /// from the LLM.
-typedef LlmResponseCallback = Void Function(
-  Pointer<Void>,
-  Pointer<bindings.LlmResponseContext>,
-);
+typedef LlmResponseCallback =
+    Void Function(Pointer<Void>, Pointer<bindings.LlmResponseContext>);
 
 /// {@template LlmInferenceExecutor}
 /// Executes MediaPipe's inference task.
 ///
 /// {@macro TaskExecutor}
 /// {@endtemplate}
-class LlmInferenceExecutor extends TaskExecutor<bindings.LlmSessionConfig,
-    LlmInferenceOptions, bindings.LlmResponseContext, LlmResponseContext> {
+class LlmInferenceExecutor
+    extends
+        TaskExecutor<
+          bindings.LlmSessionConfig,
+          LlmInferenceOptions,
+          bindings.LlmResponseContext,
+          LlmResponseContext
+        > {
   /// {@macro LlmInferenceExecutor}
   LlmInferenceExecutor(super.options);
 
@@ -74,40 +78,39 @@ class LlmInferenceExecutor extends TaskExecutor<bindings.LlmSessionConfig,
     }());
     _responseController = StreamController<LlmResponseContext>();
     final textPtr = text.copyToNative();
-    final callback = NativeCallable<LlmResponseCallback>.listener(
-      (
-        Pointer<Void> context,
-        Pointer<bindings.LlmResponseContext> responseContext,
-      ) {
-        if (_responseController == null) {
-          // Short-circuit if the caller has cancelled this query before receiving
-          // the complete output.
-          return;
-        }
-        // Not often, but also not never, `nullptr` seems to arrive here, which
-        // breaks everything if not caught and discarded.
-        if (responseContext == nullptr) {
-          _log.warning('Discarding unexpected nullptr from PredictAsync');
-          return;
-        }
-        _responseController!.add(
-          // Ideally this would pass the raw pointer to the
-          // LlmResponseContext.native() constructor and rely on
-          // LlmResponseContext.dispose() for cleanup, but passing pointers
-          // between threads does not work.
-          LlmResponseContext(
-            responseArray: responseContext.ref.response_array
-                .toDartStrings(responseContext.ref.response_count),
-            isDone: responseContext.ref.done,
+    final callback = NativeCallable<LlmResponseCallback>.listener((
+      Pointer<Void> context,
+      Pointer<bindings.LlmResponseContext> responseContext,
+    ) {
+      if (_responseController == null) {
+        // Short-circuit if the caller has cancelled this query before receiving
+        // the complete output.
+        return;
+      }
+      // Not often, but also not never, `nullptr` seems to arrive here, which
+      // breaks everything if not caught and discarded.
+      if (responseContext == nullptr) {
+        _log.warning('Discarding unexpected nullptr from PredictAsync');
+        return;
+      }
+      _responseController!.add(
+        // Ideally this would pass the raw pointer to the
+        // LlmResponseContext.native() constructor and rely on
+        // LlmResponseContext.dispose() for cleanup, but passing pointers
+        // between threads does not work.
+        LlmResponseContext(
+          responseArray: responseContext.ref.response_array.toDartStrings(
+            responseContext.ref.response_count,
           ),
-        );
-        bindings.LlmInferenceEngine_CloseResponseContext(responseContext);
-        if (responseContext.ref.done) {
-          malloc.free(textPtr);
-          _finalizeResponse();
-        }
-      },
-    );
+          isDone: responseContext.ref.done,
+        ),
+      );
+      bindings.LlmInferenceEngine_CloseResponseContext(responseContext);
+      if (responseContext.ref.done) {
+        malloc.free(textPtr);
+        _finalizeResponse();
+      }
+    });
     bindings.LlmInferenceEngine_Session_PredictAsync(
       worker,
       nullptr,
@@ -134,6 +137,7 @@ class LlmInferenceExecutor extends TaskExecutor<bindings.LlmSessionConfig,
   }
 
   /// Releases all native resources and closes any open streams.
+  @override
   void dispose() {
     if (_worker != null) {
       bindings.LlmInferenceEngine_Session_Delete(_worker!);

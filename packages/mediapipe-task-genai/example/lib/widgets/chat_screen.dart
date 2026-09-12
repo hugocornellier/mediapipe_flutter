@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:chat_bubbles/chat_bubbles.dart';
+import 'package:chat_bubbles/chat_bubbles.dart' show BubbleSpecialThree;
 import 'package:example/bloc.dart';
 import 'package:example/models/models.dart';
 import 'package:example/widgets/widgets.dart';
@@ -83,10 +83,7 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class ChatTranscript extends StatefulWidget {
-  const ChatTranscript(
-    this.transcript, {
-    super.key,
-  });
+  const ChatTranscript(this.transcript, {super.key});
 
   final List<ChatMessage> transcript;
 
@@ -114,9 +111,7 @@ class _ChatTranscriptState extends State<ChatTranscript> {
                       width: constraints.maxWidth * 0.8,
                       key: ValueKey('message-${message.id}'),
                     )
-                  : const TypingIndicator(
-                      showIndicator: true,
-                    ),
+                  : const TypingIndicator(showIndicator: true),
             );
           },
         );

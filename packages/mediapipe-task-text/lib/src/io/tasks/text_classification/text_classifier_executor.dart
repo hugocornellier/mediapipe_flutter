@@ -17,11 +17,14 @@ final _log = Logger('TextTaskExecutor');
 ///
 /// {@macro TaskExecutor}
 /// {@endtemplate}
-class TextClassifierExecutor extends TaskExecutor<
-    bindings.TextClassifierOptions,
-    TextClassifierOptions,
-    bindings.TextClassifierResult,
-    TextClassifierResult> {
+class TextClassifierExecutor
+    extends
+        TaskExecutor<
+          bindings.TextClassifierOptions,
+          TextClassifierOptions,
+          bindings.TextClassifierResult,
+          TextClassifierResult
+        > {
   /// {macro TextClassifierExecutor}
   TextClassifierExecutor(super.options);
 

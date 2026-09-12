@@ -11,8 +11,7 @@ import '../../third_party/mediapipe/generated/mediapipe_flutter_text_bindings.da
 /// {@macro TextEmbedderResult}
 class TextEmbedderResult extends BaseEmbedderResult with IOTaskResult {
   /// {@macro TextEmbedderResult.fake}
-  TextEmbedderResult({required Iterable<Embedding> embeddings})
-      : _embeddings = embeddings;
+  TextEmbedderResult({required Iterable<Embedding> this._embeddings});
 
   /// {@template TextEmbedderResult.native}
   /// Initializes a [TextEmbedderResult] instance as a wrapper around native
@@ -30,9 +29,7 @@ class TextEmbedderResult extends BaseEmbedderResult with IOTaskResult {
   Iterable<Embedding> get embeddings => _embeddings ??= _getEmbeddings();
   Iterable<Embedding> _getEmbeddings() {
     if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'No native memory for TextEmbedderResult.embeddings',
-      );
+      throw Exception('No native memory for TextEmbedderResult.embeddings');
     }
     return Embedding.fromNativeArray(
       _pointer!.ref.embeddings,
