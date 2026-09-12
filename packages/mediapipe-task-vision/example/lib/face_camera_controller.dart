@@ -6,10 +6,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
-/// Owns camera capture and the official VIDEO-mode detector for this demo.
+/// Owns camera capture and the official VIDEO-mode Face Landmarker for this demo.
 class FaceCameraController extends ChangeNotifier {
   CameraController? _camera;
-  FaceDetector? _detector;
+  FaceLandmarker? _landmarker;
   Future<void> _operations = Future.value();
   Future<void>? _frame;
   Future<void>? _closing;
@@ -22,7 +22,7 @@ class FaceCameraController extends ChangeNotifier {
   bool running = false;
   bool changing = false;
   String? error;
-  FaceDetectorResult? result;
+  FaceLandmarkerResult? result;
   int processedFrames = 0;
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
@@ -56,11 +56,9 @@ class FaceCameraController extends ChangeNotifier {
       await _release();
       if (_closed || generation != _generation) return;
       try {
-        final data = await rootBundle.load(
-          'assets/blaze_face_short_range.tflite',
-        );
-        _detector = await FaceDetector.create(
-          FaceDetectorOptions(
+        final data = await rootBundle.load('assets/face_landmarker.task');
+        _landmarker = await FaceLandmarker.create(
+          FaceLandmarkerOptions(
             modelBytes: data.buffer.asUint8List(
               data.offsetInBytes,
               data.lengthInBytes,
@@ -156,7 +154,7 @@ class FaceCameraController extends ChangeNotifier {
             ? VisionPixelFormat.rgba
             : VisionPixelFormat.bgra,
       );
-      final detection = await _detector!.detectForVideo(
+      final detection = await _landmarker!.detectForVideo(
         frame,
         timestampMilliseconds: timestamp,
       );
@@ -207,10 +205,10 @@ class FaceCameraController extends ChangeNotifier {
       }
     }
     await _frame;
-    final detector = _detector;
-    _detector = null;
+    final landmarker = _landmarker;
+    _landmarker = null;
     try {
-      await detector?.dispose();
+      await landmarker?.dispose();
     } catch (failure) {
       error ??= _message(failure);
     }

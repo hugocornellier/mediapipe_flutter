@@ -37,4 +37,3 @@ preamble: |
   // Generated from unmodified MediaPipe v1.0.0 headers; see third_party/README.md.
 ffi-native:
   asset-id: package:mediapipe_flutter_vision/face_landmarker.dylib
-

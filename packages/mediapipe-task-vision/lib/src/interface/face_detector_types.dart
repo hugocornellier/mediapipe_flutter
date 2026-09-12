@@ -188,7 +188,7 @@ final class FaceCategory {
   /// Model category index; may be -1 when unspecified.
   final int index;
 
-  /// Detection confidence.
+  /// Model category score (detection confidence or a blendshape coefficient).
   final double score;
 
   /// Model category name, if present.

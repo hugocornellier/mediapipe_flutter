@@ -5,7 +5,7 @@ import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  testWidgets('bundled runtime detects a real portrait', (tester) async {
+  testWidgets('bundled face runtimes process a real portrait together', (tester) async {
     final model = await rootBundle.load('assets/model.tflite');
     final pixels = await rootBundle.load('assets/portrait.rgb');
     final detector = await FaceDetector.create(
@@ -23,6 +23,23 @@ void main() {
       expect(result.detections, hasLength(1));
       expect(result.detections.single.keypoints, hasLength(6));
       expect(result.detections.single.categories.single.score, greaterThan(0.9));
+      final bundle = await rootBundle.load('assets/face_landmarker.task');
+      final mesh = await FaceLandmarker.create(FaceLandmarkerOptions(
+        modelBytes: bundle.buffer.asUint8List(bundle.offsetInBytes, bundle.lengthInBytes),
+        outputFaceBlendshapes: true,
+        outputFacialTransformationMatrixes: true,
+      ));
+      try {
+        final landmarks = await mesh.detectImage(VisionImage.fromPixels(
+          pixels: pixels.buffer.asUint8List(pixels.offsetInBytes, pixels.lengthInBytes),
+          width: 301, height: 209, format: VisionPixelFormat.rgb,
+        ));
+        expect(landmarks.faceLandmarks.single, hasLength(478));
+        expect(landmarks.faceBlendshapes.single, hasLength(52));
+        expect(landmarks.facialTransformationMatrixes.single.values, hasLength(16));
+      } finally {
+        await mesh.dispose();
+      }
     } finally {
       await detector.dispose();
     }

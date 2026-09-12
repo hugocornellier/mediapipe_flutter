@@ -11,6 +11,12 @@ void main() {
     'real macOS camera supplies frames for official video inference',
     (tester) async {
       final session = FaceCameraController();
+      var maximumLandmarks = 0;
+      session.addListener(() {
+        for (final face in session.result?.faceLandmarks ?? []) {
+          if (face.length > maximumLandmarks) maximumLandmarks = face.length;
+        }
+      });
       await tester.pumpWidget(FaceCameraApp(controller: session));
       Future<void> waitFor(bool Function() ready) async {
         final timeout = Stopwatch()..start();
@@ -37,13 +43,14 @@ void main() {
       expect(session.result, isNotNull);
       expect(session.result!.imageWidth, greaterThan(0));
       expect(session.result!.timestampMilliseconds, greaterThan(0));
-      for (final face in session.result!.detections) {
-        expect(face.keypoints, hasLength(6));
+      for (final face in session.result!.faceLandmarks) {
+        expect(face, hasLength(478));
       }
       // Diagnostic counts only; camera frames are neither saved nor uploaded.
       debugPrint(
         'Live camera: ${session.processedFrames} frames, '
-        '${session.result!.detections.length} faces, '
+        '${session.result!.faceLandmarks.length} faces, '
+        '$maximumLandmarks landmarks observed, '
         '${session.framesPerSecond.toStringAsFixed(1)} FPS, '
         '${session.inferenceMilliseconds.toStringAsFixed(1)} ms/frame',
       );

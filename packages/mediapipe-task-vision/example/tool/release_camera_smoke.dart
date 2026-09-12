@@ -10,6 +10,12 @@ import 'package:mediapipe_face_camera/main.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final session = FaceCameraController();
+  var maximumLandmarks = 0;
+  session.addListener(() {
+    for (final face in session.result?.faceLandmarks ?? []) {
+      if (face.length > maximumLandmarks) maximumLandmarks = face.length;
+    }
+  });
   runApp(FaceCameraApp(controller: session));
   final watchdog = Timer(const Duration(seconds: 90), () {
     stderr.writeln('Release camera test timed out.');
@@ -28,7 +34,8 @@ Future<void> main() async {
     }
     stdout.writeln(
       'Release camera passed: ${session.processedFrames} frames, '
-      '${session.result!.detections.length} faces, '
+      '${session.result!.faceLandmarks.length} faces, '
+      '$maximumLandmarks landmarks observed, '
       '${session.framesPerSecond.toStringAsFixed(1)} FPS, '
       '${session.inferenceMilliseconds.toStringAsFixed(1)} ms/frame.',
     );

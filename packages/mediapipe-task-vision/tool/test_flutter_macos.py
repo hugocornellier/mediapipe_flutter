@@ -36,11 +36,14 @@ dev_dependencies:
 flutter:
   assets:
     - assets/model.tflite
+    - assets/face_landmarker.task
     - assets/portrait.rgb
 """)
     (app / "assets").mkdir(exist_ok=True)
     shutil.copyfile(PACKAGE / "models/blaze_face_short_range.tflite",
                     app / "assets/model.tflite")
+    shutil.copyfile(PACKAGE / "models/face_landmarker.task",
+                    app / "assets/face_landmarker.task")
     shutil.copyfile(PACKAGE / "test/fixtures/face_detection/portrait-301x209.rgb",
                     app / "assets/portrait.rgb")
     (app / "integration_test").mkdir(exist_ok=True)

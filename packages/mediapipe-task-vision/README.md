@@ -1,14 +1,19 @@
 # mediapipe_flutter_vision
 
-Official MediaPipe Face Detector for Dart and Flutter on **macOS arm64**.
+Official MediaPipe Face Detector and Face Landmarker for Dart and Flutter on **macOS arm64**.
 This development version implements **CPU IMAGE and VIDEO modes**. It accepts JPEG/image
 files or RGB/RGBA/BGRA pixels and returns face boxes, categories, and
-six keypoints. Inference runs on a worker isolate.
+six keypoints, or a full 478-point face mesh including irises. Inference runs on
+a worker isolate. Face Landmarker also exposes the official optional 52
+blendshape scores and 4×4 face transformation matrices.
 
 The task uses the unmodified MediaPipe v1.0.0 Face Detector graph and its official
 BlazeFace short-range float16 model, version 1. MediaPipe performs image
 preprocessing, model inference, anchor decoding, suppression, and coordinate
-projection. The Dart wrapper copies results and owns native resource cleanup.
+projection. Face Landmarker uses Google's complete float16 version-1 bundle
+(FaceMesh V2), including its own detector, landmark model, and expression model.
+It does not require a separate Dart Face Detector call. The Dart wrapper copies
+results and owns native resource cleanup.
 
 ## Run locally
 
@@ -17,12 +22,30 @@ Use Flutter 3.44.8 / Dart 3.12.2 and Xcode. From this directory:
 ```sh
 dart pub get
 dart tool/download_model.dart
+dart tool/download_face_landmarker.dart
 dart test --reporter expanded
 dart run example/face_detection.dart models/blaze_face_short_range.tflite test/fixtures/face_detection/landmark-ex1.jpg
 ```
 
-The first build downloads a 4.2 MB native archive from the public
-[native runtime release](https://github.com/hugocornellier/mediapipe_flutter_native/releases/tag/face-detector-v1.0.0-1).
+The first build downloads the selected tasks from the public
+[native runtime releases](https://github.com/hugocornellier/mediapipe_flutter_native/releases).
+Face Detector is a 4.2 MB archive; Face Landmarker is 4.6 MB. Both are enabled
+by default. Select only the task you use in the consuming app's `pubspec.yaml`:
+
+```yaml
+hooks:
+  user_defines:
+    mediapipe_flutter_vision:
+      tasks: [face_landmarker] # or [face_detector], or both
+```
+
+Task selection happens at build time, not dynamically when a Dart class is used.
+An excluded task's API cannot run in that build. The camera example selects only
+Face Landmarker. Models are separate: about 224 KB for BlazeFace and 3.8 MB for
+the complete Face Landmarker bundle; each application chooses how to supply them.
+When removing a task from an existing Flutter app, run `flutter clean` once to
+remove native frameworks left over from earlier incremental builds.
+
 The hook verifies the archive and library against pinned SHA-256 digests, checks
 the upstream revisions and architecture, and caches the extracted runtime under
 Dart/Flutter's shared hook output directory. Warm builds reuse the verified
@@ -44,6 +67,37 @@ milestone, add `EXCLUDED_ARCHS = x86_64` to the application's
 of silently bundling an incompatible library.
 
 ## Dart API
+
+For the full mesh:
+
+```dart
+import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+
+final landmarker = await FaceLandmarker.create(FaceLandmarkerOptions(
+  modelPath: '/absolute/path/face_landmarker.task',
+  outputFaceBlendshapes: true, // optional; false by default
+  outputFacialTransformationMatrixes: true, // optional; false by default
+));
+try {
+  final result = await landmarker.detectImage(
+    VisionImage.fromFile('/absolute/path/portrait.jpg'),
+  );
+  for (final face in result.faceLandmarks) {
+    print(face.length); // 478 with the official bundle, including irises
+    print((face.first.x, face.first.y, face.first.z));
+  }
+} finally {
+  await landmarker.dispose();
+}
+```
+
+Landmark x/y are relative to input width/height. The z value is relative depth,
+scaled like x, not a distance in meters. Values retain their native ordering and
+are not clamped. `FaceLandmarkConnections` provides Google's tessellation,
+contours, and iris edges for drawing. Transformation matrix `values` retain the
+C API's column-major layout; `at(row, column)` provides indexed access.
+
+For boxes and six keypoints only:
 
 ```dart
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
@@ -68,7 +122,8 @@ try {
 For Flutter assets, load the model with `rootBundle.load` and pass
 `FaceDetectorOptions(modelBytes: data.buffer.asUint8List(
 data.offsetInBytes, data.lengthInBytes))`. A Flutter asset key is not a filesystem
-path. Apps choose whether to bundle or download their model; runtime build hooks
+path. `FaceLandmarkerOptions` accepts model bytes the same way.
+Apps choose whether to bundle or download their model; runtime build hooks
 do not download models.
 
 For decoded pixels and camera frames, use
@@ -87,6 +142,7 @@ and disposal. Missing keypoint confidence is represented by null.
 Requests are serialized. `dispose()` finishes queued work and closes the task;
 it is idempotent and rejects new requests immediately. Always await it.
 Native failures become `FaceDetectorException` with a status code and message.
+Face Landmarker reports `FaceLandmarkerException` with the same error fields.
 
 For video or live camera frames, create the detector with
 `runningMode: VisionRunningMode.video` and call:
@@ -108,12 +164,22 @@ For live capture, await each inference and skip incoming frames while busy. This
 bounds latency without changing MediaPipe's task graph. Native LIVE_STREAM
 callbacks are not yet exposed by this wrapper.
 
+Face Landmarker supports the same `runningMode` and `detectForVideo` interface.
+Its official graph performs tracking and, with the default `numFaces: 1`, video
+smoothing. Set `numFaces` when creating the task to enable multiple faces;
+MediaPipe disables that smoothing when the maximum exceeds one. The camera
+demo uses the default single-face behavior without additional Dart smoothing.
+
 ## Validation and provenance
 
 The integration suite consumes checked-in reference outputs generated through
 Google's official `mediapipe==1.0.0` Python API. It checks boxes, scores, keypoints,
 image dimensions, file hashes, raw inputs, rotation, multiple detections, empty
 results, initialization failures, and resource lifecycle.
+Landmarker references cover every 3D coordinate, blendshape score, and transform
+in ten still images and two tracking sequences, plus both libraries running
+concurrently. Numeric tolerances and measured differences from Google's wheel
+are recorded in [the mesh reference notes](test/fixtures/face_landmarker/README.md).
 
 `python3 tool/test_flutter_macos.py` generates an isolated Flutter host, runs a
 macOS integration test, then builds and launches a release app that verifies
@@ -133,12 +199,14 @@ Maintainers can still build the official runtime with Python 3, Xcode, and
 
 ```sh
 python3 tool/build_native.py
+python3 tool/build_native.py --task face_landmarker
 ```
 
 The first native build downloads pinned MediaPipe/OpenCV sources and build
 dependencies; allow several minutes and several GB of build space. Later builds
 reuse the Bazel/CMake caches. The hook prefers a verified package-local
 `build/native/libface_detector.dylib` when present, preserving source-build tests.
+Face Landmarker uses `build/native/face_landmarker/libface_landmarker.dylib`.
 To force the public runtime in a maintainer checkout, add this to the root app's
 `pubspec.yaml`:
 
@@ -153,7 +221,8 @@ hooks:
 `build/releases/face-detector-v1.0.0-1/`, with deterministic archive metadata,
 checksums, a public build manifest, a repository README, and release notes.
 It does not upload anything. See [tool/RELEASING.md](tool/RELEASING.md) for the
-release process. Every rebuild must get a new tag and reviewed digests in
+release process; use `--task face_landmarker` to prepare the mesh runtime.
+Every rebuild must get a new tag and reviewed digests in
 `sdk_downloads.dart`; never replace the bytes behind an existing download URL.
 
 The wide group fixture contains four people but the official short-range model
@@ -161,7 +230,8 @@ returns zero detections at the default threshold. The test preserves that
 behavior. The derived close-up pair exercises two detections. Fixture provenance
 and oracle settings are in [test/fixtures/face_detection](test/fixtures/face_detection/).
 
-Regenerate bindings with `dart tool/generate_bindings.dart`. Original upstream
+Regenerate detector bindings with `dart tool/generate_bindings.dart`, and mesh
+bindings with `dart tool/generate_bindings.dart ffigen_face_landmarker.yaml`. Original upstream
 headers are checked in unchanged. The generator removes only C-linkage wrappers
 in temporary copies because ffigen 21 does not traverse C++ linkage blocks.
 The native smoke test checks struct/enum sizes against those original headers.
@@ -170,17 +240,19 @@ To regenerate references, create a separate Python 3.12 environment, install
 `mediapipe==1.0.0`, and run `tool/generate_face_detector_reference.py`. The
 script verifies the model, native wheel library, and fixture digests before
 writing goldens. Ordinary tests do not require Python MediaPipe.
+`tool/generate_face_landmarker_reference.py` generates the mesh references and
+official drawing connections using the same pinned environment.
 
 See [third_party/README.md](third_party/README.md) for exact native pins and build
-details. Native LIVE_STREAM callbacks, Face Landmarker/iris, Intel macOS,
+details. Native LIVE_STREAM callbacks, Intel macOS,
 mobile devices, Linux, Windows, and web are outside this initial implementation.
 A camera plugin is not required for still-image inference.
 
 ## Live camera example
 
 The [Flutter example](example/) uses `camera_desktop` for macOS capture and the
-official VIDEO-mode detector on a worker isolate. It shows an uncropped live
-preview with face boxes, confidence, and optional keypoints. Camera access is
+official VIDEO-mode Face Landmarker on a worker isolate. It shows an uncropped
+preview with the full mesh, highlighted irises, optional points, and timing. Camera access is
 limited to the example; the task package remains a pure Dart/FFI dependency.
 
 Run `make example_vision` from the repository root, or follow the

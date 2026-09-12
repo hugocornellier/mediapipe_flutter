@@ -148,8 +148,8 @@ void main() {
       await _until(() => session.processedFrames == 1 || session.error != null);
       expect(session.error, isNull);
       expect(session.skippedFrames, 11);
-      expect(session.result!.detections, hasLength(1));
-      expect(session.result!.detections.single.keypoints, hasLength(6));
+      expect(session.result!.faceLandmarks, hasLength(1));
+      expect(session.result!.faceLandmarks.single, hasLength(478));
       final timestamp = session.result!.timestampMilliseconds!;
       await Future<void>.delayed(const Duration(milliseconds: 2));
       platform.frames.add(image);
@@ -166,7 +166,7 @@ void main() {
       await session.start(_description);
       platform.frames.add(image);
       await _until(() => session.processedFrames == 1);
-      expect(session.result!.detections, hasLength(1));
+      expect(session.result!.faceLandmarks, hasLength(1));
     },
   );
 

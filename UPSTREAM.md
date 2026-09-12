@@ -90,3 +90,11 @@ The wrapper also exposes the official VIDEO entry point from that same native
 artifact, with timestamped results and worker-side conversion of padded camera
 buffers. A macOS camera example uses the published `camera_desktop` plugin and
 compares fixture frames and video sequences with independent Python references.
+
+Face Landmarker uses that same pinned MediaPipe source and Google's unmodified
+float16 version-1 task bundle (FaceMesh V2). It exposes 478 3D landmarks including
+irises, optional 52 blendshape scores, and 4×4 face transforms. The camera demo
+now renders the official mesh topology. The second native library is released
+separately; build-hook task selection controls which face libraries are fetched.
+All landmark outputs and tracking sequences are compared with Google's wheel,
+and concurrent detector/landmarker use is tested without sharing native pointers.

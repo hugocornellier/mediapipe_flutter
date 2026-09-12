@@ -16,15 +16,18 @@ models:
 	cd tool/builder && dart bin/main.dart model -m textembedding
 	cd tool/builder && dart bin/main.dart model -m languagedetection
 	cd packages/mediapipe-task-vision && dart tool/download_model.dart
-	cd packages/mediapipe-task-vision && dart tool/download_model.dart example/assets/blaze_face_short_range.tflite
+	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
+	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart example/assets/face_landmarker.task
 
 # Optional maintainer build; consumers download the pinned prebuilt runtime.
 native_vision:
 	cd packages/mediapipe-task-vision && python3 tool/build_native.py $(VISION_NATIVE_ARGS)
+	cd packages/mediapipe-task-vision && python3 tool/build_native.py --task face_landmarker $(VISION_NATIVE_ARGS)
 
 # Prepare a reviewable public archive from an already tested native build.
 release_vision:
 	cd packages/mediapipe-task-vision && python3 tool/prepare_native_release.py
+	cd packages/mediapipe-task-vision && python3 tool/prepare_native_release.py --task face_landmarker
 
 analyze:
 	@for package in $(ALL_PACKAGES); do (cd "$$package" && dart analyze --fatal-infos) || exit $$?; done
@@ -53,6 +56,7 @@ generate_genai:
 
 generate_vision:
 	cd packages/mediapipe-task-vision && dart tool/generate_bindings.dart
+	cd packages/mediapipe-task-vision && dart tool/generate_bindings.dart ffigen_face_landmarker.yaml
 
 test:
 	$(MAKE) models
@@ -92,7 +96,7 @@ build_vision_camera:
 	cd packages/mediapipe-task-vision/example && flutter build macos --release
 
 example_vision:
-	cd packages/mediapipe-task-vision && dart tool/download_model.dart example/assets/blaze_face_short_range.tflite
+	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart example/assets/face_landmarker.task
 	cd packages/mediapipe-task-vision/example && flutter run -d macos --release
 
 example_text:

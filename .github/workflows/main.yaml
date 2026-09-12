@@ -27,8 +27,8 @@ jobs:
       - run: make ci
       - uses: actions/upload-artifact@v4
         with:
-          name: mediapipe-face-detector-1.0.0-macos-arm64
-          path: packages/mediapipe-task-vision/build/native/mediapipe-face-detector-1.0.0-macos-arm64.tar.gz
+          name: mediapipe-face-tasks-1.0.0-macos-arm64
+          path: packages/mediapipe-task-vision/build/native/**/*.tar.gz
           if-no-files-found: error
 
   prebuilt-consumer:
@@ -47,6 +47,7 @@ jobs:
         run: |
           dart pub get
           dart tool/download_model.dart
+          dart tool/download_face_landmarker.dart
       - name: Test public download and debug/release inference without native build tools
         working-directory: packages/mediapipe-task-vision
         run: python3 tool/test_prebuilt_macos.py

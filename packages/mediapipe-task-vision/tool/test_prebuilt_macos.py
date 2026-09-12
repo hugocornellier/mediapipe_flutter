@@ -17,12 +17,15 @@ import tempfile
 from threading import Thread
 
 from test_flutter_macos import PACKAGE, test_app
-from prepare_native_release import NAME
+from prepare_native_release import RELEASE_TAGS
 
 
 @contextmanager
 def release_server(directory):
     requests = []
+    names = {path.name for path in directory.glob('*.tar.gz')}
+    if not names:
+        raise ValueError('No release archive found')
 
     class Handler(SimpleHTTPRequestHandler):
         def do_GET(self):
@@ -33,14 +36,14 @@ def release_server(directory):
     worker = Thread(target=server.serve_forever, daemon=True)
     worker.start()
     try:
-        yield f"http://127.0.0.1:{server.server_port}/{NAME}", requests
+        yield {name: f"http://127.0.0.1:{server.server_port}/{name}" for name in names}, requests
     finally:
         server.shutdown()
         server.server_close()
         worker.join()
 
 
-def verify(root, local_url=None):
+def verify(root, local_urls=None):
     packages = root / "packages"
     for name in ("mediapipe-core", "mediapipe-task-vision"):
         source = PACKAGE.parent / name
@@ -52,11 +55,18 @@ def verify(root, local_url=None):
     shutil.copytree(PACKAGE / "hook", vision / "hook")
     shutil.copyfile(PACKAGE / "sdk_downloads.dart", vision / "sdk_downloads.dart")
     pins = vision / "sdk_downloads.dart"
-    if local_url:
-        content, count = re.subn(r"url:\s*(?:'[^']*'\s*)+,", f"url: '{local_url}',",
-                                pins.read_text())
-        if count != 1:
-            raise ValueError("Could not identify the single pinned release URL")
+    if local_urls:
+        replaced = set()
+        def replace_url(match):
+            url = ''.join(re.findall(r"'([^']*)'", match.group()))
+            name = url.rsplit('/', 1)[-1]
+            if name not in local_urls:
+                return match.group()
+            replaced.add(name)
+            return f"url: '{local_urls[name]}',"
+        content = re.sub(r"url:\s*(?:'[^']*'\s*)+,", replace_url, pins.read_text())
+        if replaced != set(local_urls):
+            raise ValueError("Could not identify the pinned candidate release URLs")
         pins.write_text(content)
     # Trap accidental source builds while preserving the Flutter/Xcode tools
     # normally available to macOS app developers. No system tool is uninstalled.
@@ -81,9 +91,9 @@ def verify(root, local_url=None):
     # fallback while still requiring that the downloaded runtime was extracted.
     if not manifests:
         manifests = list((root / "app/.dart_tool").rglob("manifest.json"))
-    if not any(json.loads(path.read_text()).get("release") == "face-detector-v1.0.0-1"
-               for path in manifests):
-        raise RuntimeError("No extracted release manifest found in the consumer cache")
+    found = {json.loads(path.read_text()).get("release") for path in manifests}
+    if not set(RELEASE_TAGS.values()).issubset(found):
+        raise RuntimeError(f"Missing extracted face-task release manifests: {found}")
     print("Prebuilt consumer passed: debug/release inference; no native build tools invoked.",
           flush=True)
 
@@ -97,11 +107,11 @@ def main():
     build.mkdir(exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix="prebuilt-consumer-", dir=build))
     if args.local_release:
-        with release_server(args.local_release.resolve()) as (url, requests):
-            verify(root, local_url=url)
+        with release_server(args.local_release.resolve()) as (urls, requests):
+            verify(root, local_urls=urls)
             if not requests:
                 raise RuntimeError("Cold consumer never requested the release archive")
-            if any(path != "/" + NAME for path in requests):
+            if any(path.lstrip('/') not in urls for path in requests):
                 raise RuntimeError(f"Unexpected release requests: {requests}")
             print(f"Verified {len(requests)} unauthenticated archive download(s).", flush=True)
     else:

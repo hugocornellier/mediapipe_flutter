@@ -9,12 +9,14 @@ repository's Git history, package code, model files, or test fixtures there.
 ## Prepare and test
 
 1. Choose a new release tag for every rebuild, even when upstream versions are
-   unchanged. Update `TAG` in `prepare_native_release.py` and the matching expected
-   release in `test_prebuilt_macos.py`. The first release is
-   `face-detector-v1.0.0-1`.
+   unchanged. Update the task's entry in `RELEASE_TAGS` in
+   `prepare_native_release.py`; consumer tests read the same expected tags.
+   Initial releases are `face-detector-v1.0.0-1` and `face-landmarker-v1.0.0-1`.
 2. Run the pinned source build and native/inference tests (`make ci` from the
    repository root). This tests the local source build; it does not publish it.
 3. Run `python3 tool/prepare_native_release.py` from this package directory.
+   For the mesh runtime, add `--task face_landmarker` to both the source builder
+   and release preparation command.
    Inspect the generated archive, `manifest.json`, `SHA256SUMS`, README, and
    release notes under `build/releases/<tag>/`. The preparation step removes
    local paths from the manifest and normalizes tar/gzip timestamps and owners.
@@ -23,7 +25,8 @@ repository's Git history, package code, model files, or test fixtures there.
    provenance aligned with its bindings and integration references.
 5. Run `python3 tool/test_prebuilt_macos.py --local-release build/releases/<tag>`.
    This serves the exact candidate over loopback HTTP and changes only the URL
-   in a temporary package copy; the digests remain pinned. Both Flutter debug
+   in a temporary package copy; the digests remain pinned. The other task's
+   archive is downloaded from its public URL. Both Flutter debug
    and release apps must perform real inference with native build tools blocked.
 
 ## Publish
@@ -31,7 +34,8 @@ repository's Git history, package code, model files, or test fixtures there.
 Create the release in the **public native repository**, using the prepared
 `RELEASE_NOTES.md` via `gh release create --notes-file`. Upload exactly:
 
-- `mediapipe-face-detector-1.0.0-macos-arm64.tar.gz`
+- `mediapipe-face-detector-1.0.0-macos-arm64.tar.gz` or
+  `mediapipe-face-landmarker-1.0.0-macos-arm64.tar.gz`, for the selected task
 - `SHA256SUMS`
 - `manifest.json`
 
