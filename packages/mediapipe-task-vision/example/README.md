@@ -71,8 +71,10 @@ The existing `face_detection.dart` remains a command-line still-image example.
 
 For a longer release soak, run `python3 tool/test_camera_soak.py` from the vision
 package directory (or `make test_vision_camera_soak` from the repository root).
-It measures 15 active minutes across five capture/task start-stop cycles. Keep
-the app window open. A second task replays the existing portrait fixture at
+It measures 15 active minutes across five capture/task start-stop cycles. The
+dedicated diagnostic screen continues capture when hidden; use **Stop test** or
+quit the app to cancel. The normal demo still releases capture when hidden.
+A second task replays the existing portrait fixture at
 roughly 10 Hz, validating 478 finite landmarks, 52 blendshapes and a 4×4 transform
 even if no person is in view of the live camera. Camera timing is measured while
 that extra workload is active; startup time is excluded from frame-rate samples.

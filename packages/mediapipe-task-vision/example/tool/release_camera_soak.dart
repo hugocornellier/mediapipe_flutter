@@ -6,11 +6,11 @@ import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:mediapipe_face_camera/face_camera_controller.dart';
-import 'package:mediapipe_face_camera/main.dart';
+import 'package:mediapipe_face_camera/face_overlay.dart';
 
 const _seconds = int.fromEnvironment('CAMERA_SOAK_SECONDS', defaultValue: 900);
 const _cycles = int.fromEnvironment('CAMERA_SOAK_CYCLES', defaultValue: 5);
@@ -43,9 +43,7 @@ Future<void> main() async {
     if (validationFailure != null) throw StateError(validationFailure!);
     if (session.error != null) throw StateError(session.error!);
     if (!session.running) {
-      throw StateError(
-        'Capture stopped during the soak. Keep the app window open.',
-      );
+      throw StateError('Capture stopped during the soak.');
     }
     if (elapsed.elapsed - lastFrameAt > const Duration(seconds: 15)) {
       throw StateError('No completed camera frame for 15 seconds.');
@@ -82,7 +80,9 @@ Future<void> main() async {
       }
     }
   });
-  runApp(FaceCameraApp(controller: session));
+  // A dedicated diagnostic screen keeps this explicitly requested capture alive
+  // when macOS occludes its window. The normal demo still stops when hidden.
+  runApp(_SoakApp(session));
   final watchdog = Timer(Duration(seconds: _seconds + _cycles * 45 + 120), () {
     report('failed', {'error': 'Camera soak watchdog expired.'});
     exit(1);
@@ -211,6 +211,7 @@ Future<void> main() async {
       }
       report('stopped', {'frames': stoppedFrames});
     }
+    cycle = _cycles;
     await session.close();
     report('complete', {
       'total_frames': totalFrames,
@@ -229,6 +230,67 @@ Future<void> main() async {
     watchdog.cancel();
     exit(1);
   }
+}
+
+class _SoakApp extends StatelessWidget {
+  const _SoakApp(this.session);
+
+  final FaceCameraController session;
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    theme: ThemeData.dark(),
+    home: Scaffold(
+      appBar: AppBar(title: const Text('MediaPipe camera soak test')),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const Text(
+              'Running $_seconds active seconds across $_cycles cycles. '
+              'Capture continues when this test window is hidden. '
+              'No camera images are saved.',
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () async {
+                await session.close();
+                exit(1);
+              },
+              child: const Text('Stop test'),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: AnimatedBuilder(
+                animation: session,
+                builder: (context, _) {
+                  final camera = session.camera;
+                  if (!session.running || camera == null) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return Center(
+                    child: AspectRatio(
+                      aspectRatio: camera.value.aspectRatio,
+                      child: ClipRect(
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            CameraPreview(camera),
+                            CustomPaint(painter: FaceOverlay(session.result)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 // Fixed memory: one-millisecond buckets, with the final bucket representing
