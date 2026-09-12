@@ -14,10 +14,11 @@ enum VisionDelegate {
   /// Official CPU inference. This is the default.
   cpu,
 
-  /// Official GPU inference, using Metal on macOS.
+  /// Official GPU inference, using Metal for the macOS face tasks.
   ///
   /// Initialization errors are reported to the caller without retrying on CPU.
   /// Some stages, including face blendshapes, remain on CPU in Google's graph.
+  /// Interactive Segmenter currently rejects this delegate on macOS.
   gpu,
 }
 

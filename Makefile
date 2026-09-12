@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-text packages/mediapipe-task-genai packages/mediapipe-task-vision tool/builder
-FLUTTER_PACKAGES := packages/mediapipe-task-text/example packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example
+FLUTTER_PACKAGES := packages/mediapipe-task-text/example packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 VISION_NATIVE_ARGS ?=
 
@@ -18,6 +18,8 @@ models:
 	cd packages/mediapipe-task-vision && dart tool/download_model.dart
 	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
+	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
+	cd packages/mediapipe-task-vision && python3 -B tool/prepare_segmenter_example.py
 
 # Optional maintainer build; consumers download the pinned prebuilt runtime.
 native_vision:
@@ -93,12 +95,25 @@ test_examples:
 	cd packages/mediapipe-task-text/example && flutter test --reporter expanded
 	cd packages/mediapipe-task-genai/example && flutter test --reporter expanded
 	cd packages/mediapipe-task-vision/example && flutter test --reporter expanded
+	cd packages/mediapipe-task-vision/example_segmenter && flutter test --reporter expanded
 
 build_text:
 	cd packages/mediapipe-task-text/example && flutter build macos --debug
 
 build_vision_camera:
 	cd packages/mediapipe-task-vision/example && flutter build macos --release
+
+.PHONY: example_segmenter build_segmenter test_segmenter_prebuilt
+example_segmenter:
+	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
+	cd packages/mediapipe-task-vision && python3 -B tool/prepare_segmenter_example.py
+	cd packages/mediapipe-task-vision/example_segmenter && flutter run -d macos --release
+
+build_segmenter:
+	cd packages/mediapipe-task-vision/example_segmenter && flutter build macos --release
+
+test_segmenter_prebuilt:
+	cd packages/mediapipe-task-vision && python3 -B tool/test_segmenter_macos.py
 
 example_vision:
 	cd packages/mediapipe-task-vision && dart tool/download_model.dart
@@ -126,6 +141,7 @@ ci:
 	$(MAKE) test_only
 	$(MAKE) build_text
 	$(MAKE) build_vision_camera
+	$(MAKE) build_segmenter
 	$(MAKE) test_vision_flutter
 
 # Maintainer tools: review headers, ABI, URLs and checksums as one runtime update.

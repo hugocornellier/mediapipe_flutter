@@ -35,8 +35,9 @@ List<SegmentationStroke> strokes(Map<String, dynamic> entry) => [
 ];
 
 VisionImage input(String kind, {int padding = 0, bool bgra = false}) {
-  if (kind == 'file')
+  if (kind == 'file') {
     return VisionImage.fromFile('$fixtures/cats_and_dogs.jpg');
+  }
   final width = reference['raw']['width'] as int;
   final height = reference['raw']['height'] as int;
   final channels = kind == 'rgba' || bgra ? 4 : 3;
@@ -120,8 +121,9 @@ void main() {
       Map<String, dynamic>? retainedCase;
       for (final dynamic value in reference['cases']) {
         final entry = value as Map<String, dynamic>;
-        if (entry['set_image'] as bool)
+        if (entry['set_image'] as bool) {
           await task.setImage(input(entry['input'] as String));
+        }
         final result = await task.segment(strokes(entry));
         compare(result, entry);
         retained ??= result;

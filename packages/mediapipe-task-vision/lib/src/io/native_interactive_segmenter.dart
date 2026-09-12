@@ -68,8 +68,9 @@ final class NativeInteractiveSegmenter {
 
   /// Submit the full history and copy the returned confidence mask.
   SegmentationMask segment(List<SegmentationStroke> strokes) {
-    if (!_hasImage)
+    if (!_hasImage) {
       throw StateError('Call setImage successfully before segment.');
+    }
     return using((arena) {
       final native = arena<mp.MpStrokes>();
       final values = arena<mp.MpStroke>(strokes.length);
@@ -109,8 +110,9 @@ final class NativeInteractiveSegmenter {
         // The official accessor realigns noncontiguous data, just as numpy_view
         // does. Do not assume ImageFrame row alignment or expose native pointers.
         _checked((error) => mp.imageData(mask, data, error));
-        if (data.value == nullptr)
+        if (data.value == nullptr) {
           throw StateError('MediaPipe returned no mask data.');
+        }
         return SegmentationMask(
           width: width,
           height: height,

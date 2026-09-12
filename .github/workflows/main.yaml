@@ -50,3 +50,39 @@ jobs:
       - name: Test public download and debug/release inference without native build tools
         working-directory: packages/mediapipe-task-vision
         run: python3 tool/test_prebuilt_macos.py
+
+  segmenter-consumer:
+    name: MagicTouch / fresh macOS consumer
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - name: Download the official MagicTouch model
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_interactive_segmenter.dart
+      - name: Verify public download, debug/release inference and CPU timings
+        working-directory: packages/mediapipe-task-vision
+        run: python3 -B tool/test_segmenter_macos.py
+      - name: Prepare the macOS editor assets
+        working-directory: packages/mediapipe-task-vision
+        run: python3 -B tool/prepare_segmenter_example.py
+      - name: Test the real macOS editor
+        working-directory: packages/mediapipe-task-vision/example_segmenter
+        run: |
+          flutter pub get
+          flutter test --reporter expanded
+          flutter test -d macos integration_test/editor_test.dart --reporter expanded
+      - uses: actions/upload-artifact@v4
+        with:
+          name: interactive-segmenter-validation
+          path: |
+            build/segmenter-consumer-*/report.json
+            build/segmenter-consumer-*/release.log
+          if-no-files-found: error

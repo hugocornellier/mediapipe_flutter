@@ -12,6 +12,13 @@ same Dart API and official task graphs. It currently requires a local native
 build; simulator archives are not published. Physical iOS devices and simulator
 GPU inference are not supported yet. See [the simulator guide](tool/IOS_SIMULATOR.md).
 
+**MagicTouch Interactive Segmenter** is an optional macOS arm64 CPU task using
+Google's modern stateful 1.0.1 API and official int8 version-1 task bundle.
+It selects arbitrary objects from positive, negative and lasso strokes.
+It requires macOS 14 or newer. See [the segmenter guide](tool/INTERACTIVE_SEGMENTER.md)
+for the API, model, packaging and validation details. Run `make example_segmenter`
+from the repository root for the macOS image editor.
+
 The task uses the unmodified MediaPipe v1.0.0 Face Detector graph and its official
 BlazeFace short-range float16 model, version 1. MediaPipe performs image
 preprocessing, model inference, anchor decoding, suppression, and coordinate
@@ -28,6 +35,7 @@ Use Flutter 3.44.8 / Dart 3.12.2 and Xcode. From this directory:
 dart pub get
 dart tool/download_model.dart
 dart tool/download_face_landmarker.dart
+dart tool/download_interactive_segmenter.dart # repository tests include all tasks
 dart test --reporter expanded
 dart run example/face_detection.dart models/blaze_face_short_range.tflite test/fixtures/face_detection/landmark-ex1.jpg
 ```
@@ -97,7 +105,7 @@ try {
 }
 ```
 
-Both task options accept `delegate: VisionDelegate.cpu` or `VisionDelegate.gpu`.
+Both face task options accept `delegate: VisionDelegate.cpu` or `VisionDelegate.gpu`.
 Each task's `delegate` is fixed at creation; await disposal and create a new task
 to change it. GPU selects Google's Metal inference on macOS. Initialization
 errors are returned to the caller without retrying on CPU. The official graph
