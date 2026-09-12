@@ -46,3 +46,11 @@ immutable copied results, repeated queued inference and idempotent disposal.
 Regenerate deliberately with `tool/generate_face_detector_reference.py` in a
 separate Python 3.12 environment with `mediapipe==1.0.0`; review numerical changes
 before accepting new goldens. Ordinary tests consume these checked-in files.
+
+`official_video_reference.json` records a seven-frame sequence through Google's
+official VIDEO-mode API at timestamps 0–198 ms. It includes repeated portraits,
+a blank frame, a two-face frame, and a rotated frame, all on one detector. The
+Dart test submits that sequence in order and checks timestamp/result pairing,
+including disposal while frames are queued. Padded RGB, RGBA, and macOS BGRA
+variants of the raw portrait separately verify camera-buffer conversion without
+changing the official detection outputs.

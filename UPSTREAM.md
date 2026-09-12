@@ -85,3 +85,8 @@ inference, and Flutter bundling checks. A prebuilt runtime is published separate
 in the public `hugocornellier/mediapipe_flutter_native` repository. The hook pins
 both archive and library digests and caches verified downloads; the source
 repository remains private. Additional platforms/modes remain pending.
+
+The wrapper also exposes the official VIDEO entry point from that same native
+artifact, with timestamped results and worker-side conversion of padded camera
+buffers. A macOS camera example uses the published `camera_desktop` plugin and
+compares fixture frames and video sequences with independent Python references.

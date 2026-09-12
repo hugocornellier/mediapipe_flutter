@@ -16,7 +16,8 @@ Tests exercise the native executors, their reference numeric outputs, and the
 public isolate-based APIs. The macOS text example also builds on this baseline.
 
 The official MediaPipe v1.0.0 Face Detector also runs on macOS arm64 in CPU IMAGE
-mode, with tests against Google's Python reference outputs. Native builds use
+and VIDEO modes, with tests against Google's Python reference outputs. A live
+camera example uses `camera_desktop`, with face boxes and keypoints. Native builds use
 pinned upstream source and static OpenCV; no task pipeline or model is patched.
 
 This is a development baseline. GenAI inference and mobile platforms still need
@@ -29,7 +30,7 @@ validation. A public prebuilt runtime is available for macOS arm64 face detectio
 | `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
 | `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Three text tasks validated on macOS arm64 |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
-| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Face Detector: macOS arm64, CPU still images |
+| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Face Detector: macOS arm64, CPU images/video, live camera demo |
 | Audio | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Placeholder, no Dart package |
 
 Text runtime artifacts exist for macOS arm64/x64, Android arm64, and iOS arm64
@@ -91,6 +92,8 @@ Other targets:
 - `make test_vision_flutter`: generate a macOS host and verify debug/release bundling.
 - `make test_vision_prebuilt`: test a fresh app against the public native download
   with native build tools blocked.
+- `make example_vision`: download the model and launch the macOS live camera demo.
+- `make build_vision_camera`: build the camera demo in release mode, without opening a camera.
 - `make headers`: maintainer-only header import from a local MediaPipe checkout.
 - `make sdks`: legacy Google bucket discovery, requiring Google access; writes
   candidate manifests without replacing the reviewed runtime pins.
@@ -105,8 +108,8 @@ are deferred with its runtime recovery.
 
 ## Remaining work
 
-- Add VIDEO/LIVE_STREAM modes and a camera demo; camera capture remains an app
-  dependency rather than a requirement for still-image inference.
+- Expose native LIVE_STREAM callbacks; the camera demo currently uses official
+  VIDEO mode on a worker isolate. Camera capture remains an app dependency.
 - Audit inherited text isolate error propagation and native-result ownership
   before publishing. Successful inference tests do not cover invalid-model
   recovery or all lifecycle paths.

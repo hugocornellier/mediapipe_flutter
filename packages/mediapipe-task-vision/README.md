@@ -175,3 +175,15 @@ See [third_party/README.md](third_party/README.md) for exact native pins and bui
 details. Native LIVE_STREAM callbacks, Face Landmarker/iris, Intel macOS,
 mobile devices, Linux, Windows, and web are outside this initial implementation.
 A camera plugin is not required for still-image inference.
+
+## Live camera example
+
+The [Flutter example](example/) uses `camera_desktop` for macOS capture and the
+official VIDEO-mode detector on a worker isolate. It shows an uncropped live
+preview with face boxes, confidence, and optional keypoints. Camera access is
+limited to the example; the task package remains a pure Dart/FFI dependency.
+
+Run `make example_vision` from the repository root, or follow the
+[example instructions](example/README.md). CI tests the frame pipeline using
+portrait fixtures and builds the release app. A separate opt-in integration test
+verifies real camera capture and stop/restart on a Mac with a camera attached.
