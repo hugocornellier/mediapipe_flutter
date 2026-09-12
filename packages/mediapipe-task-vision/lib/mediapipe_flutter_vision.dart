@@ -7,3 +7,6 @@ library;
 
 export 'src/interface/face_detector_types.dart';
 export 'src/io/face_detector.dart';
+export 'src/interface/face_landmarker_types.dart';
+export 'src/io/face_landmarker.dart';
+export 'src/interface/face_landmark_connections.dart';

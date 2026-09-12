@@ -1,0 +1,40 @@
+name: MediaPipeFaceLandmarkerBindings
+description: MediaPipe v1.0.0 C API. Regenerate with dart tool/generate_bindings.dart.
+silence-enum-warning: true # sizeof(enum)==4 is checked by tool/native_landmarker_smoke.cc.
+output: lib/third_party/mediapipe/face_landmarker_bindings.dart
+headers:
+  entry-points:
+    - build/ffigen/mediapipe/tasks/c/vision/face_landmarker/face_landmarker.h
+    - build/ffigen/mediapipe/tasks/c/vision/core/image_processing_options.h
+    - build/ffigen/mediapipe/tasks/c/components/containers/category.h
+    - build/ffigen/mediapipe/tasks/c/components/containers/keypoint.h
+  include-directives:
+    - '**/mediapipe/tasks/c/**.h'
+compiler-opts:
+  - '-xc++'
+  - '-Ibuild/ffigen'
+  - '-std=c++17'
+functions:
+  include:
+    - 'MpFaceLandmarker.*'
+    - 'MpImage(CreateFromFile|CreateFromUint8Data|Free|GetWidth|GetHeight)'
+    - MpErrorFree
+structs:
+  include:
+    - 'Mp.*'
+enums:
+  include:
+    - 'Mp.*'
+typedefs:
+  include:
+    - 'Mp.*'
+macros:
+  exclude:
+    - '.*'
+preamble: |
+  // Copyright 2026 The MediaPipe Authors.
+  // Licensed under the Apache License, Version 2.0.
+  // Generated from unmodified MediaPipe v1.0.0 headers; see third_party/README.md.
+ffi-native:
+  asset-id: package:mediapipe_flutter_vision/face_landmarker.dylib
+

@@ -3,12 +3,13 @@
 - MediaPipe: https://github.com/google-ai-edge/mediapipe/tree/v1.0.0
 - Commit: `6d31f1ebc3284db74d211d62bdc4f0a0c29ea120`
 - Bazel: 7.4.1, from that release's `.bazelversion`.
-- Target: `//mediapipe/tasks/c/vision/face_detector:libface_detector.dylib`.
+- Targets: `//mediapipe/tasks/c/vision/face_detector:libface_detector.dylib`
+  and `//mediapipe/tasks/c/vision/face_landmarker:libface_landmarker.dylib`.
 - OpenCV: 4.12.0, commit `49486f61fb25722cbcf586b7f4320921d46fb38e`.
-- Model: official BlazeFace short-range float16 version 1; URL and digest are in
+- Models: official BlazeFace short-range and Face Landmarker float16 version 1; URLs and digests are in
   `lib/models.dart`.
 
-The ten headers under `mediapipe/` are unchanged copies from that commit.
+The fourteen headers under `mediapipe/` are unchanged copies from that commit.
 They define the modern C ABI separately from the legacy 2024 core/text/GenAI
 bindings. Do not substitute those packages' base options or image structs.
 
@@ -16,13 +17,19 @@ bindings. Do not substitute those packages' base options or image structs.
 and imgproc. Its external-repository override supplies those static libraries;
 no MediaPipe graph, calculator, model, or C implementation is patched.
 
-Linker flags retain the Face Detector/image entry points (otherwise the upstream
+Linker flags retain the selected task/image entry points (otherwise the upstream
 target dead-strips them), restrict exports to `Mp*`, and reserve install-name
 space for Dart/Flutter relocation. Only macOS system frameworks/libraries remain
 as dynamic dependencies. Every build verifies C exports, ABI sizes, and portrait
 inference before preparing a native release candidate with a SHA-256 manifest.
 The build is source/version pinned; byte-identical output across Xcode versions
 is not claimed.
+
+Each task has its own dylib and generated bindings, including its own image
+allocation/free functions. Native pointers never cross task libraries. Tests
+exercise concurrent detector/landmarker inference and independent disposal in
+one process. `FaceLandmarkConnections` is generated from the same release's
+official Python drawing topology, retaining every edge and its ordering.
 
 `LICENSE` and `NOTICE` were copied from Google's official MediaPipe 1.0.0
 distribution. They include notices for the larger upstream distribution.

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-Future<void> main() async {
+Future<void> main(List<String> arguments) async {
   // ffigen 21 does not visit C++ LinkageSpec cursors. Remove only the enclosing
   // extern-C blocks in temporary copies; every ABI declaration stays identical.
   await for (final entry in Directory(
@@ -29,7 +29,7 @@ Future<void> main() async {
   final process = await Process.start(Platform.resolvedExecutable, [
     'run',
     'ffigen',
-    '--config=ffigen.yaml',
+    '--config=${arguments.isEmpty ? 'ffigen.yaml' : arguments.single}',
     '--compiler-opts',
     '-isystem "$path/usr/include/c++/v1"',
   ], mode: ProcessStartMode.inheritStdio);

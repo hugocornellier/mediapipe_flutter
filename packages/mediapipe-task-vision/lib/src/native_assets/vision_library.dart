@@ -7,9 +7,8 @@ import 'package:mediapipe_flutter_core/native_assets.dart';
 
 const _mediaPipeRevision = '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120';
 const _openCvRevision = '49486f61fb25722cbcf586b7f4320921d46fb38e';
-const _libraryName = 'libface_detector.dylib';
-const _requiredFiles = {
-  _libraryName,
+Set<String> _requiredFiles(String libraryName) => {
+  libraryName,
   'manifest.json',
   'LICENSE',
   'NOTICE',
@@ -20,11 +19,13 @@ const _requiredFiles = {
 /// Checks both provenance and the library bytes before loading native code.
 /// Source builds use their manifest digest; downloads also require a pinned
 /// digest independent of the downloaded manifest.
-Future<File> validateFaceDetectorLibrary(
+Future<File> validateVisionLibrary(
   Directory directory, {
   String? expectedSha256,
+  String libraryName = 'libface_detector.dylib',
 }) async {
-  final library = File.fromUri(directory.uri.resolve(_libraryName));
+  _checkLibraryName(libraryName);
+  final library = File.fromUri(directory.uri.resolve(libraryName));
   final manifestFile = File.fromUri(directory.uri.resolve('manifest.json'));
   final manifest = jsonDecode(await manifestFile.readAsString());
   if (manifest is! Map<String, dynamic> ||
@@ -36,18 +37,21 @@ Future<File> validateFaceDetectorLibrary(
       (expectedSha256 != null && manifest['sha256'] != expectedSha256) ||
       (await sha256.bind(library.openRead()).first).toString() !=
           manifest['sha256']) {
-    throw StateError('Face Detector native artifact provenance/hash mismatch.');
+    throw StateError('MediaPipe native artifact provenance/hash mismatch.');
   }
   return library;
 }
 
 /// Downloads and unpacks a pinned runtime using Dart, with no native compiler,
 /// shell archive utility, or GitHub credentials required.
-Future<File> downloadFaceDetectorLibrary({
+Future<File> downloadVisionLibrary({
   required DownloadAsset asset,
   required String librarySha256,
   required Directory cache,
+  String libraryName = 'libface_detector.dylib',
 }) async {
+  _checkLibraryName(libraryName);
+  final requiredFiles = _requiredFiles(libraryName);
   if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(asset.sha256) ||
       !RegExp(r'^[a-f0-9]{64}$').hasMatch(librarySha256)) {
     throw ArgumentError('Expected SHA-256 hex digests for the native runtime.');
@@ -57,12 +61,13 @@ Future<File> downloadFaceDetectorLibrary({
   // Validate the compressed cache too, repairing it through downloadVerified.
   await downloadVerified(asset, archiveFile);
   try {
-    final library = await validateFaceDetectorLibrary(
+    final library = await validateVisionLibrary(
       directory,
       expectedSha256: librarySha256,
+      libraryName: libraryName,
     );
     if (await Future.wait([
-      for (final name in _requiredFiles)
+      for (final name in requiredFiles)
         File.fromUri(directory.uri.resolve(name)).exists(),
     ]).then((exists) => exists.every((value) => value))) {
       return library;
@@ -92,12 +97,12 @@ Future<File> downloadFaceDetectorLibrary({
         if (!entry.isFile ||
             entry.isSymbolicLink ||
             !seen.add(name) ||
-            !(_requiredFiles.contains(name) || license)) {
+            !(requiredFiles.contains(name) || license)) {
           throw FormatException('Unexpected native archive entry: $name');
         }
       },
     );
-    if (!seen.containsAll(_requiredFiles)) {
+    if (!seen.containsAll(requiredFiles)) {
       throw const FormatException('Native archive is missing required files.');
     }
     // We write only individually validated file names and never follow archive
@@ -107,10 +112,14 @@ Future<File> downloadFaceDetectorLibrary({
       await file.parent.create(recursive: true);
       await file.writeAsBytes(entry.readBytes()!);
     }
-    await validateFaceDetectorLibrary(temporary, expectedSha256: librarySha256);
+    await validateVisionLibrary(
+      temporary,
+      expectedSha256: librarySha256,
+      libraryName: libraryName,
+    );
     // Publish the library last. Each rename is atomic and concurrent hooks
     // write identical content within this digest-specific cache directory.
-    for (final entry in archive.where((entry) => entry.name != _libraryName)) {
+    for (final entry in archive.where((entry) => entry.name != libraryName)) {
       final destination = File.fromUri(directory.uri.resolve(entry.name));
       await destination.parent.create(recursive: true);
       await File.fromUri(
@@ -118,9 +127,19 @@ Future<File> downloadFaceDetectorLibrary({
       ).rename(destination.path);
     }
     return await File.fromUri(
-      temporary.uri.resolve(_libraryName),
-    ).rename(File.fromUri(directory.uri.resolve(_libraryName)).path);
+      temporary.uri.resolve(libraryName),
+    ).rename(File.fromUri(directory.uri.resolve(libraryName)).path);
   } finally {
     await temporary.delete(recursive: true);
+  }
+}
+
+void _checkLibraryName(String name) {
+  if (name != 'libface_detector.dylib' && name != 'libface_landmarker.dylib') {
+    throw ArgumentError.value(
+      name,
+      'libraryName',
+      'Unsupported vision runtime',
+    );
   }
 }

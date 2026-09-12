@@ -3,10 +3,19 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/face_detector_library.dart';
+import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
 import 'package:test/test.dart';
 
 void main() {
+  for (final libraryName in [
+    'libface_detector.dylib',
+    'libface_landmarker.dylib',
+  ]) {
+    group(libraryName, () => _testLibrary(libraryName));
+  }
+}
+
+void _testLibrary(String libraryName) {
   final libraryBytes = utf8.encode('test native library');
   final libraryHash = sha256.convert(libraryBytes).toString();
   late Directory cache;
@@ -22,7 +31,7 @@ void main() {
     bool includeNotices = true,
   }) {
     final archive = Archive()
-      ..add(ArchiveFile.bytes('libface_detector.dylib', libraryBytes))
+      ..add(ArchiveFile.bytes(libraryName, libraryBytes))
       ..add(
         ArchiveFile.string(
           'manifest.json',
@@ -44,13 +53,14 @@ void main() {
     return GZipEncoder().encodeBytes(TarEncoder().encodeBytes(archive));
   }
 
-  Future<File> download({String? expectedHash}) => downloadFaceDetectorLibrary(
+  Future<File> download({String? expectedHash}) => downloadVisionLibrary(
     asset: (
       url: 'http://127.0.0.1:$port/runtime.tar.gz',
       sha256: expectedHash ?? sha256.convert(response).toString(),
     ),
     librarySha256: libraryHash,
     cache: cache,
+    libraryName: libraryName,
   );
 
   setUp(() async {

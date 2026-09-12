@@ -1,4 +1,4 @@
-"""Build the pinned, official CPU Face Detector for macOS arm64.
+"""Build a pinned, official CPU face task for macOS arm64.
 
 Requires Xcode, Bazelisk, CMake and Ninja. No MediaPipe source is patched.
 Run from any directory. Output is bundled by hook/build.dart.
@@ -92,6 +92,8 @@ cc_library(
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--task", choices=("face_detector", "face_landmarker"),
+                        default="face_detector")
     parser.add_argument("--source-dir", type=Path,
                         default=REPO / "build/native/mediapipe-v1.0.0")
     parser.add_argument("--bazel-cache", type=Path,
@@ -99,6 +101,15 @@ def main():
     parser.add_argument("--opencv-root", type=Path,
                         default=REPO / "build/native")
     args = parser.parse_args()
+    task = args.task
+    landmarker = task == "face_landmarker"
+    target = f"//mediapipe/tasks/c/vision/{task}:lib{task}.dylib"
+    flags = [flag.replace("MpFaceDetector", "MpFaceLandmarker")
+             if landmarker else flag for flag in FLAGS]
+    symbols = [name.replace("MpFaceDetector", "MpFaceLandmarker")
+               if landmarker else name for name in SYMBOLS]
+    symbols.append("MpFaceLandmarkerDetectForVideo" if landmarker
+                   else "MpFaceDetectorDetectForVideo")
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         raise SystemExit("This build supports macOS arm64 only.")
     source = args.source_dir.resolve()
@@ -112,10 +123,10 @@ def main():
         raise SystemExit("Refusing a checkout with modified tracked source files.")
     opencv, opencv_configuration = build_opencv(args.opencv_root.resolve())
     run(["bazelisk", f"--output_user_root={args.bazel_cache.resolve()}",
-         "build", *FLAGS, f"--override_repository=macos_opencv={opencv}", TARGET], source)
-    built = source / "bazel-bin/mediapipe/tasks/c/vision/face_detector/libface_detector.dylib"
+         "build", *flags, f"--override_repository=macos_opencv={opencv}", target], source)
+    built = source / f"bazel-bin/mediapipe/tasks/c/vision/{task}/lib{task}.dylib"
     library = ctypes.CDLL(str(built))
-    for name in SYMBOLS:
+    for name in symbols:
         getattr(library, name)  # Reject the upstream target's empty C API build.
     dependencies = capture(["otool", "-L", str(built)]).splitlines()[2:]
     for dependency in dependencies:
@@ -124,25 +135,29 @@ def main():
             raise SystemExit(f"Non-system dynamic dependency: {name}")
 
     output = PACKAGE / "build/native"
+    if landmarker:
+        output = output / task
     output.mkdir(parents=True, exist_ok=True)
     smoke = output / "native_smoke"
     run(["xcrun", "clang++", "-std=c++17", "-I", str(source),
-         str(PACKAGE / "tool/native_smoke.cc"), str(built), "-o", str(smoke)])
+         str(PACKAGE / ("tool/native_landmarker_smoke.cc" if landmarker
+                        else "tool/native_smoke.cc")), str(built), "-o", str(smoke)])
     # The upstream library's install name is bare; this isolated native test
     # points dyld at it. Flutter/Dart rewrite the ID when bundling.
     subprocess.run(
-        [str(smoke), str(PACKAGE / "models/blaze_face_short_range.tflite"),
+        [str(smoke), str(PACKAGE / ("models/face_landmarker.task" if landmarker
+                                   else "models/blaze_face_short_range.tflite")),
          str(PACKAGE / "test/fixtures/face_detection/landmark-ex1.jpg")],
         env={**os.environ, "DYLD_LIBRARY_PATH": str(built.parent)}, check=True,
     )
-    destination = output / "libface_detector.dylib"
-    temporary = output / "libface_detector.dylib.tmp"
+    destination = output / f"lib{task}.dylib"
+    temporary = output / f"lib{task}.dylib.tmp"
     shutil.copyfile(built, temporary)
     temporary.replace(destination)
     digest = hashlib.sha256(destination.read_bytes()).hexdigest()
     manifest = dict(
         source=SOURCE, revision=REVISION, version="1.0.0",
-        target=TARGET, flags=FLAGS, platform="macos", architecture="arm64",
+        target=target, flags=flags, platform="macos", architecture="arm64",
         opencv_revision=OPENCV_REVISION, opencv_configuration=opencv_configuration,
         sha256=digest, bytes=destination.stat().st_size,
         bazel_version=(source / ".bazelversion").read_text().strip(),
@@ -152,7 +167,7 @@ def main():
     manifest_path = output / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
     # Prepare a reviewable release artifact; this tool never uploads anything.
-    archive = output / "mediapipe-face-detector-1.0.0-macos-arm64.tar.gz"
+    archive = output / f"mediapipe-{task.replace('_', '-')}-1.0.0-macos-arm64.tar.gz"
     with tarfile.open(archive, "w:gz") as bundle:
         bundle.add(destination, arcname=destination.name)
         bundle.add(manifest_path, arcname=manifest_path.name)
