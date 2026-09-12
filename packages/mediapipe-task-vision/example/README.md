@@ -68,3 +68,20 @@ nonzero code on failure. Run `flutter run -d macos --release` afterward to rebui
 and launch the interactive demo. Hardware tests are opt-in and do not run on CI.
 
 The existing `face_detection.dart` remains a command-line still-image example.
+
+For a longer release soak, run `python3 tool/test_camera_soak.py` from the vision
+package directory (or `make test_vision_camera_soak` from the repository root).
+It measures 15 active minutes across five capture/task start-stop cycles. Keep
+the app window open. A second task replays the existing portrait fixture at
+roughly 10 Hz, validating 478 finite landmarks, 52 blendshapes and a 4×4 transform
+even if no person is in view of the live camera. Camera timing is measured while
+that extra workload is active; startup time is excluded from frame-rate samples.
+
+Timing, frame counts, process RSS and shutdown checks are saved under the ignored
+root `build/camera-soak-<timestamp>/` directory. The harness retains fixed-size
+latency histograms and never saves camera images or landmark coordinates. RSS
+trends are observational: caching and allocator behavior can grow memory without
+a leak. The report includes camera face coverage separately from fixture replay.
+For a quick harness check, use `--seconds 30 --cycles 2`. Rebuild the normal
+interactive target afterward with `flutter build macos --release -t lib/main.dart`
+from this example directory.

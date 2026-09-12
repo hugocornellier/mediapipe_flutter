@@ -83,6 +83,11 @@ test_vision_flutter:
 test_vision_prebuilt:
 	cd packages/mediapipe-task-vision && python3 tool/test_prebuilt_macos.py
 
+# Opt-in hardware soak; never runs on a hosted CI runner.
+.PHONY: test_vision_camera_soak
+test_vision_camera_soak:
+	cd packages/mediapipe-task-vision && python3 tool/test_camera_soak.py
+
 # GenAI example tests cover Dart state only; they do not validate LLM inference.
 test_examples:
 	cd packages/mediapipe-task-text/example && flutter test --reporter expanded
