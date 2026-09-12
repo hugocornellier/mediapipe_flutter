@@ -140,7 +140,8 @@ The build hook verifies the compressed archive, prepared library, manifest,
 platform, CPU-only capability and license digests. Extraction allows only the
 four expected regular files. Corrupt caches are repaired from verified bytes.
 Consumers need Flutter/Xcode, but no Python, Bazel, CMake or credentials for
-native downloads. Source access still follows this private repository's policy.
+native downloads. The Dart/Flutter source repository is public; packages are
+not yet published to pub.dev.
 
 ## Validation and measurements
 

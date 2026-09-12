@@ -72,7 +72,7 @@ modern stateful C API is not available in the public source build. See
    `python3 -B tool/test_segmenter_macos.py --local-release build/releases/interactive-segmenter-v1.0.1-1`.
 4. Publish the tar.gz, `SHA256SUMS` and `manifest.json` to a new prerelease in the
    public native repository using the generated notes. Do not upload the wheel,
-   private wrapper source, models, fixtures or local validation logs.
+   wrapper source, models, fixtures or local validation logs.
 5. Run `python3 -B tool/test_segmenter_macos.py` against the public URL. Commit
    the resulting validation/benchmark report and keep existing release assets
    immutable. A rebuild requires a new tag and updated pins in
