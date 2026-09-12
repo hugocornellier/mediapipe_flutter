@@ -29,6 +29,7 @@ void _testLibrary(String libraryName) {
     String architecture = 'arm64',
     ArchiveFile? extra,
     bool includeNotices = true,
+    List<String>? delegates = const ['cpu', 'gpu'],
   }) {
     final archive = Archive()
       ..add(ArchiveFile.bytes(libraryName, libraryBytes))
@@ -42,6 +43,7 @@ void _testLibrary(String libraryName) {
             'architecture': architecture,
             'bytes': libraryBytes.length,
             'sha256': libraryHash,
+            'delegates': ?delegates,
           }),
         ),
       )
@@ -173,6 +175,26 @@ void _testLibrary(String libraryName) {
     response = bundle(includeNotices: false);
     await expectLater(download(), throwsFormatException);
   });
+
+  for (final delegates in [
+    null,
+    <String>['cpu'],
+    <String>['gpu'],
+  ]) {
+    test('rejects a runtime without both delegates: $delegates', () async {
+      response = bundle(delegates: delegates);
+      await expectLater(
+        download(),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'diagnostic',
+            contains('CPU and Metal'),
+          ),
+        ),
+      );
+    });
+  }
 
   for (final name in [
     '../outside',

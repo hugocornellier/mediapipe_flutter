@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -8,14 +7,25 @@ import 'package:mediapipe_flutter_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/vision_fixture.dart';
+import 'support/face_reference.dart';
 
 const _fixtures = 'test/fixtures/face_detection';
 const _model = 'models/blaze_face_short_range.tflite';
 
 void main() {
-  final reference =
-      jsonDecode(File('$_fixtures/official_reference.json').readAsStringSync())
-          as Map<String, dynamic>;
+  for (final delegate in VisionDelegate.values) {
+    group(delegate.name, () => _testDelegate(delegate));
+  }
+  test('CPU is the default delegate', () {
+    expect(FaceDetectorOptions(modelPath: _model).delegate, VisionDelegate.cpu);
+  });
+}
+
+void _testDelegate(VisionDelegate delegate) {
+  final reference = loadFaceReference(
+    'face_detection',
+    'official${delegate == VisionDelegate.gpu ? '_gpu' : ''}_reference.json',
+  );
   final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
   late FaceDetector detector;
 
@@ -25,11 +35,16 @@ void main() {
       blazeFaceShortRangeSha256,
     );
     expect(reference['model_sha256'], blazeFaceShortRangeSha256);
+    expect(reference['delegate'], delegate.name.toUpperCase());
     detector = await FaceDetector.create(
-      FaceDetectorOptions(modelPath: _model),
+      FaceDetectorOptions(delegate: delegate, modelPath: _model),
     );
   });
   tearDownAll(() async => detector.dispose());
+  test(
+    'task exposes the selected delegate',
+    () => expect(detector.delegate, delegate),
+  );
 
   for (final expected in cases) {
     test('official reference: ${expected['name']}', () async {
@@ -43,7 +58,7 @@ void main() {
 
   test('model bytes produce the same detections', () async {
     final bytes = File(_model).readAsBytesSync();
-    final options = FaceDetectorOptions(modelBytes: bytes);
+    final options = FaceDetectorOptions(delegate: delegate, modelBytes: bytes);
     bytes.fillRange(0, bytes.length, 0); // The options own their model data.
     final task = await FaceDetector.create(options);
     try {
@@ -56,7 +71,7 @@ void main() {
 
   test('queued requests complete before idempotent disposal', () async {
     final task = await FaceDetector.create(
-      FaceDetectorOptions(modelPath: _model),
+      FaceDetectorOptions(delegate: delegate, modelPath: _model),
     );
     final expected = cases.where((c) => c['name'] == 'rgb').single;
     final requests = [
@@ -104,8 +119,11 @@ void main() {
     'invalid model initialization fails promptly without poisoning later tasks',
     () async {
       for (final options in [
-        FaceDetectorOptions(modelPath: 'missing-model.tflite'),
-        FaceDetectorOptions(modelBytes: Uint8List(32)),
+        FaceDetectorOptions(
+          delegate: delegate,
+          modelPath: 'missing-model.tflite',
+        ),
+        FaceDetectorOptions(delegate: delegate, modelBytes: Uint8List(32)),
       ]) {
         await expectLater(
           FaceDetector.create(options).timeout(const Duration(seconds: 10)),
@@ -113,7 +131,7 @@ void main() {
         );
       }
       final task = await FaceDetector.create(
-        FaceDetectorOptions(modelPath: _model),
+        FaceDetectorOptions(delegate: delegate, modelPath: _model),
       );
       await task.dispose();
     },
@@ -122,18 +140,27 @@ void main() {
   test(
     'invalid input is rejected before crossing the native boundary',
     () async {
-      expect(() => FaceDetectorOptions(), throwsArgumentError);
       expect(
-        () => FaceDetectorOptions(modelPath: _model, modelBytes: Uint8List(1)),
+        () => FaceDetectorOptions(delegate: delegate),
         throwsArgumentError,
       );
       expect(
-        () => FaceDetectorOptions(modelPath: 'bad\u0000path'),
+        () => FaceDetectorOptions(
+          delegate: delegate,
+          modelPath: _model,
+          modelBytes: Uint8List(1),
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () =>
+            FaceDetectorOptions(delegate: delegate, modelPath: 'bad\u0000path'),
         throwsArgumentError,
       );
       for (final confidence in [-0.1, 1.1, double.nan, double.infinity]) {
         expect(
           () => FaceDetectorOptions(
+            delegate: delegate,
             modelPath: _model,
             minDetectionConfidence: confidence,
           ),
@@ -191,17 +218,15 @@ void main() {
   });
 
   test('video sequence matches the official VIDEO-mode reference', () async {
-    final reference =
-        jsonDecode(
-              File(
-                '$_fixtures/official_video_reference.json',
-              ).readAsStringSync(),
-            )
-            as Map<String, dynamic>;
+    final reference = loadFaceReference(
+      'face_detection',
+      'official${delegate == VisionDelegate.gpu ? '_gpu' : ''}_video_reference.json',
+    );
     expect(reference['running_mode'], 'VIDEO');
     expect(reference['model_sha256'], blazeFaceShortRangeSha256);
     final video = await FaceDetector.create(
       FaceDetectorOptions(
+        delegate: delegate,
         modelPath: _model,
         runningMode: VisionRunningMode.video,
       ),
@@ -233,6 +258,7 @@ void main() {
       final image = fixtureImage(expected);
       final video = await FaceDetector.create(
         FaceDetectorOptions(
+          delegate: delegate,
           modelPath: _model,
           runningMode: VisionRunningMode.video,
         ),

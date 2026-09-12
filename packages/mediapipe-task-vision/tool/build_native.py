@@ -1,4 +1,4 @@
-"""Build a pinned, official CPU face task for macOS arm64.
+"""Build a pinned, official CPU/Metal face task for macOS arm64.
 
 Requires Xcode, Bazelisk, CMake and Ninja. No MediaPipe source is patched.
 Run from any directory. Output is bundled by hook/build.dart.
@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shlex
 import shutil
 import subprocess
@@ -23,7 +24,6 @@ TARGET = "//mediapipe/tasks/c/vision/face_detector:libface_detector.dylib"
 OPENCV_REVISION = "49486f61fb25722cbcf586b7f4320921d46fb38e"
 FLAGS = [
     "--config=darwin_arm64", "-c", "opt", "--strip=always",
-    "--define=MEDIAPIPE_DISABLE_GPU=1",
     "--repo_env=HERMETIC_PYTHON_VERSION=3.12", "--jobs=8",
     "--linkopt=-Wl,-headerpad_max_install_names",
     "--linkopt=-Wl,-u,_MpFaceDetectorCreate",
@@ -36,6 +36,14 @@ SYMBOLS = [
     "MpImageCreateFromFile", "MpImageCreateFromUint8Data",
     "MpImageGetWidth", "MpImageGetHeight", "MpImageFree", "MpErrorFree",
 ]
+# Objective-C names are process-global even when the linker hides C symbols.
+# Keep each task independent of the other task and of apps using LiteRT directly.
+# Rename identifiers at compilation; the official sources and graphs stay intact.
+OBJC_IDENTIFIERS = (
+    "TFLBufferConvert", "MPPMetalUtil", "MPPMetalHelper", "MPPGraph",
+    "MPPTimestampConverter", "GUSUtilStatusWrapper", "MPPMetalSharedResources",
+    "MPPGraphDelegate", "GUSGoogleUtilStatus", "gus_errorWithStatus", "gus_status",
+)
 
 
 def run(arguments, cwd=None):
@@ -45,6 +53,25 @@ def run(arguments, cwd=None):
 
 def capture(arguments, cwd=None):
     return subprocess.check_output(arguments, cwd=cwd, text=True).strip()
+
+
+def verify_objc_namespace(library, task):
+    metadata = capture(["otool", "-ov", str(library)])
+    section = re.search(
+        r"Contents of [^\n]*__objc_classlist[^\n]*\n(.*?)(?=\nContents of |\Z)",
+        metadata, re.DOTALL)
+    classes = set(re.findall(
+        r"^[0-9a-f]+ 0x[0-9a-f]+ _OBJC_CLASS_\$_(\w+)$",
+        section.group(1) if section else "", re.MULTILINE))
+    prefix = "MpfFaceLandmarker" if task == "face_landmarker" else "MpfFaceDetector"
+    expected = {f"{prefix}_{name}" for name in OBJC_IDENTIFIERS[:7]}
+    if classes != expected:
+        raise SystemExit(f"Unexpected Objective-C classes: {classes}; expected {expected}")
+    # NSError categories also share selectors process-wide.
+    for selector in ("gus_status", "gus_errorWithStatus"):
+        if re.search(rf"\s{selector}:?$", metadata, re.MULTILINE):
+            raise SystemExit(f"Unnamespaced NSError selector: {selector}")
+    print(f"Verified {len(classes)} isolated Objective-C classes for {task}.")
 
 
 def build_opencv(root):
@@ -94,6 +121,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--task", choices=("face_detector", "face_landmarker"),
                         default="face_detector")
+    parser.add_argument("--cpu-only", action="store_true",
+                        help="Omit Metal support for a CPU-only maintainer build")
+    parser.add_argument("--output-dir", type=Path,
+                        help="Override the output directory for an isolated candidate")
     parser.add_argument("--source-dir", type=Path,
                         default=REPO / "build/native/mediapipe-v1.0.0")
     parser.add_argument("--bazel-cache", type=Path,
@@ -106,6 +137,19 @@ def main():
     target = f"//mediapipe/tasks/c/vision/{task}:lib{task}.dylib"
     flags = [flag.replace("MpFaceDetector", "MpFaceLandmarker")
              if landmarker else flag for flag in FLAGS]
+    if args.cpu_only:
+        flags.append("--define=MEDIAPIPE_DISABLE_GPU=1")
+    else:
+        # MediaPipe registers rules_cc before apple_support. Bazel 7 otherwise
+        # selects the generic C++ toolchain, which cannot compile objc_library.
+        # This canonical label belongs to the pinned Bazel/apple_support setup.
+        flags.extend([
+            "--platforms=@build_bazel_apple_support//platforms:macos_arm64",
+            "--extra_toolchains=@@apple_support~~apple_cc_configure_extension~local_config_apple_cc_toolchains//:all",
+        ])
+        prefix = "MpfFaceLandmarker" if landmarker else "MpfFaceDetector"
+        flags.extend(f"--copt=-D{name}={prefix}_{name}"
+                     for name in OBJC_IDENTIFIERS)
     symbols = [name.replace("MpFaceDetector", "MpFaceLandmarker")
                if landmarker else name for name in SYMBOLS]
     symbols.append("MpFaceLandmarkerDetectForVideo" if landmarker
@@ -125,6 +169,8 @@ def main():
     run(["bazelisk", f"--output_user_root={args.bazel_cache.resolve()}",
          "build", *flags, f"--override_repository=macos_opencv={opencv}", target], source)
     built = source / f"bazel-bin/mediapipe/tasks/c/vision/{task}/lib{task}.dylib"
+    if not args.cpu_only:
+        verify_objc_namespace(built, task)
     library = ctypes.CDLL(str(built))
     for name in symbols:
         getattr(library, name)  # Reject the upstream target's empty C API build.
@@ -137,6 +183,8 @@ def main():
     output = PACKAGE / "build/native"
     if landmarker:
         output = output / task
+    if args.output_dir is not None:
+        output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
     smoke = output / "native_smoke"
     run(["xcrun", "clang++", "-std=c++17", "-I", str(source),
@@ -144,12 +192,21 @@ def main():
                         else "tool/native_smoke.cc")), str(built), "-o", str(smoke)])
     # The upstream library's install name is bare; this isolated native test
     # points dyld at it. Flutter/Dart rewrite the ID when bundling.
-    subprocess.run(
-        [str(smoke), str(PACKAGE / ("models/face_landmarker.task" if landmarker
-                                   else "models/blaze_face_short_range.tflite")),
-         str(PACKAGE / "test/fixtures/face_detection/landmark-ex1.jpg")],
-        env={**os.environ, "DYLD_LIBRARY_PATH": str(built.parent)}, check=True,
-    )
+    delegates = ["cpu"] if args.cpu_only else ["cpu", "gpu"]
+    for delegate in delegates:
+        result = subprocess.run(
+            [str(smoke), str(PACKAGE / ("models/face_landmarker.task" if landmarker
+                                       else "models/blaze_face_short_range.tflite")),
+             str(PACKAGE / "test/fixtures/face_detection/landmark-ex1.jpg"), delegate],
+            env={**os.environ, "DYLD_LIBRARY_PATH": str(built.parent)},
+            capture_output=True, text=True,
+        )
+        log = result.stdout + result.stderr
+        (output / f"smoke_{delegate}.log").write_text(log)
+        print(log, end="", flush=True)
+        result.check_returncode()
+        if delegate == "gpu" and "Created TensorFlow Lite delegate for Metal." not in log:
+            raise SystemExit("GPU smoke did not confirm Metal delegate creation; refusing CPU fallback.")
     destination = output / f"lib{task}.dylib"
     temporary = output / f"lib{task}.dylib.tmp"
     shutil.copyfile(built, temporary)
@@ -158,6 +215,7 @@ def main():
     manifest = dict(
         source=SOURCE, revision=REVISION, version="1.0.0",
         target=target, flags=flags, platform="macos", architecture="arm64",
+        delegates=delegates,
         opencv_revision=OPENCV_REVISION, opencv_configuration=opencv_configuration,
         sha256=digest, bytes=destination.stat().st_size,
         bazel_version=(source / ".bazelversion").read_text().strip(),

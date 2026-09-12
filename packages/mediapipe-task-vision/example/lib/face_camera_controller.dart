@@ -26,6 +26,7 @@ class FaceCameraController extends ChangeNotifier {
   int processedFrames = 0;
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
+  VisionDelegate delegate = VisionDelegate.cpu;
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
       ? 0
       : processedFrames * 1000000 / _clock.elapsedMicroseconds;
@@ -44,7 +45,10 @@ class FaceCameraController extends ChangeNotifier {
     if (!_closed) notifyListeners();
   }
 
-  Future<void> start(CameraDescription description) {
+  Future<void> start(
+    CameraDescription description, {
+    VisionDelegate delegate = VisionDelegate.cpu,
+  }) {
     if (_closed) return Future.error(StateError('Camera demo is closed.'));
     final generation = ++_generation;
     running = false;
@@ -56,9 +60,11 @@ class FaceCameraController extends ChangeNotifier {
       await _release();
       if (_closed || generation != _generation) return;
       try {
+        this.delegate = delegate;
         final data = await rootBundle.load('assets/face_landmarker.task');
         _landmarker = await FaceLandmarker.create(
           FaceLandmarkerOptions(
+            delegate: delegate,
             modelBytes: data.buffer.asUint8List(
               data.offsetInBytes,
               data.lengthInBytes,

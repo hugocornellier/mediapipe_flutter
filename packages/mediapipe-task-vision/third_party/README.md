@@ -13,7 +13,7 @@ The fourteen headers under `mediapipe/` are unchanged copies from that commit.
 They define the modern C ABI separately from the legacy 2024 core/text/GenAI
 bindings. Do not substitute those packages' base options or image structs.
 
-`tool/build_native.py` compiles the official CPU task with static OpenCV core
+`tool/build_native.py` compiles the official CPU/Metal task with static OpenCV core
 and imgproc. Its external-repository override supplies those static libraries;
 no MediaPipe graph, calculator, model, or C implementation is patched.
 
@@ -24,6 +24,14 @@ as dynamic dependencies. Every build verifies C exports, ABI sizes, and portrait
 inference before preparing a native release candidate with a SHA-256 manifest.
 The build is source/version pinned; byte-identical output across Xcode versions
 is not claimed.
+
+Metal builds select the pinned Apple C++/Objective-C toolchain explicitly.
+Compiler definitions prefix seven Objective-C classes, the graph delegate
+protocol, and the NSError category/selectors separately for each task. These
+identifiers are process-global even with hidden C exports; prefixing prevents
+collisions between the two dylibs and other LiteRT Metal runtimes. The builder
+checks the class list and requires successful CPU and GPU inference, including
+the upstream Metal delegate creation log. Upstream sources remain unmodified.
 
 Each task has its own dylib and generated bindings, including its own image
 allocation/free functions. Native pointers never cross task libraries. Tests

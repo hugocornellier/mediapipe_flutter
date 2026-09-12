@@ -3,12 +3,12 @@
 - Source: https://github.com/google/flutter-mediapipe
 - Branch: `main`
 - Fork base: `d3e554eacc81bc469fad525f54ed533b2fc585e7`
-- Private repository: https://github.com/hugocornellier/mediapipe_flutter
+- Repository: https://github.com/hugocornellier/mediapipe_flutter
 
-This is a standalone private repository containing the upstream Git history.
-GitHub does not permit a private fork of a public repository within its fork
-network. The local `upstream` remote tracks Google's original repository;
-`origin` points to this private repository.
+This standalone repository contains the upstream Git history. It was created
+privately, outside GitHub's fork network, and made public on 2026-09-12.
+The local `upstream` remote tracks Google's original repository;
+`origin` points to this maintained repository.
 
 ## Initial rename
 
@@ -84,7 +84,7 @@ records model, fixture, and reference-library digests and provides native ABI,
 inference, and Flutter bundling checks. A prebuilt runtime is published separately
 in the public `hugocornellier/mediapipe_flutter_native` repository. The hook pins
 both archive and library digests and caches verified downloads; the source
-repository remains private. Additional platforms/modes remain pending.
+repository is now public. Additional platforms/modes remain pending.
 
 The wrapper also exposes the official VIDEO entry point from that same native
 artifact, with timestamped results and worker-side conversion of padded camera

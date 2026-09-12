@@ -3,6 +3,7 @@
 Run from the package root in a Python 3.12 venv with mediapipe==1.0.0.
 The Dart tests consume the checked-in JSON; they do not need Python.
 """
+import argparse
 import dataclasses
 import hashlib
 import json
@@ -25,7 +26,25 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def gpu_image(image):
+    """Apple's GPU upload requires RGBA; preserve RGB values and add alpha."""
+    if image.image_format != mp.ImageFormat.SRGB:
+        return image
+    pixels = image.numpy_view()
+    return mp.Image(image_format=mp.ImageFormat.SRGBA, data=np.concatenate(
+        [pixels, np.full((*pixels.shape[:2], 1), 255, dtype=np.uint8)], axis=2))
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--delegate", choices=("cpu", "gpu"), default="cpu")
+    parser.add_argument("--output-dir", type=Path,
+                        help="Write independent references here without changing fixtures")
+    args = parser.parse_args()
+    output = args.output_dir.resolve() if args.output_dir else FIXTURES
+    output.mkdir(parents=True, exist_ok=True)
+    delegate = getattr(mp.tasks.BaseOptions.Delegate, args.delegate.upper())
+    suffix = "_gpu" if args.delegate == "gpu" else ""
     assert mp.__version__ == "1.0.0", mp.__version__
     assert platform.system() == "Darwin" and platform.machine() == "arm64"
     assert digest(MODEL) == MODEL_SHA256
@@ -36,13 +55,15 @@ def main():
     options = vision.FaceDetectorOptions(
         base_options=mp.tasks.BaseOptions(
             model_asset_path=str(MODEL),
-            delegate=mp.tasks.BaseOptions.Delegate.CPU,
+            delegate=delegate,
         ),
         min_detection_confidence=0.5,
         min_suppression_threshold=0.3,
     )
     with vision.FaceDetector.create_from_options(options) as detector:
         def record(name, image, *, rotation=0, file=None, raw=None):
+            if args.delegate == "gpu":
+                image = gpu_image(image)
             result = detector.detect(
                 image, ImageProcessingOptions(
                     rotation_degrees=rotation
@@ -69,7 +90,11 @@ def main():
             str(FIXTURES / "mesh-ex1.jpeg")
         ).numpy_view()[::20, ::20, :3].copy()
         raw = FIXTURES / "portrait-301x209.rgb"
-        raw.write_bytes(pixels.tobytes())
+        if args.output_dir:
+            # A host comparison must use exactly the checked-in fixture bytes.
+            assert raw.read_bytes() == pixels.tobytes(), "Raw fixture derivation changed"
+        else:
+            raw.write_bytes(pixels.tobytes())
         image = mp.Image(image_format=mp.ImageFormat.SRGB, data=pixels)
         record("rgb", image, raw=raw)
         rgba = np.concatenate(
@@ -97,12 +122,14 @@ def main():
         source_revision="6d31f1ebc3284db74d211d62bdc4f0a0c29ea120",
         library_sha256=LIBRARY_SHA256,
         model_sha256=MODEL_SHA256,
-        platform="macOS arm64", delegate="CPU", running_mode="IMAGE",
+        platform="macOS arm64", delegate=args.delegate.upper(), running_mode="IMAGE",
         min_detection_confidence=0.5, min_suppression_threshold=0.3,
         raw_derivation="mesh-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
+        **({"input_conversion": "RGB to RGBA with opaque alpha for Metal"}
+           if args.delegate == "gpu" else {}),
         cases=cases,
     )
-    (FIXTURES / "official_reference.json").write_text(
+    (output / f"official{suffix}_reference.json").write_text(
         json.dumps(reference, indent=2, allow_nan=False) + "\n"
     )
 
@@ -118,6 +145,8 @@ def main():
     with vision.FaceDetector.create_from_options(options) as detector:
         for index, (name, data, rotation) in enumerate(frames):
             image = mp.Image(image_format=mp.ImageFormat.SRGB, data=data)
+            if args.delegate == "gpu":
+                image = gpu_image(image)
             timestamp = index * 33
             result = detector.detect_for_video(image, timestamp,
                 ImageProcessingOptions(rotation_degrees=rotation))
@@ -128,7 +157,7 @@ def main():
                 case.update(raw=raw.name, sha256=digest(raw))
             video_cases.append(case)
             print("video", timestamp, name, len(result.detections), "face(s)")
-    (FIXTURES / "official_video_reference.json").write_text(json.dumps(
+    (output / f"official{suffix}_video_reference.json").write_text(json.dumps(
         {**reference, "running_mode": "VIDEO", "cases": video_cases},
         indent=2, allow_nan=False) + "\n")
 
