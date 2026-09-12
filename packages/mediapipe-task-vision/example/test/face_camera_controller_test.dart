@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediapipe_face_camera/face_camera_controller.dart';
 import 'package:mediapipe_face_camera/main.dart';
+import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 const _description = CameraDescription(
   name: 'Fixture camera',
@@ -163,10 +164,18 @@ void main() {
       expect(session.result, isNull);
       expect(platform.frames.hasListener, isFalse);
       expect(platform.disposed, 1);
-      await session.start(_description);
+      // Switch backend after draining the old task, then switch back below.
+      await session.start(_description, delegate: VisionDelegate.gpu);
+      expect(session.delegate, VisionDelegate.gpu);
+      expect(session.error, isNull);
       platform.frames.add(image);
       await _until(() => session.processedFrames == 1);
       expect(session.result!.faceLandmarks, hasLength(1));
+      await session.start(_description, delegate: VisionDelegate.cpu);
+      expect(session.delegate, VisionDelegate.cpu);
+      platform.frames.add(image);
+      await _until(() => session.processedFrames == 1);
+      expect(session.result!.faceLandmarks.single, hasLength(478));
     },
   );
 
@@ -204,6 +213,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Start camera'), findsOneWidget);
     expect(find.text('Fixture camera'), findsOneWidget);
+    expect(find.text('CPU'), findsOneWidget);
+    expect(find.text('GPU (Metal)'), findsOneWidget);
+    await tester.tap(find.text('GPU (Metal)'));
+    await tester.pumpAndSettle();
     expect(platform.created, 0);
     await tester.runAsync(session.close);
     await tester.pumpWidget(const SizedBox());
