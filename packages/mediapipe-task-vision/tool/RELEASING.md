@@ -1,9 +1,9 @@
 # Native runtime releases
 
-The Dart/Flutter source repository is private. Public native downloads live in
+The Dart/Flutter source repository is public. Native downloads live separately in
 [`hugocornellier/mediapipe_flutter_native`](https://github.com/hugocornellier/mediapipe_flutter_native),
 whose Git history contains the native-runtime README. Releases contain the
-compiled upstream runtime, manifest, and checksums. Do not push this private
+compiled upstream runtime, manifest, and checksums. Do not push this source
 repository's Git history, package code, model files, or test fixtures there.
 
 ## Prepare and test

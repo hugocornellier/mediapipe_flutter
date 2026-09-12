@@ -38,7 +38,11 @@ def gpu_image(image):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--delegate", choices=("cpu", "gpu"), default="cpu")
+    parser.add_argument("--output-dir", type=Path,
+                        help="Write independent references here without changing fixtures")
     args = parser.parse_args()
+    output = args.output_dir.resolve() if args.output_dir else FIXTURES
+    output.mkdir(parents=True, exist_ok=True)
     delegate = getattr(mp.tasks.BaseOptions.Delegate, args.delegate.upper())
     suffix = "_gpu" if args.delegate == "gpu" else ""
     assert mp.__version__ == "1.0.0", mp.__version__
@@ -86,7 +90,11 @@ def main():
             str(FIXTURES / "mesh-ex1.jpeg")
         ).numpy_view()[::20, ::20, :3].copy()
         raw = FIXTURES / "portrait-301x209.rgb"
-        raw.write_bytes(pixels.tobytes())
+        if args.output_dir:
+            # A host comparison must use exactly the checked-in fixture bytes.
+            assert raw.read_bytes() == pixels.tobytes(), "Raw fixture derivation changed"
+        else:
+            raw.write_bytes(pixels.tobytes())
         image = mp.Image(image_format=mp.ImageFormat.SRGB, data=pixels)
         record("rgb", image, raw=raw)
         rgba = np.concatenate(
@@ -121,7 +129,7 @@ def main():
            if args.delegate == "gpu" else {}),
         cases=cases,
     )
-    (FIXTURES / f"official{suffix}_reference.json").write_text(
+    (output / f"official{suffix}_reference.json").write_text(
         json.dumps(reference, indent=2, allow_nan=False) + "\n"
     )
 
@@ -149,7 +157,7 @@ def main():
                 case.update(raw=raw.name, sha256=digest(raw))
             video_cases.append(case)
             print("video", timestamp, name, len(result.detections), "face(s)")
-    (FIXTURES / f"official{suffix}_video_reference.json").write_text(json.dumps(
+    (output / f"official{suffix}_video_reference.json").write_text(json.dumps(
         {**reference, "running_mode": "VIDEO", "cases": video_cases},
         indent=2, allow_nan=False) + "\n")
 
