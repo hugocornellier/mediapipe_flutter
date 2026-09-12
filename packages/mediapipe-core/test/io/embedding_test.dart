@@ -13,11 +13,17 @@ import 'package:mediapipe_flutter_core/src/io/third_party/mediapipe/generated/me
 void main() {
   group('Native embeddings should', () {
     test('represent a float embedding pointer correctly', () {
-      final ptr = malloc<bindings.Embedding>();
+      // The native contract requires the unused embedding pointer to be null.
+      final ptr = calloc<bindings.Embedding>();
       ptr.ref.float_embedding = Float32List.fromList([0.1, 0.2]).copyToNative();
       ptr.ref.values_count = 2;
       ptr.ref.head_index = 2394723;
       ptr.ref.head_name = 'Head Name'.copyToNative();
+      addTearDown(() {
+        malloc.free(ptr.ref.float_embedding);
+        malloc.free(ptr.ref.head_name);
+        calloc.free(ptr);
+      });
 
       final embedding = Embedding.native(ptr);
       expect(embedding.type, equals(EmbeddingType.float));
@@ -30,7 +36,7 @@ void main() {
     });
 
     test('represent a quantized embedding pointer correctly', () {
-      final ptr = malloc<bindings.Embedding>();
+      final ptr = calloc<bindings.Embedding>();
       ptr.ref.quantized_embedding = Uint8List.fromList([
         3,
         2,
@@ -39,6 +45,11 @@ void main() {
       ptr.ref.values_count = 3;
       ptr.ref.head_index = 999;
       ptr.ref.head_name = 'Tail Name'.copyToNative();
+      addTearDown(() {
+        malloc.free(ptr.ref.quantized_embedding);
+        malloc.free(ptr.ref.head_name);
+        calloc.free(ptr);
+      });
 
       final embedding = Embedding.native(ptr);
       expect(embedding.type, equals(EmbeddingType.quantized));

@@ -2,4 +2,5 @@ include: ../analysis_options.yaml
 
 analyzer:
   exclude:
+    - "build/**"
     - "**/mediapipe_flutter_vision_bindings.dart"
