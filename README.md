@@ -1,6 +1,6 @@
 # mediapipe_flutter
 
-MediaPipe Tasks for Flutter. An independent, private development fork of
+MediaPipe Tasks for Flutter. An independent development fork of
 [google/flutter-mediapipe](https://github.com/google/flutter-mediapipe), maintained
 by [Hugo Cornellier](https://github.com/hugocornellier). This is not an official
 Google package. No packages from this fork have been published to pub.dev.
@@ -67,7 +67,7 @@ The unpacked libraries are about 13.7 MB and 15.9 MB, with separate 224 KB and
 demo selects only Face Landmarker. Both archive
 and library digests are pinned. The hook extracts the runtime using Dart and
 requires no Bazel, CMake, Ninja, or GitHub credentials. The Dart/Flutter source
-repository remains private; obtaining the package still requires source access.
+repository is public; no packages from this fork are published to pub.dev yet.
 
 `make native_vision` optionally builds pinned MediaPipe v1.0.0 and static OpenCV
 4.12.0. The hook uses that verified local build when present. `make release_vision`

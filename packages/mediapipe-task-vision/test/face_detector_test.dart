@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -8,6 +7,7 @@ import 'package:mediapipe_flutter_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/vision_fixture.dart';
+import 'support/face_reference.dart';
 
 const _fixtures = 'test/fixtures/face_detection';
 const _model = 'models/blaze_face_short_range.tflite';
@@ -22,13 +22,10 @@ void main() {
 }
 
 void _testDelegate(VisionDelegate delegate) {
-  final reference =
-      jsonDecode(
-            File(
-              '$_fixtures/official${delegate == VisionDelegate.gpu ? '_gpu' : ''}_reference.json',
-            ).readAsStringSync(),
-          )
-          as Map<String, dynamic>;
+  final reference = loadFaceReference(
+    'face_detection',
+    'official${delegate == VisionDelegate.gpu ? '_gpu' : ''}_reference.json',
+  );
   final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
   late FaceDetector detector;
 
@@ -221,13 +218,10 @@ void _testDelegate(VisionDelegate delegate) {
   });
 
   test('video sequence matches the official VIDEO-mode reference', () async {
-    final reference =
-        jsonDecode(
-              File(
-                '$_fixtures/official${delegate == VisionDelegate.gpu ? '_gpu' : ''}_video_reference.json',
-              ).readAsStringSync(),
-            )
-            as Map<String, dynamic>;
+    final reference = loadFaceReference(
+      'face_detection',
+      'official${delegate == VisionDelegate.gpu ? '_gpu' : ''}_video_reference.json',
+    );
     expect(reference['running_mode'], 'VIDEO');
     expect(reference['model_sha256'], blazeFaceShortRangeSha256);
     final video = await FaceDetector.create(

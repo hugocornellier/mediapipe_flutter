@@ -8,6 +8,7 @@ import 'package:mediapipe_flutter_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/vision_fixture.dart';
+import 'support/face_reference.dart';
 
 const _model = 'models/face_landmarker.task';
 const _fixtures = 'test/fixtures/face_detection';
@@ -36,12 +37,7 @@ void _testDelegate(VisionDelegate delegate) {
       _compare(actual, expected, delegate);
   final reference = delegate == VisionDelegate.cpu
       ? _reference
-      : jsonDecode(
-              File(
-                'test/fixtures/face_landmarker/official_gpu_reference.json',
-              ).readAsStringSync(),
-            )
-            as Map<String, dynamic>;
+      : loadFaceReference('face_landmarker', 'official_gpu_reference.json');
   final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
   final rgbFrame = (cases.first['frames'] as List)
       .cast<Map<String, dynamic>>()

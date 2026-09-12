@@ -34,3 +34,8 @@ matrix elements. GPU tests allow 0.002, 0.04, and 0.06 respectively. Counts,
 ordering, optional fields, timestamps, and category names still match exactly.
 These measurements describe this fixture suite, not model accuracy in general.
 CPU tolerances remain unchanged; CPU and GPU are not expected to be bit-identical.
+
+CI generates the GPU oracle on the same runner as the native task, using the
+exact pinned official wheel and the same model/fixtures. All tolerances above
+remain unchanged. The physical-Mac goldens remain available for local runs.
+See [the GPU comparison guide](../../../tool/GPU_VALIDATION.md).
