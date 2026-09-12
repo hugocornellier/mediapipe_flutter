@@ -10,3 +10,6 @@ export 'src/io/face_detector.dart';
 export 'src/interface/face_landmarker_types.dart';
 export 'src/io/face_landmarker.dart';
 export 'src/interface/face_landmark_connections.dart';
+export 'src/interface/vision_types.dart';
+export 'src/interface/interactive_segmenter_types.dart';
+export 'src/io/interactive_segmenter.dart';

@@ -1,9 +1,10 @@
-"""Prepare an unchanged official macOS runtime for Interactive Segmenter.
+"""Prepare the official macOS runtime for Interactive Segmenter.
 
 The new stateful implementation is present in Google's Python wheel but is not
 available as a standalone public C++ build target. No Python is shipped to apps.
 This tool verifies the wheel and extracts only its native library and notices.
-It creates a deterministic, reviewable archive; it never publishes anything.
+Load-command paths and the ad-hoc signature are adjusted for Dart bundling;
+code/data bytes are verified unchanged. It never publishes anything.
 """
 import argparse
 import gzip
@@ -16,6 +17,8 @@ import subprocess
 import tarfile
 import urllib.request
 import zipfile
+
+from macho_metadata import normalize
 
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
@@ -48,15 +51,22 @@ def prepare(wheel, output):
         }
     if digest(files[LIBRARY_NAME]) != LIBRARY_SHA256:
         raise ValueError('Official library checksum mismatch')
+    output.mkdir(parents=True, exist_ok=True)
+    library = output / LIBRARY_NAME
+    library.write_bytes(files[LIBRARY_NAME])
+    packaging = normalize(library)
+    files[LIBRARY_NAME] = library.read_bytes()
+    artifact_hash = digest(files[LIBRARY_NAME])
     manifest = {
         'origin': 'official-pypi-wheel', 'upstream_version': VERSION,
         'upstream_url': WHEEL_URL, 'upstream_sha256': WHEEL_SHA256,
         'upstream_library': 'mediapipe/tasks/c/libmediapipe.dylib',
+        'upstream_library_sha256': LIBRARY_SHA256,
         'release': TAG, 'platform': 'macos', 'architecture': 'arm64',
         'minimum_os': '14.0', 'delegates': ['cpu'],
-        'sha256': LIBRARY_SHA256, 'bytes': len(files[LIBRARY_NAME]),
+        'sha256': artifact_hash, 'bytes': len(files[LIBRARY_NAME]),
         'files': {name: digest(data) for name, data in files.items()},
-        'modifications': 'None; native bytes and upstream notices are unchanged.',
+        'packaging': packaging,
         'scope': 'Full upstream runtime, exposed here only for Interactive Segmenter. '
                  'GPU is not enabled: the upstream macOS stroke shader fails to initialize.',
     }
@@ -98,10 +108,12 @@ def prepare(wheel, output):
     (release / 'SHA256SUMS').write_text(f'{checksum}  {ARCHIVE_NAME}\n')
     (release / 'RELEASE_NOTES.md').write_text(
         f'Interactive Segmenter runtime for macOS arm64, CPU only.\n\n'
-        f'Unchanged native library from the official MediaPipe {VERSION} macOS wheel; '
+        f'Native library from the official MediaPipe {VERSION} macOS wheel; '
         'includes its complete LICENSE and NOTICE. This is the full upstream runtime, '
-        'not a standalone source build. Models are separate. No Python is required by apps.\n\n'
-        f'Archive SHA-256: `{checksum}`\n\nLibrary SHA-256: `{LIBRARY_SHA256}`\n')
+        'not a standalone source build. System framework load paths and signing metadata '
+        'are adjusted for Dart bundling; all code and data are verified unchanged. '
+        'Requires macOS 14+. Models are separate. No Python is required by apps.\n\n'
+        f'Archive SHA-256: `{checksum}`\n\nLibrary SHA-256: `{artifact_hash}`\n')
     print(json.dumps({'archive': str(archive), 'sha256': checksum,
                       'bytes': archive.stat().st_size, 'manifest': manifest}, indent=2))
 
