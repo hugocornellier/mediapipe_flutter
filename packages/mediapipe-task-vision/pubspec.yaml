@@ -25,3 +25,10 @@ dev_dependencies:
   ffigen: ^21.0.0
   lints: ^6.1.0
   test: ^1.31.0
+
+# Package-maintainer tests exercise coexistence of all three runtimes.
+# Consumer apps choose their own tasks; the hook's default remains face-only.
+hooks:
+  user_defines:
+    mediapipe_flutter_vision:
+      tasks: [face_detector, face_landmarker, interactive_segmenter]

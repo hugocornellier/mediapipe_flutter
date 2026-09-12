@@ -1,0 +1,93 @@
+{
+  "runtime": "mediapipe==1.0.1",
+  "delegate": "cpu",
+  "initialize_ms": 69.976,
+  "os": "Version 26.4 (Build 25E246)",
+  "processors": 16,
+  "dart": "3.12.2 (stable) (Tue Jun 9 01:11:39 2026 -0700) on \"macos_arm64\"",
+  "model_sha256": "38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03",
+  "reference_cases": 2,
+  "maximum_reference_error": 0.0,
+  "width": 1200,
+  "height": 600,
+  "input_copy_ms": 0.167,
+  "set_image": {
+    "samples_ms": [
+      0.591,
+      0.815,
+      0.666,
+      0.725,
+      0.776
+    ],
+    "p50_ms": 0.725,
+    "p95_ms": 0.815,
+    "mean_ms": 0.7146000000000001
+  },
+  "first_stroke_after_image": {
+    "samples_ms": [
+      195.363,
+      193.177,
+      192.665,
+      192.98,
+      192.756
+    ],
+    "p50_ms": 192.98,
+    "p95_ms": 195.363,
+    "mean_ms": 193.38819999999998
+  },
+  "repeated_stroke": {
+    "samples_ms": [
+      190.768,
+      191.036,
+      191.6,
+      192.64,
+      191.384,
+      191.596,
+      192.498,
+      189.767,
+      192.128,
+      192.43,
+      191.132,
+      191.601,
+      191.264,
+      201.845,
+      191.238,
+      192.395,
+      192.096,
+      190.866,
+      192.38,
+      191.624
+    ],
+    "p50_ms": 191.6,
+    "p95_ms": 192.64,
+    "mean_ms": 192.1144
+  },
+  "overlay_conversion_and_upload": {
+    "samples_ms": [
+      1.915,
+      1.503,
+      1.264,
+      1.213,
+      1.279,
+      1.192,
+      1.272,
+      1.391,
+      1.43,
+      1.3
+    ],
+    "p50_ms": 1.279,
+    "p95_ms": 1.915,
+    "mean_ms": 1.3759000000000001
+  },
+  "timing_scope": "Public async API includes isolate transfer, native inference and mask copy. Overlay includes a new isolate, threshold conversion, RGBA transfer and ui.Image creation, but excludes frame presentation.",
+  "debug_inference": "passed",
+  "release_inference": "passed",
+  "native_build_tools_invoked": false,
+  "release": "interactive-segmenter-v1.0.1-1",
+  "source": "local-candidate",
+  "frameworks": [
+    "FlutterMacOS.framework",
+    "App.framework",
+    "interactive_segmenter.framework"
+  ]
+}
