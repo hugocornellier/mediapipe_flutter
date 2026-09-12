@@ -8,7 +8,7 @@ import '../interface/face_detector_types.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceDetector {
-  /// Creates the official IMAGE-mode CPU task.
+  /// Creates the official IMAGE or VIDEO CPU task.
   NativeFaceDetector(FaceDetectorOptions options) {
     using((arena) {
       final native = arena<mp.MpFaceDetectorOptions>();
@@ -26,7 +26,9 @@ final class NativeFaceDetector {
         base.model_asset_buffer_count = bytes.length;
       }
       native.ref
-        ..running_mode = mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
+        ..running_mode = options.runningMode == VisionRunningMode.video
+            ? mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
+            : mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
         ..min_detection_confidence = options.minDetectionConfidence
         ..min_suppression_threshold = options.minSuppressionThreshold;
       final output = arena<mp.MpFaceDetectorPtr>();
@@ -38,7 +40,7 @@ final class NativeFaceDetector {
   mp.MpFaceDetectorPtr _detector = nullptr;
 
   /// Runs a single image and copies every result before releasing native memory.
-  FaceDetectorResult detect(VisionImage input, int rotation) {
+  FaceDetectorResult detect(VisionImage input, int rotation, {int? timestamp}) {
     return using((arena) {
       final imageOut = arena<mp.MpImagePtr>();
       if (input.path case final path?) {
@@ -46,8 +48,31 @@ final class NativeFaceDetector {
         _checked((error) => mp.MpImageCreateFromFile(name, imageOut, error));
       } else {
         final bytes = input.pixels!;
-        final pixels = arena<Uint8>(bytes.length);
-        pixels.asTypedList(bytes.length).setAll(0, bytes);
+        final rowSize = input.width! * input.format!.channels;
+        final byteCount = rowSize * input.height!;
+        final pixels = arena<Uint8>(byteCount);
+        final packed = pixels.asTypedList(byteCount);
+        if (input.format == VisionPixelFormat.bgra) {
+          for (var y = 0; y < input.height!; y++) {
+            final sourceRow = y * input.bytesPerRow!;
+            final targetRow = y * rowSize;
+            for (var x = 0; x < rowSize; x += 4) {
+              packed[targetRow + x] = bytes[sourceRow + x + 2];
+              packed[targetRow + x + 1] = bytes[sourceRow + x + 1];
+              packed[targetRow + x + 2] = bytes[sourceRow + x];
+              packed[targetRow + x + 3] = bytes[sourceRow + x + 3];
+            }
+          }
+        } else {
+          for (var y = 0; y < input.height!; y++) {
+            packed.setRange(
+              y * rowSize,
+              (y + 1) * rowSize,
+              bytes,
+              y * input.bytesPerRow!,
+            );
+          }
+        }
         _checked(
           (error) => mp.MpImageCreateFromUint8Data(
             input.format == VisionPixelFormat.rgb
@@ -56,7 +81,7 @@ final class NativeFaceDetector {
             input.width!,
             input.height!,
             pixels,
-            bytes.length,
+            byteCount,
             imageOut,
             error,
           ),
@@ -67,19 +92,33 @@ final class NativeFaceDetector {
         final options = arena<mp.MpImageProcessingOptions>();
         options.ref.rotation_degrees = rotation;
         final result = arena<mp.MpFaceDetectorResult>();
-        _checked(
-          (error) => mp.MpFaceDetectorDetectImage(
-            _detector,
-            image,
-            options,
-            result,
-            error,
-          ),
-        );
+        if (timestamp == null) {
+          _checked(
+            (error) => mp.MpFaceDetectorDetectImage(
+              _detector,
+              image,
+              options,
+              result,
+              error,
+            ),
+          );
+        } else {
+          _checked(
+            (error) => mp.MpFaceDetectorDetectForVideo(
+              _detector,
+              image,
+              options,
+              timestamp,
+              result,
+              error,
+            ),
+          );
+        }
         try {
           return FaceDetectorResult(
             imageWidth: mp.MpImageGetWidth(image),
             imageHeight: mp.MpImageGetHeight(image),
+            timestampMilliseconds: timestamp,
             detections: [
               for (var i = 0; i < result.ref.detections_count; i++)
                 _copyDetection(result.ref.detections[i]),

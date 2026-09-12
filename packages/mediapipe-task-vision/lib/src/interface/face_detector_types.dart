@@ -1,11 +1,21 @@
 import 'dart:typed_data';
 
-/// Options for the official CPU Face Detector in IMAGE mode.
+/// Supported modes of the official MediaPipe task.
+enum VisionRunningMode {
+  /// Independent still images.
+  image,
+
+  /// Frames with monotonically increasing timestamps.
+  video,
+}
+
+/// Options for the official CPU Face Detector.
 final class FaceDetectorOptions {
   /// Supply exactly one model source. Thresholds match the official Python API.
   FaceDetectorOptions({
     this.modelPath,
     Uint8List? modelBytes,
+    this.runningMode = VisionRunningMode.image,
     this.minDetectionConfidence = 0.5,
     this.minSuppressionThreshold = 0.3,
   }) : modelBytes = modelBytes == null
@@ -37,6 +47,9 @@ final class FaceDetectorOptions {
   /// Owned, read-only copy of model bytes, useful with Flutter's rootBundle.
   final Uint8List? modelBytes;
 
+  /// The task mode, fixed for the lifetime of this detector.
+  final VisionRunningMode runningMode;
+
   /// Minimum score for a detection to be returned.
   final double minDetectionConfidence;
 
@@ -44,13 +57,17 @@ final class FaceDetectorOptions {
   final double minSuppressionThreshold;
 }
 
-/// Channel order for tightly packed, unsigned 8-bit input pixels.
+/// Channel order for unsigned 8-bit input pixels.
 enum VisionPixelFormat {
   /// Red, green, blue.
   rgb(3),
 
   /// Red, green, blue, alpha. This is not BGRA.
-  rgba(4);
+  rgba(4),
+
+  /// Blue, green, red, alpha, as supplied by macOS cameras.
+  /// Converted to RGBA on the inference worker before entering MediaPipe.
+  bgra(4);
 
   const VisionPixelFormat(this.channels);
 
@@ -66,36 +83,46 @@ final class VisionImage {
       pixels = null,
       width = null,
       height = null,
-      format = null {
+      format = null,
+      bytesPerRow = null {
     if (path.isEmpty || path.contains('\u0000')) {
       throw ArgumentError.value(path, 'path', 'Invalid path');
     }
   }
 
-  /// Copy tightly packed RGB or RGBA bytes, without row padding.
+  /// Copy RGB, RGBA, or BGRA bytes, optionally including camera row padding.
+  ///
+  /// [bytesPerRow] defaults to width times channel count. The buffer must have
+  /// exactly height times bytesPerRow bytes. Row padding is removed on the
+  /// inference worker; no resizing, rotation, or model normalization is done here.
   VisionImage.fromPixels({
     required Uint8List pixels,
     required int width,
     required int height,
     required VisionPixelFormat format,
+    int? bytesPerRow,
   }) : path = null,
        width = width,
        height = height,
        format = format,
+       bytesPerRow = bytesPerRow ?? width * format.channels,
        pixels = Uint8List.fromList(pixels).asUnmodifiableView() {
-    final size = width * height * format.channels;
+    final rowSize = this.bytesPerRow!;
     if (width <= 0 ||
         height <= 0 ||
         width > 0x7fffffff ||
         height > 0x7fffffff ||
-        size > 0x7fffffff) {
+        rowSize < width * format.channels ||
+        rowSize > 0x7fffffff ||
+        height > 0x7fffffff ~/ rowSize) {
       throw ArgumentError(
         'Image dimensions must be positive and fit the C API.',
       );
     }
+    final size = rowSize * height;
     if (pixels.length != size) {
       throw ArgumentError(
-        'Expected $size tightly packed bytes, received ${pixels.length}.',
+        'Expected $size pixel-buffer bytes, received ${pixels.length}.',
       );
     }
   }
@@ -114,6 +141,9 @@ final class VisionImage {
 
   /// Channel order, resolved by MediaPipe for file input.
   final VisionPixelFormat? format;
+
+  /// Bytes between the starts of adjacent pixel rows, including any padding.
+  final int? bytesPerRow;
 }
 
 /// An unmodified MediaPipe box, in pixels of the input image.
@@ -218,6 +248,7 @@ final class FaceDetectorResult {
     required this.imageWidth,
     required this.imageHeight,
     required List<FaceDetection> detections,
+    this.timestampMilliseconds,
   }) : detections = List.unmodifiable(detections);
 
   /// Decoded input width, after any EXIF orientation correction.
@@ -228,6 +259,9 @@ final class FaceDetectorResult {
 
   /// Detections in the official pipeline's original order.
   final List<FaceDetection> detections;
+
+  /// Input video timestamp, or null for an independent still image.
+  final int? timestampMilliseconds;
 }
 
 /// Failure reported by MediaPipe or its worker isolate.

@@ -181,6 +181,142 @@ void main() {
     expect(() => image.pixels![0] = 0, throwsUnsupportedError);
     _compare(await detector.detectImage(image), expected);
   });
+
+  test('video sequence matches the official VIDEO-mode reference', () async {
+    final reference =
+        jsonDecode(
+              File(
+                '$_fixtures/official_video_reference.json',
+              ).readAsStringSync(),
+            )
+            as Map<String, dynamic>;
+    expect(reference['running_mode'], 'VIDEO');
+    expect(reference['model_sha256'], blazeFaceShortRangeSha256);
+    final video = await FaceDetector.create(
+      FaceDetectorOptions(
+        modelPath: _model,
+        runningMode: VisionRunningMode.video,
+      ),
+    );
+    final frames = (reference['cases'] as List).cast<Map<String, dynamic>>();
+    // Queue the sequence, then dispose immediately: timestamps and results must
+    // stay paired, and shutdown must wait for every submitted frame.
+    final requests = [
+      for (final frame in frames)
+        video.detectForVideo(
+          _image(frame),
+          timestampMilliseconds: frame['timestamp_ms'] as int,
+          rotationDegrees: frame['rotation_degrees'] as int,
+        ),
+    ];
+    final closing = video.dispose();
+    final results = await Future.wait(requests);
+    await closing;
+    for (var i = 0; i < frames.length; i++) {
+      _compare(results[i], frames[i]);
+      expect(results[i].timestampMilliseconds, frames[i]['timestamp_ms']);
+    }
+  });
+
+  test(
+    'video timestamps and mode mismatches fail without poisoning the task',
+    () async {
+      final expected = cases.where((c) => c['name'] == 'rgb').single;
+      final image = _image(expected);
+      final video = await FaceDetector.create(
+        FaceDetectorOptions(
+          modelPath: _model,
+          runningMode: VisionRunningMode.video,
+        ),
+      );
+      try {
+        await expectLater(video.detectImage(image), throwsStateError);
+        await expectLater(
+          detector.detectForVideo(image, timestampMilliseconds: 0),
+          throwsStateError,
+        );
+        _compare(
+          await video.detectForVideo(image, timestampMilliseconds: 10),
+          expected,
+        );
+        for (final timestamp in [-1, 9, 10, 0x7fffffffffffffff]) {
+          await expectLater(
+            video.detectForVideo(image, timestampMilliseconds: timestamp),
+            throwsArgumentError,
+          );
+        }
+        await expectLater(
+          video.detectForVideo(
+            image,
+            timestampMilliseconds: 11,
+            rotationDegrees: 45,
+          ),
+          throwsArgumentError,
+        );
+        await expectLater(
+          video.detectForVideo(
+            VisionImage.fromFile('missing.jpg'),
+            timestampMilliseconds: 11,
+          ),
+          throwsA(isA<FaceDetectorException>()),
+        );
+        _compare(
+          await video.detectForVideo(image, timestampMilliseconds: 12),
+          expected,
+        );
+      } finally {
+        await video.dispose();
+      }
+    },
+  );
+
+  for (final format in VisionPixelFormat.values) {
+    test(
+      'padded ${format.name} camera pixels preserve official detections',
+      () async {
+        final expected = cases.where((c) => c['name'] == 'rgb').single;
+        final rgb = _image(expected).pixels!;
+        final stride = 301 * format.channels + 20;
+        final bytes = Uint8List(stride * 209)..fillRange(0, stride * 209, 127);
+        for (var y = 0; y < 209; y++) {
+          for (var x = 0; x < 301; x++) {
+            final source = (y * 301 + x) * 3;
+            final target = y * stride + x * format.channels;
+            bytes[target] =
+                rgb[source + (format == VisionPixelFormat.bgra ? 2 : 0)];
+            bytes[target + 1] = rgb[source + 1];
+            bytes[target + 2] =
+                rgb[source + (format == VisionPixelFormat.bgra ? 0 : 2)];
+            if (format.channels == 4) bytes[target + 3] = 255;
+          }
+        }
+        final image = VisionImage.fromPixels(
+          pixels: bytes,
+          width: 301,
+          height: 209,
+          format: format,
+          bytesPerRow: stride,
+        );
+        bytes.fillRange(0, bytes.length, 0);
+        _compare(await detector.detectImage(image), expected);
+      },
+    );
+  }
+
+  test('invalid camera strides fail before native allocation', () {
+    for (final stride in [-1, 0, 3, 0x7fffffffffffffff]) {
+      expect(
+        () => VisionImage.fromPixels(
+          pixels: Uint8List(8),
+          width: 2,
+          height: 1,
+          format: VisionPixelFormat.bgra,
+          bytesPerRow: stride,
+        ),
+        throwsArgumentError,
+      );
+    }
+  });
 }
 
 VisionImage _image(Map<String, dynamic> expected) {
@@ -192,7 +328,9 @@ VisionImage _image(Map<String, dynamic> expected) {
     );
     return VisionImage.fromFile(file.path);
   }
-  var pixels = Uint8List(640 * 480 * 3);
+  var pixels = Uint8List(
+    (expected['width'] as int) * (expected['height'] as int) * 3,
+  );
   var format = VisionPixelFormat.rgb;
   if (expected['raw'] case final String name) {
     pixels = File('$_fixtures/$name').readAsBytesSync();

@@ -106,6 +106,32 @@ def main():
         json.dumps(reference, indent=2, allow_nan=False) + "\n"
     )
 
+    video_cases = []
+    frames = [
+        ("rgb", pixels, 0), ("rgb", pixels, 0),
+        ("blank", np.zeros((209, 301, 3), dtype=np.uint8), 0),
+        ("rgb-pair", pair, 0), ("rgb", pixels, 0),
+        ("rgb-rotated", np.ascontiguousarray(np.rot90(pixels)), 90),
+        ("rgb", pixels, 0),
+    ]
+    options.running_mode = vision.RunningMode.VIDEO
+    with vision.FaceDetector.create_from_options(options) as detector:
+        for index, (name, data, rotation) in enumerate(frames):
+            image = mp.Image(image_format=mp.ImageFormat.SRGB, data=data)
+            timestamp = index * 33
+            result = detector.detect_for_video(image, timestamp,
+                ImageProcessingOptions(rotation_degrees=rotation))
+            case = dict(name=name, width=image.width, height=image.height,
+                        timestamp_ms=timestamp, rotation_degrees=rotation,
+                        **dataclasses.asdict(result))
+            if name != "blank":
+                case.update(raw=raw.name, sha256=digest(raw))
+            video_cases.append(case)
+            print("video", timestamp, name, len(result.detections), "face(s)")
+    (FIXTURES / "official_video_reference.json").write_text(json.dumps(
+        {**reference, "running_mode": "VIDEO", "cases": video_cases},
+        indent=2, allow_nan=False) + "\n")
+
 
 if __name__ == "__main__":
     main()

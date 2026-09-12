@@ -1,8 +1,8 @@
 # mediapipe_flutter_vision
 
 Official MediaPipe Face Detector for Dart and Flutter on **macOS arm64**.
-This development version implements **CPU IMAGE mode**. It accepts JPEG/image
-files or tightly packed RGB/RGBA pixels and returns face boxes, categories, and
+This development version implements **CPU IMAGE and VIDEO modes**. It accepts JPEG/image
+files or RGB/RGBA/BGRA pixels and returns face boxes, categories, and
 six keypoints. Inference runs on a worker isolate.
 
 The task uses the unmodified MediaPipe v1.0.0 Face Detector graph and its official
@@ -71,12 +71,13 @@ data.offsetInBytes, data.lengthInBytes))`. A Flutter asset key is not a filesyst
 path. Apps choose whether to bundle or download their model; runtime build hooks
 do not download models.
 
-For decoded pixels, use
+For decoded pixels and camera frames, use
 `VisionImage.fromPixels(pixels: bytes, width: width, height: height,
-format: VisionPixelFormat.rgb)` (or `rgba`). Buffers must be tightly packed;
-convert BGRA/YUV and remove row padding before calling. Inputs are copied and
-made read-only. File decoding, including EXIF orientation, uses MediaPipe's image
-loader.
+format: VisionPixelFormat.rgb)` (or `rgba` / `bgra`). Supply `bytesPerRow` for
+padded camera buffers; omit it for tightly packed pixels. The worker removes
+row padding and converts BGRA channel order before passing RGB/RGBA to MediaPipe.
+Inputs are copied and made read-only. YUV input requires conversion by the caller.
+File decoding, including EXIF orientation, uses MediaPipe's image loader.
 
 `rotationDegrees` must be a clockwise multiple of 90. Returned boxes are in pixels
 of the decoded input image, and keypoints are normalized to that image. Values
@@ -86,6 +87,26 @@ and disposal. Missing keypoint confidence is represented by null.
 Requests are serialized. `dispose()` finishes queued work and closes the task;
 it is idempotent and rejects new requests immediately. Always await it.
 Native failures become `FaceDetectorException` with a status code and message.
+
+For video or live camera frames, create the detector with
+`runningMode: VisionRunningMode.video` and call:
+
+```dart
+final result = await detector.detectForVideo(
+  frame,
+  timestampMilliseconds: timestamp,
+);
+```
+
+This calls the official `MpFaceDetectorDetectForVideo` API on the worker isolate.
+Timestamps are nonnegative milliseconds and must strictly increase in submission
+order. Each submitted timestamp is reserved even when that frame fails. Results
+include `timestampMilliseconds`; still-image results leave it null. Each detector
+has a fixed mode and rejects methods for the other mode.
+
+For live capture, await each inference and skip incoming frames while busy. This
+bounds latency without changing MediaPipe's task graph. Native LIVE_STREAM
+callbacks are not yet exposed by this wrapper.
 
 ## Validation and provenance
 
@@ -151,6 +172,6 @@ script verifies the model, native wheel library, and fixture digests before
 writing goldens. Ordinary tests do not require Python MediaPipe.
 
 See [third_party/README.md](third_party/README.md) for exact native pins and build
-details. Live/video modes, camera capture, Face Landmarker/iris, Intel macOS,
+details. Native LIVE_STREAM callbacks, Face Landmarker/iris, Intel macOS,
 mobile devices, Linux, Windows, and web are outside this initial implementation.
 A camera plugin is not required for still-image inference.

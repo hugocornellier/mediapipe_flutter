@@ -6,9 +6,9 @@ import 'native_face_detector.dart';
 
 /// Official MediaPipe Face Detector, with inference serialized on a worker isolate.
 ///
-/// This initial API supports CPU IMAGE mode on macOS arm64. Always await [dispose].
+/// Supports CPU IMAGE and VIDEO modes on macOS arm64. Always await [dispose].
 final class FaceDetector {
-  FaceDetector._() {
+  FaceDetector._(this.runningMode) {
     _events.listen(_receive);
   }
 
@@ -21,10 +21,14 @@ final class FaceDetector {
   bool _disposing = false;
   Future<void>? _disposeFuture;
   FaceDetectorException? _failure;
+  int? _lastTimestamp;
+
+  /// The official running mode selected when this detector was created.
+  final VisionRunningMode runningMode;
 
   /// Load an official model and initialize MediaPipe off the calling isolate.
   static Future<FaceDetector> create(FaceDetectorOptions options) async {
-    final detector = FaceDetector._();
+    final detector = FaceDetector._(options.runningMode);
     try {
       await Isolate.spawn(
         _runWorker,
@@ -50,8 +54,50 @@ final class FaceDetector {
     VisionImage image, {
     int rotationDegrees = 0,
   }) async {
+    _checkMode(VisionRunningMode.image);
+    _checkRotation(rotationDegrees);
+    return (await _request((image, rotationDegrees, null)))!;
+  }
+
+  /// Process a video or camera frame on the inference worker.
+  ///
+  /// Requires [VisionRunningMode.video]. Timestamps are nonnegative milliseconds
+  /// and must strictly increase in submission order. A submitted timestamp is
+  /// reserved even if that frame fails. Each call returns its input timestamp.
+  /// For a live camera, await each call and skip frames while busy to bound delay.
+  Future<FaceDetectorResult> detectForVideo(
+    VisionImage image, {
+    required int timestampMilliseconds,
+    int rotationDegrees = 0,
+  }) async {
+    _checkMode(VisionRunningMode.video);
+    _checkRotation(rotationDegrees);
+    // MediaPipe converts milliseconds to signed 64-bit microseconds internally.
+    if (timestampMilliseconds < 0 ||
+        timestampMilliseconds > 0x7fffffffffffffff ~/ 1000 ||
+        (_lastTimestamp != null && timestampMilliseconds <= _lastTimestamp!)) {
+      throw ArgumentError.value(
+        timestampMilliseconds,
+        'timestampMilliseconds',
+        'Must be nonnegative, strictly increasing, and fit MediaPipe timestamps',
+      );
+    }
+    _lastTimestamp = timestampMilliseconds;
+    return (await _request((image, rotationDegrees, timestampMilliseconds)))!;
+  }
+
+  void _checkMode(VisionRunningMode expected) {
     if (_disposing) throw StateError('FaceDetector has been disposed.');
     if (_failure case final failure?) throw failure;
+    if (runningMode != expected) {
+      throw StateError(
+        'This method requires ${expected.name} mode; '
+        'the detector was created in ${runningMode.name} mode.',
+      );
+    }
+  }
+
+  void _checkRotation(int rotationDegrees) {
     if (rotationDegrees % 90 != 0 ||
         rotationDegrees < -0x80000000 ||
         rotationDegrees > 0x7fffffff) {
@@ -61,10 +107,9 @@ final class FaceDetector {
         'Must be a C int divisible by 90',
       );
     }
-    return (await _request((image, rotationDegrees)))!;
   }
 
-  Future<FaceDetectorResult?> _request((VisionImage, int)? input) {
+  Future<FaceDetectorResult?> _request((VisionImage, int, int?)? input) {
     final id = _nextId++;
     final completer = Completer<FaceDetectorResult?>();
     _pending[id] = completer;
@@ -132,14 +177,14 @@ Future<void> _runWorker((SendPort, FaceDetectorOptions) initial) async {
     native = NativeFaceDetector(options);
     parent.send(commands.sendPort);
     await for (final dynamic message in commands) {
-      final (id, input) = message as (int, (VisionImage, int)?);
+      final (id, input) = message as (int, (VisionImage, int, int?)?);
       FaceDetectorResult? result;
       FaceDetectorException? failure;
       try {
         if (input == null) {
           native.close();
         } else {
-          result = native.detect(input.$1, input.$2);
+          result = native.detect(input.$1, input.$2, timestamp: input.$3);
         }
       } catch (error) {
         failure = error is FaceDetectorException
