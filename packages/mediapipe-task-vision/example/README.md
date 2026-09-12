@@ -17,6 +17,14 @@ Choose **CPU** (the default) or **GPU (Metal)**. Changing the selection while li
 drains the current inference and recreates the task before restarting capture.
 Both delegates are included in the same runtime download. GPU initialization
 errors appear in the UI; the demo does not silently switch to CPU.
+
+To launch directly into a live GPU session:
+
+```sh
+flutter run -d macos --release --dart-define=FACE_CAMERA_DELEGATE=gpu --dart-define=FACE_CAMERA_AUTOSTART=true
+```
+
+These flags are opt-in. A normal launch starts idle with CPU selected.
 If access was previously denied, enable the app in System Settings → Privacy &
 Security → Camera. The example requests camera access only; audio is disabled.
 

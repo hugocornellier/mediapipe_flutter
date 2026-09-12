@@ -49,16 +49,27 @@ class _FaceCameraPageState extends State<FaceCameraPage>
   bool loading = true;
   bool showMesh = true;
   bool showPoints = false;
-  VisionDelegate delegate = VisionDelegate.cpu;
+  VisionDelegate delegate = switch (const String.fromEnvironment(
+    'FACE_CAMERA_DELEGATE',
+    defaultValue: 'cpu',
+  )) {
+    'cpu' => VisionDelegate.cpu,
+    'gpu' => VisionDelegate.gpu,
+    final value => throw ArgumentError.value(value, 'FACE_CAMERA_DELEGATE'),
+  };
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    unawaited(_loadCameras());
+    unawaited(
+      _loadCameras(
+        autoStart: const bool.fromEnvironment('FACE_CAMERA_AUTOSTART'),
+      ),
+    );
   }
 
-  Future<void> _loadCameras() async {
+  Future<void> _loadCameras({bool autoStart = false}) async {
     setState(() {
       loading = true;
       cameraError = null;
@@ -71,6 +82,9 @@ class _FaceCameraPageState extends State<FaceCameraPage>
         selected = found.isEmpty ? null : found.first;
         loading = false;
       });
+      if (autoStart && selected != null) {
+        await session.start(selected!, delegate: delegate);
+      }
     } catch (error) {
       if (mounted) {
         setState(() {
