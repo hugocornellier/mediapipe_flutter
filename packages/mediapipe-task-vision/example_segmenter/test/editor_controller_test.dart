@@ -229,8 +229,8 @@ void main() {
       final high = maskRgba(values, 0.75);
       expect([low[3], low[7], low[11], low[15]], [0, 0, 115, 115]);
       expect([high[3], high[7], high[11], high[15]], [0, 0, 0, 115]);
-    expect(values, [0, 0.25, 0.5, 1]);
-    expect(low.sublist(8, 12), [30, 107, 82, 115]);
+      expect(values, [0, 0.25, 0.5, 1]);
+      expect(low.sublist(8, 12), [30, 107, 82, 115]);
     },
   );
 }

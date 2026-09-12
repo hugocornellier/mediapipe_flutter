@@ -144,6 +144,9 @@ native downloads. Source access still follows this private repository's policy.
 
 ## Validation and measurements
 
+The [saved macOS validation and CPU baseline](validations/2026-09-12-interactive-segmenter/)
+include the public-release consumer report and editor screenshot.
+
 - `dart test test/interactive_segmenter_test.dart` compares every mask pixel in
   11 cases with Google's 1.0.1 Python API at maximum absolute error 1e-6:
   clicks, partial strokes, multiple selections, exclusion, lasso, undo, image

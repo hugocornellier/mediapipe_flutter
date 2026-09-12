@@ -1,0 +1,93 @@
+{
+  "runtime": "mediapipe==1.0.1",
+  "delegate": "cpu",
+  "initialize_ms": 70.593,
+  "os": "Version 26.4 (Build 25E246)",
+  "processors": 16,
+  "dart": "3.12.2 (stable) (Tue Jun 9 01:11:39 2026 -0700) on \"macos_arm64\"",
+  "model_sha256": "38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03",
+  "reference_cases": 2,
+  "maximum_reference_error": 0.0,
+  "width": 1200,
+  "height": 600,
+  "input_copy_ms": 0.19,
+  "set_image": {
+    "samples_ms": [
+      0.632,
+      0.909,
+      0.586,
+      0.987,
+      0.597
+    ],
+    "p50_ms": 0.632,
+    "p95_ms": 0.987,
+    "mean_ms": 0.7422
+  },
+  "first_stroke_after_image": {
+    "samples_ms": [
+      200.599,
+      197.471,
+      197.342,
+      197.189,
+      195.092
+    ],
+    "p50_ms": 197.342,
+    "p95_ms": 200.599,
+    "mean_ms": 197.5386
+  },
+  "repeated_stroke": {
+    "samples_ms": [
+      195.004,
+      197.647,
+      196.5,
+      197.761,
+      197.962,
+      197.343,
+      199.013,
+      196.206,
+      197.187,
+      196.772,
+      196.785,
+      197.516,
+      196.736,
+      197.856,
+      202.735,
+      199.907,
+      197.436,
+      196.647,
+      194.798,
+      194.209
+    ],
+    "p50_ms": 197.187,
+    "p95_ms": 199.907,
+    "mean_ms": 197.301
+  },
+  "overlay_conversion_and_upload": {
+    "samples_ms": [
+      1.925,
+      1.518,
+      1.488,
+      1.488,
+      1.269,
+      1.303,
+      1.428,
+      1.413,
+      1.173,
+      1.234
+    ],
+    "p50_ms": 1.413,
+    "p95_ms": 1.925,
+    "mean_ms": 1.4239000000000002
+  },
+  "timing_scope": "Public async API includes isolate transfer, native inference and mask copy. Overlay includes a new isolate, threshold conversion, RGBA transfer and ui.Image creation, but excludes frame presentation.",
+  "debug_inference": "passed",
+  "release_inference": "passed",
+  "native_build_tools_invoked": false,
+  "release": "interactive-segmenter-v1.0.1-1",
+  "source": "public-release",
+  "frameworks": [
+    "FlutterMacOS.framework",
+    "App.framework",
+    "interactive_segmenter.framework"
+  ]
+}
