@@ -1,0 +1,387 @@
+{
+  "runtime": "mediapipe==1.0.1",
+  "delegate": "CPU",
+  "library_sha256": "9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a",
+  "model_sha256": "38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03",
+  "image": {
+    "file": "cats_and_dogs.jpg",
+    "sha256": "a2eaa7ad3a1aae4e623dd362a5f737e8a88d122597ecd1a02b3e1444db56df9c",
+    "source": "https://storage.googleapis.com/mediapipe-assets/cats_and_dogs.jpg"
+  },
+  "raw": {
+    "file": "animals-299x150.rgb",
+    "sha256": "156b078f4c93882e2d57e0d933a02ec6fe35788d899cae470b28719e17e6d9a2",
+    "width": 299,
+    "height": 150,
+    "derivation": "Official JPEG RGB decode, [::4, ::4, :3][:, :299]"
+  },
+  "cases": [
+    {
+      "name": "file-cat",
+      "input": "file",
+      "set_image": true,
+      "strokes": [
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.27,
+              0.8
+            ]
+          ],
+          "is_completed": true
+        }
+      ],
+      "width": 1200,
+      "height": 600,
+      "mask": "file-cat.f32.gz",
+      "sha256": "c71c7ddb255dc9cd113f1a576bd0466fce3f74a5923f61f20a9293f9420d660b",
+      "foreground_pixels": 41405,
+      "mean": 0.057494841516017914,
+      "set_image_ms": 0.02787495031952858,
+      "segment_and_copy_ms": 262.29333400260657
+    },
+    {
+      "name": "raw-dog",
+      "input": "rgb",
+      "set_image": true,
+      "strokes": [
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.66,
+              0.55
+            ]
+          ],
+          "is_completed": true
+        }
+      ],
+      "width": 299,
+      "height": 150,
+      "mask": "raw-dog.f32.gz",
+      "sha256": "9df020eb912340deaaf2ca4cdf29d225496238f1f8d9ed8057546659f3ab6af4",
+      "foreground_pixels": 5710,
+      "mean": 0.1273769736289978,
+      "set_image_ms": 2.4467499461025,
+      "segment_and_copy_ms": 219.06562498770654
+    },
+    {
+      "name": "raw-repeat",
+      "input": "rgb",
+      "set_image": false,
+      "strokes": [
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.66,
+              0.55
+            ]
+          ],
+          "is_completed": true
+        }
+      ],
+      "width": 299,
+      "height": 150,
+      "mask": "raw-repeat.f32.gz",
+      "sha256": "9df020eb912340deaaf2ca4cdf29d225496238f1f8d9ed8057546659f3ab6af4",
+      "foreground_pixels": 5710,
+      "mean": 0.1273769736289978,
+      "set_image_ms": null,
+      "segment_and_copy_ms": 203.2497909385711
+    },
+    {
+      "name": "raw-partial",
+      "input": "rgb",
+      "set_image": false,
+      "strokes": [
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.66,
+              0.55
+            ],
+            [
+              0.65,
+              0.65
+            ]
+          ],
+          "is_completed": false
+        }
+      ],
+      "width": 299,
+      "height": 150,
+      "mask": "raw-partial.f32.gz",
+      "sha256": "a5daab4b6d3219d2723c4b732678a05da2f5787e4c762cb0720e18f32001a834",
+      "foreground_pixels": 5702,
+      "mean": 0.12727417051792145,
+      "set_image_ms": null,
+      "segment_and_copy_ms": 197.23337492905557
+    },
+    {
+      "name": "raw-two-positive",
+      "input": "rgb",
+      "set_image": false,
+      "strokes": [
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.66,
+              0.55
+            ]
+          ],
+          "is_completed": true
+        },
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.27,
+              0.8
+            ]
+          ],
+          "is_completed": true
+        }
+      ],
+      "width": 299,
+      "height": 150,
+      "mask": "raw-two-positive.f32.gz",
+      "sha256": "70f6f8fc6b6337e2a04cdf65f06d86ea3d106c8b4453ede87196421acfba0379",
+      "foreground_pixels": 8307,
+      "mean": 0.1852300614118576,
+      "set_image_ms": null,
+      "segment_and_copy_ms": 197.8435410419479
+    },
+    {
+      "name": "raw-negative",
+      "input": "rgb",
+      "set_image": false,
+      "strokes": [
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.66,
+              0.55
+            ]
+          ],
+          "is_completed": true
+        },
+        {
+          "brush_mode": "negative",
+          "points": [
+            [
+              0.42,
+              0.6
+            ]
+          ],
+          "is_completed": true
+        }
+      ],
+      "width": 299,
+      "height": 150,
+      "mask": "raw-negative.f32.gz",
+      "sha256": "2283925dc3c951cdc3c12838f2e93674785b8df233b5f95e607c32e21125b438",
+      "foreground_pixels": 5700,
+      "mean": 0.12712369859218597,
+      "set_image_ms": null,
+      "segment_and_copy_ms": 197.34833296388388
+    },
+    {
+      "name": "raw-lasso",
+      "input": "rgb",
+      "set_image": false,
+      "strokes": [
+        {
+          "brush_mode": "lasso",
+          "points": [
+            [
+              0.52,
+              0.2
+            ],
+            [
+              0.78,
+              0.2
+            ],
+            [
+              0.78,
+              0.98
+            ],
+            [
+              0.52,
+              0.98
+            ],
+            [
+              0.52,
+              0.2
+            ]
+          ],
+          "is_completed": true
+        }
+      ],
+      "width": 299,
+      "height": 150,
+      "mask": "raw-lasso.f32.gz",
+      "sha256": "30788dc47fd0dff1629506a70af0e32f6b856779676dd7f56c35eb7292bfdbdb",
+      "foreground_pixels": 5890,
+      "mean": 0.14829300343990326,
+      "set_image_ms": null,
+      "segment_and_copy_ms": 194.93025005795062
+    },
+    {
+      "name": "raw-undo",
+      "input": "rgb",
+      "set_image": false,
+      "strokes": [
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.66,
+              0.55
+            ]
+          ],
+          "is_completed": true
+        }
+      ],
+      "width": 299,
+      "height": 150,
+      "mask": "raw-undo.f32.gz",
+      "sha256": "9df020eb912340deaaf2ca4cdf29d225496238f1f8d9ed8057546659f3ab6af4",
+      "foreground_pixels": 5710,
+      "mean": 0.1273769736289978,
+      "set_image_ms": null,
+      "segment_and_copy_ms": 202.44741695933044
+    },
+    {
+      "name": "rgba-cat",
+      "input": "rgba",
+      "set_image": true,
+      "strokes": [
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.27,
+              0.8
+            ]
+          ],
+          "is_completed": true
+        }
+      ],
+      "width": 299,
+      "height": 150,
+      "mask": "rgba-cat.f32.gz",
+      "sha256": "6cb284d26551795ba8eaf2071a705bcfed84a843b99d62efb3e625fce4395cb6",
+      "foreground_pixels": 2608,
+      "mean": 0.05802874267101288,
+      "set_image_ms": 2.3017500061541796,
+      "segment_and_copy_ms": 221.85087495017797
+    },
+    {
+      "name": "blank",
+      "input": "blank",
+      "set_image": true,
+      "strokes": [
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.66,
+              0.55
+            ]
+          ],
+          "is_completed": true
+        }
+      ],
+      "width": 299,
+      "height": 150,
+      "mask": "blank.f32.gz",
+      "sha256": "26486c07b577aefabc8c14de077d335c602aa5128422f77f2e48df0b654034aa",
+      "foreground_pixels": 7977,
+      "mean": 0.16112792491912842,
+      "set_image_ms": 2.3140839766710997,
+      "segment_and_copy_ms": 212.05620805267245
+    },
+    {
+      "name": "replaced-image",
+      "input": "rgb",
+      "set_image": true,
+      "strokes": [
+        {
+          "brush_mode": "positive",
+          "points": [
+            [
+              0.66,
+              0.55
+            ]
+          ],
+          "is_completed": true
+        }
+      ],
+      "width": 299,
+      "height": 150,
+      "mask": "replaced-image.f32.gz",
+      "sha256": "9df020eb912340deaaf2ca4cdf29d225496238f1f8d9ed8057546659f3ab6af4",
+      "foreground_pixels": 5710,
+      "mean": 0.1273769736289978,
+      "set_image_ms": 2.287624985910952,
+      "segment_and_copy_ms": 216.71541698742658
+    }
+  ],
+  "abi": {
+    "MpBaseOptionsC": {
+      "size": 72,
+      "alignment": 8,
+      "offsets": {
+        "model_asset_buffer": 0,
+        "model_asset_buffer_count": 8,
+        "model_asset_path": 16,
+        "file_descriptor": 24,
+        "delegate": 28,
+        "host_environment": 32,
+        "host_system": 36,
+        "host_version": 40,
+        "ca_bundle_path": 48,
+        "app_id": 56,
+        "app_version": 64
+      }
+    },
+    "InteractiveSegmenterOptionsC": {
+      "size": 72,
+      "alignment": 8,
+      "offsets": {
+        "base_options": 0
+      }
+    },
+    "MpStrokePointC": {
+      "size": 8,
+      "alignment": 4,
+      "offsets": {
+        "x": 0,
+        "y": 4
+      }
+    },
+    "MpStrokeC": {
+      "size": 24,
+      "alignment": 8,
+      "offsets": {
+        "brush_mode": 0,
+        "points": 8,
+        "points_count": 16,
+        "is_completed": 20
+      }
+    },
+    "MpStrokesC": {
+      "size": 16,
+      "alignment": 8,
+      "offsets": {
+        "strokes": 0,
+        "strokes_count": 8
+      }
+    }
+  }
+}

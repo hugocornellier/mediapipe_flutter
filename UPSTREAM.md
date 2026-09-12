@@ -3,12 +3,12 @@
 - Source: https://github.com/google/flutter-mediapipe
 - Branch: `main`
 - Fork base: `d3e554eacc81bc469fad525f54ed533b2fc585e7`
-- Private repository: https://github.com/hugocornellier/mediapipe_flutter
+- Repository: https://github.com/hugocornellier/mediapipe_flutter
 
-This is a standalone private repository containing the upstream Git history.
-GitHub does not permit a private fork of a public repository within its fork
-network. The local `upstream` remote tracks Google's original repository;
-`origin` points to this private repository.
+This standalone repository contains the upstream Git history. It was created
+privately, outside GitHub's fork network, and made public on 2026-09-12.
+The local `upstream` remote tracks Google's original repository;
+`origin` points to this maintained repository.
 
 ## Initial rename
 
@@ -54,3 +54,47 @@ Checked with Dart 3.12.2 on macOS arm64:
 
 Native inference and the unfinished vision scaffold were not validated by this
 rename. Their implementation and runtime modernization remain separate work.
+
+## Stable SDK recovery
+
+The subsequent cleanup targets Flutter 3.44.8 stable / Dart 3.12.2. It migrates
+the text and GenAI hooks to `hooks` / `code_assets`, pins native downloads with
+SHA-256, and regenerates FFI bindings with ffigen 21 from the existing headers.
+The native runtime remains the April/May 2024 upstream builds. Header filters
+exclude unrelated host SDK declarations from generated bindings.
+
+Text executor and public API tests now exercise real macOS arm64 inference;
+the text example builds and its widget tests pass. The GenAI example resolves
+dependencies and passes its Dart state tests, but LLM inference is unvalidated.
+CI now runs on this fork. See the root README for commands and remaining work.
+
+## Modern Face Detector
+
+Vision now uses MediaPipe v1.0.0, commit
+`6d31f1ebc3284db74d211d62bdc4f0a0c29ea120`, with unchanged C API headers and
+the official BlazeFace short-range float16 version-1 model. Its ABI is separate
+from the legacy core/text/GenAI structs. The native build keeps the official task
+graph and calculators intact, statically links OpenCV 4.12.0 for CPU preprocessing,
+and adjusts linking to retain C entry points and permit Dart/Flutter relocation.
+
+Fixtures come from `face_detection_tflite` at
+`50c784adaa9f40c722affb1d4412674f25e1fe0c`. Reference detections are generated
+independently through Google's `mediapipe==1.0.0` Python API. The vision package
+records model, fixture, and reference-library digests and provides native ABI,
+inference, and Flutter bundling checks. A prebuilt runtime is published separately
+in the public `hugocornellier/mediapipe_flutter_native` repository. The hook pins
+both archive and library digests and caches verified downloads; the source
+repository is now public. Additional platforms/modes remain pending.
+
+The wrapper also exposes the official VIDEO entry point from that same native
+artifact, with timestamped results and worker-side conversion of padded camera
+buffers. A macOS camera example uses the published `camera_desktop` plugin and
+compares fixture frames and video sequences with independent Python references.
+
+Face Landmarker uses that same pinned MediaPipe source and Google's unmodified
+float16 version-1 task bundle (FaceMesh V2). It exposes 478 3D landmarks including
+irises, optional 52 blendshape scores, and 4×4 face transforms. The camera demo
+now renders the official mesh topology. The second native library is released
+separately; build-hook task selection controls which face libraries are fetched.
+All landmark outputs and tracking sequences are compared with Google's wheel,
+and concurrent detector/landmarker use is tested without sharing native pointers.

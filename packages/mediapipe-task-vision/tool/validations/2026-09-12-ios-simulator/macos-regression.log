@@ -1,0 +1,201 @@
+Running build hooks...Running build hooks...00:00 +0: loading test/face_landmarker_test.dart
+00:00 +0: test/pixel_conversion_test.dart: BGRA conversion preserves every channel and ignores row padding
+00:00 +1: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +2: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +3: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +4: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +5: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +6: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +7: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +8: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +9: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +10: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +11: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +12: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +13: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +14: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +15: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +16: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +17: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +18: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +19: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +20: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +21: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +22: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +23: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +24: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +25: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +26: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +27: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +28: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +29: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +30: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +31: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +32: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +33: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +34: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +35: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +36: test/face_detector_test.dart: cpu (setUpAll)
+00:00 +37: test/face_detector_test.dart: cpu (setUpAll)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1789213715.013725 29434027 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.033349 29434027 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789213715.033548 29434024 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+W0000 00:00:1789213715.034784 29434066 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789213715.035014 29434051 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +37: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +38: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+W0000 00:00:1789213715.040334 29434066 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +39: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +40: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +41: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +42: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +43: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +44: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +45: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +46: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +47: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +48: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+I0000 00:00:1789213715.298747 29434022 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.299286 29434088 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +49: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+I0000 00:00:1789213715.314044 29434024 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.314583 29434099 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +50: test/face_detector_test.dart: cpu queued requests complete before idempotent disposal
+W0000 00:00:1789213715.320193 29434020 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.323410 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.323975 29434112 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789213715.327709 29434116 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +51: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+00:00 +52: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+ERROR: The model is not a valid Flatbuffer buffer
+I0000 00:00:1789213715.354959 29434022 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.355515 29434128 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +53: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+00:01 +54: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+00:01 +55: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+I0000 00:00:1789213715.365376 29434024 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.365912 29434144 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +56: test/face_detector_test.dart: cpu video sequence matches the official VIDEO-mode reference
+W0000 00:00:1789213715.370722 29434020 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.373875 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.374440 29434156 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789213715.378172 29434159 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +57: test/face_landmarker_test.dart: cpu official VIDEO reference with 2 faces
+I0000 00:00:1789213715.383631 29434024 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.384093 29434175 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +58: test/face_landmarker_test.dart: cpu official VIDEO reference with 2 faces
+00:01 +59: test/face_landmarker_test.dart: cpu official VIDEO reference with 2 faces
+00:01 +60: test/face_landmarker_test.dart: cpu official VIDEO reference with 2 faces
+00:01 +61: test/face_landmarker_test.dart: cpu official VIDEO reference with 2 faces
+00:01 +62: test/face_landmarker_test.dart: cpu official VIDEO reference with 2 faces
+I0000 00:00:1789213715.413510 29434024 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+INFO: Created TensorFlow Lite delegate for Metal.
+00:01 +63: test/face_detector_test.dart: gpu (setUpAll)
+W0000 00:00:1789213715.431144 29434027 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+00:01 +63: test/face_landmarker_test.dart: cpu model bytes are owned and optional outputs default to empty
+00:01 +64: test/face_landmarker_test.dart: cpu model bytes are owned and optional outputs default to empty
+I0000 00:00:1789213715.433739 29434027 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.434309 29434201 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789213715.437985 29434214 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +65: test/face_detector_test.dart: gpu official reference: landmark-ex1.jpg
+I0000 00:00:1789213715.452007 29434027 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.452505 29434218 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789213715.453243 29434027 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.455888 29434027 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +66: test/face_landmarker_test.dart: cpu detector and landmarker coexist in one process with independent lifetimes
+W0000 00:00:1789213715.456430 29434231 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789213715.459782 29434244 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +67: test/face_detector_test.dart: gpu official reference: mesh-ex1.jpeg
+W0000 00:00:1789213715.500591 29434020 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.504792 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.505284 29434246 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789213715.508634 29434259 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +68: test/face_detector_test.dart: gpu official reference: mesh-ex1.jpeg
+W0000 00:00:1789213715.520659 29434020 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.523608 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.524115 29434262 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789213715.527652 29434273 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +69: test/face_detector_test.dart: gpu official reference: mesh-ex1.jpeg
+W0000 00:00:1789213715.539710 29434020 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.548828 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.549394 29434278 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789213715.553160 29434278 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +70: test/face_detector_test.dart: gpu official reference: mesh-ex1.jpeg
+W0000 00:00:1789213715.564641 29434020 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.567351 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.567831 29434297 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789213715.571360 29434299 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +71: test/face_landmarker_test.dart: cpu mode, timestamps, rotation and native errors leave video task usable
+00:01 +72: test/face_landmarker_test.dart: cpu mode, timestamps, rotation and native errors leave video task usable
+00:01 +73: test/face_detector_test.dart: gpu official reference: iris-detection-ex2.jpg
+W0000 00:00:1789213715.600962 29434028 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.604517 29434028 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213715.605058 29434325 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +74: test/face_landmarker_test.dart: cpu invalid initialization fails promptly; later creation still succeeds
+W0000 00:00:1789213715.608757 29434335 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +75: test/face_detector_test.dart: gpu official reference: group-shot-bounding-box-ex1.jpeg
+00:01 +76: test/face_detector_test.dart: gpu official reference: group-shot-bounding-box-ex1.jpeg
+W0000 00:00:1789213715.643284 29434028 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.647347 29434028 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+INFO: Created TensorFlow Lite delegate for Metal.
+00:01 +77: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +78: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +79: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +80: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +81: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +82: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+I0000 00:00:1789213715.685054 29434022 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +83: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+I0000 00:00:1789213715.714025 29434024 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +84: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +85: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+ERROR: The model is not a valid Flatbuffer buffer
+I0000 00:00:1789213715.756084 29434024 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +86: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +87: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +88: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+I0000 00:00:1789213715.777446 29434022 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +89: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+I0000 00:00:1789213715.801703 29434022 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +90: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +91: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +92: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +93: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +94: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +95: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:01 +96: test/face_landmarker_test.dart: gpu official VIDEO reference with 1 faces
+W0000 00:00:1789213715.938156 29434028 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213715.948239 29434028 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +97: test/face_landmarker_test.dart: gpu official VIDEO reference with 2 faces
+W0000 00:00:1789213716.016413 29434028 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213716.018517 29434028 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +98: test/face_landmarker_test.dart: gpu model bytes are owned and optional outputs default to empty
+W0000 00:00:1789213716.096503 29434028 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213716.099378 29434028 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +99: test/face_landmarker_test.dart: gpu detector and landmarker coexist in one process with independent lifetimes
+I0000 00:00:1789213716.147021 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789213716.154807 29434028 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213716.157406 29434028 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +100: test/face_landmarker_test.dart: gpu padded rgb camera frames preserve the landmark coordinates
+W0000 00:00:1789213716.232345 29434028 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213716.235027 29434028 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +101: test/face_landmarker_test.dart: gpu padded rgba camera frames preserve the landmark coordinates
+W0000 00:00:1789213716.287425 29434027 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213716.290507 29434027 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:01 +102: test/face_landmarker_test.dart: gpu padded bgra camera frames preserve the landmark coordinates
+W0000 00:00:1789213716.339124 29434027 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213716.350679 29434027 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:02 +103: test/face_landmarker_test.dart: gpu mode, timestamps, rotation and native errors leave video task usable
+W0000 00:00:1789213716.399784 29434027 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213716.402687 29434027 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:02 +104: test/face_landmarker_test.dart: gpu invalid initialization fails promptly; later creation still succeeds
+W0000 00:00:1789213716.474138 29434027 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789213716.484685 29434027 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+00:02 +105: test/face_landmarker_test.dart: gpu options reject malformed model sources, face counts and thresholds
+00:02 +106: test/face_landmarker_test.dart: gpu (tearDownAll)
+00:02 +106: test/face_landmarker_test.dart: CPU is the default delegate
+00:02 +107: All tests passed!

@@ -1,0 +1,195 @@
+Round 1/3: 640x480_bgra_pad64/gpu/native_stages
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1789206739.740115 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206739.777999 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+INFO: Created TensorFlow Lite delegate for Metal.
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+Round 1/3: 1920x1080_bgra_pad64/cpu/public_api
+W0000 00:00:1789206740.677063 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206740.679737 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206740.680288 29025880 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206740.683750 29025879 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 1/3: 1920x1080_bgra_pad64/cpu/native_stages
+W0000 00:00:1789206742.245719 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206742.251375 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206742.251895 29025909 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206742.255374 29025915 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 1/3: 640x480_bgra_pad64/cpu/public_api
+W0000 00:00:1789206743.740572 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206743.743353 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206743.743817 29025932 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206743.746928 29025934 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 1/3: 640x480_bgra_pad64/gpu/public_api
+W0000 00:00:1789206744.679470 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206744.685356 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 1/3: 1280x720_bgra_pad64/gpu/public_api
+W0000 00:00:1789206745.301633 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206745.304474 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 1/3: 640x480_bgra_pad64/cpu/native_stages
+W0000 00:00:1789206746.241015 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206746.243822 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206746.244297 29026001 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206746.247482 29026004 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 1/3: 1920x1080_rgba_pad64/gpu/native_stages
+W0000 00:00:1789206747.160208 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206747.162976 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 1/3: 1920x1080_rgba_pad64/cpu/native_stages
+W0000 00:00:1789206747.894479 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206747.897348 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206747.897847 29026046 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206747.901112 29026049 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 1/3: 1920x1080_bgra_pad64/gpu/native_stages
+W0000 00:00:1789206748.860098 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206748.863165 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 1/3: 1280x720_bgra_pad64/gpu/native_stages
+W0000 00:00:1789206750.272128 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206750.275180 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 1/3: 1920x1080_bgra_pad64/gpu/public_api
+W0000 00:00:1789206751.153982 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206751.156681 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 1/3: 1280x720_bgra_pad64/cpu/native_stages
+W0000 00:00:1789206752.647360 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206752.654876 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206752.655365 29026158 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206752.658659 29026159 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 1/3: 1920x1080_rgba_pad64/gpu/public_api
+W0000 00:00:1789206753.771443 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206753.775660 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 1/3: 1920x1080_rgba_pad64/cpu/public_api
+W0000 00:00:1789206754.628094 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206754.630791 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206754.631271 29026204 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206754.634492 29026202 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 1/3: 1280x720_bgra_pad64/cpu/public_api
+W0000 00:00:1789206755.665828 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206755.671861 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206755.672369 29026220 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206755.675625 29026222 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 2/3: 1280x720_bgra_pad64/cpu/public_api
+W0000 00:00:1789206756.842272 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206756.845455 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206756.846027 29026491 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206756.849715 29026495 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 2/3: 1920x1080_rgba_pad64/cpu/public_api
+W0000 00:00:1789206758.055541 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206758.059831 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206758.060325 29027345 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206758.063541 29027346 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 2/3: 1920x1080_rgba_pad64/gpu/public_api
+W0000 00:00:1789206759.102087 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206759.104902 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 2/3: 1280x720_bgra_pad64/cpu/native_stages
+W0000 00:00:1789206759.964923 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206759.971980 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206759.972562 29027433 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206759.976101 29027432 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 2/3: 1920x1080_bgra_pad64/gpu/public_api
+W0000 00:00:1789206761.104655 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206761.109436 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 2/3: 1280x720_bgra_pad64/gpu/native_stages
+W0000 00:00:1789206762.622110 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206762.625134 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 2/3: 1920x1080_bgra_pad64/gpu/native_stages
+W0000 00:00:1789206763.517207 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206763.520014 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 2/3: 1920x1080_rgba_pad64/cpu/native_stages
+W0000 00:00:1789206764.942715 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206764.945565 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206764.946142 29027519 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206764.949387 29027520 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 2/3: 1920x1080_rgba_pad64/gpu/native_stages
+W0000 00:00:1789206765.905380 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206765.909473 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 2/3: 640x480_bgra_pad64/cpu/native_stages
+W0000 00:00:1789206766.647860 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206766.652277 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206766.652756 29027581 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206766.655917 29027583 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 2/3: 1280x720_bgra_pad64/gpu/public_api
+W0000 00:00:1789206767.574210 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206767.576790 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 2/3: 640x480_bgra_pad64/gpu/public_api
+W0000 00:00:1789206768.541504 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206768.544235 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 2/3: 640x480_bgra_pad64/cpu/public_api
+W0000 00:00:1789206769.177155 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206769.179965 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206769.180473 29027642 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206769.183613 29027642 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 2/3: 1920x1080_bgra_pad64/cpu/native_stages
+W0000 00:00:1789206770.146409 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206770.153366 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206770.153852 29027669 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206770.157053 29027671 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 2/3: 1920x1080_bgra_pad64/cpu/public_api
+W0000 00:00:1789206771.671094 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206771.675200 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206771.675681 29027689 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206771.678885 29027693 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 2/3: 640x480_bgra_pad64/gpu/native_stages
+W0000 00:00:1789206773.287569 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206773.292011 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 3/3: 640x480_bgra_pad64/gpu/native_stages
+W0000 00:00:1789206773.873990 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206773.876772 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 3/3: 1920x1080_bgra_pad64/cpu/public_api
+W0000 00:00:1789206774.468459 29025744 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206774.471304 29025744 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206774.471780 29027750 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206774.474987 29027750 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 3/3: 1920x1080_bgra_pad64/cpu/native_stages
+W0000 00:00:1789206776.083097 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206776.089117 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206776.089603 29027790 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206776.092933 29027792 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 3/3: 640x480_bgra_pad64/cpu/public_api
+W0000 00:00:1789206777.615541 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206777.622449 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206777.622954 29027848 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206777.626472 29027848 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 3/3: 640x480_bgra_pad64/gpu/public_api
+W0000 00:00:1789206778.589070 29027688 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206778.592825 29027688 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 3/3: 1280x720_bgra_pad64/gpu/public_api
+W0000 00:00:1789206779.247670 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206779.252285 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 3/3: 640x480_bgra_pad64/cpu/native_stages
+W0000 00:00:1789206780.247858 29027688 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206780.255943 29027688 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206780.256440 29027900 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206780.259741 29027900 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 3/3: 1920x1080_rgba_pad64/gpu/native_stages
+W0000 00:00:1789206781.190112 29027688 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206781.193140 29027688 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 3/3: 1920x1080_rgba_pad64/cpu/native_stages
+W0000 00:00:1789206781.946245 29025842 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206781.955298 29025842 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206781.955778 29027955 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206781.959023 29027954 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 3/3: 1920x1080_bgra_pad64/gpu/native_stages
+W0000 00:00:1789206782.932450 29027688 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206782.935483 29027688 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 3/3: 1280x720_bgra_pad64/gpu/native_stages
+W0000 00:00:1789206784.376196 29027688 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206784.378779 29027688 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 3/3: 1920x1080_bgra_pad64/gpu/public_api
+W0000 00:00:1789206785.275731 29027952 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206785.278565 29027952 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 3/3: 1280x720_bgra_pad64/cpu/native_stages
+W0000 00:00:1789206786.841679 29027952 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206786.844211 29027952 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206786.844703 29028064 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206786.847983 29028064 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 3/3: 1920x1080_rgba_pad64/gpu/public_api
+W0000 00:00:1789206788.035192 29027688 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206788.039892 29027688 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+Round 3/3: 1920x1080_rgba_pad64/cpu/public_api
+W0000 00:00:1789206788.911698 29027952 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206788.914432 29027952 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206788.914908 29029199 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206788.918208 29029200 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+Round 3/3: 1280x720_bgra_pad64/cpu/public_api
+W0000 00:00:1789206789.981565 29027952 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1789206789.992153 29027952 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
+W0000 00:00:1789206789.992626 29029218 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789206789.995879 29029218 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.

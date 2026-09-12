@@ -1,0 +1,191 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:isolate';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flutter/services.dart';
+import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+
+import 'mask_overlay.dart';
+
+Future<Uint8List> _asset(String name) async {
+  final data = await rootBundle.load('assets/$name');
+  return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+}
+
+List<SegmentationStroke> _strokes(Map<String, dynamic> reference) =>
+    (reference['strokes'] as List).map((dynamic stroke) {
+      return SegmentationStroke(
+        brushMode: SegmentationBrushMode.values.byName(
+          stroke['brush_mode'] as String,
+        ),
+        points: (stroke['points'] as List)
+            .map(
+              (dynamic p) => SegmentationPoint(
+                x: (p[0] as num).toDouble(),
+                y: (p[1] as num).toDouble(),
+              ),
+            )
+            .toList(),
+        isCompleted: stroke['is_completed'] as bool,
+      );
+    }).toList();
+
+Future<Uint8List> _overlay(Float32List values) =>
+    Isolate.run(() => maskRgba(values, 0.5));
+
+Map<String, Object> _distribution(List<double> samples) {
+  final sorted = [...samples]..sort();
+  return {
+    'samples_ms': samples,
+    'p50_ms': sorted[(sorted.length * 0.5).ceil() - 1],
+    'p95_ms': sorted[(sorted.length * 0.95).ceil() - 1],
+    'mean_ms': samples.reduce((a, b) => a + b) / samples.length,
+  };
+}
+
+Future<Map<String, Object>> validateSegmenter({bool benchmark = false}) async {
+  final model = await _asset('interactive_segmentation.task');
+  final watch = Stopwatch()..start();
+  final task = await InteractiveSegmenter.create(
+    InteractiveSegmenterOptions(modelBytes: model),
+  );
+  final report = <String, Object>{
+    'runtime': 'mediapipe==1.0.1',
+    'delegate': 'cpu',
+    'initialize_ms': watch.elapsedMicroseconds / 1000,
+    'os': Platform.operatingSystemVersion,
+    'processors': Platform.numberOfProcessors,
+    'dart': Platform.version,
+    'model_sha256':
+        '38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03',
+  };
+  try {
+    final raw = await _asset('animals-299x150.rgb');
+    await task.setImage(
+      VisionImage.fromPixels(
+        pixels: raw,
+        width: 299,
+        height: 150,
+        format: VisionPixelFormat.rgb,
+      ),
+    );
+    final reference =
+        jsonDecode(utf8.decode(await _asset('official_reference.json')))
+            as Map<String, dynamic>;
+    var cases = 0;
+    var maximumError = 0.0;
+    for (final dynamic entry in reference['cases'] as List) {
+      if (entry['name'] != 'raw-dog' && entry['name'] != 'raw-negative')
+        continue;
+      final result = await task.segment(
+        _strokes(entry as Map<String, dynamic>),
+      );
+      final bytes = Uint8List.fromList(
+        gzip.decode(await _asset(entry['mask'] as String)),
+      );
+      final expected = bytes.buffer.asFloat32List();
+      if (result.width != 299 ||
+          result.height != 150 ||
+          result.confidence.length != expected.length) {
+        throw StateError('Incorrect mask dimensions.');
+      }
+      for (var i = 0; i < expected.length; i++) {
+        final error = (result.confidence[i] - expected[i]).abs();
+        if (!error.isFinite || error > 1e-6) {
+          throw StateError('Official reference mismatch at pixel $i: $error');
+        }
+        if (error > maximumError) maximumError = error;
+      }
+      cases++;
+    }
+    if (cases != 2) throw StateError('Missing reference cases.');
+    report.addAll({
+      'reference_cases': cases,
+      'maximum_reference_error': maximumError,
+    });
+    if (!benchmark) return report;
+
+    final codec = await ui.instantiateImageCodec(
+      await _asset('cats_and_dogs.jpg'),
+    );
+    final ui.Image image;
+    try {
+      image = (await codec.getNextFrame()).image;
+    } finally {
+      codec.dispose();
+    }
+    final rgba = (await image.toByteData(
+      format: ui.ImageByteFormat.rawStraightRgba,
+    ))!;
+    watch.reset();
+    final input = VisionImage.fromPixels(
+      pixels: rgba.buffer.asUint8List(rgba.offsetInBytes, rgba.lengthInBytes),
+      width: image.width,
+      height: image.height,
+      format: VisionPixelFormat.rgba,
+    );
+    report.addAll({
+      'width': image.width,
+      'height': image.height,
+      'input_copy_ms': watch.elapsedMicroseconds / 1000,
+    });
+    image.dispose();
+    List<SegmentationStroke> history(int index) => [
+      SegmentationStroke(
+        brushMode: SegmentationBrushMode.positive,
+        points: [SegmentationPoint(x: index.isEven ? 0.66 : 0.65, y: 0.55)],
+      ),
+    ];
+    final setImage = <double>[];
+    final firstStroke = <double>[];
+    late SegmentationMask mask;
+    for (var i = 0; i < 5; i++) {
+      watch.reset();
+      await task.setImage(input);
+      setImage.add(watch.elapsedMicroseconds / 1000);
+      watch.reset();
+      mask = await task.segment(history(i));
+      firstStroke.add(watch.elapsedMicroseconds / 1000);
+    }
+    for (var i = 0; i < 5; i++) {
+      mask = await task.segment(history(i));
+    }
+    final warmStroke = <double>[];
+    for (var i = 0; i < 20; i++) {
+      watch.reset();
+      mask = await task.segment(history(i));
+      warmStroke.add(watch.elapsedMicroseconds / 1000);
+    }
+    final overlay = <double>[];
+    for (var i = 0; i < 10; i++) {
+      watch.reset();
+      final pixels = await _overlay(mask.confidence);
+      final ready = Completer<ui.Image>();
+      ui.decodeImageFromPixels(
+        pixels,
+        mask.width,
+        mask.height,
+        ui.PixelFormat.rgba8888,
+        ready.complete,
+      );
+      (await ready.future).dispose();
+      overlay.add(watch.elapsedMicroseconds / 1000);
+    }
+    report.addAll({
+      'set_image': _distribution(setImage),
+      'first_stroke_after_image': _distribution(firstStroke),
+      'repeated_stroke': _distribution(warmStroke),
+      'overlay_conversion_and_upload': _distribution(overlay),
+      'timing_scope':
+          'Public async API includes isolate transfer, native inference and '
+          'mask copy. Overlay includes a new isolate, threshold conversion, '
+          'RGBA transfer and ui.Image creation, but excludes frame presentation.',
+    });
+    return report;
+  } finally {
+    await task.dispose();
+  }
+}

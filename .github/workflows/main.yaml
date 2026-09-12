@@ -1,35 +1,135 @@
-name: Main Branch CI
+name: macOS tasks
 
-# Declare default permissions as read only.
-permissions: read-all
+permissions:
+  contents: read
 
 on:
   pull_request:
-    branches: []
   push:
-    branches: [main, ffi-wrapper, ffi-wrapper-text-pkg]
-
-defaults:
-  run:
-    shell: bash
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  flutter-tests:
-    name: Test mediapipe_flutter_core against ${{ matrix.flutter_version }}
-    runs-on: ${{ matrix.os }}
-    # Skip running job on forks
-    if: github.repository == 'google/flutter-mediapipe'
-    strategy:
-      fail-fast: false
-      matrix:
-        flutter_version: [master]
-        # TODO(craiglabenz): reverse once CI works
-        # flutter_version: [stable, beta, master]
-        # TODO(craiglabenz): Add `ubuntu-latest` and `windows-latest` when those artifacts exist
-        os: [macos-latest]
+  native-tasks:
+    name: Stable Flutter / macOS arm64
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      MEDIAPIPE_GPU_REFERENCE_DIR: ${{ github.workspace }}/build/gpu-reference
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
-          channel: ${{ matrix.flutter_version }}
-      - run: ./tool/mediapipe_ci_script_${{ matrix.flutter_version }}.sh
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - run: flutter --version
+      - run: brew install bazelisk cmake ninja
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: make get models
+      - name: Generate official GPU references on this runner
+        run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py
+      - run: make ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-gpu-reference-source-build
+          path: |
+            build/gpu-reference/**/*.json
+            build/gpu-reference/*.log
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mediapipe-face-tasks-1.0.0-macos-arm64
+          path: packages/mediapipe-task-vision/build/native/**/*.tar.gz
+          if-no-files-found: error
+
+  prebuilt-consumer:
+    name: Fresh Flutter consumer / public runtime download
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - name: Download the test model
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_model.dart
+          dart tool/download_face_landmarker.dart
+      - name: Test public download and debug/release inference without native build tools
+        working-directory: packages/mediapipe-task-vision
+        run: python3 tool/test_prebuilt_macos.py
+
+  gpu-reference:
+    name: Official GPU comparison / same macOS runner
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download the official face models
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_model.dart
+          dart tool/download_face_landmarker.dart
+      - name: Compare public native tasks with the official wheel on this runner
+        run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-gpu-reference-prebuilt
+          path: |
+            build/gpu-reference/**/*.json
+            build/gpu-reference/*.log
+          if-no-files-found: error
+
+  segmenter-consumer:
+    name: MagicTouch / fresh macOS consumer
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - name: Download the official MagicTouch model
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_interactive_segmenter.dart
+      - name: Verify public download, debug/release inference and CPU timings
+        working-directory: packages/mediapipe-task-vision
+        run: python3 -B tool/test_segmenter_macos.py
+      - name: Prepare the macOS editor assets
+        working-directory: packages/mediapipe-task-vision
+        run: python3 -B tool/prepare_segmenter_example.py
+      - name: Test the real macOS editor
+        working-directory: packages/mediapipe-task-vision/example_segmenter
+        run: |
+          flutter pub get
+          flutter test --reporter expanded
+          flutter test -d macos integration_test/editor_test.dart --reporter expanded
+      - uses: actions/upload-artifact@v4
+        with:
+          name: interactive-segmenter-validation
+          path: |
+            build/segmenter-consumer-*/report.json
+            build/segmenter-consumer-*/release.log
+          if-no-files-found: error

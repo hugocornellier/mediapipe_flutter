@@ -1,0 +1,37 @@
+name: mediapipe_face_camera
+description: Official MediaPipe face demos for macOS and the iOS simulator.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  camera: ^0.12.1
+  camera_desktop: ^1.2.1
+  mediapipe_flutter_vision:
+    path: ..
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  crypto: ^3.0.6
+  camera_platform_interface: ^2.13.1
+  integration_test:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/face_landmarker.task
+    - assets/blaze_face_short_range.tflite
+    - assets/fixtures/face_detection/
+    - assets/fixtures/face_landmarker/
+
+hooks:
+  user_defines:
+    mediapipe_flutter_vision:
+      tasks: [face_detector, face_landmarker]
