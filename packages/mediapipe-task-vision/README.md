@@ -7,6 +7,11 @@ six keypoints, or a full 478-point face mesh including irises. Inference runs on
 a worker isolate. Face Landmarker also exposes the official optional 52
 blendshape scores and 4×4 face transformation matrices.
 
+An **arm64 iOS simulator CPU** development target is also available, using the
+same Dart API and official task graphs. It currently requires a local native
+build; simulator archives are not published. Physical iOS devices and simulator
+GPU inference are not supported yet. See [the simulator guide](tool/IOS_SIMULATOR.md).
+
 The task uses the unmodified MediaPipe v1.0.0 Face Detector graph and its official
 BlazeFace short-range float16 model, version 1. MediaPipe performs image
 preprocessing, model inference, anchor decoding, suppression, and coordinate
@@ -27,7 +32,7 @@ dart test --reporter expanded
 dart run example/face_detection.dart models/blaze_face_short_range.tflite test/fixtures/face_detection/landmark-ex1.jpg
 ```
 
-The first build downloads the selected tasks from the public
+The first macOS build downloads the selected tasks from the public
 [native runtime releases](https://github.com/hugocornellier/mediapipe_flutter_native/releases).
 Face Detector is a 5.0 MB archive; Face Landmarker is 5.5 MB. Both are enabled
 by default. Select only the task you use in the consuming app's `pubspec.yaml`:
@@ -40,8 +45,8 @@ hooks:
 ```
 
 Task selection happens at build time, not dynamically when a Dart class is used.
-An excluded task's API cannot run in that build. The camera example selects only
-Face Landmarker. Models are separate: about 224 KB for BlazeFace and 3.8 MB for
+An excluded task's API cannot run in that build. The Flutter example selects both
+tasks for its camera and image screens. Models are separate: about 224 KB for BlazeFace and 3.8 MB for
 the complete Face Landmarker bundle; each application chooses how to supply them.
 When removing a task from an existing Flutter app, run `flutter clean` once to
 remove native frameworks left over from earlier incremental builds.

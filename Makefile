@@ -17,7 +17,7 @@ models:
 	cd tool/builder && dart bin/main.dart model -m languagedetection
 	cd packages/mediapipe-task-vision && dart tool/download_model.dart
 	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
-	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart example/assets/face_landmarker.task
+	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
 
 # Optional maintainer build; consumers download the pinned prebuilt runtime.
 native_vision:
@@ -101,8 +101,17 @@ build_vision_camera:
 	cd packages/mediapipe-task-vision/example && flutter build macos --release
 
 example_vision:
-	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart example/assets/face_landmarker.task
+	cd packages/mediapipe-task-vision && dart tool/download_model.dart
+	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
+	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
 	cd packages/mediapipe-task-vision/example && flutter run -d macos --release
+
+.PHONY: native_vision_ios_simulator test_vision_ios_simulator
+native_vision_ios_simulator:
+	cd packages/mediapipe-task-vision && python3 -B tool/build_ios_simulator.py
+
+test_vision_ios_simulator:
+	cd packages/mediapipe-task-vision && python3 -B tool/test_ios_simulator.py
 
 example_text:
 	cd packages/mediapipe-task-text/example && flutter run -d macos

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -6,8 +7,10 @@ import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 import 'face_camera_controller.dart';
 import 'face_overlay.dart';
+import 'main_fixture.dart' show FaceFixtureApp;
 
-void main() => runApp(const FaceCameraApp());
+void main() =>
+    runApp(Platform.isIOS ? const FaceFixtureApp() : const FaceCameraApp());
 
 class FaceCameraApp extends StatelessWidget {
   const FaceCameraApp({super.key, this.controller});

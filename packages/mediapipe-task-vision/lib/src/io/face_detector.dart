@@ -6,7 +6,8 @@ import 'native_face_detector.dart';
 
 /// Official MediaPipe Face Detector, with inference serialized on a worker isolate.
 ///
-/// Supports CPU and Metal IMAGE/VIDEO modes on macOS arm64. Await [dispose].
+/// Supports CPU/Metal on macOS arm64 and CPU on arm64 iOS simulators.
+/// Both targets support IMAGE/VIDEO modes. Await [dispose].
 final class FaceDetector {
   FaceDetector._(this.runningMode, this.delegate) {
     _events.listen(_receive);

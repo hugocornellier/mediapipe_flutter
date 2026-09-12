@@ -7,7 +7,8 @@ import 'native_face_landmarker.dart';
 
 /// Official MediaPipe Face Landmarker, with inference serialized on a worker isolate.
 ///
-/// Supports CPU and Metal IMAGE/VIDEO modes on macOS arm64. Await [dispose].
+/// Supports CPU/Metal on macOS arm64 and CPU on arm64 iOS simulators.
+/// Both targets support IMAGE/VIDEO modes. Await [dispose].
 final class FaceLandmarker {
   FaceLandmarker._(this.runningMode, this.delegate) {
     _events.listen(_receive);
