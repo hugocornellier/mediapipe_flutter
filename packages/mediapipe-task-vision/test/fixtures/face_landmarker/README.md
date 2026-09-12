@@ -20,3 +20,17 @@ These are numeric tolerances, not changes to preprocessing, models, or graphs.
 Regenerate with `tool/generate_face_landmarker_reference.py` in the pinned Python
 environment. That script also copies the official drawing connections into Dart.
 The tests use checked-in JSON and need no Python installation.
+
+`official_gpu_reference.json` is generated independently with the same official
+wheel and `--delegate gpu`. The wheel confirms creation of the Metal delegate.
+RGB input is expanded to RGBA with opaque alpha before entering the graph because
+Apple's GPU image upload does not support three-channel ImageFrames. No model,
+graph, coordinates, or reference result is modified to match the Dart wrapper.
+
+On the Apple M4 Max development Mac, maximum absolute differences from the wheel's
+GPU results across all stills, tracking sequences and padded input tests were
+0.00147671 for coordinates, 0.0290841 for blendshape scores, and 0.0431214 for
+matrix elements. GPU tests allow 0.002, 0.04, and 0.06 respectively. Counts,
+ordering, optional fields, timestamps, and category names still match exactly.
+These measurements describe this fixture suite, not model accuracy in general.
+CPU tolerances remain unchanged; CPU and GPU are not expected to be bit-identical.

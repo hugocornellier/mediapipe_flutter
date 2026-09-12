@@ -54,3 +54,9 @@ Dart test submits that sequence in order and checks timestamp/result pairing,
 including disposal while frames are queued. Padded RGB, RGBA, and macOS BGRA
 variants of the raw portrait separately verify camera-buffer conversion without
 changing the official detection outputs.
+
+`official_gpu_reference.json` and `official_gpu_video_reference.json` use the
+same independent wheel with `--delegate gpu`, which confirms Metal creation.
+RGB frames gain an opaque alpha channel for Apple's GPU upload; the original
+RGB values and task pipeline are unchanged. Both delegates run the same test
+coverage with the same detector tolerances above, each against its own reference.

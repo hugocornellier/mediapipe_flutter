@@ -9,13 +9,26 @@ enum VisionRunningMode {
   video,
 }
 
-/// Options for the official CPU Face Detector.
+/// The inference backend requested for a task, fixed until it is disposed.
+enum VisionDelegate {
+  /// Official CPU inference. This is the default.
+  cpu,
+
+  /// Official GPU inference, using Metal on macOS.
+  ///
+  /// Initialization errors are reported to the caller without retrying on CPU.
+  /// Some stages, including face blendshapes, remain on CPU in Google's graph.
+  gpu,
+}
+
+/// Options for the official Face Detector.
 final class FaceDetectorOptions {
   /// Supply exactly one model source. Thresholds match the official Python API.
   FaceDetectorOptions({
     this.modelPath,
     Uint8List? modelBytes,
     this.runningMode = VisionRunningMode.image,
+    this.delegate = VisionDelegate.cpu,
     this.minDetectionConfidence = 0.5,
     this.minSuppressionThreshold = 0.3,
   }) : modelBytes = modelBytes == null
@@ -49,6 +62,9 @@ final class FaceDetectorOptions {
 
   /// The task mode, fixed for the lifetime of this detector.
   final VisionRunningMode runningMode;
+
+  /// Inference backend. Recreate the task to change it.
+  final VisionDelegate delegate;
 
   /// Minimum score for a detection to be returned.
   final double minDetectionConfidence;

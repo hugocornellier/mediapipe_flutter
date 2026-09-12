@@ -18,27 +18,51 @@ final _reference =
           ).readAsStringSync(),
         )
         as Map<String, dynamic>;
-final _cases = (_reference['cases'] as List).cast<Map<String, dynamic>>();
-final _rgb = (_cases.first['frames'] as List)
-    .cast<Map<String, dynamic>>()
-    .singleWhere((frame) => frame['name'] == 'rgb');
 
 void main() {
+  for (final delegate in VisionDelegate.values) {
+    group(delegate.name, () => _testDelegate(delegate));
+  }
+  test('CPU is the default delegate', () {
+    expect(
+      FaceLandmarkerOptions(modelPath: _model).delegate,
+      VisionDelegate.cpu,
+    );
+  });
+}
+
+void _testDelegate(VisionDelegate delegate) {
+  void compare(FaceLandmarkerResult actual, Map<String, dynamic> expected) =>
+      _compare(actual, expected, delegate);
+  final reference = delegate == VisionDelegate.cpu
+      ? _reference
+      : jsonDecode(
+              File(
+                'test/fixtures/face_landmarker/official_gpu_reference.json',
+              ).readAsStringSync(),
+            )
+            as Map<String, dynamic>;
+  final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
+  final rgbFrame = (cases.first['frames'] as List)
+      .cast<Map<String, dynamic>>()
+      .singleWhere((frame) => frame['name'] == 'rgb');
   setUpAll(() {
     expect(
       sha256.convert(File(_model).readAsBytesSync()).toString(),
       faceLandmarkerSha256,
     );
-    expect(_reference['model_sha256'], faceLandmarkerSha256);
+    expect(reference['model_sha256'], faceLandmarkerSha256);
+    expect(reference['delegate'], delegate.name.toUpperCase());
   });
 
-  for (final sequence in _cases) {
+  for (final sequence in cases) {
     test(
       'official ${sequence['mode']} reference with ${sequence['num_faces']} faces',
       () async {
         final video = sequence['mode'] == 'VIDEO';
         final task = await FaceLandmarker.create(
           FaceLandmarkerOptions(
+            delegate: delegate,
             modelPath: _model,
             runningMode: video
                 ? VisionRunningMode.video
@@ -48,6 +72,7 @@ void main() {
             outputFacialTransformationMatrixes: true,
           ),
         );
+        expect(task.delegate, delegate);
         final frames = (sequence['frames'] as List)
             .cast<Map<String, dynamic>>();
         final requests = [
@@ -65,11 +90,11 @@ void main() {
         ];
         final closing = task.dispose();
         expect(identical(closing, task.dispose()), isTrue);
-        await expectLater(task.detectImage(_image(_rgb)), throwsStateError);
+        await expectLater(task.detectImage(_image(rgbFrame)), throwsStateError);
         final results = await Future.wait(requests);
         await closing;
         for (var i = 0; i < frames.length; i++) {
-          _compare(results[i], frames[i]);
+          compare(results[i], frames[i]);
         }
         final face = results.first.faceLandmarks.first;
         expect(() => face.clear(), throwsUnsupportedError);
@@ -91,13 +116,16 @@ void main() {
 
   test('model bytes are owned and optional outputs default to empty', () async {
     final bytes = File(_model).readAsBytesSync();
-    final options = FaceLandmarkerOptions(modelBytes: bytes);
+    final options = FaceLandmarkerOptions(
+      delegate: delegate,
+      modelBytes: bytes,
+    );
     bytes.fillRange(0, bytes.length, 0);
     final task = await FaceLandmarker.create(options);
     try {
-      final result = await task.detectImage(_image(_rgb));
-      _compare(result, {
-        ..._rgb,
+      final result = await task.detectImage(_image(rgbFrame));
+      compare(result, {
+        ...rgbFrame,
         'face_blendshapes': [],
         'facial_transformation_matrixes': [],
       });
@@ -110,16 +138,19 @@ void main() {
     'detector and landmarker coexist in one process with independent lifetimes',
     () async {
       final detector = await FaceDetector.create(
-        FaceDetectorOptions(modelPath: 'models/blaze_face_short_range.tflite'),
+        FaceDetectorOptions(
+          delegate: delegate,
+          modelPath: 'models/blaze_face_short_range.tflite',
+        ),
       );
       final mesh = await FaceLandmarker.create(
-        FaceLandmarkerOptions(modelPath: _model),
+        FaceLandmarkerOptions(delegate: delegate, modelPath: _model),
       );
       try {
         for (var i = 0; i < 3; i++) {
           final results = await Future.wait<Object>([
-            detector.detectImage(_image(_rgb)),
-            mesh.detectImage(_image(_rgb)),
+            detector.detectImage(_image(rgbFrame)),
+            mesh.detectImage(_image(rgbFrame)),
           ]);
           expect(
             (results[0] as FaceDetectorResult).detections.single.keypoints,
@@ -132,7 +163,7 @@ void main() {
         }
         await detector.dispose();
         expect(
-          (await mesh.detectImage(_image(_rgb))).faceLandmarks.single,
+          (await mesh.detectImage(_image(rgbFrame))).faceLandmarks.single,
           hasLength(478),
         );
       } finally {
@@ -146,7 +177,7 @@ void main() {
     test(
       'padded ${format.name} camera frames preserve the landmark coordinates',
       () async {
-        final rgb = _image(_rgb).pixels!;
+        final rgb = _image(rgbFrame).pixels!;
         final stride = 301 * format.channels + 20;
         final pixels = Uint8List(stride * 209)..fillRange(0, stride * 209, 127);
         for (var y = 0; y < 209; y++) {
@@ -163,6 +194,7 @@ void main() {
         }
         final task = await FaceLandmarker.create(
           FaceLandmarkerOptions(
+            delegate: delegate,
             modelPath: _model,
             numFaces: 2,
             outputFaceBlendshapes: true,
@@ -178,7 +210,7 @@ void main() {
             bytesPerRow: stride,
           );
           pixels.fillRange(0, pixels.length, 0);
-          _compare(await task.detectImage(image), _rgb);
+          compare(await task.detectImage(image), rgbFrame);
         } finally {
           await task.dispose();
         }
@@ -191,22 +223,26 @@ void main() {
     () async {
       final task = await FaceLandmarker.create(
         FaceLandmarkerOptions(
+          delegate: delegate,
           modelPath: _model,
           runningMode: VisionRunningMode.video,
         ),
       );
       try {
-        await expectLater(task.detectImage(_image(_rgb)), throwsStateError);
-        await task.detectForVideo(_image(_rgb), timestampMilliseconds: 10);
+        await expectLater(task.detectImage(_image(rgbFrame)), throwsStateError);
+        await task.detectForVideo(_image(rgbFrame), timestampMilliseconds: 10);
         for (final timestamp in [-1, 9, 10, 0x7fffffffffffffff]) {
           await expectLater(
-            task.detectForVideo(_image(_rgb), timestampMilliseconds: timestamp),
+            task.detectForVideo(
+              _image(rgbFrame),
+              timestampMilliseconds: timestamp,
+            ),
             throwsArgumentError,
           );
         }
         await expectLater(
           task.detectForVideo(
-            _image(_rgb),
+            _image(rgbFrame),
             timestampMilliseconds: 11,
             rotationDegrees: 45,
           ),
@@ -220,12 +256,12 @@ void main() {
           throwsA(isA<FaceLandmarkerException>()),
         );
         await expectLater(
-          task.detectForVideo(_image(_rgb), timestampMilliseconds: 11),
+          task.detectForVideo(_image(rgbFrame), timestampMilliseconds: 11),
           throwsArgumentError,
         );
         expect(
           (await task.detectForVideo(
-            _image(_rgb),
+            _image(rgbFrame),
             timestampMilliseconds: 12,
           )).faceLandmarks.single,
           hasLength(478),
@@ -240,8 +276,8 @@ void main() {
     'invalid initialization fails promptly; later creation still succeeds',
     () async {
       for (final options in [
-        FaceLandmarkerOptions(modelPath: 'missing.task'),
-        FaceLandmarkerOptions(modelBytes: Uint8List(32)),
+        FaceLandmarkerOptions(delegate: delegate, modelPath: 'missing.task'),
+        FaceLandmarkerOptions(delegate: delegate, modelBytes: Uint8List(32)),
       ]) {
         await expectLater(
           FaceLandmarker.create(options).timeout(const Duration(seconds: 10)),
@@ -249,15 +285,15 @@ void main() {
         );
       }
       final task = await FaceLandmarker.create(
-        FaceLandmarkerOptions(modelPath: _model),
+        FaceLandmarkerOptions(delegate: delegate, modelPath: _model),
       );
       try {
         await expectLater(
-          task.detectForVideo(_image(_rgb), timestampMilliseconds: 0),
+          task.detectForVideo(_image(rgbFrame), timestampMilliseconds: 0),
           throwsStateError,
         );
         expect(
-          (await task.detectImage(_image(_rgb))).faceLandmarks.single,
+          (await task.detectImage(_image(rgbFrame))).faceLandmarks.single,
           hasLength(478),
         );
       } finally {
@@ -269,29 +305,44 @@ void main() {
   test(
     'options reject malformed model sources, face counts and thresholds',
     () {
-      expect(() => FaceLandmarkerOptions(), throwsArgumentError);
+      expect(
+        () => FaceLandmarkerOptions(delegate: delegate),
+        throwsArgumentError,
+      );
+      expect(
+        () => FaceLandmarkerOptions(
+          delegate: delegate,
+          modelPath: _model,
+          modelBytes: Uint8List(1),
+        ),
+        throwsArgumentError,
+      );
       expect(
         () =>
-            FaceLandmarkerOptions(modelPath: _model, modelBytes: Uint8List(1)),
+            FaceLandmarkerOptions(delegate: delegate, modelBytes: Uint8List(0)),
         throwsArgumentError,
       );
       expect(
-        () => FaceLandmarkerOptions(modelBytes: Uint8List(0)),
-        throwsArgumentError,
-      );
-      expect(
-        () => FaceLandmarkerOptions(modelPath: 'bad\u0000path'),
+        () => FaceLandmarkerOptions(
+          delegate: delegate,
+          modelPath: 'bad\u0000path',
+        ),
         throwsArgumentError,
       );
       for (final count in [0, -1, 0x80000000]) {
         expect(
-          () => FaceLandmarkerOptions(modelPath: _model, numFaces: count),
+          () => FaceLandmarkerOptions(
+            delegate: delegate,
+            modelPath: _model,
+            numFaces: count,
+          ),
           throwsArgumentError,
         );
       }
       for (final confidence in [-0.1, 1.1, double.nan, double.infinity]) {
         expect(
           () => FaceLandmarkerOptions(
+            delegate: delegate,
             modelPath: _model,
             minFaceDetectionConfidence: confidence,
           ),
@@ -299,6 +350,7 @@ void main() {
         );
         expect(
           () => FaceLandmarkerOptions(
+            delegate: delegate,
             modelPath: _model,
             minFacePresenceConfidence: confidence,
           ),
@@ -306,6 +358,7 @@ void main() {
         );
         expect(
           () => FaceLandmarkerOptions(
+            delegate: delegate,
             modelPath: _model,
             minTrackingConfidence: confidence,
           ),
@@ -335,7 +388,14 @@ VisionImage _image(Map<String, dynamic> frame) {
   });
 }
 
-void _compare(FaceLandmarkerResult actual, Map<String, dynamic> expected) {
+void _compare(
+  FaceLandmarkerResult actual,
+  Map<String, dynamic> expected,
+  VisionDelegate delegate,
+) {
+  // Measured against the independent wheel, separately for each backend.
+  // See fixtures/face_landmarker/README.md for observed maxima and provenance.
+  final gpu = delegate == VisionDelegate.gpu;
   expect(actual.imageWidth, expected['width']);
   expect(actual.imageHeight, expected['height']);
   expect(actual.timestampMilliseconds, expected['timestamp_ms']);
@@ -352,9 +412,9 @@ void _compare(FaceLandmarkerResult actual, Map<String, dynamic> expected) {
     for (var j = 0; j < points.length; j++) {
       final point = points[j] as Map<String, dynamic>;
       final value = actual.faceLandmarks[i][j];
-      expect(value.x, closeTo(point['x'] as num, 0.0001));
-      expect(value.y, closeTo(point['y'] as num, 0.0001));
-      expect(value.z, closeTo(point['z'] as num, 0.0001));
+      expect(value.x, closeTo(point['x'] as num, gpu ? 0.002 : 0.0001));
+      expect(value.y, closeTo(point['y'] as num, gpu ? 0.002 : 0.0001));
+      expect(value.z, closeTo(point['z'] as num, gpu ? 0.002 : 0.0001));
       expect(value.visibility, point['visibility']);
       expect(value.presence, point['presence']);
       expect(value.name, point['name']);
@@ -369,7 +429,10 @@ void _compare(FaceLandmarkerResult actual, Map<String, dynamic> expected) {
       final value = actual.faceBlendshapes[i][j];
       final category = categories[j] as Map<String, dynamic>;
       expect(value.index, category['index']);
-      expect(value.score, closeTo(category['score'] as num, 0.002));
+      expect(
+        value.score,
+        closeTo(category['score'] as num, gpu ? 0.04 : 0.002),
+      );
       expect(value.categoryName, category['category_name']);
       expect(value.displayName, category['display_name']);
     }
@@ -385,7 +448,10 @@ void _compare(FaceLandmarkerResult actual, Map<String, dynamic> expected) {
         // Python exposes row/column indexing; C stores the same data column-major.
         expect(
           matrix.at(row, column),
-          closeTo((matrices[i] as List)[row][column] as num, 0.005),
+          closeTo(
+            (matrices[i] as List)[row][column] as num,
+            gpu ? 0.06 : 0.005,
+          ),
         );
       }
     }

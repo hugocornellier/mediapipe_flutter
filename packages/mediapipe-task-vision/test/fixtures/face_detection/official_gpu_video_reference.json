@@ -1,0 +1,467 @@
+{
+  "runtime": "mediapipe==1.0.0",
+  "source_revision": "6d31f1ebc3284db74d211d62bdc4f0a0c29ea120",
+  "library_sha256": "aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f",
+  "model_sha256": "b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f",
+  "platform": "macOS arm64",
+  "delegate": "GPU",
+  "running_mode": "VIDEO",
+  "min_detection_confidence": 0.5,
+  "min_suppression_threshold": 0.3,
+  "raw_derivation": "mesh-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
+  "input_conversion": "RGB to RGBA with opaque alpha for Metal",
+  "cases": [
+    {
+      "name": "rgb",
+      "width": 301,
+      "height": 209,
+      "timestamp_ms": 0,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 108,
+            "origin_y": 50,
+            "width": 85,
+            "height": 85
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9656413197517395,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.45133742690086365,
+              "y": 0.3642479181289673,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5642240643501282,
+              "y": 0.36316269636154175,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5101727247238159,
+              "y": 0.46992623805999756,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5086448788642883,
+              "y": 0.542049765586853,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.38458389043807983,
+              "y": 0.38856977224349976,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6245236992835999,
+              "y": 0.3903999924659729,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgb",
+      "width": 301,
+      "height": 209,
+      "timestamp_ms": 33,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 108,
+            "origin_y": 50,
+            "width": 85,
+            "height": 85
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9656413197517395,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.45133742690086365,
+              "y": 0.3642479181289673,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5642240643501282,
+              "y": 0.36316269636154175,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5101727247238159,
+              "y": 0.46992623805999756,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5086448788642883,
+              "y": 0.542049765586853,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.38458389043807983,
+              "y": 0.38856977224349976,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6245236992835999,
+              "y": 0.3903999924659729,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "blank",
+      "width": 301,
+      "height": 209,
+      "timestamp_ms": 66,
+      "rotation_degrees": 0,
+      "detections": []
+    },
+    {
+      "name": "rgb-pair",
+      "width": 360,
+      "height": 209,
+      "timestamp_ms": 99,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 231,
+            "origin_y": 53,
+            "width": 79,
+            "height": 79
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9453994035720825,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.7099698781967163,
+              "y": 0.36533084511756897,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.8024029731750488,
+              "y": 0.370030015707016,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.7561070919036865,
+              "y": 0.4609090983867645,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.7552726864814758,
+              "y": 0.5320185422897339,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6559138298034668,
+              "y": 0.38708242774009705,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.8538485169410706,
+              "y": 0.39494088292121887,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "bounding_box": {
+            "origin_x": 51,
+            "origin_y": 53,
+            "width": 79,
+            "height": 79
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9433475732803345,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.20922885835170746,
+              "y": 0.3653983175754547,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3014794886112213,
+              "y": 0.36773356795310974,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.25528135895729065,
+              "y": 0.4597345292568207,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.2551456093788147,
+              "y": 0.5311050415039062,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.15638425946235657,
+              "y": 0.38878223299980164,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.35372889041900635,
+              "y": 0.39232489466667175,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgb",
+      "width": 301,
+      "height": 209,
+      "timestamp_ms": 132,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 108,
+            "origin_y": 50,
+            "width": 85,
+            "height": 85
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9656413197517395,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.45133742690086365,
+              "y": 0.3642479181289673,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5642240643501282,
+              "y": 0.36316269636154175,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5101727247238159,
+              "y": 0.46992623805999756,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5086448788642883,
+              "y": 0.542049765586853,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.38458389043807983,
+              "y": 0.38856977224349976,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6245236992835999,
+              "y": 0.3903999924659729,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgb-rotated",
+      "width": 209,
+      "height": 301,
+      "timestamp_ms": 165,
+      "rotation_degrees": 90,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 50,
+            "origin_y": 106,
+            "width": 85,
+            "height": 85
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9656413197517395,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.3642479181289673,
+              "y": 0.548662543296814,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.363162636756897,
+              "y": 0.4357759356498718,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.4699261784553528,
+              "y": 0.4898272752761841,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5420497059822083,
+              "y": 0.49135512113571167,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.38856977224349976,
+              "y": 0.6154160499572754,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3903999328613281,
+              "y": 0.37547630071640015,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgb",
+      "width": 301,
+      "height": 209,
+      "timestamp_ms": 198,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 108,
+            "origin_y": 50,
+            "width": 85,
+            "height": 85
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9656413197517395,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.45133742690086365,
+              "y": 0.3642479181289673,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5642240643501282,
+              "y": 0.36316269636154175,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5101727247238159,
+              "y": 0.46992623805999756,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5086448788642883,
+              "y": 0.542049765586853,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.38458389043807983,
+              "y": 0.38856977224349976,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6245236992835999,
+              "y": 0.3903999924659729,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    }
+  ]
+}
