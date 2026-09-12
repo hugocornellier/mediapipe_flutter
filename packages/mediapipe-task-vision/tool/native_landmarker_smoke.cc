@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 #include "mediapipe/tasks/c/vision/face_landmarker/face_landmarker.h"
 
 static_assert(sizeof(MpFaceLandmarkerOptions) == 104);
@@ -9,7 +10,10 @@ static_assert(sizeof(MpNormalizedLandmarks) == 16);
 static_assert(sizeof(MpMatrix) == 16);
 
 int main(int argc, char** argv) {
-  assert(argc == 3);
+  if (argc != 3 && argc != 4) return 64;
+  if (argc == 4 && std::strcmp(argv[3], "cpu") != 0 &&
+      std::strcmp(argv[3], "gpu") != 0) return 64;
+  const bool gpu = argc == 4 && std::strcmp(argv[3], "gpu") == 0;
   char* error = nullptr;
   auto check = [&](MpStatus status) {
     if (status != kMpOk) fprintf(stderr, "%s\n", error ? error : "Native failure");
@@ -18,7 +22,7 @@ int main(int argc, char** argv) {
   MpFaceLandmarkerOptions options{};
   options.base_options.model_asset_path = argv[1];
   options.base_options.file_descriptor = -1;
-  options.base_options.delegate = MP_DELEGATE_CPU;
+  options.base_options.delegate = gpu ? MP_DELEGATE_GPU : MP_DELEGATE_CPU;
   options.base_options.host_system = MP_HOST_SYSTEM_MAC;
   options.running_mode = MP_RUNNING_MODE_IMAGE;
   options.output_face_blendshapes = true;
@@ -39,5 +43,6 @@ int main(int argc, char** argv) {
   MpFaceLandmarkerCloseResult(&result);
   MpImageFree(image);
   check(MpFaceLandmarkerClose(task, &error));
-  puts("Official Face Landmarker ABI: 478 landmarks, 52 blendshapes, 4x4 matrix.");
+  printf("Official Face Landmarker ABI: 478 landmarks, 52 blendshapes, 4x4 matrix (%s).\n",
+         gpu ? "gpu" : "cpu");
 }
