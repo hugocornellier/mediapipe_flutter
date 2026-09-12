@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
@@ -13,6 +14,9 @@ final class NativeFaceLandmarker {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeFaceLandmarker(FaceLandmarkerOptions options)
     : _gpu = options.delegate == VisionDelegate.gpu {
+    if (Platform.isIOS && _gpu) {
+      throw UnsupportedError('The iOS simulator runtime supports CPU only.');
+    }
     using((arena) {
       final native = arena<mp.MpFaceLandmarkerOptions>();
       final base = native.ref.base_options;
@@ -20,7 +24,9 @@ final class NativeFaceLandmarker {
       base.delegate = options.delegate == VisionDelegate.gpu
           ? mp.MpDelegate.MP_DELEGATE_GPU
           : mp.MpDelegate.MP_DELEGATE_CPU;
-      base.host_system = mp.MpHostSystem.MP_HOST_SYSTEM_MAC;
+      base.host_system = Platform.isIOS
+          ? mp.MpHostSystem.MP_HOST_SYSTEM_IOS
+          : mp.MpHostSystem.MP_HOST_SYSTEM_MAC;
       if (options.modelPath case final path?) {
         base.model_asset_path = path.toNativeUtf8(allocator: arena).cast();
       }

@@ -74,10 +74,11 @@ def verify_objc_namespace(library, task):
     print(f"Verified {len(classes)} isolated Objective-C classes for {task}.")
 
 
-def build_opencv(root):
+def build_opencv(root, *, ios_simulator=False):
     source = root / "opencv"
-    build = root / "opencv-build"
-    install = root / "opencv-install"
+    suffix = "-ios-simulator" if ios_simulator else ""
+    build = root / f"opencv{suffix}-build"
+    install = root / f"opencv{suffix}-install"
     if not source.exists():
         root.mkdir(parents=True, exist_ok=True)
         run(["git", "clone", "--depth", "1", "--branch", "4.12.0",
@@ -88,7 +89,8 @@ def build_opencv(root):
         raise SystemExit("Refusing modified OpenCV source.")
     configuration = [
         "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
-        "-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0", "-DCMAKE_OSX_ARCHITECTURES=arm64",
+        f"-DCMAKE_OSX_DEPLOYMENT_TARGET={'13.0' if ios_simulator else '11.0'}",
+        "-DCMAKE_OSX_ARCHITECTURES=arm64",
         "-DBUILD_LIST=core,imgproc", "-DBUILD_SHARED_LIBS=OFF",
         "-DBUILD_TESTS=OFF", "-DBUILD_PERF_TESTS=OFF", "-DBUILD_EXAMPLES=OFF",
         "-DBUILD_opencv_apps=OFF", "-DBUILD_JAVA=OFF",
@@ -99,11 +101,18 @@ def build_opencv(root):
         "PNG", "TIFF", "WEBP", "OPENEXR", "JASPER", "OPENJPEG", "AVIF",
         "FFMPEG", "AVFOUNDATION", "GSTREAMER", "VTK",
     )]
+    if ios_simulator:
+        configuration.extend([
+            "-DCMAKE_SYSTEM_NAME=iOS", "-DCMAKE_OSX_SYSROOT=iphonesimulator",
+            "-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY",
+            "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO",
+        ])
     run(["cmake", "-S", str(source), "-B", str(build), "-G", "Ninja",
          *configuration])
     run(["cmake", "--build", str(build), "--parallel", "8"])
     run(["cmake", "--install", str(build)])
-    (install / "WORKSPACE").write_text('workspace(name = "macos_opencv")\n')
+    repository = "ios_opencv" if ios_simulator else "macos_opencv"
+    (install / "WORKSPACE").write_text(f'workspace(name = "{repository}")\n')
     (install / "BUILD.bazel").write_text('''load("@rules_cc//cc:cc_library.bzl", "cc_library")
 cc_library(
     name = "opencv",

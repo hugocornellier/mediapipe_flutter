@@ -1,5 +1,9 @@
 ## Unreleased
 
+* Add local CPU runtime builds and Flutter IMAGE/VIDEO integration coverage for arm64 iOS simulators.
+* Add a simulator image demo with face detection, mesh, irises and optional expression/transform outputs.
+* Keep simulator/device artifact selection distinct and reject unsupported iOS GPU requests explicitly.
+
 * Add per-task `VisionDelegate.cpu` / `.gpu` selection for Face Detector and Landmarker.
 * Bundle Metal and CPU in one runtime per task; keep official models and graphs unchanged.
 * Add independent Metal reference tests, RGB-to-RGBA input conversion, and camera delegate switching.

@@ -2,13 +2,17 @@
 
 Live camera face mesh on macOS Apple Silicon using `camera_desktop` and the
 official MediaPipe v1.0.0 Face Landmarker. Requires Flutter 3.44.8 / Dart 3.12.2 and
-Xcode. The native runtime downloads automatically from the pinned public release.
+Xcode. macOS native runtimes download automatically when local builds are absent.
+The same example opens a CPU image demo on arm64 iOS simulators; follow the
+[simulator guide](../tool/IOS_SIMULATOR.md) to build its local native libraries.
 
 From this directory:
 
 ```sh
+dart ../tool/download_model.dart
+dart ../tool/download_face_landmarker.dart
+python3 -B ../tool/prepare_face_example.py
 flutter pub get
-dart ../tool/download_face_landmarker.dart assets/face_landmarker.task
 flutter run -d macos --release
 ```
 
@@ -50,9 +54,10 @@ and image stream. The overlay scales the returned input coordinates directly
 onto an uncropped preview, without applying another mirror. Stopping, switching
 cameras, or hiding the app releases capture and drains active inference.
 
-The demo explicitly uses the prebuilt runtime even in a maintainer checkout.
-Its hook configuration selects only `face_landmarker`, so the standalone
-Face Detector library is not downloaded or bundled for this app.
+The example selects both face tasks for its camera and image screens. Verified
+local builds take precedence; macOS downloads are used when local builds are
+absent. The simulator currently requires local CPU libraries. Fixture copies
+and models are prepared from the package's canonical inputs by the command above.
 Native LIVE_STREAM callbacks are not exposed by the Dart wrapper yet; live
 capture here uses the official synchronous VIDEO API off the UI isolate.
 

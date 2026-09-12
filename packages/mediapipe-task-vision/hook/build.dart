@@ -10,16 +10,23 @@ void main(List<String> arguments) async {
   await build(arguments, (input, output) async {
     if (!input.config.buildCodeAssets) return;
     final code = input.config.code;
-    if (code.targetOS != OS.macOS ||
+    final simulator =
+        code.targetOS == OS.iOS && code.iOS.targetSdk == IOSSdk.iPhoneSimulator;
+    if ((code.targetOS != OS.macOS && !simulator) ||
         code.targetArchitecture != Architecture.arm64) {
       throw UnsupportedError(
-        'mediapipe_flutter_vision currently supports macOS arm64 only. '
+        'mediapipe_flutter_vision supports macOS arm64 and CPU inference '
+        'on the arm64 iOS simulator. Physical iOS devices and other '
+        'architectures are not supported yet. '
         'Requested ${code.targetOS}/${code.targetArchitecture}.',
       );
     }
     if (code.linkModePreference == LinkModePreference.static) {
       throw UnsupportedError('MediaPipe requires dynamic library bundling.');
     }
+    // Flutter 3.44 reports a fixed iOS targetVersion of 13 here, independently
+    // of Runner's deployment target. It cannot validate the app's minimum OS.
+    // Our arm64 simulator binaries require iOS 14; see tool/IOS_SIMULATOR.md.
     final usePrebuilt = input.userDefines['prebuilt'];
     if (usePrebuilt != null && usePrebuilt is! bool) {
       throw const FormatException(
@@ -43,12 +50,31 @@ void main(List<String> arguments) async {
       final landmarker = task == 'face_landmarker';
       final local = Directory.fromUri(
         input.packageRoot.resolve(
-          landmarker ? 'build/native/face_landmarker/' : 'build/native/',
+          simulator
+              ? 'build/native/ios-simulator/arm64/$task/'
+              : landmarker
+              ? 'build/native/face_landmarker/'
+              : 'build/native/',
         ),
       );
       final libraryName = 'lib$task.dylib';
       final File library;
-      if (usePrebuilt != true &&
+      if (simulator) {
+        if (usePrebuilt == true ||
+            !await File.fromUri(local.uri.resolve(libraryName)).exists()) {
+          throw StateError(
+            'iOS simulator runtimes are currently local development builds. '
+            'Run python3 tool/build_ios_simulator.py in the vision package '
+            'and omit prebuilt: true. No macOS library can substitute for '
+            'an iOS simulator library.',
+          );
+        }
+        library = await validateVisionLibrary(
+          local,
+          libraryName: libraryName,
+          target: VisionLibraryTarget.iosSimulatorArm64,
+        );
+      } else if (usePrebuilt != true &&
           await File.fromUri(local.uri.resolve(libraryName)).exists()) {
         // Maintainers can continue testing builds made by tool/build_native.py.
         // A normal dependency installation has no package-local build directory.
