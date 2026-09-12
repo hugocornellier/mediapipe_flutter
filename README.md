@@ -15,10 +15,12 @@ Text classification, text embedding, and language detection run on macOS arm64.
 Tests exercise the native executors, their reference numeric outputs, and the
 public isolate-based APIs. The macOS text example also builds on this baseline.
 
-The official MediaPipe v1.0.0 Face Detector and Face Landmarker run on macOS arm64 in CPU IMAGE
-and VIDEO modes, with tests against Google's Python reference outputs. A live
+The official MediaPipe v1.0.0 Face Detector and Face Landmarker run on macOS arm64
+in CPU and Metal GPU IMAGE/VIDEO modes, with tests against Google's Python reference outputs. A live
 camera example uses `camera_desktop`, with the full 478-point mesh and irises. Native builds use
 pinned upstream source and static OpenCV; no task pipeline or model is patched.
+Both tasks accept `delegate: VisionDelegate.cpu` (default) or `VisionDelegate.gpu`.
+The camera demo exposes the same choice; each task download contains both backends.
 
 This is a development baseline. GenAI inference and mobile platforms still need
 validation. Public prebuilt runtimes are available for both macOS arm64 face tasks.
@@ -30,7 +32,7 @@ validation. Public prebuilt runtimes are available for both macOS arm64 face tas
 | `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
 | `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Three text tasks validated on macOS arm64 |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
-| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Face Detector + Face Landmarker: macOS arm64, CPU images/video, live mesh demo |
+| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Face Detector + Face Landmarker: macOS arm64, CPU/Metal images/video, live mesh demo |
 | Audio | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Placeholder, no Dart package |
 
 Text runtime artifacts exist for macOS arm64/x64, Android arm64, and iOS arm64
@@ -57,9 +59,9 @@ existing headers. This tooling migration does not upgrade the native runtime.
 The shared `native_assets.dart` helpers are imported by hooks, not by task runtime
 entry points.
 
-Vision downloads separate 4.2 MB Face Detector and 4.6 MB Face Landmarker archives from the public
+Vision downloads separate 5.0 MB Face Detector and 5.5 MB Face Landmarker archives from the public
 [native runtime repository](https://github.com/hugocornellier/mediapipe_flutter_native/releases).
-The unpacked libraries are about 11.4 MB and 13.6 MB, with separate 224 KB and
+The unpacked libraries are about 13.7 MB and 15.9 MB, with separate 224 KB and
 3.8 MB models. Both tasks are enabled by default; apps can select a subset with
 `hooks.user_defines.mediapipe_flutter_vision.tasks` in their pubspec. The camera
 demo selects only Face Landmarker. Both archive
