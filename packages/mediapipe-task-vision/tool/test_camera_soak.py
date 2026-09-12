@@ -14,6 +14,8 @@ import statistics
 import subprocess
 from threading import Timer
 
+from prepare_face_example import prepare
+
 PACKAGE = Path(__file__).resolve().parents[1]
 EXAMPLE = PACKAGE / 'example'
 
@@ -82,8 +84,9 @@ def main():
         'flutter': subprocess.check_output(['flutter', '--version'], text=True),
     }, indent=2) + '\n')
     print(f'Soak artifacts: {output}', flush=True)
-    subprocess.run(['dart', '../tool/download_face_landmarker.dart', 'assets/face_landmarker.task'],
-                   cwd=EXAMPLE, check=True)
+    for downloader in ('download_model.dart', 'download_face_landmarker.dart'):
+        subprocess.run(['dart', f'tool/{downloader}'], cwd=PACKAGE, check=True)
+    prepare()
     subprocess.run(['flutter', 'build', 'macos', '--release', '-t', 'tool/release_camera_soak.dart',
                     f'--dart-define-from-file={definitions}'], cwd=EXAMPLE, check=True)
     executable = EXAMPLE / ('build/macos/Build/Products/Release/'

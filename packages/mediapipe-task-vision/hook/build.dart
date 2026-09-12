@@ -24,9 +24,9 @@ void main(List<String> arguments) async {
     if (code.linkModePreference == LinkModePreference.static) {
       throw UnsupportedError('MediaPipe requires dynamic library bundling.');
     }
-    if (simulator && code.iOS.targetVersion < 13) {
-      throw UnsupportedError('The simulator runtime requires iOS 13 or newer.');
-    }
+    // Flutter 3.44 reports a fixed iOS targetVersion of 13 here, independently
+    // of Runner's deployment target. It cannot validate the app's minimum OS.
+    // Our arm64 simulator binaries require iOS 14; see tool/IOS_SIMULATOR.md.
     final usePrebuilt = input.userDefines['prebuilt'];
     if (usePrebuilt != null && usePrebuilt is! bool) {
       throw const FormatException(

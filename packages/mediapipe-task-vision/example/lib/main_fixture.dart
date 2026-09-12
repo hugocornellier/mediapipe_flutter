@@ -201,7 +201,10 @@ class _FaceFixturePageState extends State<FaceFixturePage> {
               ),
             ),
             const SizedBox(height: 16),
-            Text('${_detections?.detections.length ?? 0} detected faces'),
+            Text(
+              '${_detections?.detections.length ?? 0} '
+              '${_detections?.detections.length == 1 ? 'face' : 'faces'} detected',
+            ),
             Text(
               '${_landmarks?.faceLandmarks.fold<int>(0, (n, points) => n + points.length) ?? 0} landmarks',
             ),

@@ -1,5 +1,5 @@
 name: mediapipe_flutter_vision
-description: Official MediaPipe Face Detector and Face Landmarker for Dart and Flutter on macOS arm64.
+description: Official MediaPipe face tasks for macOS arm64 and CPU inference on arm64 iOS simulators.
 version: 0.0.1
 repository: https://github.com/hugocornellier/mediapipe_flutter
 issue_tracker: https://github.com/hugocornellier/mediapipe_flutter/issues
@@ -10,6 +10,7 @@ environment:
 
 platforms:
   macos:
+  ios:
 
 dependencies:
   archive: ^4.2.0

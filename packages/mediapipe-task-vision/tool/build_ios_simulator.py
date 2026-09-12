@@ -9,6 +9,7 @@ import hashlib
 import json
 from pathlib import Path
 import platform
+import re
 import shutil
 
 from build_native import (
@@ -63,6 +64,9 @@ def main():
         if ('platform IOSSIMULATOR' not in build_info or
                 capture(['xcrun', 'lipo', '-archs', str(built)]) != 'arm64'):
             raise SystemExit(f'Not an arm64 simulator dylib: {build_info}')
+        minimum_os = re.search(r'^\s*minos\s+(\d+(?:\.\d+)+)\s*$', build_info, re.MULTILINE)
+        if minimum_os is None:
+            raise SystemExit(f'Missing deployment target in {build_info}')
         exported = set(capture(['xcrun', 'nm', '-gjU', str(built)]).splitlines())
         symbols = [name.replace('MpFaceDetector', 'MpFaceLandmarker')
                    if landmarker else name for name in SYMBOLS]
@@ -82,7 +86,10 @@ def main():
         manifest = dict(
             source=SOURCE, revision=REVISION, version='1.0.0', target=target,
             platform='ios', architecture='arm64', ios_sdk='iphonesimulator',
-            minimum_os='13.0', delegates=['cpu'], flags=task_flags,
+            # Apple clang floors the arm64 simulator link target to iOS 14.
+            # Record the binary's requirement, not just the requested flag.
+            minimum_os=minimum_os.group(1), requested_minimum_os='13.0',
+            delegates=['cpu'], flags=task_flags,
             opencv_revision=OPENCV_REVISION, opencv_configuration=configuration,
             sha256=hashlib.sha256(destination.read_bytes()).hexdigest(),
             bytes=destination.stat().st_size,

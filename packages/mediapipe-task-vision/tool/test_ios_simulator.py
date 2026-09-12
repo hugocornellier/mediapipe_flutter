@@ -45,6 +45,8 @@ def main():
     output.mkdir(parents=True)
     command = ['flutter', 'test', '-d', device['udid'],
                'integration_test/ios_cpu_test.dart', '--reporter', 'expanded']
+    git_head = capture(['git', '-C', str(PACKAGE), 'rev-parse', 'HEAD'])
+    git_status = capture(['git', '-C', str(PACKAGE), 'status', '--porcelain'])
     print(f'Running CPU integration tests; log: {output / "flutter-test.log"}', flush=True)
     with (output / 'flutter-test.log').open('w') as log:
         result = subprocess.run(command, cwd=PACKAGE / 'example', stdout=log,
@@ -52,7 +54,7 @@ def main():
     report = {
         'started_utc': stamp, 'device': device['udid'], 'device_name': device['name'],
         'runtime': runtime, 'command': command, 'exit_code': result.returncode,
-        'git_head': capture(['git', '-C', str(PACKAGE), 'rev-parse', 'HEAD']),
+        'git_head': git_head, 'git_status': git_status,
         'libraries': libraries,
         'scope': 'Flutter debug simulator integration; not physical-device or camera performance.',
     }
