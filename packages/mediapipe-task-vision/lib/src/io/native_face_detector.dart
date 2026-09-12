@@ -5,6 +5,7 @@ import 'package:ffi/ffi.dart';
 import '../../third_party/mediapipe/mediapipe_flutter_vision_bindings.dart'
     as mp;
 import '../interface/face_detector_types.dart';
+import 'pixel_conversion.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceDetector {
@@ -71,16 +72,13 @@ final class NativeFaceDetector {
             }
           }
         } else if (input.format == VisionPixelFormat.bgra) {
-          for (var y = 0; y < input.height!; y++) {
-            final sourceRow = y * input.bytesPerRow!;
-            final targetRow = y * rowSize;
-            for (var x = 0; x < rowSize; x += 4) {
-              packed[targetRow + x] = bytes[sourceRow + x + 2];
-              packed[targetRow + x + 1] = bytes[sourceRow + x + 1];
-              packed[targetRow + x + 2] = bytes[sourceRow + x];
-              packed[targetRow + x + 3] = bytes[sourceRow + x + 3];
-            }
-          }
+          copyBgraToRgba(
+            source: bytes,
+            target: packed,
+            width: input.width!,
+            height: input.height!,
+            bytesPerRow: input.bytesPerRow!,
+          );
         } else {
           for (var y = 0; y < input.height!; y++) {
             packed.setRange(
