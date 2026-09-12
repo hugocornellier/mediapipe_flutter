@@ -44,6 +44,18 @@ baseline (ABBA) and compare repeated results and the unchanged RGBA control to
 detect drift. Never run the variants simultaneously. Raw native stderr should
 also be retained when automating runs to verify Metal initialization.
 
+Compare retained run prefixes with the standard-library-only Python tool:
+
+```sh
+python3 tool/compare_face_benchmarks.py --baseline build/benchmarks/baseline-a build/benchmarks/baseline-d --candidate build/benchmarks/word-swap-b build/benchmarks/word-swap-c --output build/benchmarks/comparison
+```
+
+It checks raw-log hashes, sample counts, matching environments, case coverage,
+and model/native-library identity. Each variant must use one executable hash.
+The output includes equally weighted round means, their ranges, and pooled
+percentiles. Frames within a run are correlated; these are descriptive results,
+not statistical confidence intervals or performance guarantees.
+
 ## Original combined detector/landmarker benchmark
 
 From the vision package root:
