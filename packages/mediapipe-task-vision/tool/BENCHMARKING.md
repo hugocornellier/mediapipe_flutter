@@ -1,5 +1,8 @@
 # CPU and Metal comparison
 
+The [2026-09-12 packing experiment](benchmarks/2026-09-12-bgra/README.md)
+retains an ABBA comparison, raw timing logs, and a measured BGRA optimization.
+
 ## Face pipeline profiling
 
 Build an AOT executable and run from the vision package root:
