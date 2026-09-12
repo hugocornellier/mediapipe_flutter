@@ -14,6 +14,8 @@ jobs:
     name: Stable Flutter / macOS arm64
     runs-on: macos-15
     timeout-minutes: 60
+    env:
+      MEDIAPIPE_GPU_REFERENCE_DIR: ${{ github.workspace }}/build/gpu-reference
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -23,7 +25,21 @@ jobs:
           cache: true
       - run: flutter --version
       - run: brew install bazelisk cmake ninja
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: make get models
+      - name: Generate official GPU references on this runner
+        run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py
       - run: make ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-gpu-reference-source-build
+          path: |
+            build/gpu-reference/**/*.json
+            build/gpu-reference/*.log
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: mediapipe-face-tasks-1.0.0-macos-arm64
@@ -50,6 +66,37 @@ jobs:
       - name: Test public download and debug/release inference without native build tools
         working-directory: packages/mediapipe-task-vision
         run: python3 tool/test_prebuilt_macos.py
+
+  gpu-reference:
+    name: Official GPU comparison / same macOS runner
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download the official face models
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_model.dart
+          dart tool/download_face_landmarker.dart
+      - name: Compare public native tasks with the official wheel on this runner
+        run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-gpu-reference-prebuilt
+          path: |
+            build/gpu-reference/**/*.json
+            build/gpu-reference/*.log
+          if-no-files-found: error
 
   segmenter-consumer:
     name: MagicTouch / fresh macOS consumer

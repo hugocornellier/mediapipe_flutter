@@ -1,6 +1,6 @@
 # mediapipe_flutter
 
-MediaPipe Tasks for Flutter. An independent, private development fork of
+MediaPipe Tasks for Flutter. An independent development fork of
 [google/flutter-mediapipe](https://github.com/google/flutter-mediapipe), maintained
 by [Hugo Cornellier](https://github.com/hugocornellier). This is not an official
 Google package. No packages from this fork have been published to pub.dev.
@@ -75,7 +75,7 @@ The unpacked libraries are about 13.7 MB and 15.9 MB, with separate 224 KB and
 demo selects both face tasks. Both archive
 and library digests are pinned. The hook extracts the runtime using Dart and
 requires no Bazel, CMake, Ninja, or GitHub credentials. The Dart/Flutter source
-repository remains private; obtaining the package still requires source access.
+repository is public; no packages from this fork are published to pub.dev yet.
 
 Interactive Segmenter is **opt-in** with `tasks: [interactive_segmenter]`.
 Its official full runtime adds a 32.6 MB download / 100.9 MB native library;

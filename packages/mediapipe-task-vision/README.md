@@ -67,8 +67,8 @@ for consumer installation or inference. Flutter applications still need the
 normal Xcode toolchain to build the app.
 
 The public repository contains native artifacts and provenance. This Dart/Flutter
-source repository remains private; access to it is still required to obtain the
-package. No package from this fork has been published to pub.dev.
+source repository is public. No package from this fork has been published to
+pub.dev; depend on the repository or a local checkout for now.
 
 The archive includes upstream licenses and notices; retain the applicable
 notices when redistributing the native library. Models are downloaded separately.
@@ -207,6 +207,12 @@ Landmarker references cover every 3D coordinate, blendshape score, and transform
 in ten still images and two tracking sequences, plus both libraries running
 concurrently. Numeric tolerances and measured differences from Google's wheel
 are recorded in [the mesh reference notes](test/fixtures/face_landmarker/README.md).
+
+Hosted CI generates GPU reference outputs with the pinned official Python wheel
+on the same runner, then runs the Dart suites against those outputs with the
+existing tolerances. CPU references remain checked in. Missing reference files
+or unverified runtime/Metal provenance fail validation. See
+[the GPU comparison guide](tool/GPU_VALIDATION.md).
 
 [Benchmark instructions and measurements](tool/BENCHMARKING.md) compare CPU and
 Metal through the public VIDEO API using a 1080p portrait replay in a native AOT
