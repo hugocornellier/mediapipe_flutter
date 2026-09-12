@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 import 'face_camera_controller.dart';
 import 'face_overlay.dart';
@@ -48,15 +49,27 @@ class _FaceCameraPageState extends State<FaceCameraPage>
   bool loading = true;
   bool showMesh = true;
   bool showPoints = false;
+  VisionDelegate delegate = switch (const String.fromEnvironment(
+    'FACE_CAMERA_DELEGATE',
+    defaultValue: 'cpu',
+  )) {
+    'cpu' => VisionDelegate.cpu,
+    'gpu' => VisionDelegate.gpu,
+    final value => throw ArgumentError.value(value, 'FACE_CAMERA_DELEGATE'),
+  };
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    unawaited(_loadCameras());
+    unawaited(
+      _loadCameras(
+        autoStart: const bool.fromEnvironment('FACE_CAMERA_AUTOSTART'),
+      ),
+    );
   }
 
-  Future<void> _loadCameras() async {
+  Future<void> _loadCameras({bool autoStart = false}) async {
     setState(() {
       loading = true;
       cameraError = null;
@@ -69,6 +82,9 @@ class _FaceCameraPageState extends State<FaceCameraPage>
         selected = found.isEmpty ? null : found.first;
         loading = false;
       });
+      if (autoStart && selected != null) {
+        await session.start(selected!, delegate: delegate);
+      }
     } catch (error) {
       if (mounted) {
         setState(() {
@@ -176,10 +192,35 @@ class _FaceCameraPageState extends State<FaceCameraPage>
                             : (camera) {
                                 setState(() => selected = camera);
                                 if (camera != null && session.running) {
-                                  unawaited(session.start(camera));
+                                  unawaited(
+                                    session.start(camera, delegate: delegate),
+                                  );
                                 }
                               },
                       ),
+                    ),
+                    SegmentedButton<VisionDelegate>(
+                      segments: const [
+                        ButtonSegment(
+                          value: VisionDelegate.cpu,
+                          label: Text('CPU'),
+                        ),
+                        ButtonSegment(
+                          value: VisionDelegate.gpu,
+                          label: Text('GPU (Metal)'),
+                        ),
+                      ],
+                      selected: {delegate},
+                      onSelectionChanged: session.changing
+                          ? null
+                          : (selection) {
+                              setState(() => delegate = selection.single);
+                              if (session.running && selected != null) {
+                                unawaited(
+                                  session.start(selected!, delegate: delegate),
+                                );
+                              }
+                            },
                     ),
                     FilledButton.icon(
                       onPressed: session.changing || selected == null
@@ -188,7 +229,10 @@ class _FaceCameraPageState extends State<FaceCameraPage>
                               unawaited(
                                 session.running
                                     ? session.stop()
-                                    : session.start(selected!),
+                                    : session.start(
+                                        selected!,
+                                        delegate: delegate,
+                                      ),
                               );
                             },
                       icon: Icon(

@@ -6,9 +6,9 @@ import 'native_face_detector.dart';
 
 /// Official MediaPipe Face Detector, with inference serialized on a worker isolate.
 ///
-/// Supports CPU IMAGE and VIDEO modes on macOS arm64. Always await [dispose].
+/// Supports CPU and Metal IMAGE/VIDEO modes on macOS arm64. Await [dispose].
 final class FaceDetector {
-  FaceDetector._(this.runningMode) {
+  FaceDetector._(this.runningMode, this.delegate) {
     _events.listen(_receive);
   }
 
@@ -26,9 +26,12 @@ final class FaceDetector {
   /// The official running mode selected when this detector was created.
   final VisionRunningMode runningMode;
 
+  /// The backend requested at creation. Fixed for the lifetime of this task.
+  final VisionDelegate delegate;
+
   /// Load an official model and initialize MediaPipe off the calling isolate.
   static Future<FaceDetector> create(FaceDetectorOptions options) async {
-    final detector = FaceDetector._(options.runningMode);
+    final detector = FaceDetector._(options.runningMode, options.delegate);
     try {
       await Isolate.spawn(
         _runWorker,

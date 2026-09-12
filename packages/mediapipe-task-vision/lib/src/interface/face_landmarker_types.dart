@@ -2,13 +2,14 @@ import 'dart:typed_data';
 
 import 'face_detector_types.dart';
 
-/// Configuration of the official CPU Face Landmarker task.
+/// Configuration of the official Face Landmarker task.
 final class FaceLandmarkerOptions {
   /// Supply exactly one model source. Defaults match Google's task API.
   FaceLandmarkerOptions({
     this.modelPath,
     Uint8List? modelBytes,
     this.runningMode = VisionRunningMode.image,
+    this.delegate = VisionDelegate.cpu,
     this.numFaces = 1,
     this.minFaceDetectionConfidence = 0.5,
     this.minFacePresenceConfidence = 0.5,
@@ -54,6 +55,9 @@ final class FaceLandmarkerOptions {
 
   /// Fixed for the lifetime of this task.
   final VisionRunningMode runningMode;
+
+  /// Inference backend. The official blendshape stage always uses CPU.
+  final VisionDelegate delegate;
 
   /// Maximum number of faces. Official video smoothing applies only at 1.
   final int numFaces;

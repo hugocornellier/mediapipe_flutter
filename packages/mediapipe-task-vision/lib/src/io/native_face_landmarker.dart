@@ -5,16 +5,21 @@ import 'package:ffi/ffi.dart';
 import '../../third_party/mediapipe/face_landmarker_bindings.dart' as mp;
 import '../interface/face_detector_types.dart';
 import '../interface/face_landmarker_types.dart';
+import 'native_frame_timings.dart';
+import 'pixel_conversion.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceLandmarker {
-  /// Creates the official IMAGE or VIDEO CPU task.
-  NativeFaceLandmarker(FaceLandmarkerOptions options) {
+  /// Creates the official IMAGE or VIDEO task with the requested delegate.
+  NativeFaceLandmarker(FaceLandmarkerOptions options)
+    : _gpu = options.delegate == VisionDelegate.gpu {
     using((arena) {
       final native = arena<mp.MpFaceLandmarkerOptions>();
       final base = native.ref.base_options;
       base.file_descriptor = -1;
-      base.delegate = mp.MpDelegate.MP_DELEGATE_CPU;
+      base.delegate = options.delegate == VisionDelegate.gpu
+          ? mp.MpDelegate.MP_DELEGATE_GPU
+          : mp.MpDelegate.MP_DELEGATE_CPU;
       base.host_system = mp.MpHostSystem.MP_HOST_SYSTEM_MAC;
       if (options.modelPath case final path?) {
         base.model_asset_path = path.toNativeUtf8(allocator: arena).cast();
@@ -43,35 +48,50 @@ final class NativeFaceLandmarker {
   }
 
   mp.MpFaceLandmarkerPtr _detector = nullptr;
+  final bool _gpu;
 
   /// Runs a single image and copies every result before releasing native memory.
   FaceLandmarkerResult detect(
     VisionImage input,
     int rotation, {
     int? timestamp,
+    NativeFrameTimings? timings,
   }) {
-    return using((arena) {
+    timings?.start();
+    final detection = using((arena) {
       final imageOut = arena<mp.MpImagePtr>();
       if (input.path case final path?) {
         final name = path.toNativeUtf8(allocator: arena).cast<Char>();
         _checked((error) => mp.MpImageCreateFromFile(name, imageOut, error));
+        timings?.mark('image_create');
       } else {
         final bytes = input.pixels!;
-        final rowSize = input.width! * input.format!.channels;
+        // Apple's GPU image upload cannot accept three-channel ImageFrames.
+        // Add opaque alpha before entering the official graph.
+        final expandRgb = _gpu && input.format == VisionPixelFormat.rgb;
+        final rowSize = input.width! * (expandRgb ? 4 : input.format!.channels);
         final byteCount = rowSize * input.height!;
         final pixels = arena<Uint8>(byteCount);
         final packed = pixels.asTypedList(byteCount);
-        if (input.format == VisionPixelFormat.bgra) {
+        if (expandRgb) {
           for (var y = 0; y < input.height!; y++) {
-            final sourceRow = y * input.bytesPerRow!;
-            final targetRow = y * rowSize;
-            for (var x = 0; x < rowSize; x += 4) {
-              packed[targetRow + x] = bytes[sourceRow + x + 2];
-              packed[targetRow + x + 1] = bytes[sourceRow + x + 1];
-              packed[targetRow + x + 2] = bytes[sourceRow + x];
-              packed[targetRow + x + 3] = bytes[sourceRow + x + 3];
+            for (var x = 0; x < input.width!; x++) {
+              final source = y * input.bytesPerRow! + x * 3;
+              final target = y * rowSize + x * 4;
+              packed[target] = bytes[source];
+              packed[target + 1] = bytes[source + 1];
+              packed[target + 2] = bytes[source + 2];
+              packed[target + 3] = 255;
             }
           }
+        } else if (input.format == VisionPixelFormat.bgra) {
+          copyBgraToRgba(
+            source: bytes,
+            target: packed,
+            width: input.width!,
+            height: input.height!,
+            bytesPerRow: input.bytesPerRow!,
+          );
         } else {
           for (var y = 0; y < input.height!; y++) {
             packed.setRange(
@@ -82,9 +102,10 @@ final class NativeFaceLandmarker {
             );
           }
         }
+        timings?.mark('pixel_pack');
         _checked(
           (error) => mp.MpImageCreateFromUint8Data(
-            input.format == VisionPixelFormat.rgb
+            input.format == VisionPixelFormat.rgb && !expandRgb
                 ? mp.MpImageFormat.kMpImageFormatSrgb
                 : mp.MpImageFormat.kMpImageFormatSrgba,
             input.width!,
@@ -95,12 +116,14 @@ final class NativeFaceLandmarker {
             error,
           ),
         );
+        timings?.mark('image_create');
       }
       final image = imageOut.value;
       try {
         final options = arena<mp.MpImageProcessingOptions>();
         options.ref.rotation_degrees = rotation;
         final result = arena<mp.MpFaceLandmarkerResult>();
+        timings?.mark('native_setup');
         if (timestamp == null) {
           _checked(
             (error) => mp.MpFaceLandmarkerDetectImage(
@@ -123,8 +146,9 @@ final class NativeFaceLandmarker {
             ),
           );
         }
+        timings?.mark('task');
         try {
-          return FaceLandmarkerResult(
+          final copied = FaceLandmarkerResult(
             imageWidth: mp.MpImageGetWidth(image),
             imageHeight: mp.MpImageGetHeight(image),
             timestampMilliseconds: timestamp,
@@ -145,6 +169,8 @@ final class NativeFaceLandmarker {
                 _copyMatrix(result.ref.facial_transformation_matrixes[i]),
             ],
           );
+          timings?.mark('result_copy');
+          return copied;
         } finally {
           // This releases the contents, while Arena owns the outer struct.
           mp.MpFaceLandmarkerCloseResult(result);
@@ -153,6 +179,8 @@ final class NativeFaceLandmarker {
         mp.MpImageFree(image);
       }
     });
+    timings?.mark('cleanup');
+    return detection;
   }
 
   /// Closes the task exactly once, including when native shutdown reports failure.

@@ -7,9 +7,9 @@ import 'native_face_landmarker.dart';
 
 /// Official MediaPipe Face Landmarker, with inference serialized on a worker isolate.
 ///
-/// Supports CPU IMAGE and VIDEO modes on macOS arm64. Always await [dispose].
+/// Supports CPU and Metal IMAGE/VIDEO modes on macOS arm64. Await [dispose].
 final class FaceLandmarker {
-  FaceLandmarker._(this.runningMode) {
+  FaceLandmarker._(this.runningMode, this.delegate) {
     _events.listen(_receive);
   }
 
@@ -27,9 +27,12 @@ final class FaceLandmarker {
   /// The official running mode selected when this detector was created.
   final VisionRunningMode runningMode;
 
+  /// The backend requested at creation. Fixed for the lifetime of this task.
+  final VisionDelegate delegate;
+
   /// Load an official model and initialize MediaPipe off the calling isolate.
   static Future<FaceLandmarker> create(FaceLandmarkerOptions options) async {
-    final detector = FaceLandmarker._(options.runningMode);
+    final detector = FaceLandmarker._(options.runningMode, options.delegate);
     try {
       await Isolate.spawn(
         _runWorker,
