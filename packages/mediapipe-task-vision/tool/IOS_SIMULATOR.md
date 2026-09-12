@@ -6,6 +6,9 @@ same worker isolates, result types and model files as macOS. CPU is the default.
 GPU requests fail explicitly. This is not physical-device support or a mobile
 performance benchmark.
 
+[Validation on iOS 26.4](validations/2026-09-12-ios-simulator/README.md) passed
+all eight integration tests with the existing official CPU reference tolerances.
+
 ## Build and run
 
 Use an Apple Silicon Mac, Xcode with an installed iOS simulator, Flutter 3.44.8 /
