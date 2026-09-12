@@ -7,6 +7,16 @@ import 'package:mediapipe_flutter_core/native_assets.dart';
 
 const _mediaPipeRevision = '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120';
 const _openCvRevision = '49486f61fb25722cbcf586b7f4320921d46fb38e';
+
+/// Supported native artifact targets. Simulator and device ARM64 are distinct.
+enum VisionLibraryTarget {
+  /// macOS runtime with CPU and Metal support.
+  macosArm64,
+
+  /// iOS simulator runtime with CPU support, built with the simulator SDK.
+  iosSimulatorArm64,
+}
+
 Set<String> _requiredFiles(String libraryName) => {
   libraryName,
   'manifest.json',
@@ -23,16 +33,20 @@ Future<File> validateVisionLibrary(
   Directory directory, {
   String? expectedSha256,
   String libraryName = 'libface_detector.dylib',
+  VisionLibraryTarget target = VisionLibraryTarget.macosArm64,
 }) async {
   _checkLibraryName(libraryName);
   final library = File.fromUri(directory.uri.resolve(libraryName));
   final manifestFile = File.fromUri(directory.uri.resolve('manifest.json'));
   final manifest = jsonDecode(await manifestFile.readAsString());
+  final simulator = target == VisionLibraryTarget.iosSimulatorArm64;
   if (manifest is! Map<String, dynamic> ||
       manifest['revision'] != _mediaPipeRevision ||
       manifest['opencv_revision'] != _openCvRevision ||
-      manifest['platform'] != 'macos' ||
+      manifest['platform'] != (simulator ? 'ios' : 'macos') ||
       manifest['architecture'] != 'arm64' ||
+      (simulator && manifest['ios_sdk'] != 'iphonesimulator') ||
+      (!simulator && manifest['ios_sdk'] != null) ||
       manifest['bytes'] != await library.length() ||
       (expectedSha256 != null && manifest['sha256'] != expectedSha256) ||
       (await sha256.bind(library.openRead()).first).toString() !=
@@ -42,10 +56,13 @@ Future<File> validateVisionLibrary(
   final delegates = manifest['delegates'];
   if (delegates is! List ||
       !delegates.contains('cpu') ||
-      !delegates.contains('gpu')) {
+      (!simulator && !delegates.contains('gpu'))) {
     throw StateError(
-      'This package requires a CPU and Metal runtime. Rebuild the local '
-      'native library without --cpu-only, or use prebuilt: true.',
+      simulator
+          ? 'The iOS simulator requires a CPU runtime. '
+                'Build it with tool/build_ios_simulator.py.'
+          : 'This package requires a CPU and Metal runtime. Rebuild the local '
+                'native library without --cpu-only, or use prebuilt: true.',
     );
   }
   return library;

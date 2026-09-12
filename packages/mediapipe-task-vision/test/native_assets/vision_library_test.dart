@@ -111,6 +111,89 @@ void _testLibrary(String libraryName) {
     expect(requests, 1);
   });
 
+  test(
+    'simulator CPU artifacts cannot substitute for macOS artifacts',
+    () async {
+      final library = await download();
+      await expectLater(
+        validateVisionLibrary(
+          library.parent,
+          libraryName: libraryName,
+          target: VisionLibraryTarget.iosSimulatorArm64,
+        ),
+        throwsStateError,
+      );
+      final file = File.fromUri(library.parent.uri.resolve('manifest.json'));
+      final manifest =
+          jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      manifest.addAll({
+        'platform': 'ios',
+        'ios_sdk': 'iphonesimulator',
+        'delegates': ['cpu'],
+      });
+      await file.writeAsString(jsonEncode(manifest));
+      expect(
+        (await validateVisionLibrary(
+          library.parent,
+          libraryName: libraryName,
+          target: VisionLibraryTarget.iosSimulatorArm64,
+        )).path,
+        library.path,
+      );
+      await expectLater(
+        validateVisionLibrary(library.parent, libraryName: libraryName),
+        throwsStateError,
+      );
+      for (final sdk in ['iphoneos', null]) {
+        manifest['ios_sdk'] = sdk;
+        await file.writeAsString(jsonEncode(manifest));
+        await expectLater(
+          validateVisionLibrary(
+            library.parent,
+            libraryName: libraryName,
+            target: VisionLibraryTarget.iosSimulatorArm64,
+          ),
+          throwsStateError,
+        );
+      }
+    },
+  );
+
+  test(
+    'simulator artifacts require CPU support and valid library bytes',
+    () async {
+      final library = await download();
+      final file = File.fromUri(library.parent.uri.resolve('manifest.json'));
+      final manifest =
+          jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      manifest.addAll({
+        'platform': 'ios',
+        'ios_sdk': 'iphonesimulator',
+        'delegates': ['gpu'],
+      });
+      await file.writeAsString(jsonEncode(manifest));
+      await expectLater(
+        validateVisionLibrary(
+          library.parent,
+          libraryName: libraryName,
+          target: VisionLibraryTarget.iosSimulatorArm64,
+        ),
+        throwsStateError,
+      );
+      manifest['delegates'] = ['cpu'];
+      await file.writeAsString(jsonEncode(manifest));
+      await library.writeAsString('tampered simulator library');
+      await expectLater(
+        validateVisionLibrary(
+          library.parent,
+          libraryName: libraryName,
+          target: VisionLibraryTarget.iosSimulatorArm64,
+        ),
+        throwsStateError,
+      );
+    },
+  );
+
   test('repairs modified library and manifest using cached archive', () async {
     final library = await download();
     await library.writeAsString('tampered');
