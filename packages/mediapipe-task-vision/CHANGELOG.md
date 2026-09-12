@@ -1,5 +1,9 @@
 ## Unreleased
 
+* Add per-task `VisionDelegate.cpu` / `.gpu` selection for Face Detector and Landmarker.
+* Bundle Metal and CPU in one runtime per task; keep official models and graphs unchanged.
+* Add independent Metal reference tests, RGB-to-RGBA input conversion, and camera delegate switching.
+* Isolate native Objective-C names and reject stale CPU-only artifacts.
 * Implement official MediaPipe v1.0.0 Face Detector on macOS arm64, CPU IMAGE/VIDEO modes.
 * Accept files, RGB/RGBA/BGRA pixels with row strides, model paths, and model bytes.
 * Validate video timestamps and compare frame sequences with official Python outputs.

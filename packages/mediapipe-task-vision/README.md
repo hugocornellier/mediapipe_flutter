@@ -1,7 +1,7 @@
 # mediapipe_flutter_vision
 
 Official MediaPipe Face Detector and Face Landmarker for Dart and Flutter on **macOS arm64**.
-This development version implements **CPU IMAGE and VIDEO modes**. It accepts JPEG/image
+This development version implements **CPU and Metal GPU IMAGE/VIDEO modes**. It accepts JPEG/image
 files or RGB/RGBA/BGRA pixels and returns face boxes, categories, and
 six keypoints, or a full 478-point face mesh including irises. Inference runs on
 a worker isolate. Face Landmarker also exposes the official optional 52
@@ -29,7 +29,7 @@ dart run example/face_detection.dart models/blaze_face_short_range.tflite test/f
 
 The first build downloads the selected tasks from the public
 [native runtime releases](https://github.com/hugocornellier/mediapipe_flutter_native/releases).
-Face Detector is a 4.2 MB archive; Face Landmarker is 4.6 MB. Both are enabled
+Face Detector is a 5.0 MB archive; Face Landmarker is 5.5 MB. Both are enabled
 by default. Select only the task you use in the consuming app's `pubspec.yaml`:
 
 ```yaml
@@ -75,6 +75,7 @@ import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 final landmarker = await FaceLandmarker.create(FaceLandmarkerOptions(
   modelPath: '/absolute/path/face_landmarker.task',
+  delegate: VisionDelegate.gpu, // optional; CPU is the default
   outputFaceBlendshapes: true, // optional; false by default
   outputFacialTransformationMatrixes: true, // optional; false by default
 ));
@@ -90,6 +91,15 @@ try {
   await landmarker.dispose();
 }
 ```
+
+Both task options accept `delegate: VisionDelegate.cpu` or `VisionDelegate.gpu`.
+Each task's `delegate` is fixed at creation; await disposal and create a new task
+to change it. GPU selects Google's Metal inference on macOS. Initialization
+errors are returned to the caller without retrying on CPU. The official graph
+still runs some work on CPU, including Face Landmarker's blendshape stage.
+CPU and GPU are included in the same download for each task; no extra backend
+download is needed. GPU results can differ numerically, and GPU is not guaranteed
+to be faster for every workload.
 
 Landmark x/y are relative to input width/height. The z value is relative depth,
 scaled like x, not a distance in meters. Values retain their native ordering and
@@ -131,6 +141,9 @@ For decoded pixels and camera frames, use
 format: VisionPixelFormat.rgb)` (or `rgba` / `bgra`). Supply `bytesPerRow` for
 padded camera buffers; omit it for tightly packed pixels. The worker removes
 row padding and converts BGRA channel order before passing RGB/RGBA to MediaPipe.
+For Metal, RGB pixels gain an opaque alpha channel because Apple's GPU upload
+requires RGBA. This preserves the original RGB values; the official task handles
+resizing, normalization and all model preprocessing.
 Inputs are copied and made read-only. YUV input requires conversion by the caller.
 File decoding, including EXIF orientation, uses MediaPipe's image loader.
 
@@ -173,13 +186,18 @@ demo uses the default single-face behavior without additional Dart smoothing.
 ## Validation and provenance
 
 The integration suite consumes checked-in reference outputs generated through
-Google's official `mediapipe==1.0.0` Python API. It checks boxes, scores, keypoints,
+Google's official `mediapipe==1.0.0` Python API, with separate CPU and GPU goldens.
+It checks boxes, scores, keypoints,
 image dimensions, file hashes, raw inputs, rotation, multiple detections, empty
 results, initialization failures, and resource lifecycle.
 Landmarker references cover every 3D coordinate, blendshape score, and transform
 in ten still images and two tracking sequences, plus both libraries running
 concurrently. Numeric tolerances and measured differences from Google's wheel
 are recorded in [the mesh reference notes](test/fixtures/face_landmarker/README.md).
+
+[Benchmark instructions and measurements](tool/BENCHMARKING.md) compare CPU and
+Metal through the public VIDEO API using a 1080p portrait replay in a native AOT
+app. They include input conversion and result copying, without accessing a camera.
 
 `python3 tool/test_flutter_macos.py` generates an isolated Flutter host, runs a
 macOS integration test, then builds and launches a release app that verifies
@@ -218,7 +236,7 @@ hooks:
 ```
 
 `python3 tool/prepare_native_release.py` repackages a tested native build into
-`build/releases/face-detector-v1.0.0-1/`, with deterministic archive metadata,
+`build/releases/face-detector-v1.0.0-2/`, with deterministic archive metadata,
 checksums, a public build manifest, a repository README, and release notes.
 It does not upload anything. See [tool/RELEASING.md](tool/RELEASING.md) for the
 release process; use `--task face_landmarker` to prepare the mesh runtime.
@@ -242,6 +260,10 @@ script verifies the model, native wheel library, and fixture digests before
 writing goldens. Ordinary tests do not require Python MediaPipe.
 `tool/generate_face_landmarker_reference.py` generates the mesh references and
 official drawing connections using the same pinned environment.
+Pass `--delegate gpu` to either generator to regenerate the separate Metal
+references. Source builds smoke-test both delegates and require a Metal creation
+log before publishing a runtime marked GPU-capable. Stale CPU-only local builds
+are rejected by the build hook; rebuild them or set `prebuilt: true`.
 
 See [third_party/README.md](third_party/README.md) for exact native pins and build
 details. Native LIVE_STREAM callbacks, Intel macOS,
@@ -254,6 +276,7 @@ The [Flutter example](example/) uses `camera_desktop` for macOS capture and the
 official VIDEO-mode Face Landmarker on a worker isolate. It shows an uncropped
 preview with the full mesh, highlighted irises, optional points, and timing. Camera access is
 limited to the example; the task package remains a pure Dart/FFI dependency.
+The CPU/GPU selector recreates the task and camera session when changed.
 
 Run `make example_vision` from the repository root, or follow the
 [example instructions](example/README.md). CI tests the frame pipeline using

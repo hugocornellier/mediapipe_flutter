@@ -12,6 +12,9 @@ repository's Git history, package code, model files, or test fixtures there.
    unchanged. Update the task's entry in `RELEASE_TAGS` in
    `prepare_native_release.py`; consumer tests read the same expected tags.
    Initial releases are `face-detector-v1.0.0-1` and `face-landmarker-v1.0.0-1`.
+   The `-2` releases add CPU and Metal in each task library. Release builds must
+   pass both native smoke modes on a Metal-capable Mac; the builder checks the
+   delegate creation log and Objective-C class namespace before packaging.
 2. Run the pinned source build and native/inference tests (`make ci` from the
    repository root). This tests the local source build; it does not publish it.
 3. Run `python3 tool/prepare_native_release.py` from this package directory.
@@ -28,6 +31,8 @@ repository's Git history, package code, model files, or test fixtures there.
    in a temporary package copy; the digests remain pinned. The other task's
    archive is downloaded from its public URL. Both Flutter debug
    and release apps must perform real inference with native build tools blocked.
+   When updating both tasks together, copy both prepared archives into one
+   candidate directory and pass that directory to `--local-release`.
 
 ## Publish
 

@@ -39,6 +39,15 @@ Future<File> validateVisionLibrary(
           manifest['sha256']) {
     throw StateError('MediaPipe native artifact provenance/hash mismatch.');
   }
+  final delegates = manifest['delegates'];
+  if (delegates is! List ||
+      !delegates.contains('cpu') ||
+      !delegates.contains('gpu')) {
+    throw StateError(
+      'This package requires a CPU and Metal runtime. Rebuild the local '
+      'native library without --cpu-only, or use prebuilt: true.',
+    );
+  }
   return library;
 }
 

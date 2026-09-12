@@ -15,10 +15,10 @@ import tarfile
 from build_native import PACKAGE, REVISION, OPENCV_REVISION
 
 NAME = "mediapipe-face-detector-1.0.0-macos-arm64.tar.gz"
-TAG = "face-detector-v1.0.0-1"
+TAG = "face-detector-v1.0.0-2"
 RELEASE_TAGS = {
     "face_detector": TAG,
-    "face_landmarker": "face-landmarker-v1.0.0-1",
+    "face_landmarker": "face-landmarker-v1.0.0-2",
 }
 REPOSITORY = "hugocornellier/mediapipe_flutter_native"
 
@@ -52,6 +52,7 @@ def prepare(source, destination, task='face_detector'):
             or manifest["opencv_revision"] != OPENCV_REVISION
             or manifest["platform"] != "macos" or manifest["architecture"] != "arm64"
             or manifest["sha256"] != library_hash
+            or manifest.get("delegates") != ["cpu", "gpu"]
             or manifest["bytes"] != len(files[library_name])):
         raise ValueError("Native artifact provenance/hash mismatch")
     manifest["opencv_configuration"] = [
@@ -84,10 +85,11 @@ artifacts and their provenance; the Dart/Flutter wrapper is developed separately
 
 ## {title}
 
-- Release: `{tag}`; macOS Apple Silicon (arm64), CPU IMAGE and VIDEO inference.
+- Release: `{tag}`; macOS Apple Silicon (arm64), CPU and Metal GPU IMAGE/VIDEO inference.
 - MediaPipe v1.0.0: [{REVISION}](https://github.com/google-ai-edge/mediapipe/tree/{REVISION}).
 - Static OpenCV 4.12.0: [{OPENCV_REVISION}](https://github.com/opencv/opencv/tree/{OPENCV_REVISION}).
 - Official task graph, calculators, model preprocessing, and C API are unchanged.
+- Objective-C identifiers are prefixed per task to avoid process-wide collisions.
 - Runtime library: {len(files[library_name]):,} bytes. Only macOS system
   frameworks and libraries are required at runtime.
 - The model is separate and is not included in these native downloads.
@@ -100,11 +102,13 @@ Rebuilds use a new release tag; published archive URLs are never reused.
 The archive includes upstream MediaPipe and OpenCV licenses and notices.
 Retain the applicable notices when redistributing the native library.
 """)
-    (destination / "RELEASE_NOTES.md").write_text(f"""{title} runtime for macOS arm64, CPU IMAGE and VIDEO modes.
+    (destination / "RELEASE_NOTES.md").write_text(f"""{title} runtime for macOS arm64, CPU and Metal GPU IMAGE/VIDEO modes in one library.
 
 MediaPipe v1.0.0 with static OpenCV 4.12.0; the official task pipeline is unchanged.
 The archive includes the native library, source/build manifest, and third-party
 licenses and notices. Models are distributed separately.
+Objective-C identifiers are prefixed per task so both libraries can coexist.
+The official Face Landmarker blendshape stage still uses CPU XNNPACK.
 
 - Archive SHA-256: `{digest}`
 - Library SHA-256: `{library_hash}`
