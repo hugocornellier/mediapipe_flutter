@@ -5,6 +5,7 @@ import 'package:ffi/ffi.dart';
 import '../../third_party/mediapipe/face_landmarker_bindings.dart' as mp;
 import '../interface/face_detector_types.dart';
 import '../interface/face_landmarker_types.dart';
+import 'native_frame_timings.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceLandmarker {
@@ -53,12 +54,15 @@ final class NativeFaceLandmarker {
     VisionImage input,
     int rotation, {
     int? timestamp,
+    NativeFrameTimings? timings,
   }) {
-    return using((arena) {
+    timings?.start();
+    final detection = using((arena) {
       final imageOut = arena<mp.MpImagePtr>();
       if (input.path case final path?) {
         final name = path.toNativeUtf8(allocator: arena).cast<Char>();
         _checked((error) => mp.MpImageCreateFromFile(name, imageOut, error));
+        timings?.mark('image_create');
       } else {
         final bytes = input.pixels!;
         // Apple's GPU image upload cannot accept three-channel ImageFrames.
@@ -100,6 +104,7 @@ final class NativeFaceLandmarker {
             );
           }
         }
+        timings?.mark('pixel_pack');
         _checked(
           (error) => mp.MpImageCreateFromUint8Data(
             input.format == VisionPixelFormat.rgb && !expandRgb
@@ -113,12 +118,14 @@ final class NativeFaceLandmarker {
             error,
           ),
         );
+        timings?.mark('image_create');
       }
       final image = imageOut.value;
       try {
         final options = arena<mp.MpImageProcessingOptions>();
         options.ref.rotation_degrees = rotation;
         final result = arena<mp.MpFaceLandmarkerResult>();
+        timings?.mark('native_setup');
         if (timestamp == null) {
           _checked(
             (error) => mp.MpFaceLandmarkerDetectImage(
@@ -141,8 +148,9 @@ final class NativeFaceLandmarker {
             ),
           );
         }
+        timings?.mark('task');
         try {
-          return FaceLandmarkerResult(
+          final copied = FaceLandmarkerResult(
             imageWidth: mp.MpImageGetWidth(image),
             imageHeight: mp.MpImageGetHeight(image),
             timestampMilliseconds: timestamp,
@@ -163,6 +171,8 @@ final class NativeFaceLandmarker {
                 _copyMatrix(result.ref.facial_transformation_matrixes[i]),
             ],
           );
+          timings?.mark('result_copy');
+          return copied;
         } finally {
           // This releases the contents, while Arena owns the outer struct.
           mp.MpFaceLandmarkerCloseResult(result);
@@ -171,6 +181,8 @@ final class NativeFaceLandmarker {
         mp.MpImageFree(image);
       }
     });
+    timings?.mark('cleanup');
+    return detection;
   }
 
   /// Closes the task exactly once, including when native shutdown reports failure.

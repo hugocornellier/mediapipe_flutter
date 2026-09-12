@@ -1,5 +1,51 @@
 # CPU and Metal comparison
 
+## Face pipeline profiling
+
+Build an AOT executable and run from the vision package root:
+
+```sh
+dart build cli -t bin/benchmark_face_pipeline.dart -o build/benchmarks/baseline
+build/benchmarks/baseline/bundle/bin/benchmark_face_pipeline build/benchmarks/baseline-a
+```
+
+Optional positional arguments after the output prefix set measured frames and
+rounds (defaults: 150 and 3). Each case warms up for 30 frames. The seeded case
+order reverses on alternating rounds. Stop camera capture and avoid concurrent
+builds, tests, or GPU workloads during measurement.
+
+The harness measures the full public API and, separately, an instrumented
+synchronous native wrapper on its own isolate. Public samples split the owned
+pixel snapshot from the request round trip (worker delivery, preparation, the
+official task, and returning results). Native samples split packing/conversion,
+C image creation, options setup, task execution, result copying, and cleanup.
+The task stage includes the whole official graph and synchronization, not just
+neural-network execution. Do not subtract percentiles from the two experiments
+to infer isolate overhead. Production calls do not enable native instrumentation.
+
+Inputs are the same aspect-preserving portrait replay at 640×480, 1280×720,
+and 1920×1080, with BGRA and 64 bytes of row padding. A 1080p RGBA control measures
+the path without channel swapping. Both delegates use VIDEO mode, one face,
+33 ms timestamps, no pacing, and no optional blendshapes/matrices. Every frame
+must return 478 finite landmarks, the matching timestamp, and no optional outputs.
+This is steady tracked-face throughput; it excludes real camera delivery,
+rendering, face reacquisition, and multi-face costs. Run the official-reference
+tests separately to verify numeric correctness, not just landmark counts.
+
+Each invocation writes compressed raw per-frame timings (`.json.gz`) and readable
+statistics (`.summary.json`), including mean, p50/p95/p99, min/max and standard
+deviation. Metadata records model/fixture/native-library/executable SHA-256,
+Dart/OS/hardware, Git state at run time, and thermal reports. Git state at run
+time does not identify the source of an older retained executable: record its
+build commit alongside the executable hash when comparing revisions.
+
+Keep baseline and candidate AOT bundles. Run baseline, candidate, candidate,
+baseline (ABBA) and compare repeated results and the unchanged RGBA control to
+detect drift. Never run the variants simultaneously. Raw native stderr should
+also be retained when automating runs to verify Metal initialization.
+
+## Original combined detector/landmarker benchmark
+
 From the vision package root:
 
 ```sh
