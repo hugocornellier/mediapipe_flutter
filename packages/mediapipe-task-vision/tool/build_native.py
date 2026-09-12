@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shlex
 import shutil
 import subprocess
@@ -35,6 +36,14 @@ SYMBOLS = [
     "MpImageCreateFromFile", "MpImageCreateFromUint8Data",
     "MpImageGetWidth", "MpImageGetHeight", "MpImageFree", "MpErrorFree",
 ]
+# Objective-C names are process-global even when the linker hides C symbols.
+# Keep each task independent of the other task and of apps using LiteRT directly.
+# Rename identifiers at compilation; the official sources and graphs stay intact.
+OBJC_IDENTIFIERS = (
+    "TFLBufferConvert", "MPPMetalUtil", "MPPMetalHelper", "MPPGraph",
+    "MPPTimestampConverter", "GUSUtilStatusWrapper", "MPPMetalSharedResources",
+    "MPPGraphDelegate", "GUSGoogleUtilStatus", "gus_errorWithStatus", "gus_status",
+)
 
 
 def run(arguments, cwd=None):
@@ -44,6 +53,25 @@ def run(arguments, cwd=None):
 
 def capture(arguments, cwd=None):
     return subprocess.check_output(arguments, cwd=cwd, text=True).strip()
+
+
+def verify_objc_namespace(library, task):
+    metadata = capture(["otool", "-ov", str(library)])
+    section = re.search(
+        r"Contents of [^\n]*__objc_classlist[^\n]*\n(.*?)(?=\nContents of |\Z)",
+        metadata, re.DOTALL)
+    classes = set(re.findall(
+        r"^[0-9a-f]+ 0x[0-9a-f]+ _OBJC_CLASS_\$_(\w+)$",
+        section.group(1) if section else "", re.MULTILINE))
+    prefix = "MpfFaceLandmarker" if task == "face_landmarker" else "MpfFaceDetector"
+    expected = {f"{prefix}_{name}" for name in OBJC_IDENTIFIERS[:7]}
+    if classes != expected:
+        raise SystemExit(f"Unexpected Objective-C classes: {classes}; expected {expected}")
+    # NSError categories also share selectors process-wide.
+    for selector in ("gus_status", "gus_errorWithStatus"):
+        if re.search(rf"\s{selector}:?$", metadata, re.MULTILINE):
+            raise SystemExit(f"Unnamespaced NSError selector: {selector}")
+    print(f"Verified {len(classes)} isolated Objective-C classes for {task}.")
 
 
 def build_opencv(root):
@@ -119,6 +147,9 @@ def main():
             "--platforms=@build_bazel_apple_support//platforms:macos_arm64",
             "--extra_toolchains=@@apple_support~~apple_cc_configure_extension~local_config_apple_cc_toolchains//:all",
         ])
+        prefix = "MpfFaceLandmarker" if landmarker else "MpfFaceDetector"
+        flags.extend(f"--copt=-D{name}={prefix}_{name}"
+                     for name in OBJC_IDENTIFIERS)
     symbols = [name.replace("MpFaceDetector", "MpFaceLandmarker")
                if landmarker else name for name in SYMBOLS]
     symbols.append("MpFaceLandmarkerDetectForVideo" if landmarker
@@ -138,6 +169,8 @@ def main():
     run(["bazelisk", f"--output_user_root={args.bazel_cache.resolve()}",
          "build", *flags, f"--override_repository=macos_opencv={opencv}", target], source)
     built = source / f"bazel-bin/mediapipe/tasks/c/vision/{task}/lib{task}.dylib"
+    if not args.cpu_only:
+        verify_objc_namespace(built, task)
     library = ctypes.CDLL(str(built))
     for name in symbols:
         getattr(library, name)  # Reject the upstream target's empty C API build.
