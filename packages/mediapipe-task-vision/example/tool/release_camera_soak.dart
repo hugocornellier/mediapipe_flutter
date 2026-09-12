@@ -277,7 +277,13 @@ class _SoakApp extends StatelessWidget {
                           fit: StackFit.expand,
                           children: [
                             CameraPreview(camera),
-                            CustomPaint(painter: FaceOverlay(session.result)),
+                            CustomPaint(
+                              painter: FaceOverlay(
+                                session.result,
+                                showMesh: true,
+                                showPoints: false,
+                              ),
+                            ),
                           ],
                         ),
                       ),
