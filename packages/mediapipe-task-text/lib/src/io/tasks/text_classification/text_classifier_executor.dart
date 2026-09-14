@@ -1,82 +1,63 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-import 'package:logging/logging.dart';
-import 'package:mediapipe_flutter_core/io.dart';
-import 'package:mediapipe_flutter_text/io.dart';
-import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
-    as bindings;
+import '../../classic_text_runtime.dart';
+import '../../third_party/mediapipe/classic_text_bindings.dart' as mp;
+import 'text_classifier_options.dart';
+import 'text_classifier_result.dart';
 
-final _log = Logger('TextTaskExecutor');
-
-/// {@template TextClassifierExecutor}
-/// Executes MediaPipe's "classifyText" task.
-///
-/// {@macro TaskExecutor}
-/// {@endtemplate}
+/// Synchronous MediaPipe 1.0.1 owner. Prefer TextClassifier for Flutter UI work.
 class TextClassifierExecutor
-    extends
-        TaskExecutor<
-          bindings.TextClassifierOptions,
-          TextClassifierOptions,
-          bindings.TextClassifierResult,
-          TextClassifierResult
-        > {
-  /// {macro TextClassifierExecutor}
-  TextClassifierExecutor(super.options);
-
-  @override
-  final String taskName = 'TextClassification';
-
-  @override
-  Pointer<Void> createWorker(
-    Pointer<bindings.TextClassifierOptions> options,
-    Pointer<Pointer<Char>> error,
-  ) {
-    _log.fine('Creating TextClassifier in native memory');
-    final worker = bindings.text_classifier_create(options, error);
-    _log.finest(
-      'Created TextClassifier at 0x${worker.address.toRadixString(16)}',
-    );
-    return worker;
+    extends NativeClassicTextTask<TextClassifierResult> {
+  /// Load the official task and acquire its handle.
+  TextClassifierExecutor(TextClassifierOptions options) {
+    requireTextTasksRuntime();
+    using((arena) {
+      final native = arena<mp.MpTextClassifierOptions>();
+      fillTextBaseOptions(native.ref.baseOptions, options.baseOptions, arena);
+      fillTextClassifierOptions(
+        native.ref.classifierOptions,
+        options.classifierOptions,
+        arena,
+      );
+      final output = arena<Pointer<Void>>();
+      checkTextStatus((error) => mp.classifierCreate(native, output, error));
+      handle = output.value;
+      if (handle == nullptr) {
+        throw StateError('MediaPipe returned no TextClassifier.');
+      }
+    });
   }
 
-  @override
-  Pointer<bindings.TextClassifierResult> createResultsPointer() {
-    _log.fine('Allocating TextClassifierResult in native memory');
-    final results = calloc<bindings.TextClassifierResult>();
-    _log.finest(
-      'Allocated TextClassifierResult at 0x${results.address.toRadixString(16)}',
-    );
-    return results;
-  }
-
-  @override
-  int closeWorker(Pointer<Void> worker, Pointer<Pointer<Char>> error) {
-    final status = bindings.text_classifier_close(worker, error);
-    _log.finest('Closed TextClassifier in native memory with status $status');
-    return status;
-  }
-
-  /// Passes [text] to MediaPipe for classification, yielding a
-  /// [TextClassifierResult] or throwing an exception.
+  /// Run official preprocessing, inference and postprocessing.
   TextClassifierResult classify(String text) {
-    final resultPtr = createResultsPointer();
-    final errorMessageMemory = calloc<Pointer<Char>>();
-    final textMemory = text.copyToNative();
-    final status = bindings.text_classifier_classify(
-      worker,
-      textMemory,
-      resultPtr,
-      errorMessageMemory,
-    );
-    _log.finest('Classified with status $status');
-    textMemory.free();
-    handleErrorMessage(errorMessageMemory, status);
-    errorMessageMemory.free(1);
-    return TextClassifierResult.native(resultPtr);
+    checkInput(text);
+    return using((arena) {
+      final output = arena<mp.MpClassificationResult>();
+      checkTextStatus(
+        (error) => mp.classifierRun(
+          handle,
+          text.toNativeUtf8(allocator: arena).cast(),
+          output,
+          error,
+        ),
+      );
+      try {
+        return TextClassifierResult.native(output);
+      } finally {
+        // Google frees nested fields; the arena owns the outer result struct.
+        mp.classifierCloseResult(output);
+      }
+    });
+  }
+
+  @override
+  TextClassifierResult run(String text) => classify(text);
+
+  @override
+  void close() {
+    if (handle == nullptr) return;
+    final task = handle;
+    handle = nullptr;
+    checkTextStatus((error) => mp.classifierClose(task, error));
   }
 }

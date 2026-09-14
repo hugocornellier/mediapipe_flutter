@@ -10,12 +10,73 @@ on:
   workflow_dispatch:
 
 jobs:
+  embedding-consumer:
+    name: Modern text tasks / fresh macOS consumer
+    runs-on: macos-15
+    timeout-minutes: 25
+    env:
+      MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate official CPU text references on this runner
+        run: |
+          cd packages/mediapipe-task-text
+          dart pub get
+          cd ../..
+          make models_text
+          python3 -B packages/mediapipe-task-text/tool/prepare_classic_text_reference.py
+      - name: Verify public downloads and debug/release task coexistence
+        run: python3 -B packages/mediapipe-task-text/tool/test_embedding_macos.py
+      - name: Prepare the text demos and check callback ownership
+        run: |
+          cd packages/mediapipe-task-text
+          dart pub get
+          cd ../..
+          make models_text
+          make models_embedding
+          make models_proofreader
+          make models_summarizer
+          make test_text_stream_bridge
+          make test_text
+      - name: Test official references, lifecycle and the macOS UI
+        working-directory: packages/mediapipe-task-text/example_embedding
+        run: |
+          flutter pub get
+          dart test --reporter expanded
+          flutter test -d macos integration_test/demo_test.dart --reporter expanded
+      - name: Test the migrated BERT, USE and language demo
+        working-directory: packages/mediapipe-task-text/example
+        run: |
+          flutter pub get
+          flutter test --reporter expanded
+          flutter test -d macos integration_test/text_tasks_test.dart --reporter expanded
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: embedding-gemma-validation
+          path: |
+            build/codex-tmp/embedding-consumer-*/report.json
+            build/codex-tmp/embedding-consumer-*/*.log
+            build/classic-text-reference/*.json
+            build/classic-text-reference/*.log
+          if-no-files-found: error
+
   native-tasks:
     name: Stable Flutter / macOS arm64
     runs-on: macos-15
-    timeout-minutes: 60
+    # A cold source build plus all Flutter builds can exceed one hour.
+    timeout-minutes: 90
     env:
       MEDIAPIPE_GPU_REFERENCE_DIR: ${{ github.workspace }}/build/gpu-reference
+      MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
       - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
@@ -29,9 +90,26 @@ jobs:
         with:
           python-version: '3.12'
       - run: make get models
+      - name: Generate official CPU text references on this runner
+        run: python3 -B packages/mediapipe-task-text/tool/prepare_classic_text_reference.py
       - name: Generate official GPU references on this runner
         run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py
-      - run: make ci
+      # make get/models already ran above for the independent references.
+      # Keep the remaining make ci checks, with visible stage boundaries.
+      - name: Build official native face tasks from source
+        run: make native_vision
+      - name: Analyze, format-check and test all packages
+        run: |
+          make analyze
+          make check_format
+          make test_only
+      - name: Build the text, camera and segmenter apps
+        run: |
+          make build_text
+          make build_vision_camera
+          make build_segmenter
+      - name: Test source-built face tasks in a fresh Flutter app
+        run: make test_vision_flutter
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -39,6 +117,8 @@ jobs:
           path: |
             build/gpu-reference/**/*.json
             build/gpu-reference/*.log
+            build/classic-text-reference/*.json
+            build/classic-text-reference/*.log
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:

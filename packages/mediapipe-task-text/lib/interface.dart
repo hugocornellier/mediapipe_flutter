@@ -3,3 +3,4 @@
 // found in the LICENSE file.
 
 export 'src/interface/interface.dart';
+export 'src/interface/text_task_exception.dart';

@@ -60,13 +60,24 @@ rename. Their implementation and runtime modernization remain separate work.
 The subsequent cleanup targets Flutter 3.44.8 stable / Dart 3.12.2. It migrates
 the text and GenAI hooks to `hooks` / `code_assets`, pins native downloads with
 SHA-256, and regenerates FFI bindings with ffigen 21 from the existing headers.
-The native runtime remains the April/May 2024 upstream builds. Header filters
+At that stage the native runtime remained the April/May 2024 upstream builds. Header filters
 exclude unrelated host SDK declarations from generated bindings.
 
 Text executor and public API tests now exercise real macOS arm64 inference;
 the text example builds and its widget tests pass. The GenAI example resolves
 dependencies and passes its Dart state tests, but LLM inference is unvalidated.
 CI now runs on this fork. See the root README for commands and remaining work.
+
+## Shared MediaPipe 1.0.1 text runtime
+
+The later text migration replaces all three inherited text tasks with the
+official MediaPipe 1.0.1 C API from the pinned macOS arm64 wheel. BERT, Universal
+Sentence Encoder and LanguageDetector now share core's runtime with
+EmbeddingGemma, Proofreader, Summarizer and MagicTouch. The original version-1
+model files and native pipelines are unchanged. Dart owns returned values and
+uses a persistent worker with error propagation and draining disposal. The
+retired 2024 text binary pins, generated bindings and headers are removed;
+GenAI remains on its inherited runtime.
 
 ## Modern Face Detector
 

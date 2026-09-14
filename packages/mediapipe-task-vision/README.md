@@ -19,6 +19,12 @@ It requires macOS 14 or newer. See [the segmenter guide](tool/INTERACTIVE_SEGMEN
 for the API, model, packaging and validation details. Run `make example_segmenter`
 from the repository root for the macOS image editor.
 
+MagicTouch apps must also enable
+`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`. Core bundles the
+official 1.0.1 library once, shared with EmbeddingGemma when both tasks are used.
+Existing segmenter apps should add this setting and run `flutter clean` after
+updating, so an earlier task-owned framework is removed from the app bundle.
+
 The task uses the unmodified MediaPipe v1.0.0 Face Detector graph and its official
 BlazeFace short-range float16 model, version 1. MediaPipe performs image
 preprocessing, model inference, anchor decoding, suppression, and coordinate
@@ -26,6 +32,13 @@ projection. Face Landmarker uses Google's complete float16 version-1 bundle
 (FaceMesh V2), including its own detector, landmark model, and expression model.
 It does not require a separate Dart Face Detector call. The Dart wrapper copies
 results and owns native resource cleanup.
+
+Face Landmarker remains on the **1.0.0 runtime**. Runtime and model versions are
+independent: Google's latest Face Landmarker model bundle was verified identical
+to our pinned version-1 bundle on September 14, 2026. The official 1.0.1 macOS
+runtime aborts during CPU task creation, so it cannot replace the working runtime
+yet. See [the compatibility check](tool/validations/2026-09-14-face-landmarker-1.0.1/README.md)
+and [upstream issue #6356](https://github.com/google-ai-edge/mediapipe/issues/6356).
 
 ## Run locally
 

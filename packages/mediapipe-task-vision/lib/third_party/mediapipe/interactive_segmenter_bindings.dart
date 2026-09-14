@@ -7,7 +7,7 @@
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
 
-const _asset = 'package:mediapipe_flutter_vision/interactive_segmenter.dylib';
+const _asset = 'package:mediapipe_flutter_core/tasks_1_0_1.dylib';
 
 final class MpBaseOptions extends Struct {
   external Pointer<Char> modelAssetBuffer;

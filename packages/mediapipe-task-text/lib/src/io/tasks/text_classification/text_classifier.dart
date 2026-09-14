@@ -1,79 +1,35 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-import 'dart:async';
-import 'dart:isolate';
-import 'package:async/async.dart';
-import 'package:logging/logging.dart';
-import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
 import 'package:mediapipe_flutter_text/interface.dart';
-import 'package:mediapipe_flutter_text/io.dart';
+import '../../pending_text_task.dart';
+import 'text_classifier_options.dart';
+import 'text_classifier_executor.dart';
+import 'text_classifier_result.dart';
 
-final _log = Logger('TextClassifier');
-
-/// {@macro TextClassifier}
+/// Official MediaPipe 1.0.1 CPU inference on a persistent worker isolate.
+///
+/// Enable core.tasks_runtime in the app's hook settings. Await [dispose] to
+/// drain accepted requests, close native resources and wait for worker exit.
 class TextClassifier extends BaseTextClassifier {
-  /// {@macro TextClassifier}
-  TextClassifier(this._options) : _readyCompleter = Completer<void>() {
-    _createIsolate(_options).then((results) {
-      _events = results.$1;
-      _sendPort = results.$2;
-      _readyCompleter.complete();
-    });
+  /// Start loading immediately. Initialization failures reach [classify].
+  TextClassifier(TextClassifierOptions options)
+    : _task = PendingTextTask.start(
+        name: 'TextClassifier',
+        options: options,
+        create: TextClassifierExecutor.new,
+      );
+
+  final PendingTextTask<TextClassifierResult> _task;
+
+  /// Load off the calling isolate and report initialization errors now.
+  static Future<TextClassifier> create(TextClassifierOptions options) async {
+    final task = TextClassifier(options);
+    await task._task.ready;
+    return task;
   }
-
-  late SendPort _sendPort;
-  late StreamQueue<dynamic> _events;
-  final Completer<void> _readyCompleter;
-  Future<void> get _ready => _readyCompleter.future;
-
-  final TextClassifierOptions _options;
 
   @override
-  Future<TextClassifierResult> classify(String text) async {
-    _log.fine('Classifying ${text.shorten()}');
-    await _ready;
-    _sendPort.send(text);
-    return await _events.next;
-  }
+  Future<TextClassifierResult> classify(String text) => _task.run(text);
 
-  /// Closes down the background isolate, releasing all resources.
+  /// Drain accepted work and close once; safe before initialization completes.
   @override
-  void dispose() => _sendPort.send(null);
-}
-
-Future<(StreamQueue<dynamic>, SendPort)> _createIsolate(
-  TextClassifierOptions options,
-) async {
-  final p = ReceivePort();
-  await Isolate.spawn(
-    (SendPort port) => _classificationService(port, options),
-    p.sendPort,
-  );
-
-  final events = StreamQueue<dynamic>(p);
-  final SendPort sendPort = await events.next;
-  return (events, sendPort);
-}
-
-Future<void> _classificationService(
-  SendPort p,
-  TextClassifierOptions options,
-) async {
-  final commandPort = ReceivePort();
-  p.send(commandPort.sendPort);
-
-  final executor = TextClassifierExecutor(options);
-
-  await for (final String? message in commandPort) {
-    if (message != null) {
-      final TextClassifierResult result = executor.classify(message);
-      p.send(result);
-    } else {
-      break;
-    }
-  }
-  executor.dispose();
-  Isolate.exit();
+  Future<void> dispose() => _task.dispose();
 }
