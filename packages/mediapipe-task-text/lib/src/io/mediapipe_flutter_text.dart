@@ -7,3 +7,5 @@ export '../interface/embedding_gemma_types.dart';
 export 'embedding_gemma.dart';
 export '../interface/text_proofreader_types.dart';
 export 'text_proofreader.dart';
+export 'text_summarizer.dart';
+export '../interface/text_summarizer_types.dart';

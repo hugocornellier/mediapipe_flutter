@@ -18,6 +18,11 @@ typedef struct {
   bool done;
 } MpFlutterProofreaderStreamView;
 
+typedef struct {
+  const char* chunk;
+  bool done;
+} MpFlutterSummarizerStreamView;
+
 // A deep copy owned by the Dart receiver, freed with MpFlutterTextEventFree.
 typedef struct {
   char* text;
@@ -36,5 +41,8 @@ void MpFlutterTextEventFree(MpFlutterTextEvent* event);
 void MpFlutterProofreaderCallback(void* context,
                                  const MpFlutterProofreaderStreamView* result,
                                  const char* error);
+void MpFlutterSummarizerCallback(void* context,
+                                const MpFlutterSummarizerStreamView* result,
+                                const char* error);
 
 #endif

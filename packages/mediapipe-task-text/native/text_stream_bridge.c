@@ -76,3 +76,17 @@ void MpFlutterProofreaderCallback(void* userdata,
   // drain the native request before releasing the callback/context.
   sink(event, terminal);
 }
+
+void MpFlutterSummarizerCallback(void* userdata,
+                                const MpFlutterSummarizerStreamView* result,
+                                const char* error) {
+  // Map Google's simpler callback view onto the same owned event protocol.
+  // This stack view is copied synchronously before this function returns.
+  if (result) {
+    const MpFlutterProofreaderStreamView view = {
+        result->chunk, 0, NULL, result->done};
+    MpFlutterProofreaderCallback(userdata, &view, error);
+  } else {
+    MpFlutterProofreaderCallback(userdata, NULL, error);
+  }
+}

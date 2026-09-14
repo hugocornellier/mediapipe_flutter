@@ -22,6 +22,7 @@ models:
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_segmenter_example.py
 	$(MAKE) models_embedding
 	$(MAKE) models_proofreader
+	$(MAKE) models_summarizer
 
 # Optional maintainer build; consumers download the pinned prebuilt runtime.
 native_vision:
@@ -140,7 +141,7 @@ models_embedding:
 	mkdir -p packages/mediapipe-task-text/example_embedding/assets
 	cp packages/mediapipe-task-text/models/embedding_gemma.task packages/mediapipe-task-text/example_embedding/assets/embedding_gemma.task
 
-example_embedding: models_embedding models_proofreader
+example_embedding: models_embedding models_proofreader models_summarizer
 	cd packages/mediapipe-task-text/example_embedding && flutter run -d macos --release
 
 test_embedding_macos:
@@ -156,6 +157,12 @@ test_text_stream_bridge:
 	mkdir -p build/codex-tmp
 	clang -Wall -Wextra -Werror -g -fsanitize=address -pthread packages/mediapipe-task-text/native/text_stream_bridge.c packages/mediapipe-task-text/native/text_stream_bridge_test.c -o build/codex-tmp/text_stream_bridge_test
 	build/codex-tmp/text_stream_bridge_test
+
+.PHONY: models_summarizer
+models_summarizer:
+	cd packages/mediapipe-task-text && dart tool/download_summarizer.dart
+	mkdir -p packages/mediapipe-task-text/example_embedding/assets
+	cp packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm packages/mediapipe-task-text/example_embedding/assets/summarization_quant_200m_2modes.litertlm
 
 # Run sequentially even when make is invoked with -j.
 ci:

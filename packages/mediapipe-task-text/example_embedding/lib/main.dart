@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_text/embedding_gemma.dart';
 
 import 'proofreader_page.dart';
+import 'summarizer_page.dart';
 
 void main() => runApp(const EmbeddingDemo());
 
@@ -17,7 +18,7 @@ class EmbeddingDemo extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
     home: DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('MediaPipe text'),
@@ -25,10 +26,13 @@ class EmbeddingDemo extends StatelessWidget {
             tabs: [
               Tab(text: 'Sentence similarity'),
               Tab(text: 'Proofreader'),
+              Tab(text: 'Summarizer'),
             ],
           ),
         ),
-        body: const TabBarView(children: [SimilarityPage(), ProofreaderPage()]),
+        body: const TabBarView(
+          children: [SimilarityPage(), ProofreaderPage(), SummarizerPage()],
+        ),
       ),
     ),
   );

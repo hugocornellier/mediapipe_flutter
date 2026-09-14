@@ -1,5 +1,5 @@
 name: embedding_gemma_demo
-description: Official EmbeddingGemma and Proofreader tasks on macOS CPU.
+description: Official EmbeddingGemma, Proofreader and Summarizer on macOS CPU.
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -26,6 +26,7 @@ flutter:
   assets:
     - assets/embedding_gemma.task
     - assets/proofread_quant_200m.litertlm
+    - assets/summarization_quant_200m_2modes.litertlm
 
 hooks:
   user_defines:

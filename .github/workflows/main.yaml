@@ -11,7 +11,7 @@ on:
 
 jobs:
   embedding-consumer:
-    name: EmbeddingGemma + Proofreader / fresh macOS consumer
+    name: Modern text tasks / fresh macOS consumer
     runs-on: macos-15
     timeout-minutes: 25
     steps:
@@ -30,6 +30,7 @@ jobs:
           cd ../..
           make models_embedding
           make models_proofreader
+          make models_summarizer
           make test_text_stream_bridge
       - name: Test official references, lifecycle and the macOS UI
         working-directory: packages/mediapipe-task-text/example_embedding
