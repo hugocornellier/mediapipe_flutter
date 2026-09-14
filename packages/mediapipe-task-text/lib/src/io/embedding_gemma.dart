@@ -76,7 +76,8 @@ final class EmbeddingGemma {
   }
 
   /// Drain queued work and release the native task and worker exactly once.
-  /// A failed graph's close error is reported after resources are released.
+  /// A failed graph's native close error is reported after the worker exits.
+  /// Cleanup inside Google's runtime is not guaranteed when native close fails.
   Future<void> dispose() {
     _disposing = true;
     return _disposeFuture ??= _close();

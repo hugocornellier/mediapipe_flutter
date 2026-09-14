@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-text packages/mediapipe-task-genai packages/mediapipe-task-vision tool/builder
-FLUTTER_PACKAGES := packages/mediapipe-task-text/example packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter
+FLUTTER_PACKAGES := packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 VISION_NATIVE_ARGS ?=
 
@@ -20,6 +20,7 @@ models:
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
 	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_segmenter_example.py
+	$(MAKE) models_embedding
 
 # Optional maintainer build; consumers download the pinned prebuilt runtime.
 native_vision:
@@ -93,6 +94,7 @@ test_vision_camera_soak:
 # GenAI example tests cover Dart state only; they do not validate LLM inference.
 test_examples:
 	cd packages/mediapipe-task-text/example && flutter test --reporter expanded
+	cd packages/mediapipe-task-text/example_embedding && dart test --reporter expanded
 	cd packages/mediapipe-task-genai/example && flutter test --reporter expanded
 	cd packages/mediapipe-task-vision/example && flutter test --reporter expanded
 	cd packages/mediapipe-task-vision/example_segmenter && flutter test --reporter expanded
@@ -130,6 +132,18 @@ test_vision_ios_simulator:
 
 example_text:
 	cd packages/mediapipe-task-text/example && flutter run -d macos
+
+.PHONY: models_embedding example_embedding test_embedding_macos
+models_embedding:
+	cd packages/mediapipe-task-text && dart tool/download_embedding_gemma.dart
+	mkdir -p packages/mediapipe-task-text/example_embedding/assets
+	cp packages/mediapipe-task-text/models/embedding_gemma.task packages/mediapipe-task-text/example_embedding/assets/embedding_gemma.task
+
+example_embedding: models_embedding
+	cd packages/mediapipe-task-text/example_embedding && flutter run -d macos --release
+
+test_embedding_macos:
+	cd packages/mediapipe-task-text && python3 -B tool/test_embedding_macos.py
 
 # Run sequentially even when make is invoked with -j.
 ci:

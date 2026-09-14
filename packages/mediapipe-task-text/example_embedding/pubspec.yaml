@@ -1,0 +1,32 @@
+name: embedding_gemma_demo
+description: Official EmbeddingGemma sentence similarity on macOS CPU.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mediapipe_flutter_text:
+    path: ..
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  ffi: ^2.1.4
+  test: ^1.31.0
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/embedding_gemma.task
+
+hooks:
+  user_defines:
+    mediapipe_flutter_core:
+      tasks_runtime: true

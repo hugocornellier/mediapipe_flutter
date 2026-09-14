@@ -11,6 +11,9 @@ Regenerate with `tool/generate_embedding_gemma_reference.py` using the pinned
 checks its version, architecture and native checksum before inference.
 Do not replace these references with Dart-generated outputs.
 
+The comparing tests live in `example_embedding/test` so their modern build-hook
+configuration runs in a separate process from the package's legacy text tests.
+
 The model is downloaded separately by `dart tool/download_embedding_gemma.dart`;
 it is not committed. Its terms are Google's
 [Gemma Terms](https://ai.google.dev/gemma/terms).

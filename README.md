@@ -15,6 +15,12 @@ Text classification, text embedding, and language detection run on macOS arm64.
 Tests exercise the native executors, their reference numeric outputs, and the
 public isolate-based APIs. The macOS text example also builds on this baseline.
 
+**EmbeddingGemma 300M** runs Google's modern MediaPipe 1.0.1 pipeline on macOS
+arm64 CPU, macOS 14+. It provides owned 768-value embeddings, all eight official
+formatting modes and optional output quantization. Run `make example_embedding`
+for sentence comparison. Fresh Flutter debug/release integration tests compare
+all 17 cases against official Python outputs and verify coexistence with vision.
+
 The official MediaPipe v1.0.0 Face Detector and Face Landmarker run on macOS arm64
 in CPU and Metal GPU IMAGE/VIDEO modes, with tests against Google's Python reference outputs. A live
 camera example uses `camera_desktop`, with the full 478-point mesh and irises. Native builds use
@@ -38,7 +44,7 @@ arm64 iOS simulator CPU target; simulator archives are not yet published.
 | Package | Directory | Status |
 | --- | --- | --- |
 | `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
-| `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Three text tasks validated on macOS arm64 |
+| `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Modern EmbeddingGemma CPU + three legacy text tasks validated on macOS arm64; choose one runtime generation per app |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
 | `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Face tasks: macOS CPU/Metal + local iOS simulator CPU; optional macOS CPU MagicTouch editor |
 | Audio | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Placeholder, no Dart package |
@@ -59,9 +65,10 @@ the hook's shared output directory. Partial or mismatched downloads are rejected
 Model files remain separate. Applications bundle or download only the models they
 need; runtime hooks do not fetch models. `make models` downloads the three pinned
 text models, BlazeFace short-range, and the complete Face Landmarker float16
-version-1 bundle (FaceMesh V2), plus the MagicTouch int8 version-1 task bundle.
+version-1 bundle (FaceMesh V2), plus the MagicTouch int8 version-1 task bundle
+and EmbeddingGemma 300M mixed int4/int8 version-1 bundle.
 
-Text/GenAI native libraries remain the inherited April/May 2024 Google-hosted builds.
+Legacy text/GenAI native libraries remain the inherited April/May 2024 Google-hosted builds.
 Their URLs and hashes are checked in, and FFI bindings are regenerated from the
 existing headers. This tooling migration does not upgrade the native runtime.
 The shared `native_assets.dart` helpers are imported by hooks, not by task runtime
@@ -78,8 +85,17 @@ requires no Bazel, CMake, Ninja, or GitHub credentials. The Dart/Flutter source
 repository is public; no packages from this fork are published to pub.dev yet.
 
 Interactive Segmenter is **opt-in** with `tasks: [interactive_segmenter]`.
-Its official full runtime adds a 32.6 MB download / 100.9 MB native library;
-the separate model is 30.5 MB. Face-only apps do not download or bundle it.
+Both it and EmbeddingGemma require the app setting
+`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`. Core owns one
+shared native asset: a 32.6 MB download / 100.9 MB library. Its existing immutable
+release retains the `interactive-segmenter-v1.0.1-1` name. Separate models are
+30.5 MB for MagicTouch and 183.8 MB for EmbeddingGemma. Face-only apps do not
+download or bundle this runtime.
+
+Enabling the modern runtime automatically omits the old text library. Loading
+both generations caused native registration collisions, so combining them is
+rejected. The legacy text APIs still work in apps using their default configuration.
+See the [text package guide](packages/mediapipe-task-text/README.md) for usage.
 
 `make native_vision` optionally builds pinned MediaPipe v1.0.0 and static OpenCV
 4.12.0. The hook uses that verified local build when present. `make release_vision`
@@ -113,6 +129,9 @@ Other targets:
 - `make example_vision`: download the model and launch the macOS live camera demo.
 - `make build_vision_camera`: build the camera demo in release mode, without opening a camera.
 - `make example_segmenter`: prepare the MagicTouch assets and open the macOS image editor.
+- `make example_embedding`: prepare EmbeddingGemma and open sentence comparison.
+- `make test_embedding_macos`: download models/runtimes into a fresh consumer and
+  verify official outputs, shared bundling and task coexistence in debug/release.
 - `make test_segmenter_prebuilt`: validate an isolated public-download consumer
   in debug/release and record CPU timings.
 - `make headers`: maintainer-only header import from a local MediaPipe checkout.
@@ -137,8 +156,9 @@ are deferred with its runtime recovery.
 - Validate Intel macOS and mobile device builds and inference.
 - Recover or replace the legacy GenAI backend separately; its example tests
   cover Dart state, not LLM inference. Current `.litertlm` support is not implied.
-- Validate coexistence with inherited text/GenAI libraries. The modern Face
-  Detector and Face Landmarker have concurrent inference/disposal coverage.
+- Migrate the legacy text APIs to the modern runtime before mixing them with
+  modern tasks. GenAI coexistence remains unvalidated.
+- Add the official Proofreader and Summarizer pipelines; their APIs are not yet exposed.
 - Extend the pinned native build/release process to additional tasks and platforms.
 
 ## Upstream and license
