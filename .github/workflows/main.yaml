@@ -14,6 +14,8 @@ jobs:
     name: Modern text tasks / fresh macOS consumer
     runs-on: macos-15
     timeout-minutes: 25
+    env:
+      MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
       - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
@@ -21,6 +23,16 @@ jobs:
           flutter-version: '3.44.8'
           channel: stable
           cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate official CPU text references on this runner
+        run: |
+          cd packages/mediapipe-task-text
+          dart pub get
+          cd ../..
+          make models_text
+          python3 -B packages/mediapipe-task-text/tool/prepare_classic_text_reference.py
       - name: Verify public downloads and debug/release task coexistence
         run: python3 -B packages/mediapipe-task-text/tool/test_embedding_macos.py
       - name: Prepare the text demos and check callback ownership
@@ -53,6 +65,8 @@ jobs:
           path: |
             build/codex-tmp/embedding-consumer-*/report.json
             build/codex-tmp/embedding-consumer-*/*.log
+            build/classic-text-reference/*.json
+            build/classic-text-reference/*.log
           if-no-files-found: error
 
   native-tasks:
@@ -61,6 +75,7 @@ jobs:
     timeout-minutes: 60
     env:
       MEDIAPIPE_GPU_REFERENCE_DIR: ${{ github.workspace }}/build/gpu-reference
+      MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
       - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
@@ -74,6 +89,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: make get models
+      - name: Generate official CPU text references on this runner
+        run: python3 -B packages/mediapipe-task-text/tool/prepare_classic_text_reference.py
       - name: Generate official GPU references on this runner
         run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py
       - run: make ci
@@ -84,6 +101,8 @@ jobs:
           path: |
             build/gpu-reference/**/*.json
             build/gpu-reference/*.log
+            build/classic-text-reference/*.json
+            build/classic-text-reference/*.log
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:

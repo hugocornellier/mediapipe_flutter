@@ -12,6 +12,8 @@ import shutil
 import subprocess
 import tempfile
 
+from prepare_classic_text_reference import digest, reference_file
+
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
 
@@ -77,7 +79,8 @@ hooks:
     shutil.copyfile(PACKAGE / 'test/fixtures/embedding_gemma/official_reference.json', assets / 'embedding_reference.json')
     shutil.copyfile(PACKAGE / 'test/fixtures/proofreader/official_reference.json', assets / 'proofreader_reference.json')
     shutil.copyfile(PACKAGE / 'test/fixtures/summarizer/official_reference.json', assets / 'summarizer_reference.json')
-    shutil.copyfile(PACKAGE / 'test/fixtures/classic_text/official_reference.json', assets / 'classic_text_reference.json')
+    classic_reference = reference_file()
+    shutil.copyfile(classic_reference, assets / 'classic_text_reference.json')
     vision = REPO / 'packages/mediapipe-task-vision'
     for name in ('animals-299x150.rgb', 'raw-dog.f32.gz'):
         shutil.copyfile(vision / 'test/fixtures/interactive_segmentation' / name, assets / name)
@@ -182,6 +185,9 @@ void main() {
     if 'Class MPPMetalSharedResources is implemented in both' in result.stderr:
         raise RuntimeError('Duplicate Objective-C runtime classes were loaded.')
     report.update({'debug_inference': 'passed', 'release_inference': 'passed',
+                   'classic_text_reference_sha256': digest(classic_reference),
+                   'classic_text_reference_source': 'same-host official wheel' if os.environ.get(
+                       'MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR') else 'checked-in official wheel',
                    'source': 'public-release', 'mediapipe_source_build': False,
                    'blocked_build_tools': ['bazel', 'bazelisk', 'cmake', 'ninja', 'python', 'python3'],
                    'callback_adapter': 'compiled with system Clang',

@@ -20,9 +20,12 @@ MODELS = {
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--python-package-root', required=True, type=Path)
+    parser.add_argument('--python-package-root', type=Path)
+    parser.add_argument('--output', type=Path,
+                        default=PACKAGE / 'test/fixtures/classic_text/official_reference.json')
     args = parser.parse_args()
-    sys.path.insert(0, str(args.python_package_root.resolve()))
+    if args.python_package_root:
+        sys.path.insert(0, str(args.python_package_root.resolve()))
     os.environ.setdefault('MPLCONFIGDIR', str(PACKAGE / 'build/matplotlib'))
     import mediapipe as mp
     from mediapipe.tasks.python.text import text_classifier as classifier
@@ -120,7 +123,7 @@ def main():
                     MpClassificationsC, MpCategoryC, MpEmbeddingResultC, MpEmbeddingC,
                     language.MpLanguageDetectorOptionsC, language.MpLanguageDetectorPredictionC,
                     language.MpLanguageDetectorResultC)}
-    target = PACKAGE / 'test/fixtures/classic_text/official_reference.json'
+    target = args.output.resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n')
 
