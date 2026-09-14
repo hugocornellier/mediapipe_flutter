@@ -7,12 +7,7 @@ repository: https://github.com/hugocornellier/mediapipe_flutter/tree/main/packag
 issue_tracker: https://github.com/hugocornellier/mediapipe_flutter/issues/
 
 platforms:
-  android:
-  ios:
-  # linux:
   macos:
-  # web:
-  # windows:
 
 environment:
   sdk: ^3.12.0
@@ -32,3 +27,10 @@ dev_dependencies:
   lints: ^6.1.0
   path: ^1.9.1
   test: ^1.31.0
+
+# Used when this package is the root (Dart tests/tools). Consumers opt in in
+# their own pubspec, keeping the shared runtime optional for vision-only apps.
+hooks:
+  user_defines:
+    mediapipe_flutter_core:
+      tasks_runtime: true

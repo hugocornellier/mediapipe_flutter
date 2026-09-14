@@ -24,5 +24,5 @@ abstract class BaseLanguageDetector {
   Future<BaseLanguageDetectorResult> detect(String text);
 
   /// Cleans up all resources.
-  void dispose();
+  Future<void> dispose();
 }

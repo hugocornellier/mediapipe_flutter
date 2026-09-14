@@ -14,5 +14,5 @@ abstract class BaseTextClassifier {
   Future<BaseTextClassifierResult> classify(String text);
 
   /// Cleans up all resources.
-  void dispose();
+  Future<void> dispose();
 }

@@ -1,41 +1,27 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 import 'dart:typed_data';
-
-import 'dart:ffi';
-import 'package:ffi/ffi.dart';
 import 'package:mediapipe_flutter_core/io.dart';
 import 'package:mediapipe_flutter_text/interface.dart';
-import '../../third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
-    as bindings;
+import '../../classic_text_runtime.dart';
 
-/// {@macro LanguageDetectorOptions}
-///
-/// This io-friendly implementation is not immutable strictly to track whether
-/// [dispose] has been called.
-// ignore: must_be_immutable
-class LanguageDetectorOptions extends BaseLanguageDetectorOptions
-    with TaskOptions<bindings.LanguageDetectorOptions> {
-  /// {@macro LanguageDetectorOptions}
+/// Owned options for the official MediaPipe 1.0.1 LanguageDetector.
+class LanguageDetectorOptions extends BaseLanguageDetectorOptions {
+  /// Supply a filesystem model path or model bytes and official task options.
   LanguageDetectorOptions({
-    required this.baseOptions,
-    this.classifierOptions = const ClassifierOptions(),
-  });
+    required BaseOptions baseOptions,
+    ClassifierOptions classifierOptions = const ClassifierOptions(),
+  }) : baseOptions = copyTextBaseOptions(baseOptions),
+       classifierOptions = copyTextClassifierOptions(classifierOptions);
 
-  /// {@macro LanguageDetectorOptions.fromAssetPath}
+  /// Load a filesystem path (not a Flutter asset key).
   factory LanguageDetectorOptions.fromAssetPath(
     String assetPath, {
     ClassifierOptions classifierOptions = const ClassifierOptions(),
-  }) {
-    return LanguageDetectorOptions(
-      baseOptions: BaseOptions.path(assetPath),
-      classifierOptions: classifierOptions,
-    );
-  }
+  }) => LanguageDetectorOptions(
+    baseOptions: BaseOptions.path(assetPath),
+    classifierOptions: classifierOptions,
+  );
 
-  /// {@macro LanguageDetectorOptions.fromAssetBuffer}
+  /// Snapshot bytes loaded from a Flutter asset or another source.
   factory LanguageDetectorOptions.fromAssetBuffer(
     Uint8List assetBuffer, {
     ClassifierOptions classifierOptions = const ClassifierOptions(),
@@ -49,45 +35,4 @@ class LanguageDetectorOptions extends BaseLanguageDetectorOptions
 
   @override
   final ClassifierOptions classifierOptions;
-
-  /// {@macro TaskOptions.memory}
-  Pointer<bindings.LanguageDetectorOptions>? _pointer;
-
-  @override
-  Pointer<bindings.LanguageDetectorOptions> copyToNative() {
-    _pointer = calloc<bindings.LanguageDetectorOptions>();
-    baseOptions.assignToStruct(_pointer!.ref.base_options);
-    classifierOptions.assignToStruct(_pointer!.ref.classifier_options);
-    return _pointer!;
-  }
-
-  bool _isClosed = false;
-
-  /// Tracks whether [dispose] has been called.
-  bool get isClosed => _isClosed;
-
-  @override
-  void dispose() {
-    assert(() {
-      if (isClosed) {
-        throw Exception(
-          'Attempted to call dispose on an already-disposed task options'
-          'object. Task options should only ever be disposed after they are at '
-          'end-of-life and will never be accessed again.',
-        );
-      }
-      if (_pointer == null) {
-        throw Exception(
-          'Attempted to call dispose on a LanguageDetectorOptions object which '
-          'was never used by a LanguageDetector, which you do not need to do. '
-          'Did you forget to create your LanguageDetector?',
-        );
-      }
-      return true;
-    }());
-    baseOptions.freeStructFields(_pointer!.ref.base_options);
-    classifierOptions.freeStructFields(_pointer!.ref.classifier_options);
-    calloc.free(_pointer!);
-    _isClosed = true;
-  }
 }

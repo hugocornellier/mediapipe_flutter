@@ -12,14 +12,20 @@ import 'package:mediapipe_flutter_text/interface.dart';
 /// {@macro TextClassifier}
 class TextClassifier extends BaseTextClassifier {
   /// {@macro TextClassifier}
-  TextClassifier(TextClassifierOptions options);
+  TextClassifier(TextClassifierOptions options) {
+    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64.');
+  }
+
+  /// Initialize the official task on a supported platform.
+  static Future<TextClassifier> create(TextClassifierOptions options) async =>
+      TextClassifier(options);
 
   @override
   Future<TextClassifierResult> classify(String text) =>
       throw UnimplementedError();
 
   @override
-  void dispose() => throw UnimplementedError();
+  Future<void> dispose() => throw UnimplementedError();
 }
 
 /// {@macro TextClassifierOptions}
@@ -70,7 +76,13 @@ class TextClassifierResult extends BaseTextClassifierResult {
 /// {@macro TextEmbedder}
 class TextEmbedder extends BaseTextEmbedder {
   /// {@macro TextEmbedder}
-  TextEmbedder(TextEmbedderOptions options);
+  TextEmbedder(TextEmbedderOptions options) {
+    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64.');
+  }
+
+  /// Initialize the official task on a supported platform.
+  static Future<TextEmbedder> create(TextEmbedderOptions options) async =>
+      TextEmbedder(options);
 
   @override
   Future<TextEmbedderResult> embed(String text) => throw UnimplementedError();
@@ -80,7 +92,7 @@ class TextEmbedder extends BaseTextEmbedder {
       throw UnimplementedError();
 
   @override
-  void dispose() => throw UnimplementedError();
+  Future<void> dispose() => throw UnimplementedError();
 }
 
 /// {@macro TextEmbedderOptions}
@@ -130,14 +142,21 @@ class TextEmbedderResult extends BaseEmbedderResult {
 /// {@macro LanguageDetector}
 class LanguageDetector extends BaseLanguageDetector {
   /// {@macro LanguageDetector}
-  LanguageDetector(LanguageDetectorOptions options);
+  LanguageDetector(LanguageDetectorOptions options) {
+    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64.');
+  }
+
+  /// Initialize the official task on a supported platform.
+  static Future<LanguageDetector> create(
+    LanguageDetectorOptions options,
+  ) async => LanguageDetector(options);
 
   @override
   Future<LanguageDetectorResult> detect(String text) =>
       throw UnimplementedError();
 
   @override
-  void dispose() => throw UnimplementedError();
+  Future<void> dispose() => throw UnimplementedError();
 }
 
 /// {@macro LanguageDetectorOptions}

@@ -29,3 +29,8 @@ flutter:
     - assets/bert_classifier.tflite
     - assets/language_detector.tflite
     - assets/universal_sentence_encoder.tflite
+
+hooks:
+  user_defines:
+    mediapipe_flutter_core:
+      tasks_runtime: true

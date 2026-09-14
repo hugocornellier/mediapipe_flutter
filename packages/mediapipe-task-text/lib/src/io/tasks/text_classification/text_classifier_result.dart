@@ -1,66 +1,65 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 import 'dart:ffi';
-
 import 'package:mediapipe_flutter_core/io.dart';
 import 'package:mediapipe_flutter_text/interface.dart';
-import '../../third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
-    as bindings;
+import '../../classic_text_runtime.dart';
+import '../../third_party/mediapipe/classic_text_bindings.dart' as mp;
 
-/// {@macro TextClassifierResult}
-class TextClassifierResult extends BaseTextClassifierResult with IOTaskResult {
-  /// {@macro TextClassifierResult.fake}
+/// Owned classification output. No native allocation is retained.
+///
+/// Calling dispose is optional and idempotent; values remain readable.
+class TextClassifierResult extends BaseTextClassifierResult {
+  /// Snapshot the ordered output heads and categories.
   TextClassifierResult({
-    required Iterable<Classifications> this._classifications,
-  }) : _pointer = null;
+    required Iterable<Classifications> classifications,
+    this.timestampMs,
+  }) : classifications = List.unmodifiable([
+         for (final head in classifications)
+           Classifications(
+             categories: List<Category>.unmodifiable([
+               for (final category in head.categories)
+                 Category(
+                   index: category.index,
+                   score: category.score,
+                   categoryName: category.categoryName,
+                   displayName: category.displayName,
+                 ),
+             ]),
+             headIndex: head.headIndex,
+             headName: head.headName,
+           ),
+       ]);
 
-  /// {@template TextClassifierResult.native}
-  /// Initializes a [TextClassifierResult] instance as a wrapper around native
-  /// memory.
-  ///
-  /// See also:
-  ///  * [TextClassifierExecutor.classify] where this is called.
-  /// {@endtemplate}
-  TextClassifierResult.native(this._pointer);
-
-  final Pointer<bindings.TextClassifierResult>? _pointer;
-
-  Iterable<Classifications>? _classifications;
-  @override
-  Iterable<Classifications> get classifications =>
-      _classifications ??= _getClassifications();
-  Iterable<Classifications> _getClassifications() {
-    if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'No native memory for TextClassifierResult.classifications',
-      );
-    }
-    return Classifications.fromNativeArray(
-      _pointer!.ref.classifications,
-      _pointer.ref.classifications_count,
+  /// Copy a borrowed 1.0.1 result immediately; the caller retains ownership.
+  factory TextClassifierResult.native(
+    Pointer<mp.MpClassificationResult> pointer,
+  ) {
+    final result = pointer.ref;
+    return TextClassifierResult(
+      timestampMs: result.hasTimestampMs ? result.timestampMs : null,
+      classifications: [
+        for (var i = 0; i < result.classificationsCount; i++)
+          _copyHead(result.classifications[i]),
+      ],
     );
   }
 
   @override
-  void dispose() {
-    assert(() {
-      if (isClosed) {
-        throw Exception(
-          'A TextClassifierResult was closed after it had already been closed. '
-          'TextClassifierResult objects should only be closed when they are at'
-          'their end of life and will never be used again.',
-        );
-      }
-      return true;
-    }());
-    if (_pointer != null) {
-      // Only call the native finalizer if there actually is native memory,
-      // because tests may verify that faked results are also closed and calling
-      // this method in that scenario would cause a segfault.
-      bindings.text_classifier_close_result(_pointer);
-    }
-    super.dispose();
-  }
+  final List<Classifications> classifications;
+
+  /// Optional timestamp supplied by MediaPipe.
+  final int? timestampMs;
 }
+
+Classifications _copyHead(mp.MpClassifications head) => Classifications(
+  categories: [
+    for (var i = 0; i < head.categoriesCount; i++)
+      Category(
+        index: head.categories[i].index,
+        score: head.categories[i].score,
+        categoryName: textTaskString(head.categories[i].categoryName),
+        displayName: textTaskString(head.categories[i].displayName),
+      ),
+  ],
+  headIndex: head.headIndex,
+  headName: textTaskString(head.headName),
+);

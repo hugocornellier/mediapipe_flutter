@@ -5,8 +5,9 @@ import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 import 'package:example/language_detection_demo.dart';
 import 'package:example/text_classification_demo.dart';
 
-class FakeTextClassifier extends TextClassifier {
-  FakeTextClassifier(super.options);
+class FakeTextClassifier implements TextClassifier {
+  @override
+  Future<void> dispose() async {}
 
   @override
   Future<TextClassifierResult> classify(String text) {
@@ -31,8 +32,9 @@ class FakeTextClassifier extends TextClassifier {
   }
 }
 
-class FakeLanguageDetector extends LanguageDetector {
-  FakeLanguageDetector(super.options);
+class FakeLanguageDetector implements LanguageDetector {
+  @override
+  Future<void> dispose() async {}
 
   @override
   Future<LanguageDetectorResult> detect(String text) {
@@ -53,11 +55,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final app = MaterialApp(
-      home: TextClassificationDemo(
-        classifier: FakeTextClassifier(
-          TextClassifierOptions.fromAssetPath('fake'),
-        ),
-      ),
+      home: TextClassificationDemo(classifier: FakeTextClassifier()),
     );
 
     await tester.pumpWidget(app);
@@ -74,11 +72,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final app = MaterialApp(
-      home: LanguageDetectionDemo(
-        detector: FakeLanguageDetector(
-          LanguageDetectorOptions.fromAssetPath('fake'),
-        ),
-      ),
+      home: LanguageDetectionDemo(detector: FakeLanguageDetector()),
     );
 
     await tester.pumpWidget(app);

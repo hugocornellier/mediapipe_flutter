@@ -61,6 +61,7 @@ class Category extends BaseCategory {
   @override
   String? get categoryName => _categoryName ??= _getCategoryName();
   String? _getCategoryName() {
+    if (_pointer == null) return null;
     if (_pointer.isNullOrNullPointer) {
       throw Exception('Could not determine value for Category.categoryName');
     }
@@ -73,6 +74,7 @@ class Category extends BaseCategory {
   @override
   String? get displayName => _displayName ??= _getDisplayName();
   String? _getDisplayName() {
+    if (_pointer == null) return null;
     if (_pointer.isNullOrNullPointer) {
       throw Exception('Could not determine value for Category.displayName');
     }
@@ -144,6 +146,7 @@ class Classifications extends BaseClassifications {
   @override
   String? get headName => _headName ??= _getHeadName();
   String? _getHeadName() {
+    if (_pointer == null) return null;
     if (_pointer.isNullOrNullPointer) {
       throw Exception('Could not determine value for Classifications.headName');
     }
@@ -220,6 +223,7 @@ class Embedding extends BaseEmbedding {
   @override
   String? get headName => _headName ??= _getHeadName();
   String? _getHeadName() {
+    if (_pointer == null) return null;
     if (_pointer.isNullOrNullPointer) {
       throw Exception('Could not determine value for Embedding.headName');
     }

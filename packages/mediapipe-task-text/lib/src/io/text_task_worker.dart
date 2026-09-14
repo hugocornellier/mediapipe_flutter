@@ -13,7 +13,7 @@ abstract interface class NativeTextTask<R, U> {
   void close();
 }
 
-/// Shared queue, stream cancellation and lifecycle for generative text tasks.
+/// Shared queue, stream cancellation and lifecycle for official text tasks.
 final class TextTaskWorker<R, U, E extends Exception> {
   TextTaskWorker._(this._name, this._exception) {
     _events.listen(_receive);

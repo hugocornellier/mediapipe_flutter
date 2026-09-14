@@ -1,41 +1,26 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-import 'dart:ffi';
 import 'dart:typed_data';
-
-import 'package:ffi/ffi.dart';
 import 'package:mediapipe_flutter_core/io.dart';
 import 'package:mediapipe_flutter_text/interface.dart';
-import '../../third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
-    as bindings;
+import '../../classic_text_runtime.dart';
 
-/// {@macro TextEmbedderOptions}
-///
-/// This io-friendly implementation is not immutable strictly for memoization of
-/// computed fields. All values used by pkg:equatable are in fact immutable.
-// ignore: must_be_immutable
-class TextEmbedderOptions extends BaseTextEmbedderOptions
-    with TaskOptions<bindings.TextEmbedderOptions> {
-  /// {@macro TextEmbedderOptions}
+/// Owned options for the official MediaPipe 1.0.1 TextEmbedder.
+class TextEmbedderOptions extends BaseTextEmbedderOptions {
+  /// Supply a filesystem model path or model bytes and official task options.
   TextEmbedderOptions({
-    required this.baseOptions,
+    required BaseOptions baseOptions,
     this.embedderOptions = const EmbedderOptions(),
-  });
+  }) : baseOptions = copyTextBaseOptions(baseOptions);
 
-  /// {@macro TextEmbedderOptions.fromAssetPath}
+  /// Load a filesystem path (not a Flutter asset key).
   factory TextEmbedderOptions.fromAssetPath(
     String assetPath, {
     EmbedderOptions embedderOptions = const EmbedderOptions(),
-  }) {
-    return TextEmbedderOptions(
-      baseOptions: BaseOptions.path(assetPath),
-      embedderOptions: embedderOptions,
-    );
-  }
+  }) => TextEmbedderOptions(
+    baseOptions: BaseOptions.path(assetPath),
+    embedderOptions: embedderOptions,
+  );
 
-  /// {@macro TextEmbedderOptions.fromAssetBuffer}
+  /// Snapshot bytes loaded from a Flutter asset or another source.
   factory TextEmbedderOptions.fromAssetBuffer(
     Uint8List assetBuffer, {
     EmbedderOptions embedderOptions = const EmbedderOptions(),
@@ -49,45 +34,4 @@ class TextEmbedderOptions extends BaseTextEmbedderOptions
 
   @override
   final EmbedderOptions embedderOptions;
-
-  /// {@macro TaskOptions.memory}
-  Pointer<bindings.TextEmbedderOptions>? _pointer;
-
-  @override
-  Pointer<bindings.TextEmbedderOptions> copyToNative() {
-    _pointer = calloc<bindings.TextEmbedderOptions>();
-    baseOptions.assignToStruct(_pointer!.ref.base_options);
-    embedderOptions.assignToStruct(_pointer!.ref.embedder_options);
-    return _pointer!;
-  }
-
-  bool _isClosed = false;
-
-  /// Tracks whether [dispose] has been called.
-  bool get isClosed => _isClosed;
-
-  @override
-  void dispose() {
-    assert(() {
-      if (isClosed) {
-        throw Exception(
-          'A TextEmbedderResult was closed after it had already been closed. '
-          'TextEmbedderResult objects should only be closed when they are at'
-          'their end of life and will never be used again.',
-        );
-      }
-      if (_pointer == null) {
-        throw Exception(
-          'Attempted to call dispose on a TextEmbedderOptions object which '
-          'was never used by a TextEmbedder. Did you forget to create your '
-          'TextEmbedder?',
-        );
-      }
-      return true;
-    }());
-    baseOptions.freeStructFields(_pointer!.ref.base_options);
-    embedderOptions.freeStructFields(_pointer!.ref.embedder_options);
-    calloc.free(_pointer!);
-    _isClosed = true;
-  }
 }
