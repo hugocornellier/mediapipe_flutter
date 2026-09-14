@@ -28,6 +28,7 @@ migrate_working_dir/
 .dart_tool/
 .packages
 build/
+/models/
 
 
 # Test artifacts (these are re-compiled before running tests)
