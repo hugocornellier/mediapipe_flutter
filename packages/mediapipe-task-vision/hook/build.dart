@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/interactive_segmenter_library.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
 
 import '../sdk_downloads.dart';
@@ -58,6 +57,16 @@ void main(List<String> arguments) async {
           'Interactive Segmenter currently supports macOS arm64 only.',
         );
       }
+      if (segmenter) {
+        if (input.metadata['mediapipe_flutter_core']['tasks_runtime'] != true) {
+          throw StateError(
+            'Interactive Segmenter requires hooks.user_defines.'
+            'mediapipe_flutter_core.tasks_runtime: true in the app pubspec. '
+            'This bundles the shared modern runtime once for vision and text.',
+          );
+        }
+        continue;
+      }
       final local = Directory.fromUri(
         input.packageRoot.resolve(
           simulator
@@ -69,20 +78,7 @@ void main(List<String> arguments) async {
       );
       final libraryName = 'lib$task.dylib';
       final File library;
-      if (segmenter) {
-        library =
-            usePrebuilt != true &&
-                await File.fromUri(local.uri.resolve(libraryName)).exists()
-            ? await validateInteractiveSegmenterLibrary(local)
-            : await downloadInteractiveSegmenterLibrary(
-                asset: interactiveSegmenterArchive,
-                cache: Directory.fromUri(
-                  input.outputDirectoryShared.resolve(
-                    'macos/arm64/interactive_segmenter/',
-                  ),
-                ),
-              );
-      } else if (simulator) {
+      if (simulator) {
         if (usePrebuilt == true ||
             !await File.fromUri(local.uri.resolve(libraryName)).exists()) {
           throw StateError(

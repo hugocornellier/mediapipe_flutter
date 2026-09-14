@@ -3,3 +3,5 @@
 // found in the LICENSE file.
 
 export 'tasks/tasks.dart';
+export '../interface/embedding_gemma_types.dart';
+export 'embedding_gemma.dart';

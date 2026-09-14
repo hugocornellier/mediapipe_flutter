@@ -30,5 +30,7 @@ dev_dependencies:
 # Consumer apps choose their own tasks; the hook's default remains face-only.
 hooks:
   user_defines:
+    mediapipe_flutter_core:
+      tasks_runtime: true
     mediapipe_flutter_vision:
       tasks: [face_detector, face_landmarker, interactive_segmenter]

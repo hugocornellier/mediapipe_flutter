@@ -1,4 +1,5 @@
 import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
 
 // A rebuild gets a new release tag and new digests. Never replace this asset
 // in-place or resolve a floating "latest" URL from the build hook.
@@ -25,10 +26,4 @@ const faceLandmarkerLibrarySha256 =
     '825cdbb58d763d87a0e35b8c38406ac738841ac7bbe1af6888de5b7e1074f4f9';
 
 // Explicit opt-in only. Native bytes originate from Google's 1.0.1 wheel.
-const DownloadAsset interactiveSegmenterArchive = (
-  url:
-      'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
-      'download/interactive-segmenter-v1.0.1-1/'
-      'mediapipe-interactive-segmenter-1.0.1-macos-arm64.tar.gz',
-  sha256: '8bec2f56b2f6bf2fa0b31dacc0c84110c24174467d2ab131935c85c89a0e5b14',
-);
+const DownloadAsset interactiveSegmenterArchive = tasksRuntimeArchive;
