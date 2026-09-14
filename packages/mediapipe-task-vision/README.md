@@ -33,6 +33,13 @@ projection. Face Landmarker uses Google's complete float16 version-1 bundle
 It does not require a separate Dart Face Detector call. The Dart wrapper copies
 results and owns native resource cleanup.
 
+Face Landmarker remains on the **1.0.0 runtime**. Runtime and model versions are
+independent: Google's latest Face Landmarker model bundle was verified identical
+to our pinned version-1 bundle on September 14, 2026. The official 1.0.1 macOS
+runtime aborts during CPU task creation, so it cannot replace the working runtime
+yet. See [the compatibility check](tool/validations/2026-09-14-face-landmarker-1.0.1/README.md)
+and [upstream issue #6356](https://github.com/google-ai-edge/mediapipe/issues/6356).
+
 ## Run locally
 
 Use Flutter 3.44.8 / Dart 3.12.2 and Xcode. From this directory:
