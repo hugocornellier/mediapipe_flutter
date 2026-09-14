@@ -41,24 +41,27 @@ void main() {
     },
   );
 
-  test('public embedder supports embedding and native similarity', () async {
-    final embedder = TextEmbedder(
-      TextEmbedderOptions.fromAssetPath(
-        'example/assets/universal_sentence_encoder.tflite',
-      ),
-    );
-    final first = await embedder.embed('Hello, world!');
-    addTearDown(embedder.dispose);
-    addTearDown(first.dispose);
-    final second = await embedder.embed('Hello, world!');
-    addTearDown(second.dispose);
-    expect(first.embeddings.first.floatEmbedding, hasLength(100));
-    expect(
-      await embedder.cosineSimilarity(
-        first.embeddings.first,
-        second.embeddings.first,
-      ),
-      closeTo(1, 0.0001),
-    );
-  });
+  test(
+    'public embedder supports embedding and owned-vector similarity',
+    () async {
+      final embedder = TextEmbedder(
+        TextEmbedderOptions.fromAssetPath(
+          'example/assets/universal_sentence_encoder.tflite',
+        ),
+      );
+      final first = await embedder.embed('Hello, world!');
+      addTearDown(embedder.dispose);
+      addTearDown(first.dispose);
+      final second = await embedder.embed('Hello, world!');
+      addTearDown(second.dispose);
+      expect(first.embeddings.first.floatEmbedding, hasLength(100));
+      expect(
+        await embedder.cosineSimilarity(
+          first.embeddings.first,
+          second.embeddings.first,
+        ),
+        closeTo(1, 0.0001),
+      );
+    },
+  );
 }

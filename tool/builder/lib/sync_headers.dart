@@ -17,14 +17,10 @@ import 'repo_finder.dart';
 final containers = 'mediapipe/tasks/c/components/containers';
 final processors = 'mediapipe/tasks/c/components/processors';
 final core = 'mediapipe/tasks/c/core';
-final tc = 'mediapipe/tasks/c/text/text_classifier';
-final te = 'mediapipe/tasks/c/text/text_embedder';
-final ld = 'mediapipe/tasks/c/text/language_detector';
 final inference = 'mediapipe/tasks/cc/genai/inference/c';
 
 /// hugocornellier/mediapipe_flutter package paths
 final corePackage = 'packages/mediapipe-core/third_party';
-final textPackage = 'packages/mediapipe-task-text/third_party';
 final inferencePackage = 'packages/mediapipe-task-genai/third_party';
 
 /// First string is its relative location in both repositories,
@@ -38,9 +34,6 @@ List<(String, String, String, Function(io.File)?)> headerPaths = [
   (core, corePackage, 'base_options.h', null),
   (processors, corePackage, 'classifier_options.h', null),
   (processors, corePackage, 'embedder_options.h', null),
-  (tc, textPackage, 'text_classifier.h', relativeIncludes),
-  (te, textPackage, 'text_embedder.h', relativeIncludes),
-  (ld, textPackage, 'language_detector.h', relativeIncludes),
   (inference, inferencePackage, 'llm_inference_engine.h', null),
 ];
 

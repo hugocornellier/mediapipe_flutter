@@ -15,8 +15,9 @@ its legacy unverified download behavior. Custom models are not used by CI.
 
 ## Headers and native runtimes
 
-`make generate` regenerates bindings from the headers already in this repository.
-It does not require a separate MediaPipe checkout.
+`make generate` regenerates header-based bindings and checks the text 1.0.1 ABI
+against its pinned Python ctypes fixture. It does not require a separate
+MediaPipe checkout. The retired text headers are no longer imported/generated.
 
 `make headers` imports headers from a local `google/mediapipe` checkout. Only use
 this as part of a coordinated native runtime update: headers, ABI, binary URLs,
@@ -27,5 +28,6 @@ and SHA-256 digests must match. Importing current headers alone can break FFI.
 `sdk_downloads.candidate.dart` files for review, not active manifests. Normal
 builds and tests do not need this command or Google credentials.
 
-Future native releases need an independently maintainable build and release
-process. The current runtime pins intentionally preserve the 2024 upstream ABI.
+The bucket-discovery tool is inherited; its candidates do not drive modern text
+or vision builds. Text uses the shared official 1.0.1 archive, and vision uses
+public pinned releases. Only GenAI still uses the 2024 runtime.

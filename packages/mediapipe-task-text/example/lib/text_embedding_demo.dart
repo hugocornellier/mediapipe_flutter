@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:example/keyboard_hider.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
@@ -33,6 +33,9 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
 
   TextEmbedder? _embedder;
   Completer<TextEmbedder>? _completer;
+  int _revision = 0;
+  bool _initializing = true;
+  String? _error;
 
   @override
   void initState() {
@@ -43,6 +46,9 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
 
   @override
   void dispose() {
+    _revision++;
+    _controller.dispose();
+    unawaited(_embedder?.dispose() ?? Future<void>.value());
     final resultsIter = feed.where(
       (el) => el._type == _EmbeddingFeedItemType.result,
     );
@@ -83,24 +89,58 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
   }
 
   Future<void> _initEmbedder() async {
-    _embedder?.dispose();
-    _completer = Completer<TextEmbedder>();
-
-    ByteData? embedderBytes = await DefaultAssetBundle.of(
-      context,
-    ).load('assets/universal_sentence_encoder.tflite');
-
-    _embedder = TextEmbedder(
-      TextEmbedderOptions.fromAssetBuffer(
-        embedderBytes.buffer.asUint8List(),
-        embedderOptions: EmbedderOptions(
-          l2Normalize: l2Normalize,
-          quantize: type == EmbeddingType.quantized,
-        ),
+    if (widget.embedder != null) {
+      _initializing = false;
+      return;
+    }
+    final revision = ++_revision;
+    final completion = Completer<TextEmbedder>();
+    _completer = completion;
+    unawaited(
+      completion.future.then<void>(
+        (_) {},
+        onError: (Object _, StackTrace _) {},
       ),
     );
-    _completer!.complete(_embedder);
-    embedderBytes = null;
+    final previous = _embedder;
+    _embedder = null;
+    _initializing = true;
+    _error = null;
+    final normalize = l2Normalize;
+    final quantize = type == EmbeddingType.quantized;
+    try {
+      await previous?.dispose();
+      final bytes = await rootBundle.load(
+        'assets/universal_sentence_encoder.tflite',
+      );
+      final task = await TextEmbedder.create(
+        TextEmbedderOptions.fromAssetBuffer(
+          bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+          embedderOptions: EmbedderOptions(
+            l2Normalize: normalize,
+            quantize: quantize,
+          ),
+        ),
+      );
+      if (!mounted || revision != _revision) {
+        await task.dispose();
+        completion.completeError(
+          StateError('Embedding configuration changed.'),
+        );
+        return;
+      }
+      _embedder = task;
+      completion.complete(task);
+      setState(() => _initializing = false);
+    } catch (error, stack) {
+      completion.completeError(error, stack);
+      if (mounted && revision == _revision) {
+        setState(() {
+          _initializing = false;
+          _error = error.toString();
+        });
+      }
+    }
   }
 
   void _prepareForEmbedding() {
@@ -135,8 +175,17 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
 
   Future<void> _embed() async {
     _prepareForEmbedding();
-    final embeddingResult = await (await embedder).embed(_controller.text);
-    _showEmbeddingResults(embeddingResult);
+    try {
+      final embeddingResult = await (await embedder).embed(_controller.text);
+      if (mounted) _showEmbeddingResults(embeddingResult);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          feed.removeLast();
+          _error = error.toString();
+        });
+      }
+    }
   }
 
   /// True if there is an `embed(String)` request out and not yet fulfilled.
@@ -176,9 +225,9 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
       feed[lowIndex].embeddingResult!.result!.embeddings.first,
       feed[highIndex].embeddingResult!.result!.embeddings.first,
     );
-    setState(() {
-      feed[index] = EmbeddingFeedItem.comparison(similarity);
-    });
+    if (mounted) {
+      setState(() => feed[index] = EmbeddingFeedItem.comparison(similarity));
+    }
   }
 
   @override
@@ -203,9 +252,14 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
                             const Text('Float:'),
                             Checkbox(
                               value: type == EmbeddingType.float,
-                              onChanged: (_) {
-                                toggleMode();
-                              },
+                              onChanged:
+                                  widget.embedder != null ||
+                                      _initializing ||
+                                      isProcessing
+                                  ? null
+                                  : (_) {
+                                      toggleMode();
+                                    },
                             ),
                           ],
                         ),
@@ -215,9 +269,14 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
                             const Text('Quantize:'),
                             Checkbox(
                               value: type == EmbeddingType.quantized,
-                              onChanged: (bool? newValue) {
-                                toggleMode();
-                              },
+                              onChanged:
+                                  widget.embedder != null ||
+                                      _initializing ||
+                                      isProcessing
+                                  ? null
+                                  : (bool? newValue) {
+                                      toggleMode();
+                                    },
                             ),
                           ],
                         ),
@@ -231,9 +290,14 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
                             const Text('L2 Normalize:'),
                             Checkbox(
                               value: l2Normalize,
-                              onChanged: (_) {
-                                toggleL2Normalize();
-                              },
+                              onChanged:
+                                  widget.embedder != null ||
+                                      _initializing ||
+                                      isProcessing
+                                  ? null
+                                  : (_) {
+                                      toggleL2Normalize();
+                                    },
                             ),
                           ],
                         ),
@@ -243,6 +307,7 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
                 ),
                 // Float checkbox
                 TextField(controller: _controller),
+                if (_error != null) Text(_error!),
                 ...feed.reversed.toList().enumerate<Widget>((
                   EmbeddingFeedItem feedItem,
                   index,
@@ -280,7 +345,9 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: isProcessing || _controller.text == '' ? null : _embed,
+        onPressed: _initializing || isProcessing || _error != null
+            ? null
+            : _embed,
         child: const Icon(Icons.search),
       ),
     );

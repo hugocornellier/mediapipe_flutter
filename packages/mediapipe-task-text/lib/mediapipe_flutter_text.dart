@@ -6,6 +6,7 @@
 library;
 
 export 'embedding_gemma.dart';
+export 'src/interface/text_task_exception.dart';
 export 'text_proofreader.dart';
 export 'text_summarizer.dart';
 

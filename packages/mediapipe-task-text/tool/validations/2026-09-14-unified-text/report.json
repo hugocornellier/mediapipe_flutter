@@ -1,0 +1,189 @@
+{
+  "runtime": "mediapipe==1.0.1",
+  "delegate": "cpu",
+  "proofreader": {
+    "reference_cases": 9,
+    "completed_text_and_edits": "exact match",
+    "streamed_text_and_final_edits": "exact match",
+    "cancel_queue_dispose": "passed",
+    "ui_timer_ticks": 150,
+    "model_sha256": "2caa317d5a6f951af6e437edce3bb3a9fdedc85a7a8c2a8fcaec96318d7708cc",
+    "sync_ms": [
+      42.592,
+      36.723,
+      32.064,
+      39.868,
+      62.407,
+      0.027,
+      153.073,
+      41.783,
+      35.821
+    ],
+    "stream_ms": [
+      41.185,
+      37.025,
+      32.942,
+      40.28,
+      65.613,
+      0.038,
+      158.369,
+      39.563,
+      36.041
+    ],
+    "first_update_ms": [
+      14.252,
+      17.384,
+      12.779,
+      13.218,
+      17.61,
+      0.034,
+      22.459,
+      13.716,
+      16.014
+    ],
+    "timing_scope": "Public async API including native inference and owned copies; nine functional reference cases, not a benchmark"
+  },
+  "summarizer": {
+    "reference_cases": 10,
+    "modes": [
+      "tldr",
+      "keypoints"
+    ],
+    "completed_and_streamed_text": "exact match",
+    "native_empty_input_errors": 4,
+    "cancel_queue_dispose": "passed",
+    "ui_timer_ticks": 496,
+    "model_sha256": "8b2d4ef09236adb9ead3127325526ba1aa5a59feb7c5de2d3f5958f27479de59",
+    "samples": [
+      {
+        "case": "tldr-meeting",
+        "sync_ms": 180.414,
+        "stream_ms": 168.315,
+        "first_update_ms": 40.854
+      },
+      {
+        "case": "tldr-garden",
+        "sync_ms": 174.294,
+        "stream_ms": 183.166,
+        "first_update_ms": 40.429
+      },
+      {
+        "case": "tldr-unicode",
+        "sync_ms": 146.353,
+        "stream_ms": 136.539,
+        "first_update_ms": 34.71
+      },
+      {
+        "case": "tldr-short",
+        "sync_ms": 49.109,
+        "stream_ms": 47.964,
+        "first_update_ms": 18.326
+      },
+      {
+        "case": "tldr-short-limit-64",
+        "sync_ms": 51.266,
+        "stream_ms": 46.154,
+        "first_update_ms": 18.518
+      },
+      {
+        "case": "keypoints-meeting",
+        "sync_ms": 276.06,
+        "stream_ms": 260.295,
+        "first_update_ms": 40.183
+      },
+      {
+        "case": "keypoints-garden",
+        "sync_ms": 274.574,
+        "stream_ms": 270.361,
+        "first_update_ms": 39.634
+      },
+      {
+        "case": "keypoints-unicode",
+        "sync_ms": 195.722,
+        "stream_ms": 216.72,
+        "first_update_ms": 33.804
+      },
+      {
+        "case": "keypoints-short",
+        "sync_ms": 72.972,
+        "stream_ms": 71.373,
+        "first_update_ms": 18.471
+      },
+      {
+        "case": "keypoints-short-limit-64",
+        "sync_ms": 71.556,
+        "stream_ms": 69.007,
+        "first_update_ms": 19.05
+      }
+    ],
+    "timing_scope": "Public async API including inference and owned copies; functional references, not a benchmark"
+  },
+  "classic_text": {
+    "reference_cases": 26,
+    "model_sources": [
+      "path",
+      "bytes"
+    ],
+    "inference_comparisons": 52,
+    "maximum_output_error": 1.1102230246251565e-16,
+    "cosine_comparisons": 4,
+    "official_creation_errors": 4,
+    "results_owned_after_disposal": "passed",
+    "queue_and_dispose": "passed"
+  },
+  "coexisting_tasks": 9,
+  "reference_cases": 17,
+  "dimensions": 768,
+  "maximum_embedding_error": 0.0,
+  "maximum_segmentation_error": 0.0,
+  "coexisting_face_detections": 1,
+  "coexisting_face_landmarks": 478,
+  "ui_timer_ticks": 233,
+  "model_sha256": "913b7a1edc7c7c3d1da3979ec1d0648ed9e0a370f181bb59ab177ca4b97707ad",
+  "samples_ms": [
+    125.217,
+    125.875,
+    126.795,
+    126.989,
+    127.084,
+    127.306,
+    127.503,
+    127.54,
+    127.643,
+    127.785,
+    127.917,
+    128.004,
+    128.234,
+    128.284,
+    128.425,
+    128.55,
+    129.356
+  ],
+  "p50_ms": 127.643,
+  "p95_ms": 129.356,
+  "timing_scope": "Public async embed, including native formatting/tokenization/inference and owned output copy",
+  "os": "Version 26.4 (Build 25E246)",
+  "dart": "3.12.2 (stable) (Tue Jun 9 01:11:39 2026 -0700) on \"macos_arm64\"",
+  "debug_inference": "passed",
+  "release_inference": "passed",
+  "source": "public-release",
+  "mediapipe_source_build": false,
+  "blocked_build_tools": [
+    "bazel",
+    "bazelisk",
+    "cmake",
+    "ninja",
+    "python",
+    "python3"
+  ],
+  "callback_adapter": "compiled with system Clang",
+  "frameworks": [
+    "FlutterMacOS.framework",
+    "face_landmarker.framework",
+    "App.framework",
+    "mediapipe_text_stream.framework",
+    "interactive_segmenter.framework",
+    "face_detector.framework"
+  ],
+  "shared_runtime_copies": 1
+}

@@ -21,5 +21,5 @@ abstract class BaseTextEmbedder {
   Future<double> cosineSimilarity(Embedding a, Embedding b);
 
   /// Cleans up all resources.
-  void dispose();
+  Future<void> dispose();
 }

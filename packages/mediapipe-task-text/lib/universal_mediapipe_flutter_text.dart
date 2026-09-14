@@ -12,14 +12,20 @@ import 'package:mediapipe_flutter_text/interface.dart';
 /// {@macro TextClassifier}
 class TextClassifier extends BaseTextClassifier {
   /// {@macro TextClassifier}
-  TextClassifier(TextClassifierOptions options);
+  TextClassifier(TextClassifierOptions options) {
+    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64.');
+  }
+
+  /// Initialize the official task on a supported platform.
+  static Future<TextClassifier> create(TextClassifierOptions options) async =>
+      TextClassifier(options);
 
   @override
   Future<TextClassifierResult> classify(String text) =>
       throw UnimplementedError();
 
   @override
-  void dispose() => throw UnimplementedError();
+  Future<void> dispose() => throw UnimplementedError();
 }
 
 /// {@macro TextClassifierOptions}
@@ -57,10 +63,16 @@ class TextClassifierResult extends BaseTextClassifierResult {
   /// {@template TextClassifierResult.fake}
   /// Instantiates a [TextClassifierResult] with fake data for testing.
   /// {@endtemplate}
-  TextClassifierResult({required Iterable<Classifications> classifications});
+  TextClassifierResult({
+    required Iterable<Classifications> classifications,
+    this.timestampMs,
+  });
+
+  /// Optional timestamp supplied by MediaPipe.
+  final int? timestampMs;
 
   @override
-  Iterable<Classifications> get classifications => throw UnimplementedError();
+  List<Classifications> get classifications => throw UnimplementedError();
 
   @override
   // ignore: must_call_super
@@ -70,7 +82,13 @@ class TextClassifierResult extends BaseTextClassifierResult {
 /// {@macro TextEmbedder}
 class TextEmbedder extends BaseTextEmbedder {
   /// {@macro TextEmbedder}
-  TextEmbedder(TextEmbedderOptions options);
+  TextEmbedder(TextEmbedderOptions options) {
+    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64.');
+  }
+
+  /// Initialize the official task on a supported platform.
+  static Future<TextEmbedder> create(TextEmbedderOptions options) async =>
+      TextEmbedder(options);
 
   @override
   Future<TextEmbedderResult> embed(String text) => throw UnimplementedError();
@@ -80,7 +98,7 @@ class TextEmbedder extends BaseTextEmbedder {
       throw UnimplementedError();
 
   @override
-  void dispose() => throw UnimplementedError();
+  Future<void> dispose() => throw UnimplementedError();
 }
 
 /// {@macro TextEmbedderOptions}
@@ -117,10 +135,16 @@ class TextEmbedderResult extends BaseEmbedderResult {
   /// {@template TextEmbedderResult.fake}
   /// Instantiates a [TextEmbedderResult] with fake data for testing.
   /// {@endtemplate}
-  TextEmbedderResult({required Iterable<Embedding> embeddings});
+  TextEmbedderResult({
+    required Iterable<Embedding> embeddings,
+    this.timestampMs,
+  });
+
+  /// Optional timestamp supplied by MediaPipe.
+  final int? timestampMs;
 
   @override
-  Iterable<Embedding> get embeddings => throw UnimplementedError();
+  List<Embedding> get embeddings => throw UnimplementedError();
 
   @override
   // ignore: must_call_super
@@ -130,14 +154,21 @@ class TextEmbedderResult extends BaseEmbedderResult {
 /// {@macro LanguageDetector}
 class LanguageDetector extends BaseLanguageDetector {
   /// {@macro LanguageDetector}
-  LanguageDetector(LanguageDetectorOptions options);
+  LanguageDetector(LanguageDetectorOptions options) {
+    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64.');
+  }
+
+  /// Initialize the official task on a supported platform.
+  static Future<LanguageDetector> create(
+    LanguageDetectorOptions options,
+  ) async => LanguageDetector(options);
 
   @override
   Future<LanguageDetectorResult> detect(String text) =>
       throw UnimplementedError();
 
   @override
-  void dispose() => throw UnimplementedError();
+  Future<void> dispose() => throw UnimplementedError();
 }
 
 /// {@macro LanguageDetectorOptions}
@@ -174,7 +205,7 @@ class LanguageDetectorResult extends BaseLanguageDetectorResult {
   LanguageDetectorResult({required Iterable<LanguagePrediction> predictions});
 
   @override
-  Iterable<LanguagePrediction> get predictions => throw UnimplementedError();
+  List<LanguagePrediction> get predictions => throw UnimplementedError();
 
   @override
   // ignore: must_call_super

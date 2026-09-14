@@ -10,17 +10,15 @@ Use Flutter 3.44.8 stable / Dart 3.12.2. Native libraries download automatically
 during builds, with caching and SHA-256 verification. No experimental flags are
 needed.
 
-All three legacy tasks have executor and public API inference tests on macOS arm64.
-Artifacts also exist for macOS x64, Android arm64, and iOS arm64 devices, but
-those targets have not been revalidated. iOS simulators, Windows, Linux, and web
-have no task runtime here.
+All six text tasks use the same official **MediaPipe 1.0.1** runtime on
+**macOS arm64 CPU, macOS 14+**: TextClassifier (BERT), TextEmbedder (Universal
+Sentence Encoder), LanguageDetector, EmbeddingGemma, Proofreader and Summarizer.
+They can run together with MagicTouch and both face tasks. The 2024 text runtime
+has been retired; its unvalidated Android, iOS and Intel macOS artifacts are no
+longer selected. Those platforms need a separate 1.0.1 integration.
 
-The existing `TextClassifier`, `TextEmbedder` (USE), and `LanguageDetector` APIs
-use pinned 2024 upstream builds. **EmbeddingGemma, Proofreader and Summarizer** use the official 1.0.1 runtime
-on macOS arm64 CPU, macOS 14+. The runtime generations are mutually exclusive in
-one app: native C++/Objective-C collisions were observed when loading both.
-Selecting the modern runtime automatically omits the legacy library; inherited
-task constructors then fail immediately with an explanatory error.
+Every text consumer must enable `hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`
+in its app pubspec, as shown below. Models remain separate optional downloads.
 
 ## EmbeddingGemma 300M
 
@@ -215,8 +213,8 @@ a smaller token budget. Empty-input errors are checked separately in both modes
 and APIs. `example_embedding/test/text_summarizer_test.dart` also covers ABI,
 ownership, parallel task instances, queueing, cancellation, pause and disposal.
 `make test_embedding_macos` validates fresh debug/release apps and simultaneous
-Summarizer, Proofreader, EmbeddingGemma, MagicTouch, face detector and face mesh
-inference with one shared modern runtime.
+all six text tasks, MagicTouch, face detector and face mesh inference with one
+shared 1.0.1 runtime.
 
 ## Models and local dependencies
 
@@ -232,6 +230,10 @@ by the tests and example:
 - [Language detector, version 1](https://storage.googleapis.com/mediapipe-models/language_detector/language_detector/float32/1/language_detector.tflite)
 - [Universal Sentence Encoder, version 1](https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/1/universal_sentence_encoder.tflite)
 
+`make models_text` downloads only these three models. Their public URL/checksum
+pins are `bertClassifierModel`, `universalSentenceEncoderModel` and
+`languageDetectorModel` in `package:mediapipe_flutter_text/models.dart`.
+
 Declare bundled models under `flutter.assets` in the application's pubspec, as
 the example does. A model's Flutter asset key is not a filesystem path: load its
 bytes and use `fromAssetBuffer`, or pass a real file path to `fromAssetPath`.
@@ -243,23 +245,56 @@ import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 
 final data = await rootBundle.load('assets/bert_classifier.tflite');
-final classifier = TextClassifier(
+final classifier = await TextClassifier.create(
   TextClassifierOptions.fromAssetBuffer(
     data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
   ),
 );
-final result = await classifier.classify('Hello, world!');
-print(result.classifications.first);
-result.dispose();
-classifier.dispose();
+try {
+  final result = await classifier.classify('Hello, world!');
+  print(result.classifications.first);
+} finally {
+  await classifier.dispose();
+}
 ```
 
 `LanguageDetector.detect` and `TextEmbedder.embed` follow the same pattern.
-`TextEmbedder.cosineSimilarity` compares native embeddings; keep both source
-results alive until that future completes, then dispose of them.
+`TextEmbedder.cosineSimilarity` compares owned vectors, including signed int8
+quantized output. Results remain readable after subsequent inference or task
+disposal. Result `dispose()` remains as an optional, idempotent compatibility
+method; it does not release or invalidate any data.
 
-This baseline validates successful inference. Inherited isolate error propagation
-and native-memory lifecycle edge cases still need an audit before publishing.
+## Migrating existing text callers
+
+- Enable the shared runtime setting above; remove `legacy_runtime: true`.
+- Existing `TextClassifier(options)`, `TextEmbedder(options)` and
+  `LanguageDetector(options)` constructors still start a worker immediately.
+  Prefer `await Task.create(options)` to receive initialization errors at creation.
+- Await task `dispose()`. It drains accepted requests, releases the native task
+  and waits for its isolate to exit. Repeated disposal returns the same future.
+  Calls submitted after disposal begins fail with `StateError`.
+- Model, configuration and native failures reach callers as `TextTaskException`
+  with the official message and status when available. Invalid models no longer
+  leave requests waiting on a dead worker. Embedded NUL is rejected before FFI.
+- Options snapshot model bytes and classifier lists. They can be reused across
+  tasks and no longer expose native `copyToNative`/`dispose` methods.
+- Low-level executors now initialize synchronously and use the 1.0.1 ABI.
+  Their results eagerly copy borrowed native data; the caller of a `.native`
+  result constructor owns the supplied pointer. Executor `cosineSimilarity`
+  accepts Dart embeddings instead of pointers. Old generated 2024 bindings and
+  headers have been removed.
+
+The official version-1 model files are unchanged. Runtime migration can change
+floating-point scores slightly. No tokenizer, prompt, label ordering, threshold,
+normalization or quantization is reimplemented in Dart. TextClassifier's native
+timestamp is preserved, including its advance on repeated requests.
+
+The pinned Python reference generator records 26 model/option cases, four
+creation errors, cosine similarities and repeated-request sequences. Tests
+compare every score/vector value from both path and buffer models, check the
+1.0.1 struct layouts, and cover initialization failure, queue ordering, immediate
+and repeated disposal, option snapshots and result ownership. Fresh Flutter
+debug/release consumers run the same references and all nine tasks together.
 
 ## Example and tests
 

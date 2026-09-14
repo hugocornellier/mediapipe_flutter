@@ -12,9 +12,7 @@ get:
 
 # Download versioned test/example models; no model is embedded in a package.
 models:
-	cd tool/builder && dart bin/main.dart model -m textclassification
-	cd tool/builder && dart bin/main.dart model -m textembedding
-	cd tool/builder && dart bin/main.dart model -m languagedetection
+	$(MAKE) models_text
 	cd packages/mediapipe-task-vision && dart tool/download_model.dart
 	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
@@ -53,8 +51,10 @@ generate:
 generate_core:
 	cd packages/mediapipe-core && dart run ffigen --config=ffigen.yaml
 
+# 1.0.1 text bindings are adapted from the pinned wheel's ctypes definitions;
+# the retired 2024 headers must not regenerate them.
 generate_text:
-	cd packages/mediapipe-task-text && dart run ffigen --config=ffigen.yaml
+	cd packages/mediapipe-task-text && dart test test/classic_text_abi_test.dart --reporter expanded
 
 generate_genai:
 	cd packages/mediapipe-task-genai && dart run ffigen --config=ffigen.yaml
@@ -132,8 +132,12 @@ native_vision_ios_simulator:
 test_vision_ios_simulator:
 	cd packages/mediapipe-task-vision && python3 -B tool/test_ios_simulator.py
 
-example_text:
+example_text: models_text
 	cd packages/mediapipe-task-text/example && flutter run -d macos
+
+.PHONY: models_text
+models_text:
+	cd packages/mediapipe-task-text && dart tool/download_classic_text.dart
 
 .PHONY: models_embedding example_embedding test_embedding_macos
 models_embedding:

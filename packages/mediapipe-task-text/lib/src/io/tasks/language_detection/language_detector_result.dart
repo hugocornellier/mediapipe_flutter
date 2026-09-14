@@ -1,103 +1,41 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 import 'dart:ffi';
-import 'package:mediapipe_flutter_core/io.dart';
 import 'package:mediapipe_flutter_text/interface.dart';
-import '../../third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
-    as bindings;
+import '../../classic_text_runtime.dart';
+import '../../third_party/mediapipe/classic_text_bindings.dart' as mp;
 
-/// {@macro LanguageDetectionResult}
-class LanguageDetectorResult extends BaseLanguageDetectorResult
-    with IOTaskResult {
-  /// {@macro LanguageDetectionResult}
-  LanguageDetectorResult({
-    required Iterable<LanguagePrediction> this._predictions,
-  }) : _pointer = null;
+/// Owned predictions. Optional dispose is idempotent and does not erase values.
+class LanguageDetectorResult extends BaseLanguageDetectorResult {
+  /// Snapshot Google's ordered language predictions.
+  LanguageDetectorResult({required Iterable<LanguagePrediction> predictions})
+    : predictions = List.unmodifiable(predictions);
 
-  /// {@template LanguageDetectorResult.native}
-  /// Initializes a [LanguageDetectorResult] instance as a wrapper around native
-  /// memory.
-  ///
-  /// See also:
-  ///  * [TextEmbedderExecutor.embed] where this is called.
-  /// {@endtemplate}
-  LanguageDetectorResult.native(this._pointer);
+  /// Copy a borrowed 1.0.1 result; the caller retains native ownership.
+  factory LanguageDetectorResult.native(
+    Pointer<mp.MpLanguageDetectorResult> pointer,
+  ) => LanguageDetectorResult(
+    predictions: [
+      for (var i = 0; i < pointer.ref.predictionsCount; i++)
+        LanguagePrediction(
+          languageCode: textTaskString(
+            pointer.ref.predictions[i].languageCode,
+          )!,
+          probability: pointer.ref.predictions[i].probability,
+        ),
+    ],
+  );
 
-  final Pointer<bindings.LanguageDetectorResult>? _pointer;
-
-  Iterable<LanguagePrediction>? _predictions;
   @override
-  Iterable<LanguagePrediction> get predictions =>
-      _predictions ??= _getpredictions();
-  Iterable<LanguagePrediction> _getpredictions() {
-    if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'Could not determine value for LanguageDetectorResult.predictions',
-      );
-    }
-    return LanguagePrediction.fromNativeArray(
-      _pointer!.ref.predictions,
-      _pointer.ref.predictions_count,
-    );
-  }
+  final List<LanguagePrediction> predictions;
 }
 
-/// {@macro LanguagePrediction}
+/// An owned language code and probability.
 class LanguagePrediction extends BaseLanguagePrediction {
-  /// {@macro LanguagePrediction}
-  LanguagePrediction({
-    required String this._languageCode,
-    required double this._probability,
-  }) : _pointer = null;
-
-  /// Initializes a [LanguagePrediction] instance as a wrapper around native
-  /// memory.
-  ///
-  /// {@macro Container.memoryManagement}
-  LanguagePrediction.native(this._pointer);
-
-  final Pointer<bindings.LanguageDetectorPrediction>? _pointer;
-
-  String? _languageCode;
+  /// Keep the official output unchanged.
+  LanguagePrediction({required this.languageCode, required this.probability});
 
   @override
-  String get languageCode => _languageCode ??= _getLanguageCode();
-  String _getLanguageCode() {
-    if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'Could not determine value for '
-        'LanguagePrediction.languageCode',
-      );
-    }
-    if (_pointer!.ref.language_code.isNullPointer) {
-      throw Exception('Corrupted memory in LanguagePrediction');
-    }
-    return _pointer.ref.language_code.toDartString();
-  }
+  final String languageCode;
 
-  double? _probability;
   @override
-  double get probability => _probability ??= _getProbability();
-  double _getProbability() {
-    if (_pointer.isNullOrNullPointer) {
-      throw Exception(
-        'Could not determine value for '
-        'LanguageDetector.probability',
-      );
-    }
-    return _pointer!.ref.probability;
-  }
-
-  /// Accepts a pointer to a list of structs, and a count representing the length
-  /// of the list, and returns a list of pure-Dart [Category] instances.
-  static Iterable<LanguagePrediction> fromNativeArray(
-    Pointer<bindings.LanguageDetectorPrediction> structs,
-    int count,
-  ) sync* {
-    for (int i = 0; i < count; i++) {
-      yield LanguagePrediction.native(structs + i);
-    }
-  }
+  final double probability;
 }

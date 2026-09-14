@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:example/keyboard_hider.dart';
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
@@ -22,7 +22,8 @@ class TextClassificationDemo extends StatefulWidget {
 class _TextClassificationDemoState extends State<TextClassificationDemo>
     with AutomaticKeepAliveClientMixin<TextClassificationDemo> {
   final TextEditingController _controller = TextEditingController();
-  final Completer<TextClassifier> _completer = Completer<TextClassifier>();
+  late final Future<TextClassifier> _task;
+  String? _error;
   final results = <Widget>[];
   String? _isProcessing;
 
@@ -30,25 +31,38 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
   void initState() {
     super.initState();
     _controller.text = 'Hello, world!';
-    _initClassifier();
-  }
-
-  Future<void> _initClassifier() async {
-    if (widget.classifier != null) {
-      return _completer.complete(widget.classifier!);
-    }
-
-    ByteData? classifierBytes = await DefaultAssetBundle.of(
-      context,
-    ).load('assets/bert_classifier.tflite');
-
-    final classifier = TextClassifier(
-      TextClassifierOptions.fromAssetBuffer(
-        classifierBytes.buffer.asUint8List(),
+    _task = _initClassifier();
+    unawaited(
+      _task.then<void>(
+        (_) {},
+        onError: (Object error, StackTrace _) {
+          if (mounted) setState(() => _error = error.toString());
+        },
       ),
     );
-    _completer.complete(classifier);
-    classifierBytes = null;
+  }
+
+  Future<TextClassifier> _initClassifier() async {
+    if (widget.classifier != null) return widget.classifier!;
+    final bytes = await rootBundle.load('assets/bert_classifier.tflite');
+    return TextClassifier.create(
+      TextClassifierOptions.fromAssetBuffer(
+        bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    if (widget.classifier == null) {
+      unawaited(
+        _task.then((task) => task.dispose()).catchError((Object error) {
+          debugPrint('Closing TextClassifier: $error');
+        }),
+      );
+    }
+    super.dispose();
   }
 
   void _prepareForClassification() {
@@ -118,10 +132,17 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
 
   Future<void> _classify() async {
     _prepareForClassification();
-    _completer.future.then((classifier) async {
-      final result = await classifier.classify(_controller.text);
-      _showClassificationResults(result);
-    });
+    try {
+      final result = await (await _task).classify(_isProcessing!);
+      if (mounted) _showClassificationResults(result);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          results.last = Text(error.toString());
+          _isProcessing = null;
+        });
+      }
+    }
   }
 
   @override
@@ -134,15 +155,14 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
           child: Column(
             children: <Widget>[
               TextField(controller: _controller),
+              if (_error != null) Text(_error!),
               ...results.reversed,
             ],
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _isProcessing != null && _controller.text != ''
-            ? null
-            : _classify,
+        onPressed: _isProcessing != null || _error != null ? null : _classify,
         child: const Icon(Icons.search),
       ),
     );

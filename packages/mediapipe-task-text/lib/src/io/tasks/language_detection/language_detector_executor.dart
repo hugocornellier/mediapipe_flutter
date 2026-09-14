@@ -1,80 +1,63 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-import 'package:logging/logging.dart';
-import 'package:mediapipe_flutter_core/io.dart';
-import 'package:mediapipe_flutter_text/io.dart';
-import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/generated/mediapipe_flutter_text_bindings.dart'
-    as bindings;
+import '../../classic_text_runtime.dart';
+import '../../third_party/mediapipe/classic_text_bindings.dart' as mp;
+import 'language_detector_options.dart';
+import 'language_detector_result.dart';
 
-final _log = Logger('LanguageDetectorExecutor');
-
-/// Executes MediaPipe's "detect language" task.
-///
-/// {@macro TaskExecutor}
+/// Synchronous MediaPipe 1.0.1 owner. Prefer LanguageDetector for Flutter UI work.
 class LanguageDetectorExecutor
-    extends
-        TaskExecutor<
-          bindings.LanguageDetectorOptions,
-          LanguageDetectorOptions,
-          bindings.LanguageDetectorResult,
-          LanguageDetectorResult
-        > {
-  /// {@macro LanguageDetectorExecutor}
-  LanguageDetectorExecutor(super.options);
-
-  @override
-  final String taskName = 'LanguageDetection';
-
-  @override
-  Pointer<Void> createWorker(
-    Pointer<bindings.LanguageDetectorOptions> options,
-    Pointer<Pointer<Char>> error,
-  ) {
-    _log.fine('Creating LanguageDetector in native memory');
-    final worker = bindings.language_detector_create(options, error);
-    _log.finest(
-      'Created LanguageDetector at 0x${worker.address.toRadixString(16)}',
-    );
-    return worker;
+    extends NativeClassicTextTask<LanguageDetectorResult> {
+  /// Load the official task and acquire its handle.
+  LanguageDetectorExecutor(LanguageDetectorOptions options) {
+    requireTextTasksRuntime();
+    using((arena) {
+      final native = arena<mp.MpTextClassifierOptions>();
+      fillTextBaseOptions(native.ref.baseOptions, options.baseOptions, arena);
+      fillTextClassifierOptions(
+        native.ref.classifierOptions,
+        options.classifierOptions,
+        arena,
+      );
+      final output = arena<Pointer<Void>>();
+      checkTextStatus((error) => mp.languageCreate(native, output, error));
+      handle = output.value;
+      if (handle == nullptr) {
+        throw StateError('MediaPipe returned no LanguageDetector.');
+      }
+    });
   }
 
-  @override
-  Pointer<bindings.LanguageDetectorResult> createResultsPointer() {
-    _log.fine('Allocating LanguageDetectorResult in native memory');
-    final results = calloc<bindings.LanguageDetectorResult>();
-    _log.finest(
-      'Allocated LanguageDetectorResult at 0x${results.address.toRadixString(16)}',
-    );
-    return results;
-  }
-
-  @override
-  int closeWorker(Pointer<Void> worker, Pointer<Pointer<Char>> error) {
-    final status = bindings.language_detector_close(worker, error);
-    _log.finest('Closed LanguageDetector in native memory with status $status');
-    return status;
-  }
-
-  /// Passes [text] to MediaPipe for classification, yielding a
-  /// [LanguageDetectorResult] or throwing an exception.
+  /// Run official preprocessing, inference and postprocessing.
   LanguageDetectorResult detect(String text) {
-    final resultPtr = createResultsPointer();
-    final errorMessageMemory = calloc<Pointer<Char>>();
-    final textMemory = text.copyToNative();
-    final status = bindings.language_detector_detect(
-      worker,
-      textMemory,
-      resultPtr,
-      errorMessageMemory,
-    );
-    _log.finest('Detected with status $status');
-    textMemory.free();
-    handleErrorMessage(errorMessageMemory, status);
-    errorMessageMemory.free(1);
-    return LanguageDetectorResult.native(resultPtr);
+    checkInput(text);
+    return using((arena) {
+      final output = arena<mp.MpLanguageDetectorResult>();
+      checkTextStatus(
+        (error) => mp.languageRun(
+          handle,
+          text.toNativeUtf8(allocator: arena).cast(),
+          output,
+          error,
+        ),
+      );
+      try {
+        return LanguageDetectorResult.native(output);
+      } finally {
+        // Google frees nested fields; the arena owns the outer result struct.
+        mp.languageCloseResult(output);
+      }
+    });
+  }
+
+  @override
+  LanguageDetectorResult run(String text) => detect(text);
+
+  @override
+  void close() {
+    if (handle == nullptr) return;
+    final task = handle;
+    handle = nullptr;
+    checkTextStatus((error) => mp.languageClose(task, error));
   }
 }
