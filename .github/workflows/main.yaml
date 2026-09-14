@@ -72,7 +72,8 @@ jobs:
   native-tasks:
     name: Stable Flutter / macOS arm64
     runs-on: macos-15
-    timeout-minutes: 60
+    # A cold source build plus all Flutter builds can exceed one hour.
+    timeout-minutes: 90
     env:
       MEDIAPIPE_GPU_REFERENCE_DIR: ${{ github.workspace }}/build/gpu-reference
       MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
@@ -93,7 +94,22 @@ jobs:
         run: python3 -B packages/mediapipe-task-text/tool/prepare_classic_text_reference.py
       - name: Generate official GPU references on this runner
         run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py
-      - run: make ci
+      # make get/models already ran above for the independent references.
+      # Keep the remaining make ci checks, with visible stage boundaries.
+      - name: Build official native face tasks from source
+        run: make native_vision
+      - name: Analyze, format-check and test all packages
+        run: |
+          make analyze
+          make check_format
+          make test_only
+      - name: Build the text, camera and segmenter apps
+        run: |
+          make build_text
+          make build_vision_camera
+          make build_segmenter
+      - name: Test source-built face tasks in a fresh Flutter app
+        run: make test_vision_flutter
       - uses: actions/upload-artifact@v4
         if: always()
         with:
