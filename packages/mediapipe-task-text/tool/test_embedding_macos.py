@@ -26,6 +26,8 @@ def main():
         shutil.copyfile(source / 'pubspec.yaml', target / 'pubspec.yaml')
         shutil.copytree(source / 'lib', target / 'lib')
         shutil.copytree(source / 'hook', target / 'hook')
+        if (source / 'native').is_dir():
+            shutil.copytree(source / 'native', target / 'native')
         if (source / 'sdk_downloads.dart').is_file():
             shutil.copyfile(source / 'sdk_downloads.dart', target / 'sdk_downloads.dart')
     guards = root / 'blocked-tools'

@@ -22,6 +22,8 @@ dependencies:
   ffi: ^2.1.4
   hooks: '>=2.0.2 <2.1.0'
   logging: ^1.3.0
+  # 0.19.3+ requires meta newer than Flutter 3.44's SDK pin.
+  native_toolchain_c: '>=0.19.2 <0.19.3'
   mediapipe_flutter_core:
     path: ../mediapipe-core
 
