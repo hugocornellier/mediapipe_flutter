@@ -1,6 +1,6 @@
 # MediaPipe Text for Flutter
 
-`mediapipe_flutter_text` provides proofreading, text classification, embedding, and language
+`mediapipe_flutter_text` provides summarization, proofreading, classification, embedding, and language
 detection through MediaPipe's native task pipelines. It is part of the public
 [mediapipe_flutter](../../README.md) fork and is not published to pub.dev.
 
@@ -10,13 +10,13 @@ Use Flutter 3.44.8 stable / Dart 3.12.2. Native libraries download automatically
 during builds, with caching and SHA-256 verification. No experimental flags are
 needed.
 
-All three tasks have executor and public API inference tests on macOS arm64.
+All three legacy tasks have executor and public API inference tests on macOS arm64.
 Artifacts also exist for macOS x64, Android arm64, and iOS arm64 devices, but
 those targets have not been revalidated. iOS simulators, Windows, Linux, and web
 have no task runtime here.
 
 The existing `TextClassifier`, `TextEmbedder` (USE), and `LanguageDetector` APIs
-use pinned 2024 upstream builds. **EmbeddingGemma and Proofreader** use the official 1.0.1 runtime
+use pinned 2024 upstream builds. **EmbeddingGemma, Proofreader and Summarizer** use the official 1.0.1 runtime
 on macOS arm64 CPU, macOS 14+. The runtime generations are mutually exclusive in
 one app: native C++/Objective-C collisions were observed when loading both.
 Selecting the modern runtime automatically omits the legacy library; inherited
@@ -92,13 +92,14 @@ From the repository root:
 ```sh
 make models_embedding
 make models_proofreader
+make models_summarizer
 cd packages/mediapipe-task-text/example_embedding
 flutter pub get
 dart test --reporter expanded
 flutter test -d macos integration_test/demo_test.dart --reporter expanded
 ```
 
-`make example_embedding` launches the sentence comparison and proofreading demo.
+`make example_embedding` launches similarity, proofreading and summarization tabs.
 `make test_embedding_macos` creates an isolated consumer, downloads all selected
 models/runtimes, and checks official embeddings plus simultaneous face/mesh and
 MagicTouch inference in debug and release. Bazel, CMake, Ninja and Python are
@@ -163,7 +164,59 @@ cancellation, pause, queueing, errors and disposal. `make test_text_stream_bridg
 tests copying from a foreign thread under AddressSanitizer.
 `make test_embedding_macos` also checks Proofreader in fresh Flutter debug and
 release apps alongside EmbeddingGemma, MagicTouch and both face tasks, with one
-shared runtime. Summarizer is not implemented yet.
+shared runtime.
+
+## Summarizer 200M
+
+`TextSummarizer` runs Google's complete official pipeline on macOS arm64 CPU,
+macOS 14+. It shares the runtime, worker queue and callback-copy infrastructure
+with Proofreader. Both `TextSummarizerMode.tldr` and `.keypoints` pass directly to
+Google's task; the default is key points. The [official guide](https://developers.google.com/edge/mediapipe/solutions/text/text_summarizer/python)
+describes the upstream options. GPU is rejected explicitly.
+
+The version-1 model is a separate 117.6 MB download. Use
+`dart tool/download_summarizer.dart`, or the public `summarizerModel` URL/SHA-256
+with core's `downloadVerified`. The [model overview](https://developers.google.com/edge/mediapipe/solutions/text/text_summarizer)
+links its Gemma terms. Enabling the shared runtime does not download models.
+
+```dart
+import 'package:mediapipe_flutter_text/text_summarizer.dart';
+
+final task = await TextSummarizer.create(TextSummarizerOptions(
+  modelPath: '/path/to/summarization_quant_200m_2modes.litertlm',
+  mode: TextSummarizerMode.tldr,
+));
+try {
+  final result = await task.summarize(article);
+  print(result.summary);
+  await for (final update in task.summarizeStream(article)) {
+    if (update.chunk != null) print(update.chunk);
+    if (update.done) print('Finished');
+  }
+} finally {
+  await task.dispose();
+}
+```
+
+Mode is fixed at creation; recreate the task to switch modes. Google's output
+is preserved, including bullet markers and whitespace. No custom prompt,
+reformatting, chunking or additional truncation is applied. `maxNumTokens` and
+`cacheDirectory` pass through to native options; null/zero tokens uses the native
+default. Empty input returns Google's `TextSummarizerException`; both APIs remain
+usable after that error. NUL characters are rejected before native calls.
+
+Results and updates own their strings. Streams start on listen, accept one
+subscription and deliver new chunks followed by a terminal update. Cancellation
+waits for native completion while suppressing delivery; pausing buffers updates.
+Await `dispose()` to drain queued requests and release the native task.
+
+Ten Python reference cases cover both modes, paragraphs, Unicode, short text and
+a smaller token budget. Empty-input errors are checked separately in both modes
+and APIs. `example_embedding/test/text_summarizer_test.dart` also covers ABI,
+ownership, parallel task instances, queueing, cancellation, pause and disposal.
+`make test_embedding_macos` validates fresh debug/release apps and simultaneous
+Summarizer, Proofreader, EmbeddingGemma, MagicTouch, face detector and face mesh
+inference with one shared modern runtime.
 
 ## Models and local dependencies
 

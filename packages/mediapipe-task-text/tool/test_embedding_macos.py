@@ -2,7 +2,7 @@
 
 Copies only publishable Dart packages: no native builds or model cache. Downloads
 the pinned models and runtime, then compares official outputs while face tasks,
-MagicTouch, EmbeddingGemma and Proofreader coexist. Bazel/CMake/Python are blocked
+MagicTouch, EmbeddingGemma, Proofreader and Summarizer coexist. Bazel/CMake/Python are blocked
 in builds. Xcode's Clang compiles only the small callback-copy adapter.
 """
 import json
@@ -76,11 +76,13 @@ hooks:
     assets.mkdir()
     shutil.copyfile(PACKAGE / 'test/fixtures/embedding_gemma/official_reference.json', assets / 'embedding_reference.json')
     shutil.copyfile(PACKAGE / 'test/fixtures/proofreader/official_reference.json', assets / 'proofreader_reference.json')
+    shutil.copyfile(PACKAGE / 'test/fixtures/summarizer/official_reference.json', assets / 'summarizer_reference.json')
     vision = REPO / 'packages/mediapipe-task-vision'
     for name in ('animals-299x150.rgb', 'raw-dog.f32.gz'):
         shutil.copyfile(vision / 'test/fixtures/interactive_segmentation' / name, assets / name)
     shutil.copyfile(vision / 'test/fixtures/face_detection/landmark-ex1.jpg', assets / 'landmark-ex1.jpg')
     shutil.copyfile(PACKAGE / 'tool/flutter_embedding_validation.dart.template', app / 'lib/validation.dart')
+    shutil.copyfile(PACKAGE / 'tool/flutter_summarizer_validation.dart.template', app / 'lib/summarizer_validation.dart')
     (app / 'bin').mkdir()
     (app / 'bin/download_models.dart').write_text('''import 'dart:io';
 import 'package:mediapipe_flutter_core/native_assets.dart';
@@ -89,6 +91,7 @@ import 'package:mediapipe_flutter_vision/models.dart';
 Future<void> main() async {
   await downloadVerified(embeddingGemmaModel, File('assets/embedding_gemma.task'));
   await downloadVerified(proofreaderModel, File('assets/proofread_quant_200m.litertlm'));
+  await downloadVerified(summarizerModel, File('assets/summarization_quant_200m_2modes.litertlm'));
   await downloadVerified((url: interactiveSegmenterModelUrl, sha256: interactiveSegmenterModelSha256), File('assets/interactive_segmentation.task'));
   await downloadVerified((url: blazeFaceShortRangeUrl, sha256: blazeFaceShortRangeSha256), File('assets/blaze_face_short_range.tflite'));
   await downloadVerified((url: faceLandmarkerUrl, sha256: faceLandmarkerSha256), File('assets/face_landmarker.task'));
@@ -116,10 +119,11 @@ import 'package:integration_test/integration_test.dart';
 import '../lib/validation.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  testWidgets('official EmbeddingGemma and vision coexist on macOS CPU', (tester) async {
+  testWidgets('official modern text and vision coexist on macOS CPU', (tester) async {
     final report = await validateEmbedding();
     expect(report['reference_cases'], 17);
     expect((report['proofreader'] as Map)['reference_cases'], 9);
+    expect((report['summarizer'] as Map)['reference_cases'], 10);
     print('EMBEDDING_DEBUG_REPORT ' + jsonEncode(report));
   });
 }
