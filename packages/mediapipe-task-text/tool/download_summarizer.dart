@@ -1,0 +1,14 @@
+import 'dart:io';
+
+import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_flutter_text/models.dart';
+
+Future<void> main(List<String> args) async {
+  final target = File(
+    args.isEmpty
+        ? 'models/summarization_quant_200m_2modes.litertlm'
+        : args.single,
+  );
+  await downloadVerified(summarizerModel, target);
+  stdout.writeln('Verified ${target.path}');
+}
