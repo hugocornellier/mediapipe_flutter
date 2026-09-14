@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_text/embedding_gemma.dart';
 
+import 'proofreader_page.dart';
+
 void main() => runApp(const EmbeddingDemo());
 
 class EmbeddingDemo extends StatelessWidget {
@@ -14,7 +16,21 @@ class EmbeddingDemo extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
-    home: const SimilarityPage(),
+    home: DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('MediaPipe text'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Sentence similarity'),
+              Tab(text: 'Proofreader'),
+            ],
+          ),
+        ),
+        body: const TabBarView(children: [SimilarityPage(), ProofreaderPage()]),
+      ),
+    ),
   );
 }
 
@@ -127,7 +143,6 @@ class _SimilarityPageState extends State<SimilarityPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Sentence similarity')),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 800),

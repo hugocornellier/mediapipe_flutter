@@ -2,7 +2,8 @@
 
 Copies only publishable Dart packages: no native builds or model cache. Downloads
 the pinned models and runtime, then compares official outputs while face tasks,
-MagicTouch and EmbeddingGemma coexist. Bazel/CMake/Python are blocked in builds.
+MagicTouch, EmbeddingGemma and Proofreader coexist. Bazel/CMake/Python are blocked
+in builds. Xcode's Clang compiles only the small callback-copy adapter.
 """
 import json
 import os
@@ -26,6 +27,8 @@ def main():
         shutil.copyfile(source / 'pubspec.yaml', target / 'pubspec.yaml')
         shutil.copytree(source / 'lib', target / 'lib')
         shutil.copytree(source / 'hook', target / 'hook')
+        if (source / 'native').is_dir():
+            shutil.copytree(source / 'native', target / 'native')
         if (source / 'sdk_downloads.dart').is_file():
             shutil.copyfile(source / 'sdk_downloads.dart', target / 'sdk_downloads.dart')
     guards = root / 'blocked-tools'
@@ -72,6 +75,7 @@ hooks:
     assets = app / 'assets'
     assets.mkdir()
     shutil.copyfile(PACKAGE / 'test/fixtures/embedding_gemma/official_reference.json', assets / 'embedding_reference.json')
+    shutil.copyfile(PACKAGE / 'test/fixtures/proofreader/official_reference.json', assets / 'proofreader_reference.json')
     vision = REPO / 'packages/mediapipe-task-vision'
     for name in ('animals-299x150.rgb', 'raw-dog.f32.gz'):
         shutil.copyfile(vision / 'test/fixtures/interactive_segmentation' / name, assets / name)
@@ -84,6 +88,7 @@ import 'package:mediapipe_flutter_text/models.dart';
 import 'package:mediapipe_flutter_vision/models.dart';
 Future<void> main() async {
   await downloadVerified(embeddingGemmaModel, File('assets/embedding_gemma.task'));
+  await downloadVerified(proofreaderModel, File('assets/proofread_quant_200m.litertlm'));
   await downloadVerified((url: interactiveSegmenterModelUrl, sha256: interactiveSegmenterModelSha256), File('assets/interactive_segmentation.task'));
   await downloadVerified((url: blazeFaceShortRangeUrl, sha256: blazeFaceShortRangeSha256), File('assets/blaze_face_short_range.tflite'));
   await downloadVerified((url: faceLandmarkerUrl, sha256: faceLandmarkerSha256), File('assets/face_landmarker.task'));
@@ -114,6 +119,7 @@ void main() {
   testWidgets('official EmbeddingGemma and vision coexist on macOS CPU', (tester) async {
     final report = await validateEmbedding();
     expect(report['reference_cases'], 17);
+    expect((report['proofreader'] as Map)['reference_cases'], 9);
     print('EMBEDDING_DEBUG_REPORT ' + jsonEncode(report));
   });
 }
@@ -153,6 +159,8 @@ void main() {
     frameworks = [path.name for path in (bundle / 'Contents/Frameworks').iterdir()]
     if sum('interactive_segmenter' in name for name in frameworks) != 1:
         raise RuntimeError(f'Shared runtime must be bundled exactly once: {frameworks}')
+    if sum('mediapipe_text_stream' in name for name in frameworks) != 1:
+        raise RuntimeError(f'Callback adapter must be bundled exactly once: {frameworks}')
     if any(name in ('libtext.framework', 'text.framework') for name in frameworks):
         raise RuntimeError('Legacy text runtime was bundled in a modern app.')
     if blocked_log.exists() or any(packages.rglob('build/native')):
@@ -163,7 +171,9 @@ void main() {
     if 'Class MPPMetalSharedResources is implemented in both' in result.stderr:
         raise RuntimeError('Duplicate Objective-C runtime classes were loaded.')
     report.update({'debug_inference': 'passed', 'release_inference': 'passed',
-                   'source': 'public-release', 'native_build_tools_invoked': False,
+                   'source': 'public-release', 'mediapipe_source_build': False,
+                   'blocked_build_tools': ['bazel', 'bazelisk', 'cmake', 'ninja', 'python', 'python3'],
+                   'callback_adapter': 'compiled with system Clang',
                    'frameworks': frameworks, 'shared_runtime_copies': 1})
     (root / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2), flush=True)
