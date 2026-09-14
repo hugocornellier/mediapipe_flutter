@@ -7,6 +7,7 @@ library;
 
 export 'embedding_gemma.dart';
 export 'text_proofreader.dart';
+export 'text_summarizer.dart';
 
 export 'universal_mediapipe_flutter_text.dart'
     if (dart.library.html) 'src/web/mediapipe_flutter_text.dart'

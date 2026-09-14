@@ -34,6 +34,15 @@ static void release(void) {
   received = NULL;
 }
 
+static void* deliver_summary(void* context) {
+  char* text = strdup("* María opened a café.\n");
+  const MpFlutterSummarizerStreamView result = {text, false};
+  MpFlutterSummarizerCallback(context, &result, NULL);
+  memset(text, 'x', strlen(text));
+  free(text);
+  return NULL;
+}
+
 int main(void) {
   assert(!MpFlutterTextStreamCreate(NULL));
   MpFlutterTextStreamContext* context = MpFlutterTextStreamCreate(sink);
@@ -67,6 +76,22 @@ int main(void) {
   release();
   terminal.corrections_count = -1;
   MpFlutterProofreaderCallback(context, &terminal, NULL);
+  assert(finished && received->copy_error == 2);
+  release();
+  assert(pthread_create(&thread, NULL, deliver_summary, context) == 0);
+  assert(pthread_join(thread, NULL) == 0);
+  assert(!finished && received && received->copy_error == 0);
+  assert(strcmp(received->text, "* María opened a café.\n") == 0);
+  assert(received->corrections_count == 0 && !received->corrections);
+  release();
+  const MpFlutterSummarizerStreamView summary_done = {NULL, true};
+  MpFlutterSummarizerCallback(context, &summary_done, NULL);
+  assert(finished && received->copy_error == 0 && !received->text);
+  release();
+  MpFlutterSummarizerCallback(context, NULL, "summary error");
+  assert(finished && strcmp(received->error, "summary error") == 0);
+  release();
+  MpFlutterSummarizerCallback(context, NULL, NULL);
   assert(finished && received->copy_error == 2);
   release();
   MpFlutterTextStreamFree(context);
