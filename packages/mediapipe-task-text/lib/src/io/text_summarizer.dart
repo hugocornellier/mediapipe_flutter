@@ -1,3 +1,4 @@
+import '../../../capabilities.dart';
 import '../interface/text_summarizer_types.dart';
 import 'native_text_summarizer.dart';
 import 'text_task_worker.dart';
@@ -21,17 +22,22 @@ final class TextSummarizer {
   _worker;
 
   /// Load the official model without blocking the calling isolate.
-  static Future<TextSummarizer> create(TextSummarizerOptions options) async =>
-      TextSummarizer._(
-        options.delegate,
-        options.mode,
-        await TextTaskWorker.start(
-          name: 'TextSummarizer',
-          options: options,
-          create: NativeTextSummarizer.new,
-          exception: _exception,
-        ),
-      );
+  static Future<TextSummarizer> create(TextSummarizerOptions options) async {
+    final support = await queryTextTaskCapabilities(TextTask.summarizer);
+    if (support.unavailableReasons[options.delegate] case final reason?) {
+      throw TextSummarizerException(reason);
+    }
+    return TextSummarizer._(
+      options.delegate,
+      options.mode,
+      await TextTaskWorker.start(
+        name: 'TextSummarizer',
+        options: options,
+        create: NativeTextSummarizer.new,
+        exception: _exception,
+      ),
+    );
+  }
 
   /// Return Google's completed summary without rewriting its text.
   Future<TextSummarizerResult> summarize(String text) => _worker.run(text);

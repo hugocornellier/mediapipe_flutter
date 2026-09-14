@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:isolate';
 
+import '../../../capabilities.dart';
 import '../interface/interactive_segmenter_types.dart';
 import '../interface/vision_types.dart';
 import 'native_interactive_segmenter.dart';
@@ -30,6 +31,10 @@ final class InteractiveSegmenter {
   static Future<InteractiveSegmenter> create(
     InteractiveSegmenterOptions options,
   ) async {
+    final support = await queryInteractiveSegmenterCapabilities();
+    if (support.unavailableReasons[options.delegate] case final reason?) {
+      throw InteractiveSegmenterException(reason);
+    }
     final task = InteractiveSegmenter._(options.delegate);
     try {
       await Isolate.spawn(

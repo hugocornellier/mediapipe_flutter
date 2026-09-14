@@ -1,3 +1,4 @@
+import '../../../capabilities.dart';
 import '../interface/text_proofreader_types.dart';
 import 'native_text_proofreader.dart';
 import 'text_task_worker.dart';
@@ -19,16 +20,21 @@ final class TextProofreader {
   _worker;
 
   /// Load the official model off the calling isolate.
-  static Future<TextProofreader> create(TextProofreaderOptions options) async =>
-      TextProofreader._(
-        options.delegate,
-        await TextTaskWorker.start(
-          name: 'TextProofreader',
-          options: options,
-          create: NativeTextProofreader.new,
-          exception: _exception,
-        ),
-      );
+  static Future<TextProofreader> create(TextProofreaderOptions options) async {
+    final support = await queryTextTaskCapabilities(TextTask.proofreader);
+    if (support.unavailableReasons[options.delegate] case final reason?) {
+      throw TextProofreaderException(reason);
+    }
+    return TextProofreader._(
+      options.delegate,
+      await TextTaskWorker.start(
+        name: 'TextProofreader',
+        options: options,
+        create: NativeTextProofreader.new,
+        exception: _exception,
+      ),
+    );
+  }
 
   /// Correct text and return Google's completed text and granular edits.
   Future<TextProofreaderResult> proofread(String text) => _worker.run(text);
