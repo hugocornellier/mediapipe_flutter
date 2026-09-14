@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:example/keyboard_hider.dart';
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
@@ -21,7 +21,8 @@ class LanguageDetectionDemo extends StatefulWidget {
 class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
     with AutomaticKeepAliveClientMixin<LanguageDetectionDemo> {
   final TextEditingController _controller = TextEditingController();
-  final Completer<LanguageDetector> _completer = Completer<LanguageDetector>();
+  late final Future<LanguageDetector> _task;
+  String? _error;
   final results = <Widget>[];
   String? _isProcessing;
 
@@ -29,23 +30,38 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
   void initState() {
     super.initState();
     _controller.text = 'Quiero agua, por favor';
-    _initDetector();
+    _task = _initDetector();
+    unawaited(
+      _task.then<void>(
+        (_) {},
+        onError: (Object error, StackTrace _) {
+          if (mounted) setState(() => _error = error.toString());
+        },
+      ),
+    );
   }
 
-  Future<void> _initDetector() async {
-    if (widget.detector != null) {
-      return _completer.complete(widget.detector!);
-    }
-
-    ByteData? bytes = await DefaultAssetBundle.of(
-      context,
-    ).load('assets/language_detector.tflite');
-
-    final detector = LanguageDetector(
-      LanguageDetectorOptions.fromAssetBuffer(bytes.buffer.asUint8List()),
+  Future<LanguageDetector> _initDetector() async {
+    if (widget.detector != null) return widget.detector!;
+    final bytes = await rootBundle.load('assets/language_detector.tflite');
+    return LanguageDetector.create(
+      LanguageDetectorOptions.fromAssetBuffer(
+        bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+      ),
     );
-    _completer.complete(detector);
-    bytes = null;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    if (widget.detector == null) {
+      unawaited(
+        _task.then((task) => task.dispose()).catchError((Object error) {
+          debugPrint('Closing LanguageDetector: $error');
+        }),
+      );
+    }
+    super.dispose();
   }
 
   void _prepareForDetection() {
@@ -57,11 +73,17 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
 
   Future<void> _detect() async {
     _prepareForDetection();
-    _completer.future.then((detector) async {
-      final result = await detector.detect(_controller.text);
-      _showDetectionResults(result);
-      result.dispose();
-    });
+    try {
+      final result = await (await _task).detect(_isProcessing!);
+      if (mounted) _showDetectionResults(result);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          results.last = Text(error.toString());
+          _isProcessing = null;
+        });
+      }
+    }
   }
 
   void _showDetectionResults(LanguageDetectorResult result) {
@@ -131,6 +153,7 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
             child: Column(
               children: <Widget>[
                 TextField(controller: _controller),
+                if (_error != null) Text(_error!),
                 ...results.reversed,
               ],
             ),
@@ -138,9 +161,7 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _isProcessing != null && _controller.text != ''
-            ? null
-            : _detect,
+        onPressed: _isProcessing != null || _error != null ? null : _detect,
         child: const Icon(Icons.search),
       ),
     );

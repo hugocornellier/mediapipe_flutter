@@ -65,7 +65,7 @@ class Category extends BaseCategory {
     if (_pointer.isNullOrNullPointer) {
       throw Exception('Could not determine value for Category.categoryName');
     }
-    return _pointer!.ref.category_name.isNotNullPointer
+    return _pointer.ref.category_name.isNotNullPointer
         ? _pointer.ref.category_name.toDartString()
         : null;
   }
@@ -78,7 +78,7 @@ class Category extends BaseCategory {
     if (_pointer.isNullOrNullPointer) {
       throw Exception('Could not determine value for Category.displayName');
     }
-    return _pointer!.ref.display_name.isNotNullPointer
+    return _pointer.ref.display_name.isNotNullPointer
         ? _pointer.ref.display_name.toDartString()
         : null;
   }
@@ -150,7 +150,7 @@ class Classifications extends BaseClassifications {
     if (_pointer.isNullOrNullPointer) {
       throw Exception('Could not determine value for Classifications.headName');
     }
-    return _pointer!.ref.head_name.isNotNullPointer
+    return _pointer.ref.head_name.isNotNullPointer
         ? _pointer.ref.head_name.toDartString()
         : null;
   }
@@ -227,7 +227,7 @@ class Embedding extends BaseEmbedding {
     if (_pointer.isNullOrNullPointer) {
       throw Exception('Could not determine value for Embedding.headName');
     }
-    return _pointer!.ref.head_name.isNotNullPointer
+    return _pointer.ref.head_name.isNotNullPointer
         ? _pointer.ref.head_name.toDartString()
         : null;
   }

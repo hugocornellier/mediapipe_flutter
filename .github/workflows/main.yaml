@@ -28,16 +28,24 @@ jobs:
           cd packages/mediapipe-task-text
           dart pub get
           cd ../..
+          make models_text
           make models_embedding
           make models_proofreader
           make models_summarizer
           make test_text_stream_bridge
+          make test_text
       - name: Test official references, lifecycle and the macOS UI
         working-directory: packages/mediapipe-task-text/example_embedding
         run: |
           flutter pub get
           dart test --reporter expanded
           flutter test -d macos integration_test/demo_test.dart --reporter expanded
+      - name: Test the migrated BERT, USE and language demo
+        working-directory: packages/mediapipe-task-text/example
+        run: |
+          flutter pub get
+          flutter test --reporter expanded
+          flutter test -d macos integration_test/text_tasks_test.dart --reporter expanded
       - uses: actions/upload-artifact@v4
         if: always()
         with:

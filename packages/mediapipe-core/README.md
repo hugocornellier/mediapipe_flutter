@@ -1,8 +1,11 @@
 # MediaPipe Core for Flutter
 
-This package is now `mediapipe_flutter_core`, part of the private
-[mediapipe_flutter](../../README.md) development fork. The following documentation
-describes the inherited upstream API; native SDK modernization is still pending.
+`mediapipe_flutter_core` is part of the public
+[mediapipe_flutter](../../README.md) development fork. It owns the optional,
+verified MediaPipe 1.0.1 runtime shared by all six text tasks and MagicTouch on
+macOS 14+ arm64. Apps enable it with
+`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`.
+Its inherited container types also remain available for compatibility.
 
 
 A Flutter plugin to use the MediaPipe Core API, which enables multiple Mediapipe tasks.

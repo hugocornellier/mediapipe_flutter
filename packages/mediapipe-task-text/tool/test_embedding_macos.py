@@ -2,7 +2,7 @@
 
 Copies only publishable Dart packages: no native builds or model cache. Downloads
 the pinned models and runtime, then compares official outputs while face tasks,
-MagicTouch, EmbeddingGemma, Proofreader and Summarizer coexist. Bazel/CMake/Python are blocked
+MagicTouch and all six text tasks coexist. Bazel/CMake/Python are blocked
 in builds. Xcode's Clang compiles only the small callback-copy adapter.
 """
 import json
@@ -77,18 +77,23 @@ hooks:
     shutil.copyfile(PACKAGE / 'test/fixtures/embedding_gemma/official_reference.json', assets / 'embedding_reference.json')
     shutil.copyfile(PACKAGE / 'test/fixtures/proofreader/official_reference.json', assets / 'proofreader_reference.json')
     shutil.copyfile(PACKAGE / 'test/fixtures/summarizer/official_reference.json', assets / 'summarizer_reference.json')
+    shutil.copyfile(PACKAGE / 'test/fixtures/classic_text/official_reference.json', assets / 'classic_text_reference.json')
     vision = REPO / 'packages/mediapipe-task-vision'
     for name in ('animals-299x150.rgb', 'raw-dog.f32.gz'):
         shutil.copyfile(vision / 'test/fixtures/interactive_segmentation' / name, assets / name)
     shutil.copyfile(vision / 'test/fixtures/face_detection/landmark-ex1.jpg', assets / 'landmark-ex1.jpg')
     shutil.copyfile(PACKAGE / 'tool/flutter_embedding_validation.dart.template', app / 'lib/validation.dart')
     shutil.copyfile(PACKAGE / 'tool/flutter_summarizer_validation.dart.template', app / 'lib/summarizer_validation.dart')
+    shutil.copyfile(PACKAGE / 'test/support/classic_text_validation.dart', app / 'lib/classic_text_validation.dart')
     (app / 'bin').mkdir()
     (app / 'bin/download_models.dart').write_text('''import 'dart:io';
 import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:mediapipe_flutter_text/models.dart';
 import 'package:mediapipe_flutter_vision/models.dart';
 Future<void> main() async {
+  await downloadVerified(bertClassifierModel, File('assets/bert_classifier.tflite'));
+  await downloadVerified(universalSentenceEncoderModel, File('assets/universal_sentence_encoder.tflite'));
+  await downloadVerified(languageDetectorModel, File('assets/language_detector.tflite'));
   await downloadVerified(embeddingGemmaModel, File('assets/embedding_gemma.task'));
   await downloadVerified(proofreaderModel, File('assets/proofread_quant_200m.litertlm'));
   await downloadVerified(summarizerModel, File('assets/summarization_quant_200m_2modes.litertlm'));
@@ -124,6 +129,8 @@ void main() {
     expect(report['reference_cases'], 17);
     expect((report['proofreader'] as Map)['reference_cases'], 9);
     expect((report['summarizer'] as Map)['reference_cases'], 10);
+    expect((report['classic_text'] as Map)['reference_cases'], 26);
+    expect(report['coexisting_tasks'], 9);
     print('EMBEDDING_DEBUG_REPORT ' + jsonEncode(report));
   });
 }

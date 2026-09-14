@@ -38,7 +38,7 @@ def main():
     assert hashlib.sha256(library.read_bytes()).hexdigest() == LIBRARY_SHA256
     report = {'runtime': 'mediapipe==1.0.1', 'delegate': 'CPU',
               'library_sha256': LIBRARY_SHA256, 'macos': platform.mac_ver()[0],
-              'models': {}, 'cases': [], 'creation_errors': []}
+              'models': {}, 'cases': [], 'creation_errors': [], 'lifecycle_sequences': {}}
     for name, (file, sha) in MODELS.items():
         model = PACKAGE / 'example/assets' / file
         assert hashlib.sha256(model.read_bytes()).hexdigest() == sha
@@ -78,6 +78,13 @@ def main():
         ]),
     ]
     embeddings = {}
+    def result_json(result, task_name):
+        if task_name != 'embedder':
+            return dataclasses.asdict(result)
+        return {'timestamp_ms': result.timestamp_ms, 'embeddings': [
+            {'values': e.embedding.tolist(), 'quantized': e.embedding.dtype.name == 'uint8',
+             'head_index': e.head_index, 'head_name': e.head_name} for e in result.embeddings]}
+
     for task_name, options_class, task_class, method, cases in specs:
         model = PACKAGE / 'example/assets' / MODELS[task_name][0]
         for name, text, config in cases:
@@ -86,14 +93,15 @@ def main():
                 result = getattr(task, method)(text)
                 if task_name == 'embedder':
                     embeddings[name] = result.embeddings[0]
-                    value = {'timestamp_ms': result.timestamp_ms, 'embeddings': [
-                        {'values': e.embedding.tolist(), 'quantized': e.embedding.dtype.name == 'uint8',
-                         'head_index': e.head_index, 'head_name': e.head_name} for e in result.embeddings]}
-                else:
-                    value = dataclasses.asdict(result)
+                value = result_json(result, task_name)
                 report['cases'].append({'task': task_name, 'name': name, 'input': text,
                                         'options': config, 'result': value})
                 print(task_name, name, flush=True)
+        with task_class.create_from_options(options_class(
+                mp.tasks.BaseOptions(model_asset_path=str(model)))) as task:
+            report['lifecycle_sequences'][task_name] = [
+                {'input': text, 'result': result_json(getattr(task, method)(text), task_name)}
+                for text in ['Hello, world!', 'Quiero agua, por favor.'] * 2]
         if task_name != 'embedder':
             for config in ({'max_results': 0}, {'category_allowlist': ['en'], 'category_denylist': ['fr']}):
                 try:

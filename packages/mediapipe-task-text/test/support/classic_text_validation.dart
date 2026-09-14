@@ -197,6 +197,44 @@ Future<Map<String, Object>> validateClassicText(
     if (!rejected) throw StateError('Invalid options were accepted.');
   }
 
+  for (final entry in models.entries) {
+    final (run, dispose) = await _create(
+      entry.key,
+      BaseOptions.path(entry.value),
+      {},
+    );
+    try {
+      final sequence = reference['lifecycle_sequences'][entry.key] as List;
+      for (var i = 0; i < 2; i++) {
+        compare(
+          _json(await run(sequence[i]['input'])),
+          sequence[i]['result'],
+          '${entry.key} serial[$i]',
+        );
+      }
+      final pending = [for (final item in sequence.skip(2)) run(item['input'])];
+      final closing = dispose();
+      var rejected = false;
+      try {
+        await run('Too late');
+      } on StateError {
+        rejected = true;
+      }
+      if (!rejected) throw StateError('Accepted a request during disposal');
+      final results = await Future.wait(pending);
+      await closing;
+      for (var i = 0; i < results.length; i++) {
+        compare(
+          _json(results[i]),
+          sequence[i + 2]['result'],
+          '${entry.key} queue[$i]',
+        );
+      }
+    } finally {
+      await dispose();
+    }
+  }
+
   return {
     'reference_cases': cases.length,
     'model_sources': ['path', 'bytes'],
@@ -205,5 +243,6 @@ Future<Map<String, Object>> validateClassicText(
     'cosine_comparisons': (reference['similarities'] as List).length,
     'official_creation_errors': (reference['creation_errors'] as List).length,
     'results_owned_after_disposal': 'passed',
+    'queue_and_dispose': 'passed',
   };
 }
