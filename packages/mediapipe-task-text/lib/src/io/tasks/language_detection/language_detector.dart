@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io' as io;
 import 'dart:isolate';
+import '../../legacy_runtime.dart';
 import 'package:async/async.dart';
 import 'package:logging/logging.dart';
 import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
@@ -17,6 +18,7 @@ final _log = Logger('LanguageDetector');
 class LanguageDetector extends BaseLanguageDetector {
   /// Generative constructor.
   LanguageDetector(this._options) : _readyCompleter = Completer<void>() {
+    requireLegacyTextRuntime();
     _createIsolate(_options).then((results) {
       _events = results.$1;
       _sendPort = results.$2;

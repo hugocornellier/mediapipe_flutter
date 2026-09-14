@@ -5,6 +5,8 @@
 /// Package containing MediaPipe's text-specific tasks.
 library;
 
+export 'embedding_gemma.dart';
+
 export 'universal_mediapipe_flutter_text.dart'
     if (dart.library.html) 'src/web/mediapipe_flutter_text.dart'
     if (dart.library.io) 'src/io/mediapipe_flutter_text.dart';

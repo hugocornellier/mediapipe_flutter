@@ -29,11 +29,12 @@ def verify(root, local_urls=None):
         target.mkdir(parents=True)
         shutil.copyfile(source / "pubspec.yaml", target / "pubspec.yaml")
         shutil.copytree(source / "lib", target / "lib")
+        if (source / "hook").is_dir():
+            shutil.copytree(source / "hook", target / "hook")
     vision = packages / PACKAGE.name
-    shutil.copytree(PACKAGE / "hook", vision / "hook")
     shutil.copyfile(PACKAGE / "sdk_downloads.dart", vision / "sdk_downloads.dart")
     if local_urls:
-        pins = vision / "sdk_downloads.dart"
+        pins = packages / "mediapipe-core/lib/src/native_assets/tasks_runtime.dart"
         def replace_url(match):
             url = "".join(re.findall(r"'([^']*)'", match.group()))
             if url.endswith("/" + NAME):
@@ -76,6 +77,8 @@ flutter:
     - assets/
 hooks:
   user_defines:
+    mediapipe_flutter_core:
+      tasks_runtime: true
     mediapipe_flutter_vision:
       tasks: [interactive_segmenter]
       prebuilt: true

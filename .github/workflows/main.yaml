@@ -10,6 +10,40 @@ on:
   workflow_dispatch:
 
 jobs:
+  embedding-consumer:
+    name: EmbeddingGemma / fresh macOS consumer
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - name: Verify public downloads and debug/release task coexistence
+        run: python3 -B packages/mediapipe-task-text/tool/test_embedding_macos.py
+      - name: Prepare the sentence comparison demo
+        run: |
+          cd packages/mediapipe-task-text
+          dart pub get
+          cd ../..
+          make models_embedding
+      - name: Test official references, lifecycle and the macOS UI
+        working-directory: packages/mediapipe-task-text/example_embedding
+        run: |
+          flutter pub get
+          dart test --reporter expanded
+          flutter test -d macos integration_test/demo_test.dart --reporter expanded
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: embedding-gemma-validation
+          path: |
+            build/codex-tmp/embedding-consumer-*/report.json
+            build/codex-tmp/embedding-consumer-*/*.log
+          if-no-files-found: error
+
   native-tasks:
     name: Stable Flutter / macOS arm64
     runs-on: macos-15

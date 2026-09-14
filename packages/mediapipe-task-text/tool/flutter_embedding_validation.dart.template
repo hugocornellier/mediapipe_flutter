@@ -1,0 +1,137 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/services.dart';
+import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
+import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+
+Future<Uint8List> _asset(String name) async {
+  final data = await rootBundle.load('assets/$name');
+  return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+}
+
+String _file(String name) {
+  final path = File.fromUri(File(Platform.resolvedExecutable).parent.parent.uri.resolve(
+    'Frameworks/App.framework/Resources/flutter_assets/assets/$name'));
+  if (!path.existsSync()) throw StateError('Missing bundled asset $name');
+  return path.path;
+}
+
+TextFormatContext? _context(Map<String, dynamic> entry) {
+  final context = entry['context'] as Map<String, dynamic>?;
+  if (context == null) return null;
+  const names = ['RETRIEVAL_QUERY', 'RETRIEVAL_DOCUMENT', 'SEMANTIC_SIMILARITY',
+    'CLASSIFICATION', 'CLUSTERING', 'QUESTION_ANSWERING', 'FACT_CHECKING', 'CODE_RETRIEVAL'];
+  return TextFormatContext(
+    taskType: EmbeddingTaskType.values[names.indexOf(context['task_type'])],
+    title: context['title'],
+    role: context['role'] == 'DOCUMENT' ? TextRole.document : TextRole.query);
+}
+
+void _check(bool condition, String message) {
+  if (!condition) throw StateError(message);
+}
+
+Future<Map<String, Object>> validateEmbedding() async {
+  final reference = jsonDecode(utf8.decode(await _asset('embedding_reference.json'))) as Map<String, dynamic>;
+  var maximumError = 0.0;
+  var count = 0;
+  var uiTicks = 0;
+  final timings = <double>[];
+  final timer = Timer.periodic(const Duration(milliseconds: 10), (_) { uiTicks++; });
+  final model = _file('embedding_gemma.task');
+  try {
+    // These inherited constructors must fail before launching a legacy worker.
+    for (final create in [
+      () => TextClassifier(TextClassifierOptions.fromAssetPath(model)),
+      () => TextEmbedder(TextEmbedderOptions.fromAssetPath(model)),
+      () => LanguageDetector(LanguageDetectorOptions.fromAssetPath(model)),
+    ]) {
+      var rejected = false;
+      try { create(); } on UnsupportedError { rejected = true; }
+      _check(rejected, 'Legacy runtime was not rejected in a modern app.');
+    }
+    for (final quantize in [false, true]) {
+      final task = await EmbeddingGemma.create(EmbeddingGemmaOptions(
+        modelPath: model, quantize: quantize, l2Normalize: quantize));
+      try {
+        for (final dynamic raw in reference['cases'] as List) {
+          final entry = raw as Map<String, dynamic>;
+          if (entry['quantize'] != quantize) continue;
+          final watch = Stopwatch()..start();
+          final result = await task.embed(entry['text'], context: _context(entry));
+          timings.add(watch.elapsedMicroseconds / 1000);
+          final embedding = result.embeddings.single;
+          final expected = entry['embeddings'][0] as Map<String, dynamic>;
+          _check(embedding.dimensions == 768 && result.timestampMs == null, 'Wrong output dimensions/timestamp');
+          _check(embedding.headIndex == expected['head_index'] && embedding.headName == expected['head_name'], 'Wrong head metadata');
+          final values = expected['values'] as List;
+          for (var i = 0; i < values.length; i++) {
+            final actual = quantize ? embedding.quantizedValues![i] : embedding.floatValues![i];
+            final error = (actual - (values[i] as num)).abs().toDouble();
+            _check(error.isFinite && error <= (quantize ? 0 : 1e-6), '${entry['name']} mismatch at $i: $error');
+            if (error > maximumError) maximumError = error;
+          }
+          count++;
+        }
+      } finally { await task.dispose(); }
+    }
+  } finally { timer.cancel(); }
+  _check(count == 17, 'Missing official reference cases.');
+  _check(uiTicks > 10, 'Inference blocked the calling isolate.');
+
+  // Keep all tasks alive together; text and MagicTouch must resolve to one dylib.
+  final embedding = await EmbeddingGemma.create(EmbeddingGemmaOptions(modelPath: model));
+  final segmenter = await InteractiveSegmenter.create(InteractiveSegmenterOptions(modelPath: _file('interactive_segmentation.task')));
+  final detector = await FaceDetector.create(FaceDetectorOptions(modelPath: _file('blaze_face_short_range.tflite')));
+  final mesh = await FaceLandmarker.create(FaceLandmarkerOptions(modelPath: _file('face_landmarker.task')));
+  var maskError = 0.0;
+  var detections = 0;
+  var landmarks = 0;
+  try {
+    await segmenter.setImage(VisionImage.fromPixels(pixels: await _asset('animals-299x150.rgb'), width: 299, height: 150, format: VisionPixelFormat.rgb));
+    final maskPending = segmenter.segment([SegmentationStroke(
+      brushMode: SegmentationBrushMode.positive, points: [SegmentationPoint(x: .66, y: .55)])]);
+    final textPending = embedding.embed('A cat is sleeping on the sofa.');
+    final portrait = VisionImage.fromFile(_file('landmark-ex1.jpg'));
+    detections = (await detector.detectImage(portrait)).detections.length;
+    landmarks = (await mesh.detectImage(portrait)).faceLandmarks.single.length;
+    _check(detections == 1 && landmarks == 478, 'Face tasks failed during coexistence.');
+    _check((await textPending).embeddings.single.dimensions == 768, 'Text failed during coexistence.');
+    final mask = await maskPending;
+    final expected = Uint8List.fromList(gzip.decode(await _asset('raw-dog.f32.gz'))).buffer.asFloat32List();
+    _check(mask.confidence.length == expected.length, 'Wrong mask dimensions.');
+    for (var i = 0; i < expected.length; i++) {
+      final error = (mask.confidence[i] - expected[i]).abs();
+      _check(error.isFinite && error <= 1e-6, 'MagicTouch reference mismatch at $i');
+      if (error > maskError) maskError = error;
+    }
+    // Submit concurrent requests then close; copied results remain valid.
+    final pending = [for (var i = 0; i < 3; i++) embedding.embed('A cat is sleeping on the sofa.')];
+    final closing = embedding.dispose();
+    final results = await Future.wait(pending);
+    await closing;
+    _check(TextEmbedding.cosineSimilarity(results.first.embeddings.single, results.last.embeddings.single) > .999999, 'Queue/result ownership failed.');
+  } finally {
+    await embedding.dispose();
+    await segmenter.dispose();
+    await detector.dispose();
+    await mesh.dispose();
+  }
+  timings.sort();
+  return {
+    'runtime': 'mediapipe==1.0.1', 'delegate': 'cpu',
+    'reference_cases': count, 'dimensions': 768,
+    'maximum_embedding_error': maximumError,
+    'maximum_segmentation_error': maskError,
+    'coexisting_face_detections': detections, 'coexisting_face_landmarks': landmarks,
+    'ui_timer_ticks': uiTicks, 'legacy_api_rejection': 'passed',
+    'model_sha256': reference['model_sha256'] as String,
+    'samples_ms': timings, 'p50_ms': timings[timings.length ~/ 2],
+    'p95_ms': timings[(timings.length * .95).ceil() - 1],
+    'timing_scope': 'Public async embed, including native formatting/tokenization/inference and owned output copy',
+    'os': Platform.operatingSystemVersion, 'dart': Platform.version,
+  };
+}

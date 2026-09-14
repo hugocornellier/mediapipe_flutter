@@ -1,0 +1,12 @@
+import 'dart:io';
+
+import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_flutter_text/models.dart';
+
+Future<void> main(List<String> args) async {
+  final target = File(
+    args.isEmpty ? 'models/embedding_gemma.task' : args.single,
+  );
+  await downloadVerified(embeddingGemmaModel, target);
+  stdout.writeln('Verified ${target.path}');
+}

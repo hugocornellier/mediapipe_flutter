@@ -19,6 +19,12 @@ It requires macOS 14 or newer. See [the segmenter guide](tool/INTERACTIVE_SEGMEN
 for the API, model, packaging and validation details. Run `make example_segmenter`
 from the repository root for the macOS image editor.
 
+MagicTouch apps must also enable
+`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`. Core bundles the
+official 1.0.1 library once, shared with EmbeddingGemma when both tasks are used.
+Existing segmenter apps should add this setting and run `flutter clean` after
+updating, so an earlier task-owned framework is removed from the app bundle.
+
 The task uses the unmodified MediaPipe v1.0.0 Face Detector graph and its official
 BlazeFace short-range float16 model, version 1. MediaPipe performs image
 preprocessing, model inference, anchor decoding, suppression, and coordinate
