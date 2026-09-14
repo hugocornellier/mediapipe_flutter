@@ -11,7 +11,7 @@ on:
 
 jobs:
   embedding-consumer:
-    name: EmbeddingGemma / fresh macOS consumer
+    name: EmbeddingGemma + Proofreader / fresh macOS consumer
     runs-on: macos-15
     timeout-minutes: 25
     steps:
@@ -23,12 +23,14 @@ jobs:
           cache: true
       - name: Verify public downloads and debug/release task coexistence
         run: python3 -B packages/mediapipe-task-text/tool/test_embedding_macos.py
-      - name: Prepare the sentence comparison demo
+      - name: Prepare the text demos and check callback ownership
         run: |
           cd packages/mediapipe-task-text
           dart pub get
           cd ../..
           make models_embedding
+          make models_proofreader
+          make test_text_stream_bridge
       - name: Test official references, lifecycle and the macOS UI
         working-directory: packages/mediapipe-task-text/example_embedding
         run: |

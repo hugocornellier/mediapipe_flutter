@@ -1,5 +1,5 @@
 name: embedding_gemma_demo
-description: Official EmbeddingGemma sentence similarity on macOS CPU.
+description: Official EmbeddingGemma and Proofreader tasks on macOS CPU.
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -25,6 +25,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/embedding_gemma.task
+    - assets/proofread_quant_200m.litertlm
 
 hooks:
   user_defines:

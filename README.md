@@ -21,6 +21,11 @@ formatting modes and optional output quantization. Run `make example_embedding`
 for sentence comparison. Fresh Flutter debug/release integration tests compare
 all 17 cases against official Python outputs and verify coexistence with vision.
 
+**Proofreader 200M** runs the official version-1 `.litertlm` model on the same
+macOS CPU runtime. It returns corrected text and Google's ordered edits, with
+both completed and streaming APIs. The text demo includes a Proofreader tab;
+nine reference inputs match Google's completed and streaming results exactly.
+
 The official MediaPipe v1.0.0 Face Detector and Face Landmarker run on macOS arm64
 in CPU and Metal GPU IMAGE/VIDEO modes, with tests against Google's Python reference outputs. A live
 camera example uses `camera_desktop`, with the full 478-point mesh and irises. Native builds use
@@ -44,7 +49,7 @@ arm64 iOS simulator CPU target; simulator archives are not yet published.
 | Package | Directory | Status |
 | --- | --- | --- |
 | `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
-| `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Modern EmbeddingGemma CPU + three legacy text tasks validated on macOS arm64; choose one runtime generation per app |
+| `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Modern EmbeddingGemma + Proofreader CPU and three legacy text tasks validated on macOS arm64; choose one runtime generation per app |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
 | `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Face tasks: macOS CPU/Metal + local iOS simulator CPU; optional macOS CPU MagicTouch editor |
 | Audio | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Placeholder, no Dart package |
@@ -66,7 +71,7 @@ Model files remain separate. Applications bundle or download only the models the
 need; runtime hooks do not fetch models. `make models` downloads the three pinned
 text models, BlazeFace short-range, and the complete Face Landmarker float16
 version-1 bundle (FaceMesh V2), plus the MagicTouch int8 version-1 task bundle
-and EmbeddingGemma 300M mixed int4/int8 version-1 bundle.
+and EmbeddingGemma 300M mixed int4/int8 and Proofreader 200M version-1 models.
 
 Legacy text/GenAI native libraries remain the inherited April/May 2024 Google-hosted builds.
 Their URLs and hashes are checked in, and FFI bindings are regenerated from the
@@ -85,12 +90,14 @@ requires no Bazel, CMake, Ninja, or GitHub credentials. The Dart/Flutter source
 repository is public; no packages from this fork are published to pub.dev yet.
 
 Interactive Segmenter is **opt-in** with `tasks: [interactive_segmenter]`.
-Both it and EmbeddingGemma require the app setting
+It, EmbeddingGemma and Proofreader require the app setting
 `hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`. Core owns one
 shared native asset: a 32.6 MB download / 100.9 MB library. Its existing immutable
 release retains the `interactive-segmenter-v1.0.1-1` name. Separate models are
-30.5 MB for MagicTouch and 183.8 MB for EmbeddingGemma. Face-only apps do not
-download or bundle this runtime.
+30.5 MB for MagicTouch, 183.8 MB for EmbeddingGemma and 117.6 MB for Proofreader.
+Face-only apps do not download or bundle this runtime. Modern text builds also
+compile a small C adapter with Xcode's Clang to copy native streaming callbacks
+before their buffers expire; Google's inference library remains unchanged.
 
 Enabling the modern runtime automatically omits the old text library. Loading
 both generations caused native registration collisions, so combining them is
@@ -129,7 +136,8 @@ Other targets:
 - `make example_vision`: download the model and launch the macOS live camera demo.
 - `make build_vision_camera`: build the camera demo in release mode, without opening a camera.
 - `make example_segmenter`: prepare the MagicTouch assets and open the macOS image editor.
-- `make example_embedding`: prepare EmbeddingGemma and open sentence comparison.
+- `make example_embedding`: prepare the models and open sentence comparison / proofreading.
+- `make test_text_stream_bridge`: check callback ownership under AddressSanitizer.
 - `make test_embedding_macos`: download models/runtimes into a fresh consumer and
   verify official outputs, shared bundling and task coexistence in debug/release.
 - `make test_segmenter_prebuilt`: validate an isolated public-download consumer
@@ -158,7 +166,7 @@ are deferred with its runtime recovery.
   cover Dart state, not LLM inference. Current `.litertlm` support is not implied.
 - Migrate the legacy text APIs to the modern runtime before mixing them with
   modern tasks. GenAI coexistence remains unvalidated.
-- Add the official Proofreader and Summarizer pipelines; their APIs are not yet exposed.
+- Add the official Summarizer pipeline; its API is not yet exposed.
 - Extend the pinned native build/release process to additional tasks and platforms.
 
 ## Upstream and license

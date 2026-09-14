@@ -1,5 +1,6 @@
 # Miscellaneous
 /assets/*.task
+/assets/*.litertlm
 *.class
 *.log
 *.pyc

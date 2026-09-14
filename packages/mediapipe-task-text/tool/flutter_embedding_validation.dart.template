@@ -35,6 +35,7 @@ void _check(bool condition, String message) {
 }
 
 Future<Map<String, Object>> validateEmbedding() async {
+  final proofreading = await _validateProofreader();
   final reference = jsonDecode(utf8.decode(await _asset('embedding_reference.json'))) as Map<String, dynamic>;
   var maximumError = 0.0;
   var count = 0;
@@ -87,6 +88,7 @@ Future<Map<String, Object>> validateEmbedding() async {
   final segmenter = await InteractiveSegmenter.create(InteractiveSegmenterOptions(modelPath: _file('interactive_segmentation.task')));
   final detector = await FaceDetector.create(FaceDetectorOptions(modelPath: _file('blaze_face_short_range.tflite')));
   final mesh = await FaceLandmarker.create(FaceLandmarkerOptions(modelPath: _file('face_landmarker.task')));
+  final proofreader = await TextProofreader.create(TextProofreaderOptions(modelPath: _file('proofread_quant_200m.litertlm')));
   var maskError = 0.0;
   var detections = 0;
   var landmarks = 0;
@@ -95,11 +97,13 @@ Future<Map<String, Object>> validateEmbedding() async {
     final maskPending = segmenter.segment([SegmentationStroke(
       brushMode: SegmentationBrushMode.positive, points: [SegmentationPoint(x: .66, y: .55)])]);
     final textPending = embedding.embed('A cat is sleeping on the sofa.');
+    final proofreadingPending = proofreader.proofreadStream('She go to the store yesterday and buyed some apples.').toList();
     final portrait = VisionImage.fromFile(_file('landmark-ex1.jpg'));
     detections = (await detector.detectImage(portrait)).detections.length;
     landmarks = (await mesh.detectImage(portrait)).faceLandmarks.single.length;
     _check(detections == 1 && landmarks == 478, 'Face tasks failed during coexistence.');
     _check((await textPending).embeddings.single.dimensions == 768, 'Text failed during coexistence.');
+    _check((await proofreadingPending).map((e) => e.chunk ?? '').join() == 'She went to the store yesterday and bought some apples.', 'Proofreader failed during coexistence.');
     final mask = await maskPending;
     final expected = Uint8List.fromList(gzip.decode(await _asset('raw-dog.f32.gz'))).buffer.asFloat32List();
     _check(mask.confidence.length == expected.length, 'Wrong mask dimensions.');
@@ -119,10 +123,12 @@ Future<Map<String, Object>> validateEmbedding() async {
     await segmenter.dispose();
     await detector.dispose();
     await mesh.dispose();
+    await proofreader.dispose();
   }
   timings.sort();
   return {
     'runtime': 'mediapipe==1.0.1', 'delegate': 'cpu',
+    'proofreader': proofreading,
     'reference_cases': count, 'dimensions': 768,
     'maximum_embedding_error': maximumError,
     'maximum_segmentation_error': maskError,
@@ -133,5 +139,74 @@ Future<Map<String, Object>> validateEmbedding() async {
     'p95_ms': timings[(timings.length * .95).ceil() - 1],
     'timing_scope': 'Public async embed, including native formatting/tokenization/inference and owned output copy',
     'os': Platform.operatingSystemVersion, 'dart': Platform.version,
+  };
+}
+
+List<Map<String, String>> _edits(List<ProofreadingCorrection> corrections) => [
+  for (final edit in corrections) {'type': edit.type.name, 'text': edit.text},
+];
+
+Future<Map<String, Object>> _validateProofreader() async {
+  final reference = jsonDecode(utf8.decode(await _asset('proofreader_reference.json'))) as Map<String, dynamic>;
+  final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
+  final syncTimes = <double>[];
+  final streamTimes = <double>[];
+  final firstChunkTimes = <double>[];
+  var count = 0;
+  var ticks = 0;
+  final timer = Timer.periodic(const Duration(milliseconds: 10), (_) { ticks++; });
+  try {
+    for (final budget in [null, 64]) {
+      final task = await TextProofreader.create(TextProofreaderOptions(
+        modelPath: _file('proofread_quant_200m.litertlm'), maxNumTokens: budget));
+      try {
+        for (final entry in cases.where((e) => e['max_num_tokens'] == budget)) {
+          final watch = Stopwatch()..start();
+          final result = await task.proofread(entry['input']);
+          syncTimes.add(watch.elapsedMicroseconds / 1000);
+          _check(result.proofreadText == entry['result']['text'], '${entry['name']}: completed text mismatch');
+          _check(jsonEncode(_edits(result.corrections)) == jsonEncode(entry['result']['corrections']), '${entry['name']}: completed edits mismatch');
+          watch.reset();
+          final updates = <TextProofreaderUpdate>[];
+          await for (final update in task.proofreadStream(entry['input'])) {
+            if (updates.isEmpty) firstChunkTimes.add(watch.elapsedMicroseconds / 1000);
+            updates.add(update);
+          }
+          streamTimes.add(watch.elapsedMicroseconds / 1000);
+          _check(updates.where((e) => e.done).length == 1 && updates.last.done, 'Missing/duplicate terminal update');
+          _check(updates.map((e) => e.chunk ?? '').join() == result.proofreadText, '${entry['name']}: stream text mismatch');
+          _check(jsonEncode(_edits(updates.last.corrections)) == jsonEncode(entry['result']['corrections']), '${entry['name']}: stream edits mismatch');
+          count++;
+        }
+        if (budget == null) {
+          // Cancellation waits for native completion, then the same task works.
+          final first = Completer<void>();
+          final subscription = task.proofreadStream(cases[6]['input']).listen((_) {
+            if (!first.isCompleted) first.complete();
+          });
+          await first.future;
+          final cancelling = subscription.cancel();
+          final result = task.proofread(cases[0]['input']);
+          final stream = task.proofreadStream(cases[1]['input']).toList();
+          final closing = task.dispose();
+          await cancelling;
+          final owned = await result;
+          final ownedStream = await stream;
+          await closing;
+          _check(owned.proofreadText == cases[0]['result']['text'], 'Queued result lost during disposal');
+          _check(ownedStream.map((e) => e.chunk ?? '').join() == cases[1]['result']['text'], 'Queued stream lost during disposal');
+          _check(jsonEncode(_edits(owned.corrections)) == jsonEncode(cases[0]['result']['corrections']), 'Result not owned after disposal');
+        }
+      } finally { await task.dispose(); }
+    }
+  } finally { timer.cancel(); }
+  _check(count == 9 && ticks > 10, 'Missing cases or caller isolate blocked');
+  return {
+    'reference_cases': count, 'completed_text_and_edits': 'exact match',
+    'streamed_text_and_final_edits': 'exact match',
+    'cancel_queue_dispose': 'passed', 'ui_timer_ticks': ticks,
+    'model_sha256': reference['model_sha256'] as String,
+    'sync_ms': syncTimes, 'stream_ms': streamTimes, 'first_update_ms': firstChunkTimes,
+    'timing_scope': 'Public async API including native inference and owned copies; nine functional reference cases, not a benchmark',
   };
 }

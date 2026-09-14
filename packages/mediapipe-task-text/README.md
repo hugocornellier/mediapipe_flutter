@@ -1,6 +1,6 @@
 # MediaPipe Text for Flutter
 
-`mediapipe_flutter_text` provides text classification, embedding, and language
+`mediapipe_flutter_text` provides proofreading, text classification, embedding, and language
 detection through MediaPipe's native task pipelines. It is part of the public
 [mediapipe_flutter](../../README.md) fork and is not published to pub.dev.
 
@@ -16,7 +16,7 @@ those targets have not been revalidated. iOS simulators, Windows, Linux, and web
 have no task runtime here.
 
 The existing `TextClassifier`, `TextEmbedder` (USE), and `LanguageDetector` APIs
-use pinned 2024 upstream builds. **EmbeddingGemma** uses the official 1.0.1 runtime
+use pinned 2024 upstream builds. **EmbeddingGemma and Proofreader** use the official 1.0.1 runtime
 on macOS arm64 CPU, macOS 14+. The runtime generations are mutually exclusive in
 one app: native C++/Objective-C collisions were observed when loading both.
 Selecting the modern runtime automatically omits the legacy library; inherited
@@ -39,6 +39,8 @@ hooks:
 ```
 
 The build hook downloads and verifies the public native archive automatically.
+It also compiles a small callback-copy adapter with Xcode's Clang. No MediaPipe
+source build, Bazel, CMake or Python installation is needed by consumers.
 MagicTouch uses this same native asset, bundled once even when both packages are
 used. Face-only apps do not download it. The immutable archive retains its
 historical `interactive-segmenter-v1.0.1-1` release name; it contains Google's full
@@ -89,18 +91,79 @@ From the repository root:
 
 ```sh
 make models_embedding
+make models_proofreader
 cd packages/mediapipe-task-text/example_embedding
 flutter pub get
 dart test --reporter expanded
 flutter test -d macos integration_test/demo_test.dart --reporter expanded
 ```
 
-`make example_embedding` launches the sentence comparison demo.
+`make example_embedding` launches the sentence comparison and proofreading demo.
 `make test_embedding_macos` creates an isolated consumer, downloads all selected
 models/runtimes, and checks official embeddings plus simultaneous face/mesh and
 MagicTouch inference in debug and release. Bazel, CMake, Ninja and Python are
 blocked during consumer builds. CI runs this validation and publishes its logs.
-Proofreader and Summarizer are not implemented yet.
+
+## Proofreader 200M
+
+`TextProofreader` runs Google's complete official pipeline, including model
+formatting, tokenization, generation and the ordered correction segments from
+Google's diff. It uses the same runtime opt-in above on macOS arm64 CPU, macOS
+14+. GPU is rejected explicitly. The [official API guide](https://developers.google.com/edge/mediapipe/solutions/text/text_proofreader/python)
+describes the upstream task.
+
+Download the pinned 117.6 MB version-1 `.litertlm` model with
+`dart tool/download_proofreader.dart`. The public `proofreaderModel` URL and
+SHA-256 work with core's `downloadVerified` for app-managed downloads. Models
+remain optional, separate files; enabling the runtime does not download them.
+
+```dart
+import 'package:mediapipe_flutter_text/text_proofreader.dart';
+
+final task = await TextProofreader.create(TextProofreaderOptions(
+  modelPath: '/path/to/proofread_quant_200m.litertlm',
+));
+try {
+  final result = await task.proofread('She go home.');
+  print(result.proofreadText);
+  for (final edit in result.corrections) {
+    print('${edit.type.name}: ${edit.text}');
+  }
+  await for (final update in task.proofreadStream('I recieved your mesage.')) {
+    if (update.chunk != null) print(update.chunk);
+    if (update.done) print(update.corrections);
+  }
+} finally {
+  await task.dispose();
+}
+```
+
+Chunks contain newly generated text. The final update normally has a null chunk
+and the complete corrections. Each correction is `same`, `insertion` or
+`deletion`, in native order; character-level edits are preserved. Results and
+updates own their data and remain valid after disposal. No Dart diff or prompt
+rewrite is applied.
+
+The native callback's temporary buffers are copied in a small C adapter before
+forwarding to Dart; Google's model and runtime code are unchanged. The worker
+serializes regular and streaming requests. Streams start on listen and have one
+subscription. Cancellation suppresses further delivery and **awaits native
+completion** because the official API offers no cancellation operation. Pausing
+buffers Dart updates. Await `dispose()` to drain queued work and close the task.
+
+`maxNumTokens` and `cacheDirectory` pass through to Google's options. Null or
+zero tokens selects the native default. Model paths and input strings must not
+contain NUL. The wrapper propagates native errors without substituting output,
+automatically truncating text or falling back to another backend.
+
+Nine official Python references cover grammar, spelling, unchanged text,
+punctuation, Unicode, empty input, a paragraph and a smaller token budget.
+`example_embedding/test/text_proofreader_test.dart` checks both APIs, ABI,
+cancellation, pause, queueing, errors and disposal. `make test_text_stream_bridge`
+tests copying from a foreign thread under AddressSanitizer.
+`make test_embedding_macos` also checks Proofreader in fresh Flutter debug and
+release apps alongside EmbeddingGemma, MagicTouch and both face tasks, with one
+shared runtime. Summarizer is not implemented yet.
 
 ## Models and local dependencies
 

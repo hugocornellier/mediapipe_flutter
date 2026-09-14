@@ -48,6 +48,30 @@ Future<TextProofreader> create([int? maxNumTokens]) => TextProofreader.create(
 );
 
 void main() {
+  test(
+    'zero token budget and an explicit native cache preserve output',
+    () async {
+      final cache = Directory('../build/proofreader-cache')
+        ..createSync(recursive: true);
+      final task = await TextProofreader.create(
+        TextProofreaderOptions(
+          modelPath: model,
+          maxNumTokens: 0,
+          cacheDirectory: cache.absolute.path,
+        ),
+      );
+      try {
+        compare(await task.proofread(cases[0]['input']), cases[0]);
+        compareStream(
+          await task.proofreadStream(cases[0]['input']).toList(),
+          cases[0],
+        );
+      } finally {
+        await task.dispose();
+      }
+    },
+  );
+
   test('proofreader FFI sizes and field offsets match official Python ABI', () {
     final abi = reference['abi'];
     expect(
