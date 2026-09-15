@@ -4,6 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_text/text_summarizer.dart';
 
+import 'token_budget_field.dart';
+import 'task_support.dart';
+
 class SummarizerPage extends StatefulWidget {
   const SummarizerPage({super.key});
 
@@ -24,18 +27,27 @@ class _SummarizerPageState extends State<SummarizerPage> {
   TextSummarizerMode _mode = TextSummarizerMode.keypoints;
   bool _busy = false;
   bool _streaming = true;
+  int? _tokenBudget;
+  int? _loadedTokenBudget;
   String? _output;
   String? _error;
   double? _elapsedMs;
 
-  Future<TextSummarizer> _load(TextSummarizerMode mode) async {
+  Future<TextSummarizer> _load(
+    TextSummarizerMode mode,
+    int? tokenBudget,
+  ) async {
     final file = File.fromUri(
       File(Platform.resolvedExecutable).parent.parent.uri.resolve(
         'Frameworks/App.framework/Resources/flutter_assets/assets/summarization_quant_200m_2modes.litertlm',
       ),
     );
     return TextSummarizer.create(
-      TextSummarizerOptions(modelPath: file.path, mode: mode),
+      TextSummarizerOptions(
+        modelPath: file.path,
+        mode: mode,
+        maxNumTokens: tokenBudget,
+      ),
     );
   }
 
@@ -43,6 +55,7 @@ class _SummarizerPageState extends State<SummarizerPage> {
     final input = _input.text;
     final mode = _mode;
     final streaming = _streaming;
+    final tokenBudget = _tokenBudget;
     setState(() {
       _busy = true;
       _output = null;
@@ -50,8 +63,11 @@ class _SummarizerPageState extends State<SummarizerPage> {
       _elapsedMs = null;
     });
     try {
-      if (_task?.mode != mode) await _release();
-      final task = _task ??= await _load(mode);
+      if (_task?.mode != mode || _loadedTokenBudget != tokenBudget) {
+        await _release();
+      }
+      final task = _task ??= await _load(mode, tokenBudget);
+      _loadedTokenBudget = tokenBudget;
       if (!mounted) {
         await _release();
         return;
@@ -111,6 +127,7 @@ class _SummarizerPageState extends State<SummarizerPage> {
           const Text(
             'Summarizer 200M · Official MediaPipe pipeline · macOS CPU',
           ),
+          const TaskSupport(task: TextTask.summarizer),
           const SizedBox(height: 24),
           SegmentedButton<TextSummarizerMode>(
             segments: const [
@@ -126,7 +143,11 @@ class _SummarizerPageState extends State<SummarizerPage> {
             selected: {_mode},
             onSelectionChanged: _busy
                 ? null
-                : (values) => setState(() => _mode = values.single),
+                : (values) => setState(() {
+                    _mode = values.single;
+                    _output = null;
+                    _error = null;
+                  }),
           ),
           const SizedBox(height: 20),
           TextField(
@@ -139,6 +160,17 @@ class _SummarizerPageState extends State<SummarizerPage> {
               labelText: 'Text to summarize',
               border: OutlineInputBorder(),
             ),
+          ),
+          TokenBudgetField(
+            key: const Key('summarizer-token-budget'),
+            value: _tokenBudget,
+            onChanged: _busy
+                ? null
+                : (value) => setState(() {
+                    _tokenBudget = value;
+                    _output = null;
+                    _error = null;
+                  }),
           ),
           SwitchListTile(
             key: const Key('summarizer-streaming'),

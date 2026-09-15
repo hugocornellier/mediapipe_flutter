@@ -7,6 +7,7 @@ import 'package:mediapipe_flutter_text/embedding_gemma.dart';
 
 import 'proofreader_page.dart';
 import 'summarizer_page.dart';
+import 'task_support.dart';
 
 void main() => runApp(const EmbeddingDemo());
 
@@ -51,6 +52,14 @@ class _SimilarityPageState extends State<SimilarityPage> {
     text: 'A kitten is resting on a couch.',
   );
   EmbeddingGemma? _task;
+  (bool, bool)? _loadedConfiguration;
+  bool _normalize = false;
+  bool _quantize = false;
+  EmbeddingTaskType _taskType = EmbeddingTaskType.semanticSimilarity;
+  TextRole _firstRole = TextRole.query;
+  TextRole _secondRole = TextRole.query;
+  final _firstTitle = TextEditingController();
+  final _secondTitle = TextEditingController();
   bool _busy = false;
   String? _error;
   double? _similarity;
@@ -65,11 +74,19 @@ class _SimilarityPageState extends State<SimilarityPage> {
       ),
     );
     if (await file.exists()) {
-      return EmbeddingGemma.create(EmbeddingGemmaOptions(modelPath: file.path));
+      return EmbeddingGemma.create(
+        EmbeddingGemmaOptions(
+          modelPath: file.path,
+          l2Normalize: _normalize,
+          quantize: _quantize,
+        ),
+      );
     }
     final data = await rootBundle.load('assets/embedding_gemma.task');
     return EmbeddingGemma.create(
       EmbeddingGemmaOptions(
+        l2Normalize: _normalize,
+        quantize: _quantize,
         modelBytes: data.buffer.asUint8List(
           data.offsetInBytes,
           data.lengthInBytes,
@@ -87,18 +104,31 @@ class _SimilarityPageState extends State<SimilarityPage> {
       _similarity = null;
     });
     try {
+      if (_loadedConfiguration != (_normalize, _quantize)) await _release();
       final task = _task ??= await _load();
+      _loadedConfiguration = (_normalize, _quantize);
       if (!mounted) {
         await _release();
         return;
       }
-      final context = TextFormatContext(
-        taskType: EmbeddingTaskType.semanticSimilarity,
-      );
       final watch = Stopwatch()..start();
       final results = await Future.wait([
-        task.embed(first, context: context),
-        task.embed(second, context: context),
+        task.embed(
+          first,
+          context: TextFormatContext(
+            taskType: _taskType,
+            role: _firstRole,
+            title: _firstTitle.text.isEmpty ? null : _firstTitle.text,
+          ),
+        ),
+        task.embed(
+          second,
+          context: TextFormatContext(
+            taskType: _taskType,
+            role: _secondRole,
+            title: _secondTitle.text.isEmpty ? null : _secondTitle.text,
+          ),
+        ),
       ]);
       final elapsed = watch.elapsedMicroseconds / 1000;
       final similarity = TextEmbedding.cosineSimilarity(
@@ -142,6 +172,8 @@ class _SimilarityPageState extends State<SimilarityPage> {
     unawaited(_release());
     _first.dispose();
     _second.dispose();
+    _firstTitle.dispose();
+    _secondTitle.dispose();
     super.dispose();
   }
 
@@ -151,6 +183,7 @@ class _SimilarityPageState extends State<SimilarityPage> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 800),
         child: ListView(
+          key: const Key('embedding-scroll'),
           padding: const EdgeInsets.all(32),
           children: [
             Text(
@@ -161,10 +194,73 @@ class _SimilarityPageState extends State<SimilarityPage> {
             const Text(
               'EmbeddingGemma 300M · Official MediaPipe pipeline · macOS CPU',
             ),
-            const SizedBox(height: 28),
+            ExpansionTile(
+              subtitle: const TaskSupport(task: TextTask.embeddingGemma),
+              key: const Key('embedding-settings'),
+              title: const Text('Embedding settings'),
+              children: [
+                DropdownButtonFormField<EmbeddingTaskType>(
+                  key: const Key('embedding-format'),
+                  initialValue: _taskType,
+                  decoration: const InputDecoration(labelText: 'Task format'),
+                  items: [
+                    for (final type in EmbeddingTaskType.values)
+                      DropdownMenuItem(
+                        value: type,
+                        child: Text(_taskLabels[type]!),
+                      ),
+                  ],
+                  onChanged: _busy
+                      ? null
+                      : (value) => _changeSettings(() {
+                          _taskType = value!;
+                          if (value == EmbeddingTaskType.retrievalDocument) {
+                            _firstRole = _secondRole = TextRole.document;
+                          } else {
+                            _firstRole = TextRole.query;
+                            _secondRole =
+                                value == EmbeddingTaskType.retrievalQuery
+                                ? TextRole.document
+                                : TextRole.query;
+                          }
+                        }),
+                ),
+                SwitchListTile(
+                  key: const Key('embedding-normalize'),
+                  title: const Text('L2 normalization'),
+                  value: _normalize,
+                  onChanged: _busy
+                      ? null
+                      : (value) => _changeSettings(() => _normalize = value),
+                ),
+                SwitchListTile(
+                  key: const Key('embedding-quantize'),
+                  title: const Text('Quantized output (int8)'),
+                  value: _quantize,
+                  onChanged: _busy
+                      ? null
+                      : (value) => _changeSettings(() => _quantize = value),
+                ),
+                _formatInput(
+                  'First',
+                  _firstRole,
+                  _firstTitle,
+                  (value) => _changeSettings(() => _firstRole = value),
+                ),
+                _formatInput(
+                  'Second',
+                  _secondRole,
+                  _secondTitle,
+                  (value) => _changeSettings(() => _secondRole = value),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+            const SizedBox(height: 20),
             TextField(
               key: const Key('first-sentence'),
               controller: _first,
+              enabled: !_busy,
               minLines: 2,
               maxLines: 4,
               decoration: const InputDecoration(
@@ -176,6 +272,7 @@ class _SimilarityPageState extends State<SimilarityPage> {
             TextField(
               key: const Key('second-sentence'),
               controller: _second,
+              enabled: !_busy,
               minLines: 2,
               maxLines: 4,
               decoration: const InputDecoration(
@@ -208,7 +305,7 @@ class _SimilarityPageState extends State<SimilarityPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '768 values per sentence · ${_elapsedMs!.toStringAsFixed(1)} ms for both',
+                        '768 ${_quantize ? 'int8' : 'float32'} values per sentence · ${_elapsedMs!.toStringAsFixed(1)} ms for both',
                       ),
                     ],
                   ),
@@ -231,4 +328,59 @@ class _SimilarityPageState extends State<SimilarityPage> {
       ),
     ),
   );
+
+  void _changeSettings(VoidCallback change) => setState(() {
+    change();
+    _similarity = null;
+    _error = null;
+  });
+
+  Widget _formatInput(
+    String name,
+    TextRole role,
+    TextEditingController title,
+    ValueChanged<TextRole> onRoleChanged,
+  ) => Column(
+    children: [
+      Row(
+        children: [
+          Text('$name input role'),
+          const SizedBox(width: 16),
+          SegmentedButton<TextRole>(
+            key: Key('embedding-${name.toLowerCase()}-role'),
+            segments: const [
+              ButtonSegment(value: TextRole.query, label: Text('Query')),
+              ButtonSegment(value: TextRole.document, label: Text('Document')),
+            ],
+            selected: {role},
+            onSelectionChanged: _busy
+                ? null
+                : (values) => onRoleChanged(values.single),
+          ),
+        ],
+      ),
+      if (role == TextRole.document)
+        TextField(
+          key: Key('embedding-${name.toLowerCase()}-title'),
+          controller: title,
+          enabled: !_busy,
+          onChanged: (_) => _changeSettings(() {}),
+          decoration: InputDecoration(
+            labelText: '$name document title (optional)',
+          ),
+        ),
+      const SizedBox(height: 12),
+    ],
+  );
 }
+
+const _taskLabels = {
+  EmbeddingTaskType.retrievalDocument: 'Retrieval document',
+  EmbeddingTaskType.retrievalQuery: 'Retrieval query',
+  EmbeddingTaskType.semanticSimilarity: 'Semantic similarity',
+  EmbeddingTaskType.classification: 'Classification',
+  EmbeddingTaskType.clustering: 'Clustering',
+  EmbeddingTaskType.questionAnswering: 'Question answering',
+  EmbeddingTaskType.factChecking: 'Fact checking',
+  EmbeddingTaskType.codeRetrieval: 'Code retrieval',
+};

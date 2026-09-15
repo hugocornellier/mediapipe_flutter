@@ -1,0 +1,8 @@
+{
+  "chip": "Apple M4 Max",
+  "memory_bytes": 51539607552,
+  "git_revision": "6a6479751746c2994977ce1abbc579f2b99cf354",
+  "dirty": false,
+  "source_sha256": "f2370f2dbfea4907b8be4c52de19a626daa4d1e12ba7653a82d429ec9aa9e645",
+  "executable_sha256": "339fec7d8d8a0b5ec6c79d807761d045ed2fed4f2d2ceea0c4760257008d1c4b"
+}

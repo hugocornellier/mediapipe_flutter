@@ -4,6 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_text/text_proofreader.dart';
 
+import 'token_budget_field.dart';
+import 'task_support.dart';
+
 class ProofreaderPage extends StatefulWidget {
   const ProofreaderPage({super.key});
 
@@ -18,23 +21,28 @@ class _ProofreaderPageState extends State<ProofreaderPage> {
   TextProofreader? _task;
   bool _busy = false;
   bool _streaming = true;
+  int? _tokenBudget;
+  int? _loadedTokenBudget;
   String? _output;
   String? _error;
   double? _elapsedMs;
   List<ProofreadingCorrection> _corrections = [];
 
-  Future<TextProofreader> _load() async {
+  Future<TextProofreader> _load(int? tokenBudget) async {
     final file = File.fromUri(
       File(Platform.resolvedExecutable).parent.parent.uri.resolve(
         'Frameworks/App.framework/Resources/flutter_assets/assets/proofread_quant_200m.litertlm',
       ),
     );
-    return TextProofreader.create(TextProofreaderOptions(modelPath: file.path));
+    return TextProofreader.create(
+      TextProofreaderOptions(modelPath: file.path, maxNumTokens: tokenBudget),
+    );
   }
 
   Future<void> _proofread() async {
     final input = _input.text;
     final streaming = _streaming;
+    final tokenBudget = _tokenBudget;
     setState(() {
       _busy = true;
       _output = null;
@@ -43,7 +51,9 @@ class _ProofreaderPageState extends State<ProofreaderPage> {
       _corrections = [];
     });
     try {
-      final task = _task ??= await _load();
+      if (_loadedTokenBudget != tokenBudget) await _release();
+      final task = _task ??= await _load(tokenBudget);
+      _loadedTokenBudget = tokenBudget;
       if (!mounted) {
         await _release();
         return;
@@ -113,6 +123,7 @@ class _ProofreaderPageState extends State<ProofreaderPage> {
           const Text(
             'Proofreader 200M · Official MediaPipe pipeline · macOS CPU',
           ),
+          const TaskSupport(task: TextTask.proofreader),
           const SizedBox(height: 28),
           TextField(
             key: const Key('proofreader-input'),
@@ -124,6 +135,18 @@ class _ProofreaderPageState extends State<ProofreaderPage> {
               labelText: 'Text to proofread',
               border: OutlineInputBorder(),
             ),
+          ),
+          TokenBudgetField(
+            key: const Key('proofreader-token-budget'),
+            value: _tokenBudget,
+            onChanged: _busy
+                ? null
+                : (value) => setState(() {
+                    _tokenBudget = value;
+                    _output = null;
+                    _corrections = [];
+                    _error = null;
+                  }),
           ),
           SwitchListTile(
             key: const Key('proofreader-streaming'),

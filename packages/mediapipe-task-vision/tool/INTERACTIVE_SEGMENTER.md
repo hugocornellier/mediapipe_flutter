@@ -113,6 +113,15 @@ not part of the Interactive Segmenter API.
 
 ## GPU status
 
+`queryInteractiveSegmenterCapabilities()` (exported by the vision package and
+its standalone `capabilities.dart` entry point) returns supported delegates,
+required macOS version/architecture and unavailable-delegate explanations. It
+does not load a model. Creation checks the same support information before
+starting a worker. The shared
+[four-task validation tool](../../../tool/task_benchmarks/README.md) measures
+repeated strokes, image replacement, reloading and process memory alongside the
+three modern text tasks.
+
 `VisionDelegate.gpu` fails explicitly for this task. The official 1.0.1 macOS
 runtime's `HeatmapFromStrokesCalculatorGl` requests GLSL 330 in a macOS OpenGL
 2.1 context and fails to compile its shader. This was reproduced using the

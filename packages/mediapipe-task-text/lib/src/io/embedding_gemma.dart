@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:isolate';
 
+import '../../../capabilities.dart';
 import '../interface/embedding_gemma_types.dart';
 import 'native_embedding_gemma.dart';
 
@@ -28,6 +29,10 @@ final class EmbeddingGemma {
   /// Load the model off the calling isolate. Initialization failures complete
   /// this future with an error, including a missing runtime or invalid model.
   static Future<EmbeddingGemma> create(EmbeddingGemmaOptions options) async {
+    final support = await queryTextTaskCapabilities(TextTask.embeddingGemma);
+    if (support.unavailableReasons[options.delegate] case final reason?) {
+      throw EmbeddingGemmaException(reason);
+    }
     final task = EmbeddingGemma._(options.delegate);
     try {
       await Isolate.spawn(

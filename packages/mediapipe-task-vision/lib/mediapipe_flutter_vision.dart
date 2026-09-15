@@ -5,6 +5,7 @@
 /// Package containing MediaPipe's vision-specific tasks.
 library;
 
+export 'capabilities.dart';
 export 'src/interface/face_detector_types.dart';
 export 'src/io/face_detector.dart';
 export 'src/interface/face_landmarker_types.dart';
