@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-text packages/mediapipe-task-genai packages/mediapipe-task-vision tool/builder
+DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-text packages/mediapipe-task-genai packages/mediapipe-task-vision tool/builder tool/task_benchmarks
 FLUTTER_PACKAGES := packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 VISION_NATIVE_ARGS ?=
@@ -150,6 +150,15 @@ example_embedding: models_embedding models_proofreader models_summarizer
 
 test_embedding_macos:
 	cd packages/mediapipe-task-text && python3 -B tool/test_embedding_macos.py
+
+.PHONY: test_modern_task_matrix
+test_modern_task_matrix:
+	cd tool/task_benchmarks && dart pub get
+	cd packages/mediapipe-task-text && dart tool/download_embedding_gemma.dart
+	cd packages/mediapipe-task-text && dart tool/download_proofreader.dart
+	cd packages/mediapipe-task-text && dart tool/download_summarizer.dart
+	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
+	python3 -B tool/task_benchmarks/run_macos.py
 
 .PHONY: models_proofreader test_text_stream_bridge
 models_proofreader:

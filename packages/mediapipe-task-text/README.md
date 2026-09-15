@@ -20,6 +20,37 @@ longer selected. Those platforms need a separate 1.0.1 integration.
 Every text consumer must enable `hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`
 in its app pubspec, as shown below. Models remain separate optional downloads.
 
+## Capabilities and settings
+
+Query support before offering a delegate in your app:
+
+```dart
+import 'package:mediapipe_flutter_text/capabilities.dart';
+
+final support = await queryTextTaskCapabilities(TextTask.embeddingGemma);
+final canUseCpu = support.supportedDelegates.contains(TextDelegate.cpu);
+final gpuReason = support.unavailableReasons[TextDelegate.gpu];
+```
+
+Use `TextTask.proofreader` or `TextTask.summarizer` for those tasks. The result
+includes the process platform, required OS/architecture, minimum OS version and
+runtime version. This is declared package support; it does not load a model,
+verify native-asset opt-in, or promise sufficient memory. Creation checks the
+same support information and reports an unavailable delegate before loading.
+
+All three currently support CPU only. Official 1.0.1 GPU probes show that
+Proofreader and Summarizer explicitly accept only CPU. EmbeddingGemma reaches
+Metal but fails to prepare its delegate with the official model. The
+[validation/benchmark tool](../../tool/task_benchmarks/README.md) documents
+reproduction, option coverage and recorded results.
+
+The macOS demo exposes all eight embedding task formats, per-input query/document
+roles and titles, normalization and quantization. Changes to inference options
+recreate the task. Proofreader and Summarizer expose token-budget presets;
+Summarizer also has both official modes. Token budgets include input and output:
+an input that already exceeds the budget can return a native error. The package
+does not silently truncate input. Streaming can be selected independently.
+
 ## EmbeddingGemma 300M
 
 The new `EmbeddingGemma` API runs Google's complete official TextEmbedder
