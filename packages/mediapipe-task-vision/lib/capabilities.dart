@@ -22,5 +22,5 @@ TaskCapabilities<VisionDelegate> interactiveSegmenterCapabilitiesForPlatform(
   gpu: VisionDelegate.gpu,
   gpuUnavailableReason:
       'The official MediaPipe 1.0.1 macOS GPU stroke shader requests GLSL 330 '
-      'in an OpenGL 2.1 context and fails to compile. CPU is supported.',
+      'in an OpenGL 2.1 context and fails to compile. This task supports CPU only.',
 );

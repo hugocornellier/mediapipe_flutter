@@ -19,7 +19,7 @@ class TokenBudgetField extends StatelessWidget {
       decoration: const InputDecoration(
         labelText: 'Token budget',
         helperText:
-            'Input + output combined. Small budgets can truncate output.',
+            'Input + output combined. Small budgets can reject input or truncate output.',
         helperMaxLines: 2,
         border: OutlineInputBorder(),
       ),
