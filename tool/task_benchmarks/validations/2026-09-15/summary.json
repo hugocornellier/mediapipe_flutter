@@ -1,0 +1,198 @@
+{
+  "status": "passed",
+  "started_utc": "2026-09-15T09:32:45.924059Z",
+  "finished_utc": "2026-09-15T09:40:58.539327Z",
+  "runtime": "1.0.1",
+  "execution": "AOT",
+  "platform": {
+    "os": "macos",
+    "version": "26.4",
+    "architecture": "arm64"
+  },
+  "iterations": 1000,
+  "reloads": 25,
+  "warmups": 3,
+  "reference_sha256": "23bbf80ac0f9555e7c9be63d95470141258ef6c58e83403c2635996298f44e88",
+  "rss_before_load_bytes": 30588928,
+  "rss_after_sustained_dispose_bytes": 619642880,
+  "rss_after_reloads_bytes": 773144576,
+  "hardware": {
+    "chip": "Apple M4 Max",
+    "memory_bytes": 51539607552
+  },
+  "benchmarks": {
+    "embedding": {
+      "create_ms": 840.951,
+      "options": {
+        "normalize": false,
+        "quantize": false
+      },
+      "input": "A cat is sleeping on the sofa.",
+      "completed": {
+        "count": 1000,
+        "median_ms": 124.954,
+        "p95_ms": 127.345,
+        "min_ms": 117.276,
+        "max_ms": 140.395
+      },
+      "create_run_dispose": {
+        "count": 25,
+        "median_ms": 317.599,
+        "p95_ms": 395.125,
+        "min_ms": 304.293,
+        "max_ms": 401.74
+      }
+    },
+    "proofreader": {
+      "create_ms": 39.574,
+      "options": {
+        "budget": 0,
+        "mode": null
+      },
+      "input": "The library will close at six today for maintenance and reopen tomorrow morning.",
+      "completed": {
+        "count": 500,
+        "median_ms": 46.4885,
+        "p95_ms": 48.303,
+        "min_ms": 45.392,
+        "max_ms": 66.141
+      },
+      "streaming": {
+        "count": 500,
+        "median_ms": 46.864,
+        "p95_ms": 48.748,
+        "min_ms": 46.027,
+        "max_ms": 69.352
+      },
+      "create_run_dispose": {
+        "count": 25,
+        "median_ms": 218.761,
+        "p95_ms": 292.857,
+        "min_ms": 201.039,
+        "max_ms": 294.29
+      }
+    },
+    "summarizer": {
+      "create_ms": 36.384,
+      "options": {
+        "budget": 0,
+        "mode": "TLDR"
+      },
+      "input": "The library will close at six today for maintenance and reopen tomorrow morning.",
+      "completed": {
+        "count": 500,
+        "median_ms": 40.635000000000005,
+        "p95_ms": 42.285,
+        "min_ms": 39.582,
+        "max_ms": 53.027
+      },
+      "streaming": {
+        "count": 500,
+        "median_ms": 40.915,
+        "p95_ms": 42.51,
+        "min_ms": 39.965,
+        "max_ms": 46.502
+      },
+      "create_run_dispose": {
+        "count": 25,
+        "median_ms": 205.04,
+        "p95_ms": 276.338,
+        "min_ms": 191.991,
+        "max_ms": 281.525
+      }
+    },
+    "segmenter": {
+      "create_ms": 1.254,
+      "set_image_ms": 0.118,
+      "first_segment_ms": 206.272,
+      "completed": {
+        "count": 1000,
+        "median_ms": 191.3625,
+        "p95_ms": 195.491,
+        "min_ms": 187.999,
+        "max_ms": 341.605
+      },
+      "reset_and_first_segment": {
+        "count": 25,
+        "median_ms": 198.588,
+        "p95_ms": 203.724,
+        "min_ms": 192.894,
+        "max_ms": 204.006
+      },
+      "create_run_dispose": {
+        "count": 25,
+        "median_ms": 324.056,
+        "p95_ms": 404.957,
+        "min_ms": 303.589,
+        "max_ms": 412.921
+      }
+    }
+  },
+  "option_cases": 97,
+  "expected_error_recoveries": 6,
+  "memory": {
+    "minimum_rss_bytes": 1001078784,
+    "maximum_rss_bytes": 1081409536,
+    "first_rss_bytes": 1052966912,
+    "last_rss_bytes": 1011974144,
+    "first_100_median_bytes": 1080901632.0,
+    "last_100_median_bytes": 1011793920.0,
+    "last_500_range_bytes": 1933312
+  },
+  "caches": [
+    {
+      "task": "proofreader",
+      "passes": [
+        {
+          "cold": true,
+          "ms": 306.815,
+          "files": [
+            {
+              "name": "proofread_quant_200m.litertlm_1789391892_117587968.xnnpack_cache",
+              "bytes": 114059960,
+              "modified": "2026-09-15T09:40:57.000Z"
+            }
+          ]
+        },
+        {
+          "cold": false,
+          "ms": 243.84,
+          "files": [
+            {
+              "name": "proofread_quant_200m.litertlm_1789391892_117587968.xnnpack_cache",
+              "bytes": 114059960,
+              "modified": "2026-09-15T09:40:57.000Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task": "summarizer",
+      "passes": [
+        {
+          "cold": true,
+          "ms": 297.637,
+          "files": [
+            {
+              "name": "summarization_quant_200m_2modes.litertlm_1789404372_117587968.xnnpack_cache",
+              "bytes": 114059960,
+              "modified": "2026-09-15T09:40:58.000Z"
+            }
+          ]
+        },
+        {
+          "cold": false,
+          "ms": 218.809,
+          "files": [
+            {
+              "name": "summarization_quant_200m_2modes.litertlm_1789404372_117587968.xnnpack_cache",
+              "bytes": 114059960,
+              "modified": "2026-09-15T09:40:58.000Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
