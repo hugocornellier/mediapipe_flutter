@@ -3,10 +3,71 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_flutter_text/text_summarizer.dart';
+import 'package:mediapipe_flutter_text/embedding_gemma.dart';
+
+Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle(const Duration(milliseconds: 100));
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   WidgetController.hitTestWarningShouldBeFatal = true;
+  testWidgets(
+    'embedding settings run quantized retrieval and reload float output',
+    (tester) async {
+      await tester.pumpWidget(const EmbeddingDemo());
+      await tapVisible(tester, find.text('Embedding settings'));
+      await tapVisible(tester, find.byKey(const Key('embedding-format')));
+      await tester.tap(find.text('Retrieval query').last);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<SegmentedButton<TextRole>>(
+              find.byKey(const Key('embedding-second-role')),
+            )
+            .selected,
+        {TextRole.document},
+      );
+      await tapVisible(tester, find.byKey(const Key('embedding-normalize')));
+      await tapVisible(tester, find.byKey(const Key('embedding-quantize')));
+      await tester.enterText(
+        find.byKey(const Key('embedding-second-title')),
+        'Animals',
+      );
+      await tapVisible(tester, find.text('Embedding settings'));
+      await tapVisible(tester, find.text('Compare sentences'));
+      final quantized = double.parse(
+        tester.widget<Text>(find.byKey(const Key('similarity-score'))).data!,
+      );
+      expect(quantized.isFinite, isTrue);
+      expect(find.textContaining('768 int8 values'), findsOneWidget);
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const Key('embedding-scroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(
+        find.text('Embedding settings'),
+        -200,
+        scrollable: scrollable,
+      );
+      await tapVisible(tester, find.text('Embedding settings'));
+      await tapVisible(tester, find.byKey(const Key('embedding-quantize')));
+      await tapVisible(tester, find.text('Embedding settings'));
+      await tapVisible(tester, find.text('Compare sentences'));
+      expect(find.textContaining('768 float32 values'), findsOneWidget);
+      final floating = double.parse(
+        tester.widget<Text>(find.byKey(const Key('similarity-score'))).data!,
+      );
+      expect((floating - quantized).abs(), lessThan(.03));
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
   testWidgets('summarize in key-points streaming and completed TLDR modes', (
     tester,
   ) async {
@@ -55,6 +116,9 @@ void main() {
           .selected,
       {TextSummarizerMode.tldr},
     );
+    await tapVisible(tester, find.byKey(const Key('summarizer-token-budget')));
+    await tester.tap(find.text('64 tokens').last);
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('summarizer-streaming')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('summarizer-streaming')));
@@ -87,8 +151,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(const EmbeddingDemo());
-    await tester.tap(find.text('Compare sentences'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tapVisible(tester, find.text('Compare sentences'));
     final first = double.parse(
       tester.widget<Text>(find.byKey(const Key('similarity-score'))).data!,
     );
@@ -96,8 +159,7 @@ void main() {
       find.byKey(const Key('second-sentence')),
       'The database migration added three indexes.',
     );
-    await tester.tap(find.text('Compare sentences'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tapVisible(tester, find.text('Compare sentences'));
     final second = double.parse(
       tester.widget<Text>(find.byKey(const Key('similarity-score'))).data!,
     );
@@ -112,8 +174,7 @@ void main() {
     await tester.pumpWidget(const EmbeddingDemo());
     await tester.tap(find.text('Proofreader'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('proofread-button')));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tapVisible(tester, find.byKey(const Key('proofread-button')));
     expect(
       tester
           .widget<SelectableText>(find.byKey(const Key('proofreader-output')))
@@ -161,6 +222,9 @@ void main() {
       find.byKey(const Key('proofreader-input')),
       'I recieved your mesage and will reply tomorow.',
     );
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(const Key('proofreader-token-budget')));
+    await tester.tap(find.text('256 tokens').last);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('proofreader-streaming')));
     await tester.pumpAndSettle();
