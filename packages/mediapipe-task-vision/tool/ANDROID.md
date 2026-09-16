@@ -82,6 +82,10 @@ logs and hash receipts are uploaded even when a consumer test fails. This is
 emulator CI; physical arm64 devices, camera use and GPU inference are untested.
 The native arm64 16 KB-page smoke evidence below is a separate validation.
 
+The full Flutter suite on the local API 36 arm64 16 KB emulator reached seven
+passing cases before an OpenCV `SIGILL` during an RGBA reference. This does not
+establish arm64 reference parity; the CI suite validates x86_64 independently.
+
 The September 16 Android 16 arm64 emulator run passed both face probes on a
 16 KB-page system. [Build and smoke receipts](validations/2026-09-16-android-native/)
 record the exact runtime and dependency hashes. See UP010 in `upstream-issues.md`
