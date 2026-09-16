@@ -59,16 +59,7 @@ void main(List<String> arguments) async {
         wheelRelease,
         Directory.fromUri(input.outputDirectoryShared.resolve('$target/')),
       );
-      // Dart rejects duplicate physical filenames across asset IDs. Preserve
-      // the existing generated bindings with a distinct file per selected task.
-      final assetNames = {
-        for (final task in tasks)
-          if (task == 'face_detector' || task == 'face_landmarker')
-            '$task.dylib'
-          else
-            'vision.dylib',
-      };
-      for (final assetName in assetNames) {
+      for (final assetName in _assetNames(tasks)) {
         final suffix = target.startsWith('windows/') ? 'dll' : 'so';
         final stem = assetName.substring(0, assetName.length - '.dylib'.length);
         final bundled = File.fromUri(
@@ -86,34 +77,32 @@ void main(List<String> arguments) async {
     final published = visionRuntimeReleases.where(
       (release) => release.target == target,
     );
-    final localOnly = localOnlyVisionTargets.contains(target);
-    if (published.isEmpty && !localOnly && tasks.isNotEmpty) {
+    if (published.isEmpty && tasks.isNotEmpty) {
       throw UnsupportedError(
         'mediapipe_flutter_vision has no runtime for $target. Published '
-        'targets: ${{...visionRuntimeReleases.map((r) => r.target), ...visionWheelReleases.keys}.join(', ')}; '
-        'maintainer-build targets: ${localOnlyVisionTargets.join(', ')}.',
+        'targets: ${{...visionRuntimeReleases.map((r) => r.target), ...visionWheelReleases.keys}.join(', ')}.',
       );
     }
     final missing = tasks.where(
       (task) => !published.any((release) => release.tasks.contains(task)),
     );
-    if (missing.isNotEmpty && !localOnly) {
+    if (missing.isNotEmpty) {
       throw UnsupportedError(
         'No published $target runtime covers ${missing.join(', ')}. '
         'Tasks published for $target: '
         '${published.expand((r) => r.tasks).toSet().join(', ')}.',
       );
     }
-    if (localOnly) {
-      for (final task in tasks) {
-        await _bundleLocalBuild(input, output, target: target, task: task);
-      }
-      return;
-    }
     for (final release in published.where(
       (release) => release.tasks.any(tasks.contains),
     )) {
-      await _bundleRelease(input, output, release: release, target: target);
+      await _bundleRelease(
+        input,
+        output,
+        release: release,
+        target: target,
+        tasks: tasks.intersection(release.tasks),
+      );
     }
   });
 }
@@ -125,6 +114,7 @@ Future<void> _bundleRelease(
   BuildOutputBuilder output, {
   required VisionRuntimeRelease release,
   required String target,
+  required Set<String> tasks,
 }) async {
   final local = Directory.fromUri(
     input.packageRoot.resolve(release.localBuildDirectory),
@@ -155,37 +145,40 @@ Future<void> _bundleRelease(
       librarySha256: release.librarySha256,
       libraryName: release.libraryName,
       cache: Directory.fromUri(input.outputDirectoryShared.resolve('$target/')),
+      target: visionLibraryTarget(target),
     );
   }
-  _addAsset(input, output, library: library, assetName: release.assetName);
+  await _bundleAliases(input, output, library: library, tasks: tasks);
 }
 
-/// Bundles a task from a target that only has maintainer builds.
-Future<void> _bundleLocalBuild(
+/// Asset IDs are compile-time constants in the generated bindings: each face
+/// binding set names its own library and every other task shares vision.dylib.
+/// Dart also rejects duplicate physical filenames across asset IDs, so one
+/// runtime serving several IDs is copied once per name.
+Set<String> _assetNames(Set<String> tasks) => {
+  for (final task in tasks)
+    if (task == 'face_detector' || task == 'face_landmarker')
+      '$task.dylib'
+    else
+      'vision.dylib',
+};
+
+Future<void> _bundleAliases(
   BuildInput input,
   BuildOutputBuilder output, {
-  required String target,
-  required String task,
+  required File library,
+  required Set<String> tasks,
 }) async {
-  final local = Directory.fromUri(
-    input.packageRoot.resolve('build/native/$target/$task/'),
-  );
-  final libraryName = 'lib$task.dylib';
-  if (input.userDefines['prebuilt'] == true ||
-      !await File.fromUri(local.uri.resolve(libraryName)).exists()) {
-    throw StateError(
-      '$target runtimes are currently local development builds. '
-      'Run python3 tool/build_ios_simulator.py in the vision package '
-      'and omit prebuilt: true. No macOS library can substitute for '
-      'a $target library.',
-    );
+  final digest = (await sha256.bind(library.openRead()).first).toString();
+  for (final assetName in _assetNames(tasks)) {
+    final stem = assetName.substring(0, assetName.length - '.dylib'.length);
+    final bundled = File.fromUri(library.parent.uri.resolve('lib$stem.dylib'));
+    if (!await bundled.exists() ||
+        (await sha256.bind(bundled.openRead()).first).toString() != digest) {
+      await library.copy(bundled.path);
+    }
+    _addAsset(input, output, library: bundled, assetName: assetName);
   }
-  final library = await validateVisionLibrary(
-    local,
-    libraryName: libraryName,
-    target: visionLibraryTarget(target),
-  );
-  _addAsset(input, output, library: library, assetName: '$task.dylib');
 }
 
 void _addAsset(

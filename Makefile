@@ -128,12 +128,18 @@ example_vision:
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
 	cd packages/mediapipe-task-vision/example && flutter run -d macos --release
 
-.PHONY: native_vision_ios_simulator test_vision_ios_simulator
+.PHONY: native_vision_ios_simulator native_vision_ios_device test_vision_ios_simulator test_vision_ios_consumer
 native_vision_ios_simulator:
 	cd packages/mediapipe-task-vision && python3 -B tool/build_ios_simulator.py
 
+native_vision_ios_device:
+	cd packages/mediapipe-task-vision && python3 -B tool/build_ios_simulator.py --sdk iphoneos
+
 test_vision_ios_simulator:
 	cd packages/mediapipe-task-vision && python3 -B tool/test_ios_simulator.py
+
+test_vision_ios_consumer:
+	cd packages/mediapipe-task-vision && python3 -B tool/test_ios_consumer.py
 
 example_text: models_text
 	cd packages/mediapipe-task-text/example && flutter run -d macos

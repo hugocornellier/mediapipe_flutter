@@ -10,6 +10,7 @@ void main() {
   for (final libraryName in [
     'libface_detector.dylib',
     'libface_landmarker.dylib',
+    'libmediapipe.dylib',
   ]) {
     group(libraryName, () => _testLibrary(libraryName));
   }
@@ -30,6 +31,8 @@ void _testLibrary(String libraryName) {
     ArchiveFile? extra,
     bool includeNotices = true,
     List<String>? delegates = const ['cpu', 'gpu'],
+    String platform = 'macos',
+    String? iosSdk,
   }) {
     final archive = Archive()
       ..add(ArchiveFile.bytes(libraryName, libraryBytes))
@@ -39,7 +42,8 @@ void _testLibrary(String libraryName) {
           jsonEncode({
             'revision': '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120',
             'opencv_revision': '49486f61fb25722cbcf586b7f4320921d46fb38e',
-            'platform': 'macos',
+            'platform': platform,
+            'ios_sdk': ?iosSdk,
             'architecture': architecture,
             'bytes': libraryBytes.length,
             'sha256': libraryHash,
@@ -55,7 +59,10 @@ void _testLibrary(String libraryName) {
     return GZipEncoder().encodeBytes(TarEncoder().encodeBytes(archive));
   }
 
-  Future<File> download({String? expectedHash}) => downloadVisionLibrary(
+  Future<File> download({
+    String? expectedHash,
+    VisionLibraryTarget target = VisionLibraryTarget.macosArm64,
+  }) => downloadVisionLibrary(
     asset: (
       url: 'http://127.0.0.1:$port/runtime.tar.gz',
       sha256: expectedHash ?? sha256.convert(response).toString(),
@@ -63,6 +70,7 @@ void _testLibrary(String libraryName) {
     librarySha256: libraryHash,
     cache: cache,
     libraryName: libraryName,
+    target: target,
   );
 
   setUp(() async {
@@ -109,6 +117,42 @@ void _testLibrary(String libraryName) {
     await server.close(force: true);
     expect((await download()).path, library.path);
     expect(requests, 1);
+  });
+
+  test(
+    'downloads simulator CPU archives and validates the offline cache',
+    () async {
+      response = bundle(
+        platform: 'ios',
+        iosSdk: 'iphonesimulator',
+        delegates: ['cpu'],
+      );
+      final library = await download(
+        target: VisionLibraryTarget.iosSimulatorArm64,
+      );
+      expect(await library.readAsBytes(), libraryBytes);
+      await server.close(force: true);
+      expect(
+        (await download(target: VisionLibraryTarget.iosSimulatorArm64)).path,
+        library.path,
+      );
+      expect(requests, 1);
+      await library.writeAsString('tampered');
+      expect(
+        await (await download(
+          target: VisionLibraryTarget.iosSimulatorArm64,
+        )).readAsBytes(),
+        libraryBytes,
+      );
+    },
+  );
+
+  test('rejects a device archive selected for a simulator download', () async {
+    response = bundle(platform: 'ios', iosSdk: 'iphoneos', delegates: ['cpu']);
+    await expectLater(
+      download(target: VisionLibraryTarget.iosSimulatorArm64),
+      throwsStateError,
+    );
   });
 
   test(

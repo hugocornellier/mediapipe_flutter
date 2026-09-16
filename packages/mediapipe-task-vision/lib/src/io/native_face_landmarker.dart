@@ -15,7 +15,10 @@ final class NativeFaceLandmarker {
   NativeFaceLandmarker(FaceLandmarkerOptions options)
     : _gpu = options.delegate == VisionDelegate.gpu {
     if (!Platform.isMacOS && _gpu) {
-      throw UnsupportedError('GPU face inference is validated on macOS only.');
+      throw UnsupportedError(
+        'GPU face inference is validated on macOS only; '
+        'this target supports CPU only.',
+      );
     }
     using((arena) {
       final native = arena<mp.MpFaceLandmarkerOptions>();

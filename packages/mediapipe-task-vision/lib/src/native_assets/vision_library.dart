@@ -84,6 +84,7 @@ Future<File> downloadVisionLibrary({
   required String librarySha256,
   required Directory cache,
   String libraryName = 'libface_detector.dylib',
+  VisionLibraryTarget target = VisionLibraryTarget.macosArm64,
 }) async {
   _checkLibraryName(libraryName);
   final requiredFiles = _requiredFiles(libraryName);
@@ -100,6 +101,7 @@ Future<File> downloadVisionLibrary({
       directory,
       expectedSha256: librarySha256,
       libraryName: libraryName,
+      target: target,
     );
     if (await Future.wait([
       for (final name in requiredFiles)
@@ -151,6 +153,7 @@ Future<File> downloadVisionLibrary({
       temporary,
       expectedSha256: librarySha256,
       libraryName: libraryName,
+      target: target,
     );
     // Publish the library last. Each rename is atomic and concurrent hooks
     // write identical content within this digest-specific cache directory.

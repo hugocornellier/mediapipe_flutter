@@ -22,7 +22,9 @@ void main() {
   );
 
   test('release rows cover published targets with distinct assets', () {
-    final assets = visionRuntimeReleases.map((release) => release.assetName);
+    final assets = visionRuntimeReleases.map(
+      (release) => (release.target, release.assetName),
+    );
     expect(assets.toSet().length, assets.length);
     for (final release in visionRuntimeReleases) {
       expect(release.tasks, isNotEmpty);
@@ -91,8 +93,9 @@ void main() {
       expect(
         testCodeBuildHook(
           mainMethod: hook.main,
-          targetOS: OS.macOS,
+          targetOS: release.target.startsWith('ios-') ? OS.iOS : OS.macOS,
           targetArchitecture: Architecture.arm64,
+          targetIOSSdk: IOSSdk.iPhoneSimulator,
           userDefines: defines({
             'tasks': [release.tasks.first],
             'prebuilt': true,
@@ -118,6 +121,23 @@ void main() {
       }
       expect(release.librarySha256, matches(RegExp(r'^[a-f0-9]{64}$')));
     }
+  });
+
+  test('simulator rejects tasks whose exports lack validated inference', () {
+    expect(
+      testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.iOS,
+        targetArchitecture: Architecture.arm64,
+        targetIOSSdk: IOSSdk.iPhoneSimulator,
+        userDefines: defines({
+          'tasks': ['object_detector'],
+        }),
+        check: (_, _) =>
+            fail('Unvalidated simulator task unexpectedly accepted'),
+      ),
+      failsWith<UnsupportedError>(contains('object_detector')),
+    );
   });
 
   test('unknown task names list every accepted task', () {

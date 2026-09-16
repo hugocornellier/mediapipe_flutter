@@ -44,8 +44,7 @@ FLAGS = [
 # The C entry points live in static archives the linker would otherwise drop,
 # because nothing inside the shared object references them.
 FORCED = "MpImageCreateFromFile"
-# Retained for tool/build_ios_simulator.py, which still links one dylib per
-# task because no combined runtime is published for the simulator.
+# Legacy face smoke entry points.
 SYMBOLS = [
     "MpFaceDetectorCreate", "MpFaceDetectorDetectImage",
     "MpFaceDetectorCloseResult", "MpFaceDetectorClose",
@@ -132,9 +131,17 @@ def verify_objc_namespace(library):
     print(f"Verified {len(classes)} isolated Objective-C classes.")
 
 
-def build_opencv(root, *, ios_simulator=False):
+def build_opencv(root, *, ios_simulator=False, ios_sdk=None):
+    if ios_simulator:
+        if ios_sdk not in (None, 'iphonesimulator'):
+            raise ValueError('ios_simulator conflicts with ios_sdk')
+        ios_sdk = 'iphonesimulator'
+    if ios_sdk not in (None, 'iphonesimulator', 'iphoneos'):
+        raise ValueError(f'Unsupported iOS SDK: {ios_sdk}')
+    is_ios = ios_sdk is not None
     source = root / "opencv"
-    suffix = "-ios-simulator" if ios_simulator else ""
+    suffix = ("-ios-simulator" if ios_sdk == 'iphonesimulator'
+              else "-ios-device" if is_ios else "")
     build = root / f"opencv{suffix}-build"
     install = root / f"opencv{suffix}-install"
     if not source.exists():
@@ -147,7 +154,7 @@ def build_opencv(root, *, ios_simulator=False):
         raise SystemExit("Refusing modified OpenCV source.")
     configuration = [
         "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
-        f"-DCMAKE_OSX_DEPLOYMENT_TARGET={'13.0' if ios_simulator else '11.0'}",
+        f"-DCMAKE_OSX_DEPLOYMENT_TARGET={'13.0' if is_ios else '11.0'}",
         "-DCMAKE_OSX_ARCHITECTURES=arm64",
         "-DBUILD_LIST=core,imgproc", "-DBUILD_SHARED_LIBS=OFF",
         "-DBUILD_TESTS=OFF", "-DBUILD_PERF_TESTS=OFF", "-DBUILD_EXAMPLES=OFF",
@@ -159,9 +166,9 @@ def build_opencv(root, *, ios_simulator=False):
         "PNG", "TIFF", "WEBP", "OPENEXR", "JASPER", "OPENJPEG", "AVIF",
         "FFMPEG", "AVFOUNDATION", "GSTREAMER", "VTK",
     )]
-    if ios_simulator:
+    if is_ios:
         configuration.extend([
-            "-DCMAKE_SYSTEM_NAME=iOS", "-DCMAKE_OSX_SYSROOT=iphonesimulator",
+            "-DCMAKE_SYSTEM_NAME=iOS", f"-DCMAKE_OSX_SYSROOT={ios_sdk}",
             "-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY",
             "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO",
         ])
@@ -169,7 +176,7 @@ def build_opencv(root, *, ios_simulator=False):
          *configuration])
     run(["cmake", "--build", str(build), "--parallel", "8"])
     run(["cmake", "--install", str(build)])
-    repository = "ios_opencv" if ios_simulator else "macos_opencv"
+    repository = "ios_opencv" if is_ios else "macos_opencv"
     (install / "WORKSPACE").write_text(f'workspace(name = "{repository}")\n')
     (install / "BUILD.bazel").write_text('''load("@rules_cc//cc:cc_library.bzl", "cc_library")
 cc_library(

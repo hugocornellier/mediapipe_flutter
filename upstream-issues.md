@@ -299,6 +299,50 @@ Evidence and prior validation artifacts are documented in
 `packages/mediapipe-task-vision/tool/validations/2026-09-12-interactive-segmenter/`.
 Morning commit `72711df` corrected attribution to a single runtime version.
 
+## UP-009 — Combined iOS simulator CPU runtime has reference differences beyond face tasks
+
+**Status:** measured compatibility finding on 2026-09-16; not established as an
+upstream bug. Face Detector and Face Landmarker remain validated. Other source
+task support declarations have not been expanded.
+
+The combined arm64 simulator build exports all 114 declared C functions. Running
+all eleven vision task families in a fresh Flutter app with temporary support
+overrides in an isolated package copy yields **107 passed, 56 failed, 49 GPU
+skips**. The failing comparisons retain the desktop suite's existing tolerances
+and exact mask-byte checks. Simulator runtime: iOS 26.4, host: Apple M4 Max.
+
+The first attempt exited during Object Detector CPU inference. Disassembly
+showed the same non-streaming SVE prologue described in UP-001. Applying the
+existing scoped KleidiAI compiler flag to the iOS build removes those instructions
+and allows the complete suite to run without that exit.
+
+The rebuilt simulator library SHA-256 is
+`a4fea1f2abddb6d656b043b5471a09a64df1308475422da9800c8f880cd2aa9e`.
+Examples: Object Detector score `0.4504084587097168` versus the official
+`0.450329452753067`; classifier ROI score `0.16767385601997375` versus
+`0.16696061193943024`; normalized quantized ROI embedding byte 7 is `254`
+versus `255`. These match UP-004's macOS observations. Hand/Gesture/Pose/Holistic
+coordinates or confidences exceed `1e-5` in some cases; confidence mask hashes
+also differ. Category-mask cases and many other cases pass.
+
+Reproduction, from the vision package with a booted simulator and downloaded models:
+
+```sh
+python3 -B tool/build_ios_simulator.py
+python3 -B tool/test_ios_consumer.py --experimental-all-tasks
+```
+
+Local evidence: root `build/codex-tmp/ios-consumer-yb2gy4pg/`. The report marks
+the capability overrides explicitly; they never modify the consumer package's
+real support declarations. Confidence-mask hash comparisons are intentionally
+stricter than numerical float comparisons; a failed hash alone does not establish
+the size or practical significance of a difference.
+
+An additional lead: the pinned official Mac 1.0.0 wheel embeds a build-information
+string naming OpenCV 4.13.0, whereas the local builders pin OpenCV 4.12.0. That
+embedded string also describes a Linux x64 build, so it is not sufficient evidence
+of the Mac binary's actual build configuration or of a cause for these differences.
+
 ## Integration pitfalls resolved in this repo
 
 These are recorded for continuity, not classified as confirmed MediaPipe defects.

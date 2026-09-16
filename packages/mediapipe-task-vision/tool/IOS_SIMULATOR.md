@@ -24,7 +24,7 @@ python3 -B tool/prepare_face_example.py
 
 The builder verifies the pinned MediaPipe and OpenCV checkouts and cross-compiles
 without patching either upstream source tree. OpenCV includes only `core` and
-`imgproc`. CPU-only task dylibs have their architecture, simulator platform,
+`imgproc`. The combined CPU-only dylib has its architecture, simulator platform,
 C exports, and system-library dependencies checked. The first build can take
 several minutes; subsequent builds reuse Bazel/CMake caches.
 
@@ -48,6 +48,7 @@ With an iOS simulator already booted:
 
 ```sh
 python3 -B tool/test_ios_simulator.py
+python3 -B tool/test_ios_consumer.py
 ```
 
 Or specify an installed simulator with `--device <uuid>`; the script boots it
@@ -73,14 +74,13 @@ does not represent an iPhone's CPU, GPU, camera or thermal behavior.
 Local artifacts live at:
 
 ```text
-build/native/ios-simulator/arm64/face_detector/libface_detector.dylib
-build/native/ios-simulator/arm64/face_landmarker/libface_landmarker.dylib
+build/native/ios-simulator/arm64/libmediapipe.dylib
 ```
 
-Each directory includes a manifest, licenses and notices. The build hook checks
+The directory includes a manifest, licenses and notices. The build hook checks
 the hash, platform, architecture, SDK and CPU capability before handing the
-library to Flutter's native-asset bundler. Flutter packages each selected dylib
-as an embedded framework. A macOS ARM64 dylib or physical-device ARM64 dylib
+library to Flutter's native-asset bundler. Flutter packages the dylib under each
+selected task's framework name. A macOS ARM64 dylib or physical-device ARM64 dylib
 cannot substitute for a simulator dylib.
 
 The built ARM64 simulator libraries require **iOS 14.0 or newer**. Set the app's
@@ -103,3 +103,31 @@ under `models/` and `test/fixtures/`.
 Shipping to physical iPhones needs an independently built device slice,
 device inference tests, packaging/release work and camera validation. That
 work is separate from this simulator milestone.
+
+## Combined runtime and device build
+
+The fresh-consumer runner copies the package into an isolated directory, creates
+a new Flutter app, runs the existing face suites, and launches a separate normal
+debug app for inference. It verifies that Flutter's embedded frameworks retain
+the runtime's code and data despite signing and Mach-O header changes. Reports
+and logs live under root `build/codex-tmp/ios-consumer-*/`. The September 16 run
+passed 37 CPU tests and standalone app inference; 34 GPU cases were skipped.
+
+The combined library exports other task APIs. An experimental run with
+`--experimental-all-tasks` passed 107 tests and failed 56 reference comparisons.
+Support declarations and reference tolerances remain unchanged; see UP009 in
+`upstream-issues.md`. The build applies the same scoped KleidiAI compiler flags
+as macOS to prevent the non-streaming SVE crash observed on the host CPU.
+
+Build a device candidate separately:
+
+```sh
+python3 -B tool/build_ios_simulator.py --sdk iphoneos
+```
+
+This writes `build/native/ios/arm64/libmediapipe.dylib` and verifies the physical
+device platform, architecture, exports and dependencies. No physical-device
+inference claim follows from those checks, and the package still rejects device
+builds. `tool/prepare_ios_release.py --simulator-report <report.json>` prepares
+deterministic simulator and device development archives, requiring a passing
+simulator report for the exact library hash.

@@ -47,7 +47,8 @@ final class VisionRuntimeRelease {
   /// Release tag in the public native runtime repository.
   final String release;
 
-  /// Tasks whose C API this library exports.
+  /// Task bindings served by this release. Additional exports do not imply
+  /// supported inference; the capability table records validation status.
   final Set<String> tasks;
 
   /// The archive holding the library, notices and `manifest.json`, or null
@@ -65,7 +66,8 @@ final class VisionRuntimeRelease {
   /// SHA-256 of the library, pinned independently of the downloaded manifest.
   final String librarySha256;
 
-  /// Code asset name the bindings reference, without the package prefix.
+  /// Primary code asset name, without the package prefix. Combined runtimes
+  /// are also bundled under the other selected tasks' binding asset names.
   final String assetName;
 
   /// Package-relative directory where `tool/build_native.py` writes the same
@@ -138,11 +140,18 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     assetName: 'vision.dylib',
     localBuildDirectory: 'build/native/tasks/',
   ),
+  VisionRuntimeRelease(
+    target: 'ios-simulator/arm64',
+    release: 'vision-ios-v1.0.0-1',
+    tasks: {'face_detector', 'face_landmarker'},
+    archive: null,
+    libraryName: 'libmediapipe.dylib',
+    librarySha256:
+        'a4fea1f2abddb6d656b043b5471a09a64df1308475422da9800c8f880cd2aa9e',
+    assetName: 'face_detector.dylib',
+    localBuildDirectory: 'build/native/ios-simulator/arm64/',
+  ),
 ];
-
-/// Targets whose vision runtimes exist only as maintainer builds made by
-/// `tool/build_ios_simulator.py`; nothing is published for them yet.
-const localOnlyVisionTargets = {'ios-simulator/arm64'};
 
 /// Official desktop CPU runtimes. Coverage grows only after inference tests pass.
 const visionWheelReleases = <String, VisionWheelRelease>{
