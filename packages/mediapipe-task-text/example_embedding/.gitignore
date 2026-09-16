@@ -1,6 +1,8 @@
 # Miscellaneous
 /assets/*.task
 /assets/*.litertlm
+# Written beside the model on first run, and as large as the model itself.
+/assets/*.xnnpack_cache
 *.class
 *.log
 *.pyc
