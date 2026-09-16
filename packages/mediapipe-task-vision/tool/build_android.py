@@ -119,9 +119,12 @@ def main():
     parser.add_argument('--ndk', type=Path, required=True)
     parser.add_argument('--abi', choices=('arm64-v8a', 'x86_64'), default='arm64-v8a')
     parser.add_argument('--api', type=int, default=24)
+    parser.add_argument('--jobs', type=int, default=8)
     parser.add_argument('--source-dir', type=Path, default=REPO / 'build/codex-tmp/mediapipe-android')
     parser.add_argument('--bazel-cache', type=Path, default=REPO / 'build/codex-tmp/bazel')
     args = parser.parse_args()
+    if args.jobs < 1:
+        raise SystemExit('--jobs must be positive.')
     if platform.system() not in ('Darwin', 'Linux'):
         raise SystemExit('Android builds require a Linux or macOS host.')
     if args.api < 24:
@@ -161,7 +164,7 @@ def main():
              '--repo_env=HERMETIC_PYTHON_VERSION=3.12',
              # Android's upstream buffer pool requires GL types even for CPU
              # task graphs. Compile its normal GL internals; GPU is unvalidated.
-             '--define=MEDIAPIPE_DISABLE_GPU=0', '-c', 'opt', '--strip=always', '--jobs=8',
+             '--define=MEDIAPIPE_DISABLE_GPU=0', '-c', 'opt', '--strip=always', f'--jobs={args.jobs}',
              '--linkopt=-Wl,-z,max-page-size=16384',
              '--linkopt=-Wl,-z,start-stop-visibility=hidden']
     flags.extend(f'--linkopt=-Wl,-u,{name}' for name in [*constructors, FORCED])

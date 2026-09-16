@@ -131,7 +131,7 @@ def verify_objc_namespace(library):
     print(f"Verified {len(classes)} isolated Objective-C classes.")
 
 
-def build_opencv(root, *, ios_simulator=False, ios_sdk=None):
+def build_opencv(root, *, ios_simulator=False, ios_sdk=None, jobs=8):
     if ios_simulator:
         if ios_sdk not in (None, 'iphonesimulator'):
             raise ValueError('ios_simulator conflicts with ios_sdk')
@@ -174,7 +174,7 @@ def build_opencv(root, *, ios_simulator=False, ios_sdk=None):
         ])
     run(["cmake", "-S", str(source), "-B", str(build), "-G", "Ninja",
          *configuration])
-    run(["cmake", "--build", str(build), "--parallel", "8"])
+    run(["cmake", "--build", str(build), "--parallel", str(jobs)])
     run(["cmake", "--install", str(build)])
     repository = "ios_opencv" if is_ios else "macos_opencv"
     (install / "WORKSPACE").write_text(f'workspace(name = "{repository}")\n')

@@ -1,8 +1,9 @@
 # Android runtime candidate
 
 The combined MediaPipe v1.0.0 C task runtime can be cross-built with the pinned
-Android NDK `28.2.13676358`. This is a validation candidate. The Flutter package
-does not yet declare Android task support or download an Android runtime.
+Android NDK `28.2.13676358`. The Flutter hook accepts verified local builds for
+Face Detector and Face Landmarker on arm64-v8a and x86_64. No Android runtime
+archive is published or downloaded; other exported tasks remain unavailable.
 
 From the repository root on macOS or Linux with Bazelisk and Python installed:
 
@@ -53,8 +54,33 @@ with six detector keypoints and a landmarker result containing 478 landmarks,
 
 These count checks do not establish numerical reference parity, Flutter APK
 packaging, VIDEO/lifecycle behavior, GPU support, camera support or physical
-device performance. Those checks must precede a supported Android release and
-consumer CI job.
+device performance. The consumer suite below adds numerical parity, APK
+packaging and VIDEO/lifecycle checks; physical-device validation is still needed
+before a supported Android release.
+
+## Flutter consumer and CI
+
+Build the ABI matching the emulator (`--abi x86_64` or `--abi arm64-v8a`), download
+both face models, and run:
+
+```sh
+python3 -B packages/mediapipe-task-vision/tool/test_android_consumer.py \
+  --adb <sdk-path>/platform-tools/adb --device emulator-5554
+```
+
+The runner copies the packages and local runtime into an isolated consumer,
+runs the unchanged face CPU IMAGE/VIDEO reference and lifecycle suites, builds
+debug and release APKs, and launches each for standalone inference. It verifies
+that all four bundled libraries retain their ELF LOAD segments after Gradle
+strips debug metadata. The hook checks provenance, all library hashes, ELF
+architecture, 16 KB alignment, SONAMEs, dependency closure and required notices.
+The app minimum API is 24, and GPU requests remain unsupported.
+
+`.github/workflows/android.yaml` builds the x86_64 candidate from pinned source
+on Ubuntu 24.04 and runs the consumer on an API 35 Google APIs emulator. Test
+logs and hash receipts are uploaded even when a consumer test fails. This is
+emulator CI; physical arm64 devices, camera use and GPU inference are untested.
+The native arm64 16 KB-page smoke evidence below is a separate validation.
 
 The September 16 Android 16 arm64 emulator run passed both face probes on a
 16 KB-page system. [Build and smoke receipts](validations/2026-09-16-android-native/)

@@ -104,6 +104,16 @@ Shipping to physical iPhones needs an independently built device slice,
 device inference tests, packaging/release work and camera validation. That
 work is separate from this simulator milestone.
 
+## CI
+
+`.github/workflows/ios.yaml` runs the two face tasks on an arm64 iOS simulator
+using `macos-15`. It installs the native toolchain, builds the pinned source
+runtime, downloads the pinned face models, and invokes the fresh-consumer
+runner without `--prebuilt`. Publication is unnecessary for this source-build
+job. It caches native build outputs per Xcode version and builder revision and
+uploads the consumer logs and report. Device builds and inference on physical
+iPhones are outside this simulator job.
+
 ## Combined runtime and device build
 
 The fresh-consumer runner copies the package into an isolated directory, creates

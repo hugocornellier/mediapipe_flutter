@@ -49,6 +49,11 @@ This is a development baseline. GenAI inference and mobile platforms still need
 validation. Public prebuilt runtimes are available for both macOS arm64 face
 tasks and the optional segmenter. The face tasks also have a validated local
 arm64 iOS simulator CPU target; simulator archives are not yet published.
+The iOS and Android workflows build pinned runtimes from source and test face
+CPU inference in fresh Flutter consumers on a simulator/emulator. Android CI
+uses x86_64 and checks debug/release APKs; iOS CI uses an arm64 simulator and
+checks embedded frameworks and a standalone debug app. Physical mobile devices,
+mobile GPU inference and camera use remain untested.
 
 **Linux x64 and Windows x64 run eleven vision tasks on CPU**, served by pinned
 official MediaPipe 1.0.0 wheels: Face Detector, Face Landmarker, Object Detector,

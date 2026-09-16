@@ -39,7 +39,7 @@ void main() {
     for (final (os, architecture) in [
       (OS.linux, Architecture.arm64),
       (OS.windows, Architecture.arm64),
-      (OS.android, Architecture.arm64),
+      (OS.android, Architecture.arm),
       (OS.iOS, Architecture.arm64),
       (OS.macOS, Architecture.x64),
     ]) {
@@ -135,6 +135,36 @@ void main() {
         }),
         check: (_, _) =>
             fail('Unvalidated simulator task unexpectedly accepted'),
+      ),
+      failsWith<UnsupportedError>(contains('object_detector')),
+    );
+  });
+
+  test('Android requires a source build instead of inventing a download', () {
+    for (final architecture in [Architecture.arm64, Architecture.x64]) {
+      expect(
+        testCodeBuildHook(
+          mainMethod: hook.main,
+          targetOS: OS.android,
+          targetArchitecture: architecture,
+          userDefines: defines({'prebuilt': true}),
+          check: (_, _) => fail('Android unexpectedly downloaded a runtime'),
+        ),
+        failsWith<StateError>(contains('No Android public archive is pinned')),
+      );
+    }
+  });
+
+  test('Android face CI rejects other exported task APIs', () {
+    expect(
+      testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.android,
+        targetArchitecture: Architecture.x64,
+        userDefines: defines({
+          'tasks': ['object_detector'],
+        }),
+        check: (_, _) => fail('Unvalidated Android task unexpectedly accepted'),
       ),
       failsWith<UnsupportedError>(contains('object_detector')),
     );

@@ -33,6 +33,7 @@ def main():
                         default='iphonesimulator',
                         help='Device slices are build-checked, not inference-validated.')
     parser.add_argument('--output-dir', type=Path)
+    parser.add_argument('--jobs', type=int, default=8)
     parser.add_argument('--source-dir', type=Path,
                         default=REPO / 'build/codex-tmp/mediapipe-native')
     parser.add_argument('--bazel-cache', type=Path,
@@ -40,6 +41,8 @@ def main():
     parser.add_argument('--opencv-root', type=Path,
                         default=REPO / 'build/codex-tmp')
     args = parser.parse_args()
+    if args.jobs < 1:
+        raise SystemExit('--jobs must be positive.')
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         raise SystemExit('This cross-build requires an Apple Silicon Mac with Xcode.')
     source = args.source_dir.resolve()
@@ -52,7 +55,8 @@ def main():
         raise SystemExit('Refusing modified MediaPipe source.')
     simulator = args.sdk == 'iphonesimulator'
     cpu = 'ios_sim_arm64' if simulator else 'ios_arm64'
-    opencv, configuration = build_opencv(args.opencv_root.resolve(), ios_sdk=args.sdk)
+    opencv, configuration = build_opencv(args.opencv_root.resolve(), ios_sdk=args.sdk,
+                                         jobs=args.jobs)
     packages = linked_packages(source)
     exports = exported_functions(source, packages)
     constructors = sorted(name for name in exports
@@ -66,7 +70,7 @@ def main():
         '--config=ios', f'--cpu={cpu}', '--ios_minimum_os=13.0',
         f'--platforms=@build_bazel_apple_support//platforms:{cpu}',
         '--extra_toolchains=@@apple_support~~apple_cc_configure_extension~local_config_apple_cc_toolchains//:all',
-        '-c', 'opt', '--strip=always', '--jobs=8',
+        '-c', 'opt', '--strip=always', f'--jobs={args.jobs}',
         '--repo_env=HERMETIC_PYTHON_VERSION=3.12',
         '--define=MEDIAPIPE_DISABLE_GPU=1',
         # The simulator executes on the host CPU. Apple's SME support does

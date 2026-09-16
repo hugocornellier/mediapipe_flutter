@@ -4,6 +4,7 @@ import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
 import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_flutter_vision/src/native_assets/android_library.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
 
@@ -45,6 +46,12 @@ void main(List<String> arguments) async {
         );
       }
       // Core's hook rejects targets its runtime table has no release for.
+    }
+    if (target == 'android/arm64' || target == 'android/x64') {
+      if (tasks.isNotEmpty) {
+        await _bundleAndroid(input, output, target: target, tasks: tasks);
+      }
+      return;
     }
     final wheelRelease = visionWheelReleases[target];
     if (wheelRelease != null && tasks.isNotEmpty) {
@@ -163,16 +170,65 @@ Set<String> _assetNames(Set<String> tasks) => {
       'vision.dylib',
 };
 
+Future<void> _bundleAndroid(
+  BuildInput input,
+  BuildOutputBuilder output, {
+  required String target,
+  required Set<String> tasks,
+}) async {
+  final missing = tasks.difference({'face_detector', 'face_landmarker'});
+  if (missing.isNotEmpty) {
+    throw UnsupportedError(
+      'Android face CI does not validate ${missing.join(', ')}.',
+    );
+  }
+  final abi = target == 'android/arm64' ? 'arm64-v8a' : 'x86_64';
+  final local = Directory.fromUri(
+    input.packageRoot.resolve('build/native/android/$abi/'),
+  );
+  if (input.userDefines['prebuilt'] == true ||
+      !await File.fromUri(local.uri.resolve('libmediapipe.so')).exists()) {
+    throw StateError(
+      'Android runtimes require a local source build. '
+      'Run tool/build_android.py --ndk <path> --abi $abi and omit prebuilt: true. '
+      'No Android public archive is pinned.',
+    );
+  }
+  final libraries = await validateAndroidVisionLibrary(
+    local,
+    abi: abi,
+    targetApi: input.config.code.android.targetNdkApi,
+  );
+  await _bundleAliases(
+    input,
+    output,
+    library: libraries.first,
+    tasks: tasks,
+    suffix: 'so',
+  );
+  for (final dependency in libraries.skip(1)) {
+    _addAsset(
+      input,
+      output,
+      library: dependency,
+      assetName: dependency.uri.pathSegments.last,
+    );
+  }
+}
+
 Future<void> _bundleAliases(
   BuildInput input,
   BuildOutputBuilder output, {
   required File library,
   required Set<String> tasks,
+  String suffix = 'dylib',
 }) async {
   final digest = (await sha256.bind(library.openRead()).first).toString();
   for (final assetName in _assetNames(tasks)) {
     final stem = assetName.substring(0, assetName.length - '.dylib'.length);
-    final bundled = File.fromUri(library.parent.uri.resolve('lib$stem.dylib'));
+    final bundled = File.fromUri(
+      library.parent.uri.resolve('lib$stem.$suffix'),
+    );
     if (!await bundled.exists() ||
         (await sha256.bind(bundled.openRead()).first).toString() != digest) {
       await library.copy(bundled.path);
