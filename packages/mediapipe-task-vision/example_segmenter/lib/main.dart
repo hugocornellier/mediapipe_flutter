@@ -254,21 +254,9 @@ class _SegmenterEditorState extends State<SegmenterEditor> {
                 spacing: 24,
                 runSpacing: 12,
                 children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'MagicTouch',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        'Point. Paint. Select.',
-                        style: TextStyle(color: Color(0xffa6bcb0)),
-                      ),
-                    ],
+                  const Text(
+                    'MagicTouch',
+                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
                   ),
                   Wrap(
                     spacing: 8,
@@ -309,16 +297,8 @@ class _SegmenterEditorState extends State<SegmenterEditor> {
                         icon: Icon(Icons.add),
                         label: Text('Include'),
                       ),
-                      ButtonSegment(
-                        value: SegmentationBrushMode.negative,
-                        icon: Icon(Icons.remove),
-                        label: Text('Exclude'),
-                      ),
-                      ButtonSegment(
-                        value: SegmentationBrushMode.lasso,
-                        icon: Icon(Icons.gesture),
-                        label: Text('Lasso'),
-                      ),
+                      // TODO: Re-add the Exclude (negative) and Lasso brushes
+                      // once they are better tested.
                     ],
                     selected: {editor?.brush ?? SegmentationBrushMode.positive},
                     onSelectionChanged: canEdit

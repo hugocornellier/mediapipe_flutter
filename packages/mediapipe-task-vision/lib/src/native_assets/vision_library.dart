@@ -17,6 +17,15 @@ enum VisionLibraryTarget {
   iosSimulatorArm64,
 }
 
+/// The validation target for a hook build target string; see `buildTarget`.
+VisionLibraryTarget visionLibraryTarget(String target) => switch (target) {
+  'macos/arm64' => VisionLibraryTarget.macosArm64,
+  'ios-simulator/arm64' => VisionLibraryTarget.iosSimulatorArm64,
+  _ => throw UnsupportedError(
+    'mediapipe_flutter_vision has no native runtime validation for $target.',
+  ),
+};
+
 Set<String> _requiredFiles(String libraryName) => {
   libraryName,
   'manifest.json',
@@ -160,8 +169,17 @@ Future<File> downloadVisionLibrary({
   }
 }
 
+/// Names a vision runtime may have. This is a closed set so a release row can
+/// never name an arbitrary path inside an extracted archive.
+const _libraryNames = {
+  'libface_detector.dylib',
+  'libface_landmarker.dylib',
+  // The combined source build covering every open-source task.
+  'libmediapipe.dylib',
+};
+
 void _checkLibraryName(String name) {
-  if (name != 'libface_detector.dylib' && name != 'libface_landmarker.dylib') {
+  if (!_libraryNames.contains(name)) {
     throw ArgumentError.value(
       name,
       'libraryName',

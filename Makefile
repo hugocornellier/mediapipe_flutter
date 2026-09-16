@@ -15,6 +15,10 @@ models:
 	$(MAKE) models_text
 	cd packages/mediapipe-task-vision && dart tool/download_model.dart
 	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
+	cd packages/mediapipe-task-vision && dart tool/download_object_detector.dart
+	cd packages/mediapipe-task-vision && dart tool/download_image_tasks.dart
+	cd packages/mediapipe-task-vision && dart tool/download_landmark_tasks.dart
+	cd packages/mediapipe-task-vision && dart tool/download_segmenter_tasks.dart
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
 	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_segmenter_example.py
@@ -25,12 +29,10 @@ models:
 # Optional maintainer build; consumers download the pinned prebuilt runtime.
 native_vision:
 	cd packages/mediapipe-task-vision && python3 tool/build_native.py $(VISION_NATIVE_ARGS)
-	cd packages/mediapipe-task-vision && python3 tool/build_native.py --task face_landmarker $(VISION_NATIVE_ARGS)
 
 # Prepare a reviewable public archive from an already tested native build.
 release_vision:
 	cd packages/mediapipe-task-vision && python3 tool/prepare_native_release.py
-	cd packages/mediapipe-task-vision && python3 tool/prepare_native_release.py --task face_landmarker
 
 analyze:
 	@for package in $(ALL_PACKAGES); do (cd "$$package" && dart analyze --fatal-infos) || exit $$?; done
@@ -62,6 +64,7 @@ generate_genai:
 generate_vision:
 	cd packages/mediapipe-task-vision && dart tool/generate_bindings.dart
 	cd packages/mediapipe-task-vision && dart tool/generate_bindings.dart ffigen_face_landmarker.yaml
+	cd packages/mediapipe-task-vision && dart tool/generate_bindings.dart ffigen_vision.yaml
 
 test:
 	$(MAKE) models

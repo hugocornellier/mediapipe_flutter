@@ -12,17 +12,20 @@ import 'support/face_reference.dart';
 
 const _model = 'models/face_landmarker.task';
 const _fixtures = 'test/fixtures/face_detection';
-final _reference =
-    jsonDecode(
-          File(
-            'test/fixtures/face_landmarker/official_reference.json',
-          ).readAsStringSync(),
-        )
-        as Map<String, dynamic>;
+final _reference = loadFaceReference(
+  'face_landmarker',
+  'official_reference.json',
+);
 
 void main() {
   for (final delegate in VisionDelegate.values) {
-    group(delegate.name, () => _testDelegate(delegate));
+    group(
+      delegate.name,
+      () => _testDelegate(delegate),
+      skip: delegate == VisionDelegate.gpu && !Platform.isMacOS
+          ? 'GPU face inference is validated on macOS only.'
+          : false,
+    );
   }
   test('CPU is the default delegate', () {
     expect(

@@ -15,13 +15,31 @@ class SummarizerPage extends StatefulWidget {
 }
 
 class _SummarizerPageState extends State<SummarizerPage> {
+  // Key points mode targets 3 to 5 bullets, so a five-sentence sample would
+  // mostly be split into bullets. This one has enough detail to condense.
   final _input = TextEditingController(
     text:
-        'The team met on Monday to plan the next app release. Maya will finish '
-        'the camera interface by Thursday. Leo will investigate the startup crash and '
-        'send a fix for review on Wednesday. Testing begins on Friday, and the release '
-        'is scheduled for the following Tuesday if no critical bugs remain. The team '
-        'decided to postpone the new settings screen until the next release.',
+        'The city of Riverton will launch a public bike-share program next '
+        'spring, the transportation department announced on Tuesday. The first '
+        'phase will include 400 bicycles and 50 docking stations spread across '
+        'downtown, the university campus and the neighborhoods along the river. '
+        "One in four bikes will have an electric motor to help riders on the city's "
+        'steep hills. The program will cost about 3.5 million dollars to set up. '
+        'A state clean-transportation grant awarded last year will cover most of '
+        'that amount, and corporate sponsors will pay the rest. Riders will unlock '
+        'bikes with a phone app or a transit card. A single ride will cost two '
+        'dollars for the first thirty minutes, and an annual membership will cost '
+        '90 dollars. Residents who receive public assistance will be able to buy '
+        'a membership for five dollars a year. The idea has been debated for '
+        'nearly a decade. An earlier proposal was abandoned in 2019 after business '
+        'owners complained about losing parking spaces, so planners now intend to '
+        'place most stations on wide sidewalks and in public plazas. Some '
+        'residents remain skeptical. At a public hearing last month, several '
+        'people worried about theft and vandalism, and others doubted that many '
+        'people would ride up the hills. Officials said every bike will have GPS '
+        'tracking, and the city will add eight miles of protected bike lanes '
+        'before the launch. If the first phase succeeds, a second phase in 2028 '
+        'could grow the network to 1,000 bikes and reach the eastern suburbs.',
   );
   TextSummarizer? _task;
   TextSummarizerMode _mode = TextSummarizerMode.keypoints;
@@ -158,6 +176,9 @@ class _SummarizerPageState extends State<SummarizerPage> {
             maxLines: 10,
             decoration: const InputDecoration(
               labelText: 'Text to summarize',
+              helperText:
+                  'Key points returns about 3 to 5 bullets. A paragraph with only a few sentences has little to condense.',
+              helperMaxLines: 2,
               border: OutlineInputBorder(),
             ),
           ),

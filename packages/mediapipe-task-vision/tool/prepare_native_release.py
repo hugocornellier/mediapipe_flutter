@@ -14,20 +14,27 @@ import tarfile
 
 from build_native import PACKAGE, REVISION, OPENCV_REVISION
 
-NAME = "mediapipe-face-detector-1.0.0-macos-arm64.tar.gz"
-TAG = "face-detector-v1.0.0-2"
+NAME = "mediapipe-vision-1.0.0-macos-arm64.tar.gz"
+# The release this tool prepares: one library covering every task the
+# open-source C API offers.
+TAG = "vision-v1.0.0-1"
+LIBRARY = "libmediapipe.dylib"
+# The releases consumers actually download, as pinned in `sdk_downloads.dart`.
+# Consumer tests assert the hook extracted exactly these, so this stays on the
+# superseded per-task releases until the combined runtime is published and
+# pinned; then it becomes {"vision": TAG}.
 RELEASE_TAGS = {
-    "face_detector": TAG,
+    "face_detector": "face-detector-v1.0.0-2",
     "face_landmarker": "face-landmarker-v1.0.0-2",
 }
 REPOSITORY = "hugocornellier/mediapipe_flutter_native"
 
 
-def prepare(source, destination, task='face_detector'):
-    archive_name = f"mediapipe-{task.replace('_', '-')}-1.0.0-macos-arm64.tar.gz"
-    tag = RELEASE_TAGS[task]
-    library_name = f"lib{task}.dylib"
-    title = task.replace('_', ' ').title()
+def prepare(source, destination):
+    archive_name = NAME
+    tag = TAG
+    library_name = LIBRARY
+    title = "Vision, text and audio tasks"
     files = {}
     with tarfile.open(source, "r:gz") as archive:
         for member in archive:
@@ -61,6 +68,9 @@ def prepare(source, destination, task='face_detector'):
     ]
     manifest["clang"] = manifest["clang"].splitlines()[0]
     manifest["release"] = tag
+    tasks = manifest.get("tasks")
+    if not tasks:
+        raise ValueError("Native manifest does not record the tasks it exports")
     files["manifest.json"] = (json.dumps(manifest, indent=2) + "\n").encode()
     destination.mkdir(parents=True, exist_ok=True)
     output = destination / archive_name
@@ -89,10 +99,12 @@ artifacts and their provenance; the Dart/Flutter wrapper is developed separately
 - MediaPipe v1.0.0: [{REVISION}](https://github.com/google-ai-edge/mediapipe/tree/{REVISION}).
 - Static OpenCV 4.12.0: [{OPENCV_REVISION}](https://github.com/opencv/opencv/tree/{OPENCV_REVISION}).
 - Official task graph, calculators, model preprocessing, and C API are unchanged.
-- Objective-C identifiers are prefixed per task to avoid process-wide collisions.
+- Objective-C identifiers are prefixed so this library does not collide
+  process-wide with another copy of MediaPipe or LiteRT.
 - Runtime library: {len(files[library_name]):,} bytes. Only macOS system
   frameworks and libraries are required at runtime.
-- The model is separate and is not included in these native downloads.
+- Tasks exported ({len(tasks)}): {', '.join(tasks)}.
+- Models are separate and are not included in these native downloads.
 
 Download the versioned archive from [Releases](https://github.com/{REPOSITORY}/releases).
 Verify it against the release's `SHA256SUMS` before use. `manifest.json` records
@@ -102,20 +114,28 @@ Rebuilds use a new release tag; published archive URLs are never reused.
 The archive includes upstream MediaPipe and OpenCV licenses and notices.
 Retain the applicable notices when redistributing the native library.
 """)
-    (destination / "RELEASE_NOTES.md").write_text(f"""{title} runtime for macOS arm64, CPU and Metal GPU IMAGE/VIDEO modes in one library.
+    (destination / "RELEASE_NOTES.md").write_text(f"""{title} for macOS arm64, CPU and Metal GPU IMAGE/VIDEO modes in one library.
 
 MediaPipe v1.0.0 with static OpenCV 4.12.0; the official task pipeline is unchanged.
+Built from `//mediapipe/tasks/c:libmediapipe`, the same target Google's own wheel
+uses, so one library exports all {len(tasks)} tasks: {', '.join(tasks)}.
 The archive includes the native library, source/build manifest, and third-party
 licenses and notices. Models are distributed separately.
-Objective-C identifiers are prefixed per task so both libraries can coexist.
+Objective-C identifiers are prefixed so this library does not collide
+process-wide with another copy of MediaPipe or LiteRT.
 The official Face Landmarker blendshape stage still uses CPU XNNPACK.
 
 - Archive SHA-256: `{digest}`
 - Library SHA-256: `{library_hash}`
 - Library size: {len(files[library_name]):,} bytes
 
-Validated against official MediaPipe Python reference outputs, native C ABI
-checks, and real Flutter debug and release inference on macOS arm64.
+Every exported entry point is checked against the upstream headers, and the
+library is verified to export nothing else and to need only macOS system
+frameworks. Face Detector and Face Landmarker are additionally validated against
+official MediaPipe Python reference outputs, native C ABI checks, and real
+Flutter debug and release inference on both CPU and Metal. The remaining tasks
+are built and exported from the same pinned source but do not yet have wrapper
+bindings or reference fixtures in this distribution.
 
 Android, iOS, Intel macOS, and LIVE_STREAM callbacks are not included.
 """)
@@ -126,18 +146,11 @@ Android, iOS, Intel macOS, and LIVE_STREAM callbacks are not included.
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--task", choices=("face_detector", "face_landmarker"),
-                        default="face_detector")
     parser.add_argument("--input", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    name = f"mediapipe-{args.task.replace('_', '-')}-1.0.0-macos-arm64.tar.gz"
-    tag = RELEASE_TAGS[args.task]
-    native = PACKAGE / "build/native"
-    if args.task == "face_landmarker":
-        native = native / args.task
-    prepare(args.input or native / name,
-            args.output or PACKAGE / "build/releases" / tag, task=args.task)
+    prepare(args.input or PACKAGE / "build/native/tasks" / NAME,
+            args.output or PACKAGE / "build/releases" / TAG)
 
 
 if __name__ == "__main__":

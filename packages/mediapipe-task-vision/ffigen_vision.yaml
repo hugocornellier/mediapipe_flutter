@@ -1,0 +1,60 @@
+name: MediaPipeVisionTasksBindings
+description: MediaPipe v1.0.0 C API. Regenerate with dart tool/generate_bindings.dart ffigen_vision.yaml.
+silence-enum-warning: true # sizeof(enum)==4 is checked by tool/native_smoke.cc.
+output: lib/third_party/mediapipe/vision_tasks_bindings.dart
+# One binding set for the combined `//mediapipe/tasks/c:libmediapipe` runtime.
+# The two face tasks keep their own bindings while they are served by their own
+# published per-task archives.
+headers:
+  entry-points:
+    - build/ffigen/mediapipe/tasks/c/vision/gesture_recognizer/gesture_recognizer.h
+    - build/ffigen/mediapipe/tasks/c/vision/hand_landmarker/hand_landmarker.h
+    - build/ffigen/mediapipe/tasks/c/vision/holistic_landmarker/holistic_landmarker.h
+    - build/ffigen/mediapipe/tasks/c/vision/image_classifier/image_classifier.h
+    - build/ffigen/mediapipe/tasks/c/vision/image_embedder/image_embedder.h
+    - build/ffigen/mediapipe/tasks/c/vision/image_segmenter/image_segmenter.h
+    - build/ffigen/mediapipe/tasks/c/vision/interactive_segmenter_legacy/interactive_segmenter_legacy.h
+    - build/ffigen/mediapipe/tasks/c/vision/object_detector/object_detector.h
+    - build/ffigen/mediapipe/tasks/c/vision/pose_landmarker/pose_landmarker.h
+    - build/ffigen/mediapipe/tasks/c/vision/core/image_processing_options.h
+    - build/ffigen/mediapipe/tasks/c/components/containers/category.h
+    - build/ffigen/mediapipe/tasks/c/components/containers/keypoint.h
+    - build/ffigen/mediapipe/tasks/c/components/containers/landmark.h
+  include-directives:
+    - '**/mediapipe/tasks/c/**.h'
+compiler-opts:
+  - '-xc++'
+  - '-Ibuild/ffigen'
+  - '-std=c++17'
+functions:
+  include:
+    - 'MpGestureRecognizer.*'
+    - 'MpHandLandmarker.*'
+    - 'MpHolisticLandmarker.*'
+    - 'MpImageClassifier.*'
+    - 'MpImageEmbedder.*'
+    - 'MpImageSegmenter.*'
+    - 'MpInteractiveSegmenterLegacy.*'
+    - 'MpObjectDetector.*'
+    - 'MpPoseLandmarker.*'
+    - 'MpImage(CreateFromFile|CreateFromUint8Data|Free|GetWidth|GetHeight|GetChannels|GetByteDepth|DataFloat32|DataUint8|IsContiguous|GetValueFloat32)'
+    - MpStringListFree
+    - MpErrorFree
+structs:
+  include:
+    - 'Mp.*'
+enums:
+  include:
+    - 'Mp.*'
+typedefs:
+  include:
+    - 'Mp.*'
+macros:
+  exclude:
+    - '.*'
+preamble: |
+  // Copyright 2026 The MediaPipe Authors.
+  // Licensed under the Apache License, Version 2.0.
+  // Generated from unmodified MediaPipe v1.0.0 headers; see third_party/README.md.
+ffi-native:
+  asset-id: package:mediapipe_flutter_vision/vision.dylib

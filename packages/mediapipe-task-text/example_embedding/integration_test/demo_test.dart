@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:embedding_gemma_demo/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +14,25 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle(const Duration(milliseconds: 100));
 }
 
+Future<void> waitForSimilarity(WidgetTester tester) async {
+  for (var i = 0; i < 600; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+    if (find.byKey(const Key('similarity-score')).evaluate().isNotEmpty) {
+      return;
+    }
+    final errors = find.byType(SelectableText);
+    if (errors.evaluate().isNotEmpty) {
+      fail(
+        'Comparison failed: ${tester.widget<SelectableText>(errors.first).data}',
+      );
+    }
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+  }
+  fail('Comparison did not finish within 60 seconds.');
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   WidgetController.hitTestWarningShouldBeFatal = true;
@@ -19,6 +40,12 @@ void main() {
     'embedding settings run quantized retrieval and reload float output',
     (tester) async {
       await tester.pumpWidget(const EmbeddingDemo());
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const Key('embedding-scroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
       await tapVisible(tester, find.text('Embedding settings'));
       await tapVisible(tester, find.byKey(const Key('embedding-format')));
       await tester.tap(find.text('Retrieval query').last);
@@ -39,17 +66,31 @@ void main() {
       );
       await tapVisible(tester, find.text('Embedding settings'));
       await tapVisible(tester, find.text('Compare sentences'));
+      await waitForSimilarity(tester);
       final quantized = double.parse(
         tester.widget<Text>(find.byKey(const Key('similarity-score'))).data!,
       );
       expect(quantized.isFinite, isTrue);
       expect(find.textContaining('768 int8 values'), findsOneWidget);
-      final scrollable = find
-          .descendant(
-            of: find.byKey(const Key('embedding-scroll')),
-            matching: find.byType(Scrollable),
-          )
-          .first;
+      await tester.scrollUntilVisible(
+        find.text('Embeddings'),
+        200,
+        scrollable: scrollable,
+      );
+      await tapVisible(tester, find.text('Embeddings'));
+      final vectorTexts = find.descendant(
+        of: find.byKey(const Key('embedding-vectors')),
+        matching: find.byType(SelectableText),
+      );
+      expect(vectorTexts, findsNWidgets(2));
+      final vector =
+          jsonDecode(tester.widget<SelectableText>(vectorTexts.first).data!)
+              as List<dynamic>;
+      expect(vector, hasLength(768));
+      expect(
+        vector.every((value) => value is int && value >= -128 && value <= 127),
+        isTrue,
+      );
       await tester.scrollUntilVisible(
         find.text('Embedding settings'),
         -200,
@@ -59,7 +100,33 @@ void main() {
       await tapVisible(tester, find.byKey(const Key('embedding-quantize')));
       await tapVisible(tester, find.text('Embedding settings'));
       await tapVisible(tester, find.text('Compare sentences'));
+      await waitForSimilarity(tester);
       expect(find.textContaining('768 float32 values'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Embeddings'),
+        200,
+        scrollable: scrollable,
+      );
+      await tapVisible(tester, find.text('Embeddings'));
+      final floatVector =
+          jsonDecode(
+                tester
+                    .widget<SelectableText>(
+                      find
+                          .descendant(
+                            of: find.byKey(const Key('embedding-vectors')),
+                            matching: find.byType(SelectableText),
+                          )
+                          .first,
+                    )
+                    .data!,
+              )
+              as List<dynamic>;
+      expect(floatVector, hasLength(768));
+      expect(
+        floatVector.every((value) => value is num && value.isFinite),
+        isTrue,
+      );
       final floating = double.parse(
         tester.widget<Text>(find.byKey(const Key('similarity-score'))).data!,
       );

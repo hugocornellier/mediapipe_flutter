@@ -14,7 +14,13 @@ const _model = 'models/blaze_face_short_range.tflite';
 
 void main() {
   for (final delegate in VisionDelegate.values) {
-    group(delegate.name, () => _testDelegate(delegate));
+    group(
+      delegate.name,
+      () => _testDelegate(delegate),
+      skip: delegate == VisionDelegate.gpu && !Platform.isMacOS
+          ? 'GPU face inference is validated on macOS only.'
+          : false,
+    );
   }
   test('CPU is the default delegate', () {
     expect(FaceDetectorOptions(modelPath: _model).delegate, VisionDelegate.cpu);

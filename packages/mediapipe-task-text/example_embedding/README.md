@@ -4,7 +4,9 @@ Uses Google's official version 1 EmbeddingGemma 300M model and MediaPipe 1.0.1
 TextEmbedder pipeline plus the official Proofreader 200M model on macOS arm64
 CPU (macOS 14+). The Proofreader tab streams corrected text and highlights
 Google's native insertion/deletion segments. Summarizer 200M supplies TL;DR and
-key-points modes with completed or streamed output in a third tab. From the repo root:
+key-points modes with completed or streamed output in a third tab. The sentence
+similarity tab also shows both full 768-value embeddings and lets you copy each
+vector. From the repo root:
 
 ```sh
 make models_embedding

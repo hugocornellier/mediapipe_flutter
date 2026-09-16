@@ -1,0 +1,146 @@
+"""Independent Image/Interactive Segmenter outputs from the official wheel."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import platform
+
+import mediapipe as mp
+import numpy as np
+from mediapipe.tasks.python import vision
+from mediapipe.tasks.python.components.containers import keypoint as keypoint_module
+from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
+from official_face_runtime import LIBRARY_NAME, LIBRARY_SHA256
+
+ROOT = Path(__file__).resolve().parents[1]
+FIXTURES = ROOT / 'test/fixtures/face_detection'
+MODELS = {
+    'image': ('deeplab_v3.tflite',
+        'ff36e24d40547fe9e645e2f4e8745d1876d6e38b332d39a82f0bf0f5d1d561b3'),
+    'interactive': ('magic_touch.tflite',
+        'e24338a717c1b7ad8d159666677ef400babb7f33b8ad60c4d96db4ecf694cd25'),
+}
+# A point on the subject of portrait-301x209, in normalized image coordinates.
+KEYPOINT = (0.5, 0.4)
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def mask_output(mask, float32):
+    if float32:
+        # In 1.0.0, float32's contiguous-copy path calls the uint8 ImageFrame
+        # overload and aborts for padded rows. Scalar access is safe on both.
+        data = mask.numpy_view().copy() if mask.is_contiguous() else np.asarray(
+            [[mask[y, x] for x in range(mask.width)] for y in range(mask.height)],
+            dtype=np.float32)
+    else:
+        data = mask.numpy_view().copy()
+    # The same native library fills both sides on this host, so the exact bytes
+    # are comparable; the summary only makes a mismatch readable.
+    return dict(width=mask.width, height=mask.height,
+                sha256=hashlib.sha256(data.tobytes()).hexdigest(),
+                minimum=float(data.min()), maximum=float(data.max()),
+                # Accumulate in float64 so the summary matches a Dart sum.
+                mean=float(data.mean(dtype=np.float64)))
+
+
+def result_output(result):
+    masks = getattr(result, 'confidence_masks', None)
+    category = getattr(result, 'category_mask', None)
+    return dict(
+        confidence_masks=None if masks is None else [mask_output(v, True) for v in masks],
+        category_mask=None if category is None else mask_output(category, False))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--delegate', choices=['cpu', 'gpu'], default='cpu')
+    parser.add_argument('--output-dir', type=Path,
+                        default=ROOT / 'test/fixtures/segmenter_tasks')
+    args = parser.parse_args()
+    assert mp.__version__ == '1.0.0'
+    assert digest(Path(mp.__file__).parent / 'tasks/c' / LIBRARY_NAME) == LIBRARY_SHA256
+    for name, sha in MODELS.values():
+        assert digest(ROOT / 'models' / name) == sha
+    raw = FIXTURES / 'portrait-301x209.rgb'
+    pixels = np.frombuffer(raw.read_bytes(), dtype=np.uint8).reshape(209, 301, 3).copy()
+    delegate = getattr(mp.tasks.BaseOptions.Delegate, args.delegate.upper())
+    cases = []
+
+    def image_for(kind):
+        if kind == 'file':
+            return mp.Image.create_from_file(str(FIXTURES / 'landmark-ex1.jpg'))
+        value = np.zeros_like(pixels) if kind == 'blank' else pixels
+        if kind == 'rotated':
+            value = np.ascontiguousarray(np.rot90(value))
+        if kind == 'rgba' or args.delegate == 'gpu':
+            value = np.concatenate([value, np.full((*value.shape[:2], 1), 255, dtype=np.uint8)], axis=2)
+            return mp.Image(image_format=mp.ImageFormat.SRGBA, data=value)
+        return mp.Image(image_format=mp.ImageFormat.SRGB, data=value)
+
+    def record(task_name, kind, image, configuration, result, **extra):
+        case = dict(task=task_name, input=kind, width=image.width, height=image.height,
+                    options=configuration, result=result_output(result), **extra)
+        if kind == 'file':
+            case.update(file='landmark-ex1.jpg', sha256=digest(FIXTURES / 'landmark-ex1.jpg'))
+        elif kind != 'blank':
+            case.update(raw=raw.name, sha256=digest(raw))
+        cases.append(case)
+        print(task_name, configuration, kind, extra, flush=True)
+
+    masks_only = dict(output_confidence_masks=True, output_category_mask=False)
+    category_only = dict(output_confidence_masks=False, output_category_mask=True)
+    both = dict(output_confidence_masks=True, output_category_mask=True)
+
+    base = mp.tasks.BaseOptions(
+        model_asset_path=str(ROOT / 'models' / MODELS['image'][0]), delegate=delegate)
+    for configuration in [masks_only, category_only, both]:
+        options = vision.ImageSegmenterOptions(base_options=base, **configuration)
+        with vision.ImageSegmenter.create_from_options(options) as task:
+            # Both tasks reject a region of interest: the official API raises
+            # "This task doesn't support region-of-interest."
+            for kind in ['rgb', 'rgba', 'file', 'blank', 'rotated']:
+                image = image_for(kind)
+                rotation = 90 if kind == 'rotated' else 0
+                processing = ImageProcessingOptions(rotation_degrees=rotation)
+                record('image', kind, image, configuration, task.segment(image, processing),
+                       rotation_degrees=rotation, timestamp_ms=None)
+        options.running_mode = vision.RunningMode.VIDEO
+        with vision.ImageSegmenter.create_from_options(options) as task:
+            for index, kind in enumerate(['rgb', 'blank', 'rgb']):
+                image = image_for(kind)
+                record('image', kind, image, configuration,
+                       task.segment_for_video(image, index * 33),
+                       rotation_degrees=0, timestamp_ms=index * 33)
+
+    base = mp.tasks.BaseOptions(
+        model_asset_path=str(ROOT / 'models' / MODELS['interactive'][0]), delegate=delegate)
+    region_type = vision.InteractiveSegmenterLegacyRegionOfInterest
+    roi = region_type(format=region_type.Format.KEYPOINT,
+                      keypoint=keypoint_module.NormalizedKeypoint(*KEYPOINT))
+    for configuration in [masks_only, category_only]:
+        options = vision.InteractiveSegmenterLegacyOptions(base_options=base, **configuration)
+        with vision.InteractiveSegmenterLegacy.create_from_options(options) as task:
+            for kind in ['rgb', 'rgba', 'file', 'blank', 'rotated']:
+                image = image_for(kind)
+                rotation = 90 if kind == 'rotated' else 0
+                processing = ImageProcessingOptions(rotation_degrees=rotation)
+                record('interactive', kind, image, configuration,
+                       task.segment(image, roi, processing),
+                       rotation_degrees=rotation, timestamp_ms=None,
+                       keypoint=dict(x=KEYPOINT[0], y=KEYPOINT[1]))
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    suffix = '_gpu' if args.delegate == 'gpu' else ''
+    (args.output_dir / f'official{suffix}_reference.json').write_text(json.dumps(dict(
+        runtime='mediapipe==1.0.0', source_revision='6d31f1ebc3284db74d211d62bdc4f0a0c29ea120',
+        library_sha256=LIBRARY_SHA256, delegate=args.delegate.upper(),
+        platform=f'{platform.system()} {platform.machine()}',
+        models={key: sha for key, (_, sha) in MODELS.items()}, cases=cases),
+        indent=2, allow_nan=False) + '\n')
+
+
+if __name__ == '__main__':
+    main()

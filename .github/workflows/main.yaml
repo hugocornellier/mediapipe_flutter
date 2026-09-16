@@ -127,7 +127,9 @@ jobs:
       - name: Generate official CPU text references on this runner
         run: python3 -B packages/mediapipe-task-text/tool/prepare_classic_text_reference.py
       - name: Generate official GPU references on this runner
-        run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py
+        # This job runs every suite with MEDIAPIPE_GPU_REFERENCE_DIR set, so it
+        # needs the Object Detector references too; `make models` supplied them.
+        run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --object-detector
       # make get/models already ran above for the independent references.
       # Keep the remaining make ci checks, with visible stage boundaries.
       - name: Build official native face tasks from source

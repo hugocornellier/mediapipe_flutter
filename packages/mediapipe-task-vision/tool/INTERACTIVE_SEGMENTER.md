@@ -100,9 +100,9 @@ No threshold, smoothing or postprocessing is added to the task result.
 
 Run `make example_segmenter` from the repository root. The separate
 [`example_segmenter`](../example_segmenter/) app supports sample photos, opening
-JPEG/PNG files, include/exclude/lasso strokes, undo, clear and a display-only
-threshold slider. It decodes the image once with Flutter and sends those exact
-oriented pixels to MediaPipe, so canvas coordinates match the input.
+JPEG/PNG files, include strokes, undo, clear and a display-only threshold
+slider. It decodes the image once with Flutter and sends those exact oriented
+pixels to MediaPipe, so canvas coordinates match the input.
 
 Inference has one active request and one replaceable pending history. Drawing
 does not enqueue every pointer event. Image replacement, undo and clear discard

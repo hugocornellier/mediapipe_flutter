@@ -14,12 +14,44 @@ Map<String, dynamic> loadFaceReference(
   final override =
       gpuReferenceDirectory ??
       Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'];
-  final root = gpu && override != null
+  final cpuOverride = Platform.environment['MEDIAPIPE_CPU_REFERENCE_DIR'];
+  final root = !gpu && cpuOverride != null
+      ? Directory(cpuOverride).absolute
+      : gpu && override != null
       ? Directory(override).absolute
       : Directory('test/fixtures').absolute;
   final relative = '$task/$filename';
   final bytes = File.fromUri(root.uri.resolve(relative)).readAsBytesSync();
   final reference = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+  if (!gpu && cpuOverride != null) {
+    final manifest =
+        jsonDecode(
+              File.fromUri(
+                root.uri.resolve('provenance.json'),
+              ).readAsStringSync(),
+            )
+            as Map<String, dynamic>;
+    final expectedLibrary = Platform.isLinux
+        ? '35ef4187d381addb1309f0f9dedd32613127fa98d1ad1f5ddeea57595cdbcaf0'
+        : Platform.isWindows
+        ? 'a8970c645c8c87c25ec9965cb5c898e803c6c42f7192b7de9a0541c62ae48cef'
+        : null;
+    if (expectedLibrary == null ||
+        manifest['runtime'] != 'mediapipe==1.0.0' ||
+        manifest['library_sha256'] != expectedLibrary ||
+        manifest['source'] != 'official-python-api' ||
+        manifest['delegate'] != 'CPU' ||
+        manifest['files'] is! Map ||
+        (manifest['files'] as Map)[relative] !=
+            sha256.convert(bytes).toString() ||
+        reference['runtime'] != manifest['runtime'] ||
+        reference['library_sha256'] != expectedLibrary ||
+        reference['delegate'] != 'CPU' ||
+        reference['source_revision'] !=
+            '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120') {
+      throw StateError('Invalid same-host official CPU reference: $relative');
+    }
+  }
   if (gpu && override != null) {
     final manifest =
         jsonDecode(

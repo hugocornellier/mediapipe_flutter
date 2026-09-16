@@ -33,4 +33,5 @@ hooks:
     mediapipe_flutter_core:
       tasks_runtime: true
     mediapipe_flutter_vision:
-      tasks: [face_detector, face_landmarker, interactive_segmenter]
+      tasks:
+        [face_detector, face_landmarker, interactive_segmenter, object_detector]
