@@ -70,7 +70,11 @@ python3 -B packages/mediapipe-task-vision/tool/test_android_consumer.py \
 
 The runner copies the packages and local runtime into an isolated consumer,
 runs the unchanged face CPU IMAGE/VIDEO reference and lifecycle suites, builds
-debug and release APKs, and launches each for standalone inference.
+debug and release APKs, and launches each for standalone inference. The desktop
+and iOS runners read the launched process's own standard streams, but an Android
+app's file descriptors reach neither logcat nor `adb`, so the smoke app reports
+its result and any failure through the platform log as well. Writing only to
+stdout there leaves a successful run indistinguishable from a hung one.
 
 The checked-in goldens come from one macOS arm64 machine, and the official
 wheel's own results drift between hosts. The runner therefore regenerates the

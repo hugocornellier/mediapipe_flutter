@@ -207,16 +207,16 @@ flutter:
         content = (PACKAGE / 'tool' / source).read_text().replace(
             'VisionDelegate.values', 'const [VisionDelegate.cpu]')
         if args.object_detector and destination == 'lib/main.dart':
-            content = content.replace('      stdout.writeln(', '      await runObjectDetectorSmoke();\n      stdout.writeln(')
+            content = content.replace('      report(', '      await runObjectDetectorSmoke();\n      report(')
             content += (PACKAGE / 'tool/flutter_desktop_object_smoke.dart.template').read_text()
         if args.image_tasks and destination == 'lib/main.dart':
-            content = content.replace('      stdout.writeln(', '      await runImageTasksSmoke();\n      stdout.writeln(')
+            content = content.replace('      report(', '      await runImageTasksSmoke();\n      report(')
             content += (PACKAGE / 'tool/flutter_desktop_image_smoke.dart.template').read_text()
         if args.landmark_tasks and destination == 'lib/main.dart':
-            content = content.replace('      stdout.writeln(', '      await runLandmarkTasksSmoke();\n      stdout.writeln(')
+            content = content.replace('      report(', '      await runLandmarkTasksSmoke();\n      report(')
             content += (PACKAGE / 'tool/flutter_desktop_landmark_smoke.dart.template').read_text()
         if args.segmenter_tasks and destination == 'lib/main.dart':
-            content = content.replace('      stdout.writeln(', '      await runSegmenterTasksSmoke();\n      stdout.writeln(')
+            content = content.replace('      report(', '      await runSegmenterTasksSmoke();\n      report(')
             content += (PACKAGE / 'tool/flutter_desktop_segmenter_smoke.dart.template').read_text()
         (app / destination).write_text(content)
     env = {**os.environ, 'MEDIAPIPE_CPU_REFERENCE_DIR': str(references)}
