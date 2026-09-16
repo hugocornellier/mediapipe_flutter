@@ -58,13 +58,16 @@ void main() {
       skip: _unvalidatedHost,
     );
   }
-  test(
-    'image segmenter video matches the official frames through queued disposal',
-    () async {
-      final frames = cases
-          .where((c) => c['task'] == 'image' && c['timestamp_ms'] != null)
-          .where((c) => (c['options'] as Map)['output_category_mask'] == true)
-          .toList();
+  // The reference records one VIDEO sequence per mask selection.
+  final videoFrames = <String, List<Map<String, dynamic>>>{};
+  for (final c in cases.where(
+    (c) => c['task'] == 'image' && c['timestamp_ms'] != null,
+  )) {
+    videoFrames.putIfAbsent('${c['options']}', () => []).add(c);
+  }
+  for (final MapEntry(key: options, value: frames) in videoFrames.entries) {
+    test('image segmenter video / $options matches the official frames through '
+        'queued disposal', () async {
       expect(frames, hasLength(3));
       final (process, close) = await _create(frames.first);
       final requests = [
@@ -82,9 +85,11 @@ void main() {
       for (var i = 0; i < frames.length; i++) {
         _compare(results[i], frames[i]['result']);
       }
-    },
-    skip: _unvalidatedHost,
-  );
+    }, skip: _unvalidatedHost);
+  }
+  test('the reference covers every mask selection in video mode', () {
+    expect(videoFrames.keys, hasLength(3));
+  });
   for (final name in _models.keys) {
     test(
       '$name native input/model errors leave later inference usable',
