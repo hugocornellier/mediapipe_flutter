@@ -1,3 +1,39 @@
+/// Versioned official Hand Landmarker float16 task bundle.
+const handLandmarkerUrl =
+    'https://storage.googleapis.com/mediapipe-models/'
+    'hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+
+/// SHA-256 of [handLandmarkerUrl].
+const handLandmarkerSha256 =
+    'fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1';
+
+/// Versioned official Gesture Recognizer float16 task bundle.
+const gestureRecognizerUrl =
+    'https://storage.googleapis.com/mediapipe-models/'
+    'gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task';
+
+/// SHA-256 of [gestureRecognizerUrl].
+const gestureRecognizerSha256 =
+    '97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482';
+
+/// Versioned official Pose Landmarker Lite float16 task bundle.
+const poseLandmarkerLiteUrl =
+    'https://storage.googleapis.com/mediapipe-models/'
+    'pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+
+/// SHA-256 of [poseLandmarkerLiteUrl].
+const poseLandmarkerLiteSha256 =
+    '59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a';
+
+/// Versioned official Holistic Landmarker float16 task bundle.
+const holisticLandmarkerUrl =
+    'https://storage.googleapis.com/mediapipe-models/'
+    'holistic_landmarker/holistic_landmarker/float16/1/holistic_landmarker.task';
+
+/// SHA-256 of [holisticLandmarkerUrl].
+const holisticLandmarkerSha256 =
+    'e2dab61191e2dcd0a15f943d8e3ed1dce13c82dfa597b9dd39f562975a50c3f8';
+
 /// Official, unmodified BlazeFace short-range float16 model, version 1.
 const blazeFaceShortRangeUrl =
     'https://storage.googleapis.com/mediapipe-models/face_detector/'

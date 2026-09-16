@@ -22,6 +22,27 @@ void main() {
       isFalse,
     );
   });
+
+  test('landmark tasks expose desktop x64 CPU and fail closed elsewhere', () {
+    for (final os in ['linux', 'windows']) {
+      expect(
+        landmarkTaskCapabilitiesForPlatform(
+          TaskPlatform(operatingSystem: os, architecture: 'x64'),
+        ).supportedDelegates,
+        {VisionDelegate.cpu},
+      );
+    }
+    final mac = landmarkTaskCapabilitiesForPlatform(
+      const TaskPlatform(
+        operatingSystem: 'macos',
+        architecture: 'arm64',
+        version: '14.0',
+      ),
+    );
+    expect(mac.isSupported, isFalse);
+    expect(mac.unavailableReasons[VisionDelegate.cpu], contains('UP-004'));
+    expect(mac.runtimeVersion, '1.0.0');
+  });
   test('MagicTouch reports its own GPU shader blocker', () {
     final result = interactiveSegmenterCapabilitiesForPlatform(
       const TaskPlatform(

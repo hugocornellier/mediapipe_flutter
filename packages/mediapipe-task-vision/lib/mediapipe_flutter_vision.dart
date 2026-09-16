@@ -5,6 +5,22 @@
 /// Package containing MediaPipe's vision-specific tasks.
 library;
 
+export 'src/interface/landmark_task_types.dart'
+    show
+        VisionLandmark,
+        HandLandmarkerOptions,
+        HandLandmarkerResult,
+        GestureClassifierOptions,
+        GestureRecognizerOptions,
+        GestureRecognizerResult,
+        PoseLandmarkerOptions,
+        PoseLandmarkerResult;
+export 'src/interface/holistic_landmarker_types.dart';
+export 'src/io/hand_landmarker.dart';
+export 'src/io/gesture_recognizer.dart';
+export 'src/io/pose_landmarker.dart';
+export 'src/io/holistic_landmarker.dart';
+
 export 'capabilities.dart';
 export 'src/interface/face_detector_types.dart';
 export 'src/io/face_detector.dart';

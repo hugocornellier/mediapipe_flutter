@@ -8,6 +8,30 @@ export 'package:mediapipe_flutter_core/capabilities.dart'
     show TaskCapabilities, TaskPlatform;
 export 'src/interface/vision_types.dart' show VisionDelegate;
 
+/// Query the validated Hand, Gesture, Pose and Holistic task runtimes.
+Future<TaskCapabilities<VisionDelegate>>
+queryLandmarkTaskCapabilities() async =>
+    landmarkTaskCapabilitiesForPlatform(await currentTaskPlatform());
+
+/// Evaluate landmark task CPU coverage without loading native code.
+TaskCapabilities<VisionDelegate> landmarkTaskCapabilitiesForPlatform(
+  TaskPlatform platform,
+) => TaskCapabilities.onTargets(
+  platform: platform,
+  delegates: const {
+    VisionDelegate.cpu: {'linux/x64': null, 'windows/x64': null},
+    VisionDelegate.gpu: {},
+  },
+  runtimeVersion: '1.0.0',
+  unavailableReasons: const {
+    VisionDelegate.cpu:
+        'Landmark task CPU inference requires Linux x64 or Windows x64. '
+        'On macOS the source runtime is not validated against the official '
+        'outputs; see upstream-issues.md UP-004.',
+    VisionDelegate.gpu: 'Landmark task GPU inference has not been validated.',
+  },
+);
+
 /// Query Image Classifier and Image Embedder's validated CPU runtimes.
 Future<TaskCapabilities<VisionDelegate>> queryImageTaskCapabilities() async =>
     imageTaskCapabilitiesForPlatform(await currentTaskPlatform());

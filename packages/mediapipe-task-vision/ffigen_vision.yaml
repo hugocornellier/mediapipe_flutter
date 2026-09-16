@@ -37,7 +37,7 @@ functions:
     - 'MpInteractiveSegmenterLegacy.*'
     - 'MpObjectDetector.*'
     - 'MpPoseLandmarker.*'
-    - 'MpImage(CreateFromFile|CreateFromUint8Data|Free|GetWidth|GetHeight)'
+    - 'MpImage(CreateFromFile|CreateFromUint8Data|Free|GetWidth|GetHeight|GetChannels|GetByteDepth|DataFloat32|DataUint8|IsContiguous|GetValueFloat32)'
     - MpStringListFree
     - MpErrorFree
 structs:

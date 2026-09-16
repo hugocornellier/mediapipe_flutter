@@ -65,12 +65,12 @@ void main() {
             targetOS: os,
             targetArchitecture: Architecture.x64,
             userDefines: defines({
-              'tasks': ['pose_landmarker'],
+              'tasks': ['image_segmenter'],
             }),
             check: (_, _) => fail('Unvalidated task unexpectedly bundled'),
           ),
           failsWith<UnsupportedError>(
-            allOf(contains('$os/x64'), contains('pose_landmarker')),
+            allOf(contains('$os/x64'), contains('image_segmenter')),
           ),
         );
       }

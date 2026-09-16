@@ -694,6 +694,48 @@ MpStatus MpImageCreateFromUint8Data(
 
 @ffi.Native<
   ffi.UnsignedInt Function(
+    MpImagePtr,
+    ffi.Pointer<ffi.Pointer<ffi.Float>>,
+    ffi.Pointer<ffi.Pointer<ffi.Char>>,
+  )
+>(symbol: 'MpImageDataFloat32')
+external int _MpImageDataFloat32(
+  MpImagePtr image,
+  ffi.Pointer<ffi.Pointer<ffi.Float>> out,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+);
+
+MpStatus MpImageDataFloat32(
+  MpImagePtr image,
+  ffi.Pointer<ffi.Pointer<ffi.Float>> out,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+) {
+  return MpStatus.fromValue(_MpImageDataFloat32(image, out, error_msg));
+}
+
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    MpImagePtr,
+    ffi.Pointer<ffi.Pointer<ffi.Uint8>>,
+    ffi.Pointer<ffi.Pointer<ffi.Char>>,
+  )
+>(symbol: 'MpImageDataUint8')
+external int _MpImageDataUint8(
+  MpImagePtr image,
+  ffi.Pointer<ffi.Pointer<ffi.Uint8>> out,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+);
+
+MpStatus MpImageDataUint8(
+  MpImagePtr image,
+  ffi.Pointer<ffi.Pointer<ffi.Uint8>> out,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+) {
+  return MpStatus.fromValue(_MpImageDataUint8(image, out, error_msg));
+}
+
+@ffi.Native<
+  ffi.UnsignedInt Function(
     MpImageEmbedderPtr,
     ffi.Pointer<ffi.Pointer<ffi.Char>>,
   )
@@ -849,10 +891,48 @@ MpStatus MpImageEmbedderEmbedImage(
 external void MpImageFree(MpImagePtr image);
 
 @ffi.Native<ffi.Int Function(MpImagePtr)>()
+external int MpImageGetByteDepth(MpImagePtr image);
+
+@ffi.Native<ffi.Int Function(MpImagePtr)>()
+external int MpImageGetChannels(MpImagePtr image);
+
+@ffi.Native<ffi.Int Function(MpImagePtr)>()
 external int MpImageGetHeight(MpImagePtr image);
+
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    MpImagePtr,
+    ffi.Pointer<ffi.Int>,
+    ffi.Int,
+    ffi.Pointer<ffi.Float>,
+    ffi.Pointer<ffi.Pointer<ffi.Char>>,
+  )
+>(symbol: 'MpImageGetValueFloat32')
+external int _MpImageGetValueFloat32(
+  MpImagePtr image,
+  ffi.Pointer<ffi.Int> pos,
+  int pos_size,
+  ffi.Pointer<ffi.Float> out,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+);
+
+MpStatus MpImageGetValueFloat32(
+  MpImagePtr image,
+  ffi.Pointer<ffi.Int> pos,
+  int pos_size,
+  ffi.Pointer<ffi.Float> out,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+) {
+  return MpStatus.fromValue(
+    _MpImageGetValueFloat32(image, pos, pos_size, out, error_msg),
+  );
+}
 
 @ffi.Native<ffi.Int Function(MpImagePtr)>()
 external int MpImageGetWidth(MpImagePtr image);
+
+@ffi.Native<ffi.Bool Function(MpImagePtr)>()
+external bool MpImageIsContiguous(MpImagePtr image);
 
 @ffi.Native<
   ffi.UnsignedInt Function(

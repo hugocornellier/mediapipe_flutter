@@ -1,0 +1,143 @@
+"""Independent Hand, Gesture, Pose and Holistic outputs from the official wheel."""
+import argparse
+import dataclasses
+import hashlib
+import json
+from pathlib import Path
+
+import mediapipe as mp
+import numpy as np
+from mediapipe.tasks.python import vision
+from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
+from official_face_runtime import LIBRARY_NAME, LIBRARY_SHA256
+
+ROOT = Path(__file__).resolve().parents[1]
+FIXTURES = ROOT / 'test/fixtures/landmark_tasks'
+MODELS = {
+    'hand': ('hand_landmarker.task', 'fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1'),
+    'gesture': ('gesture_recognizer.task', '97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482'),
+    'pose': ('pose_landmarker_lite.task', '59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a'),
+    'holistic': ('holistic_landmarker.task', 'e2dab61191e2dcd0a15f943d8e3ed1dce13c82dfa597b9dd39f562975a50c3f8'),
+}
+FILES = {
+    'thumb_up.jpg': '5d673c081ab13b8a1812269ff57047066f9c33c07db5f4178089e8cb3fdc0291',
+    'right_hands.jpg': '4b5134daa4cb60465535239535f9f74c2842aba3aa5fd30bf04ef5678f93d87f',
+    'pose.jpg': 'c8a830ed683c0276d713dd5aeda28f415f10cd6291972084a40d0d8b934ed62b',
+}
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def mask_output(mask):
+    # In 1.0.0, float32's contiguous-copy path calls the uint8 ImageFrame
+    # overload and aborts for padded rows. Scalar access is safe on both paths.
+    data = mask.numpy_view().copy() if mask.is_contiguous() else np.asarray(
+        [[mask[y, x] for x in range(mask.width)] for y in range(mask.height)], dtype=np.float32)
+    return dict(width=mask.width, height=mask.height,
+                samples=data[::17, ::19].reshape(-1).tolist(),
+                minimum=float(data.min()), maximum=float(data.max()), mean=float(data.mean()))
+
+
+def result_output(result):
+    output = {}
+    for field in dataclasses.fields(result):
+        value = getattr(result, field.name)
+        if field.name == 'segmentation_masks':
+            output[field.name] = None if value is None else [mask_output(v) for v in value]
+        elif field.name == 'segmentation_mask':
+            output[field.name] = None if value is None else mask_output(value)
+        else:
+            output[field.name] = None if value is None else json.loads(json.dumps(value,
+                default=lambda v: dataclasses.asdict(v)))
+    return output
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--delegate', choices=['cpu', 'gpu'], default='cpu')
+    parser.add_argument('--output-dir', type=Path, default=FIXTURES)
+    args = parser.parse_args()
+    assert mp.__version__ == '1.0.0'
+    assert digest(Path(mp.__file__).parent / 'tasks/c' / LIBRARY_NAME) == LIBRARY_SHA256
+    for name, sha in MODELS.values():
+        assert digest(ROOT / 'models' / name) == sha
+    for name, sha in FILES.items():
+        assert digest(FIXTURES / name) == sha
+    decoded = {}
+    for name in FILES:
+        image = mp.Image.create_from_file(str(FIXTURES / name))
+        # The C image decoder returns RGBA; packed SRGB fixtures need 3 channels.
+        decoded[name] = image.numpy_view()[:, :, :3].copy()
+        (FIXTURES / name.replace('.jpg', '.rgb')).write_bytes(decoded[name].tobytes())
+    cases = []
+    delegate = getattr(mp.tasks.BaseOptions.Delegate, args.delegate.upper())
+    for task_name, (model_name, model_sha) in MODELS.items():
+        task_type = {'hand': vision.HandLandmarker, 'gesture': vision.GestureRecognizer,
+                     'pose': vision.PoseLandmarker, 'holistic': vision.HolisticLandmarker}[task_name]
+        option_type = getattr(vision, task_type.__name__ + 'Options')
+        base = mp.tasks.BaseOptions(model_asset_path=str(ROOT / 'models' / model_name), delegate=delegate)
+        configuration = dict(num_hands=2) if task_name in ('hand', 'gesture') else (
+            dict(output_segmentation_masks=True) if task_name == 'pose' else
+            dict(output_face_blendshapes=True, output_segmentation_mask=True))
+        configurations = [configuration]
+        if task_name == 'holistic':
+            configurations.append({**configuration, 'min_hand_landmarks_confidence': 0.99,
+                'min_pose_detection_confidence': 0.11, 'min_pose_suppression_threshold': 0.31,
+                'min_pose_landmarks_confidence': 0.43})
+        sample = 'thumb_up.jpg' if task_name in ('hand', 'gesture') else 'pose.jpg'
+        for configuration in configurations:
+            for mode in [vision.RunningMode.IMAGE, vision.RunningMode.VIDEO]:
+                options = option_type(base_options=base, running_mode=mode, **configuration)
+                inputs = [(name, 'file') for name in FILES] + [(sample, v) for v in ['rgb', 'rgba', 'blank', 'rotated']]
+                if mode == vision.RunningMode.VIDEO:
+                    inputs = [(sample, 'rgb'), (sample, 'blank'), (sample, 'rgb')]
+                # VIDEO frames deliberately share one task. IMAGE requests are independent,
+                # and 1.0.0's Holistic mask smoothing otherwise keeps the previous image's
+                # dimensions, so build a fresh task per IMAGE input as the Dart tests do.
+                tracked = task_type.create_from_options(options) if mode == vision.RunningMode.VIDEO else None
+                for index, (name, kind) in enumerate(inputs):
+                    rotation = 90 if kind == 'rotated' else 0
+                    if kind == 'file':
+                        image = mp.Image.create_from_file(str(FIXTURES / name))
+                    else:
+                        pixels = np.zeros_like(decoded[name]) if kind == 'blank' else decoded[name].copy()
+                        if kind == 'rotated':
+                            pixels = np.ascontiguousarray(np.rot90(pixels))
+                        rgba = kind == 'rgba' or args.delegate == 'gpu'
+                        if rgba:
+                            pixels = np.concatenate([pixels, np.full((*pixels.shape[:2], 1), 255, dtype=np.uint8)], axis=2)
+                        image = mp.Image(image_format=mp.ImageFormat.SRGBA if rgba else mp.ImageFormat.SRGB, data=pixels)
+                    processing = ImageProcessingOptions(rotation_degrees=rotation)
+                    timestamp = index * 33 if mode == vision.RunningMode.VIDEO else None
+                    task = tracked or task_type.create_from_options(options)
+                    try:
+                        if timestamp is None:
+                            method = task.recognize if task_name == 'gesture' else task.detect
+                            result = method(image, processing)
+                        else:
+                            method = task.recognize_for_video if task_name == 'gesture' else task.detect_for_video
+                            result = method(image, timestamp, processing)
+                        # Read masks while their task is alive.
+                        payload = result_output(result)
+                    finally:
+                        if tracked is None:
+                            task.close()
+                    raw = name.replace('.jpg', '.rgb')
+                    cases.append(dict(task=task_name, input=kind, file=name, sha256=FILES[name],
+                        raw=raw, raw_sha256=digest(FIXTURES / raw), width=image.width, height=image.height,
+                        rotation_degrees=rotation, timestamp_ms=timestamp, options=configuration,
+                        result=payload))
+                    print(task_name, mode.name, kind, name, flush=True)
+                if tracked is not None:
+                    tracked.close()
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    output = dict(runtime='mediapipe==1.0.0', delegate=args.delegate.upper(),
+        source_revision='6d31f1ebc3284db74d211d62bdc4f0a0c29ea120',
+        library_sha256=LIBRARY_SHA256, models={name: sha for name, (_, sha) in MODELS.items()}, cases=cases)
+    (args.output_dir / 'official_reference.json').write_text(json.dumps(output, indent=2) + '\n')
+
+
+if __name__ == '__main__':
+    main()

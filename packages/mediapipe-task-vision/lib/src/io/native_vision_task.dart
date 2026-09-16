@@ -1,10 +1,11 @@
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../interface/vision_task_types.dart';
+import '../interface/landmark_task_types.dart';
 import 'native_vision_image.dart';
 
 /// Initialize the shared base options with owned model bytes or a model path.
@@ -114,4 +115,126 @@ Pointer<Pointer<Char>> visionOptionStrings(Arena arena, List<String> values) {
     array[i] = values[i].toNativeUtf8(allocator: arena).cast();
   }
   return array;
+}
+
+/// Own every category in each hand's classification result.
+///
+/// [index] overrides the native index for heads whose raw value carries no
+/// meaning, matching how the official bindings report them.
+List<List<VisionCategory>> copyVisionCategories(
+  Pointer<mp.MpCategories> values,
+  int count, {
+  int? index,
+}) => [
+  for (var i = 0; i < count; i++)
+    [
+      for (var j = 0; j < values[i].categories_count; j++)
+        if (index == null)
+          copyVisionCategory(values[i].categories[j])
+        else
+          VisionCategory(
+            index: index,
+            score: values[i].categories[j].score,
+            categoryName: nativeString(values[i].categories[j].category_name),
+            displayName: nativeString(values[i].categories[j].display_name),
+          ),
+    ],
+];
+
+/// Own normalized landmarks including optional confidence metadata.
+List<VisionLandmark> copyVisionNormalizedLandmarks(
+  mp.MpNormalizedLandmarks values,
+) => [
+  for (var i = 0; i < values.landmarks_count; i++)
+    VisionLandmark(
+      x: values.landmarks[i].x,
+      y: values.landmarks[i].y,
+      z: values.landmarks[i].z,
+      visibility: values.landmarks[i].has_visibility
+          ? values.landmarks[i].visibility
+          : null,
+      presence: values.landmarks[i].has_presence
+          ? values.landmarks[i].presence
+          : null,
+      name: nativeString(values.landmarks[i].name),
+    ),
+];
+
+/// Own world landmarks including optional confidence metadata.
+List<VisionLandmark> copyVisionWorldLandmarks(mp.MpLandmarks values) => [
+  for (var i = 0; i < values.landmarks_count; i++)
+    VisionLandmark(
+      x: values.landmarks[i].x,
+      y: values.landmarks[i].y,
+      z: values.landmarks[i].z,
+      visibility: values.landmarks[i].has_visibility
+          ? values.landmarks[i].visibility
+          : null,
+      presence: values.landmarks[i].has_presence
+          ? values.landmarks[i].presence
+          : null,
+      name: nativeString(values.landmarks[i].name),
+    ),
+];
+
+/// Read and copy a single-channel float32 mask, including padded native rows.
+SegmentationMask copyVisionConfidenceMask(Arena arena, mp.MpImagePtr image) {
+  final width = mp.MpImageGetWidth(image);
+  final height = mp.MpImageGetHeight(image);
+  if (width < 1 ||
+      height < 1 ||
+      mp.MpImageGetChannels(image) != 1 ||
+      mp.MpImageGetByteDepth(image) != 4) {
+    throw const VisionTaskException(
+      'Native result is not a float32 confidence mask.',
+    );
+  }
+  final data = arena<Pointer<Float>>();
+  // The pinned 1.0.0 float accessor aborts while copying padded rows because
+  // its ImageFrame copy selects the uint8 overload. Use the checked scalar
+  // API for those images, preserving dimensions and every float32 value.
+  if (!mp.MpImageIsContiguous(image)) {
+    final values = Float32List(width * height);
+    final position = arena<Int>(2);
+    final value = arena<Float>();
+    for (var y = 0; y < height; y++) {
+      position[0] = y;
+      for (var x = 0; x < width; x++) {
+        position[1] = x;
+        checkVisionCall(
+          (error) =>
+              mp.MpImageGetValueFloat32(image, position, 2, value, error),
+        );
+        values[y * width + x] = value.value;
+      }
+    }
+    return SegmentationMask(width: width, height: height, confidence: values);
+  }
+  checkVisionCall((error) => mp.MpImageDataFloat32(image, data, error));
+  if (data.value == nullptr) {
+    throw const VisionTaskException('Native mask data is missing.');
+  }
+  return SegmentationMask(
+    width: width,
+    height: height,
+    confidence: data.value.asTypedList(width * height),
+  );
+}
+
+/// Populate native canned/custom gesture classification filters.
+void setVisionGestureClassifier(
+  Arena arena,
+  mp.MpClassifierOptions output,
+  GestureClassifierOptions options,
+) {
+  output
+    ..max_results = options.maxResults
+    ..score_threshold = options.scoreThreshold
+    ..category_allowlist = visionOptionStrings(arena, options.categoryAllowlist)
+    ..category_allowlist_count = options.categoryAllowlist.length
+    ..category_denylist = visionOptionStrings(arena, options.categoryDenylist)
+    ..category_denylist_count = options.categoryDenylist.length;
+  if (options.displayNamesLocale case final locale?) {
+    output.display_names_locale = locale.toNativeUtf8(allocator: arena).cast();
+  }
 }

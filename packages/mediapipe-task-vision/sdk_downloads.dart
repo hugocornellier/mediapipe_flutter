@@ -166,6 +166,10 @@ const visionWheelReleases = <String, VisionWheelRelease>{
       'object_detector',
       'image_classifier',
       'image_embedder',
+      'hand_landmarker',
+      'gesture_recognizer',
+      'pose_landmarker',
+      'holistic_landmarker',
     },
   ),
   'windows/x64': VisionWheelRelease(
@@ -188,6 +192,10 @@ const visionWheelReleases = <String, VisionWheelRelease>{
       'object_detector',
       'image_classifier',
       'image_embedder',
+      'hand_landmarker',
+      'gesture_recognizer',
+      'pose_landmarker',
+      'holistic_landmarker',
     },
   ),
 };

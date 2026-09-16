@@ -58,6 +58,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--object-detector', action='store_true')
     parser.add_argument('--image-tasks', action='store_true')
+    parser.add_argument('--landmark-tasks', action='store_true')
     args = parser.parse_args()
     system = platform.system()
     target = {'Linux': 'linux', 'Windows': 'windows'}.get(system)
@@ -80,6 +81,11 @@ def main():
     if args.image_tasks:
         models += [('efficientNetLite0', 'efficientnet_lite0.tflite'),
                    ('mobileNetV3Small', 'mobilenet_v3_small.tflite')]
+    if args.landmark_tasks:
+        models += [('handLandmarker', 'hand_landmarker.task'),
+                   ('gestureRecognizer', 'gesture_recognizer.task'),
+                   ('poseLandmarkerLite', 'pose_landmarker_lite.task'),
+                   ('holisticLandmarker', 'holistic_landmarker.task')]
     for prefix, name in models:
         url = dart_strings(re.search(r'const ' + prefix + r'Url\s*=(.*?);', model_pins, re.S).group(1))
         sha = dart_strings(re.search(r'const ' + prefix + r'Sha256\s*=(.*?);', model_pins, re.S).group(1))
@@ -102,6 +108,9 @@ def main():
     if args.image_tasks:
         tasks.append(('image_tasks', 'image_tasks'))
         files.append('image_tasks/official_reference.json')
+    if args.landmark_tasks:
+        tasks.append(('landmark_tasks', 'landmark_tasks'))
+        files.append('landmark_tasks/official_reference.json')
     for task, folder in tasks:
         run([python, '-u', '-X', 'faulthandler', '-B', PACKAGE / f'tool/generate_{task}_reference.py',
              '--output-dir', references / folder], REPO, root / f'{task}-reference.log')
@@ -134,6 +143,28 @@ def main():
     app = root / 'app'
     run(['flutter', 'create', '--empty', '--no-pub', '--platforms=' + target,
          '--project-name', 'mediapipe_desktop_smoke', app], REPO, root / 'create.log')
+    # Every selected task is bundled, asset-mapped and exercised by the app.
+    selected = ['face_detector', 'face_landmarker']
+    bundled = [(PACKAGE / 'models/blaze_face_short_range.tflite', 'model.tflite'),
+               (PACKAGE / 'models/face_landmarker.task', 'face_landmarker.task'),
+               (PACKAGE / 'test/fixtures/face_detection/portrait-301x209.rgb', 'portrait.rgb')]
+    if args.object_detector:
+        selected.append('object_detector')
+        bundled.append((PACKAGE / 'models/efficientdet_lite0.tflite', 'object_detector.tflite'))
+    if args.image_tasks:
+        selected += ['image_classifier', 'image_embedder']
+        bundled += [(PACKAGE / 'models/efficientnet_lite0.tflite', 'image_classifier.tflite'),
+                    (PACKAGE / 'models/mobilenet_v3_small.tflite', 'image_embedder.tflite')]
+    if args.landmark_tasks:
+        selected += ['hand_landmarker', 'gesture_recognizer', 'pose_landmarker',
+                     'holistic_landmarker']
+        landmarks = PACKAGE / 'test/fixtures/landmark_tasks'
+        bundled += [(PACKAGE / 'models/hand_landmarker.task', 'hand_landmarker.task'),
+                    (PACKAGE / 'models/gesture_recognizer.task', 'gesture_recognizer.task'),
+                    (PACKAGE / 'models/pose_landmarker_lite.task', 'pose_landmarker.task'),
+                    (PACKAGE / 'models/holistic_landmarker.task', 'holistic_landmarker.task'),
+                    (landmarks / 'thumb_up.rgb', 'thumb_up.rgb'),
+                    (landmarks / 'pose.rgb', 'pose.rgb')]
     (app / 'pubspec.yaml').write_text('''name: mediapipe_desktop_smoke
 publish_to: none
 environment:
@@ -155,36 +186,14 @@ hooks:
   user_defines:
     mediapipe_flutter_vision:
       prebuilt: true
-      tasks: [face_detector, face_landmarker]
+      tasks: [''' + ', '.join(selected) + ''']
 flutter:
   assets:
-    - assets/model.tflite
-    - assets/face_landmarker.task
-    - assets/portrait.rgb
-''')
-    if args.object_detector:
-        pubspec = app / 'pubspec.yaml'
-        pubspec.write_text(pubspec.read_text().replace(
-            'tasks: [face_detector, face_landmarker]',
-            'tasks: [face_detector, face_landmarker, object_detector]') +
-            '    - assets/object_detector.tflite\n')
-    if args.image_tasks:
-        pubspec = app / 'pubspec.yaml'
-        pubspec.write_text(pubspec.read_text().replace(
-            'face_landmarker,', 'face_landmarker, image_classifier, image_embedder,')
-            .replace('face_landmarker]', 'face_landmarker, image_classifier, image_embedder]') +
-            '    - assets/image_classifier.tflite\n    - assets/image_embedder.tflite\n')
+''' + ''.join(f'    - assets/{name}\n' for _, name in bundled))
     assets = app / 'assets'
     assets.mkdir()
-    for source, name in [(PACKAGE / 'models/blaze_face_short_range.tflite', 'model.tflite'),
-                         (PACKAGE / 'models/face_landmarker.task', 'face_landmarker.task'),
-                         (PACKAGE / 'test/fixtures/face_detection/portrait-301x209.rgb', 'portrait.rgb')]:
+    for source, name in bundled:
         shutil.copyfile(source, assets / name)
-    if args.object_detector:
-        shutil.copyfile(PACKAGE / 'models/efficientdet_lite0.tflite', assets / 'object_detector.tflite')
-    if args.image_tasks:
-        shutil.copyfile(PACKAGE / 'models/efficientnet_lite0.tflite', assets / 'image_classifier.tflite')
-        shutil.copyfile(PACKAGE / 'models/mobilenet_v3_small.tflite', assets / 'image_embedder.tflite')
     shutil.copytree(PACKAGE / 'models', app / 'models',
                     ignore=shutil.ignore_patterns('*.xnnpack_cache'))
     for folder in ['fixtures/face_detection', 'fixtures/face_landmarker', 'support']:
@@ -198,6 +207,10 @@ flutter:
     if args.image_tasks:
         shutil.copytree(PACKAGE / 'test/fixtures/image_tasks', app / 'test/fixtures/image_tasks')
         shutil.copyfile(PACKAGE / 'test/image_tasks_test.dart', app / 'test/image_tasks_test.dart')
+    if args.landmark_tasks:
+        # The generator rewrote the raw fixtures with this host's decoder.
+        shutil.copytree(PACKAGE / 'test/fixtures/landmark_tasks', app / 'test/fixtures/landmark_tasks')
+        shutil.copyfile(PACKAGE / 'test/landmark_tasks_test.dart', app / 'test/landmark_tasks_test.dart')
     (app / 'test/native_assets').mkdir()
     shutil.copyfile(PACKAGE / 'test/native_assets/wheel_library_test.dart',
                     app / 'test/native_assets/wheel_library_test.dart')
@@ -212,10 +225,15 @@ flutter:
         if args.image_tasks and destination == 'lib/main.dart':
             content = content.replace('      stdout.writeln(', '      await runImageTasksSmoke();\n      stdout.writeln(')
             content += (PACKAGE / 'tool/flutter_desktop_image_smoke.dart.template').read_text()
+        if args.landmark_tasks and destination == 'lib/main.dart':
+            content = content.replace('      stdout.writeln(', '      await runLandmarkTasksSmoke();\n      stdout.writeln(')
+            content += (PACKAGE / 'tool/flutter_desktop_landmark_smoke.dart.template').read_text()
         (app / destination).write_text(content)
     env = {**os.environ, 'MEDIAPIPE_CPU_REFERENCE_DIR': str(references)}
     run(['flutter', 'pub', 'get'], app, root / 'pub.log', env)
-    run(['dart', 'test', '--reporter', 'expanded'], app, root / 'dart-tests.log', env)
+    # Every selected task builds its own tasks per reference case.
+    run(['dart', 'test', '--reporter', 'expanded'], app, root / 'dart-tests.log',
+        env, timeout=2400)
     run(['flutter', 'test', '-d', target, 'integration_test/face_test.dart',
          '--reporter', 'expanded'], app, root / 'integration.log', env)
     report = {'target': target + '/x64', 'delegate': 'CPU', 'library_sha256': library_sha,
@@ -233,13 +251,16 @@ flutter:
         executable = deployed / ('mediapipe_desktop_smoke.exe' if target == 'windows'
                                   else 'mediapipe_desktop_smoke')
         log = root / f'inference-{mode}.log'
-        run([executable], deployed, log, env, timeout=90)
+        run([executable], deployed, log, env, timeout=300)
         if 'bundled cpu Face Detector and Face Landmarker inference passed.' not in log.read_text():
             raise RuntimeError(f'{mode} app did not confirm inference')
         if args.object_detector and 'Object Detector CPU inference passed.' not in log.read_text():
             raise RuntimeError(f'{mode} app did not confirm Object Detector inference')
         if args.image_tasks and 'Image Classifier and Image Embedder CPU inference passed.' not in log.read_text():
             raise RuntimeError(f'{mode} app did not confirm image task inference')
+        if args.landmark_tasks and ('Hand, Gesture, Pose and Holistic Landmarker CPU inference '
+                                    'passed.') not in log.read_text():
+            raise RuntimeError(f'{mode} app did not confirm landmark task inference')
         report['modes'][mode] = {'inference': 'passed',
                                  'bundled_libraries': [str(path.relative_to(bundle)) for path in libraries]}
     (root / 'report.json').write_text(json.dumps(report, indent=2))
