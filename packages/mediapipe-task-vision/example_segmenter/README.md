@@ -10,8 +10,8 @@ Requires Apple Silicon, macOS 14+, Flutter 3.44.8 / Dart 3.12.2 and Xcode.
 The first build downloads the optional pinned native runtime. The make target
 prepares the unchanged official MagicTouch model and attributed sample images.
 
-Click or draw with **Include**, **Exclude**, or **Lasso**. **Undo** removes the
-last stroke; **Clear** resets the selection. **Open image** accepts JPEG/PNG.
+Click or draw with **Include** to select an object. **Undo** removes the last
+stroke; **Clear** resets the selection. **Open image** accepts JPEG/PNG.
 The mask checkbox and threshold affect only the displayed overlay.
 Inference runs on CPU; the official macOS GPU stroke graph currently fails.
 
