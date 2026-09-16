@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:isolate';
+import '../../capabilities.dart';
 
 import '../interface/object_detector_types.dart';
 import 'native_object_detector.dart';
@@ -33,6 +34,12 @@ final class ObjectDetector {
 
   /// Load an official model and initialize MediaPipe off the calling isolate.
   static Future<ObjectDetector> create(ObjectDetectorOptions options) async {
+    final capabilities = await queryObjectDetectorCapabilities();
+    if (!capabilities.supportedDelegates.contains(options.delegate)) {
+      throw UnsupportedError(
+        capabilities.unavailableReasons[options.delegate]!,
+      );
+    }
     final detector = ObjectDetector._(options.runningMode, options.delegate);
     try {
       await Isolate.spawn(

@@ -37,6 +37,46 @@ const tasksRuntimeTargets = <String, String?>{'macos/arm64': '14.0'};
 /// Model validity, native-asset opt-in, and available memory are checked when
 /// creating a task. Querying support does not download assets or initialize GPU.
 final class TaskCapabilities<D extends Enum> {
+  /// Describe delegates whose validated target sets differ.
+  ///
+  /// Each delegate is checked against its own minimum OS version. Unsupported
+  /// delegates use [unavailableReasons], or the target mismatch diagnostic.
+  factory TaskCapabilities.onTargets({
+    required TaskPlatform platform,
+    required Map<D, RuntimeTargets> delegates,
+    required Map<D, String> unavailableReasons,
+    required String runtimeVersion,
+  }) {
+    final supported = <D>{};
+    final reasons = <D, String>{};
+    final targets = <String, String?>{};
+    for (final entry in delegates.entries) {
+      for (final target in entry.value.entries) {
+        if (!targets.containsKey(target.key) ||
+            target.value == null ||
+            (targets[target.key] != null &&
+                _compareVersions(target.value!, targets[target.key]!) < 0)) {
+          targets[target.key] = target.value;
+        }
+      }
+      final reason = _platformReason(platform, entry.value);
+      if (reason == null) {
+        supported.add(entry.key);
+      } else {
+        reasons[entry.key] = entry.value.containsKey(platform.target)
+            ? reason
+            : unavailableReasons[entry.key] ?? reason;
+      }
+    }
+    return TaskCapabilities._(
+      platform,
+      Set.unmodifiable(supported),
+      Map.unmodifiable(reasons),
+      Map.unmodifiable(targets),
+      runtimeVersion: runtimeVersion,
+    );
+  }
+
   /// Describe CPU support on every target in [targets], with GPU explained as
   /// unavailable by [gpuUnavailableReason] on targets that are supported.
   ///

@@ -32,7 +32,7 @@ void main() {
     final result = objectDetectorCapabilitiesForPlatform(
       const TaskPlatform(
         operatingSystem: 'linux',
-        architecture: 'x64',
+        architecture: 'arm64',
         version: '1.0',
       ),
     );
@@ -41,5 +41,19 @@ void main() {
     // The platform itself is the blocker, so it explains both delegates.
     expect(result.unavailableReasons[VisionDelegate.cpu], isNotNull);
     expect(result.unavailableReasons[VisionDelegate.gpu], isNotNull);
+  });
+
+  test('Object Detector desktop x64 supports CPU and explains GPU scope', () {
+    for (final os in ['linux', 'windows']) {
+      final result = objectDetectorCapabilitiesForPlatform(
+        TaskPlatform(operatingSystem: os, architecture: 'x64'),
+      );
+      expect(result.supportedDelegates, {VisionDelegate.cpu});
+      expect(result.unavailableReasons[VisionDelegate.gpu], contains('macOS'));
+      expect(
+        result.supportedTargets.keys,
+        containsAll(['linux/x64', 'windows/x64', 'macos/arm64']),
+      );
+    }
   });
 }

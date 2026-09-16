@@ -1,4 +1,5 @@
 """Validate official CPU references and isolated Flutter desktop consumers."""
+import argparse
 import hashlib
 import json
 import os
@@ -21,7 +22,12 @@ def digest(path):
 
 def run(command, cwd, log, env=None, timeout=900):
     # Windows Flutter/Dart are batch entry points. Resolve them explicitly.
-    command = [shutil.which(command[0]) or command[0], *map(str, command[1:])]
+    executable = str(command[0])
+    if platform.system() == 'Windows' and executable == 'dart':
+        # PATHEXT lookup can spell dart.EXE in upper case. Dart 3.12's hook
+        # runner then appends another .exe. Flutter's wrapper uses dart.exe.
+        executable = 'dart.bat'
+    command = [shutil.which(executable) or executable, *map(str, command[1:])]
     print(' '.join(command), flush=True)
     with log.open('w', encoding='utf-8') as output:
         result = subprocess.run(command, cwd=cwd, env=env, stdout=output,
@@ -46,6 +52,9 @@ def download(url, sha, destination):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--object-detector', action='store_true')
+    args = parser.parse_args()
     system = platform.system()
     target = {'Linux': 'linux', 'Windows': 'windows'}.get(system)
     if target is None or platform.machine().lower() not in ('amd64', 'x86_64'):
@@ -60,8 +69,11 @@ def main():
     wheel_sha = re.search(r"sha256:\s*'([a-f0-9]+)'", row).group(1)
     library_sha = re.search(r"librarySha256:\s*'([a-f0-9]+)'", row).group(1)
     model_pins = (PACKAGE / 'lib/models.dart').read_text()
-    for prefix, name in [('blazeFaceShortRange', 'blaze_face_short_range.tflite'),
-                         ('faceLandmarker', 'face_landmarker.task')]:
+    models = [('blazeFaceShortRange', 'blaze_face_short_range.tflite'),
+              ('faceLandmarker', 'face_landmarker.task')]
+    if args.object_detector:
+        models.append(('efficientDetLite0', 'efficientdet_lite0.tflite'))
+    for prefix, name in models:
         url = dart_strings(re.search(r'const ' + prefix + r'Url\s*=(.*?);', model_pins, re.S).group(1))
         sha = dart_strings(re.search(r'const ' + prefix + r'Sha256\s*=(.*?);', model_pins, re.S).group(1))
         download(url, sha, PACKAGE / 'models' / name)
@@ -76,8 +88,11 @@ def main():
     files = ['face_detection/official_reference.json',
              'face_detection/official_video_reference.json',
              'face_landmarker/official_reference.json']
-    for task, folder in [('face_detector', 'face_detection'),
-                         ('face_landmarker', 'face_landmarker')]:
+    tasks = [('face_detector', 'face_detection'), ('face_landmarker', 'face_landmarker')]
+    if args.object_detector:
+        tasks.append(('object_detector', 'object_detection'))
+        files += ['object_detection/official_reference.json', 'object_detection/official_video_reference.json']
+    for task, folder in tasks:
         run([python, '-u', '-X', 'faulthandler', '-B', PACKAGE / f'tool/generate_{task}_reference.py',
              '--output-dir', references / folder], REPO, root / f'{task}-reference.log')
     from prepare_gpu_reference import difference
@@ -137,18 +152,30 @@ flutter:
     - assets/face_landmarker.task
     - assets/portrait.rgb
 ''')
+    if args.object_detector:
+        pubspec = app / 'pubspec.yaml'
+        pubspec.write_text(pubspec.read_text().replace(
+            'tasks: [face_detector, face_landmarker]',
+            'tasks: [face_detector, face_landmarker, object_detector]') +
+            '    - assets/object_detector.tflite\n')
     assets = app / 'assets'
     assets.mkdir()
     for source, name in [(PACKAGE / 'models/blaze_face_short_range.tflite', 'model.tflite'),
                          (PACKAGE / 'models/face_landmarker.task', 'face_landmarker.task'),
                          (PACKAGE / 'test/fixtures/face_detection/portrait-301x209.rgb', 'portrait.rgb')]:
         shutil.copyfile(source, assets / name)
+    if args.object_detector:
+        shutil.copyfile(PACKAGE / 'models/efficientdet_lite0.tflite', assets / 'object_detector.tflite')
     shutil.copytree(PACKAGE / 'models', app / 'models',
                     ignore=shutil.ignore_patterns('*.xnnpack_cache'))
     for folder in ['fixtures/face_detection', 'fixtures/face_landmarker', 'support']:
         shutil.copytree(PACKAGE / 'test' / folder, app / 'test' / folder)
     for name in ['face_detector_test.dart', 'face_landmarker_test.dart', 'pixel_conversion_test.dart']:
         shutil.copyfile(PACKAGE / 'test' / name, app / 'test' / name)
+    if args.object_detector:
+        shutil.copytree(PACKAGE / 'test/fixtures/object_detection', app / 'test/fixtures/object_detection')
+        shutil.copyfile(PACKAGE / 'test/object_detector_test.dart', app / 'test/object_detector_test.dart')
+        shutil.copyfile(PACKAGE / 'test/capabilities_test.dart', app / 'test/capabilities_test.dart')
     (app / 'test/native_assets').mkdir()
     shutil.copyfile(PACKAGE / 'test/native_assets/wheel_library_test.dart',
                     app / 'test/native_assets/wheel_library_test.dart')
@@ -157,6 +184,9 @@ flutter:
                                 ('flutter_release_smoke.dart.template', 'lib/main.dart')]:
         content = (PACKAGE / 'tool' / source).read_text().replace(
             'VisionDelegate.values', 'const [VisionDelegate.cpu]')
+        if args.object_detector and destination == 'lib/main.dart':
+            content = content.replace('      stdout.writeln(', '      await runObjectDetectorSmoke();\n      stdout.writeln(')
+            content += (PACKAGE / 'tool/flutter_desktop_object_smoke.dart.template').read_text()
         (app / destination).write_text(content)
     env = {**os.environ, 'MEDIAPIPE_CPU_REFERENCE_DIR': str(references)}
     run(['flutter', 'pub', 'get'], app, root / 'pub.log', env)
@@ -181,6 +211,8 @@ flutter:
         run([executable], deployed, log, env, timeout=90)
         if 'bundled cpu Face Detector and Face Landmarker inference passed.' not in log.read_text():
             raise RuntimeError(f'{mode} app did not confirm inference')
+        if args.object_detector and 'Object Detector CPU inference passed.' not in log.read_text():
+            raise RuntimeError(f'{mode} app did not confirm Object Detector inference')
         report['modes'][mode] = {'inference': 'passed',
                                  'bundled_libraries': [str(path.relative_to(bundle)) for path in libraries]}
     (root / 'report.json').write_text(json.dumps(report, indent=2))

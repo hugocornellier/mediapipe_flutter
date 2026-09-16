@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
+import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
 import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
@@ -60,12 +61,25 @@ void main(List<String> arguments) async {
       );
       // Dart rejects duplicate physical filenames across asset IDs. Preserve
       // the existing generated bindings with a distinct file per selected task.
-      for (final task in tasks) {
+      final assetNames = {
+        for (final task in tasks)
+          if (task == 'face_detector' || task == 'face_landmarker')
+            '$task.dylib'
+          else
+            'vision.dylib',
+      };
+      for (final assetName in assetNames) {
         final suffix = target.startsWith('windows/') ? 'dll' : 'so';
-        final bundled = await library.copy(
-          File.fromUri(library.parent.uri.resolve('lib$task.$suffix')).path,
+        final stem = assetName.substring(0, assetName.length - '.dylib'.length);
+        final bundled = File.fromUri(
+          library.parent.uri.resolve('lib$stem.$suffix'),
         );
-        _addAsset(input, output, library: bundled, assetName: '$task.dylib');
+        if (!await bundled.exists() ||
+            (await sha256.bind(bundled.openRead()).first).toString() !=
+                wheelRelease.librarySha256) {
+          await library.copy(bundled.path);
+        }
+        _addAsset(input, output, library: bundled, assetName: assetName);
       }
       return;
     }

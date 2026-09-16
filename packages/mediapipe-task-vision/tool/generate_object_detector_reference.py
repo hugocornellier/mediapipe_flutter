@@ -13,6 +13,7 @@ import hashlib
 import json
 from pathlib import Path
 import platform
+from official_face_runtime import LIBRARY_NAME, LIBRARY_SHA256
 
 import mediapipe as mp
 import numpy as np
@@ -25,7 +26,6 @@ FIXTURES = ROOT / "test/fixtures/object_detection"
 IMAGES = ROOT / "test/fixtures/face_detection"
 MODEL = ROOT / "models/efficientdet_lite0.tflite"
 MODEL_SHA256 = "40338edf5ec70d43e318b0a716a84d4564cd1802759a7a07170c7e43796dbf58"
-LIBRARY_SHA256 = "aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f"
 SCORE_THRESHOLD = 0.3
 MAX_RESULTS = 5
 
@@ -54,9 +54,8 @@ def main():
     delegate = getattr(mp.tasks.BaseOptions.Delegate, args.delegate.upper())
     suffix = "_gpu" if args.delegate == "gpu" else ""
     assert mp.__version__ == "1.0.0", mp.__version__
-    assert platform.system() == "Darwin" and platform.machine() == "arm64"
     assert digest(MODEL) == MODEL_SHA256
-    library = Path(mp.__file__).parent / "tasks/c/libmediapipe.dylib"
+    library = Path(mp.__file__).parent / "tasks/c" / LIBRARY_NAME
     assert digest(library) == LIBRARY_SHA256
     manifest = json.loads((IMAGES / "manifest.json").read_text())
     cases = []
@@ -92,9 +91,11 @@ def main():
 
         # The same decimation the face fixtures use, so both tasks read one
         # checked-in raw buffer and no test depends on a JPEG decoder.
-        pixels = mp.Image.create_from_file(
+        decoded = mp.Image.create_from_file(
             str(IMAGES / "mesh-ex1.jpeg")
-        ).numpy_view()[::20, ::20, :3].copy()
+        )
+        # numpy_view borrows native storage; retain its owner until copying.
+        pixels = decoded.numpy_view()[::20, ::20, :3].copy()
         raw = IMAGES / "portrait-301x209.rgb"
         assert raw.read_bytes() == pixels.tobytes(), "Raw fixture derivation changed"
         image = mp.Image(image_format=mp.ImageFormat.SRGB, data=pixels)
@@ -120,7 +121,7 @@ def main():
         source_revision="6d31f1ebc3284db74d211d62bdc4f0a0c29ea120",
         library_sha256=LIBRARY_SHA256,
         model_sha256=MODEL_SHA256,
-        platform="macOS arm64", delegate=args.delegate.upper(), running_mode="IMAGE",
+        platform=f"{platform.system()} {platform.machine()}", delegate=args.delegate.upper(), running_mode="IMAGE",
         score_threshold=SCORE_THRESHOLD, max_results=MAX_RESULTS,
         raw_derivation="mesh-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
         **({"input_conversion": "RGB to RGBA with opaque alpha for Metal"}

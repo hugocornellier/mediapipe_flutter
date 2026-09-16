@@ -23,9 +23,11 @@ void main() {
       // crashes with no Dart in the process, Google's official 1.0.0 wheel runs
       // the same model and images on CPU, and our Metal results match the
       // official GPU goldens exactly. See tool/OBJECT_DETECTOR.md.
-      skip: delegate == VisionDelegate.cpu
+      skip: delegate == VisionDelegate.cpu && Platform.isMacOS
           ? 'Source-build CPU path aborts in XNNPACK SME kernels; '
                 'see tool/OBJECT_DETECTOR.md'
+          : delegate == VisionDelegate.gpu && !Platform.isMacOS
+          ? 'GPU object inference is validated on macOS only.'
           : null,
     );
   }
@@ -36,6 +38,23 @@ void main() {
       VisionDelegate.cpu,
     );
   });
+
+  if (Platform.isMacOS) {
+    test('known CPU abort is rejected before native initialization', () async {
+      await expectLater(
+        ObjectDetector.create(
+          ObjectDetectorOptions(modelPath: 'missing-model.tflite'),
+        ),
+        throwsA(
+          isA<UnsupportedError>().having(
+            (e) => e.message,
+            'diagnostic',
+            contains('SIGILL'),
+          ),
+        ),
+      );
+    });
+  }
 
   test('rejects a zero result limit', () {
     expect(
@@ -103,6 +122,70 @@ void _testDelegate(VisionDelegate delegate) {
     expect(detector.delegate, delegate);
     expect(detector.runningMode, VisionRunningMode.image);
   });
+
+  test('queued requests complete before idempotent disposal', () async {
+    final task = await ObjectDetector.create(
+      ObjectDetectorOptions(
+        delegate: delegate,
+        modelPath: _model,
+        scoreThreshold: _scoreThreshold,
+        maxResults: _maxResults,
+      ),
+    );
+    final expected = cases.where((c) => c['name'] == 'rgb').single;
+    final requests = [
+      for (var i = 0; i < 6; i++) task.detectImage(fixtureImage(expected)),
+    ];
+    final closing = task.dispose();
+    expect(identical(closing, task.dispose()), isTrue);
+    await expectLater(
+      task.detectImage(fixtureImage(expected)),
+      throwsStateError,
+    );
+    final results = await Future.wait(requests);
+    await closing;
+    for (final result in results) {
+      _expectMatches(result, expected);
+      expect(() => result.detections.clear(), throwsUnsupportedError);
+      expect(
+        () => result.detections.first.categories.clear(),
+        throwsUnsupportedError,
+      );
+    }
+  });
+
+  test('native input errors leave the detector usable', () async {
+    await expectLater(
+      detector.detectImage(VisionImage.fromFile('missing-image.jpg')),
+      throwsA(isA<ObjectDetectorException>()),
+    );
+    _expectMatches(
+      await detector.detectImage(fixtureImage(cases.first)),
+      cases.first,
+    );
+  });
+
+  test(
+    'invalid model initialization fails without poisoning later tasks',
+    () async {
+      for (final options in [
+        ObjectDetectorOptions(
+          delegate: delegate,
+          modelPath: 'missing-model.tflite',
+        ),
+        ObjectDetectorOptions(delegate: delegate, modelBytes: Uint8List(32)),
+      ]) {
+        await expectLater(
+          ObjectDetector.create(options).timeout(const Duration(seconds: 10)),
+          throwsA(isA<ObjectDetectorException>()),
+        );
+      }
+      final task = await ObjectDetector.create(
+        ObjectDetectorOptions(delegate: delegate, modelPath: _model),
+      );
+      await task.dispose();
+    },
+  );
 
   for (final expected in cases) {
     test('matches the official result for ${expected['name']}', () async {

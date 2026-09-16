@@ -11,7 +11,7 @@ on:
 
 jobs:
   face-tasks:
-    name: Face tasks / ${{ matrix.os }} x64 CPU
+    name: Face and Object tasks / ${{ matrix.os }} x64 CPU
     strategy:
       fail-fast: false
       matrix:
@@ -33,10 +33,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev xvfb
       - name: Validate Linux CPU references and debug/release consumers
         if: runner.os == 'Linux'
-        run: xvfb-run -a python3 -B packages/mediapipe-task-vision/tool/test_desktop.py
+        run: xvfb-run -a python3 -B packages/mediapipe-task-vision/tool/test_desktop.py --object-detector
       - name: Validate Windows CPU references and debug/release consumers
         if: runner.os == 'Windows'
-        run: python -B packages/mediapipe-task-vision/tool/test_desktop.py
+        run: python -B packages/mediapipe-task-vision/tool/test_desktop.py --object-detector
       - uses: actions/upload-artifact@v4
         if: always()
         with:

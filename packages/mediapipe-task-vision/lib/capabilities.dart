@@ -39,13 +39,20 @@ queryObjectDetectorCapabilities() async =>
 /// official reference and CPU is the broken path.
 TaskCapabilities<VisionDelegate> objectDetectorCapabilitiesForPlatform(
   TaskPlatform platform,
-) => TaskCapabilities.gpuOnTargets(
+) => TaskCapabilities.onTargets(
   platform: platform,
-  cpu: VisionDelegate.cpu,
-  gpu: VisionDelegate.gpu,
+  delegates: const {
+    VisionDelegate.cpu: {'linux/x64': null, 'windows/x64': null},
+    VisionDelegate.gpu: {'macos/arm64': '14.0'},
+  },
   runtimeVersion: '1.0.0',
-  cpuUnavailableReason:
-      'CPU inference aborts with SIGILL inside XNNPACK\'s KleidiAI SME kernels '
-      'in the pinned v1.0.0 source build. This task supports Metal only; see '
-      'tool/OBJECT_DETECTOR.md.',
+  unavailableReasons: {
+    VisionDelegate.cpu: platform.operatingSystem == 'macos'
+        ? 'CPU inference aborts with SIGILL inside XNNPACK\'s KleidiAI SME kernels '
+              'in the pinned v1.0.0 source build. This task supports Metal only; see '
+              'tool/OBJECT_DETECTOR.md.'
+        : 'Object Detector CPU requires Linux x64 or Windows x64.',
+    VisionDelegate.gpu:
+        'Object Detector GPU is validated on macOS arm64 14.0+ only.',
+  },
 );

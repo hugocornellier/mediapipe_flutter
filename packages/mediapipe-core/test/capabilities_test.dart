@@ -12,6 +12,45 @@ TaskCapabilities<_Delegate> _support(TaskPlatform platform) =>
     );
 
 void main() {
+  test(
+    'delegate-specific target and minimum versions are checked independently',
+    () {
+      TaskCapabilities<_Delegate> check(String os, String? version) =>
+          TaskCapabilities.onTargets(
+            platform: TaskPlatform(
+              operatingSystem: os,
+              architecture: 'x64',
+              version: version,
+            ),
+            delegates: const {
+              _Delegate.cpu: {'windows/x64': '10.0', 'linux/x64': null},
+              _Delegate.gpu: {'windows/x64': '11.0'},
+            },
+            unavailableReasons: const {_Delegate.gpu: 'GPU requires Windows.'},
+            runtimeVersion: '1.0.0',
+          );
+      expect(check('windows', '10.0').supportedDelegates, {_Delegate.cpu});
+      expect(
+        check('windows', '10.0').unavailableReasons[_Delegate.gpu],
+        contains('11.0'),
+      );
+      expect(
+        check('windows', '11.0').supportedDelegates,
+        _Delegate.values.toSet(),
+      );
+      expect(check('windows', null).supportedDelegates, isEmpty);
+      expect(check('linux', null).supportedDelegates, {_Delegate.cpu});
+      expect(
+        check('linux', null).unavailableReasons[_Delegate.gpu],
+        'GPU requires Windows.',
+      );
+      expect(check('windows', '11.0').minimumOperatingSystemVersion, '10.0');
+      expect(
+        () => check('linux', null).supportedTargets.clear(),
+        throwsUnsupportedError,
+      );
+    },
+  );
   test('minimum OS accepts CPU and preserves the upstream GPU explanation', () {
     final result = _support(
       const TaskPlatform(
