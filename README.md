@@ -50,6 +50,16 @@ validation. Public prebuilt runtimes are available for both macOS arm64 face
 tasks and the optional segmenter. The face tasks also have a validated local
 arm64 iOS simulator CPU target; simulator archives are not yet published.
 
+**Linux x64 and Windows x64 run eleven vision tasks on CPU**, served by pinned
+official MediaPipe 1.0.0 wheels: Face Detector, Face Landmarker, Object Detector,
+Image Classifier, Image Embedder, Hand Landmarker, Gesture Recognizer, Pose
+Landmarker, Holistic Landmarker, Image Segmenter and the legacy Interactive
+Segmenter. Every push runs `.github/workflows/desktop.yaml`, which regenerates
+reference outputs through Google's official Python API on each runner, compares
+Dart against them, and launches relocated debug and release Flutter bundles for
+real inference. macOS arm64 keeps its own source-built runtime, so its CPU
+results for these tasks are not validated; see `upstream-issues.md`.
+
 ## Packages and platform status
 
 | Package | Directory | Status |
@@ -57,14 +67,16 @@ arm64 iOS simulator CPU target; simulator archives are not yet published.
 | `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
 | `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Six text tasks on one MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
-| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Face tasks: macOS CPU/Metal + local iOS simulator CPU; optional macOS CPU MagicTouch editor |
+| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Eleven tasks on Linux/Windows x64 CPU; face tasks on macOS CPU/Metal and local iOS simulator CPU; optional macOS CPU MagicTouch editor |
 | Audio | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Placeholder, no Dart package |
 
 The migrated text package supports macOS arm64; its old Android, iOS and Intel
 macOS artifacts have been retired. GenAI artifacts exist for macOS arm64, Android arm64, and iOS arm64
 devices. Artifact availability does not establish tested platform support.
-There are no published iOS simulator, Windows, Linux, or web task runtimes in this baseline.
-Unsupported native targets fail with an explicit build error.
+Linux and Windows x64 vision runtimes come from Google's published wheels, whose
+libraries and notices the build hook extracts and verifies by digest. There are no
+published iOS simulator, arm64 desktop, or web task runtimes in this baseline, and
+no desktop GPU support. Unsupported native targets fail with an explicit build error.
 
 ## Packaging
 

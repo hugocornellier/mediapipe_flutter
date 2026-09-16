@@ -55,27 +55,29 @@ void main() {
     }
   });
 
-  test(
-    'desktop rows reject tasks outside tested coverage before downloading',
-    () {
-      for (final os in [OS.linux, OS.windows]) {
-        expect(
-          testCodeBuildHook(
-            mainMethod: hook.main,
-            targetOS: os,
-            targetArchitecture: Architecture.x64,
-            userDefines: defines({
-              'tasks': ['image_segmenter'],
-            }),
-            check: (_, _) => fail('Unvalidated task unexpectedly bundled'),
-          ),
-          failsWith<UnsupportedError>(
-            allOf(contains('$os/x64'), contains('image_segmenter')),
-          ),
-        );
-      }
-    },
-  );
+  test('desktop rows cover exactly what the desktop jobs validate', () {
+    // The hook refuses any task missing from these rows, so widening them
+    // without adding the task to tool/test_desktop.py would claim coverage
+    // nothing proves. The stateful Interactive Segmenter is deliberately
+    // absent: core's shared 1.0.1 runtime serves it instead of a wheel.
+    const validated = {
+      'face_detector',
+      'face_landmarker',
+      'object_detector',
+      'image_classifier',
+      'image_embedder',
+      'hand_landmarker',
+      'gesture_recognizer',
+      'pose_landmarker',
+      'holistic_landmarker',
+      'image_segmenter',
+      'interactive_segmenter_legacy',
+    };
+    for (final release in visionWheelReleases.values) {
+      expect(release.tasks, validated);
+    }
+    expect(visionTasks.difference(validated), {sharedRuntimeTask});
+  });
 
   test('an unpublished release is served only from a local build', () {
     final unpublished = visionRuntimeReleases.where(

@@ -18,6 +18,7 @@ models:
 	cd packages/mediapipe-task-vision && dart tool/download_object_detector.dart
 	cd packages/mediapipe-task-vision && dart tool/download_image_tasks.dart
 	cd packages/mediapipe-task-vision && dart tool/download_landmark_tasks.dart
+	cd packages/mediapipe-task-vision && dart tool/download_segmenter_tasks.dart
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
 	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_segmenter_example.py

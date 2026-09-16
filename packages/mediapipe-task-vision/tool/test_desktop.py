@@ -59,6 +59,7 @@ def main():
     parser.add_argument('--object-detector', action='store_true')
     parser.add_argument('--image-tasks', action='store_true')
     parser.add_argument('--landmark-tasks', action='store_true')
+    parser.add_argument('--segmenter-tasks', action='store_true')
     args = parser.parse_args()
     system = platform.system()
     target = {'Linux': 'linux', 'Windows': 'windows'}.get(system)
@@ -86,6 +87,9 @@ def main():
                    ('gestureRecognizer', 'gesture_recognizer.task'),
                    ('poseLandmarkerLite', 'pose_landmarker_lite.task'),
                    ('holisticLandmarker', 'holistic_landmarker.task')]
+    if args.segmenter_tasks:
+        models += [('deepLabV3', 'deeplab_v3.tflite'),
+                   ('magicTouch', 'magic_touch.tflite')]
     for prefix, name in models:
         url = dart_strings(re.search(r'const ' + prefix + r'Url\s*=(.*?);', model_pins, re.S).group(1))
         sha = dart_strings(re.search(r'const ' + prefix + r'Sha256\s*=(.*?);', model_pins, re.S).group(1))
@@ -111,6 +115,9 @@ def main():
     if args.landmark_tasks:
         tasks.append(('landmark_tasks', 'landmark_tasks'))
         files.append('landmark_tasks/official_reference.json')
+    if args.segmenter_tasks:
+        tasks.append(('segmenter_tasks', 'segmenter_tasks'))
+        files.append('segmenter_tasks/official_reference.json')
     for task, folder in tasks:
         run([python, '-u', '-X', 'faulthandler', '-B', PACKAGE / f'tool/generate_{task}_reference.py',
              '--output-dir', references / folder], REPO, root / f'{task}-reference.log')
@@ -165,6 +172,10 @@ def main():
                     (PACKAGE / 'models/holistic_landmarker.task', 'holistic_landmarker.task'),
                     (landmarks / 'thumb_up.rgb', 'thumb_up.rgb'),
                     (landmarks / 'pose.rgb', 'pose.rgb')]
+    if args.segmenter_tasks:
+        selected += ['image_segmenter', 'interactive_segmenter_legacy']
+        bundled += [(PACKAGE / 'models/deeplab_v3.tflite', 'image_segmenter.tflite'),
+                    (PACKAGE / 'models/magic_touch.tflite', 'magic_touch.tflite')]
     (app / 'pubspec.yaml').write_text('''name: mediapipe_desktop_smoke
 publish_to: none
 environment:
@@ -211,6 +222,9 @@ flutter:
         # The generator rewrote the raw fixtures with this host's decoder.
         shutil.copytree(PACKAGE / 'test/fixtures/landmark_tasks', app / 'test/fixtures/landmark_tasks')
         shutil.copyfile(PACKAGE / 'test/landmark_tasks_test.dart', app / 'test/landmark_tasks_test.dart')
+    if args.segmenter_tasks:
+        # Both segmenter tasks reuse the checked-in face fixtures.
+        shutil.copyfile(PACKAGE / 'test/segmenter_tasks_test.dart', app / 'test/segmenter_tasks_test.dart')
     (app / 'test/native_assets').mkdir()
     shutil.copyfile(PACKAGE / 'test/native_assets/wheel_library_test.dart',
                     app / 'test/native_assets/wheel_library_test.dart')
@@ -228,6 +242,9 @@ flutter:
         if args.landmark_tasks and destination == 'lib/main.dart':
             content = content.replace('      stdout.writeln(', '      await runLandmarkTasksSmoke();\n      stdout.writeln(')
             content += (PACKAGE / 'tool/flutter_desktop_landmark_smoke.dart.template').read_text()
+        if args.segmenter_tasks and destination == 'lib/main.dart':
+            content = content.replace('      stdout.writeln(', '      await runSegmenterTasksSmoke();\n      stdout.writeln(')
+            content += (PACKAGE / 'tool/flutter_desktop_segmenter_smoke.dart.template').read_text()
         (app / destination).write_text(content)
     env = {**os.environ, 'MEDIAPIPE_CPU_REFERENCE_DIR': str(references)}
     run(['flutter', 'pub', 'get'], app, root / 'pub.log', env)
@@ -261,6 +278,9 @@ flutter:
         if args.landmark_tasks and ('Hand, Gesture, Pose and Holistic Landmarker CPU inference '
                                     'passed.') not in log.read_text():
             raise RuntimeError(f'{mode} app did not confirm landmark task inference')
+        if args.segmenter_tasks and ('Image Segmenter and legacy Interactive Segmenter CPU '
+                                     'inference passed.') not in log.read_text():
+            raise RuntimeError(f'{mode} app did not confirm segmenter task inference')
         report['modes'][mode] = {'inference': 'passed',
                                  'bundled_libraries': [str(path.relative_to(bundle)) for path in libraries]}
     (root / 'report.json').write_text(json.dumps(report, indent=2))

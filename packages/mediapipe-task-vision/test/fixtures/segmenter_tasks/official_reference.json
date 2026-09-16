@@ -1,0 +1,3545 @@
+{
+  "runtime": "mediapipe==1.0.0",
+  "source_revision": "6d31f1ebc3284db74d211d62bdc4f0a0c29ea120",
+  "library_sha256": "aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f",
+  "delegate": "CPU",
+  "platform": "Darwin arm64",
+  "models": {
+    "image": "ff36e24d40547fe9e645e2f4e8745d1876d6e38b332d39a82f0bf0f5d1d561b3",
+    "interactive": "e24338a717c1b7ad8d159666677ef400babb7f33b8ad60c4d96db4ecf694cd25"
+  },
+  "cases": [
+    {
+      "task": "image",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2ad5329f78d4ed87cc15093d51cd36cce8a9a16df722cbc2a57b6bdfcf32a39f",
+            "minimum": 0.00013522095105145127,
+            "maximum": 0.9999815225601196,
+            "mean": 0.6202562580822968
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "df5ab23cc05b13fbe95832688a6ec60fc4d0f08bb8075a1ced38fcc228786c40",
+            "minimum": 3.0869968040136975e-12,
+            "maximum": 2.7769451094172837e-07,
+            "mean": 7.751108570355024e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8c46054eb9ec6e6a18f8720b1c9903a620109b40b5f63c30129b7accf0ea1759",
+            "minimum": 2.702059496290099e-12,
+            "maximum": 1.1100763913418632e-05,
+            "mean": 1.7538456271626756e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a385803b0b691112dcc3c08c083ad7ec3e0bb9a6fa1af8a934eb25af16d06361",
+            "minimum": 6.101987803930342e-10,
+            "maximum": 0.0002791128063108772,
+            "mean": 3.977919995961105e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3d436bdf2f90d8aacebeb6484f0aa28f451c55cdea85da629429e3971fe3f06c",
+            "minimum": 2.8968995171435585e-12,
+            "maximum": 2.2352603537001414e-06,
+            "mean": 4.205426166458947e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6c5d85a19f788f7972324589374cd29fa6734fa8f01eca6c86558dbb3d391ba1",
+            "minimum": 1.185492806143884e-06,
+            "maximum": 0.049079544842243195,
+            "mean": 0.0009605797338463082
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "556320d28cb2b467968417b33ec22005b4d29db4346505857806754c221ece4a",
+            "minimum": 8.868978414091483e-14,
+            "maximum": 5.584041318229538e-08,
+            "mean": 1.932963581818437e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "35a15d8cabf6028d5b6295e043eb9b878d107ffec55df811b713e5b48d26f9db",
+            "minimum": 1.7061891179406818e-12,
+            "maximum": 0.00015141817857511342,
+            "mean": 1.2707038742060728e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8435da3466f174c040ed562abf69f5c7b20baabeb850d90cd8f3065eb283049b",
+            "minimum": 5.849808831781544e-11,
+            "maximum": 3.0944809168431675e-06,
+            "mean": 1.286520048828451e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4dd2bcc0328090368ac94ba8b4b8540b4110d037202491285900ff255586c7dc",
+            "minimum": 2.0734496342100783e-09,
+            "maximum": 0.02219308540225029,
+            "mean": 0.00020900978840149702
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "aa9eaceaf04c42d575cd1514cac6b351cf614270b3b87f0fd264b57c4612a0a1",
+            "minimum": 1.1462702904647525e-14,
+            "maximum": 7.532996448844642e-09,
+            "mean": 2.2660920811225651e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c847a6dd56aed75efd8028029bb2bbfc422c4a453b0e27a3d62c05fae2f95490",
+            "minimum": 3.251785507529803e-09,
+            "maximum": 0.0525815412402153,
+            "mean": 0.00014719793365704272
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a30e58fc4b0ae907b028c4709dc9272222cafe525ceaccf560046c1a71b72900",
+            "minimum": 2.2208415662028358e-11,
+            "maximum": 8.633046491013374e-06,
+            "mean": 1.4865735048874543e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9471d7835fe0203da1b5ad7f2c7b81af0708e9e0026daaeee5bcc46ab0ef1505",
+            "minimum": 4.5324456536023627e-13,
+            "maximum": 1.1010457967586262e-07,
+            "mean": 2.5289483891131587e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "1620855443ee954219904df072f3f19784be9c5e8ed4c23b184c370df26e054d",
+            "minimum": 8.550221620128029e-13,
+            "maximum": 9.89189175015781e-07,
+            "mean": 1.4866639774098754e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3e76155facd8a557e0585cdbf9a6f54f782f1ceed9eff42d243622fea2ed3301",
+            "minimum": 5.701368991140043e-06,
+            "maximum": 0.9998608827590942,
+            "mean": 0.3783250241325331
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "700c4799afa6b867c5b26685b5e40758bc2e295db8f5238c3764833dc35a39e0",
+            "minimum": 4.659974628395958e-10,
+            "maximum": 0.0008438228396698833,
+            "mean": 2.5619225725261348e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c3567224176e8e2cd20d042a81749e02f5e67e6942cbc85e7c26c79dd76c6806",
+            "minimum": 1.39426662964094e-14,
+            "maximum": 4.19916679206267e-09,
+            "mean": 1.39270201197315e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f30d688af03226f13230357e9b2af566e8d03c580b2094885c994b6e5483f254",
+            "minimum": 5.325440088910227e-11,
+            "maximum": 0.0011509143514558673,
+            "mean": 1.3596599782170493e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "27eb124fb666b623fb4e05c0f8e0d7e5140a5dbf8c41d3e2a806c9c39529f2da",
+            "minimum": 1.0593481082306951e-14,
+            "maximum": 1.0958209450961931e-08,
+            "mean": 4.177899835117082e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "51ef932a6b6d3974d82758c6e64c110d0f8d06306cf52c0c7928d82d6b101eae",
+            "minimum": 1.239354840976148e-09,
+            "maximum": 0.0016705718589946628,
+            "mean": 5.697340807415442e-05
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "rgba",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2ad5329f78d4ed87cc15093d51cd36cce8a9a16df722cbc2a57b6bdfcf32a39f",
+            "minimum": 0.00013522095105145127,
+            "maximum": 0.9999815225601196,
+            "mean": 0.6202562580822968
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "df5ab23cc05b13fbe95832688a6ec60fc4d0f08bb8075a1ced38fcc228786c40",
+            "minimum": 3.0869968040136975e-12,
+            "maximum": 2.7769451094172837e-07,
+            "mean": 7.751108570355024e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8c46054eb9ec6e6a18f8720b1c9903a620109b40b5f63c30129b7accf0ea1759",
+            "minimum": 2.702059496290099e-12,
+            "maximum": 1.1100763913418632e-05,
+            "mean": 1.7538456271626756e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a385803b0b691112dcc3c08c083ad7ec3e0bb9a6fa1af8a934eb25af16d06361",
+            "minimum": 6.101987803930342e-10,
+            "maximum": 0.0002791128063108772,
+            "mean": 3.977919995961105e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3d436bdf2f90d8aacebeb6484f0aa28f451c55cdea85da629429e3971fe3f06c",
+            "minimum": 2.8968995171435585e-12,
+            "maximum": 2.2352603537001414e-06,
+            "mean": 4.205426166458947e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6c5d85a19f788f7972324589374cd29fa6734fa8f01eca6c86558dbb3d391ba1",
+            "minimum": 1.185492806143884e-06,
+            "maximum": 0.049079544842243195,
+            "mean": 0.0009605797338463082
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "556320d28cb2b467968417b33ec22005b4d29db4346505857806754c221ece4a",
+            "minimum": 8.868978414091483e-14,
+            "maximum": 5.584041318229538e-08,
+            "mean": 1.932963581818437e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "35a15d8cabf6028d5b6295e043eb9b878d107ffec55df811b713e5b48d26f9db",
+            "minimum": 1.7061891179406818e-12,
+            "maximum": 0.00015141817857511342,
+            "mean": 1.2707038742060728e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8435da3466f174c040ed562abf69f5c7b20baabeb850d90cd8f3065eb283049b",
+            "minimum": 5.849808831781544e-11,
+            "maximum": 3.0944809168431675e-06,
+            "mean": 1.286520048828451e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4dd2bcc0328090368ac94ba8b4b8540b4110d037202491285900ff255586c7dc",
+            "minimum": 2.0734496342100783e-09,
+            "maximum": 0.02219308540225029,
+            "mean": 0.00020900978840149702
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "aa9eaceaf04c42d575cd1514cac6b351cf614270b3b87f0fd264b57c4612a0a1",
+            "minimum": 1.1462702904647525e-14,
+            "maximum": 7.532996448844642e-09,
+            "mean": 2.2660920811225651e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c847a6dd56aed75efd8028029bb2bbfc422c4a453b0e27a3d62c05fae2f95490",
+            "minimum": 3.251785507529803e-09,
+            "maximum": 0.0525815412402153,
+            "mean": 0.00014719793365704272
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a30e58fc4b0ae907b028c4709dc9272222cafe525ceaccf560046c1a71b72900",
+            "minimum": 2.2208415662028358e-11,
+            "maximum": 8.633046491013374e-06,
+            "mean": 1.4865735048874543e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9471d7835fe0203da1b5ad7f2c7b81af0708e9e0026daaeee5bcc46ab0ef1505",
+            "minimum": 4.5324456536023627e-13,
+            "maximum": 1.1010457967586262e-07,
+            "mean": 2.5289483891131587e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "1620855443ee954219904df072f3f19784be9c5e8ed4c23b184c370df26e054d",
+            "minimum": 8.550221620128029e-13,
+            "maximum": 9.89189175015781e-07,
+            "mean": 1.4866639774098754e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3e76155facd8a557e0585cdbf9a6f54f782f1ceed9eff42d243622fea2ed3301",
+            "minimum": 5.701368991140043e-06,
+            "maximum": 0.9998608827590942,
+            "mean": 0.3783250241325331
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "700c4799afa6b867c5b26685b5e40758bc2e295db8f5238c3764833dc35a39e0",
+            "minimum": 4.659974628395958e-10,
+            "maximum": 0.0008438228396698833,
+            "mean": 2.5619225725261348e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c3567224176e8e2cd20d042a81749e02f5e67e6942cbc85e7c26c79dd76c6806",
+            "minimum": 1.39426662964094e-14,
+            "maximum": 4.19916679206267e-09,
+            "mean": 1.39270201197315e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f30d688af03226f13230357e9b2af566e8d03c580b2094885c994b6e5483f254",
+            "minimum": 5.325440088910227e-11,
+            "maximum": 0.0011509143514558673,
+            "mean": 1.3596599782170493e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "27eb124fb666b623fb4e05c0f8e0d7e5140a5dbf8c41d3e2a806c9c39529f2da",
+            "minimum": 1.0593481082306951e-14,
+            "maximum": 1.0958209450961931e-08,
+            "mean": 4.177899835117082e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "51ef932a6b6d3974d82758c6e64c110d0f8d06306cf52c0c7928d82d6b101eae",
+            "minimum": 1.239354840976148e-09,
+            "maximum": 0.0016705718589946628,
+            "mean": 5.697340807415442e-05
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "file",
+      "width": 1280,
+      "height": 853,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "d958f77f98e29c40fd92076f6fbac76bef096389e7c801fb89fd76cf04c0fbbb",
+            "minimum": 4.820152526008314e-07,
+            "maximum": 0.9998022317886353,
+            "mean": 0.49429446613577926
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "813dc0c26e72b5a94d6f4725243effed220adf7e428ce70cd56305bd36fd99e5",
+            "minimum": 8.60418913851621e-14,
+            "maximum": 4.837145866076753e-07,
+            "mean": 9.691003086029154e-09
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "9a2be635d16ef0fcc2a4e3c3f0440d2ab676cecee1b7bb335fca555712c51e86",
+            "minimum": 2.978878537070184e-13,
+            "maximum": 7.907710096333176e-05,
+            "mean": 1.5875466951892453e-06
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "56a01acec57927de622e69984bd7db441524430fc684549c643b2223bc892cc6",
+            "minimum": 9.01667451813637e-09,
+            "maximum": 0.0010732359951362014,
+            "mean": 1.3601033048303202e-05
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "80ccd95c43c7321c1ce1a71b129aa5f55b119beb08550d849150439d54f39afd",
+            "minimum": 4.3337448023652095e-14,
+            "maximum": 1.0750812862170278e-06,
+            "mean": 3.263932419431888e-08
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "4f11f4e74eb1df80241ccef46d6d88a7c2c11c38b7bcab7328a2d1d8d0e9f0c3",
+            "minimum": 2.4490694272572e-07,
+            "maximum": 0.42124229669570923,
+            "mean": 0.0033066853570656507
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "cd359331b546a83e0cf268a5606fa0906edd20028f4a2fe6ad433f9de9a40469",
+            "minimum": 6.832402274800458e-16,
+            "maximum": 1.9351395508238056e-07,
+            "mean": 3.71502137748587e-09
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "825dae353490db07fd5d5560194a2e338d2947eca0df732d6810a13f6c139290",
+            "minimum": 1.2120756025105813e-14,
+            "maximum": 1.4031076716491953e-05,
+            "mean": 3.964412782610861e-07
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "e5d765dc443de3304d6d1839b5295241e706c7a0d946c59b5c5bd7685835beaa",
+            "minimum": 4.656438790107131e-09,
+            "maximum": 0.0005488833412528038,
+            "mean": 1.02520154261533e-05
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "78049ce52607a99cf3319b95494856909c195908a52cc1011f33e10558b18e1b",
+            "minimum": 1.4006185544701566e-08,
+            "maximum": 0.03948508948087692,
+            "mean": 0.0011121994426326032
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "516efb5ff16519e2dfb0051b66a2efc33f0eac85641de40cdab18d59dbf45d7a",
+            "minimum": 3.7426614948486356e-14,
+            "maximum": 5.763721446783165e-07,
+            "mean": 1.7358425293796837e-08
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "997a22584180397d17871f59a4d42da60e431db833b622fdc0c1a5004583afb8",
+            "minimum": 7.109657862436336e-10,
+            "maximum": 0.07489684969186783,
+            "mean": 0.0020320037851555596
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "60e8eba361340507c0d64c89c7184f4b16413ab6d485e4b0cd3994db76f58fd9",
+            "minimum": 1.0777315151422329e-10,
+            "maximum": 2.2372209059540182e-05,
+            "mean": 7.046376775687897e-07
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "84ca9f6df39de6413898624ca3b22fc046d0d632baed4ac03003d68fce58031f",
+            "minimum": 9.796307645290603e-13,
+            "maximum": 9.336334301224269e-07,
+            "mean": 2.5268039355446664e-08
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "5de8a4022725efa0275b95af95d9a39c1fd6196b4fd43da57b563d1849a8c6cd",
+            "minimum": 2.3671889169446687e-14,
+            "maximum": 2.0284021502448013e-06,
+            "mean": 3.24269054840828e-08
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "0536ea75a446f0d6603b1f82aed4e04efdbf3dec7362985d882ed5533b7b4a6b",
+            "minimum": 0.00016187723667826504,
+            "maximum": 0.9999988079071045,
+            "mean": 0.49899119044441925
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "221f227bc77fd4fcfb4ee5e69420a65ebeca8ffb27d02cb6829926dcf0f22998",
+            "minimum": 1.447638259266526e-10,
+            "maximum": 0.001963741844519973,
+            "mean": 8.545535807825337e-05
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "00bf10e79528ed24808e20c3fd8b3a29e67187155e03aec108ea219aeb574cdf",
+            "minimum": 1.1744195669942652e-14,
+            "maximum": 1.869263428488921e-07,
+            "mean": 2.735445415122408e-09
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "b18afc1f4c4846bc92c26a76852b2f7082c7b8c92d34fb4b2c1e9978a1ebc343",
+            "minimum": 5.7034276607081935e-11,
+            "maximum": 0.0014350957935675979,
+            "mean": 2.197157319361176e-05
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "eb35f0fcecaacb5bb0e675321c65722e11afdba89e02ac0c919a3b3f785a4880",
+            "minimum": 3.65764369678989e-15,
+            "maximum": 2.2568224267160986e-07,
+            "mean": 1.0409681096173816e-08
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "51eed00e45979ba79afeb2aef5e322fabf56d3e4c2f55a4964d699f0d1b29bd3",
+            "minimum": 3.396392611598742e-10,
+            "maximum": 0.004052121192216873,
+            "mean": 0.00012938662431179995
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "file": "landmark-ex1.jpg",
+      "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
+    },
+    {
+      "task": "image",
+      "input": "blank",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "e5e1c234d23026ac8c7183ecb5a3e522b1ff1f60fd336e6bd666ec71bb47403e",
+            "minimum": 0.9839030504226685,
+            "maximum": 0.9997256398200989,
+            "mean": 0.9983371180748553
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "0dec9de30f530fb6442c42f3ff09e6c8d87ad10b4209cba68acbbaef29ba8fda",
+            "minimum": 1.961434890063174e-07,
+            "maximum": 4.1495579353068024e-05,
+            "mean": 3.2235669441733193e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "808dcb34cb813e3687f6b227804a81a1114a15b28b64c43b314541987ded6e21",
+            "minimum": 3.9666463180765277e-07,
+            "maximum": 4.706087929662317e-05,
+            "mean": 3.954553122897721e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "93ff27db54e09844403723062ba1a82bc5e96261e59ee6cc687c644f1fb1d5dc",
+            "minimum": 8.222938845392491e-07,
+            "maximum": 9.255071927327663e-05,
+            "mean": 8.887709191652213e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "488f7307d1f397420a4326c217cc8d9d6759107f6642f8753b7424107da7e883",
+            "minimum": 9.080855534193688e-07,
+            "maximum": 6.63057726342231e-05,
+            "mean": 6.779512097342659e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2738969a643e6cd7723bab19ae46efa843ce306e37183ba3154e925fea977ab2",
+            "minimum": 2.4561477403040044e-05,
+            "maximum": 0.0026329264510422945,
+            "mean": 0.0003427897136962965
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "31ca2dde8653d820c9e645b2a58c49538236ec4655140e4e45d8b732902ea928",
+            "minimum": 7.508791100008239e-08,
+            "maximum": 9.430976206203923e-06,
+            "mean": 7.825854133699305e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c2c834e2d46d525b1748e5e39913bd1e7e72a9e94df4182e55b30ac252dddd7f",
+            "minimum": 3.135469523840584e-05,
+            "maximum": 0.0016921430360525846,
+            "mean": 0.0002940595975284618
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f395845c6c46f642bb1c4db6bda931dd6f7d03687cdefd936591539f266e6eea",
+            "minimum": 2.550512135712779e-06,
+            "maximum": 0.0004961889935657382,
+            "mean": 8.582256022418259e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "5c75f406b34e9b83db8a411fb8fee1d9da9656b04c0acc5526c1025f74f7dc9d",
+            "minimum": 3.4285406513845373e-08,
+            "maximum": 2.707522526179673e-06,
+            "mean": 2.562637121943413e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3db86119cfe21b75f1c64ebc69cf9378b7afb9d08d01a2c70383cccaf2fe07ff",
+            "minimum": 9.519642389932415e-07,
+            "maximum": 0.00018779808306135237,
+            "mean": 1.2970847012094705e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3b6efea8c6c8d140ce2af355d9aaa689c81beb6a6e06be5e06c47682450aecde",
+            "minimum": 4.3913978009513244e-10,
+            "maximum": 4.8612250225232856e-08,
+            "mean": 3.7112482661898307e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9f161a434063828e877079f71fe4997a41dba2ed2d884b110109fda8e8e870e4",
+            "minimum": 2.2849799279356375e-06,
+            "maximum": 0.0014084340073168278,
+            "mean": 0.00010031999472747953
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4e61e3fe45cbe13f9a301d72db8f983b5e7023860817bc671d96eada6930b7d2",
+            "minimum": 1.0331450539524667e-05,
+            "maximum": 0.006130687426775694,
+            "mean": 0.00041944242056377284
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "ca317c9d6a96e09f4df10ad95546fde21bc4380a65e82dda163b50b31b111d19",
+            "minimum": 1.8157084014092106e-07,
+            "maximum": 4.727952546090819e-05,
+            "mean": 2.701239455808171e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c95dc61544375d62854101144c8e66649cc7c0c0f6e3697bc2a99abda1b0723d",
+            "minimum": 9.455630788579583e-06,
+            "maximum": 0.003828983288258314,
+            "mean": 0.00018285710598716062
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "bc6100fae25ead04d8f8a04d2a987b685da415eeb8cf25e637f970e291191cc6",
+            "minimum": 1.411283619745518e-06,
+            "maximum": 0.00011695404828060418,
+            "mean": 9.559685515123205e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "d3d4f1cb00fbb8b4fbe9215b03f216014d2f3d68b0615084bfd59a1df8d3b088",
+            "minimum": 2.550401063672325e-07,
+            "maximum": 8.026645809877664e-05,
+            "mean": 5.966633447904029e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "26ffebb0bccbf20c5f0a4e2accc2f7434f61057e795ff2fd000b483f5f919918",
+            "minimum": 2.1798798854888446e-07,
+            "maximum": 6.133634997240733e-06,
+            "mean": 9.026355101723073e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6af1c93cd2fe41393ecd3b07d9c5e7136c899b5a2d6cae5d88eb844d5eee4e0d",
+            "minimum": 1.9884365087818878e-07,
+            "maximum": 2.739826413744595e-05,
+            "mean": 2.9105898808849714e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "68f2908759aca1f2111ce846cd415d981c24d4ce19592f7748d3e598167aad80",
+            "minimum": 3.106446092715487e-05,
+            "maximum": 0.0008153098751790822,
+            "mean": 0.00017869683877124045
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null
+    },
+    {
+      "task": "image",
+      "input": "rotated",
+      "width": 209,
+      "height": 301,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "0660ac768d56e927aa03de263aff8e79153e1e124500853ffe65e4c914c245bb",
+            "minimum": 8.499038813170046e-05,
+            "maximum": 0.9999842047691345,
+            "mean": 0.6162986649185619
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "d295c46b0bbddf12ca1cdf8e1f29f4a0bbcec151c29068fcde9c4b5d9434d9ba",
+            "minimum": 2.011139301968945e-12,
+            "maximum": 2.5156808192150493e-07,
+            "mean": 4.3981458203034294e-09
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "a5a2fa2096831f23c87eb521c3fc4aaa147ae172f7fc0d62ef497508afa5ecc9",
+            "minimum": 1.7351266907647545e-12,
+            "maximum": 5.940483333688462e-06,
+            "mean": 1.0956577014228498e-07
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "db3266dec3961e222552d28ae0ebef74cb2dabbd3271a90fbde5492e089a5ec0",
+            "minimum": 4.0270309309420327e-10,
+            "maximum": 8.765859820414335e-05,
+            "mean": 2.04427432000209e-06
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "843e3fcd40f7891de03d61fc338313253f73494b885e83215560ffdf297454ed",
+            "minimum": 1.5292546959658204e-12,
+            "maximum": 1.6879650956980186e-06,
+            "mean": 2.3802139060472265e-08
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "4245b3f8b24eafb48fb464baed2d2e458a61abf3cfb3046c8176b1cc2499d089",
+            "minimum": 5.961683768873627e-07,
+            "maximum": 0.03461466729640961,
+            "mean": 0.000643838022202783
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "9cc78d6a3ca0aa610c94ab42ccc7abf04ae6c0ea96be4281679e747f556e2854",
+            "minimum": 3.212178651323602e-14,
+            "maximum": 2.4343689730699225e-08,
+            "mean": 7.165275150400771e-10
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "5856b4af48d40509cb6edd2255df8951cb04043e297f50d21d00760e3ad0b1e0",
+            "minimum": 4.730217953441418e-13,
+            "maximum": 0.00017504667630419135,
+            "mean": 1.0143983911547893e-06
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "028668a1a4dcb058594c4760a8f00b5918e30f20c0e745a210a1b12b30057d04",
+            "minimum": 4.0963708120012043e-11,
+            "maximum": 3.7652894206985366e-06,
+            "mean": 1.1481382306271023e-07
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "8930f67d1d1f706043486489b1562918f73d591b0d43db1e2e9a4b449ba5ad99",
+            "minimum": 2.8148317010590063e-09,
+            "maximum": 0.0336422361433506,
+            "mean": 0.00030326506743375996
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "16111348c8979d9e9ec1e1ef7a931f6d907351770cc4439503eb294a433d8b07",
+            "minimum": 7.4115467588046e-15,
+            "maximum": 4.421578214675037e-09,
+            "mean": 1.1719266217737018e-10
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "a44b968e731d3e06c9bcddd59d009c3f4516d50295d961802802e7622a653a02",
+            "minimum": 3.185970154362394e-09,
+            "maximum": 0.06294425576925278,
+            "mean": 0.00016607941663828084
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "0d1e11f35d0f2950da93a49c49f27570b43536f896a89f41f738decd1e915735",
+            "minimum": 1.440361545312907e-11,
+            "maximum": 9.589639375917614e-06,
+            "mean": 1.4564799147563902e-07
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "a9197b2d67dda0b78b81ba730b71c55403f9ae4b9b34b5e06c48392d4cad002f",
+            "minimum": 2.49129520181815e-13,
+            "maximum": 8.785147542766936e-08,
+            "mean": 1.533101667896793e-09
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "0372d29f37e2b0a02564fe70ca6f03cc140e1695f1f3e918e54942731a3aa5ce",
+            "minimum": 5.249494957650092e-13,
+            "maximum": 7.526977015004377e-07,
+            "mean": 8.952494797113315e-09
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "2b29086797f0a06edb4484c66c120dde0e4977273ce60e1960cc619e6f01e4f1",
+            "minimum": 5.246910404821392e-06,
+            "maximum": 0.9999123215675354,
+            "mean": 0.3824662991725781
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "1a605dc5e82badb35436ae8d0666e9f9560c851bea6534188e21f597de39bec8",
+            "minimum": 5.884368547981467e-10,
+            "maximum": 0.0006703189574182034,
+            "mean": 2.4564203109863547e-05
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "e852dc1186e27c33702c1b24036dd74240f9ad302959541ef0b39aea2ab41ca4",
+            "minimum": 7.440590671533003e-15,
+            "maximum": 2.728497650039685e-09,
+            "mean": 7.739896909714505e-11
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "88ec4dd426f80f5485bd2b79c6bbc99a0a907105a6d5925749d158eaa67d9969",
+            "minimum": 8.47685324711911e-11,
+            "maximum": 0.002200368558987975,
+            "mean": 2.992519934254978e-05
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "7b27b2c7b99cfc33f10748f749a56469f493e71a9ee00e1330a0a7c2c8bcad88",
+            "minimum": 5.594159219922878e-15,
+            "maximum": 7.002216140250539e-09,
+            "mean": 2.38432299477598e-10
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "f64b551aa7ebcaabd6a7d811e0a19fe7b36a0f5942e7a240a9b855d3cc80cdb9",
+            "minimum": 1.4892556077228392e-09,
+            "maximum": 0.0028403550386428833,
+            "mean": 6.392074652789678e-05
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 90,
+      "timestamp_ms": null,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2ad5329f78d4ed87cc15093d51cd36cce8a9a16df722cbc2a57b6bdfcf32a39f",
+            "minimum": 0.00013522095105145127,
+            "maximum": 0.9999815225601196,
+            "mean": 0.6202562580822968
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "df5ab23cc05b13fbe95832688a6ec60fc4d0f08bb8075a1ced38fcc228786c40",
+            "minimum": 3.0869968040136975e-12,
+            "maximum": 2.7769451094172837e-07,
+            "mean": 7.751108570355024e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8c46054eb9ec6e6a18f8720b1c9903a620109b40b5f63c30129b7accf0ea1759",
+            "minimum": 2.702059496290099e-12,
+            "maximum": 1.1100763913418632e-05,
+            "mean": 1.7538456271626756e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a385803b0b691112dcc3c08c083ad7ec3e0bb9a6fa1af8a934eb25af16d06361",
+            "minimum": 6.101987803930342e-10,
+            "maximum": 0.0002791128063108772,
+            "mean": 3.977919995961105e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3d436bdf2f90d8aacebeb6484f0aa28f451c55cdea85da629429e3971fe3f06c",
+            "minimum": 2.8968995171435585e-12,
+            "maximum": 2.2352603537001414e-06,
+            "mean": 4.205426166458947e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6c5d85a19f788f7972324589374cd29fa6734fa8f01eca6c86558dbb3d391ba1",
+            "minimum": 1.185492806143884e-06,
+            "maximum": 0.049079544842243195,
+            "mean": 0.0009605797338463082
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "556320d28cb2b467968417b33ec22005b4d29db4346505857806754c221ece4a",
+            "minimum": 8.868978414091483e-14,
+            "maximum": 5.584041318229538e-08,
+            "mean": 1.932963581818437e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "35a15d8cabf6028d5b6295e043eb9b878d107ffec55df811b713e5b48d26f9db",
+            "minimum": 1.7061891179406818e-12,
+            "maximum": 0.00015141817857511342,
+            "mean": 1.2707038742060728e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8435da3466f174c040ed562abf69f5c7b20baabeb850d90cd8f3065eb283049b",
+            "minimum": 5.849808831781544e-11,
+            "maximum": 3.0944809168431675e-06,
+            "mean": 1.286520048828451e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4dd2bcc0328090368ac94ba8b4b8540b4110d037202491285900ff255586c7dc",
+            "minimum": 2.0734496342100783e-09,
+            "maximum": 0.02219308540225029,
+            "mean": 0.00020900978840149702
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "aa9eaceaf04c42d575cd1514cac6b351cf614270b3b87f0fd264b57c4612a0a1",
+            "minimum": 1.1462702904647525e-14,
+            "maximum": 7.532996448844642e-09,
+            "mean": 2.2660920811225651e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c847a6dd56aed75efd8028029bb2bbfc422c4a453b0e27a3d62c05fae2f95490",
+            "minimum": 3.251785507529803e-09,
+            "maximum": 0.0525815412402153,
+            "mean": 0.00014719793365704272
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a30e58fc4b0ae907b028c4709dc9272222cafe525ceaccf560046c1a71b72900",
+            "minimum": 2.2208415662028358e-11,
+            "maximum": 8.633046491013374e-06,
+            "mean": 1.4865735048874543e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9471d7835fe0203da1b5ad7f2c7b81af0708e9e0026daaeee5bcc46ab0ef1505",
+            "minimum": 4.5324456536023627e-13,
+            "maximum": 1.1010457967586262e-07,
+            "mean": 2.5289483891131587e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "1620855443ee954219904df072f3f19784be9c5e8ed4c23b184c370df26e054d",
+            "minimum": 8.550221620128029e-13,
+            "maximum": 9.89189175015781e-07,
+            "mean": 1.4866639774098754e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3e76155facd8a557e0585cdbf9a6f54f782f1ceed9eff42d243622fea2ed3301",
+            "minimum": 5.701368991140043e-06,
+            "maximum": 0.9998608827590942,
+            "mean": 0.3783250241325331
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "700c4799afa6b867c5b26685b5e40758bc2e295db8f5238c3764833dc35a39e0",
+            "minimum": 4.659974628395958e-10,
+            "maximum": 0.0008438228396698833,
+            "mean": 2.5619225725261348e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c3567224176e8e2cd20d042a81749e02f5e67e6942cbc85e7c26c79dd76c6806",
+            "minimum": 1.39426662964094e-14,
+            "maximum": 4.19916679206267e-09,
+            "mean": 1.39270201197315e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f30d688af03226f13230357e9b2af566e8d03c580b2094885c994b6e5483f254",
+            "minimum": 5.325440088910227e-11,
+            "maximum": 0.0011509143514558673,
+            "mean": 1.3596599782170493e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "27eb124fb666b623fb4e05c0f8e0d7e5140a5dbf8c41d3e2a806c9c39529f2da",
+            "minimum": 1.0593481082306951e-14,
+            "maximum": 1.0958209450961931e-08,
+            "mean": 4.177899835117082e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "51ef932a6b6d3974d82758c6e64c110d0f8d06306cf52c0c7928d82d6b101eae",
+            "minimum": 1.239354840976148e-09,
+            "maximum": 0.0016705718589946628,
+            "mean": 5.697340807415442e-05
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": 0,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "blank",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "e5e1c234d23026ac8c7183ecb5a3e522b1ff1f60fd336e6bd666ec71bb47403e",
+            "minimum": 0.9839030504226685,
+            "maximum": 0.9997256398200989,
+            "mean": 0.9983371180748553
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "0dec9de30f530fb6442c42f3ff09e6c8d87ad10b4209cba68acbbaef29ba8fda",
+            "minimum": 1.961434890063174e-07,
+            "maximum": 4.1495579353068024e-05,
+            "mean": 3.2235669441733193e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "808dcb34cb813e3687f6b227804a81a1114a15b28b64c43b314541987ded6e21",
+            "minimum": 3.9666463180765277e-07,
+            "maximum": 4.706087929662317e-05,
+            "mean": 3.954553122897721e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "93ff27db54e09844403723062ba1a82bc5e96261e59ee6cc687c644f1fb1d5dc",
+            "minimum": 8.222938845392491e-07,
+            "maximum": 9.255071927327663e-05,
+            "mean": 8.887709191652213e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "488f7307d1f397420a4326c217cc8d9d6759107f6642f8753b7424107da7e883",
+            "minimum": 9.080855534193688e-07,
+            "maximum": 6.63057726342231e-05,
+            "mean": 6.779512097342659e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2738969a643e6cd7723bab19ae46efa843ce306e37183ba3154e925fea977ab2",
+            "minimum": 2.4561477403040044e-05,
+            "maximum": 0.0026329264510422945,
+            "mean": 0.0003427897136962965
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "31ca2dde8653d820c9e645b2a58c49538236ec4655140e4e45d8b732902ea928",
+            "minimum": 7.508791100008239e-08,
+            "maximum": 9.430976206203923e-06,
+            "mean": 7.825854133699305e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c2c834e2d46d525b1748e5e39913bd1e7e72a9e94df4182e55b30ac252dddd7f",
+            "minimum": 3.135469523840584e-05,
+            "maximum": 0.0016921430360525846,
+            "mean": 0.0002940595975284618
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f395845c6c46f642bb1c4db6bda931dd6f7d03687cdefd936591539f266e6eea",
+            "minimum": 2.550512135712779e-06,
+            "maximum": 0.0004961889935657382,
+            "mean": 8.582256022418259e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "5c75f406b34e9b83db8a411fb8fee1d9da9656b04c0acc5526c1025f74f7dc9d",
+            "minimum": 3.4285406513845373e-08,
+            "maximum": 2.707522526179673e-06,
+            "mean": 2.562637121943413e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3db86119cfe21b75f1c64ebc69cf9378b7afb9d08d01a2c70383cccaf2fe07ff",
+            "minimum": 9.519642389932415e-07,
+            "maximum": 0.00018779808306135237,
+            "mean": 1.2970847012094705e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3b6efea8c6c8d140ce2af355d9aaa689c81beb6a6e06be5e06c47682450aecde",
+            "minimum": 4.3913978009513244e-10,
+            "maximum": 4.8612250225232856e-08,
+            "mean": 3.7112482661898307e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9f161a434063828e877079f71fe4997a41dba2ed2d884b110109fda8e8e870e4",
+            "minimum": 2.2849799279356375e-06,
+            "maximum": 0.0014084340073168278,
+            "mean": 0.00010031999472747953
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4e61e3fe45cbe13f9a301d72db8f983b5e7023860817bc671d96eada6930b7d2",
+            "minimum": 1.0331450539524667e-05,
+            "maximum": 0.006130687426775694,
+            "mean": 0.00041944242056377284
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "ca317c9d6a96e09f4df10ad95546fde21bc4380a65e82dda163b50b31b111d19",
+            "minimum": 1.8157084014092106e-07,
+            "maximum": 4.727952546090819e-05,
+            "mean": 2.701239455808171e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c95dc61544375d62854101144c8e66649cc7c0c0f6e3697bc2a99abda1b0723d",
+            "minimum": 9.455630788579583e-06,
+            "maximum": 0.003828983288258314,
+            "mean": 0.00018285710598716062
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "bc6100fae25ead04d8f8a04d2a987b685da415eeb8cf25e637f970e291191cc6",
+            "minimum": 1.411283619745518e-06,
+            "maximum": 0.00011695404828060418,
+            "mean": 9.559685515123205e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "d3d4f1cb00fbb8b4fbe9215b03f216014d2f3d68b0615084bfd59a1df8d3b088",
+            "minimum": 2.550401063672325e-07,
+            "maximum": 8.026645809877664e-05,
+            "mean": 5.966633447904029e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "26ffebb0bccbf20c5f0a4e2accc2f7434f61057e795ff2fd000b483f5f919918",
+            "minimum": 2.1798798854888446e-07,
+            "maximum": 6.133634997240733e-06,
+            "mean": 9.026355101723073e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6af1c93cd2fe41393ecd3b07d9c5e7136c899b5a2d6cae5d88eb844d5eee4e0d",
+            "minimum": 1.9884365087818878e-07,
+            "maximum": 2.739826413744595e-05,
+            "mean": 2.9105898808849714e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "68f2908759aca1f2111ce846cd415d981c24d4ce19592f7748d3e598167aad80",
+            "minimum": 3.106446092715487e-05,
+            "maximum": 0.0008153098751790822,
+            "mean": 0.00017869683877124045
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": 33
+    },
+    {
+      "task": "image",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2ad5329f78d4ed87cc15093d51cd36cce8a9a16df722cbc2a57b6bdfcf32a39f",
+            "minimum": 0.00013522095105145127,
+            "maximum": 0.9999815225601196,
+            "mean": 0.6202562580822968
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "df5ab23cc05b13fbe95832688a6ec60fc4d0f08bb8075a1ced38fcc228786c40",
+            "minimum": 3.0869968040136975e-12,
+            "maximum": 2.7769451094172837e-07,
+            "mean": 7.751108570355024e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8c46054eb9ec6e6a18f8720b1c9903a620109b40b5f63c30129b7accf0ea1759",
+            "minimum": 2.702059496290099e-12,
+            "maximum": 1.1100763913418632e-05,
+            "mean": 1.7538456271626756e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a385803b0b691112dcc3c08c083ad7ec3e0bb9a6fa1af8a934eb25af16d06361",
+            "minimum": 6.101987803930342e-10,
+            "maximum": 0.0002791128063108772,
+            "mean": 3.977919995961105e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3d436bdf2f90d8aacebeb6484f0aa28f451c55cdea85da629429e3971fe3f06c",
+            "minimum": 2.8968995171435585e-12,
+            "maximum": 2.2352603537001414e-06,
+            "mean": 4.205426166458947e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6c5d85a19f788f7972324589374cd29fa6734fa8f01eca6c86558dbb3d391ba1",
+            "minimum": 1.185492806143884e-06,
+            "maximum": 0.049079544842243195,
+            "mean": 0.0009605797338463082
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "556320d28cb2b467968417b33ec22005b4d29db4346505857806754c221ece4a",
+            "minimum": 8.868978414091483e-14,
+            "maximum": 5.584041318229538e-08,
+            "mean": 1.932963581818437e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "35a15d8cabf6028d5b6295e043eb9b878d107ffec55df811b713e5b48d26f9db",
+            "minimum": 1.7061891179406818e-12,
+            "maximum": 0.00015141817857511342,
+            "mean": 1.2707038742060728e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8435da3466f174c040ed562abf69f5c7b20baabeb850d90cd8f3065eb283049b",
+            "minimum": 5.849808831781544e-11,
+            "maximum": 3.0944809168431675e-06,
+            "mean": 1.286520048828451e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4dd2bcc0328090368ac94ba8b4b8540b4110d037202491285900ff255586c7dc",
+            "minimum": 2.0734496342100783e-09,
+            "maximum": 0.02219308540225029,
+            "mean": 0.00020900978840149702
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "aa9eaceaf04c42d575cd1514cac6b351cf614270b3b87f0fd264b57c4612a0a1",
+            "minimum": 1.1462702904647525e-14,
+            "maximum": 7.532996448844642e-09,
+            "mean": 2.2660920811225651e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c847a6dd56aed75efd8028029bb2bbfc422c4a453b0e27a3d62c05fae2f95490",
+            "minimum": 3.251785507529803e-09,
+            "maximum": 0.0525815412402153,
+            "mean": 0.00014719793365704272
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a30e58fc4b0ae907b028c4709dc9272222cafe525ceaccf560046c1a71b72900",
+            "minimum": 2.2208415662028358e-11,
+            "maximum": 8.633046491013374e-06,
+            "mean": 1.4865735048874543e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9471d7835fe0203da1b5ad7f2c7b81af0708e9e0026daaeee5bcc46ab0ef1505",
+            "minimum": 4.5324456536023627e-13,
+            "maximum": 1.1010457967586262e-07,
+            "mean": 2.5289483891131587e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "1620855443ee954219904df072f3f19784be9c5e8ed4c23b184c370df26e054d",
+            "minimum": 8.550221620128029e-13,
+            "maximum": 9.89189175015781e-07,
+            "mean": 1.4866639774098754e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3e76155facd8a557e0585cdbf9a6f54f782f1ceed9eff42d243622fea2ed3301",
+            "minimum": 5.701368991140043e-06,
+            "maximum": 0.9998608827590942,
+            "mean": 0.3783250241325331
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "700c4799afa6b867c5b26685b5e40758bc2e295db8f5238c3764833dc35a39e0",
+            "minimum": 4.659974628395958e-10,
+            "maximum": 0.0008438228396698833,
+            "mean": 2.5619225725261348e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c3567224176e8e2cd20d042a81749e02f5e67e6942cbc85e7c26c79dd76c6806",
+            "minimum": 1.39426662964094e-14,
+            "maximum": 4.19916679206267e-09,
+            "mean": 1.39270201197315e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f30d688af03226f13230357e9b2af566e8d03c580b2094885c994b6e5483f254",
+            "minimum": 5.325440088910227e-11,
+            "maximum": 0.0011509143514558673,
+            "mean": 1.3596599782170493e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "27eb124fb666b623fb4e05c0f8e0d7e5140a5dbf8c41d3e2a806c9c39529f2da",
+            "minimum": 1.0593481082306951e-14,
+            "maximum": 1.0958209450961931e-08,
+            "mean": 4.177899835117082e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "51ef932a6b6d3974d82758c6e64c110d0f8d06306cf52c0c7928d82d6b101eae",
+            "minimum": 1.239354840976148e-09,
+            "maximum": 0.0016705718589946628,
+            "mean": 5.697340807415442e-05
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": 66,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "672b81405c21c085d9f9a5f72344158606f2a2ee93ed7bd688786872aaaacf3f",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 5.578295633375193
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "rgba",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "672b81405c21c085d9f9a5f72344158606f2a2ee93ed7bd688786872aaaacf3f",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 5.578295633375193
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "file",
+      "width": 1280,
+      "height": 853,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 1280,
+          "height": 853,
+          "sha256": "8b565101f58422f9015e12e05aed04b14adaa3971c26e6bcc82d3775e596693c",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 7.310851406799531
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "file": "landmark-ex1.jpg",
+      "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
+    },
+    {
+      "task": "image",
+      "input": "blank",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "24d80c7136ad9187521a58b7bd2e0b2bfbe993e65221480f585dfd9f0286eb16",
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null
+    },
+    {
+      "task": "image",
+      "input": "rotated",
+      "width": 209,
+      "height": 301,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 209,
+          "height": 301,
+          "sha256": "a1e3e7600741e126dccb029e79e5f7be341af8a8cdde4d5f9b23d90ea38743ed",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 5.63075235657855
+        }
+      },
+      "rotation_degrees": 90,
+      "timestamp_ms": null,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "672b81405c21c085d9f9a5f72344158606f2a2ee93ed7bd688786872aaaacf3f",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 5.578295633375193
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": 0,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "blank",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "24d80c7136ad9187521a58b7bd2e0b2bfbe993e65221480f585dfd9f0286eb16",
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": 33
+    },
+    {
+      "task": "image",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "672b81405c21c085d9f9a5f72344158606f2a2ee93ed7bd688786872aaaacf3f",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 5.578295633375193
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": 66,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2ad5329f78d4ed87cc15093d51cd36cce8a9a16df722cbc2a57b6bdfcf32a39f",
+            "minimum": 0.00013522095105145127,
+            "maximum": 0.9999815225601196,
+            "mean": 0.6202562580822968
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "df5ab23cc05b13fbe95832688a6ec60fc4d0f08bb8075a1ced38fcc228786c40",
+            "minimum": 3.0869968040136975e-12,
+            "maximum": 2.7769451094172837e-07,
+            "mean": 7.751108570355024e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8c46054eb9ec6e6a18f8720b1c9903a620109b40b5f63c30129b7accf0ea1759",
+            "minimum": 2.702059496290099e-12,
+            "maximum": 1.1100763913418632e-05,
+            "mean": 1.7538456271626756e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a385803b0b691112dcc3c08c083ad7ec3e0bb9a6fa1af8a934eb25af16d06361",
+            "minimum": 6.101987803930342e-10,
+            "maximum": 0.0002791128063108772,
+            "mean": 3.977919995961105e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3d436bdf2f90d8aacebeb6484f0aa28f451c55cdea85da629429e3971fe3f06c",
+            "minimum": 2.8968995171435585e-12,
+            "maximum": 2.2352603537001414e-06,
+            "mean": 4.205426166458947e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6c5d85a19f788f7972324589374cd29fa6734fa8f01eca6c86558dbb3d391ba1",
+            "minimum": 1.185492806143884e-06,
+            "maximum": 0.049079544842243195,
+            "mean": 0.0009605797338463082
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "556320d28cb2b467968417b33ec22005b4d29db4346505857806754c221ece4a",
+            "minimum": 8.868978414091483e-14,
+            "maximum": 5.584041318229538e-08,
+            "mean": 1.932963581818437e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "35a15d8cabf6028d5b6295e043eb9b878d107ffec55df811b713e5b48d26f9db",
+            "minimum": 1.7061891179406818e-12,
+            "maximum": 0.00015141817857511342,
+            "mean": 1.2707038742060728e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8435da3466f174c040ed562abf69f5c7b20baabeb850d90cd8f3065eb283049b",
+            "minimum": 5.849808831781544e-11,
+            "maximum": 3.0944809168431675e-06,
+            "mean": 1.286520048828451e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4dd2bcc0328090368ac94ba8b4b8540b4110d037202491285900ff255586c7dc",
+            "minimum": 2.0734496342100783e-09,
+            "maximum": 0.02219308540225029,
+            "mean": 0.00020900978840149702
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "aa9eaceaf04c42d575cd1514cac6b351cf614270b3b87f0fd264b57c4612a0a1",
+            "minimum": 1.1462702904647525e-14,
+            "maximum": 7.532996448844642e-09,
+            "mean": 2.2660920811225651e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c847a6dd56aed75efd8028029bb2bbfc422c4a453b0e27a3d62c05fae2f95490",
+            "minimum": 3.251785507529803e-09,
+            "maximum": 0.0525815412402153,
+            "mean": 0.00014719793365704272
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a30e58fc4b0ae907b028c4709dc9272222cafe525ceaccf560046c1a71b72900",
+            "minimum": 2.2208415662028358e-11,
+            "maximum": 8.633046491013374e-06,
+            "mean": 1.4865735048874543e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9471d7835fe0203da1b5ad7f2c7b81af0708e9e0026daaeee5bcc46ab0ef1505",
+            "minimum": 4.5324456536023627e-13,
+            "maximum": 1.1010457967586262e-07,
+            "mean": 2.5289483891131587e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "1620855443ee954219904df072f3f19784be9c5e8ed4c23b184c370df26e054d",
+            "minimum": 8.550221620128029e-13,
+            "maximum": 9.89189175015781e-07,
+            "mean": 1.4866639774098754e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3e76155facd8a557e0585cdbf9a6f54f782f1ceed9eff42d243622fea2ed3301",
+            "minimum": 5.701368991140043e-06,
+            "maximum": 0.9998608827590942,
+            "mean": 0.3783250241325331
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "700c4799afa6b867c5b26685b5e40758bc2e295db8f5238c3764833dc35a39e0",
+            "minimum": 4.659974628395958e-10,
+            "maximum": 0.0008438228396698833,
+            "mean": 2.5619225725261348e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c3567224176e8e2cd20d042a81749e02f5e67e6942cbc85e7c26c79dd76c6806",
+            "minimum": 1.39426662964094e-14,
+            "maximum": 4.19916679206267e-09,
+            "mean": 1.39270201197315e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f30d688af03226f13230357e9b2af566e8d03c580b2094885c994b6e5483f254",
+            "minimum": 5.325440088910227e-11,
+            "maximum": 0.0011509143514558673,
+            "mean": 1.3596599782170493e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "27eb124fb666b623fb4e05c0f8e0d7e5140a5dbf8c41d3e2a806c9c39529f2da",
+            "minimum": 1.0593481082306951e-14,
+            "maximum": 1.0958209450961931e-08,
+            "mean": 4.177899835117082e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "51ef932a6b6d3974d82758c6e64c110d0f8d06306cf52c0c7928d82d6b101eae",
+            "minimum": 1.239354840976148e-09,
+            "maximum": 0.0016705718589946628,
+            "mean": 5.697340807415442e-05
+          }
+        ],
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "672b81405c21c085d9f9a5f72344158606f2a2ee93ed7bd688786872aaaacf3f",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 5.578295633375193
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "rgba",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2ad5329f78d4ed87cc15093d51cd36cce8a9a16df722cbc2a57b6bdfcf32a39f",
+            "minimum": 0.00013522095105145127,
+            "maximum": 0.9999815225601196,
+            "mean": 0.6202562580822968
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "df5ab23cc05b13fbe95832688a6ec60fc4d0f08bb8075a1ced38fcc228786c40",
+            "minimum": 3.0869968040136975e-12,
+            "maximum": 2.7769451094172837e-07,
+            "mean": 7.751108570355024e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8c46054eb9ec6e6a18f8720b1c9903a620109b40b5f63c30129b7accf0ea1759",
+            "minimum": 2.702059496290099e-12,
+            "maximum": 1.1100763913418632e-05,
+            "mean": 1.7538456271626756e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a385803b0b691112dcc3c08c083ad7ec3e0bb9a6fa1af8a934eb25af16d06361",
+            "minimum": 6.101987803930342e-10,
+            "maximum": 0.0002791128063108772,
+            "mean": 3.977919995961105e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3d436bdf2f90d8aacebeb6484f0aa28f451c55cdea85da629429e3971fe3f06c",
+            "minimum": 2.8968995171435585e-12,
+            "maximum": 2.2352603537001414e-06,
+            "mean": 4.205426166458947e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6c5d85a19f788f7972324589374cd29fa6734fa8f01eca6c86558dbb3d391ba1",
+            "minimum": 1.185492806143884e-06,
+            "maximum": 0.049079544842243195,
+            "mean": 0.0009605797338463082
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "556320d28cb2b467968417b33ec22005b4d29db4346505857806754c221ece4a",
+            "minimum": 8.868978414091483e-14,
+            "maximum": 5.584041318229538e-08,
+            "mean": 1.932963581818437e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "35a15d8cabf6028d5b6295e043eb9b878d107ffec55df811b713e5b48d26f9db",
+            "minimum": 1.7061891179406818e-12,
+            "maximum": 0.00015141817857511342,
+            "mean": 1.2707038742060728e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8435da3466f174c040ed562abf69f5c7b20baabeb850d90cd8f3065eb283049b",
+            "minimum": 5.849808831781544e-11,
+            "maximum": 3.0944809168431675e-06,
+            "mean": 1.286520048828451e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4dd2bcc0328090368ac94ba8b4b8540b4110d037202491285900ff255586c7dc",
+            "minimum": 2.0734496342100783e-09,
+            "maximum": 0.02219308540225029,
+            "mean": 0.00020900978840149702
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "aa9eaceaf04c42d575cd1514cac6b351cf614270b3b87f0fd264b57c4612a0a1",
+            "minimum": 1.1462702904647525e-14,
+            "maximum": 7.532996448844642e-09,
+            "mean": 2.2660920811225651e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c847a6dd56aed75efd8028029bb2bbfc422c4a453b0e27a3d62c05fae2f95490",
+            "minimum": 3.251785507529803e-09,
+            "maximum": 0.0525815412402153,
+            "mean": 0.00014719793365704272
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a30e58fc4b0ae907b028c4709dc9272222cafe525ceaccf560046c1a71b72900",
+            "minimum": 2.2208415662028358e-11,
+            "maximum": 8.633046491013374e-06,
+            "mean": 1.4865735048874543e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9471d7835fe0203da1b5ad7f2c7b81af0708e9e0026daaeee5bcc46ab0ef1505",
+            "minimum": 4.5324456536023627e-13,
+            "maximum": 1.1010457967586262e-07,
+            "mean": 2.5289483891131587e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "1620855443ee954219904df072f3f19784be9c5e8ed4c23b184c370df26e054d",
+            "minimum": 8.550221620128029e-13,
+            "maximum": 9.89189175015781e-07,
+            "mean": 1.4866639774098754e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3e76155facd8a557e0585cdbf9a6f54f782f1ceed9eff42d243622fea2ed3301",
+            "minimum": 5.701368991140043e-06,
+            "maximum": 0.9998608827590942,
+            "mean": 0.3783250241325331
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "700c4799afa6b867c5b26685b5e40758bc2e295db8f5238c3764833dc35a39e0",
+            "minimum": 4.659974628395958e-10,
+            "maximum": 0.0008438228396698833,
+            "mean": 2.5619225725261348e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c3567224176e8e2cd20d042a81749e02f5e67e6942cbc85e7c26c79dd76c6806",
+            "minimum": 1.39426662964094e-14,
+            "maximum": 4.19916679206267e-09,
+            "mean": 1.39270201197315e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f30d688af03226f13230357e9b2af566e8d03c580b2094885c994b6e5483f254",
+            "minimum": 5.325440088910227e-11,
+            "maximum": 0.0011509143514558673,
+            "mean": 1.3596599782170493e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "27eb124fb666b623fb4e05c0f8e0d7e5140a5dbf8c41d3e2a806c9c39529f2da",
+            "minimum": 1.0593481082306951e-14,
+            "maximum": 1.0958209450961931e-08,
+            "mean": 4.177899835117082e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "51ef932a6b6d3974d82758c6e64c110d0f8d06306cf52c0c7928d82d6b101eae",
+            "minimum": 1.239354840976148e-09,
+            "maximum": 0.0016705718589946628,
+            "mean": 5.697340807415442e-05
+          }
+        ],
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "672b81405c21c085d9f9a5f72344158606f2a2ee93ed7bd688786872aaaacf3f",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 5.578295633375193
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "file",
+      "width": 1280,
+      "height": 853,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "d958f77f98e29c40fd92076f6fbac76bef096389e7c801fb89fd76cf04c0fbbb",
+            "minimum": 4.820152526008314e-07,
+            "maximum": 0.9998022317886353,
+            "mean": 0.49429446613577926
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "813dc0c26e72b5a94d6f4725243effed220adf7e428ce70cd56305bd36fd99e5",
+            "minimum": 8.60418913851621e-14,
+            "maximum": 4.837145866076753e-07,
+            "mean": 9.691003086029154e-09
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "9a2be635d16ef0fcc2a4e3c3f0440d2ab676cecee1b7bb335fca555712c51e86",
+            "minimum": 2.978878537070184e-13,
+            "maximum": 7.907710096333176e-05,
+            "mean": 1.5875466951892453e-06
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "56a01acec57927de622e69984bd7db441524430fc684549c643b2223bc892cc6",
+            "minimum": 9.01667451813637e-09,
+            "maximum": 0.0010732359951362014,
+            "mean": 1.3601033048303202e-05
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "80ccd95c43c7321c1ce1a71b129aa5f55b119beb08550d849150439d54f39afd",
+            "minimum": 4.3337448023652095e-14,
+            "maximum": 1.0750812862170278e-06,
+            "mean": 3.263932419431888e-08
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "4f11f4e74eb1df80241ccef46d6d88a7c2c11c38b7bcab7328a2d1d8d0e9f0c3",
+            "minimum": 2.4490694272572e-07,
+            "maximum": 0.42124229669570923,
+            "mean": 0.0033066853570656507
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "cd359331b546a83e0cf268a5606fa0906edd20028f4a2fe6ad433f9de9a40469",
+            "minimum": 6.832402274800458e-16,
+            "maximum": 1.9351395508238056e-07,
+            "mean": 3.71502137748587e-09
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "825dae353490db07fd5d5560194a2e338d2947eca0df732d6810a13f6c139290",
+            "minimum": 1.2120756025105813e-14,
+            "maximum": 1.4031076716491953e-05,
+            "mean": 3.964412782610861e-07
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "e5d765dc443de3304d6d1839b5295241e706c7a0d946c59b5c5bd7685835beaa",
+            "minimum": 4.656438790107131e-09,
+            "maximum": 0.0005488833412528038,
+            "mean": 1.02520154261533e-05
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "78049ce52607a99cf3319b95494856909c195908a52cc1011f33e10558b18e1b",
+            "minimum": 1.4006185544701566e-08,
+            "maximum": 0.03948508948087692,
+            "mean": 0.0011121994426326032
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "516efb5ff16519e2dfb0051b66a2efc33f0eac85641de40cdab18d59dbf45d7a",
+            "minimum": 3.7426614948486356e-14,
+            "maximum": 5.763721446783165e-07,
+            "mean": 1.7358425293796837e-08
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "997a22584180397d17871f59a4d42da60e431db833b622fdc0c1a5004583afb8",
+            "minimum": 7.109657862436336e-10,
+            "maximum": 0.07489684969186783,
+            "mean": 0.0020320037851555596
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "60e8eba361340507c0d64c89c7184f4b16413ab6d485e4b0cd3994db76f58fd9",
+            "minimum": 1.0777315151422329e-10,
+            "maximum": 2.2372209059540182e-05,
+            "mean": 7.046376775687897e-07
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "84ca9f6df39de6413898624ca3b22fc046d0d632baed4ac03003d68fce58031f",
+            "minimum": 9.796307645290603e-13,
+            "maximum": 9.336334301224269e-07,
+            "mean": 2.5268039355446664e-08
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "5de8a4022725efa0275b95af95d9a39c1fd6196b4fd43da57b563d1849a8c6cd",
+            "minimum": 2.3671889169446687e-14,
+            "maximum": 2.0284021502448013e-06,
+            "mean": 3.24269054840828e-08
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "0536ea75a446f0d6603b1f82aed4e04efdbf3dec7362985d882ed5533b7b4a6b",
+            "minimum": 0.00016187723667826504,
+            "maximum": 0.9999988079071045,
+            "mean": 0.49899119044441925
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "221f227bc77fd4fcfb4ee5e69420a65ebeca8ffb27d02cb6829926dcf0f22998",
+            "minimum": 1.447638259266526e-10,
+            "maximum": 0.001963741844519973,
+            "mean": 8.545535807825337e-05
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "00bf10e79528ed24808e20c3fd8b3a29e67187155e03aec108ea219aeb574cdf",
+            "minimum": 1.1744195669942652e-14,
+            "maximum": 1.869263428488921e-07,
+            "mean": 2.735445415122408e-09
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "b18afc1f4c4846bc92c26a76852b2f7082c7b8c92d34fb4b2c1e9978a1ebc343",
+            "minimum": 5.7034276607081935e-11,
+            "maximum": 0.0014350957935675979,
+            "mean": 2.197157319361176e-05
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "eb35f0fcecaacb5bb0e675321c65722e11afdba89e02ac0c919a3b3f785a4880",
+            "minimum": 3.65764369678989e-15,
+            "maximum": 2.2568224267160986e-07,
+            "mean": 1.0409681096173816e-08
+          },
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "51eed00e45979ba79afeb2aef5e322fabf56d3e4c2f55a4964d699f0d1b29bd3",
+            "minimum": 3.396392611598742e-10,
+            "maximum": 0.004052121192216873,
+            "mean": 0.00012938662431179995
+          }
+        ],
+        "category_mask": {
+          "width": 1280,
+          "height": 853,
+          "sha256": "8b565101f58422f9015e12e05aed04b14adaa3971c26e6bcc82d3775e596693c",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 7.310851406799531
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "file": "landmark-ex1.jpg",
+      "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
+    },
+    {
+      "task": "image",
+      "input": "blank",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "e5e1c234d23026ac8c7183ecb5a3e522b1ff1f60fd336e6bd666ec71bb47403e",
+            "minimum": 0.9839030504226685,
+            "maximum": 0.9997256398200989,
+            "mean": 0.9983371180748553
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "0dec9de30f530fb6442c42f3ff09e6c8d87ad10b4209cba68acbbaef29ba8fda",
+            "minimum": 1.961434890063174e-07,
+            "maximum": 4.1495579353068024e-05,
+            "mean": 3.2235669441733193e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "808dcb34cb813e3687f6b227804a81a1114a15b28b64c43b314541987ded6e21",
+            "minimum": 3.9666463180765277e-07,
+            "maximum": 4.706087929662317e-05,
+            "mean": 3.954553122897721e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "93ff27db54e09844403723062ba1a82bc5e96261e59ee6cc687c644f1fb1d5dc",
+            "minimum": 8.222938845392491e-07,
+            "maximum": 9.255071927327663e-05,
+            "mean": 8.887709191652213e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "488f7307d1f397420a4326c217cc8d9d6759107f6642f8753b7424107da7e883",
+            "minimum": 9.080855534193688e-07,
+            "maximum": 6.63057726342231e-05,
+            "mean": 6.779512097342659e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2738969a643e6cd7723bab19ae46efa843ce306e37183ba3154e925fea977ab2",
+            "minimum": 2.4561477403040044e-05,
+            "maximum": 0.0026329264510422945,
+            "mean": 0.0003427897136962965
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "31ca2dde8653d820c9e645b2a58c49538236ec4655140e4e45d8b732902ea928",
+            "minimum": 7.508791100008239e-08,
+            "maximum": 9.430976206203923e-06,
+            "mean": 7.825854133699305e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c2c834e2d46d525b1748e5e39913bd1e7e72a9e94df4182e55b30ac252dddd7f",
+            "minimum": 3.135469523840584e-05,
+            "maximum": 0.0016921430360525846,
+            "mean": 0.0002940595975284618
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f395845c6c46f642bb1c4db6bda931dd6f7d03687cdefd936591539f266e6eea",
+            "minimum": 2.550512135712779e-06,
+            "maximum": 0.0004961889935657382,
+            "mean": 8.582256022418259e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "5c75f406b34e9b83db8a411fb8fee1d9da9656b04c0acc5526c1025f74f7dc9d",
+            "minimum": 3.4285406513845373e-08,
+            "maximum": 2.707522526179673e-06,
+            "mean": 2.562637121943413e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3db86119cfe21b75f1c64ebc69cf9378b7afb9d08d01a2c70383cccaf2fe07ff",
+            "minimum": 9.519642389932415e-07,
+            "maximum": 0.00018779808306135237,
+            "mean": 1.2970847012094705e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3b6efea8c6c8d140ce2af355d9aaa689c81beb6a6e06be5e06c47682450aecde",
+            "minimum": 4.3913978009513244e-10,
+            "maximum": 4.8612250225232856e-08,
+            "mean": 3.7112482661898307e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9f161a434063828e877079f71fe4997a41dba2ed2d884b110109fda8e8e870e4",
+            "minimum": 2.2849799279356375e-06,
+            "maximum": 0.0014084340073168278,
+            "mean": 0.00010031999472747953
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4e61e3fe45cbe13f9a301d72db8f983b5e7023860817bc671d96eada6930b7d2",
+            "minimum": 1.0331450539524667e-05,
+            "maximum": 0.006130687426775694,
+            "mean": 0.00041944242056377284
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "ca317c9d6a96e09f4df10ad95546fde21bc4380a65e82dda163b50b31b111d19",
+            "minimum": 1.8157084014092106e-07,
+            "maximum": 4.727952546090819e-05,
+            "mean": 2.701239455808171e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c95dc61544375d62854101144c8e66649cc7c0c0f6e3697bc2a99abda1b0723d",
+            "minimum": 9.455630788579583e-06,
+            "maximum": 0.003828983288258314,
+            "mean": 0.00018285710598716062
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "bc6100fae25ead04d8f8a04d2a987b685da415eeb8cf25e637f970e291191cc6",
+            "minimum": 1.411283619745518e-06,
+            "maximum": 0.00011695404828060418,
+            "mean": 9.559685515123205e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "d3d4f1cb00fbb8b4fbe9215b03f216014d2f3d68b0615084bfd59a1df8d3b088",
+            "minimum": 2.550401063672325e-07,
+            "maximum": 8.026645809877664e-05,
+            "mean": 5.966633447904029e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "26ffebb0bccbf20c5f0a4e2accc2f7434f61057e795ff2fd000b483f5f919918",
+            "minimum": 2.1798798854888446e-07,
+            "maximum": 6.133634997240733e-06,
+            "mean": 9.026355101723073e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6af1c93cd2fe41393ecd3b07d9c5e7136c899b5a2d6cae5d88eb844d5eee4e0d",
+            "minimum": 1.9884365087818878e-07,
+            "maximum": 2.739826413744595e-05,
+            "mean": 2.9105898808849714e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "68f2908759aca1f2111ce846cd415d981c24d4ce19592f7748d3e598167aad80",
+            "minimum": 3.106446092715487e-05,
+            "maximum": 0.0008153098751790822,
+            "mean": 0.00017869683877124045
+          }
+        ],
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "24d80c7136ad9187521a58b7bd2e0b2bfbe993e65221480f585dfd9f0286eb16",
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null
+    },
+    {
+      "task": "image",
+      "input": "rotated",
+      "width": 209,
+      "height": 301,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "0660ac768d56e927aa03de263aff8e79153e1e124500853ffe65e4c914c245bb",
+            "minimum": 8.499038813170046e-05,
+            "maximum": 0.9999842047691345,
+            "mean": 0.6162986649185619
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "d295c46b0bbddf12ca1cdf8e1f29f4a0bbcec151c29068fcde9c4b5d9434d9ba",
+            "minimum": 2.011139301968945e-12,
+            "maximum": 2.5156808192150493e-07,
+            "mean": 4.3981458203034294e-09
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "a5a2fa2096831f23c87eb521c3fc4aaa147ae172f7fc0d62ef497508afa5ecc9",
+            "minimum": 1.7351266907647545e-12,
+            "maximum": 5.940483333688462e-06,
+            "mean": 1.0956577014228498e-07
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "db3266dec3961e222552d28ae0ebef74cb2dabbd3271a90fbde5492e089a5ec0",
+            "minimum": 4.0270309309420327e-10,
+            "maximum": 8.765859820414335e-05,
+            "mean": 2.04427432000209e-06
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "843e3fcd40f7891de03d61fc338313253f73494b885e83215560ffdf297454ed",
+            "minimum": 1.5292546959658204e-12,
+            "maximum": 1.6879650956980186e-06,
+            "mean": 2.3802139060472265e-08
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "4245b3f8b24eafb48fb464baed2d2e458a61abf3cfb3046c8176b1cc2499d089",
+            "minimum": 5.961683768873627e-07,
+            "maximum": 0.03461466729640961,
+            "mean": 0.000643838022202783
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "9cc78d6a3ca0aa610c94ab42ccc7abf04ae6c0ea96be4281679e747f556e2854",
+            "minimum": 3.212178651323602e-14,
+            "maximum": 2.4343689730699225e-08,
+            "mean": 7.165275150400771e-10
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "5856b4af48d40509cb6edd2255df8951cb04043e297f50d21d00760e3ad0b1e0",
+            "minimum": 4.730217953441418e-13,
+            "maximum": 0.00017504667630419135,
+            "mean": 1.0143983911547893e-06
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "028668a1a4dcb058594c4760a8f00b5918e30f20c0e745a210a1b12b30057d04",
+            "minimum": 4.0963708120012043e-11,
+            "maximum": 3.7652894206985366e-06,
+            "mean": 1.1481382306271023e-07
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "8930f67d1d1f706043486489b1562918f73d591b0d43db1e2e9a4b449ba5ad99",
+            "minimum": 2.8148317010590063e-09,
+            "maximum": 0.0336422361433506,
+            "mean": 0.00030326506743375996
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "16111348c8979d9e9ec1e1ef7a931f6d907351770cc4439503eb294a433d8b07",
+            "minimum": 7.4115467588046e-15,
+            "maximum": 4.421578214675037e-09,
+            "mean": 1.1719266217737018e-10
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "a44b968e731d3e06c9bcddd59d009c3f4516d50295d961802802e7622a653a02",
+            "minimum": 3.185970154362394e-09,
+            "maximum": 0.06294425576925278,
+            "mean": 0.00016607941663828084
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "0d1e11f35d0f2950da93a49c49f27570b43536f896a89f41f738decd1e915735",
+            "minimum": 1.440361545312907e-11,
+            "maximum": 9.589639375917614e-06,
+            "mean": 1.4564799147563902e-07
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "a9197b2d67dda0b78b81ba730b71c55403f9ae4b9b34b5e06c48392d4cad002f",
+            "minimum": 2.49129520181815e-13,
+            "maximum": 8.785147542766936e-08,
+            "mean": 1.533101667896793e-09
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "0372d29f37e2b0a02564fe70ca6f03cc140e1695f1f3e918e54942731a3aa5ce",
+            "minimum": 5.249494957650092e-13,
+            "maximum": 7.526977015004377e-07,
+            "mean": 8.952494797113315e-09
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "2b29086797f0a06edb4484c66c120dde0e4977273ce60e1960cc619e6f01e4f1",
+            "minimum": 5.246910404821392e-06,
+            "maximum": 0.9999123215675354,
+            "mean": 0.3824662991725781
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "1a605dc5e82badb35436ae8d0666e9f9560c851bea6534188e21f597de39bec8",
+            "minimum": 5.884368547981467e-10,
+            "maximum": 0.0006703189574182034,
+            "mean": 2.4564203109863547e-05
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "e852dc1186e27c33702c1b24036dd74240f9ad302959541ef0b39aea2ab41ca4",
+            "minimum": 7.440590671533003e-15,
+            "maximum": 2.728497650039685e-09,
+            "mean": 7.739896909714505e-11
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "88ec4dd426f80f5485bd2b79c6bbc99a0a907105a6d5925749d158eaa67d9969",
+            "minimum": 8.47685324711911e-11,
+            "maximum": 0.002200368558987975,
+            "mean": 2.992519934254978e-05
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "7b27b2c7b99cfc33f10748f749a56469f493e71a9ee00e1330a0a7c2c8bcad88",
+            "minimum": 5.594159219922878e-15,
+            "maximum": 7.002216140250539e-09,
+            "mean": 2.38432299477598e-10
+          },
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "f64b551aa7ebcaabd6a7d811e0a19fe7b36a0f5942e7a240a9b855d3cc80cdb9",
+            "minimum": 1.4892556077228392e-09,
+            "maximum": 0.0028403550386428833,
+            "mean": 6.392074652789678e-05
+          }
+        ],
+        "category_mask": {
+          "width": 209,
+          "height": 301,
+          "sha256": "a1e3e7600741e126dccb029e79e5f7be341af8a8cdde4d5f9b23d90ea38743ed",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 5.63075235657855
+        }
+      },
+      "rotation_degrees": 90,
+      "timestamp_ms": null,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2ad5329f78d4ed87cc15093d51cd36cce8a9a16df722cbc2a57b6bdfcf32a39f",
+            "minimum": 0.00013522095105145127,
+            "maximum": 0.9999815225601196,
+            "mean": 0.6202562580822968
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "df5ab23cc05b13fbe95832688a6ec60fc4d0f08bb8075a1ced38fcc228786c40",
+            "minimum": 3.0869968040136975e-12,
+            "maximum": 2.7769451094172837e-07,
+            "mean": 7.751108570355024e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8c46054eb9ec6e6a18f8720b1c9903a620109b40b5f63c30129b7accf0ea1759",
+            "minimum": 2.702059496290099e-12,
+            "maximum": 1.1100763913418632e-05,
+            "mean": 1.7538456271626756e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a385803b0b691112dcc3c08c083ad7ec3e0bb9a6fa1af8a934eb25af16d06361",
+            "minimum": 6.101987803930342e-10,
+            "maximum": 0.0002791128063108772,
+            "mean": 3.977919995961105e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3d436bdf2f90d8aacebeb6484f0aa28f451c55cdea85da629429e3971fe3f06c",
+            "minimum": 2.8968995171435585e-12,
+            "maximum": 2.2352603537001414e-06,
+            "mean": 4.205426166458947e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6c5d85a19f788f7972324589374cd29fa6734fa8f01eca6c86558dbb3d391ba1",
+            "minimum": 1.185492806143884e-06,
+            "maximum": 0.049079544842243195,
+            "mean": 0.0009605797338463082
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "556320d28cb2b467968417b33ec22005b4d29db4346505857806754c221ece4a",
+            "minimum": 8.868978414091483e-14,
+            "maximum": 5.584041318229538e-08,
+            "mean": 1.932963581818437e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "35a15d8cabf6028d5b6295e043eb9b878d107ffec55df811b713e5b48d26f9db",
+            "minimum": 1.7061891179406818e-12,
+            "maximum": 0.00015141817857511342,
+            "mean": 1.2707038742060728e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8435da3466f174c040ed562abf69f5c7b20baabeb850d90cd8f3065eb283049b",
+            "minimum": 5.849808831781544e-11,
+            "maximum": 3.0944809168431675e-06,
+            "mean": 1.286520048828451e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4dd2bcc0328090368ac94ba8b4b8540b4110d037202491285900ff255586c7dc",
+            "minimum": 2.0734496342100783e-09,
+            "maximum": 0.02219308540225029,
+            "mean": 0.00020900978840149702
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "aa9eaceaf04c42d575cd1514cac6b351cf614270b3b87f0fd264b57c4612a0a1",
+            "minimum": 1.1462702904647525e-14,
+            "maximum": 7.532996448844642e-09,
+            "mean": 2.2660920811225651e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c847a6dd56aed75efd8028029bb2bbfc422c4a453b0e27a3d62c05fae2f95490",
+            "minimum": 3.251785507529803e-09,
+            "maximum": 0.0525815412402153,
+            "mean": 0.00014719793365704272
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a30e58fc4b0ae907b028c4709dc9272222cafe525ceaccf560046c1a71b72900",
+            "minimum": 2.2208415662028358e-11,
+            "maximum": 8.633046491013374e-06,
+            "mean": 1.4865735048874543e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9471d7835fe0203da1b5ad7f2c7b81af0708e9e0026daaeee5bcc46ab0ef1505",
+            "minimum": 4.5324456536023627e-13,
+            "maximum": 1.1010457967586262e-07,
+            "mean": 2.5289483891131587e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "1620855443ee954219904df072f3f19784be9c5e8ed4c23b184c370df26e054d",
+            "minimum": 8.550221620128029e-13,
+            "maximum": 9.89189175015781e-07,
+            "mean": 1.4866639774098754e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3e76155facd8a557e0585cdbf9a6f54f782f1ceed9eff42d243622fea2ed3301",
+            "minimum": 5.701368991140043e-06,
+            "maximum": 0.9998608827590942,
+            "mean": 0.3783250241325331
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "700c4799afa6b867c5b26685b5e40758bc2e295db8f5238c3764833dc35a39e0",
+            "minimum": 4.659974628395958e-10,
+            "maximum": 0.0008438228396698833,
+            "mean": 2.5619225725261348e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c3567224176e8e2cd20d042a81749e02f5e67e6942cbc85e7c26c79dd76c6806",
+            "minimum": 1.39426662964094e-14,
+            "maximum": 4.19916679206267e-09,
+            "mean": 1.39270201197315e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f30d688af03226f13230357e9b2af566e8d03c580b2094885c994b6e5483f254",
+            "minimum": 5.325440088910227e-11,
+            "maximum": 0.0011509143514558673,
+            "mean": 1.3596599782170493e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "27eb124fb666b623fb4e05c0f8e0d7e5140a5dbf8c41d3e2a806c9c39529f2da",
+            "minimum": 1.0593481082306951e-14,
+            "maximum": 1.0958209450961931e-08,
+            "mean": 4.177899835117082e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "51ef932a6b6d3974d82758c6e64c110d0f8d06306cf52c0c7928d82d6b101eae",
+            "minimum": 1.239354840976148e-09,
+            "maximum": 0.0016705718589946628,
+            "mean": 5.697340807415442e-05
+          }
+        ],
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "672b81405c21c085d9f9a5f72344158606f2a2ee93ed7bd688786872aaaacf3f",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 5.578295633375193
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": 0,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "image",
+      "input": "blank",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "e5e1c234d23026ac8c7183ecb5a3e522b1ff1f60fd336e6bd666ec71bb47403e",
+            "minimum": 0.9839030504226685,
+            "maximum": 0.9997256398200989,
+            "mean": 0.9983371180748553
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "0dec9de30f530fb6442c42f3ff09e6c8d87ad10b4209cba68acbbaef29ba8fda",
+            "minimum": 1.961434890063174e-07,
+            "maximum": 4.1495579353068024e-05,
+            "mean": 3.2235669441733193e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "808dcb34cb813e3687f6b227804a81a1114a15b28b64c43b314541987ded6e21",
+            "minimum": 3.9666463180765277e-07,
+            "maximum": 4.706087929662317e-05,
+            "mean": 3.954553122897721e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "93ff27db54e09844403723062ba1a82bc5e96261e59ee6cc687c644f1fb1d5dc",
+            "minimum": 8.222938845392491e-07,
+            "maximum": 9.255071927327663e-05,
+            "mean": 8.887709191652213e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "488f7307d1f397420a4326c217cc8d9d6759107f6642f8753b7424107da7e883",
+            "minimum": 9.080855534193688e-07,
+            "maximum": 6.63057726342231e-05,
+            "mean": 6.779512097342659e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2738969a643e6cd7723bab19ae46efa843ce306e37183ba3154e925fea977ab2",
+            "minimum": 2.4561477403040044e-05,
+            "maximum": 0.0026329264510422945,
+            "mean": 0.0003427897136962965
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "31ca2dde8653d820c9e645b2a58c49538236ec4655140e4e45d8b732902ea928",
+            "minimum": 7.508791100008239e-08,
+            "maximum": 9.430976206203923e-06,
+            "mean": 7.825854133699305e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c2c834e2d46d525b1748e5e39913bd1e7e72a9e94df4182e55b30ac252dddd7f",
+            "minimum": 3.135469523840584e-05,
+            "maximum": 0.0016921430360525846,
+            "mean": 0.0002940595975284618
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f395845c6c46f642bb1c4db6bda931dd6f7d03687cdefd936591539f266e6eea",
+            "minimum": 2.550512135712779e-06,
+            "maximum": 0.0004961889935657382,
+            "mean": 8.582256022418259e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "5c75f406b34e9b83db8a411fb8fee1d9da9656b04c0acc5526c1025f74f7dc9d",
+            "minimum": 3.4285406513845373e-08,
+            "maximum": 2.707522526179673e-06,
+            "mean": 2.562637121943413e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3db86119cfe21b75f1c64ebc69cf9378b7afb9d08d01a2c70383cccaf2fe07ff",
+            "minimum": 9.519642389932415e-07,
+            "maximum": 0.00018779808306135237,
+            "mean": 1.2970847012094705e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3b6efea8c6c8d140ce2af355d9aaa689c81beb6a6e06be5e06c47682450aecde",
+            "minimum": 4.3913978009513244e-10,
+            "maximum": 4.8612250225232856e-08,
+            "mean": 3.7112482661898307e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9f161a434063828e877079f71fe4997a41dba2ed2d884b110109fda8e8e870e4",
+            "minimum": 2.2849799279356375e-06,
+            "maximum": 0.0014084340073168278,
+            "mean": 0.00010031999472747953
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4e61e3fe45cbe13f9a301d72db8f983b5e7023860817bc671d96eada6930b7d2",
+            "minimum": 1.0331450539524667e-05,
+            "maximum": 0.006130687426775694,
+            "mean": 0.00041944242056377284
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "ca317c9d6a96e09f4df10ad95546fde21bc4380a65e82dda163b50b31b111d19",
+            "minimum": 1.8157084014092106e-07,
+            "maximum": 4.727952546090819e-05,
+            "mean": 2.701239455808171e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c95dc61544375d62854101144c8e66649cc7c0c0f6e3697bc2a99abda1b0723d",
+            "minimum": 9.455630788579583e-06,
+            "maximum": 0.003828983288258314,
+            "mean": 0.00018285710598716062
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "bc6100fae25ead04d8f8a04d2a987b685da415eeb8cf25e637f970e291191cc6",
+            "minimum": 1.411283619745518e-06,
+            "maximum": 0.00011695404828060418,
+            "mean": 9.559685515123205e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "d3d4f1cb00fbb8b4fbe9215b03f216014d2f3d68b0615084bfd59a1df8d3b088",
+            "minimum": 2.550401063672325e-07,
+            "maximum": 8.026645809877664e-05,
+            "mean": 5.966633447904029e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "26ffebb0bccbf20c5f0a4e2accc2f7434f61057e795ff2fd000b483f5f919918",
+            "minimum": 2.1798798854888446e-07,
+            "maximum": 6.133634997240733e-06,
+            "mean": 9.026355101723073e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6af1c93cd2fe41393ecd3b07d9c5e7136c899b5a2d6cae5d88eb844d5eee4e0d",
+            "minimum": 1.9884365087818878e-07,
+            "maximum": 2.739826413744595e-05,
+            "mean": 2.9105898808849714e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "68f2908759aca1f2111ce846cd415d981c24d4ce19592f7748d3e598167aad80",
+            "minimum": 3.106446092715487e-05,
+            "maximum": 0.0008153098751790822,
+            "mean": 0.00017869683877124045
+          }
+        ],
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "24d80c7136ad9187521a58b7bd2e0b2bfbe993e65221480f585dfd9f0286eb16",
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": 33
+    },
+    {
+      "task": "image",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "2ad5329f78d4ed87cc15093d51cd36cce8a9a16df722cbc2a57b6bdfcf32a39f",
+            "minimum": 0.00013522095105145127,
+            "maximum": 0.9999815225601196,
+            "mean": 0.6202562580822968
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "df5ab23cc05b13fbe95832688a6ec60fc4d0f08bb8075a1ced38fcc228786c40",
+            "minimum": 3.0869968040136975e-12,
+            "maximum": 2.7769451094172837e-07,
+            "mean": 7.751108570355024e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8c46054eb9ec6e6a18f8720b1c9903a620109b40b5f63c30129b7accf0ea1759",
+            "minimum": 2.702059496290099e-12,
+            "maximum": 1.1100763913418632e-05,
+            "mean": 1.7538456271626756e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a385803b0b691112dcc3c08c083ad7ec3e0bb9a6fa1af8a934eb25af16d06361",
+            "minimum": 6.101987803930342e-10,
+            "maximum": 0.0002791128063108772,
+            "mean": 3.977919995961105e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3d436bdf2f90d8aacebeb6484f0aa28f451c55cdea85da629429e3971fe3f06c",
+            "minimum": 2.8968995171435585e-12,
+            "maximum": 2.2352603537001414e-06,
+            "mean": 4.205426166458947e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "6c5d85a19f788f7972324589374cd29fa6734fa8f01eca6c86558dbb3d391ba1",
+            "minimum": 1.185492806143884e-06,
+            "maximum": 0.049079544842243195,
+            "mean": 0.0009605797338463082
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "556320d28cb2b467968417b33ec22005b4d29db4346505857806754c221ece4a",
+            "minimum": 8.868978414091483e-14,
+            "maximum": 5.584041318229538e-08,
+            "mean": 1.932963581818437e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "35a15d8cabf6028d5b6295e043eb9b878d107ffec55df811b713e5b48d26f9db",
+            "minimum": 1.7061891179406818e-12,
+            "maximum": 0.00015141817857511342,
+            "mean": 1.2707038742060728e-06
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "8435da3466f174c040ed562abf69f5c7b20baabeb850d90cd8f3065eb283049b",
+            "minimum": 5.849808831781544e-11,
+            "maximum": 3.0944809168431675e-06,
+            "mean": 1.286520048828451e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "4dd2bcc0328090368ac94ba8b4b8540b4110d037202491285900ff255586c7dc",
+            "minimum": 2.0734496342100783e-09,
+            "maximum": 0.02219308540225029,
+            "mean": 0.00020900978840149702
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "aa9eaceaf04c42d575cd1514cac6b351cf614270b3b87f0fd264b57c4612a0a1",
+            "minimum": 1.1462702904647525e-14,
+            "maximum": 7.532996448844642e-09,
+            "mean": 2.2660920811225651e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c847a6dd56aed75efd8028029bb2bbfc422c4a453b0e27a3d62c05fae2f95490",
+            "minimum": 3.251785507529803e-09,
+            "maximum": 0.0525815412402153,
+            "mean": 0.00014719793365704272
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "a30e58fc4b0ae907b028c4709dc9272222cafe525ceaccf560046c1a71b72900",
+            "minimum": 2.2208415662028358e-11,
+            "maximum": 8.633046491013374e-06,
+            "mean": 1.4865735048874543e-07
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "9471d7835fe0203da1b5ad7f2c7b81af0708e9e0026daaeee5bcc46ab0ef1505",
+            "minimum": 4.5324456536023627e-13,
+            "maximum": 1.1010457967586262e-07,
+            "mean": 2.5289483891131587e-09
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "1620855443ee954219904df072f3f19784be9c5e8ed4c23b184c370df26e054d",
+            "minimum": 8.550221620128029e-13,
+            "maximum": 9.89189175015781e-07,
+            "mean": 1.4866639774098754e-08
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "3e76155facd8a557e0585cdbf9a6f54f782f1ceed9eff42d243622fea2ed3301",
+            "minimum": 5.701368991140043e-06,
+            "maximum": 0.9998608827590942,
+            "mean": 0.3783250241325331
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "700c4799afa6b867c5b26685b5e40758bc2e295db8f5238c3764833dc35a39e0",
+            "minimum": 4.659974628395958e-10,
+            "maximum": 0.0008438228396698833,
+            "mean": 2.5619225725261348e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "c3567224176e8e2cd20d042a81749e02f5e67e6942cbc85e7c26c79dd76c6806",
+            "minimum": 1.39426662964094e-14,
+            "maximum": 4.19916679206267e-09,
+            "mean": 1.39270201197315e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "f30d688af03226f13230357e9b2af566e8d03c580b2094885c994b6e5483f254",
+            "minimum": 5.325440088910227e-11,
+            "maximum": 0.0011509143514558673,
+            "mean": 1.3596599782170493e-05
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "27eb124fb666b623fb4e05c0f8e0d7e5140a5dbf8c41d3e2a806c9c39529f2da",
+            "minimum": 1.0593481082306951e-14,
+            "maximum": 1.0958209450961931e-08,
+            "mean": 4.177899835117082e-10
+          },
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "51ef932a6b6d3974d82758c6e64c110d0f8d06306cf52c0c7928d82d6b101eae",
+            "minimum": 1.239354840976148e-09,
+            "maximum": 0.0016705718589946628,
+            "mean": 5.697340807415442e-05
+          }
+        ],
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "672b81405c21c085d9f9a5f72344158606f2a2ee93ed7bd688786872aaaacf3f",
+          "minimum": 0.0,
+          "maximum": 15.0,
+          "mean": 5.578295633375193
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": 66,
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "interactive",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "14d1e0adf32f83dbde536c8276ee15653945f2b5e74141ff2d2159d82d77af85",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "mean": 0.3511426402234956
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "keypoint": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "interactive",
+      "input": "rgba",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "14d1e0adf32f83dbde536c8276ee15653945f2b5e74141ff2d2159d82d77af85",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "mean": 0.3511426402234956
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "keypoint": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "interactive",
+      "input": "file",
+      "width": 1280,
+      "height": 853,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 1280,
+            "height": 853,
+            "sha256": "8936726f275bdaacdc6ccf5e4a33543a70e3ef82ff7b693a27b747c1d8c60973",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "mean": 0.42962923402339154
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "keypoint": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "file": "landmark-ex1.jpg",
+      "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
+    },
+    {
+      "task": "interactive",
+      "input": "blank",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 301,
+            "height": 209,
+            "sha256": "90cd511888bf89c98d9c35e7b650dd87d6fb724a1add7a6303b82ea8321f89cc",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "mean": 0.12478043285513171
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "keypoint": {
+        "x": 0.5,
+        "y": 0.4
+      }
+    },
+    {
+      "task": "interactive",
+      "input": "rotated",
+      "width": 209,
+      "height": 301,
+      "options": {
+        "output_confidence_masks": true,
+        "output_category_mask": false
+      },
+      "result": {
+        "confidence_masks": [
+          {
+            "width": 209,
+            "height": 301,
+            "sha256": "0de9c07bf8e3daf02afe2f58f69b067668e145d0678b932921353c84c601262a",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "mean": 0.3605998169866089
+          }
+        ],
+        "category_mask": null
+      },
+      "rotation_degrees": 90,
+      "timestamp_ms": null,
+      "keypoint": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "interactive",
+      "input": "rgb",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "740c0dd329cd153b994350d8fd50f188385cb9bebf6b961cc0b2d2293cb0c6f9",
+          "minimum": 0.0,
+          "maximum": 255.0,
+          "mean": 165.67359201386128
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "keypoint": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "interactive",
+      "input": "rgba",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "740c0dd329cd153b994350d8fd50f188385cb9bebf6b961cc0b2d2293cb0c6f9",
+          "minimum": 0.0,
+          "maximum": 255.0,
+          "mean": 165.67359201386128
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "keypoint": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "task": "interactive",
+      "input": "file",
+      "width": 1280,
+      "height": 853,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 1280,
+          "height": 853,
+          "sha256": "15cae389291c4afaf429359f79dafca211658bf1f2fab32ec12c57b689690a0c",
+          "minimum": 0.0,
+          "maximum": 255.0,
+          "mean": 145.3458427974795
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "keypoint": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "file": "landmark-ex1.jpg",
+      "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
+    },
+    {
+      "task": "interactive",
+      "input": "blank",
+      "width": 301,
+      "height": 209,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 301,
+          "height": 209,
+          "sha256": "0df0bdb5cf7b4f42714bc7c891b8f86b58e53068af969280f3d23592712ee6ae",
+          "minimum": 0.0,
+          "maximum": 255.0,
+          "mean": 243.2773530019552
+        }
+      },
+      "rotation_degrees": 0,
+      "timestamp_ms": null,
+      "keypoint": {
+        "x": 0.5,
+        "y": 0.4
+      }
+    },
+    {
+      "task": "interactive",
+      "input": "rotated",
+      "width": 209,
+      "height": 301,
+      "options": {
+        "output_confidence_masks": false,
+        "output_category_mask": true
+      },
+      "result": {
+        "confidence_masks": null,
+        "category_mask": {
+          "width": 209,
+          "height": 301,
+          "sha256": "f11193f0ab3bfdaa368104a5e12ce5c497d5e212b1bf0ae7517097383ffc242c",
+          "minimum": 0.0,
+          "maximum": 255.0,
+          "mean": 163.24961452256434
+        }
+      },
+      "rotation_degrees": 90,
+      "timestamp_ms": null,
+      "keypoint": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    }
+  ]
+}

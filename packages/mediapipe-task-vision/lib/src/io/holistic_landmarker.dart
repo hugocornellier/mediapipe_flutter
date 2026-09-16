@@ -102,7 +102,7 @@ final class _NativeHolisticLandmarker
   mp.MpHolisticLandmarkerPtr _task = nullptr;
   @override
   HolisticLandmarkerResult process(VisionTaskInput input) => using((arena) {
-    final (source, rotation, timestamp, _) = input;
+    final (source, rotation, timestamp, _, _) = input;
     final image = createVisionImage(
       arena,
       source,

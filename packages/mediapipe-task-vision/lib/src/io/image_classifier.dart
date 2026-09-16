@@ -106,7 +106,7 @@ final class _NativeImageClassifier
 
   @override
   ImageClassifierResult process(VisionTaskInput input) => using((arena) {
-    final (source, rotation, timestamp, region) = input;
+    final (source, rotation, timestamp, region, _) = input;
     final image = createVisionImage(
       arena,
       source,

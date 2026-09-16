@@ -32,6 +32,33 @@ TaskCapabilities<VisionDelegate> landmarkTaskCapabilitiesForPlatform(
   },
 );
 
+/// Query the validated Image Segmenter and legacy MagicTouch runtimes.
+Future<TaskCapabilities<VisionDelegate>>
+querySegmenterTaskCapabilities() async =>
+    segmenterTaskCapabilitiesForPlatform(await currentTaskPlatform());
+
+/// Evaluate segmenter task CPU coverage without loading native code.
+///
+/// This covers Image Segmenter and the stateless legacy MagicTouch API, not
+/// the stateful `InteractiveSegmenter`, which has its own 1.0.1 runtime.
+TaskCapabilities<VisionDelegate> segmenterTaskCapabilitiesForPlatform(
+  TaskPlatform platform,
+) => TaskCapabilities.onTargets(
+  platform: platform,
+  delegates: const {
+    VisionDelegate.cpu: {'linux/x64': null, 'windows/x64': null},
+    VisionDelegate.gpu: {},
+  },
+  runtimeVersion: '1.0.0',
+  unavailableReasons: const {
+    VisionDelegate.cpu:
+        'Segmenter task CPU inference requires Linux x64 or Windows x64. '
+        'On macOS the source runtime is not validated against the official '
+        'outputs; see upstream-issues.md UP-004.',
+    VisionDelegate.gpu: 'Segmenter task GPU inference has not been validated.',
+  },
+);
+
 /// Query Image Classifier and Image Embedder's validated CPU runtimes.
 Future<TaskCapabilities<VisionDelegate>> queryImageTaskCapabilities() async =>
     imageTaskCapabilitiesForPlatform(await currentTaskPlatform());

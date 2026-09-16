@@ -6,6 +6,7 @@ import 'package:ffi/ffi.dart';
 
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../interface/landmark_task_types.dart';
+import '../interface/segmenter_task_types.dart';
 import 'native_vision_image.dart';
 
 /// Initialize the shared base options with owned model bytes or a model path.
@@ -220,6 +221,59 @@ SegmentationMask copyVisionConfidenceMask(Arena arena, mp.MpImagePtr image) {
     confidence: data.value.asTypedList(width * height),
   );
 }
+
+/// Read and copy a single-channel uint8 category mask.
+///
+/// The contiguous-copy path is correct for uint8 images, unlike the float32
+/// accessor in UP-003, so the official accessor handles padded rows here.
+CategoryMask copyVisionCategoryMask(Arena arena, mp.MpImagePtr image) {
+  final width = mp.MpImageGetWidth(image);
+  final height = mp.MpImageGetHeight(image);
+  if (width < 1 ||
+      height < 1 ||
+      mp.MpImageGetChannels(image) != 1 ||
+      mp.MpImageGetByteDepth(image) != 1) {
+    throw const VisionTaskException(
+      'Native result is not a uint8 category mask.',
+    );
+  }
+  final data = arena<Pointer<Uint8>>();
+  checkVisionCall((error) => mp.MpImageDataUint8(image, data, error));
+  if (data.value == nullptr) {
+    throw const VisionTaskException('Native mask data is missing.');
+  }
+  return CategoryMask(
+    width: width,
+    height: height,
+    categories: data.value.asTypedList(width * height),
+  );
+}
+
+/// Own every mask and quality score in a shared segmentation result.
+SegmentationResult copyVisionSegmentation(
+  Arena arena,
+  mp.MpImageSegmenterResult result,
+  mp.MpImagePtr image,
+  int? timestamp, {
+  List<String> labels = const [],
+}) => SegmentationResult(
+  labels: labels,
+  confidenceMasks: result.confidence_masks_count == 0
+      ? null
+      : [
+          for (var i = 0; i < result.confidence_masks_count; i++)
+            copyVisionConfidenceMask(arena, result.confidence_masks[i]),
+        ],
+  categoryMask: result.has_category_mask == 0
+      ? null
+      : copyVisionCategoryMask(arena, result.category_mask),
+  qualityScores: result.quality_scores == nullptr
+      ? null
+      : result.quality_scores.asTypedList(result.quality_scores_count),
+  imageWidth: mp.MpImageGetWidth(image),
+  imageHeight: mp.MpImageGetHeight(image),
+  timestampMilliseconds: timestamp,
+);
 
 /// Populate native canned/custom gesture classification filters.
 void setVisionGestureClassifier(

@@ -170,6 +170,8 @@ const visionWheelReleases = <String, VisionWheelRelease>{
       'gesture_recognizer',
       'pose_landmarker',
       'holistic_landmarker',
+      'image_segmenter',
+      'interactive_segmenter_legacy',
     },
   ),
   'windows/x64': VisionWheelRelease(
@@ -196,6 +198,8 @@ const visionWheelReleases = <String, VisionWheelRelease>{
       'gesture_recognizer',
       'pose_landmarker',
       'holistic_landmarker',
+      'image_segmenter',
+      'interactive_segmenter_legacy',
     },
   ),
 };

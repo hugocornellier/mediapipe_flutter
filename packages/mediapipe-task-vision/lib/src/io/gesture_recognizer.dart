@@ -95,7 +95,7 @@ final class _NativeGestureRecognizer
 
   @override
   GestureRecognizerResult process(VisionTaskInput input) => using((arena) {
-    final (source, rotation, timestamp, _) = input;
+    final (source, rotation, timestamp, _, _) = input;
     final image = createVisionImage(
       arena,
       source,

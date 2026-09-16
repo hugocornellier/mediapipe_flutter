@@ -1,10 +1,20 @@
 import 'dart:async';
 import 'dart:isolate';
 
+import '../interface/segmenter_task_types.dart' show SegmentationPoint;
 import '../interface/vision_task_types.dart';
 
 /// Input transported to a native task's worker without sharing native pointers.
-typedef VisionTaskInput = (VisionImage, int, int?, VisionRegionOfInterest?);
+///
+/// The trailing point is the legacy Interactive Segmenter's region of interest;
+/// every other task leaves it null.
+typedef VisionTaskInput = (
+  VisionImage,
+  int,
+  int?,
+  VisionRegionOfInterest?,
+  SegmentationPoint?,
+);
 
 /// Native owners are created, used and closed exclusively on their worker.
 abstract interface class NativeVisionTask<R> {
@@ -61,10 +71,11 @@ final class VisionTaskWorker<R> {
   Future<R> processImage(
     VisionImage image,
     int rotation,
-    VisionRegionOfInterest? region,
-  ) async {
+    VisionRegionOfInterest? region, {
+    SegmentationPoint? keypoint,
+  }) async {
     _check(VisionRunningMode.image, rotation);
-    return (await _request((image, rotation, null, region)))!;
+    return (await _request((image, rotation, null, region, keypoint)))!;
   }
 
   /// Reserve strictly increasing timestamps in submission order.
@@ -85,7 +96,7 @@ final class VisionTaskWorker<R> {
       );
     }
     _lastTimestamp = timestamp;
-    return (await _request((image, rotation, timestamp, region)))!;
+    return (await _request((image, rotation, timestamp, region, null)))!;
   }
 
   void _check(VisionRunningMode expected, int rotation) {

@@ -6,14 +6,16 @@ An exported symbol alone does not establish a working task or platform.
 
 ## Validated baseline
 
-Commit `0d6666858cc8717924838b12aa2d331db8032cc9` passes Linux x64 and Windows
-x64 CPU CI for Face Detector, Face Landmarker, Object Detector, Image Classifier,
-and Image Embedder. This includes independent official-Python reference outputs,
-native loading, errors, queued disposal, and fresh Flutter debug/release consumers.
+Commit `a615390` passes Linux x64 and Windows x64 CPU CI for nine vision tasks:
+Face Detector, Face Landmarker, Object Detector, Image Classifier, Image Embedder,
+Hand Landmarker, Gesture Recognizer, Pose Landmarker and Holistic Landmarker. This
+includes independent official-Python reference outputs generated on each runner,
+native loading, errors, queued disposal, and fresh Flutter debug/release consumers
+that are relocated before running real inference.
 
-[Passing desktop run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/35103375248)
-uses pinned official MediaPipe 1.0.0 wheels. Uncommitted work after that commit is
-experimental and has not passed those CI jobs.
+[Passing desktop run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/35108048060)
+uses pinned official MediaPipe 1.0.0 wheels. Work after that commit is experimental
+until the same jobs pass on it.
 
 ## UP-001 — KleidiAI SME wrappers can execute non-streaming SVE on Apple M4
 
@@ -227,6 +229,44 @@ checked-in reference was regenerated from scratch after that change; the earlier
 file, written from incorrectly packed raw fixtures, is gone. A caller that reuses
 one Holistic task with masks enabled across differently sized images still hits
 this; VIDEO mask processing needs a documented size policy.
+
+## UP-009 — Image Segmenter creation crashes on a null display-names locale
+
+**Status:** reproduced through this repository's Dart bindings against the pinned
+1.0.0 runtime. Worked around locally; not reported upstream.
+
+`MpImageSegmenterOptions.display_names_locale` is a `const char*` that
+`MpImageSegmenterCreate` dereferences unconditionally, so passing null segfaults
+inside task creation rather than returning a status:
+
+```text
+si_signo=Segmentation fault: 11(11), si_code=SEGV_ACCERR(2), si_addr=0x0
+MpImageSegmenterCreate
+```
+
+The equivalent classifier field tolerates null: `classifier_options_c.py` sets
+`display_names_locale = None` when no locale is requested, and that path works.
+Google's own Image Segmenter bindings never exercise the null case because
+`MpImageSegmenterOptionsC.from_c_options` always passes `ctypes.c_char_p(b'')`.
+
+`lib/src/io/image_segmenter.dart` therefore always passes a string, using an
+empty one when the caller requests no locale. Review this field for each new
+task rather than assuming null is accepted.
+
+## UP-010 — Segmentation tasks reject a region of interest
+
+**Status:** confirmed through the official 1.0.0 Python API; expected behavior
+rather than a defect, recorded because the C API accepts the argument.
+
+`MpImageSegmenterSegmentImage` and the legacy Interactive Segmenter both take
+`MpImageProcessingOptions`, which carries a rectangle, but supplying one fails:
+
+```text
+ValueError: This task doesn't support region-of-interest.
+```
+
+Rotation is accepted. The Dart wrappers therefore expose `rotationDegrees` only,
+instead of offering a parameter the task rejects at run time.
 
 ## UP-007 — Official 1.0.1 Mac detector graphs can abort opening a CPU graph
 

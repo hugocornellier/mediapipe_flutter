@@ -16,6 +16,14 @@ export 'src/interface/landmark_task_types.dart'
         PoseLandmarkerOptions,
         PoseLandmarkerResult;
 export 'src/interface/holistic_landmarker_types.dart';
+export 'src/interface/segmenter_task_types.dart'
+    show
+        CategoryMask,
+        SegmentationResult,
+        ImageSegmenterOptions,
+        InteractiveSegmenterLegacyOptions;
+export 'src/io/image_segmenter.dart';
+export 'src/io/interactive_segmenter_legacy.dart';
 export 'src/io/hand_landmarker.dart';
 export 'src/io/gesture_recognizer.dart';
 export 'src/io/pose_landmarker.dart';
