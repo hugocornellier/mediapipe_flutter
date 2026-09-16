@@ -18,14 +18,12 @@ void main() {
     group(
       delegate.name,
       () => _testDelegate(delegate),
-      // CPU inference aborts with SIGILL inside XNNPACK's KleidiAI SME kernel
-      // in our pinned source build. It is not a wrapper defect: the same call
-      // crashes with no Dart in the process, Google's official 1.0.0 wheel runs
-      // the same model and images on CPU, and our Metal results match the
-      // official GPU goldens exactly. See tool/OBJECT_DETECTOR.md.
+      // The pinned source build no longer aborts in XNNPACK's KleidiAI SME
+      // kernels, but its macOS CPU results still differ from Google's official
+      // 1.0.0 outputs beyond tolerance, while Metal matches them exactly.
+      // See upstream-issues.md UP-001/UP-004.
       skip: delegate == VisionDelegate.cpu && Platform.isMacOS
-          ? 'Source-build CPU path aborts in XNNPACK SME kernels; '
-                'see tool/OBJECT_DETECTOR.md'
+          ? 'macOS source-build CPU output is unvalidated; see UP-004'
           : delegate == VisionDelegate.gpu && !Platform.isMacOS
           ? 'GPU object inference is validated on macOS only.'
           : null,
@@ -40,20 +38,23 @@ void main() {
   });
 
   if (Platform.isMacOS) {
-    test('known CPU abort is rejected before native initialization', () async {
-      await expectLater(
-        ObjectDetector.create(
-          ObjectDetectorOptions(modelPath: 'missing-model.tflite'),
-        ),
-        throwsA(
-          isA<UnsupportedError>().having(
-            (e) => e.message,
-            'diagnostic',
-            contains('SIGILL'),
+    test(
+      'the unvalidated CPU path is rejected before native initialization',
+      () async {
+        await expectLater(
+          ObjectDetector.create(
+            ObjectDetectorOptions(modelPath: 'missing-model.tflite'),
           ),
-        ),
-      );
-    });
+          throwsA(
+            isA<UnsupportedError>().having(
+              (e) => e.message,
+              'diagnostic',
+              contains('UP-004'),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   test('rejects a zero result limit', () {

@@ -241,7 +241,8 @@ void main() {
       );
     },
     skip: Platform.isMacOS
-        ? 'Mac source runtime SME CPU fix is under validation.'
+        ? 'The macOS source runtime is not validated against the official '
+              'outputs; see upstream-issues.md UP-004.'
         : false,
   );
 

@@ -25,7 +25,9 @@ TaskCapabilities<VisionDelegate> imageTaskCapabilitiesForPlatform(
   unavailableReasons: const {
     VisionDelegate.cpu:
         'Image task CPU inference currently requires Linux x64 or Windows x64. '
-        'The macOS source runtime has an XNNPACK SME SIGILL under investigation.',
+        'The macOS source runtime no longer aborts in XNNPACK, but its CPU '
+        'results still differ from the official outputs; see '
+        'upstream-issues.md UP-004.',
     VisionDelegate.gpu: 'Image task GPU inference has not been validated.',
   },
 );
@@ -57,8 +59,7 @@ queryObjectDetectorCapabilities() async =>
 
 /// Evaluate support for an explicit process platform snapshot.
 ///
-/// This task is the inverse of MagicTouch: Metal is validated against the
-/// official reference and CPU is the broken path.
+/// CPU is validated on desktop x64; macOS arm64 supports Metal only.
 TaskCapabilities<VisionDelegate> objectDetectorCapabilitiesForPlatform(
   TaskPlatform platform,
 ) => TaskCapabilities.onTargets(
@@ -70,9 +71,10 @@ TaskCapabilities<VisionDelegate> objectDetectorCapabilitiesForPlatform(
   runtimeVersion: '1.0.0',
   unavailableReasons: {
     VisionDelegate.cpu: platform.operatingSystem == 'macos'
-        ? 'CPU inference aborts with SIGILL inside XNNPACK\'s KleidiAI SME kernels '
-              'in the pinned v1.0.0 source build. This task supports Metal only; see '
-              'tool/OBJECT_DETECTOR.md.'
+        ? 'The pinned macOS source build no longer aborts in XNNPACK\'s KleidiAI '
+              'SME kernels, but its CPU results still differ from Google\'s '
+              'official 1.0.0 outputs beyond tolerance. This task supports Metal '
+              'only until that is resolved; see upstream-issues.md UP-001/UP-004.'
         : 'Object Detector CPU requires Linux x64 or Windows x64.',
     VisionDelegate.gpu:
         'Object Detector GPU is validated on macOS arm64 14.0+ only.',

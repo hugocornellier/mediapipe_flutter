@@ -34,6 +34,12 @@ FLAGS = [
     "--repo_env=HERMETIC_PYTHON_VERSION=3.12", "--jobs=8",
     "--linkopt=-Wl,-headerpad_max_install_names",
     "--linkopt=-Wl,-exported_symbol,_Mp*",
+    # Apple Silicon has streaming SVE through SME, but no non-streaming SVE.
+    # Clang can otherwise auto-vectorize KleidiAI's SME C wrappers before
+    # their assembly kernels enter streaming mode, causing SIGILL on M4.
+    # Keep explicit architecture kernels; disable automatic vectorization
+    # only in the C wrappers. Upstream MediaPipe/KleidiAI sources stay intact.
+    "--per_file_copt=external/KleidiAI/.*[.]c@-fno-vectorize,-fno-slp-vectorize",
 ]
 # The C entry points live in static archives the linker would otherwise drop,
 # because nothing inside the shared object references them.

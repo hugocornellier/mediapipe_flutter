@@ -34,7 +34,7 @@ void main() {
     expect(result.unavailableReasons[VisionDelegate.gpu], contains('GLSL 330'));
   });
 
-  test('Object Detector reports Metal only, with the CPU abort explained', () {
+  test('Object Detector reports Metal only, with the CPU gap explained', () {
     final result = objectDetectorCapabilitiesForPlatform(
       const TaskPlatform(
         operatingSystem: 'macos',
@@ -44,7 +44,7 @@ void main() {
     );
     expect(result.supportedDelegates, {VisionDelegate.gpu});
     expect(result.isSupported, isTrue);
-    expect(result.unavailableReasons[VisionDelegate.cpu], contains('SIGILL'));
+    expect(result.unavailableReasons[VisionDelegate.cpu], contains('UP-004'));
     expect(result.runtimeVersion, '1.0.0');
   });
 

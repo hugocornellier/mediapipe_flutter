@@ -134,7 +134,7 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     archive: null,
     libraryName: 'libmediapipe.dylib',
     librarySha256:
-        'dbc5ea41d10c334e2f7adc9a746f109334d0826abbd9cedd5d03360c8b4f6238',
+        '7133bfed77463171f1af4792d3cbcb8dbbb2bb6d5a37e7aa204be856292b649e',
     assetName: 'vision.dylib',
     localBuildDirectory: 'build/native/tasks/',
   ),
