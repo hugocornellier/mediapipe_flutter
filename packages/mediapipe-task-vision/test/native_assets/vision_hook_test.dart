@@ -35,8 +35,8 @@ void main() {
 
   test('targets without any runtime name the published ones', () {
     for (final (os, architecture) in [
-      (OS.linux, Architecture.x64),
-      (OS.windows, Architecture.x64),
+      (OS.linux, Architecture.arm64),
+      (OS.windows, Architecture.arm64),
       (OS.android, Architecture.arm64),
       (OS.iOS, Architecture.arm64),
       (OS.macOS, Architecture.x64),
@@ -54,6 +54,28 @@ void main() {
       );
     }
   });
+
+  test(
+    'desktop rows reject tasks outside tested coverage before downloading',
+    () {
+      for (final os in [OS.linux, OS.windows]) {
+        expect(
+          testCodeBuildHook(
+            mainMethod: hook.main,
+            targetOS: os,
+            targetArchitecture: Architecture.x64,
+            userDefines: defines({
+              'tasks': ['pose_landmarker'],
+            }),
+            check: (_, _) => fail('Unvalidated task unexpectedly bundled'),
+          ),
+          failsWith<UnsupportedError>(
+            allOf(contains('$os/x64'), contains('pose_landmarker')),
+          ),
+        );
+      }
+    },
+  );
 
   test('an unpublished release is served only from a local build', () {
     final unpublished = visionRuntimeReleases.where(

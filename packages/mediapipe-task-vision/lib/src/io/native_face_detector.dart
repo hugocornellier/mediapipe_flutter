@@ -13,8 +13,8 @@ final class NativeFaceDetector {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeFaceDetector(FaceDetectorOptions options)
     : _gpu = options.delegate == VisionDelegate.gpu {
-    if (Platform.isIOS && _gpu) {
-      throw UnsupportedError('The iOS simulator runtime supports CPU only.');
+    if (!Platform.isMacOS && _gpu) {
+      throw UnsupportedError('GPU face inference is validated on macOS only.');
     }
     using((arena) {
       final native = arena<mp.MpFaceDetectorOptions>();
@@ -25,6 +25,10 @@ final class NativeFaceDetector {
           : mp.MpDelegate.MP_DELEGATE_CPU;
       base.host_system = Platform.isIOS
           ? mp.MpHostSystem.MP_HOST_SYSTEM_IOS
+          : Platform.isLinux
+          ? mp.MpHostSystem.MP_HOST_SYSTEM_LINUX
+          : Platform.isWindows
+          ? mp.MpHostSystem.MP_HOST_SYSTEM_WINDOWS
           : mp.MpHostSystem.MP_HOST_SYSTEM_MAC;
       if (options.modelPath case final path?) {
         base.model_asset_path = path.toNativeUtf8(allocator: arena).cast();

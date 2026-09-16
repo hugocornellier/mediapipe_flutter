@@ -1,5 +1,6 @@
 import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
 
 /// Every task name accepted by `hooks.user_defines.mediapipe_flutter_vision.tasks`.
 ///
@@ -142,6 +143,47 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
 /// Targets whose vision runtimes exist only as maintainer builds made by
 /// `tool/build_ios_simulator.py`; nothing is published for them yet.
 const localOnlyVisionTargets = {'ios-simulator/arm64'};
+
+/// Official desktop CPU runtimes. Coverage grows only after inference tests pass.
+const visionWheelReleases = <String, VisionWheelRelease>{
+  'linux/x64': VisionWheelRelease(
+    target: 'linux/x64',
+    wheel: (
+      url:
+          'https://files.pythonhosted.org/packages/d3/1d/'
+          'bc666b2edee87cc06421b040df0282607339091954ab9d4906a65a45be10/'
+          'mediapipe-1.0.0-py3-none-manylinux_2_28_x86_64.whl',
+      sha256:
+          '07a449446bf888a8a2787dbf6fc1a33da4c47977313deec64d13c35bff41f6d2',
+    ),
+    libraryName: 'libmediapipe.so',
+    librarySha256:
+        '35ef4187d381addb1309f0f9dedd32613127fa98d1ad1f5ddeea57595cdbcaf0',
+    notices: _wheelNotices,
+    tasks: {'face_detector', 'face_landmarker'},
+  ),
+  'windows/x64': VisionWheelRelease(
+    target: 'windows/x64',
+    wheel: (
+      url:
+          'https://files.pythonhosted.org/packages/68/53/'
+          'ffb67e668f23130aff197ec49be912be910c128b60658000d8bf263207c9/'
+          'mediapipe-1.0.0-py3-none-win_amd64.whl',
+      sha256:
+          'da57e6719bbab05007272c91d6ca2e0e2e370709491cbe344a372f87e25cf604',
+    ),
+    libraryName: 'libmediapipe.dll',
+    librarySha256:
+        'a8970c645c8c87c25ec9965cb5c898e803c6c42f7192b7de9a0541c62ae48cef',
+    notices: _wheelNotices,
+    tasks: {'face_detector', 'face_landmarker'},
+  ),
+};
+
+const _wheelNotices = {
+  'LICENSE': '8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8',
+  'NOTICE': 'd3b4a80a24a01fd445d4b70a610fd836ec3547c3a62eb835a1041956c38d9f56',
+};
 
 /// Kept for callers that pin the face detector archive directly.
 DownloadAsset get faceDetectorArchive => visionRuntimeReleases[0].archive!;

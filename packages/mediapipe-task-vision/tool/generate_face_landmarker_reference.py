@@ -16,6 +16,7 @@ from mediapipe.tasks.python.vision.face_landmarker import FaceLandmarksConnectio
 from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
 
 from generate_face_detector_reference import ROOT, FIXTURES, LIBRARY_SHA256, digest, gpu_image
+from official_face_runtime import LIBRARY_NAME
 
 MODEL = ROOT / "models/face_landmarker.task"
 MODEL_SHA256 = "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff"
@@ -32,7 +33,7 @@ def main():
     assert mp.__version__ == "1.0.0"
     assert digest(MODEL) == MODEL_SHA256
     assert digest(__import__('pathlib').Path(mp.__file__).parent /
-                  "tasks/c/libmediapipe.dylib") == LIBRARY_SHA256
+                  "tasks/c" / LIBRARY_NAME) == LIBRARY_SHA256
     manifest = json.loads((FIXTURES / "manifest.json").read_text())
     raw = FIXTURES / "portrait-301x209.rgb"
     pixels = np.frombuffer(raw.read_bytes(), dtype=np.uint8).reshape(209, 301, 3)

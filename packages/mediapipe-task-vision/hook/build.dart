@@ -4,6 +4,7 @@ import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
 import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
+import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
 
 import '../sdk_downloads.dart';
 
@@ -44,6 +45,30 @@ void main(List<String> arguments) async {
       }
       // Core's hook rejects targets its runtime table has no release for.
     }
+    final wheelRelease = visionWheelReleases[target];
+    if (wheelRelease != null && tasks.isNotEmpty) {
+      final missing = tasks.difference(wheelRelease.tasks);
+      if (missing.isNotEmpty) {
+        throw UnsupportedError(
+          'No validated $target runtime covers ${missing.join(', ')}. '
+          'Available tasks: ${wheelRelease.tasks.join(', ')}.',
+        );
+      }
+      final library = await downloadVisionWheel(
+        wheelRelease,
+        Directory.fromUri(input.outputDirectoryShared.resolve('$target/')),
+      );
+      // Dart rejects duplicate physical filenames across asset IDs. Preserve
+      // the existing generated bindings with a distinct file per selected task.
+      for (final task in tasks) {
+        final suffix = target.startsWith('windows/') ? 'dll' : 'so';
+        final bundled = await library.copy(
+          File.fromUri(library.parent.uri.resolve('lib$task.$suffix')).path,
+        );
+        _addAsset(input, output, library: bundled, assetName: '$task.dylib');
+      }
+      return;
+    }
     final published = visionRuntimeReleases.where(
       (release) => release.target == target,
     );
@@ -51,7 +76,7 @@ void main(List<String> arguments) async {
     if (published.isEmpty && !localOnly && tasks.isNotEmpty) {
       throw UnsupportedError(
         'mediapipe_flutter_vision has no runtime for $target. Published '
-        'targets: ${visionRuntimeReleases.map((r) => r.target).toSet().join(', ')}; '
+        'targets: ${{...visionRuntimeReleases.map((r) => r.target), ...visionWheelReleases.keys}.join(', ')}; '
         'maintainer-build targets: ${localOnlyVisionTargets.join(', ')}.',
       );
     }
