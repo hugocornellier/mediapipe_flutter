@@ -13,4 +13,33 @@ void main() {
     expect(result.supportedDelegates, {VisionDelegate.cpu});
     expect(result.unavailableReasons[VisionDelegate.gpu], contains('GLSL 330'));
   });
+
+  test('Object Detector reports Metal only, with the CPU abort explained', () {
+    final result = objectDetectorCapabilitiesForPlatform(
+      const TaskPlatform(
+        operatingSystem: 'macos',
+        architecture: 'arm64',
+        version: '14.0',
+      ),
+    );
+    expect(result.supportedDelegates, {VisionDelegate.gpu});
+    expect(result.isSupported, isTrue);
+    expect(result.unavailableReasons[VisionDelegate.cpu], contains('SIGILL'));
+    expect(result.runtimeVersion, '1.0.0');
+  });
+
+  test('an unsupported platform fails closed for both delegates', () {
+    final result = objectDetectorCapabilitiesForPlatform(
+      const TaskPlatform(
+        operatingSystem: 'linux',
+        architecture: 'x64',
+        version: '1.0',
+      ),
+    );
+    expect(result.supportedDelegates, isEmpty);
+    expect(result.isSupported, isFalse);
+    // The platform itself is the blocker, so it explains both delegates.
+    expect(result.unavailableReasons[VisionDelegate.cpu], isNotNull);
+    expect(result.unavailableReasons[VisionDelegate.gpu], isNotNull);
+  });
 }

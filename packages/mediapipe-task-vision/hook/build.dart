@@ -90,9 +90,12 @@ Future<void> _bundleRelease(
   final local = Directory.fromUri(
     input.packageRoot.resolve(release.localBuildDirectory),
   );
+  final archive = release.archive;
+  final hasLocalBuild = await File.fromUri(
+    local.uri.resolve(release.libraryName),
+  ).exists();
   final File library;
-  if (input.userDefines['prebuilt'] != true &&
-      await File.fromUri(local.uri.resolve(release.libraryName)).exists()) {
+  if (input.userDefines['prebuilt'] != true && hasLocalBuild) {
     // Maintainers can continue testing builds made by tool/build_native.py.
     // A normal dependency installation has no package-local build directory.
     library = await validateVisionLibrary(
@@ -100,9 +103,16 @@ Future<void> _bundleRelease(
       libraryName: release.libraryName,
       target: visionLibraryTarget(target),
     );
+  } else if (archive == null) {
+    throw StateError(
+      'The ${release.release} runtime is not published yet, so it can only be '
+      'served from a local source build. Run python3 tool/build_native.py in '
+      'the vision package and omit prebuilt: true. Tasks it covers: '
+      '${release.tasks.join(', ')}.',
+    );
   } else {
     library = await downloadVisionLibrary(
-      asset: release.archive,
+      asset: archive,
       librarySha256: release.librarySha256,
       libraryName: release.libraryName,
       cache: Directory.fromUri(input.outputDirectoryShared.resolve('$target/')),

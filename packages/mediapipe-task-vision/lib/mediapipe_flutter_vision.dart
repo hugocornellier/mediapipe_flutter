@@ -14,3 +14,5 @@ export 'src/interface/face_landmark_connections.dart';
 export 'src/interface/vision_types.dart';
 export 'src/interface/interactive_segmenter_types.dart';
 export 'src/io/interactive_segmenter.dart';
+export 'src/interface/object_detector_types.dart';
+export 'src/io/object_detector.dart';

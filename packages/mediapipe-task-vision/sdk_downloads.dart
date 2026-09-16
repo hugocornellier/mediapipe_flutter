@@ -49,8 +49,14 @@ final class VisionRuntimeRelease {
   /// Tasks whose C API this library exports.
   final Set<String> tasks;
 
-  /// The archive holding the library, notices and `manifest.json`.
-  final DownloadAsset archive;
+  /// The archive holding the library, notices and `manifest.json`, or null
+  /// while the release is built but not yet published.
+  ///
+  /// A null archive is not a placeholder for a future URL: the hook refuses to
+  /// invent one and serves the release only from [localBuildDirectory], so a
+  /// maintainer can develop against a source build without anyone pinning an
+  /// address that does not answer yet.
+  final DownloadAsset? archive;
 
   /// Bundle filename of the library inside the archive.
   final String libraryName;
@@ -105,6 +111,32 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     assetName: 'face_landmarker.dylib',
     localBuildDirectory: 'build/native/face_landmarker/',
   ),
+  // The combined source build from `//mediapipe/tasks/c:libmediapipe`. It also
+  // exports the two face tasks, but they are deliberately left to the published
+  // rows above so existing consumers keep downloading exactly what they do
+  // today. Selecting a face task alongside one of these bundles both libraries;
+  // that ends when this release is published and supersedes them.
+  VisionRuntimeRelease(
+    target: 'macos/arm64',
+    release: 'vision-v1.0.0-1',
+    tasks: {
+      'gesture_recognizer',
+      'hand_landmarker',
+      'holistic_landmarker',
+      'image_classifier',
+      'image_embedder',
+      'image_segmenter',
+      'interactive_segmenter_legacy',
+      'object_detector',
+      'pose_landmarker',
+    },
+    archive: null,
+    libraryName: 'libmediapipe.dylib',
+    librarySha256:
+        'dbc5ea41d10c334e2f7adc9a746f109334d0826abbd9cedd5d03360c8b4f6238',
+    assetName: 'vision.dylib',
+    localBuildDirectory: 'build/native/tasks/',
+  ),
 ];
 
 /// Targets whose vision runtimes exist only as maintainer builds made by
@@ -112,13 +144,13 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
 const localOnlyVisionTargets = {'ios-simulator/arm64'};
 
 /// Kept for callers that pin the face detector archive directly.
-DownloadAsset get faceDetectorArchive => visionRuntimeReleases[0].archive;
+DownloadAsset get faceDetectorArchive => visionRuntimeReleases[0].archive!;
 
 /// Kept for callers that pin the face detector library digest directly.
 String get faceDetectorLibrarySha256 => visionRuntimeReleases[0].librarySha256;
 
 /// Kept for callers that pin the face landmarker archive directly.
-DownloadAsset get faceLandmarkerArchive => visionRuntimeReleases[1].archive;
+DownloadAsset get faceLandmarkerArchive => visionRuntimeReleases[1].archive!;
 
 /// Kept for callers that pin the face landmarker library digest directly.
 String get faceLandmarkerLibrarySha256 =>

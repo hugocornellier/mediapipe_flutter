@@ -17,6 +17,18 @@ const faceLandmarkerUrl =
 const faceLandmarkerSha256 =
     '64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff';
 
+/// Official EfficientDet-Lite0 float32 detector, version 1, 80 COCO classes.
+///
+/// Float32 rather than int8 because Metal needs a float model; see
+/// tool/GPU_VALIDATION.md.
+const efficientDetLite0Url =
+    'https://storage.googleapis.com/mediapipe-models/object_detector/'
+    'efficientdet_lite0/float32/1/efficientdet_lite0.tflite';
+
+/// SHA-256 of [efficientDetLite0Url].
+const efficientDetLite0Sha256 =
+    '40338edf5ec70d43e318b0a716a84d4564cd1802759a7a07170c7e43796dbf58';
+
 /// Official stateful MagicTouch int8 encoder/decoder bundle, version 1.
 const interactiveSegmenterModelUrl =
     'https://storage.googleapis.com/mediapipe-models/'

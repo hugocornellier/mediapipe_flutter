@@ -63,6 +63,33 @@ final class TaskCapabilities<D extends Enum> {
     );
   }
 
+  /// Describe GPU support on every target in [targets], with CPU explained as
+  /// unavailable by [cpuUnavailableReason] on targets that are supported.
+  ///
+  /// The mirror of [TaskCapabilities.cpuOnTargets], for a task whose CPU path
+  /// is the broken one. Targets not in the table, unknown OS versions and
+  /// versions older than the table's minimum fail closed for every delegate.
+  factory TaskCapabilities.gpuOnTargets({
+    required TaskPlatform platform,
+    required D cpu,
+    required D gpu,
+    required String cpuUnavailableReason,
+    RuntimeTargets targets = tasksRuntimeTargets,
+    String runtimeVersion = '1.0.1',
+  }) {
+    final platformReason = _platformReason(platform, targets);
+    return TaskCapabilities._(
+      platform,
+      Set.unmodifiable({if (platformReason == null) gpu}),
+      Map.unmodifiable({
+        gpu: ?platformReason,
+        cpu: platformReason ?? cpuUnavailableReason,
+      }),
+      targets,
+      runtimeVersion: runtimeVersion,
+    );
+  }
+
   /// Describe the shared 1.0.1 distribution's validated macOS CPU support.
   ///
   /// Equivalent to [TaskCapabilities.cpuOnTargets] with the shared runtime's

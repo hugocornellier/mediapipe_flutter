@@ -55,21 +55,45 @@ void main() {
     }
   });
 
-  test('a task without a release on the target is refused by name', () {
-    expect(
-      testCodeBuildHook(
-        mainMethod: hook.main,
-        targetOS: OS.macOS,
-        targetArchitecture: Architecture.arm64,
-        userDefines: defines({
-          'tasks': ['face_detector', 'hand_landmarker'],
-        }),
-        check: (_, _) => fail('Unpublished task unexpectedly bundled'),
-      ),
-      failsWith<UnsupportedError>(
-        allOf(contains('hand_landmarker'), contains('face_detector')),
-      ),
+  test('an unpublished release is served only from a local build', () {
+    final unpublished = visionRuntimeReleases.where(
+      (release) => release.archive == null,
     );
+    expect(unpublished, isNotEmpty, reason: 'No unpublished row to exercise');
+    for (final release in unpublished) {
+      // `prebuilt: true` forces the download path, which an unpublished row
+      // cannot satisfy. This keeps the test independent of whether the
+      // maintainer running it happens to have a local source build.
+      expect(
+        testCodeBuildHook(
+          mainMethod: hook.main,
+          targetOS: OS.macOS,
+          targetArchitecture: Architecture.arm64,
+          userDefines: defines({
+            'tasks': [release.tasks.first],
+            'prebuilt': true,
+          }),
+          check: (_, _) => fail('Unpublished release unexpectedly downloaded'),
+        ),
+        failsWith<StateError>(
+          allOf(
+            contains(release.release),
+            contains('not published yet'),
+            contains(release.tasks.first),
+          ),
+        ),
+      );
+    }
+  });
+
+  test('published rows pin an archive digest', () {
+    for (final release in visionRuntimeReleases) {
+      if (release.archive case final archive?) {
+        expect(archive.sha256, matches(RegExp(r'^[a-f0-9]{64}$')));
+        expect(archive.url, startsWith('https://'));
+      }
+      expect(release.librarySha256, matches(RegExp(r'^[a-f0-9]{64}$')));
+    }
   });
 
   test('unknown task names list every accepted task', () {
