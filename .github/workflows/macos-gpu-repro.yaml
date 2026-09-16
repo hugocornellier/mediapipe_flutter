@@ -1,0 +1,123 @@
+name: Interactive Segmenter GPU repro (fresh macOS)
+
+# Manual only. Reproduces the official Interactive Segmenter (MagicTouch) GPU
+# failure on a hosted macOS runner using nothing from this repository: the PyPI
+# wheel, Google's model bundle and Google's sample image. See
+# packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md for context.
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      mediapipe_version:
+        description: mediapipe version to install from PyPI
+        default: '1.0.1'
+        required: true
+
+jobs:
+  repro:
+    name: Official Python API, CPU control and GPU failure
+    runs-on: macos-15
+    timeout-minutes: 15
+    env:
+      MODEL_URL: https://storage.googleapis.com/mediapipe-models/interactive_segmenter_v2/magic_touch/int8/1/interactive_segmentation.task
+      MODEL_SHA256: 38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03
+      IMAGE_URL: https://storage.googleapis.com/mediapipe-assets/cats_and_dogs.jpg
+      IMAGE_SHA256: a2eaa7ad3a1aae4e623dd362a5f737e8a88d122597ecd1a02b3e1444db56df9c
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install the official wheel from PyPI
+        run: |
+          python -m pip install --quiet "mediapipe==${{ inputs.mediapipe_version }}"
+          python -c "import mediapipe, platform; print('mediapipe', mediapipe.__version__, '|', platform.platform(), platform.machine())"
+          python -m pip download --quiet --no-deps --only-binary=:all: -d wheel "mediapipe==${{ inputs.mediapipe_version }}"
+          shasum -a 256 wheel/*.whl
+
+      - name: Download Google's model bundle and sample image, verify hashes
+        run: |
+          mkdir -p repro && cd repro
+          curl -sSfL -o model.tflite "$MODEL_URL"
+          curl -sSfL -o cats_and_dogs.jpg "$IMAGE_URL"
+          echo "$MODEL_SHA256  model.tflite" | shasum -a 256 -c -
+          echo "$IMAGE_SHA256  cats_and_dogs.jpg" | shasum -a 256 -c -
+
+      - name: Write the repro (Colab sample, unchanged except the delegate)
+        run: |
+          cat > repro/repro.py <<'EOF'
+          import sys
+          import mediapipe as mp
+          from mediapipe.tasks import python
+          from mediapipe.tasks.python import vision
+          from mediapipe.tasks.python.vision import interactive_segmenter
+
+          Stroke = interactive_segmenter.Stroke
+          StrokePoint = interactive_segmenter.StrokePoint
+          BrushMode = interactive_segmenter.BrushMode
+
+          delegate = python.BaseOptions.Delegate.GPU if sys.argv[1] == 'gpu' else python.BaseOptions.Delegate.CPU
+          base_options = python.BaseOptions(model_asset_path='model.tflite', delegate=delegate)  # added
+          options = vision.InteractiveSegmenterOptions(base_options=base_options)
+
+          with vision.InteractiveSegmenter.create_from_options(options) as segmenter:
+              image = mp.Image.create_from_file('cats_and_dogs.jpg')
+              segmenter.set_image(image)
+              strokes = [Stroke(brush_mode=BrushMode.POSITIVE,
+                                points=[StrokePoint(x=0.68, y=0.68)], is_completed=True)]
+              mask = segmenter.segment(strokes).numpy_view()   # raises here on GPU
+              print('OK:', int((mask.squeeze(-1) > 0.5).sum()), 'pixels selected')
+          EOF
+
+      - name: Run with Delegate.CPU (control)
+        working-directory: repro
+        run: GLOG_logtostderr=1 python -B repro.py cpu 2>&1 | tee cpu.log
+
+      - name: Run with Delegate.GPU (expected to fail)
+        working-directory: repro
+        run: |
+          set +e
+          GLOG_logtostderr=1 python -B repro.py gpu > gpu.log 2>&1
+          echo "exit=$?" | tee gpu.exit
+          grep -E "GL version|version '330'|Calculator::Open|^OK:" gpu.log || true
+
+      - name: Summarize
+        working-directory: repro
+        run: |
+          {
+            echo "## Interactive Segmenter on macOS-15 runner, mediapipe ${{ inputs.mediapipe_version }}"
+            echo
+            echo '```'
+            sw_vers
+            sysctl -n machdep.cpu.brand_string
+            echo '```'
+            echo
+            echo "### CPU"
+            echo '```'
+            grep -E "^OK:|Error|Traceback" cpu.log || tail -3 cpu.log
+            echo '```'
+            echo
+            echo "### GPU ($(cat gpu.exit))"
+            echo '```'
+            grep -E "GL version|Failed to compile|version '330'|heatmap_from_strokes|Calculator::Open|^OK:" gpu.log | sed -E 's/^[IWE]0000 [0-9: .]+ [0-9]+ //' || tail -5 gpu.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          grep -q "^OK:" cpu.log || { echo "CPU control did not produce a mask"; exit 1; }
+          if grep -q "^OK:" gpu.log; then
+            echo "::notice::GPU delegate produced a mask on this runner. The upstream bug may be fixed in this version."
+          else
+            echo "::notice::GPU delegate failed on this runner, as on physical Macs. See gpu.log in the artifact."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: interactive-segmenter-gpu-repro-${{ inputs.mediapipe_version }}
+          path: |
+            repro/cpu.log
+            repro/gpu.log
+            repro/gpu.exit
+            repro/repro.py
