@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shutil
 import subprocess
 import sys
 
@@ -73,6 +74,43 @@ def difference(reference, current):
 
     visit(reference["cases"], current["cases"], "cases")
     return {"numeric_groups": groups, "structural_differences": structural}
+
+
+def face_test_root(destination):
+    """Builds a face-only root package for the Dart suites.
+
+    This package's own pubspec selects tasks whose macOS runtime exists only in
+    a maintainer source build, so `dart test` run here cannot resolve its assets
+    on a machine without one. Only the root package's user_defines reach a build
+    hook, so an isolated root scoped to the two published face runtimes keeps
+    this job on the public download path it exists to check.
+    """
+    if destination.exists():
+        shutil.rmtree(destination)
+    (destination / "test").mkdir(parents=True)
+    for folder in ("support", "fixtures/face_detection", "fixtures/face_landmarker"):
+        shutil.copytree(PACKAGE / "test" / folder, destination / "test" / folder)
+    for name in ("face_detector_test.dart", "face_landmarker_test.dart"):
+        shutil.copyfile(PACKAGE / "test" / name, destination / "test" / name)
+    (destination / "models").mkdir()
+    for name in ("blaze_face_short_range.tflite", "face_landmarker.task"):
+        shutil.copyfile(PACKAGE / "models" / name, destination / "models" / name)
+    (destination / "pubspec.yaml").write_text(f"""name: mediapipe_gpu_face_tests
+publish_to: none
+environment:
+  sdk: ^3.12.0
+dependencies:
+  mediapipe_flutter_vision:
+    path: {PACKAGE}
+dev_dependencies:
+  crypto: ^3.0.6
+  test: ^1.31.0
+hooks:
+  user_defines:
+    mediapipe_flutter_vision:
+      tasks: [face_detector, face_landmarker]
+""")
+    return destination
 
 
 def main():
@@ -140,11 +178,15 @@ def main():
     print(f"Verified official GPU references: {output}", flush=True)
     if args.test:
         env["MEDIAPIPE_GPU_REFERENCE_DIR"] = str(output)
+        root = face_test_root(REPO / "build/gpu-face-tests")
         with (output / "dart-tests.log").open("w") as log:
-            result = subprocess.run([
-                "dart", "test", "test/face_detector_test.dart",
-                "test/face_landmarker_test.dart", "--reporter", "expanded",
-            ], cwd=PACKAGE, env=env, stdout=log, stderr=subprocess.STDOUT)
+            result = subprocess.run(["dart", "pub", "get"], cwd=root, env=env,
+                                    stdout=log, stderr=subprocess.STDOUT)
+            if result.returncode == 0:
+                result = subprocess.run([
+                    "dart", "test", "test/face_detector_test.dart",
+                    "test/face_landmarker_test.dart", "--reporter", "expanded",
+                ], cwd=root, env=env, stdout=log, stderr=subprocess.STDOUT)
         print("\n".join((output / "dart-tests.log").read_text().splitlines()[-30:]),
               flush=True)
         result.check_returncode()
