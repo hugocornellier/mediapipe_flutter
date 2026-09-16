@@ -1,0 +1,139 @@
+{
+  "source": "https://github.com/google-ai-edge/mediapipe.git",
+  "revision": "6d31f1ebc3284db74d211d62bdc4f0a0c29ea120",
+  "version": "1.0.0",
+  "target": "//mediapipe/tasks/c:libmediapipe",
+  "platform": "android",
+  "abi": "arm64-v8a",
+  "minimum_api": 24,
+  "validation_delegates": [
+    "cpu"
+  ],
+  "gpu_internals_compiled": true,
+  "flags": [
+    "--config=android_arm64",
+    "--cpu=arm64-v8a",
+    "--platforms=//third_party/android:arm64-v8a",
+    "--extra_toolchains=@androidndk//:all",
+    "--crosstool_top=//external:android/crosstool",
+    "--repo_env=HERMETIC_PYTHON_VERSION=3.12",
+    "--define=MEDIAPIPE_DISABLE_GPU=0",
+    "-c",
+    "opt",
+    "--strip=always",
+    "--jobs=8",
+    "--linkopt=-Wl,-z,max-page-size=16384",
+    "--linkopt=-Wl,-z,start-stop-visibility=hidden",
+    "--linkopt=-Wl,-u,MpAudioClassifierCreate",
+    "--linkopt=-Wl,-u,MpFaceDetectorCreate",
+    "--linkopt=-Wl,-u,MpFaceLandmarkerCreate",
+    "--linkopt=-Wl,-u,MpFlatbufferParserCreate",
+    "--linkopt=-Wl,-u,MpGestureRecognizerCreate",
+    "--linkopt=-Wl,-u,MpHandLandmarkerCreate",
+    "--linkopt=-Wl,-u,MpHolisticLandmarkerCreate",
+    "--linkopt=-Wl,-u,MpImageClassifierCreate",
+    "--linkopt=-Wl,-u,MpImageEmbedderCreate",
+    "--linkopt=-Wl,-u,MpImageSegmenterCreate",
+    "--linkopt=-Wl,-u,MpInteractiveSegmenterLegacyCreate",
+    "--linkopt=-Wl,-u,MpLanguageDetectorCreate",
+    "--linkopt=-Wl,-u,MpObjectDetectorCreate",
+    "--linkopt=-Wl,-u,MpPoseLandmarkerCreate",
+    "--linkopt=-Wl,-u,MpTextClassifierCreate",
+    "--linkopt=-Wl,-u,MpTextEmbedderCreate",
+    "--linkopt=-Wl,-u,MpImageCreateFromFile"
+  ],
+  "ndk_version": "28.2.13676358",
+  "toolchain_overlay": {
+    "path": "codex_android_toolchain",
+    "files": {
+      "BUILD.bazel": "6ee0fc19651767ca4c64f434f1da544ec4812d40ac8f52b535f25051ef62fb3d",
+      "repositories.bzl": "8f1d1a2815021fcce1d4c3da5fce070722b3de51c291fe057e1a7978a2b0e600"
+    },
+    "workspace_original_sha256": "dcaed81694c1b8d81fc0115abcf3f39f58981bb5947b621e65f4c024ba997976",
+    "workspace_sha256": "a9dd2f86f14b1368826b480da51c0647cd6d92f68405e1613b1f078ae1b5eacd",
+    "workspace_addition": "\nload(\"//codex_android_toolchain:repositories.bzl\", \"register_ndk\")\nregister_ndk()\n",
+    "task_build_original_sha256": "85f107690add3354f9fce991d98b36057c3525ccbe43981dc7307922e6953210",
+    "task_build_sha256": "81769a08ffd06160858c44b057586d445aa5ec158fa39eb22188e0c32e296ff4",
+    "android_link_selection": "\"@platforms//os:android\": [\n            \"-Wl,-soname=libmediapipe.so\",\n            \"-Wl,--version-script=$(location :mediapipe_tasks_c_version_script.lds)\",\n        ],\n        \"@platforms//os:linux\": [",
+    "opencv_sdk_sha256": "fd7f2332331b4eb8b67e55137281cfb16823c9399d90deb9cfa3476783b99e35",
+    "rules_archive_sha256": "89bf5012567a5bade4c78eac5ac56c336695c3bfd281a9b0894ff6605328d2d5"
+  },
+  "c_api_export_count": 114,
+  "export_map_sha256": "494d9e7536290f2559b73137b58f79edbfff58aa83a2eb097e415b0d3ed1a837",
+  "sha256": "1a01c7ebef93f0a113d8c9714c72b0012198d7dfc7dcff12207db67667de3658",
+  "bytes": 27679624,
+  "elf": {
+    "libmediapipe.so": {
+      "needed": [
+        "libEGL.so",
+        "libGLESv2.so",
+        "libandroid.so",
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libopencv_java4.so"
+      ],
+      "load_alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "soname": "libmediapipe.so"
+    },
+    "libopencv_java4.so": {
+      "needed": [
+        "libc++_shared.so",
+        "libc.so",
+        "libdl.so",
+        "libjnigraphics.so",
+        "liblog.so",
+        "libm.so",
+        "libmediandk.so",
+        "libz.so"
+      ],
+      "load_alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "soname": "libopencv_java4.so"
+    },
+    "libc++_shared.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "libm.so"
+      ],
+      "load_alignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "soname": "libc++_shared.so"
+    }
+  },
+  "dependencies": {
+    "libopencv_java4.so": "144bbc9ad0b0bac4ba58f7d53198aead64379e5314f68200968c703d2c1c14ab",
+    "libc++_shared.so": "ab4e6c71b96b851de45a8a9bd86369e7dbc2130a44b3b4520564be94847910f2"
+  },
+  "tasks": [
+    "audio_classifier",
+    "face_detector",
+    "face_landmarker",
+    "gesture_recognizer",
+    "hand_landmarker",
+    "holistic_landmarker",
+    "image_classifier",
+    "image_embedder",
+    "image_segmenter",
+    "interactive_segmenter_legacy",
+    "language_detector",
+    "object_detector",
+    "pose_landmarker",
+    "text_classifier",
+    "text_embedder"
+  ],
+  "validation": "Build/export checks only; Android inference has not been validated."
+}

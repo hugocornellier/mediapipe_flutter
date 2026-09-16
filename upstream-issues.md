@@ -343,6 +343,39 @@ string naming OpenCV 4.13.0, whereas the local builders pin OpenCV 4.12.0. That
 embedded string also describes a Linux x64 build, so it is not sufficient evidence
 of the Mac binary's actual build configuration or of a cause for these differences.
 
+## UP010 — Android combined runtime needs C API export isolation
+
+Observed September 16 with pinned MediaPipe v1.0.0, NDK 28.2.13676358,
+OpenCV 4.12.0's Android SDK, and an arm64 Android 16 emulator using 16 KB pages.
+The first combined runtime built and exported all 114 C APIs, but the native
+face probe crashed before entering inference. The Android crash backtrace ends
+at `/system/lib64/libprotobuf-cpp-lite.so (_GLOBAL__I_000101+60)` during linker
+constructor initialization. The runtime exported internal C++/protobuf symbols;
+this behavior is consistent with symbol interposition against system protobuf.
+
+Upstream's task BUILD applies its existing C API version script only to Linux.
+A recorded Android-specific BUILD selection now applies that same map to the
+combined library. `-z start-stop-visibility=hidden` also hides linker-generated
+`__start_pb_defaults` and `__stop_pb_defaults` symbols. The resulting runtime
+exports only the public C APIs and its version definition. Both native CPU face
+IMAGE probes then pass on the same emulator. No task source/graph code changed.
+
+The GPU-disabled Android build also fails compiling `gl_texture_buffer_pool.cc`
+because it includes `gl_context.h` while `GlVersion` and `GlTextureInfo` are
+hidden. The candidate uses Android's normal GL-enabled configuration and
+selects CPU delegates for validation. Its probes initialize EGL even with CPU
+delegates; a functioning GL context is therefore part of the tested environment.
+GPU inference remains unvalidated.
+
+Reproduce with `tool/build_android.py` and `tool/test_android_native.py` in the
+vision package; see [the Android guide](packages/mediapipe-task-vision/tool/ANDROID.md).
+The passing runtime has SHA-256
+`1a01c7ebef93f0a113d8c9714c72b0012198d7dfc7dcff12207db67667de3658`.
+Build and smoke receipts are under `tool/validations/2026-09-16-android-native/`.
+These probes check loading, ABI and result counts, not Flutter packaging,
+numerical reference parity or physical-device performance. Android package
+support remains undeclared. This issue has not been filed upstream.
+
 ## Integration pitfalls resolved in this repo
 
 These are recorded for continuity, not classified as confirmed MediaPipe defects.

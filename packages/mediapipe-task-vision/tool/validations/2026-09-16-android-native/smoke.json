@@ -1,0 +1,22 @@
+{
+  "target": "android/arm64",
+  "device": "emulator-5554",
+  "revision": "6d31f1ebc3284db74d211d62bdc4f0a0c29ea120",
+  "ndk_version": "28.2.13676358",
+  "libraries": {
+    "libmediapipe.so": "1a01c7ebef93f0a113d8c9714c72b0012198d7dfc7dcff12207db67667de3658",
+    "libopencv_java4.so": "144bbc9ad0b0bac4ba58f7d53198aead64379e5314f68200968c703d2c1c14ab",
+    "libc++_shared.so": "ab4e6c71b96b851de45a8a9bd86369e7dbc2130a44b3b4520564be94847910f2"
+  },
+  "status": "passed",
+  "scope": "Native face IMAGE ABI/count smoke only; Flutter/reference tests still required.",
+  "ro.product.cpu.abi": "arm64-v8a",
+  "ro.build.version.sdk": "36",
+  "ro.kernel.qemu": "1",
+  "page_size": 16384,
+  "inputs": {
+    "blaze_face_short_range.tflite": "b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f",
+    "face_landmarker.task": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+    "landmark-ex1.jpg": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
+  }
+}
