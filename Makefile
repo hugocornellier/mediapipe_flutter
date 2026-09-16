@@ -25,12 +25,10 @@ models:
 # Optional maintainer build; consumers download the pinned prebuilt runtime.
 native_vision:
 	cd packages/mediapipe-task-vision && python3 tool/build_native.py $(VISION_NATIVE_ARGS)
-	cd packages/mediapipe-task-vision && python3 tool/build_native.py --task face_landmarker $(VISION_NATIVE_ARGS)
 
 # Prepare a reviewable public archive from an already tested native build.
 release_vision:
 	cd packages/mediapipe-task-vision && python3 tool/prepare_native_release.py
-	cd packages/mediapipe-task-vision && python3 tool/prepare_native_release.py --task face_landmarker
 
 analyze:
 	@for package in $(ALL_PACKAGES); do (cd "$$package" && dart analyze --fatal-infos) || exit $$?; done

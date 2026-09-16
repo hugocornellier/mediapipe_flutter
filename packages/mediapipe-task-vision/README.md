@@ -249,14 +249,22 @@ Maintainers can still build the official runtime with Python 3, Xcode, and
 
 ```sh
 python3 tool/build_native.py
-python3 tool/build_native.py --task face_landmarker
 ```
+
+One invocation builds `//mediapipe/tasks/c:libmediapipe`, Google's own wheel
+target, which exports every task the open-source C API offers: 11 vision tasks,
+the 3 classic text tasks and the audio classifier. Linking each task into its own
+dylib instead would repeat the shared graph runtime, about 12 MB, in every one.
+The task list is read from that target's `BUILD` dependencies rather than pinned
+here, so an upstream addition or removal shows up as a changed manifest instead
+of drifting silently. MagicTouch, the modern stateful interactive segmenter, is
+not open source and is served by core's official 1.0.1 runtime instead.
 
 The first native build downloads pinned MediaPipe/OpenCV sources and build
 dependencies; allow several minutes and several GB of build space. Later builds
 reuse the Bazel/CMake caches. The hook prefers a verified package-local
-`build/native/libface_detector.dylib` when present, preserving source-build tests.
-Face Landmarker uses `build/native/face_landmarker/libface_landmarker.dylib`.
+`build/native/tasks/libmediapipe.dylib` when present, preserving source-build
+tests.
 To force the public runtime in a maintainer checkout, add this to the root app's
 `pubspec.yaml`:
 

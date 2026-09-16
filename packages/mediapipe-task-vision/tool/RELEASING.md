@@ -9,17 +9,21 @@ repository's Git history, package code, model files, or test fixtures there.
 ## Prepare and test
 
 1. Choose a new release tag for every rebuild, even when upstream versions are
-   unchanged. Update the task's entry in `RELEASE_TAGS` in
-   `prepare_native_release.py`; consumer tests read the same expected tags.
-   Initial releases are `face-detector-v1.0.0-1` and `face-landmarker-v1.0.0-1`.
-   The `-2` releases add CPU and Metal in each task library. Release builds must
-   pass both native smoke modes on a Metal-capable Mac; the builder checks the
-   delegate creation log and Objective-C class namespace before packaging.
+   unchanged, and set it as `TAG` in `prepare_native_release.py`. `RELEASE_TAGS`
+   in the same file is a separate list: the releases `sdk_downloads.dart`
+   actually pins, which consumer tests assert the hook extracted. Move a tag
+   into `RELEASE_TAGS` only once it is published and pinned, never before.
+   `vision-v1.0.0-1` is the first combined runtime; it supersedes
+   `face-detector-v1.0.0-2` and `face-landmarker-v1.0.0-2`, which stay pinned
+   until it is published. Release builds must pass every native smoke mode on a
+   Metal-capable Mac; the builder checks the delegate creation log and the
+   Objective-C class namespace before packaging.
 2. Run the pinned source build and native/inference tests (`make ci` from the
    repository root). This tests the local source build; it does not publish it.
 3. Run `python3 tool/prepare_native_release.py` from this package directory.
-   For the mesh runtime, add `--task face_landmarker` to both the source builder
-   and release preparation command.
+   One invocation covers every task: the source builder links
+   `//mediapipe/tasks/c:libmediapipe`, so a single `libmediapipe.dylib` exports
+   all 11 vision tasks, the 3 classic text tasks and the audio classifier.
    Inspect the generated archive, `manifest.json`, `SHA256SUMS`, README, and
    release notes under `build/releases/<tag>/`. The preparation step removes
    local paths from the manifest and normalizes tar/gzip timestamps and owners.
