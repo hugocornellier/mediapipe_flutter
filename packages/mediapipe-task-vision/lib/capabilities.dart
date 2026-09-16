@@ -21,8 +21,11 @@ TaskCapabilities<VisionDelegate> interactiveSegmenterCapabilitiesForPlatform(
   cpu: VisionDelegate.cpu,
   gpu: VisionDelegate.gpu,
   gpuUnavailableReason:
-      'The official MediaPipe 1.0.1 macOS GPU stroke shader requests GLSL 330 '
-      'in an OpenGL 2.1 context and fails to compile. This task supports CPU only.',
+      'The official MediaPipe macOS GPU stroke shader requests GLSL 330 in an '
+      'OpenGL 2.1 context and fails to compile. Confirmed on both the 1.0.0 and '
+      '1.0.1 official runtimes, so it is not fixed by changing version. Metal '
+      'itself is fine; only GL-shader calculators are affected. This task '
+      'supports CPU only.',
 );
 
 /// Describe the package's Object Detector support on this process platform.
