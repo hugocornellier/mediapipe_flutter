@@ -78,7 +78,7 @@ def main():
              'face_landmarker/official_reference.json']
     for task, folder in [('face_detector', 'face_detection'),
                          ('face_landmarker', 'face_landmarker')]:
-        run([python, '-B', PACKAGE / f'tool/generate_{task}_reference.py',
+        run([python, '-u', '-X', 'faulthandler', '-B', PACKAGE / f'tool/generate_{task}_reference.py',
              '--output-dir', references / folder], REPO, root / f'{task}-reference.log')
     from prepare_gpu_reference import difference
     comparisons = {}
