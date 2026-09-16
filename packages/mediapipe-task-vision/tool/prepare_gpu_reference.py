@@ -26,10 +26,19 @@ WHEEL_URL = (
     "mediapipe-1.0.0-py3-none-macosx_11_0_arm64.whl"
 )
 WHEEL_SHA256 = "7ee4783be41b2de345e1eb71e2f7e7c159a50ed5c283e60ccb8f5a6027c70a82"
-FILES = (
+FACE_TASKS = (("face_detector", "face_detection"),
+              ("face_landmarker", "face_landmarker"))
+FACE_FILES = (
     "face_detection/official_gpu_reference.json",
     "face_detection/official_gpu_video_reference.json",
     "face_landmarker/official_gpu_reference.json",
+)
+# Every suite reading a GPU reference under MEDIAPIPE_GPU_REFERENCE_DIR needs
+# its references generated here; a missing one fails the suite at load time.
+OBJECT_TASKS = (("object_detector", "object_detection"),)
+OBJECT_FILES = (
+    "object_detection/official_gpu_reference.json",
+    "object_detection/official_gpu_video_reference.json",
 )
 
 
@@ -119,7 +128,13 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=REPO / "build/gpu-reference")
     parser.add_argument("--test", action="store_true",
                         help="Also run both Dart face suites with these references")
+    # Opt-in because the public-runtime comparison job downloads face models only.
+    parser.add_argument("--object-detector", action="store_true",
+                        help="Also generate Object Detector references, for a "
+                             "checkout whose object detection model is present")
     args = parser.parse_args()
+    tasks = FACE_TASKS + (OBJECT_TASKS if args.object_detector else ())
+    files = FACE_FILES + (OBJECT_FILES if args.object_detector else ())
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         raise SystemExit("GPU references require macOS arm64.")
     output = args.output_dir.resolve()
@@ -142,8 +157,7 @@ def main():
     env = {**os.environ, "MPLCONFIGDIR": str(output / "matplotlib")}
     summaries = {}
     graphics = {}
-    for task, folder in (("face_detector", "face_detection"),
-                         ("face_landmarker", "face_landmarker")):
+    for task, folder in tasks:
         log_file = output / (task + ".log")
         command = [str(python), "-B", str(PACKAGE / "tool" /
                    f"generate_{task}_reference.py"), "--delegate", "gpu",
@@ -157,7 +171,7 @@ def main():
         if "Created TensorFlow Lite delegate for Metal." not in log:
             raise RuntimeError(f"Official {task} did not confirm Metal creation")
         graphics[task] = sorted(set(re.findall(r"GL version:.*", log)))
-    for name in FILES:
+    for name in files:
         baseline = json.loads((PACKAGE / "test/fixtures" / name).read_text())
         reference = json.loads((output / name).read_text())
         summaries[name] = difference(baseline, reference)
@@ -167,7 +181,7 @@ def main():
         "wheel_url": WHEEL_URL, "wheel_sha256": WHEEL_SHA256,
         "delegate": "GPU", "metal_confirmed": True,
         "os": platform.platform(), "machine": platform.machine(),
-        "graphics": graphics, "files": {name: digest(output / name) for name in FILES},
+        "graphics": graphics, "files": {name: digest(output / name) for name in files},
         "checked_in_reference_differences": summaries,
         "scope": "Official wheel on this host versus checked-in physical-Mac "
                  "GPU references. Dart tests separately compare the native task "
