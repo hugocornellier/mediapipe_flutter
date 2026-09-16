@@ -85,9 +85,11 @@ def main():
 
         # Decimate the official decoder's RGB pixels to a small, odd-width input.
         # The resulting bytes are checked in so no test depends on a JPEG decoder.
-        pixels = mp.Image.create_from_file(
+        decoded = mp.Image.create_from_file(
             str(FIXTURES / "mesh-ex1.jpeg")
-        ).numpy_view()[::20, ::20, :3].copy()
+        )
+        # numpy_view borrows native storage; retain its owner until copying.
+        pixels = decoded.numpy_view()[::20, ::20, :3].copy()
         raw = FIXTURES / "portrait-301x209.rgb"
         if args.output_dir:
             # A host comparison must use exactly the checked-in fixture bytes.
