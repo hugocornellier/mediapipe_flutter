@@ -17,6 +17,15 @@ enum VisionLibraryTarget {
   iosSimulatorArm64,
 }
 
+/// The validation target for a hook build target string; see `buildTarget`.
+VisionLibraryTarget visionLibraryTarget(String target) => switch (target) {
+  'macos/arm64' => VisionLibraryTarget.macosArm64,
+  'ios-simulator/arm64' => VisionLibraryTarget.iosSimulatorArm64,
+  _ => throw UnsupportedError(
+    'mediapipe_flutter_vision has no native runtime validation for $target.',
+  ),
+};
+
 Set<String> _requiredFiles(String libraryName) => {
   libraryName,
   'manifest.json',

@@ -62,6 +62,26 @@ Future<File> downloadVerified(
   }
 }
 
+/// The build target a hook produces assets for: `macos/arm64`,
+/// `ios-simulator/arm64`, `ios/arm64`, `linux/x64`, `windows/arm64`, and so on.
+///
+/// Runtime tables are keyed by this string. The iOS simulator is a separate
+/// target because its binaries are built with a different SDK than devices.
+String buildTarget(CodeConfig code) {
+  final os = code.targetOS;
+  final platform = os == OS.iOS && code.iOS.targetSdk == IOSSdk.iPhoneSimulator
+      ? 'ios-simulator'
+      : os.toString();
+  return '$platform/${code.targetArchitecture}';
+}
+
+/// Rejects static linking, which no MediaPipe runtime supports.
+void requireDynamicLinking(CodeConfig code) {
+  if (code.linkModePreference == LinkModePreference.static) {
+    throw UnsupportedError('MediaPipe requires dynamic library bundling.');
+  }
+}
+
 /// Bundles the pinned library for the exact OS, architecture, and Apple SDK.
 Future<void> buildNativeLibrary(
   BuildInput input,

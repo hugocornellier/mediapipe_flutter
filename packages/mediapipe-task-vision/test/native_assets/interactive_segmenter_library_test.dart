@@ -54,14 +54,15 @@ void main() {
     await cache.delete(recursive: true);
   });
 
-  Future<File> download({String? checksum}) =>
-      downloadInteractiveSegmenterLibrary(
-        asset: (
-          url: 'http://127.0.0.1:$port/runtime.tar.gz',
-          sha256: checksum ?? sha256.convert(response).toString(),
-        ),
-        cache: cache,
-      );
+  final release = tasksRuntimeReleases['macos/arm64']!;
+
+  Future<File> download({String? checksum}) => downloadTasksRuntime(
+    release: release.withArchive((
+      url: 'http://127.0.0.1:$port/runtime.tar.gz',
+      sha256: checksum ?? sha256.convert(response).toString(),
+    )),
+    cache: cache,
+  );
 
   test(
     'pinned archive installs, works offline and repairs corrupt cache',
@@ -100,7 +101,7 @@ void main() {
           jsonEncode({...original, change.key: change.value}),
         );
         await expectLater(
-          validateInteractiveSegmenterLibrary(library.parent),
+          validateTasksRuntime(library.parent, release: release),
           throwsStateError,
         );
       }
@@ -109,7 +110,7 @@ void main() {
         library.parent.uri.resolve('LICENSE'),
       ).writeAsString('changed license');
       await expectLater(
-        validateInteractiveSegmenterLibrary(library.parent),
+        validateTasksRuntime(library.parent, release: release),
         throwsStateError,
       );
     },
@@ -130,7 +131,7 @@ void main() {
     ArchiveFile.string('../outside', 'bad'),
     ArchiveFile.string('/absolute', 'bad'),
     ArchiveFile.string('extra.txt', 'bad'),
-    ArchiveFile.symlink(interactiveSegmenterLibraryName, '../../outside'),
+    ArchiveFile.symlink(release.libraryName, '../../outside'),
   ]) {
     test('rejects unsafe/unexpected entry ${extra.name}', () async {
       response = GZipEncoder().encodeBytes(

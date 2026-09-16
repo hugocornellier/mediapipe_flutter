@@ -1,29 +1,130 @@
 import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
 
-// A rebuild gets a new release tag and new digests. Never replace this asset
-// in-place or resolve a floating "latest" URL from the build hook.
-const DownloadAsset faceDetectorArchive = (
-  url:
-      'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
-      'download/face-detector-v1.0.0-2/'
-      'mediapipe-face-detector-1.0.0-macos-arm64.tar.gz',
-  sha256: 'bbebd7ef2cfd95df89a757f6d8620c1fb5a12a2d55c2858082fecacf979ab87c',
-);
+/// Every task name accepted by `hooks.user_defines.mediapipe_flutter_vision.tasks`.
+///
+/// Tasks other than MagicTouch come from the pinned v1.0.0 source build;
+/// MagicTouch is served by core's shared official 1.0.1 runtime.
+const visionTasks = {
+  'face_detector',
+  'face_landmarker',
+  'gesture_recognizer',
+  'hand_landmarker',
+  'holistic_landmarker',
+  'image_classifier',
+  'image_embedder',
+  'image_segmenter',
+  'interactive_segmenter',
+  'interactive_segmenter_legacy',
+  'object_detector',
+  'pose_landmarker',
+};
 
-const faceDetectorLibrarySha256 =
-    'c57d0698684e0abcb6a2cfb5a7d38855a7044a43c9714add50f92f36525c9497';
+/// The one task served by core's runtime instead of a vision release.
+const sharedRuntimeTask = 'interactive_segmenter';
 
-const DownloadAsset faceLandmarkerArchive = (
-  url:
-      'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
-      'download/face-landmarker-v1.0.0-2/'
-      'mediapipe-face-landmarker-1.0.0-macos-arm64.tar.gz',
-  sha256: '0c72b6af47508a50a67a137bc5313c990d91da8a819041431bf6408aa5656f83',
-);
+/// A pinned, immutable source-built runtime covering [tasks] on one target.
+///
+/// A rebuild gets a new release tag and new digests. Never replace an archive
+/// in place or resolve a floating "latest" URL from the build hook.
+final class VisionRuntimeRelease {
+  /// Describe a published release.
+  const VisionRuntimeRelease({
+    required this.target,
+    required this.release,
+    required this.tasks,
+    required this.archive,
+    required this.libraryName,
+    required this.librarySha256,
+    required this.assetName,
+    required this.localBuildDirectory,
+  });
 
-const faceLandmarkerLibrarySha256 =
-    '825cdbb58d763d87a0e35b8c38406ac738841ac7bbe1af6888de5b7e1074f4f9';
+  /// Build target such as `macos/arm64`; see `buildTarget`.
+  final String target;
+
+  /// Release tag in the public native runtime repository.
+  final String release;
+
+  /// Tasks whose C API this library exports.
+  final Set<String> tasks;
+
+  /// The archive holding the library, notices and `manifest.json`.
+  final DownloadAsset archive;
+
+  /// Bundle filename of the library inside the archive.
+  final String libraryName;
+
+  /// SHA-256 of the library, pinned independently of the downloaded manifest.
+  final String librarySha256;
+
+  /// Code asset name the bindings reference, without the package prefix.
+  final String assetName;
+
+  /// Package-relative directory where `tool/build_native.py` writes the same
+  /// library, so maintainers can test a source build before publishing it.
+  final String localBuildDirectory;
+}
+
+/// Published vision runtimes. Add a row per (release, target); the hook
+/// downloads each release that covers a selected task exactly once.
+const visionRuntimeReleases = <VisionRuntimeRelease>[
+  VisionRuntimeRelease(
+    target: 'macos/arm64',
+    release: 'face-detector-v1.0.0-2',
+    tasks: {'face_detector'},
+    archive: (
+      url:
+          'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
+          'download/face-detector-v1.0.0-2/'
+          'mediapipe-face-detector-1.0.0-macos-arm64.tar.gz',
+      sha256:
+          'bbebd7ef2cfd95df89a757f6d8620c1fb5a12a2d55c2858082fecacf979ab87c',
+    ),
+    libraryName: 'libface_detector.dylib',
+    librarySha256:
+        'c57d0698684e0abcb6a2cfb5a7d38855a7044a43c9714add50f92f36525c9497',
+    assetName: 'face_detector.dylib',
+    localBuildDirectory: 'build/native/',
+  ),
+  VisionRuntimeRelease(
+    target: 'macos/arm64',
+    release: 'face-landmarker-v1.0.0-2',
+    tasks: {'face_landmarker'},
+    archive: (
+      url:
+          'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
+          'download/face-landmarker-v1.0.0-2/'
+          'mediapipe-face-landmarker-1.0.0-macos-arm64.tar.gz',
+      sha256:
+          '0c72b6af47508a50a67a137bc5313c990d91da8a819041431bf6408aa5656f83',
+    ),
+    libraryName: 'libface_landmarker.dylib',
+    librarySha256:
+        '825cdbb58d763d87a0e35b8c38406ac738841ac7bbe1af6888de5b7e1074f4f9',
+    assetName: 'face_landmarker.dylib',
+    localBuildDirectory: 'build/native/face_landmarker/',
+  ),
+];
+
+/// Targets whose vision runtimes exist only as maintainer builds made by
+/// `tool/build_ios_simulator.py`; nothing is published for them yet.
+const localOnlyVisionTargets = {'ios-simulator/arm64'};
+
+/// Kept for callers that pin the face detector archive directly.
+DownloadAsset get faceDetectorArchive => visionRuntimeReleases[0].archive;
+
+/// Kept for callers that pin the face detector library digest directly.
+String get faceDetectorLibrarySha256 => visionRuntimeReleases[0].librarySha256;
+
+/// Kept for callers that pin the face landmarker archive directly.
+DownloadAsset get faceLandmarkerArchive => visionRuntimeReleases[1].archive;
+
+/// Kept for callers that pin the face landmarker library digest directly.
+String get faceLandmarkerLibrarySha256 =>
+    visionRuntimeReleases[1].librarySha256;
 
 // Explicit opt-in only. Native bytes originate from Google's 1.0.1 wheel.
-const DownloadAsset interactiveSegmenterArchive = tasksRuntimeArchive;
+/// The shared runtime archive MagicTouch is served from, for macOS arm64.
+DownloadAsset get interactiveSegmenterArchive =>
+    tasksRuntimeReleases['macos/arm64']!.archive;
