@@ -160,7 +160,13 @@ const visionWheelReleases = <String, VisionWheelRelease>{
     librarySha256:
         '35ef4187d381addb1309f0f9dedd32613127fa98d1ad1f5ddeea57595cdbcaf0',
     notices: _wheelNotices,
-    tasks: {'face_detector', 'face_landmarker', 'object_detector'},
+    tasks: {
+      'face_detector',
+      'face_landmarker',
+      'object_detector',
+      'image_classifier',
+      'image_embedder',
+    },
   ),
   'windows/x64': VisionWheelRelease(
     target: 'windows/x64',
@@ -176,7 +182,13 @@ const visionWheelReleases = <String, VisionWheelRelease>{
     librarySha256:
         'a8970c645c8c87c25ec9965cb5c898e803c6c42f7192b7de9a0541c62ae48cef',
     notices: _wheelNotices,
-    tasks: {'face_detector', 'face_landmarker', 'object_detector'},
+    tasks: {
+      'face_detector',
+      'face_landmarker',
+      'object_detector',
+      'image_classifier',
+      'image_embedder',
+    },
   ),
 };
 

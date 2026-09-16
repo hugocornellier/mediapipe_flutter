@@ -16,3 +16,7 @@ export 'src/interface/interactive_segmenter_types.dart';
 export 'src/io/interactive_segmenter.dart';
 export 'src/interface/object_detector_types.dart';
 export 'src/io/object_detector.dart';
+export 'src/interface/image_classifier_types.dart';
+export 'src/io/image_classifier.dart';
+export 'src/interface/image_embedder_types.dart';
+export 'src/io/image_embedder.dart';

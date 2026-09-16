@@ -57,6 +57,7 @@ def main():
     sys.stderr.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--object-detector', action='store_true')
+    parser.add_argument('--image-tasks', action='store_true')
     args = parser.parse_args()
     system = platform.system()
     target = {'Linux': 'linux', 'Windows': 'windows'}.get(system)
@@ -76,6 +77,9 @@ def main():
               ('faceLandmarker', 'face_landmarker.task')]
     if args.object_detector:
         models.append(('efficientDetLite0', 'efficientdet_lite0.tflite'))
+    if args.image_tasks:
+        models += [('efficientNetLite0', 'efficientnet_lite0.tflite'),
+                   ('mobileNetV3Small', 'mobilenet_v3_small.tflite')]
     for prefix, name in models:
         url = dart_strings(re.search(r'const ' + prefix + r'Url\s*=(.*?);', model_pins, re.S).group(1))
         sha = dart_strings(re.search(r'const ' + prefix + r'Sha256\s*=(.*?);', model_pins, re.S).group(1))
@@ -95,6 +99,9 @@ def main():
     if args.object_detector:
         tasks.append(('object_detector', 'object_detection'))
         files += ['object_detection/official_reference.json', 'object_detection/official_video_reference.json']
+    if args.image_tasks:
+        tasks.append(('image_tasks', 'image_tasks'))
+        files.append('image_tasks/official_reference.json')
     for task, folder in tasks:
         run([python, '-u', '-X', 'faulthandler', '-B', PACKAGE / f'tool/generate_{task}_reference.py',
              '--output-dir', references / folder], REPO, root / f'{task}-reference.log')
@@ -161,6 +168,12 @@ flutter:
             'tasks: [face_detector, face_landmarker]',
             'tasks: [face_detector, face_landmarker, object_detector]') +
             '    - assets/object_detector.tflite\n')
+    if args.image_tasks:
+        pubspec = app / 'pubspec.yaml'
+        pubspec.write_text(pubspec.read_text().replace(
+            'face_landmarker,', 'face_landmarker, image_classifier, image_embedder,')
+            .replace('face_landmarker]', 'face_landmarker, image_classifier, image_embedder]') +
+            '    - assets/image_classifier.tflite\n    - assets/image_embedder.tflite\n')
     assets = app / 'assets'
     assets.mkdir()
     for source, name in [(PACKAGE / 'models/blaze_face_short_range.tflite', 'model.tflite'),
@@ -169,6 +182,9 @@ flutter:
         shutil.copyfile(source, assets / name)
     if args.object_detector:
         shutil.copyfile(PACKAGE / 'models/efficientdet_lite0.tflite', assets / 'object_detector.tflite')
+    if args.image_tasks:
+        shutil.copyfile(PACKAGE / 'models/efficientnet_lite0.tflite', assets / 'image_classifier.tflite')
+        shutil.copyfile(PACKAGE / 'models/mobilenet_v3_small.tflite', assets / 'image_embedder.tflite')
     shutil.copytree(PACKAGE / 'models', app / 'models',
                     ignore=shutil.ignore_patterns('*.xnnpack_cache'))
     for folder in ['fixtures/face_detection', 'fixtures/face_landmarker', 'support']:
@@ -179,6 +195,9 @@ flutter:
         shutil.copytree(PACKAGE / 'test/fixtures/object_detection', app / 'test/fixtures/object_detection')
         shutil.copyfile(PACKAGE / 'test/object_detector_test.dart', app / 'test/object_detector_test.dart')
         shutil.copyfile(PACKAGE / 'test/capabilities_test.dart', app / 'test/capabilities_test.dart')
+    if args.image_tasks:
+        shutil.copytree(PACKAGE / 'test/fixtures/image_tasks', app / 'test/fixtures/image_tasks')
+        shutil.copyfile(PACKAGE / 'test/image_tasks_test.dart', app / 'test/image_tasks_test.dart')
     (app / 'test/native_assets').mkdir()
     shutil.copyfile(PACKAGE / 'test/native_assets/wheel_library_test.dart',
                     app / 'test/native_assets/wheel_library_test.dart')
@@ -190,6 +209,9 @@ flutter:
         if args.object_detector and destination == 'lib/main.dart':
             content = content.replace('      stdout.writeln(', '      await runObjectDetectorSmoke();\n      stdout.writeln(')
             content += (PACKAGE / 'tool/flutter_desktop_object_smoke.dart.template').read_text()
+        if args.image_tasks and destination == 'lib/main.dart':
+            content = content.replace('      stdout.writeln(', '      await runImageTasksSmoke();\n      stdout.writeln(')
+            content += (PACKAGE / 'tool/flutter_desktop_image_smoke.dart.template').read_text()
         (app / destination).write_text(content)
     env = {**os.environ, 'MEDIAPIPE_CPU_REFERENCE_DIR': str(references)}
     run(['flutter', 'pub', 'get'], app, root / 'pub.log', env)
@@ -216,6 +238,8 @@ flutter:
             raise RuntimeError(f'{mode} app did not confirm inference')
         if args.object_detector and 'Object Detector CPU inference passed.' not in log.read_text():
             raise RuntimeError(f'{mode} app did not confirm Object Detector inference')
+        if args.image_tasks and 'Image Classifier and Image Embedder CPU inference passed.' not in log.read_text():
+            raise RuntimeError(f'{mode} app did not confirm image task inference')
         report['modes'][mode] = {'inference': 'passed',
                                  'bundled_libraries': [str(path.relative_to(bundle)) for path in libraries]}
     (root / 'report.json').write_text(json.dumps(report, indent=2))

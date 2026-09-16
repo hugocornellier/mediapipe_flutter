@@ -8,6 +8,28 @@ export 'package:mediapipe_flutter_core/capabilities.dart'
     show TaskCapabilities, TaskPlatform;
 export 'src/interface/vision_types.dart' show VisionDelegate;
 
+/// Query Image Classifier and Image Embedder's validated CPU runtimes.
+Future<TaskCapabilities<VisionDelegate>> queryImageTaskCapabilities() async =>
+    imageTaskCapabilitiesForPlatform(await currentTaskPlatform());
+
+/// Evaluate the two image tasks without loading native code or a model.
+TaskCapabilities<VisionDelegate> imageTaskCapabilitiesForPlatform(
+  TaskPlatform platform,
+) => TaskCapabilities.onTargets(
+  platform: platform,
+  delegates: const {
+    VisionDelegate.cpu: {'linux/x64': null, 'windows/x64': null},
+    VisionDelegate.gpu: {},
+  },
+  runtimeVersion: '1.0.0',
+  unavailableReasons: const {
+    VisionDelegate.cpu:
+        'Image task CPU inference currently requires Linux x64 or Windows x64. '
+        'The macOS source runtime has an XNNPACK SME SIGILL under investigation.',
+    VisionDelegate.gpu: 'Image task GPU inference has not been validated.',
+  },
+);
+
 /// Describe the package's stateful MagicTouch support on this process platform.
 Future<TaskCapabilities<VisionDelegate>>
 queryInteractiveSegmenterCapabilities() async =>

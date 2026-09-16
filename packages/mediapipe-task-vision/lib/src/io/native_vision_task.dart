@@ -1,0 +1,117 @@
+import 'dart:ffi';
+import 'dart:io';
+
+import 'package:ffi/ffi.dart';
+
+import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
+import '../interface/vision_task_types.dart';
+import 'native_vision_image.dart';
+
+/// Initialize the shared base options with owned model bytes or a model path.
+void setVisionBaseOptions(
+  Arena arena,
+  mp.MpBaseOptions base,
+  VisionModelOptions options,
+) {
+  if (!Platform.isMacOS && options.delegate == VisionDelegate.gpu) {
+    throw UnsupportedError('GPU vision inference is validated on macOS only.');
+  }
+  base.file_descriptor = -1;
+  base.delegate = options.delegate == VisionDelegate.gpu
+      ? mp.MpDelegate.MP_DELEGATE_GPU
+      : mp.MpDelegate.MP_DELEGATE_CPU;
+  base.host_system = Platform.isLinux
+      ? mp.MpHostSystem.MP_HOST_SYSTEM_LINUX
+      : Platform.isWindows
+      ? mp.MpHostSystem.MP_HOST_SYSTEM_WINDOWS
+      : Platform.isIOS
+      ? mp.MpHostSystem.MP_HOST_SYSTEM_IOS
+      : mp.MpHostSystem.MP_HOST_SYSTEM_MAC;
+  if (options.modelPath case final path?) {
+    base.model_asset_path = path.toNativeUtf8(allocator: arena).cast();
+  }
+  if (options.modelBytes case final bytes?) {
+    final buffer = arena<Uint8>(bytes.length);
+    buffer.asTypedList(bytes.length).setAll(0, bytes);
+    base.model_asset_buffer = buffer.cast();
+    base.model_asset_buffer_count = bytes.length;
+  }
+}
+
+/// Convert the public running mode into the native task enum.
+mp.MpRunningMode nativeVisionRunningMode(VisionRunningMode mode) =>
+    mode == VisionRunningMode.video
+    ? mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
+    : mp.MpRunningMode.MP_RUNNING_MODE_IMAGE;
+
+/// Populate native rotation and optional normalized region of interest.
+Pointer<mp.MpImageProcessingOptions> visionProcessingOptions(
+  Arena arena,
+  int rotation,
+  VisionRegionOfInterest? region,
+) {
+  final options = arena<mp.MpImageProcessingOptions>();
+  options.ref.rotation_degrees = rotation;
+  if (region != null) {
+    options.ref.has_region_of_interest = 1;
+    options.ref.region_of_interest
+      ..left = region.left
+      ..top = region.top
+      ..right = region.right
+      ..bottom = region.bottom;
+  }
+  return options;
+}
+
+/// Copy native category labels and scores before closing the result.
+VisionCategory copyVisionCategory(mp.MpCategory category) => VisionCategory(
+  index: category.index,
+  score: category.score,
+  categoryName: nativeString(category.category_name),
+  displayName: nativeString(category.display_name),
+);
+
+/// Copy every head and category into immutable Dart values.
+List<VisionClassifications> copyVisionClassifications(
+  mp.MpClassificationResult result,
+) => [
+  for (var i = 0; i < result.classifications_count; i++)
+    VisionClassifications(
+      headIndex: result.classifications[i].head_index,
+      headName: nativeString(result.classifications[i].head_name),
+      categories: [
+        for (var j = 0; j < result.classifications[i].categories_count; j++)
+          copyVisionCategory(result.classifications[i].categories[j]),
+      ],
+    ),
+];
+
+/// Copy a native embedding, preserving quantized bytes without sign conversion.
+VisionEmbedding copyVisionEmbedding(mp.MpEmbedding value) => VisionEmbedding(
+  headIndex: value.head_index,
+  headName: nativeString(value.head_name),
+  floatEmbedding: value.float_embedding == nullptr
+      ? null
+      : value.float_embedding.asTypedList(value.values_count),
+  quantizedEmbedding: value.quantized_embedding == nullptr
+      ? null
+      : value.quantized_embedding.cast<Uint8>().asTypedList(value.values_count),
+);
+
+/// Release native errors and throw an owned diagnostic on non-OK status.
+void checkVisionCall(mp.MpStatus Function(Pointer<Pointer<Char>>) call) =>
+    checkedCall(
+      call,
+      onError: (message, status) =>
+          VisionTaskException(message, statusCode: status),
+    );
+
+/// Copy metadata option strings into the task creation arena.
+Pointer<Pointer<Char>> visionOptionStrings(Arena arena, List<String> values) {
+  if (values.isEmpty) return nullptr;
+  final array = arena<Pointer<Char>>(values.length);
+  for (var i = 0; i < values.length; i++) {
+    array[i] = values[i].toNativeUtf8(allocator: arena).cast();
+  }
+  return array;
+}

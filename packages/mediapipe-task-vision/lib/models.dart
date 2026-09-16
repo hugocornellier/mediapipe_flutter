@@ -29,6 +29,24 @@ const efficientDetLite0Url =
 const efficientDetLite0Sha256 =
     '40338edf5ec70d43e318b0a716a84d4564cd1802759a7a07170c7e43796dbf58';
 
+/// Official ImageNet EfficientNet-Lite0 float32 classifier, version 1.
+const efficientNetLite0Url =
+    'https://storage.googleapis.com/mediapipe-models/image_classifier/'
+    'efficientnet_lite0/float32/1/efficientnet_lite0.tflite';
+
+/// SHA-256 of [efficientNetLite0Url].
+const efficientNetLite0Sha256 =
+    '6c7ab0a6e5dcbf38a8c33b960996a55a3b4300b36a018c4545801de3a3c8bde0';
+
+/// Official MobileNet-V3 small float32 image embedder, version 1.
+const mobileNetV3SmallUrl =
+    'https://storage.googleapis.com/mediapipe-models/image_embedder/'
+    'mobilenet_v3_small/float32/1/mobilenet_v3_small.tflite';
+
+/// SHA-256 of [mobileNetV3SmallUrl].
+const mobileNetV3SmallSha256 =
+    'bbbb4c51a55a53905af1daec995ca1aae355046f8839bb8c9f5ce9271394bc40';
+
 /// Official stateful MagicTouch int8 encoder/decoder bundle, version 1.
 const interactiveSegmenterModelUrl =
     'https://storage.googleapis.com/mediapipe-models/'

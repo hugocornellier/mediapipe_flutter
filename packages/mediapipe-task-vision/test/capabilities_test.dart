@@ -2,6 +2,26 @@ import 'package:mediapipe_flutter_vision/capabilities.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('image tasks expose desktop x64 CPU and fail closed elsewhere', () {
+    for (final os in ['linux', 'windows']) {
+      expect(
+        imageTaskCapabilitiesForPlatform(
+          TaskPlatform(operatingSystem: os, architecture: 'x64'),
+        ).supportedDelegates,
+        {VisionDelegate.cpu},
+      );
+    }
+    expect(
+      imageTaskCapabilitiesForPlatform(
+        const TaskPlatform(
+          operatingSystem: 'macos',
+          architecture: 'arm64',
+          version: '14.0',
+        ),
+      ).isSupported,
+      isFalse,
+    );
+  });
   test('MagicTouch reports its own GPU shader blocker', () {
     final result = interactiveSegmenterCapabilitiesForPlatform(
       const TaskPlatform(
