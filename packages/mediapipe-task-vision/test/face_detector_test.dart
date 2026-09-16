@@ -368,7 +368,13 @@ void _compare(
   VisionDelegate delegate,
 ) {
   final name = expected['name'] as String;
-  void close(num measured, num official, num tolerance, String group, String at) {
+  void close(
+    num measured,
+    num official,
+    num tolerance,
+    String group,
+    String at,
+  ) {
     recordReferenceDelta(
       'face_detector',
       delegate.name,
@@ -388,9 +394,27 @@ void _compare(
     final face = actual.detections[i];
     final box = faces[i]['bounding_box'] as Map<String, dynamic>;
     const boxGroup = 'bounding_box';
-    close(face.boundingBox.left, box['origin_x'] as num, 1, boxGroup, '[$i].left');
-    close(face.boundingBox.top, box['origin_y'] as num, 1, boxGroup, '[$i].top');
-    close(face.boundingBox.width, box['width'] as num, 1, boxGroup, '[$i].width');
+    close(
+      face.boundingBox.left,
+      box['origin_x'] as num,
+      1,
+      boxGroup,
+      '[$i].left',
+    );
+    close(
+      face.boundingBox.top,
+      box['origin_y'] as num,
+      1,
+      boxGroup,
+      '[$i].top',
+    );
+    close(
+      face.boundingBox.width,
+      box['width'] as num,
+      1,
+      boxGroup,
+      '[$i].width',
+    );
     close(
       face.boundingBox.height,
       box['height'] as num,
@@ -419,8 +443,20 @@ void _compare(
     for (var j = 0; j < points.length; j++) {
       final point = points[j] as Map<String, dynamic>;
       const group = 'keypoints';
-      close(face.keypoints[j].x, point['x'] as num, 0.00001, group, '[$i][$j].x');
-      close(face.keypoints[j].y, point['y'] as num, 0.00001, group, '[$i][$j].y');
+      close(
+        face.keypoints[j].x,
+        point['x'] as num,
+        0.00001,
+        group,
+        '[$i][$j].x',
+      );
+      close(
+        face.keypoints[j].y,
+        point['y'] as num,
+        0.00001,
+        group,
+        '[$i][$j].y',
+      );
       expect(face.keypoints[j].label, point['label']);
       // Python exposes 0.0 for missing keypoint confidence; the C API separately
       // exposes has_score=false, represented by null in Dart.

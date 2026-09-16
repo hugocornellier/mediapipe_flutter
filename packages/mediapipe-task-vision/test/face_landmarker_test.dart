@@ -397,7 +397,13 @@ void _compare(
   // See fixtures/face_landmarker/README.md for observed maxima and provenance.
   final gpu = delegate == VisionDelegate.gpu;
   final name = expected['name'] as String;
-  void close(num measured, num official, num tolerance, String group, String at) {
+  void close(
+    num measured,
+    num official,
+    num tolerance,
+    String group,
+    String at,
+  ) {
     recordReferenceDelta(
       'face_landmarker',
       delegate.name,

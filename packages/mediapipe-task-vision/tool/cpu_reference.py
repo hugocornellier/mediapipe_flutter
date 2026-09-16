@@ -72,9 +72,10 @@ def generate(root, output, target, tasks=FACE_TASKS, files=FACE_FILES,
              python=None, env=None):
     """Writes references and a provenance receipt for `target` into `output`."""
     wheel_url, wheel_sha, library_sha = wheel_pin(target)
+    root.mkdir(parents=True, exist_ok=True)
+    output.mkdir(parents=True, exist_ok=True)
     if python is None:
         python = install(root, target)
-    output.mkdir(parents=True, exist_ok=True)
     for task, folder in tasks:
         run([python, '-u', '-X', 'faulthandler', '-B',
              PACKAGE / f'tool/generate_{task}_reference.py',

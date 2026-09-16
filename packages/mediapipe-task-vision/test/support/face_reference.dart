@@ -83,13 +83,16 @@ void _verifyReceipt(
       manifest['delegate'] != delegate ||
       (metal && manifest['metal_confirmed'] != true) ||
       manifest['files'] is! Map ||
-      (manifest['files'] as Map)[relative] != sha256.convert(bytes).toString() ||
+      (manifest['files'] as Map)[relative] !=
+          sha256.convert(bytes).toString() ||
       reference['runtime'] != manifest['runtime'] ||
       reference['library_sha256'] != library ||
       reference['delegate'] != delegate ||
       reference['source_revision'] !=
           '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120') {
-    throw StateError('Invalid same-host official $delegate reference: $relative');
+    throw StateError(
+      'Invalid same-host official $delegate reference: $relative',
+    );
   }
 }
 
@@ -115,7 +118,10 @@ void recordReferenceDelta(
   num measured,
   num official,
 ) {
-  final delta = _deltas.putIfAbsent('$task/$delegate/$group', _ReferenceDelta.new);
+  final delta = _deltas.putIfAbsent(
+    '$task/$delegate/$group',
+    _ReferenceDelta.new,
+  );
   final error = (measured - official).abs().toDouble();
   delta.values++;
   if (error > delta.maximumAbsoluteError) {
