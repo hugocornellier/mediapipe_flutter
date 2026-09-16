@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -64,6 +65,8 @@ class _SimilarityPageState extends State<SimilarityPage> {
   String? _error;
   double? _similarity;
   double? _elapsedMs;
+  TextEmbedding? _firstEmbedding;
+  TextEmbedding? _secondEmbedding;
 
   Future<EmbeddingGemma> _load() async {
     // A packaged macOS app can mmap the bundled file without copying 184 MB
@@ -102,6 +105,8 @@ class _SimilarityPageState extends State<SimilarityPage> {
       _busy = true;
       _error = null;
       _similarity = null;
+      _firstEmbedding = null;
+      _secondEmbedding = null;
     });
     try {
       if (_loadedConfiguration != (_normalize, _quantize)) await _release();
@@ -139,6 +144,8 @@ class _SimilarityPageState extends State<SimilarityPage> {
         setState(() {
           _similarity = similarity;
           _elapsedMs = elapsed;
+          _firstEmbedding = results[0].embeddings.single;
+          _secondEmbedding = results[1].embeddings.single;
         });
       }
     } catch (error) {
@@ -311,6 +318,27 @@ class _SimilarityPageState extends State<SimilarityPage> {
                   ),
                 ),
               ),
+            if (_firstEmbedding != null && _secondEmbedding != null)
+              Card(
+                margin: const EdgeInsets.only(top: 12),
+                child: ExpansionTile(
+                  key: const Key('embedding-vectors'),
+                  title: const Text('Embeddings'),
+                  subtitle: Text(
+                    'Two 768-value ${_quantize ? 'int8' : 'float32'} vectors',
+                  ),
+                  children: [
+                    _EmbeddingVector(
+                      label: 'First sentence',
+                      embedding: _firstEmbedding!,
+                    ),
+                    _EmbeddingVector(
+                      label: 'Second sentence',
+                      embedding: _secondEmbedding!,
+                    ),
+                  ],
+                ),
+              ),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 24),
@@ -332,6 +360,8 @@ class _SimilarityPageState extends State<SimilarityPage> {
   void _changeSettings(VoidCallback change) => setState(() {
     change();
     _similarity = null;
+    _firstEmbedding = null;
+    _secondEmbedding = null;
     _error = null;
   });
 
@@ -384,3 +414,47 @@ const _taskLabels = {
   EmbeddingTaskType.factChecking: 'Fact checking',
   EmbeddingTaskType.codeRetrieval: 'Code retrieval',
 };
+
+class _EmbeddingVector extends StatelessWidget {
+  const _EmbeddingVector({required this.label, required this.embedding});
+
+  final String label;
+  final TextEmbedding embedding;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<num> values =
+        embedding.floatValues?.toList() ??
+        [for (final byte in embedding.quantizedValues!) byte.toSigned(8)];
+    final encoded = jsonEncode(values);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 120,
+            child: SingleChildScrollView(child: SelectableText(encoded)),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: encoded));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('$label embedding copied')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.copy),
+              label: Text('Copy $label vector'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
