@@ -69,11 +69,6 @@ def main():
     build.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix=f'desktop-{target}-', dir=build))
     print(f'Validation artifacts: {root}', flush=True)
-    pins = (PACKAGE / 'sdk_downloads.dart').read_text()
-    row = re.search(r"'" + target + r"/x64': VisionWheelRelease\((.*?)\n  \),", pins, re.S).group(1)
-    wheel_url = dart_strings(re.search(r'url:(.*?),', row, re.S).group(1))
-    wheel_sha = re.search(r"sha256:\s*'([a-f0-9]+)'", row).group(1)
-    library_sha = re.search(r"librarySha256:\s*'([a-f0-9]+)'", row).group(1)
     model_pins = (PACKAGE / 'lib/models.dart').read_text()
     models = [('blazeFaceShortRange', 'blaze_face_short_range.tflite'),
               ('faceLandmarker', 'face_landmarker.task')]
@@ -95,17 +90,10 @@ def main():
         sha = dart_strings(re.search(r'const ' + prefix + r'Sha256\s*=(.*?);', model_pins, re.S).group(1))
         download(url, sha, PACKAGE / 'models' / name)
 
-    python_env = root / 'python'
-    run([sys.executable, '-m', 'venv', python_env], REPO, root / 'venv.log')
-    python = python_env / ('Scripts/python.exe' if system == 'Windows' else 'bin/python')
-    run([python, '-m', 'pip', 'install', '--disable-pip-version-check',
-         wheel_url + '#sha256=' + wheel_sha], REPO, root / 'pip.log')
+    from cpu_reference import FACE_FILES, FACE_TASKS, generate
     references = root / 'reference'
-    references.mkdir()
-    files = ['face_detection/official_reference.json',
-             'face_detection/official_video_reference.json',
-             'face_landmarker/official_reference.json']
-    tasks = [('face_detector', 'face_detection'), ('face_landmarker', 'face_landmarker')]
+    files = list(FACE_FILES)
+    tasks = list(FACE_TASKS)
     if args.object_detector:
         tasks.append(('object_detector', 'object_detection'))
         files += ['object_detection/official_reference.json', 'object_detection/official_video_reference.json']
@@ -118,24 +106,9 @@ def main():
     if args.segmenter_tasks:
         tasks.append(('segmenter_tasks', 'segmenter_tasks'))
         files.append('segmenter_tasks/official_reference.json')
-    for task, folder in tasks:
-        run([python, '-u', '-X', 'faulthandler', '-B', PACKAGE / f'tool/generate_{task}_reference.py',
-             '--output-dir', references / folder], REPO, root / f'{task}-reference.log')
-    from prepare_gpu_reference import difference
-    comparisons = {}
-    for name in files:
-        reference = json.loads((references / name).read_text())
-        if reference['library_sha256'] != library_sha:
-            raise RuntimeError('Independent reference used a different native library')
-        comparisons[name] = difference(json.loads((PACKAGE / 'test/fixtures' / name).read_text()),
-                                       reference)
-    (references / 'provenance.json').write_text(json.dumps({
-        'runtime': 'mediapipe==1.0.0', 'source': 'official-python-api',
-        'delegate': 'CPU', 'target': target + '/x64',
-        'library_sha256': library_sha, 'wheel_sha256': wheel_sha,
-        'files': {name: digest(references / name) for name in files},
-        'checked_in_reference_differences': comparisons,
-    }, indent=2))
+    oracle = generate(root, references, target + '/x64', tasks, files)
+    library_sha = oracle['library_sha256']
+    comparisons = oracle['comparisons']
 
     # Package copies exclude source builds, tools, caches and maintenance opt-ins.
     for name in ['mediapipe-core', 'mediapipe-task-vision']:

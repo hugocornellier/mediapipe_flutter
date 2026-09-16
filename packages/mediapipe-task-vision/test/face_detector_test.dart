@@ -25,9 +25,12 @@ void main() {
   test('CPU is the default delegate', () {
     expect(FaceDetectorOptions(modelPath: _model).delegate, VisionDelegate.cpu);
   });
+  tearDownAll(() => reportReferenceDeltas('face_detector'));
 }
 
 void _testDelegate(VisionDelegate delegate) {
+  void compare(FaceDetectorResult actual, Map<String, dynamic> expected) =>
+      _compare(actual, expected, delegate);
   final reference = loadFaceReference(
     'face_detection',
     'official${delegate == VisionDelegate.gpu ? '_gpu' : ''}_reference.json',
@@ -58,7 +61,7 @@ void _testDelegate(VisionDelegate delegate) {
         fixtureImage(expected),
         rotationDegrees: expected['rotation_degrees'] as int,
       );
-      _compare(result, expected);
+      compare(result, expected);
     });
   }
 
@@ -69,7 +72,7 @@ void _testDelegate(VisionDelegate delegate) {
     final task = await FaceDetector.create(options);
     try {
       final expected = cases.first;
-      _compare(await task.detectImage(fixtureImage(expected)), expected);
+      compare(await task.detectImage(fixtureImage(expected)), expected);
     } finally {
       await task.dispose();
     }
@@ -92,7 +95,7 @@ void _testDelegate(VisionDelegate delegate) {
     final results = await Future.wait(requests);
     await closing;
     for (final result in results) {
-      _compare(result, expected); // Results remain valid after native teardown.
+      compare(result, expected); // Results remain valid after native teardown.
       expect(() => result.detections.clear(), throwsUnsupportedError);
       expect(
         () => result.detections.single.keypoints.clear(),
@@ -114,7 +117,7 @@ void _testDelegate(VisionDelegate delegate) {
           ),
         ),
       );
-      _compare(
+      compare(
         await detector.detectImage(fixtureImage(cases.first)),
         cases.first,
       );
@@ -220,7 +223,7 @@ void _testDelegate(VisionDelegate delegate) {
     );
     source.fillRange(0, source.length, 0);
     expect(() => image.pixels![0] = 0, throwsUnsupportedError);
-    _compare(await detector.detectImage(image), expected);
+    compare(await detector.detectImage(image), expected);
   });
 
   test('video sequence matches the official VIDEO-mode reference', () async {
@@ -252,7 +255,7 @@ void _testDelegate(VisionDelegate delegate) {
     final results = await Future.wait(requests);
     await closing;
     for (var i = 0; i < frames.length; i++) {
-      _compare(results[i], frames[i]);
+      compare(results[i], frames[i]);
       expect(results[i].timestampMilliseconds, frames[i]['timestamp_ms']);
     }
   });
@@ -275,7 +278,7 @@ void _testDelegate(VisionDelegate delegate) {
           detector.detectForVideo(image, timestampMilliseconds: 0),
           throwsStateError,
         );
-        _compare(
+        compare(
           await video.detectForVideo(image, timestampMilliseconds: 10),
           expected,
         );
@@ -300,7 +303,7 @@ void _testDelegate(VisionDelegate delegate) {
           ),
           throwsA(isA<FaceDetectorException>()),
         );
-        _compare(
+        compare(
           await video.detectForVideo(image, timestampMilliseconds: 12),
           expected,
         );
@@ -338,7 +341,7 @@ void _testDelegate(VisionDelegate delegate) {
           bytesPerRow: stride,
         );
         bytes.fillRange(0, bytes.length, 0);
-        _compare(await detector.detectImage(image), expected);
+        compare(await detector.detectImage(image), expected);
       },
     );
   }
@@ -359,7 +362,24 @@ void _testDelegate(VisionDelegate delegate) {
   });
 }
 
-void _compare(FaceDetectorResult actual, Map<String, dynamic> expected) {
+void _compare(
+  FaceDetectorResult actual,
+  Map<String, dynamic> expected,
+  VisionDelegate delegate,
+) {
+  final name = expected['name'] as String;
+  void close(num measured, num official, num tolerance, String group, String at) {
+    recordReferenceDelta(
+      'face_detector',
+      delegate.name,
+      group,
+      '$name.$at',
+      measured,
+      official,
+    );
+    expect(measured, closeTo(official, tolerance), reason: '$name.$at');
+  }
+
   expect(actual.imageWidth, expected['width']);
   expect(actual.imageHeight, expected['height']);
   final faces = (expected['detections'] as List).cast<Map<String, dynamic>>();
@@ -367,19 +387,29 @@ void _compare(FaceDetectorResult actual, Map<String, dynamic> expected) {
   for (var i = 0; i < faces.length; i++) {
     final face = actual.detections[i];
     final box = faces[i]['bounding_box'] as Map<String, dynamic>;
-    expect(face.boundingBox.left, closeTo(box['origin_x'] as num, 1));
-    expect(face.boundingBox.top, closeTo(box['origin_y'] as num, 1));
-    expect(face.boundingBox.width, closeTo(box['width'] as num, 1));
-    expect(face.boundingBox.height, closeTo(box['height'] as num, 1));
+    const boxGroup = 'bounding_box';
+    close(face.boundingBox.left, box['origin_x'] as num, 1, boxGroup, '[$i].left');
+    close(face.boundingBox.top, box['origin_y'] as num, 1, boxGroup, '[$i].top');
+    close(face.boundingBox.width, box['width'] as num, 1, boxGroup, '[$i].width');
+    close(
+      face.boundingBox.height,
+      box['height'] as num,
+      1,
+      boxGroup,
+      '[$i].height',
+    );
     final categories = faces[i]['categories'] as List;
     expect(face.categories, hasLength(categories.length));
     for (var j = 0; j < categories.length; j++) {
       final category = face.categories[j];
       final expectedCategory = categories[j] as Map<String, dynamic>;
       expect(category.index, expectedCategory['index']);
-      expect(
+      close(
         category.score,
-        closeTo(expectedCategory['score'] as num, 0.00001),
+        expectedCategory['score'] as num,
+        0.00001,
+        'categories',
+        '[$i][$j].score',
       );
       expect(category.categoryName, expectedCategory['category_name']);
       expect(category.displayName, expectedCategory['display_name']);
@@ -388,8 +418,9 @@ void _compare(FaceDetectorResult actual, Map<String, dynamic> expected) {
     expect(face.keypoints, hasLength(points.length));
     for (var j = 0; j < points.length; j++) {
       final point = points[j] as Map<String, dynamic>;
-      expect(face.keypoints[j].x, closeTo(point['x'] as num, 0.00001));
-      expect(face.keypoints[j].y, closeTo(point['y'] as num, 0.00001));
+      const group = 'keypoints';
+      close(face.keypoints[j].x, point['x'] as num, 0.00001, group, '[$i][$j].x');
+      close(face.keypoints[j].y, point['y'] as num, 0.00001, group, '[$i][$j].y');
       expect(face.keypoints[j].label, point['label']);
       // Python exposes 0.0 for missing keypoint confidence; the C API separately
       // exposes has_score=false, represented by null in Dart.

@@ -16,7 +16,7 @@ import tempfile
 from build_native import PACKAGE, REPO
 from test_desktop import digest, run
 from macho_metadata import inspect
-from mobile_consumer import prepare_app
+from mobile_consumer import prepare_app, reference_deltas
 
 
 def arm64_slice(data):
@@ -102,6 +102,9 @@ def main():
         run(['flutter', 'pub', 'get'], app, root / 'pub.log')
         run(['flutter', 'test', '-d', device['udid'], 'integration_test/tasks_test.dart',
              '--reporter', 'expanded'], app, root / 'integration.log', timeout=2400)
+        integration = (root / 'integration.log').read_text()
+        report['reference_deltas'] = reference_deltas(
+            integration, ['face_detector', 'face_landmarker'])
         totals = re.findall(r'\+(\d+)(?: ~(\d+))?: All tests passed!',
                             (root / 'integration.log').read_text())
         if not totals:

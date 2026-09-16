@@ -70,7 +70,18 @@ python3 -B packages/mediapipe-task-vision/tool/test_android_consumer.py \
 
 The runner copies the packages and local runtime into an isolated consumer,
 runs the unchanged face CPU IMAGE/VIDEO reference and lifecycle suites, builds
-debug and release APKs, and launches each for standalone inference. It verifies
+debug and release APKs, and launches each for standalone inference.
+
+The checked-in goldens come from one macOS arm64 machine, and the official
+wheel's own results drift between hosts. The runner therefore regenerates the
+reference with the pinned official wheel for the emulator's own architecture,
+exactly as the desktop jobs do, and refuses a host whose wheel architecture does
+not match the emulator ABI. A packaged consumer cannot read
+`MEDIAPIPE_CPU_REFERENCE_DIR` from its bundled assets, so the reference is
+substituted in place with the receipt the suites verify. `--reference-dir`
+reuses one generated earlier; `tool/cpu_reference.py` writes it. `report.json`
+records the receipt, how far the checked-in goldens sit from it, and the maxima
+the run actually measured per value group. Tolerances are unchanged. It verifies
 that all four bundled libraries retain their ELF LOAD segments after Gradle
 strips debug metadata. The hook checks provenance, all library hashes, ELF
 architecture, 16 KB alignment, SONAMEs, dependency closure and required notices.

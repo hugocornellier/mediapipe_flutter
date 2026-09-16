@@ -15,8 +15,9 @@ import tempfile
 import time
 import zipfile
 
+import cpu_reference
 from build_native import PACKAGE, REPO
-from mobile_consumer import prepare_app
+from mobile_consumer import prepare_app, reference_deltas
 from test_desktop import digest, run
 
 
@@ -67,6 +68,9 @@ def main():
     parser.add_argument('--adb', default='adb')
     parser.add_argument('--device', required=True)
     parser.add_argument('--require-page-size', type=int)
+    parser.add_argument('--reference-dir', type=Path,
+                        help='An existing same-host official CPU reference; '
+                             'generated here when omitted')
     args = parser.parse_args()
     adb = [args.adb, '-s', args.device]
     abi = subprocess.check_output([*adb, 'shell', 'getprop', 'ro.product.cpu.abi'], text=True).strip()
@@ -96,9 +100,31 @@ def main():
                 raise RuntimeError(f'Android runtime hash mismatch: {name}')
         report['libraries'] = hashes
         report['library_manifest'] = manifest
+        # The checked-in goldens come from one macOS arm64 machine, and the
+        # official wheel's own results drift between hosts. Compare this
+        # source-built runtime with the pinned wheel for the emulator's own
+        # architecture, exactly as the desktop jobs do for their runtimes.
+        target = cpu_reference.host_target()
+        if target is None or target.split('/')[1] != architecture:
+            raise SystemExit('This emulator needs a host with the pinned official '
+                             f'{architecture} CPU wheel.')
+        references = args.reference_dir.resolve() if args.reference_dir else None
+        if references is None:
+            references = root / 'reference'
+            cpu_reference.generate(root, references, target)
+        provenance = json.loads((references / 'provenance.json').read_text())
+        report['reference'] = {
+            'target': provenance['target'],
+            'runtime': provenance['runtime'],
+            'library_sha256': provenance['library_sha256'],
+            'wheel_sha256': provenance['wheel_sha256'],
+            'checked_in_reference_differences':
+                provenance['checked_in_reference_differences'],
+        }
         app, vision = prepare_app(root, 'android', report['tasks'],
                                   ['face_detector', 'face_landmarker', 'pixel_conversion'],
-                                  ['blaze_face_short_range.tflite', 'face_landmarker.task'])
+                                  ['blaze_face_short_range.tflite', 'face_landmarker.task'],
+                                  references=references)
         shutil.copytree(source, vision / ('build/native/android/' + abi))
         project = app / 'android/app/build.gradle.kts'
         content = project.read_text().replace('minSdk = flutter.minSdkVersion', 'minSdk = 24')
@@ -113,12 +139,14 @@ def main():
         run(['flutter', 'pub', 'get'], app, root / 'pub.log')
         run(['flutter', 'test', '-d', args.device, 'integration_test/tasks_test.dart',
              '--reporter', 'expanded'], app, root / 'integration.log', timeout=2400)
-        totals = re.findall(r'\+(\d+)(?: ~(\d+))?: All tests passed!',
-                            (root / 'integration.log').read_text())
+        integration = (root / 'integration.log').read_text()
+        totals = re.findall(r'\+(\d+)(?: ~(\d+))?: All tests passed!', integration)
         if not totals:
             raise RuntimeError('Integration runner did not report passing test counts')
         passed, skipped = totals[-1]
         report['tests'] = {'passed': int(passed), 'skipped': int(skipped or 0)}
+        report['reference_deltas'] = reference_deltas(
+            integration, ['face_detector', 'face_landmarker'])
         report['apks'] = {}
         original_smoke = (app / 'lib/main.dart').read_text()
         platform = 'android-arm64' if abi == 'arm64-v8a' else 'android-x64'

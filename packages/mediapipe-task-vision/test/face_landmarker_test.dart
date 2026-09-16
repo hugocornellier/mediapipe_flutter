@@ -33,6 +33,7 @@ void main() {
       VisionDelegate.cpu,
     );
   });
+  tearDownAll(() => reportReferenceDeltas('face_landmarker'));
 }
 
 void _testDelegate(VisionDelegate delegate) {
@@ -395,6 +396,19 @@ void _compare(
   // Measured against the independent wheel, separately for each backend.
   // See fixtures/face_landmarker/README.md for observed maxima and provenance.
   final gpu = delegate == VisionDelegate.gpu;
+  final name = expected['name'] as String;
+  void close(num measured, num official, num tolerance, String group, String at) {
+    recordReferenceDelta(
+      'face_landmarker',
+      delegate.name,
+      group,
+      '$name.$at',
+      measured,
+      official,
+    );
+    expect(measured, closeTo(official, tolerance), reason: '$name.$at');
+  }
+
   expect(actual.imageWidth, expected['width']);
   expect(actual.imageHeight, expected['height']);
   expect(actual.timestampMilliseconds, expected['timestamp_ms']);
@@ -411,9 +425,11 @@ void _compare(
     for (var j = 0; j < points.length; j++) {
       final point = points[j] as Map<String, dynamic>;
       final value = actual.faceLandmarks[i][j];
-      expect(value.x, closeTo(point['x'] as num, gpu ? 0.002 : 0.0001));
-      expect(value.y, closeTo(point['y'] as num, gpu ? 0.002 : 0.0001));
-      expect(value.z, closeTo(point['z'] as num, gpu ? 0.002 : 0.0001));
+      final tolerance = gpu ? 0.002 : 0.0001;
+      const group = 'face_landmarks';
+      close(value.x, point['x'] as num, tolerance, group, 'faces[$i][$j].x');
+      close(value.y, point['y'] as num, tolerance, group, 'faces[$i][$j].y');
+      close(value.z, point['z'] as num, tolerance, group, 'faces[$i][$j].z');
       expect(value.visibility, point['visibility']);
       expect(value.presence, point['presence']);
       expect(value.name, point['name']);
@@ -428,9 +444,12 @@ void _compare(
       final value = actual.faceBlendshapes[i][j];
       final category = categories[j] as Map<String, dynamic>;
       expect(value.index, category['index']);
-      expect(
+      close(
         value.score,
-        closeTo(category['score'] as num, gpu ? 0.04 : 0.002),
+        category['score'] as num,
+        gpu ? 0.04 : 0.002,
+        'face_blendshapes',
+        'faces[$i][$j].score',
       );
       expect(value.categoryName, category['category_name']);
       expect(value.displayName, category['display_name']);
@@ -445,12 +464,12 @@ void _compare(
     for (var row = 0; row < 4; row++) {
       for (var column = 0; column < 4; column++) {
         // Python exposes row/column indexing; C stores the same data column-major.
-        expect(
+        close(
           matrix.at(row, column),
-          closeTo(
-            (matrices[i] as List)[row][column] as num,
-            gpu ? 0.06 : 0.005,
-          ),
+          (matrices[i] as List)[row][column] as num,
+          gpu ? 0.06 : 0.005,
+          'facial_transformation_matrixes',
+          'matrixes[$i][$row][$column]',
         );
       }
     }

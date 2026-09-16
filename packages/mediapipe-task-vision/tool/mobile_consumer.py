@@ -1,12 +1,29 @@
 """Create isolated Flutter apps containing the existing vision test suites."""
+import json
 from pathlib import Path
+import re
 import shutil
 
 from build_native import PACKAGE, REPO
 from test_desktop import run
 
 
-def prepare_app(root, platform, selected, suites, models, *, prebuilt=False):
+def reference_deltas(log, tasks):
+    """Collects the measured distance from the official reference each suite prints.
+
+    Tolerances are unchanged; this records the headroom a passing run actually
+    had, instead of learning it only when some value finally exceeds one.
+    """
+    found = {task: json.loads(payload) for task, payload in
+             re.findall(r'MEDIAPIPE_REFERENCE_DELTAS (\S+) (\{.*\})', log)}
+    missing = [task for task in tasks if task not in found]
+    if missing:
+        raise RuntimeError('Suites reported no reference deltas: ' + ', '.join(missing))
+    return found
+
+
+def prepare_app(root, platform, selected, suites, models, *, prebuilt=False,
+                references=None):
     for name in ['mediapipe-core', 'mediapipe-task-vision']:
         source = PACKAGE.parent / name
         destination = root / 'packages' / name
@@ -23,7 +40,17 @@ def prepare_app(root, platform, selected, suites, models, *, prebuilt=False):
     for suite in suites:
         shutil.copyfile(PACKAGE / f'test/{suite}_test.dart', app / f'test/{suite}_test.dart')
     assets = app / 'assets'
-    shutil.copytree(PACKAGE / 'test/fixtures', assets / 'test/fixtures')
+    fixtures = assets / 'test/fixtures'
+    shutil.copytree(PACKAGE / 'test/fixtures', fixtures)
+    if references is not None:
+        # Packaged suites read bundled assets and cannot see an environment
+        # variable, so this host's official references replace the checked-in
+        # goldens in place. The receipt travels with them; the suites refuse
+        # references that do not match it.
+        manifest = json.loads((references / 'provenance.json').read_text())
+        for name in manifest['files']:
+            shutil.copyfile(references / name, fixtures / name)
+        shutil.copyfile(references / 'provenance.json', fixtures / 'provenance.json')
     (assets / 'models').mkdir(parents=True)
     for name in models:
         shutil.copyfile(PACKAGE / 'models' / name, assets / 'models' / name)
