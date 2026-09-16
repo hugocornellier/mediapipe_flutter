@@ -6,14 +6,15 @@ An exported symbol alone does not establish a working task or platform.
 
 ## Validated baseline
 
-Commit `a615390` passes Linux x64 and Windows x64 CPU CI for nine vision tasks:
-Face Detector, Face Landmarker, Object Detector, Image Classifier, Image Embedder,
-Hand Landmarker, Gesture Recognizer, Pose Landmarker and Holistic Landmarker. This
-includes independent official-Python reference outputs generated on each runner,
-native loading, errors, queued disposal, and fresh Flutter debug/release consumers
-that are relocated before running real inference.
+Commit `60da77f` passes Linux x64 and Windows x64 CPU CI for all eleven vision
+task families: Face Detector, Face Landmarker, Object Detector, Image Classifier,
+Image Embedder, Hand Landmarker, Gesture Recognizer, Pose Landmarker, Holistic
+Landmarker, Image Segmenter and the legacy Interactive Segmenter. This includes
+independent official-Python reference outputs generated on each runner, native
+loading, errors, queued disposal, and fresh Flutter debug/release consumers that
+are relocated before running real inference.
 
-[Passing desktop run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/35108048060)
+[Passing desktop run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/35111596078)
 uses pinned official MediaPipe 1.0.0 wheels. Work after that commit is experimental
 until the same jobs pass on it.
 
