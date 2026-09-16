@@ -44,8 +44,13 @@ Future<File> downloadVerified(
         response.stream.timeout(const Duration(seconds: 60)),
       );
       await sink.flush();
-    } finally {
       await sink.close();
+    } catch (_) {
+      // A stalled or failed response already closed the sink, so closing it
+      // again throws `FileSystemException: File closed` and would report that
+      // in place of the download failure that actually happened.
+      await sink.close().catchError((Object _) {});
+      rethrow;
     }
     final digest = (await sha256.bind(partial.openRead()).first).toString();
     if (digest != asset.sha256) {
