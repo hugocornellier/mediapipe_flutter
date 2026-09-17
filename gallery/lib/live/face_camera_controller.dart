@@ -26,7 +26,15 @@ class FaceCameraController extends ChangeNotifier {
   int processedFrames = 0;
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
+  double _totalInferenceMilliseconds = 0;
   VisionDelegate delegate = VisionDelegate.cpu;
+
+  /// Mean inference time since capture last started. Starting is what happens
+  /// when the delegate changes, so this compares like with like rather than
+  /// mixing CPU and GPU frames into one figure.
+  double get averageInferenceMilliseconds => processedFrames == 0
+      ? 0
+      : _totalInferenceMilliseconds / processedFrames;
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
       ? 0
       : processedFrames * 1000000 / _clock.elapsedMicroseconds;
@@ -93,6 +101,7 @@ class FaceCameraController extends ChangeNotifier {
         processedFrames = 0;
         skippedFrames = 0;
         inferenceMilliseconds = 0;
+        _totalInferenceMilliseconds = 0;
         _lastTimestamp = -1;
         _clock
           ..reset()
@@ -168,6 +177,7 @@ class FaceCameraController extends ChangeNotifier {
       if (_closed || generation != _generation) return;
       result = detection;
       inferenceMilliseconds = timer.elapsedMicroseconds / 1000;
+      _totalInferenceMilliseconds += inferenceMilliseconds;
       processedFrames++;
       _changed();
     } catch (failure) {

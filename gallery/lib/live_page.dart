@@ -150,9 +150,12 @@ class _LivePageState extends State<LivePage> {
                   Text(
                     '${controller.framesPerSecond.toStringAsFixed(1)} fps  ·  '
                     '${controller.inferenceMilliseconds.toStringAsFixed(1)} ms  ·  '
-                    '${controller.processedFrames} processed, '
-                    '${controller.skippedFrames} skipped',
+                    'avg ${controller.averageInferenceMilliseconds.toStringAsFixed(1)} ms '
+                    'over ${controller.processedFrames} '
+                    '${controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'} '
+                    'frames  ·  ${controller.skippedFrames} skipped',
                     style: theme.textTheme.bodySmall,
+                    textAlign: TextAlign.center,
                   ),
                 const SizedBox(height: 8),
                 Wrap(
