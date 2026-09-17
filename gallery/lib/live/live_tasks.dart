@@ -4,6 +4,14 @@ import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 import 'live_camera_controller.dart';
 
+/// Subjects each live demo tracks. Ask for what the demo needs and no more:
+/// MediaPipe only skips its detector once tracking reaches the configured
+/// maximum, so an inflated count keeps detection running every frame for a
+/// scene that never reaches it. Hands counts hands, not people.
+const _faces = 1;
+const _hands = 2;
+const _poses = 1;
+
 /// Each adapter is only the two things that differ between live demos: how the
 /// task is built, and how one frame runs through it.
 final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
@@ -19,6 +27,7 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
+        numFaces: _faces,
       ),
     );
   }
@@ -48,7 +57,7 @@ final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
-        numHands: 2,
+        numHands: _hands,
       ),
     );
   }
@@ -78,6 +87,7 @@ final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
+        numPoses: _poses,
       ),
     );
   }

@@ -52,7 +52,17 @@ class LiveCameraController<T> extends ChangeNotifier {
   int processedFrames = 0;
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
+  double conversionMilliseconds = 0;
+  double frameMilliseconds = 0;
   double _totalInferenceMilliseconds = 0;
+  double _totalConversionMilliseconds = 0;
+  double _totalFrameMilliseconds = 0;
+  /// CPU by default, deliberately. Metal wins on back-to-back frames but
+  /// loses at camera cadence, because it goes cold in the ~30 ms between them.
+  /// Measured on an M4 Max at 1080p with one face: tight loop 4.03 CPU vs 3.45
+  /// GPU, at 33 ms spacing 9.03 CPU vs 10.80 GPU. The official Python API
+  /// inverts the same way on the same runtime, so this is the delegate's
+  /// behaviour rather than anything this wrapper does.
   VisionDelegate delegate = VisionDelegate.cpu;
 
   /// Mean inference time since capture last started. Starting is what happens
@@ -61,6 +71,17 @@ class LiveCameraController<T> extends ChangeNotifier {
   double get averageInferenceMilliseconds => processedFrames == 0
       ? 0
       : _totalInferenceMilliseconds / processedFrames;
+
+  /// Mean time spent building a [VisionImage] from the camera plane.
+  double get averageConversionMilliseconds => processedFrames == 0
+      ? 0
+      : _totalConversionMilliseconds / processedFrames;
+
+  /// Mean wall time for a whole frame, so plumbing shows up as the gap between
+  /// this and [averageInferenceMilliseconds].
+  double get averageFrameMilliseconds => processedFrames == 0
+      ? 0
+      : _totalFrameMilliseconds / processedFrames;
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
       ? 0
       : processedFrames * 1000000 / _clock.elapsedMicroseconds;
@@ -122,7 +143,11 @@ class LiveCameraController<T> extends ChangeNotifier {
         processedFrames = 0;
         skippedFrames = 0;
         inferenceMilliseconds = 0;
+        conversionMilliseconds = 0;
+        frameMilliseconds = 0;
         _totalInferenceMilliseconds = 0;
+        _totalConversionMilliseconds = 0;
+        _totalFrameMilliseconds = 0;
         _lastTimestamp = -1;
         _clock
           ..reset()
@@ -178,10 +203,11 @@ class LiveCameraController<T> extends ChangeNotifier {
       if (image.format.group != ImageFormatGroup.bgra8888 ||
           image.planes.length != 1) {
         throw StateError(
-          '\${task.name} needs one BGRA or RGBA camera plane.',
+          '${task.name} needs one BGRA or RGBA camera plane.',
         );
       }
       final plane = image.planes.single;
+      final conversion = Stopwatch()..start();
       final frame = VisionImage.fromPixels(
         pixels: plane.bytes,
         width: image.width,
@@ -191,11 +217,22 @@ class LiveCameraController<T> extends ChangeNotifier {
             ? VisionPixelFormat.rgba
             : VisionPixelFormat.bgra,
       );
+      conversion.stop();
+      final inference = Stopwatch()..start();
       final detection = await task.detect(frame, timestamp);
+      inference.stop();
       if (_closed || generation != _generation) return;
       result = detection;
-      inferenceMilliseconds = timer.elapsedMicroseconds / 1000;
+      // Split so the readout distinguishes the task's own work from what this
+      // demo spends getting a camera frame to it: building the VisionImage,
+      // and the isolate hop the task worker makes to keep native pointers off
+      // the calling isolate.
+      conversionMilliseconds = conversion.elapsedMicroseconds / 1000;
+      inferenceMilliseconds = inference.elapsedMicroseconds / 1000;
+      frameMilliseconds = timer.elapsedMicroseconds / 1000;
+      _totalConversionMilliseconds += conversionMilliseconds;
       _totalInferenceMilliseconds += inferenceMilliseconds;
+      _totalFrameMilliseconds += frameMilliseconds;
       processedFrames++;
       _changed();
     } catch (failure) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
@@ -12,10 +14,16 @@ import 'live/live_registry.dart';
 /// and timings all live in [LiveCameraController]; this screen only picks the
 /// task and painter out of the registry and draws the controls.
 class LivePage extends StatefulWidget {
-  const LivePage({super.key, required this.task, required this.platform});
+  const LivePage({
+    super.key,
+    required this.task,
+    required this.platform,
+    required this.officialMacosLandmarkTasks,
+  });
 
   final GalleryTask task;
   final TaskPlatform platform;
+  final Set<String> officialMacosLandmarkTasks;
 
   @override
   State<LivePage> createState() => _LivePageState();
@@ -25,15 +33,17 @@ class _LivePageState extends State<LivePage> {
   late final LiveDemo _demo = liveDemoFor(widget.task.id)!;
   late final LiveCameraController<Object?> _controller =
       LiveCameraController<Object?>(_demo.task());
-  late final List<VisionDelegate> _delegates = widget.task
-      .capabilities(widget.platform)
-      .supportedDelegates
-      .toList()
-    ..sort((a, b) => a.index.compareTo(b.index));
+  late final List<VisionDelegate> _delegates =
+      widget.task
+          .capabilitiesFor(widget.platform, widget.officialMacosLandmarkTasks)
+          .supportedDelegates
+          .toList()
+        ..sort((a, b) => a.index.compareTo(b.index));
 
   List<CameraDescription> _cameras = const [];
   CameraDescription? _selected;
   String? _error;
+  bool _autoStarted = false;
   bool _showMesh = true;
   bool _showPoints = false;
 
@@ -56,6 +66,12 @@ class _LivePageState extends State<LivePage> {
         _cameras = cameras;
         _selected = cameras.isEmpty ? null : cameras.first;
       });
+      // Open the demo already running. Guarded so that pressing Stop, or
+      // switching delegate, is never undone by a later rebuild.
+      if (_selected != null && !_autoStarted) {
+        _autoStarted = true;
+        unawaited(_start());
+      }
     } on Object catch (error) {
       if (mounted) setState(() => _error = '$error');
     }
@@ -99,9 +115,7 @@ class _LivePageState extends State<LivePage> {
             onPressed: () => setState(() => _showMesh = !_showMesh),
           ),
           IconButton(
-            icon: Icon(_showPoints
-                ? Icons.blur_on
-                : Icons.blur_off),
+            icon: Icon(_showPoints ? Icons.blur_on : Icons.blur_off),
             tooltip: 'Points',
             onPressed: () => setState(() => _showPoints = !_showPoints),
           ),
@@ -152,11 +166,13 @@ class _LivePageState extends State<LivePage> {
                 if (controller.running)
                   Text(
                     '${controller.framesPerSecond.toStringAsFixed(1)} fps  ·  '
-                    '${controller.inferenceMilliseconds.toStringAsFixed(1)} ms  ·  '
-                    'avg ${controller.averageInferenceMilliseconds.toStringAsFixed(1)} ms '
-                    'over ${controller.processedFrames} '
+                    '${controller.averageFrameMilliseconds.toStringAsFixed(1)} ms '
+                    'per frame over ${controller.processedFrames} '
                     '${controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'} '
-                    'frames  ·  ${controller.skippedFrames} skipped',
+                    'frames\n'
+                    'inference ${controller.averageInferenceMilliseconds.toStringAsFixed(1)} ms  ·  '
+                    'convert ${controller.averageConversionMilliseconds.toStringAsFixed(2)} ms  ·  '
+                    '${controller.skippedFrames} skipped',
                     style: theme.textTheme.bodySmall,
                     textAlign: TextAlign.center,
                   ),
@@ -208,8 +224,8 @@ class _LivePageState extends State<LivePage> {
                       onPressed: busy || _selected == null
                           ? null
                           : controller.running
-                              ? () => controller.stop()
-                              : _start,
+                          ? () => controller.stop()
+                          : _start,
                       icon: Icon(
                         controller.running ? Icons.stop : Icons.play_arrow,
                       ),
