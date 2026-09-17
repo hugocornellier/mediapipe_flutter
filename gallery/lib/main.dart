@@ -7,6 +7,7 @@ import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 import 'catalog.dart';
 import 'runners.dart';
+import 'segment_page.dart';
 import 'live_page.dart';
 import 'task_page.dart';
 
@@ -26,6 +27,8 @@ final class GalleryAssets {
       (manifest['tasks'] as List).cast<String>().toSet();
 
   String path(String name) => '${directory.path}/$name';
+
+  File file(String name) => File(path(name));
 
   static Future<GalleryAssets> unpack() async {
     final directory = await Directory.systemTemp.createTemp('mediapipe-gallery-');
@@ -104,7 +107,7 @@ class _HomePageState extends State<HomePage> {
         final bundled = assets.bundledTasks;
         final tasks = [
           for (final task in supportedTasks(platform, bundled))
-            if (task.live || runnerFor(task.id) != null) task,
+            if (task.hasOwnPage || runnerFor(task.id) != null) task,
         ];
         return _Gallery(assets: assets, platform: platform, tasks: tasks);
       },
@@ -187,7 +190,7 @@ class _Gallery extends StatelessWidget {
     // invisible: absent from the grid and absent from the unvalidated list.
     final pending = [
       for (final task in supportedTasks(platform, assets.bundledTasks))
-        if (!task.live && runnerFor(task.id) == null) task,
+        if (!task.hasOwnPage && runnerFor(task.id) == null) task,
     ];
     showModalBottomSheet<void>(
       context: context,
@@ -275,9 +278,15 @@ class _TaskCard extends StatelessWidget {
       child: InkWell(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (context) => task.live
-                ? LivePage(task: task, platform: platform)
-                : TaskPage(task: task, platform: platform, assets: assets),
+            builder: (context) => switch (task.demo) {
+              GalleryDemo.live => LivePage(task: task, platform: platform),
+              GalleryDemo.segment => SegmentPage(task: task, assets: assets),
+              GalleryDemo.sample => TaskPage(
+                task: task,
+                platform: platform,
+                assets: assets,
+              ),
+            },
           ),
         ),
         child: Padding(

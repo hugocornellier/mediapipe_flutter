@@ -1,5 +1,17 @@
 import 'package:mediapipe_flutter_vision/capabilities.dart';
 
+/// How a tile demonstrates its task.
+enum GalleryDemo {
+  /// Runs against a bundled sample image; see `runners.dart`.
+  sample,
+
+  /// Live camera capture.
+  live,
+
+  /// Interactive segmentation on a bundled image.
+  segment,
+}
+
 /// One entry in the gallery.
 ///
 /// [capabilities] is the package's own support query, so a tile appears only
@@ -13,7 +25,7 @@ final class GalleryTask {
     required this.model,
     required this.sample,
     required this.capabilities,
-    this.live = false,
+    this.demo = GalleryDemo.sample,
     String? runtimeId,
   }) : runtimeId = runtimeId ?? id;
 
@@ -26,8 +38,14 @@ final class GalleryTask {
   final String title;
   final String summary;
 
-  /// Whether this tile opens the live camera demo rather than a sample image.
-  final bool live;
+  /// How this tile demonstrates its task.
+  final GalleryDemo demo;
+
+  /// Whether this tile opens the live camera demo.
+  bool get live => demo == GalleryDemo.live;
+
+  /// Whether this tile has a screen of its own rather than a sample runner.
+  bool get hasOwnPage => demo != GalleryDemo.sample;
 
   /// Model asset name, matching `tool/prepare.py`.
   final String model;
@@ -102,7 +120,7 @@ const _catalog = <GalleryTask>[
   GalleryTask(
     id: 'face_landmarker_live',
     runtimeId: 'face_landmarker',
-    live: true,
+    demo: GalleryDemo.live,
     title: 'Live Face Mesh',
     summary: 'Face mesh on the camera feed, with frame timings.',
     model: 'face_landmarker.task',
@@ -173,12 +191,25 @@ const _catalog = <GalleryTask>[
     sample: 'portrait.jpg',
     capabilities: segmenterTaskCapabilitiesForPlatform,
   ),
+  // Two different implementations share the MagicTouch name. This is the
+  // stateless legacy API inside the combined vision runtime; the stateful
+  // InteractiveSegmenter below is a separate 1.0.1 runtime with its own
+  // support table. Their capability queries are not interchangeable.
   GalleryTask(
     id: 'interactive_segmenter_legacy',
-    title: 'Interactive Segmenter',
-    summary: 'MagicTouch segmentation from a point or box.',
+    title: 'Interactive Segmenter (legacy)',
+    summary: 'Stateless MagicTouch segmentation from a point or box.',
     model: 'magic_touch.tflite',
     sample: 'portrait.jpg',
+    capabilities: segmenterTaskCapabilitiesForPlatform,
+  ),
+  GalleryTask(
+    id: 'interactive_segmenter',
+    demo: GalleryDemo.segment,
+    title: 'MagicTouch',
+    summary: 'Tap a subject to segment it, stroke by stroke.',
+    model: 'interactive_segmentation.task',
+    sample: 'animals.jpg',
     capabilities: interactiveSegmenterCapabilitiesForPlatform,
   ),
 ];
