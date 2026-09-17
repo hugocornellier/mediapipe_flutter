@@ -17,6 +17,42 @@ enum VisionLibraryTarget {
   iosSimulatorArm64,
 }
 
+/// Immutable provenance expected from a runtime extracted from an official
+/// MediaPipe Python wheel.
+final class OfficialWheelProvenance {
+  /// Describes the exact wheel inputs and runtime claims a manifest must match.
+  const OfficialWheelProvenance({
+    required this.version,
+    required this.wheel,
+    required this.libraryPath,
+    required this.librarySha256,
+    required this.minimumOS,
+    required this.delegates,
+    required this.notices,
+  });
+
+  /// Upstream MediaPipe package version.
+  final String version;
+
+  /// Immutable wheel URL and digest.
+  final DownloadAsset wheel;
+
+  /// Library member path inside the wheel.
+  final String libraryPath;
+
+  /// Digest of the library before loader/signing metadata adjustments.
+  final String librarySha256;
+
+  /// Minimum operating-system version encoded in the library.
+  final String minimumOS;
+
+  /// Delegates validated for this prepared runtime.
+  final Set<String> delegates;
+
+  /// Upstream notice filenames and their wheel-content digests.
+  final Map<String, String> notices;
+}
+
 /// The validation target for a hook build target string; see `buildTarget`.
 VisionLibraryTarget visionLibraryTarget(String target) => switch (target) {
   'macos/arm64' => VisionLibraryTarget.macosArm64,
@@ -26,13 +62,18 @@ VisionLibraryTarget visionLibraryTarget(String target) => switch (target) {
   ),
 };
 
-Set<String> _requiredFiles(String libraryName) => {
+Set<String> _requiredFiles(
+  String libraryName,
+  OfficialWheelProvenance? officialWheel,
+) => {
   libraryName,
   'manifest.json',
   'LICENSE',
   'NOTICE',
-  'opencv-licenses/LICENSE',
-  'opencv-licenses/CAROTENE_NOTICES',
+  if (officialWheel == null) ...{
+    'opencv-licenses/LICENSE',
+    'opencv-licenses/CAROTENE_NOTICES',
+  },
 };
 
 /// Checks both provenance and the library bytes before loading native code.
@@ -43,6 +84,7 @@ Future<File> validateVisionLibrary(
   String? expectedSha256,
   String libraryName = 'libface_detector.dylib',
   VisionLibraryTarget target = VisionLibraryTarget.macosArm64,
+  OfficialWheelProvenance? officialWheel,
 }) async {
   _checkLibraryName(libraryName);
   final library = File.fromUri(directory.uri.resolve(libraryName));
@@ -50,8 +92,6 @@ Future<File> validateVisionLibrary(
   final manifest = jsonDecode(await manifestFile.readAsString());
   final simulator = target == VisionLibraryTarget.iosSimulatorArm64;
   if (manifest is! Map<String, dynamic> ||
-      manifest['revision'] != _mediaPipeRevision ||
-      manifest['opencv_revision'] != _openCvRevision ||
       manifest['platform'] != (simulator ? 'ios' : 'macos') ||
       manifest['architecture'] != 'arm64' ||
       (simulator && manifest['ios_sdk'] != 'iphonesimulator') ||
@@ -63,9 +103,46 @@ Future<File> validateVisionLibrary(
     throw StateError('MediaPipe native artifact provenance/hash mismatch.');
   }
   final delegates = manifest['delegates'];
-  if (delegates is! List ||
-      !delegates.contains('cpu') ||
-      (!simulator && !delegates.contains('gpu'))) {
+  if (officialWheel == null) {
+    if (manifest['revision'] != _mediaPipeRevision ||
+        manifest['opencv_revision'] != _openCvRevision) {
+      throw StateError('MediaPipe native artifact provenance/hash mismatch.');
+    }
+  } else {
+    final packaging = manifest['packaging'];
+    final files = manifest['files'];
+    if (simulator ||
+        expectedSha256 == null ||
+        manifest['origin'] != 'official-pypi-wheel' ||
+        manifest['upstream_version'] != officialWheel.version ||
+        manifest['upstream_url'] != officialWheel.wheel.url ||
+        manifest['upstream_sha256'] != officialWheel.wheel.sha256 ||
+        manifest['upstream_library'] != officialWheel.libraryPath ||
+        manifest['upstream_library_sha256'] != officialWheel.librarySha256 ||
+        manifest['minimum_os'] != officialWheel.minimumOS ||
+        packaging is! Map<String, dynamic> ||
+        packaging['install_name'] != '@rpath/libmediapipe.dylib' ||
+        packaging['section_layout_unchanged'] != true ||
+        files is! Map<String, dynamic> ||
+        files[libraryName] != expectedSha256 ||
+        officialWheel.notices.entries.any(
+          (notice) => files[notice.key] != notice.value,
+        )) {
+      throw StateError('Official MediaPipe wheel provenance/hash mismatch.');
+    }
+    for (final notice in officialWheel.notices.entries) {
+      final file = File.fromUri(directory.uri.resolve(notice.key));
+      if (!await file.exists() ||
+          (await sha256.bind(file.openRead()).first).toString() !=
+              notice.value) {
+        throw StateError('Official MediaPipe notice hash mismatch.');
+      }
+    }
+  }
+  final requiredDelegates =
+      officialWheel?.delegates ??
+      (simulator ? const {'cpu'} : const {'cpu', 'gpu'});
+  if (delegates is! List || !requiredDelegates.every(delegates.contains)) {
     throw StateError(
       simulator
           ? 'The iOS simulator requires a CPU runtime. '
@@ -85,9 +162,10 @@ Future<File> downloadVisionLibrary({
   required Directory cache,
   String libraryName = 'libface_detector.dylib',
   VisionLibraryTarget target = VisionLibraryTarget.macosArm64,
+  OfficialWheelProvenance? officialWheel,
 }) async {
   _checkLibraryName(libraryName);
-  final requiredFiles = _requiredFiles(libraryName);
+  final requiredFiles = _requiredFiles(libraryName, officialWheel);
   if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(asset.sha256) ||
       !RegExp(r'^[a-f0-9]{64}$').hasMatch(librarySha256)) {
     throw ArgumentError('Expected SHA-256 hex digests for the native runtime.');
@@ -102,6 +180,7 @@ Future<File> downloadVisionLibrary({
       expectedSha256: librarySha256,
       libraryName: libraryName,
       target: target,
+      officialWheel: officialWheel,
     );
     if (await Future.wait([
       for (final name in requiredFiles)
@@ -134,7 +213,8 @@ Future<File> downloadVisionLibrary({
         if (!entry.isFile ||
             entry.isSymbolicLink ||
             !seen.add(name) ||
-            !(requiredFiles.contains(name) || license)) {
+            !(requiredFiles.contains(name) ||
+                (officialWheel == null && license))) {
           throw FormatException('Unexpected native archive entry: $name');
         }
       },
@@ -154,6 +234,7 @@ Future<File> downloadVisionLibrary({
       expectedSha256: librarySha256,
       libraryName: libraryName,
       target: target,
+      officialWheel: officialWheel,
     );
     // Publish the library last. Each rename is atomic and concurrent hooks
     // write identical content within this digest-specific cache directory.

@@ -25,6 +25,15 @@ void main(List<String> arguments) async {
         'mediapipe_flutter_vision.prebuilt must be a boolean.',
       );
     }
+    final useOfficialMacosLandmarks =
+        input.userDefines['official_macos_landmark_tasks'];
+    if (useOfficialMacosLandmarks != null &&
+        useOfficialMacosLandmarks is! bool) {
+      throw const FormatException(
+        'mediapipe_flutter_vision.official_macos_landmark_tasks must be a '
+        'boolean.',
+      );
+    }
     final selection =
         input.userDefines['tasks'] ?? ['face_detector', 'face_landmarker'];
     if (selection is! List ||
@@ -46,6 +55,42 @@ void main(List<String> arguments) async {
         );
       }
       // Core's hook rejects targets its runtime table has no release for.
+    }
+    if (useOfficialMacosLandmarks == true) {
+      if (target != officialMacosLandmarkRuntime.target) {
+        throw UnsupportedError(
+          'The official macOS landmark runtime only supports '
+          '${officialMacosLandmarkRuntime.target}, not $target.',
+        );
+      }
+      final validated = tasks.intersection(officialMacosLandmarkRuntime.tasks);
+      if (validated.isEmpty) {
+        throw StateError(
+          'official_macos_landmark_tasks requires at least one of '
+          '${officialMacosLandmarkRuntime.tasks.join(', ')} in tasks.',
+        );
+      }
+      tasks.removeAll(validated);
+      // All non-face task bindings share one `vision.dylib` asset ID. Once the
+      // official monolith owns that ID for Hand or Pose, it must also serve any
+      // other selected task using the ID; registering the source monolith too
+      // would produce a duplicate native asset. These extra tasks remain
+      // unvalidated and are deliberately absent from the release's task set.
+      final aliases = _assetNames(validated);
+      final sharingSelectedAlias = {
+        for (final task in tasks)
+          if (_assetNames({task}).any(aliases.contains)) task,
+      };
+      tasks.removeAll(sharingSelectedAlias);
+      await _bundleRelease(
+        input,
+        output,
+        release: officialMacosLandmarkRuntime,
+        target: target,
+        tasks: {...validated, ...sharingSelectedAlias},
+      );
+      output.metadata['official_macos_landmark_tasks'] = validated.toList()
+        ..sort();
     }
     if (target == 'android/arm64' || target == 'android/x64') {
       if (tasks.isNotEmpty) {
@@ -131,15 +176,27 @@ Future<void> _bundleRelease(
     local.uri.resolve(release.libraryName),
   ).exists();
   final File library;
-  if (input.userDefines['prebuilt'] != true && hasLocalBuild) {
+  if (hasLocalBuild &&
+      (release.officialWheel != null ||
+          input.userDefines['prebuilt'] != true)) {
     // Maintainers can continue testing builds made by tool/build_native.py.
     // A normal dependency installation has no package-local build directory.
     library = await validateVisionLibrary(
       local,
+      expectedSha256: release.officialWheel == null
+          ? null
+          : release.librarySha256,
       libraryName: release.libraryName,
       target: visionLibraryTarget(target),
+      officialWheel: release.officialWheel,
     );
   } else if (archive == null) {
+    if (release.officialWheel != null) {
+      throw StateError(
+        'The ${release.release} runtime must be prepared locally. Run python3 '
+        'tool/prepare_official_macos_landmark_runtime.py in the vision package.',
+      );
+    }
     throw StateError(
       'The ${release.release} runtime is not published yet, so it can only be '
       'served from a local source build. Run python3 tool/build_native.py in '
@@ -153,6 +210,7 @@ Future<void> _bundleRelease(
       libraryName: release.libraryName,
       cache: Directory.fromUri(input.outputDirectoryShared.resolve('$target/')),
       target: visionLibraryTarget(target),
+      officialWheel: release.officialWheel,
     );
   }
   await _bundleAliases(input, output, library: library, tasks: tasks);

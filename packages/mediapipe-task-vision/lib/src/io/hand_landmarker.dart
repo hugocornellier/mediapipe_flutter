@@ -20,7 +20,9 @@ final class HandLandmarker {
 
   /// Load a compatible task bundle on a worker isolate.
   static Future<HandLandmarker> create(HandLandmarkerOptions options) async {
-    final capabilities = await queryLandmarkTaskCapabilities();
+    final capabilities = await queryLandmarkTaskCapabilities(
+      useOfficialMacosRuntime: true,
+    );
     if (!capabilities.supportedDelegates.contains(options.delegate)) {
       throw UnsupportedError(
         capabilities.unavailableReasons[options.delegate]!,

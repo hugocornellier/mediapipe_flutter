@@ -24,12 +24,19 @@ final class GalleryAssets {
   Set<String> get bundledTasks =>
       (manifest['tasks'] as List).cast<String>().toSet();
 
+  Set<String> get officialMacosLandmarkTasks =>
+      (manifest['official_macos_landmark_tasks'] as List)
+          .cast<String>()
+          .toSet();
+
   String path(String name) => '${directory.path}/$name';
 
   File file(String name) => File(path(name));
 
   static Future<GalleryAssets> unpack() async {
-    final directory = await Directory.systemTemp.createTemp('mediapipe-gallery-');
+    final directory = await Directory.systemTemp.createTemp(
+      'mediapipe-gallery-',
+    );
     final manifest =
         jsonDecode(await rootBundle.loadString('assets/manifest.json'))
             as Map<String, dynamic>;
@@ -104,7 +111,11 @@ class _HomePageState extends State<HomePage> {
         final (assets, platform) = snapshot.requireData;
         final bundled = assets.bundledTasks;
         final tasks = [
-          for (final task in supportedTasks(platform, bundled))
+          for (final task in supportedTasks(
+            platform,
+            bundled,
+            assets.officialMacosLandmarkTasks,
+          ))
             if (task.hasOwnPage) task,
         ];
         return _Gallery(assets: assets, platform: platform, tasks: tasks);
@@ -215,11 +226,19 @@ class _Gallery extends StatelessWidget {
       );
 
   void _showAbout(BuildContext context) {
-    final unvalidated = unvalidatedTasks(platform, assets.bundledTasks);
+    final unvalidated = unvalidatedTasks(
+      platform,
+      assets.bundledTasks,
+      assets.officialMacosLandmarkTasks,
+    );
     // Validated here, but with no screen of its own. Without this the task is
     // invisible: absent from the grid and absent from the unvalidated list.
     final pending = [
-      for (final task in supportedTasks(platform, assets.bundledTasks))
+      for (final task in supportedTasks(
+        platform,
+        assets.bundledTasks,
+        assets.officialMacosLandmarkTasks,
+      ))
         if (!task.hasOwnPage) task,
     ];
     showModalBottomSheet<void>(
@@ -232,15 +251,14 @@ class _Gallery extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'This build',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              Text('This build', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               Text('Target: ${assets.manifest['target']}'),
-              Text('Platform: ${platform.operatingSystem} '
-                  '${platform.architecture}'
-                  '${platform.version == null ? '' : ' ${platform.version}'}'),
+              Text(
+                'Platform: ${platform.operatingSystem} '
+                '${platform.architecture}'
+                '${platform.version == null ? '' : ' ${platform.version}'}',
+              ),
               Text('Bundled runtimes: ${assets.bundledTasks.length}'),
               if (pending.isNotEmpty) ...[
                 const SizedBox(height: 20),
@@ -302,14 +320,20 @@ class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final delegates = task.capabilities(platform).supportedDelegates;
+    final delegates = task
+        .capabilitiesFor(platform, assets.officialMacosLandmarkTasks)
+        .supportedDelegates;
     return Card.filled(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (context) => switch (task.demo) {
-              GalleryDemo.live => LivePage(task: task, platform: platform),
+              GalleryDemo.live => LivePage(
+                task: task,
+                platform: platform,
+                officialMacosLandmarkTasks: assets.officialMacosLandmarkTasks,
+              ),
               GalleryDemo.segment => SegmentPage(task: task, assets: assets),
               // Entries without a screen never reach a tile.
               GalleryDemo.none => throw StateError('${task.id} has no demo'),
@@ -346,9 +370,9 @@ class _TaskCard extends StatelessWidget {
                     ),
                   for (final delegate in delegates)
                     Chip(
-                      label: Text(delegate == VisionDelegate.gpu
-                          ? 'GPU'
-                          : 'CPU'),
+                      label: Text(
+                        delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+                      ),
                       visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
                       labelStyle: theme.textTheme.labelSmall,

@@ -29,6 +29,8 @@ Map<String, dynamic> loadFaceReference(
         ? '35ef4187d381addb1309f0f9dedd32613127fa98d1ad1f5ddeea57595cdbcaf0'
         : Platform.isWindows
         ? 'a8970c645c8c87c25ec9965cb5c898e803c6c42f7192b7de9a0541c62ae48cef'
+        : Platform.isMacOS
+        ? 'aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f'
         : null;
     if (expectedLibrary == null) {
       throw StateError('Invalid same-host official CPU reference: $relative');

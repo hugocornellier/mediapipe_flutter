@@ -21,9 +21,16 @@ typedef _Task = (
 // native library on Linux and Windows. macOS loads our source build, whose CPU
 // results still differ from the official outputs; see upstream-issues.md
 // UP-004. Creating a task there fails closed, so the comparisons cannot run.
-final _unvalidatedHost = Platform.isMacOS
+final _unvalidatedHost =
+    Platform.isMacOS &&
+        Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] != '1'
     ? 'macOS source-build CPU output is unvalidated; see UP-004'
     : null;
+final _selectedTasks =
+    switch (Platform.environment['MEDIAPIPE_LANDMARK_TASKS']) {
+      final value? => value.split(',').toSet(),
+      null => _models.keys.toSet(),
+    };
 
 void main() {
   final reference = loadFaceReference(
@@ -32,12 +39,22 @@ void main() {
   );
   final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
   setUpAll(() {
-    for (final (name, row) in _models.entries.map((e) => (e.key, e.value))) {
+    for (final (name, row)
+        in _models.entries
+            .where((entry) => _selectedTasks.contains(entry.key))
+            .map((e) => (e.key, e.value))) {
       expect(sha256.convert(File(row.$1).readAsBytesSync()).toString(), row.$2);
       expect(reference['models'][name], row.$2);
     }
   });
-  for (final expected in cases.where((c) => c['timestamp_ms'] == null)) {
+  tearDownAll(() {
+    for (final task in _selectedTasks) {
+      reportReferenceDeltas(task);
+    }
+  });
+  for (final expected in cases.where(
+    (c) => c['timestamp_ms'] == null && _selectedTasks.contains(c['task']),
+  )) {
     test(
       'official ${expected['task']} / ${expected['input']} / ${expected['file']} / ${expected['options']}',
       () async {
@@ -50,6 +67,7 @@ void main() {
               null,
             ),
             expected['result'],
+            expected['task'] as String,
           );
         } finally {
           await close();
@@ -58,7 +76,7 @@ void main() {
       skip: _unvalidatedHost,
     );
   }
-  for (final name in _models.keys) {
+  for (final name in _models.keys.where(_selectedTasks.contains)) {
     test(
       '$name video matches tracked and empty frames through queued disposal',
       () async {
@@ -85,7 +103,7 @@ void main() {
         final results = await Future.wait(requests);
         await closing;
         for (var i = 0; i < frames.length; i++) {
-          _compare(results[i], frames[i]['result']);
+          _compare(results[i], frames[i]['result'], name);
         }
       },
       skip: _unvalidatedHost,
@@ -105,6 +123,7 @@ void main() {
           _compare(
             await process(_image(expected), 0, null),
             expected['result'],
+            name,
           );
         } finally {
           await close();
@@ -461,20 +480,33 @@ Map<String, dynamic> _mask(SegmentationMask mask) {
   };
 }
 
-void _compare(dynamic actual, dynamic expected, [String path = 'result']) {
+void _compare(
+  dynamic actual,
+  dynamic expected,
+  String task, [
+  String path = 'result',
+]) {
   if (expected is Map) {
     expect(actual, isA<Map>(), reason: path);
     expect((actual as Map).keys, unorderedEquals(expected.keys), reason: path);
     for (final key in expected.keys) {
-      _compare(actual[key], expected[key], '$path.$key');
+      _compare(actual[key], expected[key], task, '$path.$key');
     }
   } else if (expected is List) {
     expect(actual, isA<List>(), reason: path);
     expect(actual, hasLength(expected.length), reason: path);
     for (var i = 0; i < expected.length; i++) {
-      _compare(actual[i], expected[i], '$path[$i]');
+      _compare(actual[i], expected[i], task, '$path[$i]');
     }
   } else if (expected is double) {
+    recordReferenceDelta(
+      task,
+      'cpu',
+      path.contains('landmark') ? 'landmarks' : 'other',
+      path,
+      actual as num,
+      expected,
+    );
     expect(actual, closeTo(expected, 0.00001), reason: path);
   } else {
     expect(actual, expected, reason: path);

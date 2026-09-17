@@ -28,6 +28,7 @@ final class GalleryTask {
     required this.capabilities,
     this.demo = GalleryDemo.none,
     this.experimentalReason,
+    this.officialMacosLandmarkTask = false,
     String? runtimeId,
   }) : runtimeId = runtimeId ?? id;
 
@@ -56,6 +57,10 @@ final class GalleryTask {
   /// ones and never counted among them.
   final String? experimentalReason;
 
+  /// Whether this entry has an earned capability claim when the build manifest
+  /// says the official macOS landmark runtime was selected for [runtimeId].
+  final bool officialMacosLandmarkTask;
+
   bool get isExperimental => experimentalReason != null;
 
   /// Model asset name, matching `tool/prepare.py`.
@@ -65,26 +70,37 @@ final class GalleryTask {
   final String sample;
 
   final TaskCapabilities<VisionDelegate> Function(TaskPlatform) capabilities;
+
+  TaskCapabilities<VisionDelegate> capabilitiesFor(
+    TaskPlatform platform,
+    Set<String> officialMacosLandmarkTasks,
+  ) =>
+      officialMacosLandmarkTask &&
+          officialMacosLandmarkTasks.contains(runtimeId)
+      ? landmarkTaskCapabilitiesForPlatform(
+          platform,
+          officialMacosRuntime: true,
+        )
+      : capabilities(platform);
 }
 
 /// Live capture needs a camera plugin as well as a runtime. Only macOS is
 /// proven here, by the example this demo is lifted from; other platforms get
 /// the tile once their camera path is actually exercised.
-TaskCapabilities<VisionDelegate> _liveFaceCapabilities(TaskPlatform platform) =>
-    TaskCapabilities.onTargets(
-      platform: platform,
-      delegates: const {
-        VisionDelegate.cpu: {'macos/arm64': null},
-        VisionDelegate.gpu: {'macos/arm64': '14.0'},
-      },
-      runtimeVersion: '1.0.0',
-      unavailableReasons: const {
-        VisionDelegate.cpu:
-            'Live camera capture is exercised on macOS arm64 only.',
-        VisionDelegate.gpu:
-            'Live camera capture is exercised on macOS arm64 only.',
-      },
-    );
+TaskCapabilities<VisionDelegate> _liveFaceCapabilities(
+  TaskPlatform platform,
+) => TaskCapabilities.onTargets(
+  platform: platform,
+  delegates: const {
+    VisionDelegate.cpu: {'macos/arm64': null},
+    VisionDelegate.gpu: {'macos/arm64': '14.0'},
+  },
+  runtimeVersion: '1.0.0',
+  unavailableReasons: const {
+    VisionDelegate.cpu: 'Live camera capture is exercised on macOS arm64 only.',
+    VisionDelegate.gpu: 'Live camera capture is exercised on macOS arm64 only.',
+  },
+);
 
 final _catalog = <GalleryTask>[
   GalleryTask(
@@ -96,6 +112,28 @@ final _catalog = <GalleryTask>[
     model: 'face_landmarker.task',
     sample: 'portrait.jpg',
     capabilities: _liveFaceCapabilities,
+  ),
+  GalleryTask(
+    id: 'hand_landmarker_live',
+    runtimeId: 'hand_landmarker',
+    demo: GalleryDemo.live,
+    title: 'Live Hands',
+    summary: 'Hand landmarks and handedness on the camera feed.',
+    model: 'hand_landmarker.task',
+    sample: 'hands.jpg',
+    capabilities: landmarkTaskCapabilitiesForPlatform,
+    officialMacosLandmarkTask: true,
+  ),
+  GalleryTask(
+    id: 'pose_landmarker_live',
+    runtimeId: 'pose_landmarker',
+    demo: GalleryDemo.live,
+    title: 'Live Pose',
+    summary: 'Pose landmarks and skeleton on the camera feed.',
+    model: 'pose_landmarker_lite.task',
+    sample: 'pose.jpg',
+    capabilities: landmarkTaskCapabilitiesForPlatform,
+    officialMacosLandmarkTask: true,
   ),
   GalleryTask(
     id: 'object_detector',
@@ -128,6 +166,7 @@ final _catalog = <GalleryTask>[
     model: 'hand_landmarker.task',
     sample: 'hands.jpg',
     capabilities: landmarkTaskCapabilitiesForPlatform,
+    officialMacosLandmarkTask: true,
   ),
   GalleryTask(
     id: 'gesture_recognizer',
@@ -144,6 +183,7 @@ final _catalog = <GalleryTask>[
     model: 'pose_landmarker_lite.task',
     sample: 'pose.jpg',
     capabilities: landmarkTaskCapabilitiesForPlatform,
+    officialMacosLandmarkTask: true,
   ),
   GalleryTask(
     id: 'holistic_landmarker',
@@ -186,10 +226,14 @@ final _catalog = <GalleryTask>[
 
 /// The catalog restricted to tasks this build actually bundled and whose
 /// runtime is validated here. [bundled] comes from `assets/manifest.json`.
-List<GalleryTask> supportedTasks(TaskPlatform platform, Set<String> bundled) => [
+List<GalleryTask> supportedTasks(
+  TaskPlatform platform,
+  Set<String> bundled,
+  Set<String> officialMacosLandmarkTasks,
+) => [
   for (final task in _catalog)
     if (bundled.contains(task.runtimeId) &&
-        task.capabilities(platform).isSupported)
+        task.capabilitiesFor(platform, officialMacosLandmarkTasks).isSupported)
       task,
 ];
 
@@ -198,10 +242,16 @@ List<GalleryTask> supportedTasks(TaskPlatform platform, Set<String> bundled) => 
 Map<GalleryTask, String> unvalidatedTasks(
   TaskPlatform platform,
   Set<String> bundled,
+  Set<String> officialMacosLandmarkTasks,
 ) => {
   for (final task in _catalog)
     if (bundled.contains(task.runtimeId) &&
-        !task.capabilities(platform).isSupported)
-      task: task.capabilities(platform).unavailableReasons.values.firstOrNull ??
+        !task.capabilitiesFor(platform, officialMacosLandmarkTasks).isSupported)
+      task:
+          task
+              .capabilitiesFor(platform, officialMacosLandmarkTasks)
+              .unavailableReasons
+              .values
+              .firstOrNull ??
           'Not validated on this platform.',
 };

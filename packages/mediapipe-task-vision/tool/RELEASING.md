@@ -82,6 +82,23 @@ modern stateful C API is not available in the public source build. See
    immutable. A rebuild requires a new tag and an updated row in core's
    `tasks_runtime.dart` release table.
 
+## Gallery's official macOS landmark runtime
+
+The gallery alone opts Live Face Mesh, Live Hands and Live Pose into Google's
+official 1.0.0 macOS arm64
+wheel runtime. `gallery/tool/prepare.py` runs
+`tool/prepare_official_macos_landmark_runtime.py`, which verifies the wheel,
+extracts its library and notices, corrects `LC_ID_DYLIB`, shortens equivalent
+system-framework load paths to leave Flutter install-name capacity, re-signs,
+and proves the native payload stayed unchanged. The
+result remains in the ignored package build directory and is never a release
+asset; ordinary consumers continue to use the published face-landmarker
+archive.
+
+Run `python3 -B tool/test_official_macos_landmark_runtime.py` on macOS arm64 to
+run Face Landmarker's CPU/GPU comparisons and Hand/Pose's checked-in official
+CPU comparisons through the prepared runtime.
+
 ## Runtime tables and release layout
 
 Build hooks are table-driven. Each hook computes a build target such as

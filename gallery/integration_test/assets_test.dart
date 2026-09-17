@@ -20,6 +20,7 @@ void main() {
     final tasks = supportedTasks(
       platform,
       assets.bundledTasks,
+      assets.officialMacosLandmarkTasks,
     ).where((task) => task.hasOwnPage).toList();
     expect(tasks, isNotEmpty, reason: 'no tile is visible to check');
     for (final task in tasks) {
@@ -44,12 +45,16 @@ void main() {
     final live = supportedTasks(
       platform,
       assets.bundledTasks,
+      assets.officialMacosLandmarkTasks,
     ).where((task) => task.demo == GalleryDemo.live).toList();
     if (live.isEmpty) {
       markTestSkipped('no live tile on this platform');
       return;
     }
-    for (final task in live) {
+    // Only the first live tile runs here: loading a second tile whose task
+    // binds a different native asset would hit the duplicate-runtime abort
+    // that runtime_test.dart documents.
+    for (final task in live.take(1)) {
       final controller = LiveCameraController<Object?>(
         liveDemoFor(task.id)!.task(),
       );
