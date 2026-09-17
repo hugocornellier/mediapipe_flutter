@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 import 'catalog.dart';
-import 'live/face_camera_controller.dart';
-import 'live/face_overlay.dart';
+import 'live/live_camera_controller.dart';
+import 'live/live_registry.dart';
 
-/// Live camera face mesh, driven by the example's `FaceCameraController`.
+/// One live camera demo, whichever task the tile names.
 ///
-/// The controller and overlay are the example's, copied unchanged: they already
-/// own capture, the VIDEO-mode task, frame skipping and delegate switching.
+/// Capture, the VIDEO-mode task lifecycle, frame skipping, delegate switching
+/// and timings all live in [LiveCameraController]; this screen only picks the
+/// task and painter out of the registry and draws the controls.
 class LivePage extends StatefulWidget {
   const LivePage({super.key, required this.task, required this.platform});
 
@@ -21,7 +22,9 @@ class LivePage extends StatefulWidget {
 }
 
 class _LivePageState extends State<LivePage> {
-  final _controller = FaceCameraController();
+  late final LiveDemo _demo = liveDemoFor(widget.task.id)!;
+  late final LiveCameraController<Object?> _controller =
+      LiveCameraController<Object?>(_demo.task());
   late final List<VisionDelegate> _delegates = widget.task
       .capabilities(widget.platform)
       .supportedDelegates
@@ -88,11 +91,11 @@ class _LivePageState extends State<LivePage> {
     final busy = controller.changing;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Live camera face mesh'),
+        title: Text(widget.task.title),
         actions: [
           IconButton(
             icon: Icon(_showMesh ? Icons.grid_on : Icons.grid_off),
-            tooltip: 'Mesh',
+            tooltip: 'Connections',
             onPressed: () => setState(() => _showMesh = !_showMesh),
           ),
           IconButton(
@@ -119,10 +122,10 @@ class _LivePageState extends State<LivePage> {
                           children: [
                             CameraPreview(camera),
                             CustomPaint(
-                              painter: FaceOverlay(
+                              painter: _demo.overlay(
                                 controller.result,
-                                showMesh: _showMesh,
-                                showPoints: _showPoints,
+                                _showMesh,
+                                _showPoints,
                               ),
                             ),
                           ],

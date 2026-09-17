@@ -6,10 +6,36 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
-/// Owns camera capture and the official VIDEO-mode Face Landmarker for this demo.
-class FaceCameraController extends ChangeNotifier {
+/// The task-specific half of a live demo: how to build it, and how to run one
+/// frame through it. Everything else about live capture is identical between
+/// tasks and lives in [LiveCameraController].
+abstract interface class LiveTask<T> {
+  /// Human-readable name, used in errors.
+  String get name;
+
+  /// Creates the underlying VIDEO-mode task.
+  Future<void> open(VisionDelegate delegate, Uint8List modelBytes);
+
+  /// Runs one frame. Called at most once at a time.
+  Future<T> detect(VisionImage frame, int timestampMilliseconds);
+
+  /// Releases native resources. Safe to call when never opened.
+  Future<void> close();
+}
+
+/// Owns camera capture and one official VIDEO-mode task.
+///
+/// Camera lifecycle, the operation queue, generation guards, frame skipping,
+/// timestamp monotonicity, timings and error capture are the same whichever
+/// task is running, so they live here once and the task supplies only [LiveTask].
+class LiveCameraController<T> extends ChangeNotifier {
+  LiveCameraController(this.task);
+
+  /// The task being demonstrated.
+  final LiveTask<T> task;
+
   CameraController? _camera;
-  FaceLandmarker? _landmarker;
+  bool _opened = false;
   Future<void> _operations = Future.value();
   Future<void>? _frame;
   Future<void>? _closing;
@@ -22,7 +48,7 @@ class FaceCameraController extends ChangeNotifier {
   bool running = false;
   bool changing = false;
   String? error;
-  FaceLandmarkerResult? result;
+  T? result;
   int processedFrames = 0;
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
@@ -56,7 +82,7 @@ class FaceCameraController extends ChangeNotifier {
   Future<void> start(
     CameraDescription description, {
     VisionDelegate delegate = VisionDelegate.cpu,
-    String modelAsset = 'assets/face_landmarker.task',
+    required String modelAsset,
   }) {
     if (_closed) return Future.error(StateError('Camera demo is closed.'));
     final generation = ++_generation;
@@ -71,16 +97,11 @@ class FaceCameraController extends ChangeNotifier {
       try {
         this.delegate = delegate;
         final data = await rootBundle.load(modelAsset);
-        _landmarker = await FaceLandmarker.create(
-          FaceLandmarkerOptions(
-            delegate: delegate,
-            modelBytes: data.buffer.asUint8List(
-              data.offsetInBytes,
-              data.lengthInBytes,
-            ),
-            runningMode: VisionRunningMode.video,
-          ),
+        await task.open(
+          delegate,
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
         );
+        _opened = true;
         if (_closed || generation != _generation) {
           await _release();
           return;
@@ -157,7 +178,7 @@ class FaceCameraController extends ChangeNotifier {
       if (image.format.group != ImageFormatGroup.bgra8888 ||
           image.planes.length != 1) {
         throw StateError(
-          'The macOS camera must supply one BGRA or RGBA plane.',
+          '\${task.name} needs one BGRA or RGBA camera plane.',
         );
       }
       final plane = image.planes.single;
@@ -170,10 +191,7 @@ class FaceCameraController extends ChangeNotifier {
             ? VisionPixelFormat.rgba
             : VisionPixelFormat.bgra,
       );
-      final detection = await _landmarker!.detectForVideo(
-        frame,
-        timestampMilliseconds: timestamp,
-      );
+      final detection = await task.detect(frame, timestamp);
       if (_closed || generation != _generation) return;
       result = detection;
       inferenceMilliseconds = timer.elapsedMicroseconds / 1000;
@@ -222,12 +240,13 @@ class FaceCameraController extends ChangeNotifier {
       }
     }
     await _frame;
-    final landmarker = _landmarker;
-    _landmarker = null;
-    try {
-      await landmarker?.dispose();
-    } catch (failure) {
-      error ??= _message(failure);
+    if (_opened) {
+      _opened = false;
+      try {
+        await task.close();
+      } catch (failure) {
+        error ??= _message(failure);
+      }
     }
     _clock.stop();
   }

@@ -1,8 +1,8 @@
 # MediaPipe Gallery
 
-One app that opens every MediaPipe task this repository has validated on the
+One app for the interactive MediaPipe demos this repository supports on the
 platform you run it on. A task appears as a tile only when its runtime is
-bundled, its support is validated here, and a demo exists for it.
+bundled, its support is validated here, and it has a screen to show.
 
 ## Running it
 
@@ -34,14 +34,16 @@ Three gates, in order:
 2. **Validated** — `lib/catalog.dart` asks the package's own capability query.
    Nothing restates support by hand, so a task validated on a new platform
    appears here with no code change.
-3. **Demonstrable** — a runner in `lib/runners.dart`, or a live page.
+3. **Demonstrable** — a screen of its own, which is what `GalleryDemo` names.
+   Entries without one are known to the gallery but never become tiles.
 
-Anything bundled but not validated, and anything validated without a demo, is
+Anything bundled but not validated, and anything validated without a screen, is
 listed in the about sheet with the package's own reason rather than hidden.
 
-Today that means 11 runtimes bundle on macOS, Linux and Windows, two on the iOS
-simulator and Android, while hand, gesture, pose, holistic and the segmenters
-stay off the grid pending the numerical work in `upstream-issues.md` UP-004.
+Today that leaves two tiles on macOS: the live camera face mesh and MagicTouch.
+Everything else is bundled and reported but not demonstrated, either because it
+has no screen yet or because it waits on the numerical work in
+`upstream-issues.md` UP-004.
 
 ## Live camera
 

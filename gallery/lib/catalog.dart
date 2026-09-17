@@ -2,8 +2,9 @@ import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 /// How a tile demonstrates its task.
 enum GalleryDemo {
-  /// Runs against a bundled sample image; see `runners.dart`.
-  sample,
+  /// Known to the gallery and reported in the about sheet, but with no screen
+  /// of its own, so it never becomes a tile.
+  none,
 
   /// Live camera capture.
   live,
@@ -25,7 +26,8 @@ final class GalleryTask {
     required this.model,
     required this.sample,
     required this.capabilities,
-    this.demo = GalleryDemo.sample,
+    this.demo = GalleryDemo.none,
+    this.experimentalReason,
     String? runtimeId,
   }) : runtimeId = runtimeId ?? id;
 
@@ -44,8 +46,17 @@ final class GalleryTask {
   /// Whether this tile opens the live camera demo.
   bool get live => demo == GalleryDemo.live;
 
-  /// Whether this tile has a screen of its own rather than a sample runner.
-  bool get hasOwnPage => demo != GalleryDemo.sample;
+  /// Whether this entry has a screen of its own, and so can be a tile.
+  bool get hasOwnPage => demo != GalleryDemo.none;
+
+  /// Why this tile's task is not validated on the platforms it appears on.
+  ///
+  /// A tile with a reason runs real inference but has never been checked
+  /// against Google's outputs here, so it is shown apart from the validated
+  /// ones and never counted among them.
+  final String? experimentalReason;
+
+  bool get isExperimental => experimentalReason != null;
 
   /// Model asset name, matching `tool/prepare.py`.
   final String model;
@@ -55,29 +66,6 @@ final class GalleryTask {
 
   final TaskCapabilities<VisionDelegate> Function(TaskPlatform) capabilities;
 }
-
-/// Face tasks have no capability query of their own: they are the baseline
-/// every published runtime carries, so support follows the bundled runtime.
-TaskCapabilities<VisionDelegate> _faceCapabilities(TaskPlatform platform) =>
-    TaskCapabilities.onTargets(
-      platform: platform,
-      delegates: const {
-        VisionDelegate.cpu: {
-          'macos/arm64': null,
-          'linux/x64': null,
-          'windows/x64': null,
-          'ios-simulator/arm64': null,
-          'android/arm64': null,
-          'android/x64': null,
-        },
-        VisionDelegate.gpu: {'macos/arm64': '14.0'},
-      },
-      runtimeVersion: '1.0.0',
-      unavailableReasons: const {
-        VisionDelegate.gpu:
-            'Face GPU inference is validated on macOS arm64 14.0+ only.',
-      },
-    );
 
 /// Live capture needs a camera plugin as well as a runtime. Only macOS is
 /// proven here, by the example this demo is lifted from; other platforms get
@@ -98,25 +86,7 @@ TaskCapabilities<VisionDelegate> _liveFaceCapabilities(TaskPlatform platform) =>
       },
     );
 
-const _catalog = <GalleryTask>[
-  GalleryTask(
-    id: 'face_detector',
-    title: 'Face Detector',
-    summary: 'Bounding boxes and six keypoints per face.',
-    model: 'blaze_face_short_range.tflite',
-    // The short-range model expects a near face; it finds none in the 4K group
-    // shot, which is correct behaviour but a poor first impression.
-    sample: 'portrait.jpg',
-    capabilities: _faceCapabilities,
-  ),
-  GalleryTask(
-    id: 'face_landmarker',
-    title: 'Face Landmarker',
-    summary: '478 landmarks, 52 blendshapes and a 4x4 transform.',
-    model: 'face_landmarker.task',
-    sample: 'portrait.jpg',
-    capabilities: _faceCapabilities,
-  ),
+final _catalog = <GalleryTask>[
   GalleryTask(
     id: 'face_landmarker_live',
     runtimeId: 'face_landmarker',
