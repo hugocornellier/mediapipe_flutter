@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: [main, runtime-table-and-vision-runtime]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 

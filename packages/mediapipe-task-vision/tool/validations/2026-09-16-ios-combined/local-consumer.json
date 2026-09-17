@@ -1,0 +1,30 @@
+{
+  "target": "ios-simulator/arm64",
+  "delegate": "CPU",
+  "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-26-4",
+  "tasks": [
+    "face_detector",
+    "face_landmarker"
+  ],
+  "experimental_support_override": false,
+  "prebuilt": false,
+  "status": "passed",
+  "library_sha256": "a4fea1f2abddb6d656b043b5471a09a64df1308475422da9800c8f880cd2aa9e",
+  "bundled_libraries": {
+    "face_detector": {
+      "source_sha256": "a4fea1f2abddb6d656b043b5471a09a64df1308475422da9800c8f880cd2aa9e",
+      "bundled_sha256": "bccc52d1881b0eff5e2e84c758fc9f50659bdb4ba518ded97c3738cf68a75a43",
+      "code_and_data_unchanged": true
+    },
+    "face_landmarker": {
+      "source_sha256": "a4fea1f2abddb6d656b043b5471a09a64df1308475422da9800c8f880cd2aa9e",
+      "bundled_sha256": "abd6fb50daacd9a38b4b79335edbddbadcfad8aac768da5bf47bc08fd45221d9",
+      "code_and_data_unchanged": true
+    }
+  },
+  "debug_app_inference": "passed",
+  "tests": {
+    "passed": 37,
+    "skipped": 34
+  }
+}

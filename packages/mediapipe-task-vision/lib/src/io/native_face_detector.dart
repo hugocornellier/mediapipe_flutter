@@ -14,7 +14,10 @@ final class NativeFaceDetector {
   NativeFaceDetector(FaceDetectorOptions options)
     : _gpu = options.delegate == VisionDelegate.gpu {
     if (!Platform.isMacOS && _gpu) {
-      throw UnsupportedError('GPU face inference is validated on macOS only.');
+      throw UnsupportedError(
+        'GPU face inference is validated on macOS only; '
+        'this target supports CPU only.',
+      );
     }
     using((arena) {
       final native = arena<mp.MpFaceDetectorOptions>();
@@ -25,13 +28,18 @@ final class NativeFaceDetector {
           : mp.MpDelegate.MP_DELEGATE_CPU;
       base.host_system = Platform.isIOS
           ? mp.MpHostSystem.MP_HOST_SYSTEM_IOS
+          : Platform.isAndroid
+          ? mp.MpHostSystem.MP_HOST_SYSTEM_ANDROID
           : Platform.isLinux
           ? mp.MpHostSystem.MP_HOST_SYSTEM_LINUX
           : Platform.isWindows
           ? mp.MpHostSystem.MP_HOST_SYSTEM_WINDOWS
           : mp.MpHostSystem.MP_HOST_SYSTEM_MAC;
       if (options.modelPath case final path?) {
-        base.model_asset_path = path.toNativeUtf8(allocator: arena).cast();
+        // Android's resource resolver treats relative paths as Java assets.
+        // This FFI API reads files, so bypass that resolver with a full path.
+        final filePath = Platform.isAndroid ? File(path).absolute.path : path;
+        base.model_asset_path = filePath.toNativeUtf8(allocator: arena).cast();
       }
       if (options.modelBytes case final bytes?) {
         final buffer = arena<Uint8>(bytes.length);

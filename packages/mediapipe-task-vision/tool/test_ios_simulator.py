@@ -26,16 +26,14 @@ def main():
     if not candidates:
         raise SystemExit('Specify an installed iOS simulator with --device UUID, or boot one first.')
     runtime, device = candidates[0]
-    libraries = {}
-    for task in ('face_detector', 'face_landmarker'):
-        directory = PACKAGE / f'build/native/ios-simulator/arm64/{task}'
-        library = directory / f'lib{task}.dylib'
-        if not library.exists():
-            raise SystemExit('Run python3 -B tool/build_ios_simulator.py first.')
-        libraries[task] = {
-            'sha256': hashlib.sha256(library.read_bytes()).hexdigest(),
-            'manifest': json.loads((directory / 'manifest.json').read_text()),
-        }
+    directory = PACKAGE / 'build/native/ios-simulator/arm64'
+    library = directory / 'libmediapipe.dylib'
+    if not library.exists():
+        raise SystemExit('Run python3 -B tool/build_ios_simulator.py first.')
+    libraries = {'combined': {
+        'sha256': hashlib.sha256(library.read_bytes()).hexdigest(),
+        'manifest': json.loads((directory / 'manifest.json').read_text()),
+    }}
     prepare()
     if device['state'] != 'Booted':
         subprocess.run(['xcrun', 'simctl', 'boot', device['udid']], check=True)

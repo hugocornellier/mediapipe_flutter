@@ -23,7 +23,11 @@ int main(int argc, char** argv) {
   options.base_options.model_asset_path = argv[1];
   options.base_options.file_descriptor = -1;
   options.base_options.delegate = gpu ? MP_DELEGATE_GPU : MP_DELEGATE_CPU;
+#ifdef __ANDROID__
+  options.base_options.host_system = MP_HOST_SYSTEM_ANDROID;
+#else
   options.base_options.host_system = MP_HOST_SYSTEM_MAC;
+#endif
   options.running_mode = MP_RUNNING_MODE_IMAGE;
   options.output_face_blendshapes = true;
   options.output_facial_transformation_matrixes = true;

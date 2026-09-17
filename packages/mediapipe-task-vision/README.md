@@ -12,6 +12,12 @@ same Dart API and official task graphs. It currently requires a local native
 build; simulator archives are not published. Physical iOS devices and simulator
 GPU inference are not supported yet. See [the simulator guide](tool/IOS_SIMULATOR.md).
 
+CI builds the iOS simulator face runtime from pinned source and tests a fresh
+Flutter consumer. Android face CI builds x86_64 from source and tests an emulator
+with debug/release APKs. Android requires a verified local native build; it has
+no public runtime download. See [the Android guide](tool/ANDROID.md). Physical
+mobile devices, camera use and mobile GPU inference remain unvalidated.
+
 **MagicTouch Interactive Segmenter** is an optional macOS arm64 CPU task using
 Google's modern stateful 1.0.1 API and official int8 version-1 task bundle.
 It selects arbitrary objects from positive, negative and lasso strokes.

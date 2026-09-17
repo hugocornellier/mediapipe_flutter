@@ -299,6 +299,83 @@ Evidence and prior validation artifacts are documented in
 `packages/mediapipe-task-vision/tool/validations/2026-09-12-interactive-segmenter/`.
 Morning commit `72711df` corrected attribution to a single runtime version.
 
+## UP-009 — Combined iOS simulator CPU runtime has reference differences beyond face tasks
+
+**Status:** measured compatibility finding on 2026-09-16; not established as an
+upstream bug. Face Detector and Face Landmarker remain validated. Other source
+task support declarations have not been expanded.
+
+The combined arm64 simulator build exports all 114 declared C functions. Running
+all eleven vision task families in a fresh Flutter app with temporary support
+overrides in an isolated package copy yields **107 passed, 56 failed, 49 GPU
+skips**. The failing comparisons retain the desktop suite's existing tolerances
+and exact mask-byte checks. Simulator runtime: iOS 26.4, host: Apple M4 Max.
+
+The first attempt exited during Object Detector CPU inference. Disassembly
+showed the same non-streaming SVE prologue described in UP-001. Applying the
+existing scoped KleidiAI compiler flag to the iOS build removes those instructions
+and allows the complete suite to run without that exit.
+
+The rebuilt simulator library SHA-256 is
+`a4fea1f2abddb6d656b043b5471a09a64df1308475422da9800c8f880cd2aa9e`.
+Examples: Object Detector score `0.4504084587097168` versus the official
+`0.450329452753067`; classifier ROI score `0.16767385601997375` versus
+`0.16696061193943024`; normalized quantized ROI embedding byte 7 is `254`
+versus `255`. These match UP-004's macOS observations. Hand/Gesture/Pose/Holistic
+coordinates or confidences exceed `1e-5` in some cases; confidence mask hashes
+also differ. Category-mask cases and many other cases pass.
+
+Reproduction, from the vision package with a booted simulator and downloaded models:
+
+```sh
+python3 -B tool/build_ios_simulator.py
+python3 -B tool/test_ios_consumer.py --experimental-all-tasks
+```
+
+Local evidence: root `build/codex-tmp/ios-consumer-yb2gy4pg/`. The report marks
+the capability overrides explicitly; they never modify the consumer package's
+real support declarations. Confidence-mask hash comparisons are intentionally
+stricter than numerical float comparisons; a failed hash alone does not establish
+the size or practical significance of a difference.
+
+An additional lead: the pinned official Mac 1.0.0 wheel embeds a build-information
+string naming OpenCV 4.13.0, whereas the local builders pin OpenCV 4.12.0. That
+embedded string also describes a Linux x64 build, so it is not sufficient evidence
+of the Mac binary's actual build configuration or of a cause for these differences.
+
+## UP010 — Android combined runtime needs C API export isolation
+
+Observed September 16 with pinned MediaPipe v1.0.0, NDK 28.2.13676358,
+OpenCV 4.12.0's Android SDK, and an arm64 Android 16 emulator using 16 KB pages.
+The first combined runtime built and exported all 114 C APIs, but the native
+face probe crashed before entering inference. The Android crash backtrace ends
+at `/system/lib64/libprotobuf-cpp-lite.so (_GLOBAL__I_000101+60)` during linker
+constructor initialization. The runtime exported internal C++/protobuf symbols;
+this behavior is consistent with symbol interposition against system protobuf.
+
+Upstream's task BUILD applies its existing C API version script only to Linux.
+A recorded Android-specific BUILD selection now applies that same map to the
+combined library. `-z start-stop-visibility=hidden` also hides linker-generated
+`__start_pb_defaults` and `__stop_pb_defaults` symbols. The resulting runtime
+exports only the public C APIs and its version definition. Both native CPU face
+IMAGE probes then pass on the same emulator. No task source/graph code changed.
+
+The GPU-disabled Android build also fails compiling `gl_texture_buffer_pool.cc`
+because it includes `gl_context.h` while `GlVersion` and `GlTextureInfo` are
+hidden. The candidate uses Android's normal GL-enabled configuration and
+selects CPU delegates for validation. Its probes initialize EGL even with CPU
+delegates; a functioning GL context is therefore part of the tested environment.
+GPU inference remains unvalidated.
+
+Reproduce with `tool/build_android.py` and `tool/test_android_native.py` in the
+vision package; see [the Android guide](packages/mediapipe-task-vision/tool/ANDROID.md).
+The passing runtime has SHA-256
+`1a01c7ebef93f0a113d8c9714c72b0012198d7dfc7dcff12207db67667de3658`.
+Build and smoke receipts are under `tool/validations/2026-09-16-android-native/`.
+These probes check loading, ABI and result counts, not Flutter packaging,
+numerical reference parity or physical-device performance. Android package
+support remains undeclared. This issue has not been filed upstream.
+
 ## Integration pitfalls resolved in this repo
 
 These are recorded for continuity, not classified as confirmed MediaPipe defects.

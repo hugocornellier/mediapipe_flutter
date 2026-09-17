@@ -39,3 +39,17 @@ CI generates the GPU oracle on the same runner as the native task, using the
 exact pinned official wheel and the same model/fixtures. All tolerances above
 remain unchanged. The physical-Mac goldens remain available for local runs.
 See [the GPU comparison guide](../../../tool/GPU_VALIDATION.md).
+
+The official wheel's own CPU results also drift between hosts, so every job that
+compares a native runtime with these goldens regenerates them on its own host
+first. On the Linux and Windows runners the checked-in goldens sit up to
+0.0000280 (coordinates), 0.000553 (blendshapes) and 0.00242 (matrix elements)
+from that host's official wheel. A desktop job reaches its host reference
+through `MEDIAPIPE_CPU_REFERENCE_DIR`; a packaged mobile consumer reads bundled
+assets instead, so its runner substitutes the host reference in place and ships
+the receipt beside it. `tool/cpu_reference.py` writes both, and the suites
+reject any reference that does not match the receipt travelling with it.
+
+Passing runs also print their measured maxima per delegate and value group, and
+mobile runners copy that into `report.json`. Tolerances stay as measured above;
+the receipt only records how much headroom a run actually had.
