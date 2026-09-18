@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:camera_desktop/camera_desktop.dart';
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,7 +21,10 @@ void main() {
     tester,
   ) async {
     expect(Platform.isLinux || Platform.isWindows, isTrue);
-    expect(CameraPlatform.instance, isA<CameraDesktopPlugin>());
+    expect(
+      CameraPlatform.instance.runtimeType.toString(),
+      'CameraDesktopPlugin',
+    );
     expect(CameraPlatform.instance.supportsImageStreaming(), isTrue);
     await tester.runAsync(() async {
       final cameras = await CameraPlatform.instance.availableCameras();
@@ -55,11 +57,12 @@ void main() {
         expect(find.text('GPU'), findsNothing);
         await tester.tap(find.text('Live Face Mesh'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
         controller = tester
             .widget<LiveCameraView>(find.byType(LiveCameraView))
             .controller;
         final live = controller;
-        await tester.runAsync(() => _frames(live));
+        await _frames(tester, live);
         await tester.pump();
         expect(find.text('GPU'), findsNothing);
         expect(find.byType(SegmentedButton<VisionDelegate>), findsNothing);
@@ -72,7 +75,7 @@ void main() {
             (live.result! as FaceLandmarkerResult).faceLandmarks.single;
         await tester.tap(find.byTooltip('Switch to back camera'));
         await tester.pump();
-        await tester.runAsync(() => _frames(live));
+        await _frames(tester, live);
         await tester.pump();
         final after =
             (live.result! as FaceLandmarkerResult).faceLandmarks.single;
@@ -95,7 +98,7 @@ void main() {
         expect(camera.activeStreams, 0);
         await tester.tap(find.text('Start camera'));
         await tester.pump();
-        await tester.runAsync(() => _frames(live));
+        await _frames(tester, live);
         await tester.pump();
         expect(live.running, isTrue);
         expect(live.delegate, VisionDelegate.cpu);
@@ -111,12 +114,18 @@ void main() {
   );
 }
 
-Future<void> _frames(LiveCameraController<Object?> controller) async {
+Future<void> _frames(
+  WidgetTester tester,
+  LiveCameraController<Object?> controller,
+) async {
   final deadline = DateTime.now().add(const Duration(seconds: 30));
   while ((controller.changing || controller.processedFrames < 12) &&
       controller.error == null &&
       DateTime.now().isBefore(deadline)) {
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pump(const Duration(milliseconds: 33));
   }
   expect(controller.error, isNull);
   expect(controller.processedFrames, greaterThanOrEqualTo(12));
@@ -183,6 +192,7 @@ final class _SuppliedCamera extends CameraPlatform {
   _SuppliedCamera(this.frames);
   final List<CameraImageData> frames;
   final _initialized = <int, StreamController<CameraInitializedEvent>>{};
+  final _errors = StreamController<CameraErrorEvent>.broadcast();
   final _indices = <int, int>{};
   int _nextId = 0;
   int activeStreams = 0;
@@ -237,7 +247,8 @@ final class _SuppliedCamera extends CameraPlatform {
   Stream<CameraInitializedEvent> onCameraInitialized(int cameraId) =>
       _initialized[cameraId]!.stream;
   @override
-  Stream<CameraErrorEvent> onCameraError(int cameraId) => const Stream.empty();
+  Stream<CameraErrorEvent> onCameraError(int cameraId) =>
+      _errors.stream.where((event) => event.cameraId == cameraId);
   @override
   Stream<CameraClosingEvent> onCameraClosing(int cameraId) =>
       const Stream.empty();
