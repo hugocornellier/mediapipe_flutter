@@ -35,11 +35,15 @@ Map<String, Object?> copied(FaceLandmarkerResult result) => {
 };
 
 Future<Map<String, Object?>> checkApi() async {
+  final delegate = Uri.base.queryParameters['delegate'] == 'gpu'
+      ? VisionDelegate.gpu
+      : VisionDelegate.cpu;
   final data = await rootBundle.load('assets/models/face_landmarker.task');
   final sourceModel = Uint8List.fromList(
     data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
   );
   final options = FaceLandmarkerOptions(
+    delegate: delegate,
     modelBytes: sourceModel,
     outputFaceBlendshapes: true,
     outputFacialTransformationMatrixes: true,
@@ -169,6 +173,7 @@ Future<Map<String, Object?>> checkApi() async {
   checks.add('owned-results-mode-validation-idempotent-disposal');
   final video = await FaceLandmarker.create(
     FaceLandmarkerOptions(
+      delegate: delegate,
       modelBytes: options.modelBytes,
       runningMode: VisionRunningMode.video,
     ),
@@ -218,16 +223,7 @@ Future<Map<String, Object?>> checkApi() async {
     ),
     FaceLandmarkerException,
   );
-  await rejects(
-    () => FaceLandmarker.create(
-      FaceLandmarkerOptions(
-        modelBytes: options.modelBytes,
-        delegate: VisionDelegate.gpu,
-      ),
-    ),
-    UnsupportedError,
-  );
-  checks.add('invalid-model-explicit-unsupported-gpu');
+  checks.add('invalid-model-explicit-error');
   return {'status': 'passed', 'checks': checks, 'image': copied(original)};
 }
 

@@ -54,19 +54,15 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
     await ready.future.timeout(const Duration(seconds: 60));
   }();
 
-  /// Creates one official browser task with explicit CPU/WASM selection.
+  /// Creates one official browser task with the requested CPU or GPU delegate.
   static Future<FaceLandmarkerBackend> create(
     FaceLandmarkerOptions options,
   ) async {
-    if (options.delegate != VisionDelegate.cpu) {
-      throw UnsupportedError(
-        'Web FaceLandmarker currently supports CPU/WASM only.',
-      );
-    }
     await _load();
     final id = await _workerResult(
       _create(
         {
+              'delegate': options.delegate.name.toUpperCase(),
               'modelBytes': options.modelBytes == null
                   ? null
                   : Uint8List.fromList(options.modelBytes!).toJS,

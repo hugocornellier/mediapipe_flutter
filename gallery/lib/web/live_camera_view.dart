@@ -17,7 +17,10 @@ class LiveCameraView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final frame = controller.frameSize;
-    if (!controller.running || frame == null) return Center(child: placeholder);
+    // Keep the video attached while a running task changes delegate/device.
+    // Removing its platform view during stream replacement can prevent Chrome
+    // from delivering requestVideoFrameCallback on the restarted stream.
+    if (frame == null) return Center(child: placeholder);
     return Center(
       child: AspectRatio(
         aspectRatio: frame.width / frame.height,

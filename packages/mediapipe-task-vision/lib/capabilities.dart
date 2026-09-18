@@ -34,6 +34,7 @@ TaskCapabilities<VisionDelegate> faceLandmarkerCapabilitiesForPlatform(
       'macos/arm64': '14.0',
       'ios/arm64': '15.0',
       if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
+      if (faceLandmarkerBackendFactory != null) 'web/unknown': null,
     },
   },
   runtimeVersion: {'ios', 'web'}.contains(platform.operatingSystem)
@@ -43,7 +44,7 @@ TaskCapabilities<VisionDelegate> faceLandmarkerCapabilitiesForPlatform(
     VisionDelegate.cpu:
         'FaceLandmarker requires a supported official runtime and its platform adapter.',
     VisionDelegate.gpu:
-        'GPU is validated on Apple and Android SDKs; web currently supports CPU/WASM only.',
+        'GPU requires Apple or Android SDKs, or the web adapter with worker WebGL 2 support.',
   },
 );
 

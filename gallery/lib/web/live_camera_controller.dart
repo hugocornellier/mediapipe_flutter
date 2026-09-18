@@ -328,6 +328,7 @@ class LiveCameraController<T> extends ChangeNotifier {
         result = detected;
         processedFrames++;
         video.setAttribute('data-processed-frames', processedFrames.toString());
+        video.setAttribute('data-delegate', delegate.name);
         video.setAttribute('data-timestamp', timestamp.toString());
         if (detected is FaceLandmarkerResult) {
           video.setAttribute(

@@ -4,11 +4,10 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/interface.dart';
-import 'package:mediapipe_flutter_vision_web/mediapipe_flutter_vision_web.dart';
 
 void main() {
   test(
-    'validates model options and rejects unsupported delegate explicitly',
+    'validates model options and preserves the requested GPU delegate',
     () async {
       // Browser unit-test asset serving differs from the deployed package path;
       // the full API is exercised through the gallery integration harness.
@@ -16,13 +15,11 @@ void main() {
         () => FaceLandmarkerOptions(modelBytes: Uint8List(0)),
         throwsArgumentError,
       );
-      final error = WebFaceLandmarker.create(
-        FaceLandmarkerOptions(
-          modelBytes: Uint8List.fromList([1]),
-          delegate: VisionDelegate.gpu,
-        ),
+      final options = FaceLandmarkerOptions(
+        modelBytes: Uint8List.fromList([1]),
+        delegate: VisionDelegate.gpu,
       );
-      await expectLater(error, throwsUnsupportedError);
+      expect(options.delegate, VisionDelegate.gpu);
     },
   );
 }

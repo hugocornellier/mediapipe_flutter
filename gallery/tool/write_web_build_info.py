@@ -18,6 +18,8 @@ info = {
     'runtime': runtime,
     'model_sha256': hashlib.sha256(model.read_bytes()).hexdigest(),
     'delegate': 'CPU/WASM',
+    'supported_delegates': ['CPU', 'GPU'],
+    'gpu_backend': 'WebGL 2',
     'ci_url': ('https://github.com/' + os.environ['GITHUB_REPOSITORY'] +
                '/actions/runs/' + os.environ['GITHUB_RUN_ID'])
               if os.environ.get('GITHUB_RUN_ID') else None,

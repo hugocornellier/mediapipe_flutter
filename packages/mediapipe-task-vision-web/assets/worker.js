@@ -16,11 +16,20 @@ self.onmessage = ({data}) => {
 async function run(type, input) {
   if (type === 'create') {
     const files = await FilesetResolver.forVisionTasks(new URL('./runtime/wasm', import.meta.url).href, true);
-    const {modelBytes, modelPath, ...settings} = input;
+    const {modelBytes, modelPath, delegate, ...settings} = input;
+    if (delegate !== 'CPU' && delegate !== 'GPU') throw new Error('Invalid FaceLandmarker delegate');
+    let canvas;
+    if (delegate === 'GPU') {
+      canvas = new OffscreenCanvas(1, 1);
+      if (!canvas.getContext('webgl2')) {
+        throw new Error('GPU FaceLandmarker requires WebGL 2 in a browser worker. Select CPU or enable browser hardware acceleration.');
+      }
+    }
     task = await FaceLandmarker.createFromOptions(files, {
       ...settings,
+      ...(canvas ? {canvas} : {}),
       baseOptions: {
-        delegate: 'CPU',
+        delegate,
         ...(modelBytes ? {modelAssetBuffer: modelBytes} : {modelAssetPath: modelPath}),
       },
     });

@@ -7,7 +7,7 @@ Google package. No packages from this fork have been published to pub.dev.
 
 **[Try the live Face Mesh gallery in your browser](https://hugocornellier.github.io/mediapipe_flutter/).**
 Web FaceLandmarker uses Google's official Tasks Vision 1.0.1 JS/WASM runtime on
-a module worker, CPU only. Release Chrome/Firefox reference tests and Chrome
+a module worker, with CPU/WASM and GPU/WebGL 2 delegates. Release Chrome/Firefox reference tests and Chrome
 camera lifecycle tests run in GitHub CI. See the
 [web adapter guide](packages/mediapipe-task-vision-web/README.md).
 
@@ -79,7 +79,7 @@ results for these tasks are not validated; see `upstream-issues.md`.
 | `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Six text tasks on one MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
 | `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Eleven tasks on Linux/Windows x64 CPU; face tasks on macOS CPU/Metal and local iOS simulator CPU; optional macOS CPU MagicTouch editor |
-| `mediapipe_flutter_vision_web` | [mediapipe-task-vision-web](packages/mediapipe-task-vision-web/) | Official FaceLandmarker JS/WASM CPU adapter; live browser camera gallery |
+| `mediapipe_flutter_vision_web` | [mediapipe-task-vision-web](packages/mediapipe-task-vision-web/) | Official FaceLandmarker CPU/WASM and GPU/WebGL 2 adapter; live browser camera gallery |
 | Audio | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Placeholder, no Dart package |
 
 The migrated text package supports macOS arm64; its old Android, iOS and Intel

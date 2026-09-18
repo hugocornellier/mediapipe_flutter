@@ -2,7 +2,14 @@
 
 [Try it now](https://hugocornellier.github.io/mediapipe_flutter/): open
 **Live Face Mesh**, allow the camera, and put a face in view. Web currently
-supports CPU/WASM only.
+supports CPU/WASM and GPU/WebGL 2. Select **GPU** while the camera is running
+to recreate the task with Google's GPU delegate. If browser hardware acceleration
+or worker WebGL 2 is unavailable, the task reports an error; select CPU and restart.
+
+Chromium CI exercises GPU IMAGE/VIDEO against the official JavaScript GPU
+reference and switches live capture CPU → GPU → CPU. Hosted Linux uses
+SwiftShader software WebGL; this validates the GPU code path, not physical GPU
+performance. The deployed release repeats the live delegate-switch test.
 
 The gallery uses the official checksum-pinned Google Tasks Vision 1.0.1 runtime,
 with inference on a module worker and the same Flutter mesh painter and controls

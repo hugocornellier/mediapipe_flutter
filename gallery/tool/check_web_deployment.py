@@ -17,6 +17,8 @@ for attempt in range(20):
             raise RuntimeError(f'Pages still serves {info.get("source_commit")}')
         if info.get('delegate') != 'CPU/WASM' or info['runtime']['version'] != '1.0.1':
             raise RuntimeError('Unexpected deployed delegate or official runtime')
+        if info.get('supported_delegates') != ['CPU', 'GPU']:
+            raise RuntimeError('Expected both official web delegates')
         print(f'Verified deployed source {expected}: {base}')
         break
     except (OSError, ValueError, RuntimeError, KeyError) as failure:

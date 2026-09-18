@@ -8,11 +8,13 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.
 const argumentsMap = Object.fromEntries(process.argv.slice(2).map(arg => arg.replace(/^--/, '').split('=')));
 const browserName = argumentsMap.browser || 'chromium';
 const suite = argumentsMap.suite || 'all';
+const delegate = argumentsMap.delegate === 'gpu' ? 'GPU' : 'CPU';
 const base = argumentsMap['base-url'] || 'http://localhost:8866/mediapipe_flutter/';
 const apiBase = argumentsMap['api-url'] || 'http://localhost:8866/api-probe/';
-const evidence = path.join(repo, 'build/codex-tmp/web-browser-' + browserName);
+const evidence = path.join(repo, 'build/codex-tmp/web-browser-' + browserName + (delegate === 'GPU' ? '-gpu' : ''));
 fs.mkdirSync(evidence, {recursive: true});
-const report = {browser: browserName, suite, checks: [], physical_webcam_tested: false};
+const report = {browser: browserName, delegate, suite, checks: [], physical_webcam_tested: false,
+  software_webgl: browserName === 'chromium' && process.platform === 'linux'};
 const logs = [];
 const browsers = [];
 
@@ -22,6 +24,7 @@ async function launch(deviceCount = 2, useFile = true) {
     // modern headless mode exercises the same capture APIs as normal Chrome.
     channel: 'chromium',
     args: ['--use-fake-device-for-media-stream=device-count=' + deviceCount,
+      ...(process.platform === 'linux' ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
       ...(useFile ? ['--use-file-for-fake-video-capture=' + path.join(repo, 'build/codex-tmp/web-camera.y4m')] : [])],
   } : {
     // Hosted Linux has no GPU. Permit Mesa's software WebGL context for the
@@ -51,17 +54,17 @@ async function apiChecks() {
   const browser = await launch();
   const page = await browser.newPage();
   observe(page);
-  await page.goto(apiBase);
+  await page.goto(apiBase + (delegate === 'GPU' ? '?delegate=gpu' : ''));
   await wait(page, () => window.mediapipeApiTestReport);
   const api = await page.evaluate(() => window.mediapipeApiTestReport);
   fs.writeFileSync(path.join(evidence, 'api-report.json'), JSON.stringify(api, null, 2));
   assert.equal(api.status, 'passed', JSON.stringify(api));
-  const direct = await page.evaluate(async () => {
+  const direct = await page.evaluate(async delegate => {
     const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
     const {FilesetResolver, FaceLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
     const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const task = await FaceLandmarker.createFromOptions(files, {
-      baseOptions: {delegate: 'CPU', modelAssetPath: new URL('assets/assets/models/face_landmarker.task', document.baseURI).href},
+      baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/face_landmarker.task', document.baseURI).href},
       runningMode: 'IMAGE', numFaces: 1, outputFaceBlendshapes: true, outputFacialTransformationMatrixes: true,
     });
     const response = await fetch(new URL('assets/assets/samples/portrait.jpg', document.baseURI));
@@ -75,7 +78,7 @@ async function apiChecks() {
         matrix: result.facialTransformationMatrixes[0].data,
       };
     } finally {bitmap.close(); task.close();}
-  });
+  }, delegate);
   fs.writeFileSync(path.join(evidence, 'official-js-reference.json'), JSON.stringify(direct, null, 2));
   assert.equal(api.image.width, direct.width);
   assert.equal(api.image.height, direct.height);
@@ -185,6 +188,17 @@ async function cameraChecks() {
     await page.screenshot({path: path.join(evidence, 'camera-' + viewport.width + '.png')});
   }
   report.checks.push('portrait-and-landscape-preview-aspect-ratio');
+  // Switch the actual running gallery task, ensuring the requested delegate
+  // completes inference and releases its worker before switching back.
+  await page.getByRole('button', {name: 'GPU', exact: true}).click({timeout: 30000});
+  await wait(page, () => document.querySelector('video')?.getAttribute('data-delegate') === 'gpu' &&
+    document.querySelector('video')?.getAttribute('data-landmarks') === '478');
+  await page.screenshot({path: path.join(evidence, 'camera-gpu-face.png')});
+  await page.getByRole('button', {name: 'CPU', exact: true}).click({timeout: 30000});
+  await wait(page, () => document.querySelector('video')?.getAttribute('data-delegate') === 'cpu' &&
+    document.querySelector('video')?.getAttribute('data-landmarks') === '478');
+  assert.equal(await page.evaluate(() => mediapipeVision.stats().activeWorkers), 1);
+  report.checks.push('live-cpu-gpu-cpu-switch-face-inference-worker-cleanup');
   await page.getByRole('button', {name: 'Stop camera'}).click();
   await wait(page, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended') &&

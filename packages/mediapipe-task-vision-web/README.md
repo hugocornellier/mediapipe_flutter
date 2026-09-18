@@ -1,9 +1,13 @@
 # MediaPipe browser FaceLandmarker
 
 Flutter web adapter for Google's unmodified **@mediapipe/tasks-vision 1.0.1**
-JavaScript/WASM distribution. FaceLandmarker supports CPU IMAGE and VIDEO modes,
+JavaScript/WASM distribution. FaceLandmarker supports CPU and GPU IMAGE and VIDEO modes,
 478 landmarks, optional 52 blendshapes and column-major facial transforms.
-Other tasks and the GPU delegate are not exposed by this adapter yet.
+Other tasks are not exposed by this adapter yet. Select GPU in the live gallery
+or use `delegate: VisionDelegate.gpu`. GPU uses the official WebGL 2 delegate
+on an `OffscreenCanvas` owned by the inference worker. A browser without worker
+WebGL 2 support reports an error; choose CPU to recover. GPU never silently
+falls back to the CPU delegate.
 
 [Try the live camera gallery](https://hugocornellier.github.io/mediapipe_flutter/).
 Camera frames are processed within your browser. Use HTTPS or localhost and
@@ -59,8 +63,8 @@ try {
 remote URLs need normal browser CORS permission. Model bytes and RGB/RGBA/BGRA
 pixels are copied before transport. Results remain valid after later frames and
 disposal. VIDEO timestamps must strictly increase, including after a failed
-frame. Runtime failures use `FaceLandmarkerException`; GPU requests fail with
-`UnsupportedError` rather than silently selecting CPU.
+frame. Runtime failures, including unavailable GPU initialization, use
+`FaceLandmarkerException` rather than silently selecting CPU.
 
 Each task owns a module worker, which serializes inference and shutdown. The
 gallery captures with `getUserMedia`, transfers `ImageBitmap` frames, skips busy
