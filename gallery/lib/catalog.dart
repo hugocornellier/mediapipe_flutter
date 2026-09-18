@@ -94,6 +94,7 @@ TaskCapabilities<VisionDelegate> _liveFaceCapabilities(TaskPlatform platform) =>
           'macos/arm64': null,
           'linux/x64': null,
           'windows/x64': null,
+          if (faceLandmarkerBackendFactory != null) 'web/unknown': null,
           'ios/arm64': '15.0',
           if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
         },
@@ -103,7 +104,7 @@ TaskCapabilities<VisionDelegate> _liveFaceCapabilities(TaskPlatform platform) =>
           if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
         },
       },
-      runtimeVersion: platform.operatingSystem == 'ios' ? '1.0.1' : '1.0.0',
+      runtimeVersion: {'ios', 'web'}.contains(platform.operatingSystem) ? '1.0.1' : '1.0.0',
       unavailableReasons: const {
         VisionDelegate.cpu: 'Live capture requires a supported camera and SDK.',
         VisionDelegate.gpu:
