@@ -1,0 +1,10 @@
+{
+  "README.md": "6808b18dad89dfda47e360f261e43bb6d059c6c5fa6163ea93c900d925696802",
+  "baseline-to-candidates.patch": "c05355683393fabb2d49b4777013ba038c2c8606de0118b637d5ef691b45ffee",
+  "comparison.json": "b66f513ca4702be63c85b08df9eab6320da841e41eb8fa4b219bda03ad6fe518",
+  "comparison.md": "5dacbc11b5d4197c256bb91ade5f845ac3a44192b8a61dc1d2e1b72da059eeb7",
+  "conditions.json": "b2525ce0a7c5c45d275fb868b6e8428d1da84af67723c76fd19cdb61f3e3ed69",
+  "normal-gallery-receipt.json": "ebf8b0926c663c3c35e82bbe5c71cc378b1b05730bf6badb7a0844cc29789a74",
+  "pooled-sdk-smoke.json": "1450c149762cc28a65ccd41c27e92caaab3f78bd5e501e9b4e094610fc7854c1",
+  "raw-results.tar.gz": "fdf2b7f28ea089f9541e45d810fc52f195feb99d252b91dfd00dfbf328c53e44"
+}

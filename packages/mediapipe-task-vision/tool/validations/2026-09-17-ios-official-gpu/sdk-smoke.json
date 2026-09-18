@@ -1,0 +1,37 @@
+{
+  "event": "complete",
+  "sdk": "1.0.1",
+  "delegates": [
+    {
+      "delegate": "cpu",
+      "image": "passed",
+      "padded_rgb_rgba_bgra": "passed",
+      "file_pixel_max_delta": 0.0021002888679504395,
+      "rotation_max_deltas": {
+        "90": 0.004792630672454834,
+        "180": 0.005459189414978027,
+        "270": 0.008458614349365234
+      },
+      "blank": "passed",
+      "video_frames": 8,
+      "detector_keypoints": 6,
+      "error_recovery": "passed"
+    },
+    {
+      "delegate": "gpu",
+      "image": "passed",
+      "padded_rgb_rgba_bgra": "passed",
+      "file_pixel_max_delta": 0.004913330078125,
+      "rotation_max_deltas": {
+        "90": 0.0020307302474975586,
+        "180": 0.0012625455856323242,
+        "270": 0.0017474889755249023
+      },
+      "blank": "passed",
+      "video_frames": 8,
+      "detector_keypoints": 6,
+      "error_recovery": "passed"
+    }
+  ],
+  "cpu_gpu_max_landmark_delta": 0.013069093227386475
+}

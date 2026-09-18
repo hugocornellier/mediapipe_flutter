@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
 import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/android_library.dart';
+import 'package:mediapipe_flutter_vision/src/native_assets/ios_sdk.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
 
@@ -46,6 +47,17 @@ void main(List<String> arguments) async {
     }
     output.dependencies.add(input.packageRoot.resolve('sdk_downloads.dart'));
     final tasks = selection.cast<String>().toSet();
+    final officialIosSdk = input.userDefines['official_ios_sdk'];
+    if (officialIosSdk != null && officialIosSdk is! bool) {
+      throw const FormatException('official_ios_sdk must be a boolean.');
+    }
+    if (officialIosSdk == true) {
+      if (useOfficialMacosLandmarks == true) {
+        throw StateError('Select only one official platform SDK.');
+      }
+      await buildOfficialIosSdk(input, output, tasks: tasks);
+      return;
+    }
     if (tasks.remove(sharedRuntimeTask)) {
       if (input.metadata['mediapipe_flutter_core']['tasks_runtime'] != true) {
         throw StateError(

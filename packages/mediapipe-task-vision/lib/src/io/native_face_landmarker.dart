@@ -7,17 +7,19 @@ import '../../third_party/mediapipe/face_landmarker_bindings.dart' as mp;
 import '../interface/face_detector_types.dart';
 import '../interface/face_landmarker_types.dart';
 import 'native_frame_timings.dart';
+import 'native_ios_sdk.dart';
 import 'pixel_conversion.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceLandmarker {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeFaceLandmarker(FaceLandmarkerOptions options)
-    : _gpu = options.delegate == VisionDelegate.gpu {
-    if (!Platform.isMacOS && _gpu) {
+    : _gpu = options.delegate == VisionDelegate.gpu,
+      _officialIos = hasOfficialIosFaceRuntime() {
+    if (!Platform.isMacOS && !_officialIos && _gpu) {
       throw UnsupportedError(
-        'GPU face inference is validated on macOS only; '
-        'this target supports CPU only.',
+        'GPU face inference requires macOS or the official iOS SDK adapter; '
+        'this runtime supports CPU only.',
       );
     }
     using((arena) {
@@ -67,6 +69,11 @@ final class NativeFaceLandmarker {
 
   mp.MpFaceLandmarkerPtr _detector = nullptr;
   final bool _gpu;
+  final bool _officialIos;
+  late final IosBgraStorage? _iosBgraStorage =
+      _officialIos && iosImageStorageMode != 0
+      ? IosBgraStorage(iosImageStorageMode)
+      : null;
 
   /// Runs a single image and copies every result before releasing native memory.
   FaceLandmarkerResult detect(
@@ -82,11 +89,25 @@ final class NativeFaceLandmarker {
         final name = path.toNativeUtf8(allocator: arena).cast<Char>();
         _checked((error) => mp.MpImageCreateFromFile(name, imageOut, error));
         timings?.mark('image_create');
+      } else if (_officialIos && input.format == VisionPixelFormat.bgra) {
+        _checked(
+          (error) => mp.MpStatus.fromValue(
+            createOfficialIosBgraImage(
+              input,
+              arena,
+              imageOut.cast(),
+              error,
+              storage: _iosBgraStorage,
+            ),
+          ),
+        );
+        timings?.mark('image_create');
       } else {
         final bytes = input.pixels!;
         // Apple's GPU image upload cannot accept three-channel ImageFrames.
         // Add opaque alpha before entering the official graph.
-        final expandRgb = _gpu && input.format == VisionPixelFormat.rgb;
+        final expandRgb =
+            _gpu && !_officialIos && input.format == VisionPixelFormat.rgb;
         final rowSize = input.width! * (expandRgb ? 4 : input.format!.channels);
         final byteCount = rowSize * input.height!;
         final pixels = arena<Uint8>(byteCount);
@@ -206,7 +227,11 @@ final class NativeFaceLandmarker {
     if (_detector == nullptr) return;
     final pointer = _detector;
     _detector = nullptr;
-    _checked((error) => mp.MpFaceLandmarkerClose(pointer, error));
+    try {
+      _checked((error) => mp.MpFaceLandmarkerClose(pointer, error));
+    } finally {
+      _iosBgraStorage?.close();
+    }
   }
 }
 
