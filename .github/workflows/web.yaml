@@ -35,7 +35,7 @@ jobs:
       - name: Prepare official web runtime and model
         run: |
           python3 -B gallery/tool/prepare.py --target web
-          sudo apt-get update && sudo apt-get install -y ffmpeg
+          sudo apt-get update && sudo apt-get install -y ffmpeg xvfb libgl1-mesa-dri
           python3 -B gallery/tool/browser/prepare_camera.py
       - name: Install browser test dependencies
         working-directory: gallery/tool/browser
@@ -63,10 +63,12 @@ jobs:
           flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
           flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
       - name: Browser runtime and webcam integration
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           python3 -B gallery/tool/web_server.py &
           node gallery/tool/browser/test_browser.mjs
-          node gallery/tool/browser/test_browser.mjs --browser=firefox --suite=api
+          xvfb-run -a node gallery/tool/browser/test_browser.mjs --browser=firefox --suite=api --headed=true
       - uses: actions/upload-artifact@v4
         if: always()
         with:

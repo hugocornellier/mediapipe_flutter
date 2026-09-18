@@ -23,7 +23,12 @@ async function launch(deviceCount = 2, useFile = true) {
     channel: 'chromium',
     args: ['--use-fake-device-for-media-stream=device-count=' + deviceCount,
       ...(useFile ? ['--use-file-for-fake-video-capture=' + path.join(repo, 'build/codex-tmp/web-camera.y4m')] : [])],
-  } : {};
+  } : {
+    // Hosted Linux has no GPU. Permit Mesa's software WebGL context for the
+    // official CPU task's image upload/preprocessing (not GPU inference).
+    firefoxUserPrefs: process.platform === 'linux' ? {'webgl.force-enabled': true} : {},
+  };
+  options.headless = argumentsMap.headed !== 'true';
   const browser = await (browserName === 'firefox' ? firefox : chromium).launch(options);
   browsers.push(browser);
   report.browser_version = browser.version();
