@@ -6,6 +6,12 @@ bundled, its support is validated here, and it has a screen to show.
 
 ## Running it
 
+**Web:** [try the live Face Mesh demo](https://hugocornellier.github.io/mediapipe_flutter/),
+or run `python3.12 -B gallery/tool/prepare.py --target web` from the root, then
+`cd gallery && flutter run -d chrome --release`. Web exposes FaceLandmarker CPU
+only, with Google's pinned official JS/WASM runtime on a worker. Allow camera
+access on HTTPS or localhost. See [web tests and deployment](tool/WEB_FACE.md).
+
 The pubspec and assets are generated, because the task list is per target and
 the build hook rejects a task it has no runtime for. Download the models once,
 then prepare and run:
@@ -69,6 +75,9 @@ macOS also has the MagicTouch image demo.
 timings, camera switching, stop/start, cleanup and overlay geometry across live
 tasks. It handles desktop RGBA, Apple BGRA and Android YUV camera buffers.
 Windows and Linux expose CPU only; Apple and Android Face Mesh also expose GPU.
+Web uses browser-native capture and transferable bitmaps while sharing these
+controls and the same overlay painter. Web GPU and other web tasks are not
+enabled yet.
 
 ## Tests
 

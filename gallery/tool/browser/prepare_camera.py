@@ -6,7 +6,7 @@ import sys
 repo = Path(__file__).resolve().parents[3]
 output = Path(sys.argv[1]) if len(sys.argv) > 1 else repo / 'build/codex-tmp/web-camera.y4m'
 output.parent.mkdir(parents=True, exist_ok=True)
-portrait = repo / 'gallery/assets/samples/portrait.jpg'
+portrait = repo / 'packages/mediapipe-task-vision/test/fixtures/face_detection/landmark-ex1.jpg'
 filter_chain = (
     '[0:v]scale=640:480:force_original_aspect_ratio=decrease,'
     'pad=640:480:(ow-iw)/2:(oh-ih)/2,format=yuv420p,setsar=1[f0];'

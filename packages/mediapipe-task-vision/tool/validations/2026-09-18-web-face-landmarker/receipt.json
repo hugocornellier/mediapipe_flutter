@@ -1,0 +1,10 @@
+{
+  "implementation_commit": "b3d7c6cbe3000f56fd0fde7a1b35caa68aae6c8e",
+  "ci_run": "https://github.com/hugocornellier/mediapipe_flutter/actions/runs/35393300772",
+  "ci_conclusion": "success",
+  "model_sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+  "native_macos_face_cpu_gpu_regressions": 23,
+  "native_build_hook_tests": 15,
+  "browser_gallery_geometry_frame_tests": 16,
+  "native_yuv_conversion_tests": 3
+}

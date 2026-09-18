@@ -1,0 +1,36 @@
+{
+  "browser": "chromium",
+  "suite": "all",
+  "checks": [
+    "official-image-landmarks-blendshapes-matrix",
+    "copied-padded-rgb-rgba-bgra",
+    "all-four-rotations",
+    "owned-results-mode-validation-idempotent-disposal",
+    "video-queue-timestamps-failed-frame-recovery-disposal",
+    "invalid-model-explicit-unsupported-gpu",
+    "same-browser-official-js-reference",
+    "real-getusermedia-y4m-face-blank-recovery-timestamps",
+    "portrait-and-landscape-preview-aspect-ratio",
+    "stop-restart-navigation-tracks-workers-callback-cleanup",
+    "browser-permission-denied-and-worker-cleanup",
+    "native-browser-device-switch-and-mirroring",
+    "worker-error-rejects-pending-requests-and-releases-capture",
+    "worker-error-restart-and-simulated-track-ended-cleanup",
+    "browser-no-video-device-and-worker-cleanup"
+  ],
+  "physical_webcam_tested": false,
+  "browser_version": "153.0.8010.12",
+  "official_js_maximum_absolute_error": {
+    "landmarks": 0,
+    "blendshapes": 0,
+    "matrix": 0
+  },
+  "camera": {
+    "width": 640,
+    "height": 480,
+    "timestamp": 1506,
+    "frames": 12,
+    "mirror": "scaleX(-1)"
+  },
+  "status": "passed"
+}

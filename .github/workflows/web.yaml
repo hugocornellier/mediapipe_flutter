@@ -62,6 +62,7 @@ jobs:
         run: |
           flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
           flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
+          python3 -B tool/write_web_build_info.py
       - name: Browser runtime and webcam integration
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -78,3 +79,67 @@ jobs:
         with:
           name: web-gallery-release
           path: gallery/build/web/
+
+  deploy:
+    needs: browser
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/web-face-landmarker')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-gallery-release
+          path: public
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: public
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+  verify-deployment:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: gallery/tool/browser/package-lock.json
+      - name: Check deployed source
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: python3 -B gallery/tool/check_web_deployment.py
+      - name: Prepare release browser verification
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          python3 -B gallery/tool/browser/prepare_camera.py
+          cd gallery/tool/browser
+          npm ci
+          npx playwright install --with-deps --no-shell chromium
+      - name: Verify public live camera gallery
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: node gallery/tool/browser/test_browser.mjs --suite=camera --base-url="$PAGE_URL"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-pages-evidence
+          path: build/codex-tmp/web-browser-*/
