@@ -6,10 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 import 'catalog.dart';
-import 'runners.dart';
 import 'segment_page.dart';
 import 'live_page.dart';
-import 'task_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,12 +24,19 @@ final class GalleryAssets {
   Set<String> get bundledTasks =>
       (manifest['tasks'] as List).cast<String>().toSet();
 
+  Set<String> get officialMacosLandmarkTasks =>
+      (manifest['official_macos_landmark_tasks'] as List)
+          .cast<String>()
+          .toSet();
+
   String path(String name) => '${directory.path}/$name';
 
   File file(String name) => File(path(name));
 
   static Future<GalleryAssets> unpack() async {
-    final directory = await Directory.systemTemp.createTemp('mediapipe-gallery-');
+    final directory = await Directory.systemTemp.createTemp(
+      'mediapipe-gallery-',
+    );
     final manifest =
         jsonDecode(await rootBundle.loadString('assets/manifest.json'))
             as Map<String, dynamic>;
@@ -106,8 +111,12 @@ class _HomePageState extends State<HomePage> {
         final (assets, platform) = snapshot.requireData;
         final bundled = assets.bundledTasks;
         final tasks = [
-          for (final task in supportedTasks(platform, bundled))
-            if (task.hasOwnPage || runnerFor(task.id) != null) task,
+          for (final task in supportedTasks(
+            platform,
+            bundled,
+            assets.officialMacosLandmarkTasks,
+          ))
+            if (task.hasOwnPage) task,
         ];
         return _Gallery(assets: assets, platform: platform, tasks: tasks);
       },
@@ -129,6 +138,14 @@ class _Gallery extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final validated = [
+      for (final task in tasks)
+        if (!task.isExperimental) task,
+    ];
+    final experimental = [
+      for (final task in tasks)
+        if (task.isExperimental) task,
+    ];
     return CustomScrollView(
       slivers: [
         SliverAppBar.large(
@@ -145,8 +162,9 @@ class _Gallery extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: Text(
-              '${tasks.length} task${tasks.length == 1 ? '' : 's'} validated on '
-              '${platform.operatingSystem} ${platform.architecture}',
+              '${validated.length} task${validated.length == 1 ? '' : 's'} '
+              'validated on ${platform.operatingSystem} '
+              '${platform.architecture}',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -162,35 +180,66 @@ class _Gallery extends StatelessWidget {
             ),
           )
         else
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            sliver: SliverGrid.builder(
-              gridDelegate:
-                  const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 320,
-                    mainAxisExtent: 150,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+          _grid(validated, platform),
+        if (experimental.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Experimental', style: theme.textTheme.titleMedium),
+                  Text(
+                    'These run real inference but are not validated against '
+                    "Google's outputs on this platform.",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-              itemCount: tasks.length,
-              itemBuilder: (context, index) => _TaskCard(
-                task: tasks[index],
-                platform: platform,
-                assets: assets,
+                ],
               ),
             ),
           ),
+          _grid(experimental, platform),
+        ],
       ],
     );
   }
 
+  Widget _grid(List<GalleryTask> entries, TaskPlatform platform) =>
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        sliver: SliverGrid.builder(
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 320,
+            mainAxisExtent: 160,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: entries.length,
+          itemBuilder: (context, index) => _TaskCard(
+            task: entries[index],
+            platform: platform,
+            assets: assets,
+          ),
+        ),
+      );
+
   void _showAbout(BuildContext context) {
-    final unvalidated = unvalidatedTasks(platform, assets.bundledTasks);
-    // Validated here, but no demo is wired up yet. Without this the task is
+    final unvalidated = unvalidatedTasks(
+      platform,
+      assets.bundledTasks,
+      assets.officialMacosLandmarkTasks,
+    );
+    // Validated here, but with no screen of its own. Without this the task is
     // invisible: absent from the grid and absent from the unvalidated list.
     final pending = [
-      for (final task in supportedTasks(platform, assets.bundledTasks))
-        if (!task.hasOwnPage && runnerFor(task.id) == null) task,
+      for (final task in supportedTasks(
+        platform,
+        assets.bundledTasks,
+        assets.officialMacosLandmarkTasks,
+      ))
+        if (!task.hasOwnPage) task,
     ];
     showModalBottomSheet<void>(
       context: context,
@@ -202,15 +251,14 @@ class _Gallery extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'This build',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              Text('This build', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               Text('Target: ${assets.manifest['target']}'),
-              Text('Platform: ${platform.operatingSystem} '
-                  '${platform.architecture}'
-                  '${platform.version == null ? '' : ' ${platform.version}'}'),
+              Text(
+                'Platform: ${platform.operatingSystem} '
+                '${platform.architecture}'
+                '${platform.version == null ? '' : ' ${platform.version}'}',
+              ),
               Text('Bundled runtimes: ${assets.bundledTasks.length}'),
               if (pending.isNotEmpty) ...[
                 const SizedBox(height: 20),
@@ -272,20 +320,23 @@ class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final delegates = task.capabilities(platform).supportedDelegates;
+    final delegates = task
+        .capabilitiesFor(platform, assets.officialMacosLandmarkTasks)
+        .supportedDelegates;
     return Card.filled(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (context) => switch (task.demo) {
-              GalleryDemo.live => LivePage(task: task, platform: platform),
-              GalleryDemo.segment => SegmentPage(task: task, assets: assets),
-              GalleryDemo.sample => TaskPage(
+              GalleryDemo.live => LivePage(
                 task: task,
                 platform: platform,
-                assets: assets,
+                officialMacosLandmarkTasks: assets.officialMacosLandmarkTasks,
               ),
+              GalleryDemo.segment => SegmentPage(task: task, assets: assets),
+              // Entries without a screen never reach a tile.
+              GalleryDemo.none => throw StateError('${task.id} has no demo'),
             },
           ),
         ),
@@ -306,12 +357,22 @@ class _TaskCard extends StatelessWidget {
               ),
               Wrap(
                 spacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
+                  if (task.experimentalReason case final reason?)
+                    Tooltip(
+                      message: reason,
+                      child: Icon(
+                        Icons.science_outlined,
+                        size: 16,
+                        color: theme.colorScheme.tertiary,
+                      ),
+                    ),
                   for (final delegate in delegates)
                     Chip(
-                      label: Text(delegate == VisionDelegate.gpu
-                          ? 'GPU'
-                          : 'CPU'),
+                      label: Text(
+                        delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+                      ),
                       visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
                       labelStyle: theme.textTheme.labelSmall,

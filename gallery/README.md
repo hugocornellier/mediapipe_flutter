@@ -1,8 +1,8 @@
 # MediaPipe Gallery
 
-One app that opens every MediaPipe task this repository has validated on the
+One app for the interactive MediaPipe demos this repository supports on the
 platform you run it on. A task appears as a tile only when its runtime is
-bundled, its support is validated here, and a demo exists for it.
+bundled, its support is validated here, and it has a screen to show.
 
 ## Running it
 
@@ -22,7 +22,10 @@ cd gallery && flutter run -d macos --release
 `prepare.py --target <platform>` prepares a different target, for example
 `ios-simulator/arm64` or `android/arm64`. It also pins the macOS build to arm64,
 excludes the x86_64 simulator slice, and adds the camera entitlement and usage
-description, none of which `flutter create` provides.
+description, none of which `flutter create` provides. For macOS it also
+verifies Google's pinned 1.0.0 wheel, prepares its official runtime, and opts
+Live Face Mesh, Live Hands and Live Pose into it. The ordinary package runtime
+rows remain unchanged.
 
 ## What decides the tiles
 
@@ -34,14 +37,16 @@ Three gates, in order:
 2. **Validated** — `lib/catalog.dart` asks the package's own capability query.
    Nothing restates support by hand, so a task validated on a new platform
    appears here with no code change.
-3. **Demonstrable** — a runner in `lib/runners.dart`, or a live page.
+3. **Demonstrable** — a screen of its own, which is what `GalleryDemo` names.
+   Entries without one are known to the gallery but never become tiles.
 
-Anything bundled but not validated, and anything validated without a demo, is
+Anything bundled but not validated, and anything validated without a screen, is
 listed in the about sheet with the package's own reason rather than hidden.
 
-Today that means 11 runtimes bundle on macOS, Linux and Windows, two on the iOS
-simulator and Android, while hand, gesture, pose, holistic and the segmenters
-stay off the grid pending the numerical work in `upstream-issues.md` UP-004.
+Today that leaves two tiles on macOS: the live camera face mesh and MagicTouch.
+Everything else is bundled and reported but not demonstrated, either because it
+has no screen yet or because it waits on the numerical work in
+`upstream-issues.md` UP-004.
 
 ## Live camera
 
@@ -54,8 +59,13 @@ The live tile is macOS-only until the camera path is exercised elsewhere.
 ## Tests
 
 ```sh
-cd gallery && flutter test -d macos integration_test/assets_test.dart
+cd gallery
+flutter test -d macos integration_test/assets_test.dart
+flutter test -d macos integration_test/runtime_test.dart
 ```
+
+Run one file per invocation: `flutter test -d macos integration_test/` cannot
+start a second app instance on the device and fails to load the later file.
 
 These check the bundle the app was actually built with: that every visible tile
 can load its model and sample, and that the live demo's model resolves. Both

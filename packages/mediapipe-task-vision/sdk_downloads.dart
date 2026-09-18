@@ -1,5 +1,6 @@
 import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
 
 /// Every task name accepted by `hooks.user_defines.mediapipe_flutter_vision.tasks`.
@@ -24,7 +25,7 @@ const visionTasks = {
 /// The one task served by core's runtime instead of a vision release.
 const sharedRuntimeTask = 'interactive_segmenter';
 
-/// A pinned, immutable source-built runtime covering [tasks] on one target.
+/// A pinned, immutable runtime covering [tasks] on one target.
 ///
 /// A rebuild gets a new release tag and new digests. Never replace an archive
 /// in place or resolve a floating "latest" URL from the build hook.
@@ -39,6 +40,7 @@ final class VisionRuntimeRelease {
     required this.librarySha256,
     required this.assetName,
     required this.localBuildDirectory,
+    this.officialWheel,
   });
 
   /// Build target such as `macos/arm64`; see `buildTarget`.
@@ -73,7 +75,45 @@ final class VisionRuntimeRelease {
   /// Package-relative directory where `tool/build_native.py` writes the same
   /// library, so maintainers can test a source build before publishing it.
   final String localBuildDirectory;
+
+  /// Exact official-wheel provenance, when this is not a source build.
+  final OfficialWheelProvenance? officialWheel;
 }
+
+/// Google's official 1.0.0 landmark runtime used only by explicit opt-in.
+///
+/// It stays separate from [visionRuntimeReleases], so package consumers keep
+/// using the existing source/published runtimes unless they explicitly select
+/// it. Only the tasks in [VisionRuntimeRelease.tasks] have earned a macOS
+/// validation claim, even though the monolith exports every task API.
+const officialMacosLandmarkRuntime = VisionRuntimeRelease(
+  target: 'macos/arm64',
+  release: 'official-landmarks-v1.0.0',
+  tasks: {'face_landmarker', 'hand_landmarker', 'pose_landmarker'},
+  archive: null,
+  libraryName: 'libmediapipe.dylib',
+  librarySha256:
+      '41e98323ac91465270d0ae6348e9bf7d8fd9b3973521838f44ee1d61271607f9',
+  assetName: 'official_landmarks.dylib',
+  localBuildDirectory: 'build/native/official-macos-landmarks/',
+  officialWheel: OfficialWheelProvenance(
+    version: '1.0.0',
+    wheel: (
+      url:
+          'https://files.pythonhosted.org/packages/42/d7/'
+          '3a5dfaa86128db110c62a4d0f0c948304817932c9dd3257313bbdf24f7d5/'
+          'mediapipe-1.0.0-py3-none-macosx_11_0_arm64.whl',
+      sha256:
+          '7ee4783be41b2de345e1eb71e2f7e7c159a50ed5c283e60ccb8f5a6027c70a82',
+    ),
+    libraryPath: 'mediapipe/tasks/c/libmediapipe.dylib',
+    librarySha256:
+        'aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f',
+    minimumOS: '14.0',
+    delegates: {'cpu', 'gpu'},
+    notices: _wheelNotices,
+  ),
+);
 
 /// Published vision runtimes. Add a row per (release, target); the hook
 /// downloads each release that covers a selected task exactly once.

@@ -6,10 +6,36 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
-/// Owns camera capture and the official VIDEO-mode Face Landmarker for this demo.
-class FaceCameraController extends ChangeNotifier {
+/// The task-specific half of a live demo: how to build it, and how to run one
+/// frame through it. Everything else about live capture is identical between
+/// tasks and lives in [LiveCameraController].
+abstract interface class LiveTask<T> {
+  /// Human-readable name, used in errors.
+  String get name;
+
+  /// Creates the underlying VIDEO-mode task.
+  Future<void> open(VisionDelegate delegate, Uint8List modelBytes);
+
+  /// Runs one frame. Called at most once at a time.
+  Future<T> detect(VisionImage frame, int timestampMilliseconds);
+
+  /// Releases native resources. Safe to call when never opened.
+  Future<void> close();
+}
+
+/// Owns camera capture and one official VIDEO-mode task.
+///
+/// Camera lifecycle, the operation queue, generation guards, frame skipping,
+/// timestamp monotonicity, timings and error capture are the same whichever
+/// task is running, so they live here once and the task supplies only [LiveTask].
+class LiveCameraController<T> extends ChangeNotifier {
+  LiveCameraController(this.task);
+
+  /// The task being demonstrated.
+  final LiveTask<T> task;
+
   CameraController? _camera;
-  FaceLandmarker? _landmarker;
+  bool _opened = false;
   Future<void> _operations = Future.value();
   Future<void>? _frame;
   Future<void>? _closing;
@@ -22,11 +48,21 @@ class FaceCameraController extends ChangeNotifier {
   bool running = false;
   bool changing = false;
   String? error;
-  FaceLandmarkerResult? result;
+  T? result;
   int processedFrames = 0;
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
+  double conversionMilliseconds = 0;
+  double frameMilliseconds = 0;
   double _totalInferenceMilliseconds = 0;
+  double _totalConversionMilliseconds = 0;
+  double _totalFrameMilliseconds = 0;
+  /// CPU by default, deliberately. Metal wins on back-to-back frames but
+  /// loses at camera cadence, because it goes cold in the ~30 ms between them.
+  /// Measured on an M4 Max at 1080p with one face: tight loop 4.03 CPU vs 3.45
+  /// GPU, at 33 ms spacing 9.03 CPU vs 10.80 GPU. The official Python API
+  /// inverts the same way on the same runtime, so this is the delegate's
+  /// behaviour rather than anything this wrapper does.
   VisionDelegate delegate = VisionDelegate.cpu;
 
   /// Mean inference time since capture last started. Starting is what happens
@@ -35,6 +71,17 @@ class FaceCameraController extends ChangeNotifier {
   double get averageInferenceMilliseconds => processedFrames == 0
       ? 0
       : _totalInferenceMilliseconds / processedFrames;
+
+  /// Mean time spent building a [VisionImage] from the camera plane.
+  double get averageConversionMilliseconds => processedFrames == 0
+      ? 0
+      : _totalConversionMilliseconds / processedFrames;
+
+  /// Mean wall time for a whole frame, so plumbing shows up as the gap between
+  /// this and [averageInferenceMilliseconds].
+  double get averageFrameMilliseconds => processedFrames == 0
+      ? 0
+      : _totalFrameMilliseconds / processedFrames;
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
       ? 0
       : processedFrames * 1000000 / _clock.elapsedMicroseconds;
@@ -56,7 +103,7 @@ class FaceCameraController extends ChangeNotifier {
   Future<void> start(
     CameraDescription description, {
     VisionDelegate delegate = VisionDelegate.cpu,
-    String modelAsset = 'assets/face_landmarker.task',
+    required String modelAsset,
   }) {
     if (_closed) return Future.error(StateError('Camera demo is closed.'));
     final generation = ++_generation;
@@ -71,16 +118,11 @@ class FaceCameraController extends ChangeNotifier {
       try {
         this.delegate = delegate;
         final data = await rootBundle.load(modelAsset);
-        _landmarker = await FaceLandmarker.create(
-          FaceLandmarkerOptions(
-            delegate: delegate,
-            modelBytes: data.buffer.asUint8List(
-              data.offsetInBytes,
-              data.lengthInBytes,
-            ),
-            runningMode: VisionRunningMode.video,
-          ),
+        await task.open(
+          delegate,
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
         );
+        _opened = true;
         if (_closed || generation != _generation) {
           await _release();
           return;
@@ -101,7 +143,11 @@ class FaceCameraController extends ChangeNotifier {
         processedFrames = 0;
         skippedFrames = 0;
         inferenceMilliseconds = 0;
+        conversionMilliseconds = 0;
+        frameMilliseconds = 0;
         _totalInferenceMilliseconds = 0;
+        _totalConversionMilliseconds = 0;
+        _totalFrameMilliseconds = 0;
         _lastTimestamp = -1;
         _clock
           ..reset()
@@ -157,10 +203,11 @@ class FaceCameraController extends ChangeNotifier {
       if (image.format.group != ImageFormatGroup.bgra8888 ||
           image.planes.length != 1) {
         throw StateError(
-          'The macOS camera must supply one BGRA or RGBA plane.',
+          '${task.name} needs one BGRA or RGBA camera plane.',
         );
       }
       final plane = image.planes.single;
+      final conversion = Stopwatch()..start();
       final frame = VisionImage.fromPixels(
         pixels: plane.bytes,
         width: image.width,
@@ -170,14 +217,22 @@ class FaceCameraController extends ChangeNotifier {
             ? VisionPixelFormat.rgba
             : VisionPixelFormat.bgra,
       );
-      final detection = await _landmarker!.detectForVideo(
-        frame,
-        timestampMilliseconds: timestamp,
-      );
+      conversion.stop();
+      final inference = Stopwatch()..start();
+      final detection = await task.detect(frame, timestamp);
+      inference.stop();
       if (_closed || generation != _generation) return;
       result = detection;
-      inferenceMilliseconds = timer.elapsedMicroseconds / 1000;
+      // Split so the readout distinguishes the task's own work from what this
+      // demo spends getting a camera frame to it: building the VisionImage,
+      // and the isolate hop the task worker makes to keep native pointers off
+      // the calling isolate.
+      conversionMilliseconds = conversion.elapsedMicroseconds / 1000;
+      inferenceMilliseconds = inference.elapsedMicroseconds / 1000;
+      frameMilliseconds = timer.elapsedMicroseconds / 1000;
+      _totalConversionMilliseconds += conversionMilliseconds;
       _totalInferenceMilliseconds += inferenceMilliseconds;
+      _totalFrameMilliseconds += frameMilliseconds;
       processedFrames++;
       _changed();
     } catch (failure) {
@@ -222,12 +277,13 @@ class FaceCameraController extends ChangeNotifier {
       }
     }
     await _frame;
-    final landmarker = _landmarker;
-    _landmarker = null;
-    try {
-      await landmarker?.dispose();
-    } catch (failure) {
-      error ??= _message(failure);
+    if (_opened) {
+      _opened = false;
+      try {
+        await task.close();
+      } catch (failure) {
+        error ??= _message(failure);
+      }
     }
     _clock.stop();
   }

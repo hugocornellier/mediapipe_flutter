@@ -2,6 +2,8 @@
 library;
 
 import 'package:mediapipe_flutter_core/capabilities.dart';
+import 'src/capabilities/official_runtime_stub.dart'
+    if (dart.library.io) 'src/capabilities/official_runtime_io.dart';
 import 'src/interface/vision_types.dart';
 
 export 'package:mediapipe_flutter_core/capabilities.dart'
@@ -9,23 +11,37 @@ export 'package:mediapipe_flutter_core/capabilities.dart'
 export 'src/interface/vision_types.dart' show VisionDelegate;
 
 /// Query the validated Hand, Gesture, Pose and Holistic task runtimes.
-Future<TaskCapabilities<VisionDelegate>>
-queryLandmarkTaskCapabilities() async =>
-    landmarkTaskCapabilitiesForPlatform(await currentTaskPlatform());
+///
+/// [useOfficialMacosRuntime] is reserved for Hand and Pose, the two tasks whose
+/// official macOS runtime has been checked against the pinned reference. The
+/// runtime probe fails closed if the build hook selected the source monolith.
+Future<TaskCapabilities<VisionDelegate>> queryLandmarkTaskCapabilities({
+  bool useOfficialMacosRuntime = false,
+}) async => landmarkTaskCapabilitiesForPlatform(
+  await currentTaskPlatform(),
+  officialMacosRuntime:
+      useOfficialMacosRuntime && hasOfficialMacosLandmarkRuntime(),
+);
 
 /// Evaluate landmark task CPU coverage without loading native code.
 TaskCapabilities<VisionDelegate> landmarkTaskCapabilitiesForPlatform(
-  TaskPlatform platform,
-) => TaskCapabilities.onTargets(
+  TaskPlatform platform, {
+  bool officialMacosRuntime = false,
+}) => TaskCapabilities.onTargets(
   platform: platform,
-  delegates: const {
-    VisionDelegate.cpu: {'linux/x64': null, 'windows/x64': null},
-    VisionDelegate.gpu: {},
+  delegates: {
+    VisionDelegate.cpu: {
+      'linux/x64': null,
+      'windows/x64': null,
+      if (officialMacosRuntime) 'macos/arm64': '14.0',
+    },
+    VisionDelegate.gpu: const {},
   },
   runtimeVersion: '1.0.0',
   unavailableReasons: const {
     VisionDelegate.cpu:
-        'Landmark task CPU inference requires Linux x64 or Windows x64. '
+        'Landmark task CPU inference requires Linux x64, Windows x64, or the '
+        'official macOS landmark runtime. '
         'On macOS the source runtime is not validated against the official '
         'outputs; see upstream-issues.md UP-004.',
     VisionDelegate.gpu: 'Landmark task GPU inference has not been validated.',

@@ -6,6 +6,7 @@ virtual addresses, fixups, symbols, code and data remain byte-for-byte intact.
 Flutter/Dart perform their normal install-name rewrite and signing afterwards.
 """
 import hashlib
+import re
 import struct
 import subprocess
 
@@ -36,6 +37,58 @@ def inspect(data):
     if signature is None or position != 32 + size or first < position:
         raise ValueError('Unexpected Mach-O layout')
     return first, signature, first - position, dependencies, sections
+
+
+def install_name(data):
+    """Return the thin dylib's LC_ID_DYLIB string."""
+    count = struct.unpack_from('<I', data, 16)[0]
+    position = 32
+    for _ in range(count):
+        command, length = struct.unpack_from('<II', data, position)
+        if command == 0xd:
+            at = struct.unpack_from('<I', data, position + 8)[0]
+            return data[position + at:position + length].split(b'\0')[0].decode()
+        position += length
+    raise ValueError('Mach-O dylib has no LC_ID_DYLIB')
+
+
+def rewrite_install_name(library, name):
+    """Rewrite only LC_ID_DYLIB/signing metadata and prove payload identity."""
+    original = library.read_bytes()
+    before = inspect(original)
+    original_name = install_name(original)
+    command = ['xcrun', 'install_name_tool', '-id', name]
+    replacements = {}
+    for dependency in before[3]:
+        if (dependency.startswith('/System/Library/Frameworks/') and
+                '/Versions/' in dependency):
+            shortened = re.sub(r'/Versions/[A-Z]/', '/', dependency)
+            replacements[dependency] = shortened
+            command.extend(['-change', dependency, shortened])
+    subprocess.run([*command, str(library)], check=True)
+    subprocess.run(['codesign', '-f', '-s', '-', str(library)], check=True)
+    modified = library.read_bytes()
+    after = inspect(modified)
+    expected_dependencies = [replacements.get(item, item) for item in before[3]]
+    if (before[:2] != after[:2] or before[4] != after[4] or
+            after[3] != expected_dependencies or
+            original[before[0]:before[1]] != modified[after[0]:after[1]]):
+        raise ValueError('Install-name packaging changed code, data, layout or fixups')
+    if install_name(modified) != name:
+        raise ValueError('install_name_tool did not set the requested LC_ID_DYLIB')
+    if after[2] < 192:
+        raise ValueError('Insufficient install-name header capacity')
+    subprocess.run(['codesign', '--verify', '--strict', str(library)], check=True)
+    return {
+        'method': ('Equivalent system framework paths without Versions; '
+                   'LC_ID_DYLIB rewrite; ad-hoc signature.'),
+        'original_install_name': original_name,
+        'install_name': name,
+        'unchanged_payload_sha256': hashlib.sha256(
+            original[before[0]:before[1]]).hexdigest(),
+        'header_free_bytes': after[2],
+        'section_layout_unchanged': True,
+    }
 
 
 def normalize(library):

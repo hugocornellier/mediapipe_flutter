@@ -43,6 +43,25 @@ void main() {
     expect(mac.unavailableReasons[VisionDelegate.cpu], contains('UP-004'));
     expect(mac.runtimeVersion, '1.0.0');
   });
+
+  test('official and source macOS landmark capability claims stay split', () {
+    const platform = TaskPlatform(
+      operatingSystem: 'macos',
+      architecture: 'arm64',
+      version: '14.0',
+    );
+    expect(
+      landmarkTaskCapabilitiesForPlatform(platform).supportedDelegates,
+      isEmpty,
+    );
+    expect(
+      landmarkTaskCapabilitiesForPlatform(
+        platform,
+        officialMacosRuntime: true,
+      ).supportedDelegates,
+      {VisionDelegate.cpu},
+    );
+  });
   test('MagicTouch reports its own GPU shader blocker', () {
     final result = interactiveSegmenterCapabilitiesForPlatform(
       const TaskPlatform(

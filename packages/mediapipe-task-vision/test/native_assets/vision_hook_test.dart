@@ -123,6 +123,58 @@ void main() {
     }
   });
 
+  test('official gallery landmark runtime pins wheel and prepared bytes', () {
+    final release = officialMacosLandmarkRuntime;
+    expect(release.target, 'macos/arm64');
+    expect(release.tasks, {
+      'face_landmarker',
+      'hand_landmarker',
+      'pose_landmarker',
+    });
+    expect(release.archive, isNull);
+    expect(release.libraryName, 'libmediapipe.dylib');
+    expect(release.librarySha256, matches(RegExp(r'^[a-f0-9]{64}$')));
+    expect(release.officialWheel, isNotNull);
+    expect(
+      release.officialWheel!.wheel.sha256,
+      matches(RegExp(r'^[a-f0-9]{64}$')),
+    );
+    expect(
+      release.officialWheel!.librarySha256,
+      matches(RegExp(r'^[a-f0-9]{64}$')),
+    );
+    expect(release.officialWheel!.delegates, {'cpu', 'gpu'});
+  });
+
+  test('official gallery landmark runtime requires its task and target', () {
+    expect(
+      testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.macOS,
+        targetArchitecture: Architecture.arm64,
+        userDefines: defines({
+          'tasks': ['face_detector'],
+          'official_macos_landmark_tasks': true,
+        }),
+        check: (_, _) => fail('Official runtime accepted without its task'),
+      ),
+      failsWith<StateError>(contains('requires at least one')),
+    );
+    expect(
+      testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.linux,
+        targetArchitecture: Architecture.x64,
+        userDefines: defines({
+          'tasks': ['face_landmarker'],
+          'official_macos_landmark_tasks': true,
+        }),
+        check: (_, _) => fail('Official macOS runtime accepted on Linux'),
+      ),
+      failsWith<UnsupportedError>(contains('macos/arm64')),
+    );
+  });
+
   test('simulator rejects tasks whose exports lack validated inference', () {
     expect(
       testCodeBuildHook(
