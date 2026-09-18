@@ -104,7 +104,9 @@ TaskCapabilities<VisionDelegate> _liveFaceCapabilities(TaskPlatform platform) =>
           if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
         },
       },
-      runtimeVersion: {'ios', 'web'}.contains(platform.operatingSystem) ? '1.0.1' : '1.0.0',
+      runtimeVersion: {'ios', 'web'}.contains(platform.operatingSystem)
+          ? '1.0.1'
+          : '1.0.0',
       unavailableReasons: const {
         VisionDelegate.cpu: 'Live capture requires a supported camera and SDK.',
         VisionDelegate.gpu:

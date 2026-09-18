@@ -6,8 +6,10 @@ import 'package:mediapipe_flutter_vision/capabilities.dart';
 import 'catalog.dart';
 import 'segment_page.dart' if (dart.library.js_interop) 'web/segment_page.dart';
 import 'live_page.dart';
-import 'gallery_assets_io.dart' if (dart.library.js_interop) 'web/gallery_assets.dart';
-export 'gallery_assets_io.dart' if (dart.library.js_interop) 'web/gallery_assets.dart';
+import 'gallery_assets_io.dart'
+    if (dart.library.js_interop) 'web/gallery_assets.dart';
+export 'gallery_assets_io.dart'
+    if (dart.library.js_interop) 'web/gallery_assets.dart';
 
 SemanticsHandle? _webSemantics;
 
