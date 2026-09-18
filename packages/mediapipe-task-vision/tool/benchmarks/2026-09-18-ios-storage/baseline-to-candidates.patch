@@ -1,0 +1,263 @@
+--- a/packages/mediapipe-task-vision/native/ios/face_sdk_bridge.mm
++++ b/packages/mediapipe-task-vision/native/ios/face_sdk_bridge.mm
+@@ -15,6 +15,13 @@
+ 
+ struct MpImageInternal {
+   CVPixelBufferRef pixels;
++};
++
++// One pool per task owner, never a shared mutable frame or a global cache.
++struct MpIosPixelBufferPoolInternal {
++  CVPixelBufferPoolRef pool = nullptr;
++  int width = 0;
++  int height = 0;
+ };
+ 
+ struct MpFaceLandmarkerInternal {
+@@ -117,7 +124,8 @@
+ 
+ MpStatus CreatePixels(int width, int height, int stride, const uint8_t *data,
+                        size_t length, int channels, bool bgra,
+-                       MpImagePtr *out, char **message) {
++                       MpImagePtr *out, char **message,
++                       MpIosPixelBufferPoolInternal *storage = nullptr) {
+   if (!out || !data || width <= 0 || height <= 0 ||
+       width > INT_MAX / channels || stride < width * channels ||
+       length < static_cast<size_t>(stride) * (height - 1) + width * channels) {
+@@ -129,8 +137,31 @@
+     (id)kCVPixelBufferIOSurfacePropertiesKey: @{},
+     (id)kCVPixelBufferMetalCompatibilityKey: @YES,
+   };
+-  CVReturn status = CVPixelBufferCreate(kCFAllocatorDefault, width, height,
+-      kCVPixelFormatType_32BGRA, (__bridge CFDictionaryRef)attributes, &pixels);
++  CVReturn status;
++  if (storage) {
++    if (!storage->pool || storage->width != width || storage->height != height) {
++      NSMutableDictionary *poolAttributes = [attributes mutableCopy];
++      poolAttributes[(id)kCVPixelBufferWidthKey] = @(width);
++      poolAttributes[(id)kCVPixelBufferHeightKey] = @(height);
++      poolAttributes[(id)kCVPixelBufferPixelFormatTypeKey] = @(kCVPixelFormatType_32BGRA);
++      CVPixelBufferPoolRef pool = nullptr;
++      status = CVPixelBufferPoolCreate(kCFAllocatorDefault, nullptr,
++          (__bridge CFDictionaryRef)poolAttributes, &pool);
++      if (status != kCVReturnSuccess) {
++        return Fail(message, @"Could not allocate an iOS pixel-buffer pool", kMpResourceExhausted);
++      }
++      if (storage->pool) CVPixelBufferPoolRelease(storage->pool);
++      storage->pool = pool;
++      storage->width = width;
++      storage->height = height;
++    }
++    // Core Video reuses only buffers whose clients have released them. A task
++    // retaining an earlier frame cannot observe a subsequent frame overwrite.
++    status = CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, storage->pool, &pixels);
++  } else {
++    status = CVPixelBufferCreate(kCFAllocatorDefault, width, height,
++        kCVPixelFormatType_32BGRA, (__bridge CFDictionaryRef)attributes, &pixels);
++  }
+   if (status != kCVReturnSuccess) {
+     return Fail(message, @"Could not allocate an iOS pixel buffer", kMpResourceExhausted);
+   }
+@@ -267,6 +298,25 @@
+ extern "C" {
+ MP_EXPORT int MpIosSdkVersion() { return 10001; }
+ MP_EXPORT void MpErrorFree(char *message) { free(message); }
++
++MP_EXPORT MpIosPixelBufferPoolInternal *MpIosPixelBufferPoolCreate() {
++  return new (std::nothrow) MpIosPixelBufferPoolInternal;
++}
++
++MP_EXPORT void MpIosPixelBufferPoolFree(MpIosPixelBufferPoolInternal *storage) {
++  if (!storage) return;
++  if (storage->pool) CVPixelBufferPoolRelease(storage->pool);
++  delete storage;
++}
++
++MP_EXPORT MpStatus MpIosImageCreateFromBgraDataWithPool(
++    MpIosPixelBufferPoolInternal *storage, int width, int height, int stride,
++    const uint8_t *data, size_t length, MpImagePtr *out, char **message) {
++  @autoreleasepool {
++    if (!storage) return Fail(message, @"Pixel-buffer pool must not be null");
++    return CreatePixels(width, height, stride, data, length, 4, true, out, message, storage);
++  }
++}
+ 
+ MP_EXPORT MpStatus MpIosImageCreateFromBgraData(
+     int width, int height, int stride, const uint8_t *data, size_t length,
+--- a/packages/mediapipe-task-vision/lib/src/io/native_ios_sdk.dart
++++ b/packages/mediapipe-task-vision/lib/src/io/native_ios_sdk.dart
+@@ -8,6 +8,10 @@
+ const _landmarkerAsset =
+     'package:mediapipe_flutter_vision/face_landmarker.dylib';
+ const _detectorAsset = 'package:mediapipe_flutter_vision/face_detector.dylib';
++
++/// Benchmark overrides: 0 baseline, 1 reusable staging, 2 pool, 3 both.
++/// The default stays at the baseline until device A/B results are accepted.
++const iosImageStorageMode = int.fromEnvironment('MEDIAPIPE_IOS_IMAGE_STORAGE');
+ 
+ @Native<Int Function()>(symbol: 'MpIosSdkVersion', assetId: _landmarkerAsset)
+ external int _landmarkerSdkVersion();
+@@ -65,6 +69,110 @@
+   Pointer<Pointer<Char>> error,
+ );
+ 
++@Native<Pointer<Void> Function()>(
++  symbol: 'MpIosPixelBufferPoolCreate',
++  assetId: _landmarkerAsset,
++)
++external Pointer<Void> _poolCreate();
++
++@Native<Void Function(Pointer<Void>)>(
++  symbol: 'MpIosPixelBufferPoolFree',
++  assetId: _landmarkerAsset,
++)
++external void _poolFree(Pointer<Void> pool);
++
++@Native<
++  UnsignedInt Function(
++    Pointer<Void>,
++    Int,
++    Int,
++    Int,
++    Pointer<Uint8>,
++    Size,
++    Pointer<Pointer<Void>>,
++    Pointer<Pointer<Char>>,
++  )
++>(symbol: 'MpIosImageCreateFromBgraDataWithPool', assetId: _landmarkerAsset)
++external int _pooledBgra(
++  Pointer<Void> pool,
++  int width,
++  int height,
++  int stride,
++  Pointer<Uint8> pixels,
++  int length,
++  Pointer<Pointer<Void>> image,
++  Pointer<Pointer<Char>> error,
++);
++
++/// Task-owned storage. Detection is serialized by the existing worker.
++final class IosBgraStorage {
++  /// Selects staging reuse (bit 0) and pixel-buffer pooling (bit 1).
++  IosBgraStorage(this.mode);
++  /// Independent candidates selected for this task's lifetime.
++  final int mode;
++  Pointer<Uint8> _pixels = nullptr;
++  int _capacity = 0;
++  Pointer<Void> _pool = nullptr;
++
++  /// Copies one owned snapshot into an SDK-compatible image.
++  int create(
++    VisionImage input,
++    Arena arena,
++    Pointer<Pointer<Void>> image,
++    Pointer<Pointer<Char>> error, {
++    bool detector = false,
++  }) {
++    final bytes = input.pixels!;
++    Pointer<Uint8> pixels;
++    if (mode & 1 != 0) {
++      if (bytes.length > _capacity) {
++        final replacement = malloc<Uint8>(bytes.length);
++        if (_pixels != nullptr) malloc.free(_pixels);
++        _pixels = replacement;
++        _capacity = bytes.length;
++      }
++      pixels = _pixels;
++    } else {
++      pixels = arena<Uint8>(bytes.length);
++    }
++    pixels.asTypedList(bytes.length).setAll(0, bytes);
++    if (mode & 2 != 0) {
++      if (_pool == nullptr) _pool = _poolCreate();
++      if (_pool == nullptr) {
++        throw StateError('Cannot allocate iOS pixel-buffer pool.');
++      }
++      return _pooledBgra(
++        _pool,
++        input.width!,
++        input.height!,
++        input.bytesPerRow!,
++        pixels,
++        bytes.length,
++        image,
++        error,
++      );
++    }
++    return (detector ? _detectorBgra : _landmarkerBgra)(
++      input.width!,
++      input.height!,
++      input.bytesPerRow!,
++      pixels,
++      bytes.length,
++      image,
++      error,
++    );
++  }
++
++  /// Releases storage after task teardown. Repeated calls are harmless.
++  void close() {
++    if (_pool != nullptr) _poolFree(_pool);
++    if (_pixels != nullptr) malloc.free(_pixels);
++    _pool = nullptr;
++    _pixels = nullptr;
++    _capacity = 0;
++  }
++}
++
+ /// Retains BGRA and its row stride; the SDK's pixel buffer needs no swizzle.
+ int createOfficialIosBgraImage(
+   VisionImage input,
+@@ -72,7 +180,11 @@
+   Pointer<Pointer<Void>> image,
+   Pointer<Pointer<Char>> error, {
+   bool detector = false,
++  IosBgraStorage? storage,
+ }) {
++  if (storage != null) {
++    return storage.create(input, arena, image, error, detector: detector);
++  }
+   final bytes = input.pixels!;
+   final pixels = arena<Uint8>(bytes.length);
+   pixels.asTypedList(bytes.length).setAll(0, bytes);
+--- a/packages/mediapipe-task-vision/lib/src/io/native_face_landmarker.dart
++++ b/packages/mediapipe-task-vision/lib/src/io/native_face_landmarker.dart
+@@ -70,6 +70,10 @@
+   mp.MpFaceLandmarkerPtr _detector = nullptr;
+   final bool _gpu;
+   final bool _officialIos;
++  late final IosBgraStorage? _iosBgraStorage =
++      _officialIos && iosImageStorageMode != 0
++      ? IosBgraStorage(iosImageStorageMode)
++      : null;
+ 
+   /// Runs a single image and copies every result before releasing native memory.
+   FaceLandmarkerResult detect(
+@@ -88,7 +92,13 @@
+       } else if (_officialIos && input.format == VisionPixelFormat.bgra) {
+         _checked(
+           (error) => mp.MpStatus.fromValue(
+-            createOfficialIosBgraImage(input, arena, imageOut.cast(), error),
++            createOfficialIosBgraImage(
++              input,
++              arena,
++              imageOut.cast(),
++              error,
++              storage: _iosBgraStorage,
++            ),
+           ),
+         );
+         timings?.mark('image_create');
+@@ -217,7 +227,11 @@
+     if (_detector == nullptr) return;
+     final pointer = _detector;
+     _detector = nullptr;
+-    _checked((error) => mp.MpFaceLandmarkerClose(pointer, error));
++    try {
++      _checked((error) => mp.MpFaceLandmarkerClose(pointer, error));
++    } finally {
++      _iosBgraStorage?.close();
++    }
+   }
+ }
+ 

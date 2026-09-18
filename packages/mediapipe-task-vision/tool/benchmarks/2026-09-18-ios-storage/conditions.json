@@ -1,0 +1,8 @@
+{
+  "unplugged_confirmed_at": "2026-09-18T07:44:12.582456+00:00",
+  "first_fully_unplugged_campaign_index": 6,
+  "staging_original_block_requires_repeat": true,
+  "source": "User confirmed iPhone unplugged, beside Mac, unlocked.",
+  "superseded_staging_fixture_mismatch": "Main index 4 decoded-pixel hashes differ; this report and the entire original staging block are excluded by the planned unplugged repeat. Final comparison requires matching decoded-pixel hashes.",
+  "first_unplugged_staging_repeat_rejected": "staging-unplugged/01-v1.json had different decoded-pixel hashes; entire repeat excluded. A second repeat enforces decoded-pixel equality before accepting each report."
+}

@@ -7,16 +7,18 @@ import '../../third_party/mediapipe/mediapipe_flutter_vision_bindings.dart'
     as mp;
 import '../interface/face_detector_types.dart';
 import 'pixel_conversion.dart';
+import 'native_ios_sdk.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceDetector {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeFaceDetector(FaceDetectorOptions options)
-    : _gpu = options.delegate == VisionDelegate.gpu {
-    if (!Platform.isMacOS && _gpu) {
+    : _gpu = options.delegate == VisionDelegate.gpu,
+      _officialIos = hasOfficialIosFaceRuntime(detector: true) {
+    if (!Platform.isMacOS && !_officialIos && _gpu) {
       throw UnsupportedError(
-        'GPU face inference is validated on macOS only; '
-        'this target supports CPU only.',
+        'GPU face inference requires macOS or the official iOS SDK adapter; '
+        'this runtime supports CPU only.',
       );
     }
     using((arena) {
@@ -61,6 +63,7 @@ final class NativeFaceDetector {
 
   mp.MpFaceDetectorPtr _detector = nullptr;
   final bool _gpu;
+  final bool _officialIos;
 
   /// Runs a single image and copies every result before releasing native memory.
   FaceDetectorResult detect(VisionImage input, int rotation, {int? timestamp}) {
@@ -69,11 +72,24 @@ final class NativeFaceDetector {
       if (input.path case final path?) {
         final name = path.toNativeUtf8(allocator: arena).cast<Char>();
         _checked((error) => mp.MpImageCreateFromFile(name, imageOut, error));
+      } else if (_officialIos && input.format == VisionPixelFormat.bgra) {
+        _checked(
+          (error) => mp.MpStatus.fromValue(
+            createOfficialIosBgraImage(
+              input,
+              arena,
+              imageOut.cast(),
+              error,
+              detector: true,
+            ),
+          ),
+        );
       } else {
         final bytes = input.pixels!;
         // Apple's GPU image upload cannot accept three-channel ImageFrames.
         // Add opaque alpha before entering the official graph.
-        final expandRgb = _gpu && input.format == VisionPixelFormat.rgb;
+        final expandRgb =
+            _gpu && !_officialIos && input.format == VisionPixelFormat.rgb;
         final rowSize = input.width! * (expandRgb ? 4 : input.format!.channels);
         final byteCount = rowSize * input.height!;
         final pixels = arena<Uint8>(byteCount);

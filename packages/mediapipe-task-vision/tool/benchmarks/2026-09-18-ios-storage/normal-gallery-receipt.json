@@ -1,0 +1,12 @@
+{
+  "entrypoint": "gallery/lib/main.dart",
+  "production_storage_mode": 2,
+  "installed_and_launched": true,
+  "sha256": {
+    "packages/mediapipe-task-vision/native/ios/face_sdk_bridge.mm": "87fca1b7f97dc185f3751d421287d33d781ac953ccb66abd83eaaaa59bce1013",
+    "packages/mediapipe-task-vision/lib/src/io/native_ios_sdk.dart": "dee4642c8bdb6b314a271a5e75c1612007a65bc90edbdaf0a95105bc3c2f783c",
+    "packages/mediapipe-task-vision/lib/src/io/native_face_landmarker.dart": "5c8ec1c59b245ffa1866360da64fe8bb3ffe96060e05ac491ae0355c88203d6a",
+    "gallery/build/ios/iphoneos/Runner.app/Frameworks/App.framework/App": "a2eaf2073993004489952c5c2fae709a06b773784cc1926706a822891b29d71d",
+    "gallery/build/ios/iphoneos/Runner.app/Frameworks/mediapipe_ios.framework/mediapipe_ios": "3a5415e63d3c589fe132a4789d2f2bd572e0dbc7509eb53d23dcc4ec57a8eee3"
+  }
+}

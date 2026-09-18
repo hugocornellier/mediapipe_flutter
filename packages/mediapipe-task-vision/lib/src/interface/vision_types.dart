@@ -14,7 +14,7 @@ enum VisionDelegate {
   /// Official CPU inference. This is the default.
   cpu,
 
-  /// Official GPU inference, using Metal for the macOS face tasks.
+  /// Official GPU inference, using Metal for macOS and the prebuilt iOS SDK.
   ///
   /// Initialization errors are reported to the caller without retrying on CPU.
   /// Some stages, including face blendshapes, remain on CPU in Google's graph.
@@ -30,8 +30,8 @@ enum VisionPixelFormat {
   /// Red, green, blue, alpha. This is not BGRA.
   rgba(4),
 
-  /// Blue, green, red, alpha, as supplied by macOS cameras.
-  /// Converted to RGBA on the inference worker before entering MediaPipe.
+  /// Blue, green, red, alpha, as supplied by Apple cameras.
+  /// The official iOS SDK accepts BGRA directly; other runtimes use RGBA.
   bgra(4);
 
   const VisionPixelFormat(this.channels);
