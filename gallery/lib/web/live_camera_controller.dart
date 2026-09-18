@@ -36,6 +36,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     ..style.height = '100%'
     ..style.objectFit = 'contain';
   web.MediaStream? _stream;
+  StreamSubscription<web.Event>? _trackEnded;
   late final JSFunction _visibility;
   Future<void> _operations = Future.value();
   Future<void>? _frame;
@@ -204,6 +205,14 @@ class LiveCameraController<T> extends ChangeNotifier {
           return;
         }
         video.srcObject = _stream;
+        _trackEnded = const web.EventStreamProvider<web.Event>('ended')
+            .forTarget(_stream!.getVideoTracks().toDart.first).listen((
+          _,
+        ) {
+          if (_closed || generation != _generation) return;
+          error = 'Camera disconnected. Reconnect it and press Start camera.';
+          unawaited(stop());
+        });
         await video.play().toDart;
         if (video.videoWidth == 0 || video.videoHeight == 0) {
           await video.onLoadedMetadata.first.timeout(
@@ -357,6 +366,8 @@ class LiveCameraController<T> extends ChangeNotifier {
 
   Future<void> _release() async {
     _cancelCallback();
+    await _trackEnded?.cancel();
+    _trackEnded = null;
     final stream = _stream;
     _stream = null;
     if (stream != null) {

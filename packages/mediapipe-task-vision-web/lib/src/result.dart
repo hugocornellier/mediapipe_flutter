@@ -16,6 +16,7 @@ FaceLandmarkerResult decodeWebFaceResult(Map<String, dynamic> data) {
               x: number(raw['x']),
               y: number(raw['y']),
               z: number(raw['z']),
+              name: raw['name'] as String?,
               visibility: raw['visibility'] == null
                   ? null
                   : number(raw['visibility']),

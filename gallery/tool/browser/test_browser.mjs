@@ -92,6 +92,11 @@ async function installCaptureObservations(page) {
   await page.addInitScript(() => {
     window.testCaptureTracks = [];
     window.testFrameCallbacks = new Set();
+    window.testWorkers = [];
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(...args) {super(...args); window.testWorkers.push(this);}
+    };
     const getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     navigator.mediaDevices.getUserMedia = async constraints => {
       const stream = await getUserMedia(constraints);
@@ -206,6 +211,27 @@ async function cameraChecks() {
   await wait(multiplePage, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended'));
   report.checks.push('native-browser-device-switch-and-mirroring');
+  // Trigger the actual worker error handler while gallery capture is active.
+  await multiplePage.getByRole('group', {name: /Live Face Mesh/}).click();
+  await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 3);
+  await multiplePage.waitForFunction(() => {
+    if (mediapipeVision.stats().pendingRequests === 0) return false;
+    window.testWorkers.at(-1).dispatchEvent(new ErrorEvent('error', {message: 'Injected worker failure'}));
+    return true;
+  }, null, {polling: 1});
+  await multiplePage.getByText(/Injected worker failure/).waitFor();
+  await wait(multiplePage, () => mediapipeVision.stats().activeWorkers === 0 &&
+    window.testCaptureTracks.every(t => t.readyState === 'ended'));
+  report.checks.push('worker-error-rejects-pending-requests-and-releases-capture');
+  await multiplePage.getByRole('button', {name: 'Start camera'}).click();
+  await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 3);
+  await multiplePage.evaluate(() => {
+    window.testCaptureTracks.find(t => t.readyState === 'live').dispatchEvent(new Event('ended'));
+  });
+  await multiplePage.getByText(/Camera disconnected/).waitFor();
+  await wait(multiplePage, () => mediapipeVision.stats().activeWorkers === 0 &&
+    window.testCaptureTracks.every(t => t.readyState === 'ended'));
+  report.checks.push('worker-error-restart-and-simulated-track-ended-cleanup');
   await multiple.close();
 
   const missing = await launch(0, false);

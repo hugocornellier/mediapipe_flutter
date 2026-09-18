@@ -1,5 +1,4 @@
 import 'package:mediapipe_flutter_vision/capabilities.dart';
-import 'package:mediapipe_flutter_vision/face_landmarker_backend.dart';
 
 /// How a tile demonstrates its task.
 enum GalleryDemo {
@@ -85,35 +84,6 @@ final class GalleryTask {
       : capabilities(platform);
 }
 
-/// Live capture with Google's official desktop/mobile runtimes.
-TaskCapabilities<VisionDelegate> _liveFaceCapabilities(TaskPlatform platform) =>
-    TaskCapabilities.onTargets(
-      platform: platform,
-      delegates: {
-        VisionDelegate.cpu: {
-          'macos/arm64': null,
-          'linux/x64': null,
-          'windows/x64': null,
-          if (faceLandmarkerBackendFactory != null) 'web/unknown': null,
-          'ios/arm64': '15.0',
-          if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
-        },
-        VisionDelegate.gpu: {
-          'macos/arm64': '14.0',
-          'ios/arm64': '15.0',
-          if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
-        },
-      },
-      runtimeVersion: {'ios', 'web'}.contains(platform.operatingSystem)
-          ? '1.0.1'
-          : '1.0.0',
-      unavailableReasons: const {
-        VisionDelegate.cpu: 'Live capture requires a supported camera and SDK.',
-        VisionDelegate.gpu:
-            'Live GPU inference requires an official platform SDK.',
-      },
-    );
-
 final _catalog = <GalleryTask>[
   GalleryTask(
     id: 'face_landmarker_live',
@@ -123,7 +93,7 @@ final _catalog = <GalleryTask>[
     summary: 'Face mesh on the camera feed, with frame timings.',
     model: 'face_landmarker.task',
     sample: 'portrait.jpg',
-    capabilities: _liveFaceCapabilities,
+    capabilities: faceLandmarkerCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'hand_landmarker_live',
