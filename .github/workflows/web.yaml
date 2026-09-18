@@ -48,6 +48,9 @@ jobs:
           flutter pub get
           flutter analyze lib test
           flutter test --platform chrome
+      - name: Analyze shared native and browser APIs
+        working-directory: packages/mediapipe-task-vision
+        run: flutter analyze lib
       - name: Analyze and test gallery geometry
         working-directory: gallery
         run: |

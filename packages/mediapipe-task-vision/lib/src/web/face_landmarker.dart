@@ -29,10 +29,12 @@ final class FaceLandmarker {
   }
 
   void _check(VisionRunningMode mode, int rotation, int? timestamp) {
-    if (_disposing != null)
+    if (_disposing != null) {
       throw StateError('FaceLandmarker has been disposed.');
-    if (runningMode != mode)
+    }
+    if (runningMode != mode) {
       throw StateError('This method requires ${mode.name} mode.');
+    }
     if (rotation % 90 != 0 || rotation < -0x80000000 || rotation > 0x7fffffff) {
       throw ArgumentError.value(
         rotation,
@@ -83,11 +85,13 @@ final class FaceLandmarker {
     int rotationDegrees = 0,
   }) async {
     _check(VisionRunningMode.video, rotationDegrees, timestampMilliseconds);
-    if (width <= 0 || height <= 0)
+    if (width <= 0 || height <= 0) {
       throw ArgumentError('Frame dimensions must be positive.');
+    }
     final backend = _backend;
-    if (backend is! FaceLandmarkerFrameBackend)
+    if (backend is! FaceLandmarkerFrameBackend) {
       throw UnsupportedError('Backend has no browser frame transport.');
+    }
     return backend.detectFrame(
       frame,
       width,
