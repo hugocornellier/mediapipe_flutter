@@ -33,8 +33,15 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
   }
 
   @override
-  Future<FaceLandmarkerResult> detect(VisionImage frame, int timestamp) =>
-      _task!.detectForVideo(frame, timestampMilliseconds: timestamp);
+  Future<FaceLandmarkerResult> detect(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.detectForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
 
   @override
   Future<void> close() async {
@@ -63,8 +70,15 @@ final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
   }
 
   @override
-  Future<HandLandmarkerResult> detect(VisionImage frame, int timestamp) =>
-      _task!.detectForVideo(frame, timestampMilliseconds: timestamp);
+  Future<HandLandmarkerResult> detect(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.detectForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
 
   @override
   Future<void> close() async {
@@ -93,8 +107,15 @@ final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
   }
 
   @override
-  Future<PoseLandmarkerResult> detect(VisionImage frame, int timestamp) =>
-      _task!.detectForVideo(frame, timestampMilliseconds: timestamp);
+  Future<PoseLandmarkerResult> detect(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.detectForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
 
   @override
   Future<void> close() async {

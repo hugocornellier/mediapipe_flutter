@@ -15,6 +15,7 @@ enum VisionDelegate {
   cpu,
 
   /// Official GPU inference, using Metal for macOS and the prebuilt iOS SDK.
+  /// FaceLandmarker also supports the official Android Flutter SDK adapter.
   ///
   /// Initialization errors are reported to the caller without retrying on CPU.
   /// Some stages, including face blendshapes, remain on CPU in Google's graph.

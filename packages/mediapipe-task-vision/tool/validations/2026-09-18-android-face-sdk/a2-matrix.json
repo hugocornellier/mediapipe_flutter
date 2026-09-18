@@ -1,0 +1,119 @@
+{
+  "testMatrixId": "matrix-1ypt8roxiisio",
+  "testSpecification": {
+    "testTimeout": "480s",
+    "androidInstrumentationTest": {
+      "appApk": {
+        "gcsPath": "gs://test-lab-7yqvc8ruj90y2-k9u7wfunxj2sa/mediapipe-face-20260918-a2-11177c7/app-debug.apk"
+      },
+      "testApk": {
+        "gcsPath": "gs://test-lab-7yqvc8ruj90y2-k9u7wfunxj2sa/mediapipe-face-20260918-a2-11177c7/app-debug-androidTest.apk"
+      },
+      "appPackageId": "com.example.mediapipe_gallery",
+      "testPackageId": "com.example.mediapipe_gallery.test",
+      "testRunnerClass": "androidx.test.runner.AndroidJUnitRunner"
+    },
+    "testSetup": {
+      "account": {
+        "googleAuto": {}
+      }
+    }
+  },
+  "environmentMatrix": {
+    "androidDeviceList": {
+      "androidDevices": [
+        {
+          "androidModelId": "panther",
+          "androidVersionId": "33",
+          "locale": "en",
+          "orientation": "portrait"
+        }
+      ]
+    }
+  },
+  "testExecutions": [
+    {
+      "id": "matrix-1ypt8roxiisio_execution-1cd3whnya6mtt",
+      "testSpecification": {
+        "testTimeout": "480s",
+        "androidInstrumentationTest": {
+          "appApk": {
+            "gcsPath": "gs://test-lab-7yqvc8ruj90y2-k9u7wfunxj2sa/mediapipe-face-20260918-a2-11177c7/app-debug.apk"
+          },
+          "testApk": {
+            "gcsPath": "gs://test-lab-7yqvc8ruj90y2-k9u7wfunxj2sa/mediapipe-face-20260918-a2-11177c7/app-debug-androidTest.apk"
+          },
+          "appPackageId": "com.example.mediapipe_gallery",
+          "testPackageId": "com.example.mediapipe_gallery.test",
+          "testRunnerClass": "androidx.test.runner.AndroidJUnitRunner"
+        },
+        "testSetup": {
+          "account": {
+            "googleAuto": {}
+          }
+        }
+      },
+      "environment": {
+        "androidDevice": {
+          "androidModelId": "panther",
+          "androidVersionId": "33",
+          "locale": "en",
+          "orientation": "portrait"
+        }
+      },
+      "state": "FINISHED",
+      "timestamp": "2026-09-18T13:55:47.499863Z",
+      "testDetails": {
+        "progressMessages": [
+          "Starting attempt 1.",
+          "Done. Test time = 28 (secs)",
+          "Starting results processing. Attempt: 1",
+          "Completed results processing. Time taken = 11 (secs)"
+        ]
+      },
+      "matrixId": "matrix-1ypt8roxiisio",
+      "projectId": "flutter-litert",
+      "toolResultsStep": {
+        "projectId": "flutter-litert",
+        "historyId": "bh.6fbb7acd7654206e",
+        "executionId": "8562909720019103204",
+        "stepId": "bs.f5b3312349debb83"
+      },
+      "shard": {
+        "numShards": 1
+      }
+    }
+  ],
+  "resultStorage": {
+    "googleCloudStorage": {
+      "gcsPath": "gs://test-lab-7yqvc8ruj90y2-k9u7wfunxj2sa/mediapipe-face-20260918-a2-11177c7/"
+    },
+    "toolResultsHistory": {
+      "projectId": "flutter-litert",
+      "historyId": "bh.6fbb7acd7654206e"
+    },
+    "toolResultsExecution": {
+      "projectId": "flutter-litert",
+      "historyId": "bh.6fbb7acd7654206e",
+      "executionId": "8562909720019103204"
+    },
+    "resultsUrl": "https://console.firebase.google.com/project/flutter-litert/testlab/histories/bh.6fbb7acd7654206e/matrices/8562909720019103204"
+  },
+  "projectId": "flutter-litert",
+  "state": "FINISHED",
+  "timestamp": "2026-09-18T13:55:47.499863Z",
+  "clientInfo": {
+    "name": "gcloud",
+    "clientInfoDetails": [
+      {
+        "key": "Cloud SDK Version",
+        "value": "575.0.1"
+      },
+      {
+        "key": "Release Track",
+        "value": "GA"
+      }
+    ]
+  },
+  "outcomeSummary": "SUCCESS"
+}

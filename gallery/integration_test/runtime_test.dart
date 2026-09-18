@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -17,41 +19,42 @@ import 'package:mediapipe_gallery/main.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('tiles that use different native assets coexist', (_) async {
-    final assets = await GalleryAssets.unpack();
-    final platform = (await queryObjectDetectorCapabilities()).platform;
-    final tiles = supportedTasks(
-      platform,
-      assets.bundledTasks,
-      assets.officialMacosLandmarkTasks,
-    ).where((task) => task.demo == GalleryDemo.live).toList();
-    expect(tiles.length, greaterThan(1), reason: 'need two live tiles');
+  testWidgets(
+    'tiles that use different native assets coexist',
+    (_) async {
+      final assets = await GalleryAssets.unpack();
+      final platform = (await queryObjectDetectorCapabilities()).platform;
+      final tiles = supportedTasks(
+        platform,
+        assets.bundledTasks,
+        assets.officialMacosLandmarkTasks,
+      ).where((task) => task.demo == GalleryDemo.live).toList();
+      expect(tiles.length, greaterThan(1), reason: 'need two live tiles');
 
-    // Visit every live tile in one process, exactly as a user moving through
-    // the grid does. Each task is fully disposed before the next opens, so a
-    // failure here is about loaded native images, not about task lifetime.
-    final visited = <String>[];
-    for (final tile in tiles) {
-      final task = liveDemoFor(tile.id)!.task();
-      final model = await rootBundle.load('assets/models/${tile.model}');
-      await task.open(
-        VisionDelegate.cpu,
-        model.buffer.asUint8List(model.offsetInBytes, model.lengthInBytes),
-      );
-      final result = await task.detect(
-        VisionImage.fromFile(assets.path(tile.sample)),
-        1,
-      );
-      expect(result, isNotNull, reason: tile.id);
-      await task.close();
-      visited.add(tile.id);
-    }
-    expect(visited, hasLength(tiles.length));
-    // Skipped: this reproduces a known defect rather than guarding against a
-    // regression. Face binds face_landmarker.dylib while the landmark tasks
-    // bind vision.dylib, so one runtime serving both ids is loaded twice and
-    // MediaPipe aborts on the second graph registration. The abort kills the
-    // process, so leaving it enabled would take the whole suite with it.
-    // Unskip once a single image serves both asset ids.
-  }, skip: true);
+      // Visit every live tile in one process, exactly as a user moving through
+      // the grid does. Each task is fully disposed before the next opens, so a
+      // failure here is about loaded native images, not about task lifetime.
+      final visited = <String>[];
+      for (final tile in tiles) {
+        final task = liveDemoFor(tile.id)!.task();
+        final model = await rootBundle.load('assets/models/${tile.model}');
+        await task.open(
+          VisionDelegate.cpu,
+          model.buffer.asUint8List(model.offsetInBytes, model.lengthInBytes),
+        );
+        final result = await task.detect(
+          VisionImage.fromFile(assets.path(tile.sample)),
+          1,
+          rotationDegrees: 0,
+        );
+        expect(result, isNotNull, reason: tile.id);
+        await task.close();
+        visited.add(tile.id);
+      }
+      expect(visited, hasLength(tiles.length));
+      // Desktop wheel aliases now resolve one loaded image. The Apple source
+      // runtime aliases still need their own fix before this test can run there.
+    },
+    skip: !Platform.isLinux && !Platform.isWindows,
+  );
 }

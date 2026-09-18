@@ -12,9 +12,13 @@ Future<TaskPlatform> currentTaskPlatform() => _platform ??= _readPlatform();
 
 Future<TaskPlatform> _readPlatform() async {
   String? version;
-  if (Platform.isMacOS) {
+  if (Platform.isMacOS || Platform.isIOS) {
     // Read the product version without spawning a process (including in a
-    // sandboxed Flutter app). Darwin kernel versions are not macOS versions.
+    // sandboxed Flutter app, and on iOS where spawning is not allowed at all).
+    // Darwin kernel versions are not product versions, and both systems answer
+    // the same sysctl. A capability table that carries a minimum iOS version
+    // fails closed when the version is unknown, so leaving iOS out here would
+    // hide every task the package does support on a phone.
     try {
       version = using((arena) {
         final sysctl = DynamicLibrary.process()

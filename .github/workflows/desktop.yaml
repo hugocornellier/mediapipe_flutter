@@ -30,13 +30,19 @@ jobs:
           python-version: '3.12'
       - name: Install Linux Flutter host dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev xvfb
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev xvfb libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good
       - name: Validate Linux CPU references and debug/release consumers
         if: runner.os == 'Linux'
         run: xvfb-run -a python3 -B packages/mediapipe-task-vision/tool/test_desktop.py --object-detector --image-tasks --landmark-tasks --segmenter-tasks
       - name: Validate Windows CPU references and debug/release consumers
         if: runner.os == 'Windows'
         run: python -B packages/mediapipe-task-vision/tool/test_desktop.py --object-detector --image-tasks --landmark-tasks --segmenter-tasks
+      - name: Build and exercise the Linux CPU gallery
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python3 -B gallery/tool/test_desktop.py
+      - name: Build and exercise the Windows CPU gallery
+        if: runner.os == 'Windows'
+        run: python -B gallery/tool/test_desktop.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -45,4 +51,6 @@ jobs:
             build/codex-tmp/desktop-*/*.log
             build/codex-tmp/desktop-*/report.json
             build/codex-tmp/desktop-*/reference/**/*.json
+            build/codex-tmp/gallery-desktop-*/*.log
+            build/codex-tmp/gallery-desktop-*/report.json
           if-no-files-found: error

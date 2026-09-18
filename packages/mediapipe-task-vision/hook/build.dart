@@ -51,6 +51,33 @@ void main(List<String> arguments) async {
     if (officialIosSdk != null && officialIosSdk is! bool) {
       throw const FormatException('official_ios_sdk must be a boolean.');
     }
+    final officialAndroidSdk = input.userDefines['official_android_sdk'];
+    if (officialAndroidSdk != null && officialAndroidSdk is! bool) {
+      throw const FormatException('official_android_sdk must be a boolean.');
+    }
+    if (officialAndroidSdk == true) {
+      if (!target.startsWith('android/') ||
+          tasks.length != 1 ||
+          !tasks.contains('face_landmarker') ||
+          officialIosSdk == true ||
+          useOfficialMacosLandmarks == true) {
+        throw UnsupportedError(
+          'official_android_sdk requires Android, face_landmarker only, and '
+          'the mediapipe_flutter_vision_android Flutter plugin.',
+        );
+      }
+      // The Flutter plugin owns Google's Java/JNI SDK. These unused C bindings
+      // remain lazy process lookups rather than bundling a second graph registry.
+      output.assets.code.add(
+        CodeAsset(
+          package: input.packageName,
+          name: 'face_landmarker.dylib',
+          linkMode: LookupInProcess(),
+        ),
+      );
+      output.metadata['official_android_sdk'] = '1.0.0';
+      return;
+    }
     if (officialIosSdk == true) {
       if (useOfficialMacosLandmarks == true) {
         throw StateError('Select only one official platform SDK.');
@@ -123,18 +150,17 @@ void main(List<String> arguments) async {
         wheelRelease,
         Directory.fromUri(input.outputDirectoryShared.resolve('$target/')),
       );
-      for (final assetName in _assetNames(tasks)) {
-        final suffix = target.startsWith('windows/') ? 'dll' : 'so';
-        final stem = assetName.substring(0, assetName.length - '.dylib'.length);
-        final bundled = File.fromUri(
-          library.parent.uri.resolve('lib$stem.$suffix'),
+      // Bundle Google's monolith once. Loading renamed copies for face and
+      // other vision tasks registers the same graphs twice and aborts.
+      _addAsset(input, output, library: library, assetName: 'vision.dylib');
+      for (final assetName in _assetNames(tasks).difference({'vision.dylib'})) {
+        output.assets.code.add(
+          CodeAsset(
+            package: input.packageName,
+            name: assetName,
+            linkMode: DynamicLoadingSystem(Uri.file(wheelRelease.libraryName)),
+          ),
         );
-        if (!await bundled.exists() ||
-            (await sha256.bind(bundled.openRead()).first).toString() !=
-                wheelRelease.librarySha256) {
-          await library.copy(bundled.path);
-        }
-        _addAsset(input, output, library: bundled, assetName: assetName);
       }
       return;
     }

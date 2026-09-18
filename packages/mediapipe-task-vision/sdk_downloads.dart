@@ -180,6 +180,21 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     assetName: 'vision.dylib',
     localBuildDirectory: 'build/native/tasks/',
   ),
+  // Built with the device SDK, so it is a separate artifact from the simulator
+  // slice above even though both are arm64. Face only: the landmark tasks stay
+  // unvalidated here for the same reason as every other source build, and iOS
+  // has no official runtime to fall back on.
+  VisionRuntimeRelease(
+    target: 'ios/arm64',
+    release: 'vision-ios-device-v1.0.0-1',
+    tasks: {'face_detector', 'face_landmarker'},
+    archive: null,
+    libraryName: 'libmediapipe.dylib',
+    librarySha256:
+        'a060f2d1f503e938e4e21432170c1b788563ed7123a6e1a71a9ab3185bae3654',
+    assetName: 'face_detector.dylib',
+    localBuildDirectory: 'build/native/ios/arm64/',
+  ),
   VisionRuntimeRelease(
     target: 'ios-simulator/arm64',
     release: 'vision-ios-v1.0.0-1',

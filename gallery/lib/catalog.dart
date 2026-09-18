@@ -1,4 +1,5 @@
 import 'package:mediapipe_flutter_vision/capabilities.dart';
+import 'package:mediapipe_flutter_vision/face_landmarker_backend.dart';
 
 /// How a tile demonstrates its task.
 enum GalleryDemo {
@@ -84,23 +85,31 @@ final class GalleryTask {
       : capabilities(platform);
 }
 
-/// Live capture needs a camera plugin as well as a runtime. Only macOS is
-/// proven here, by the example this demo is lifted from; other platforms get
-/// the tile once their camera path is actually exercised.
-TaskCapabilities<VisionDelegate> _liveFaceCapabilities(
-  TaskPlatform platform,
-) => TaskCapabilities.onTargets(
-  platform: platform,
-  delegates: const {
-    VisionDelegate.cpu: {'macos/arm64': null},
-    VisionDelegate.gpu: {'macos/arm64': '14.0'},
-  },
-  runtimeVersion: '1.0.0',
-  unavailableReasons: const {
-    VisionDelegate.cpu: 'Live camera capture is exercised on macOS arm64 only.',
-    VisionDelegate.gpu: 'Live camera capture is exercised on macOS arm64 only.',
-  },
-);
+/// Live capture with Google's official desktop/mobile runtimes.
+TaskCapabilities<VisionDelegate> _liveFaceCapabilities(TaskPlatform platform) =>
+    TaskCapabilities.onTargets(
+      platform: platform,
+      delegates: {
+        VisionDelegate.cpu: {
+          'macos/arm64': null,
+          'linux/x64': null,
+          'windows/x64': null,
+          'ios/arm64': '15.0',
+          if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
+        },
+        VisionDelegate.gpu: {
+          'macos/arm64': '14.0',
+          'ios/arm64': '15.0',
+          if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
+        },
+      },
+      runtimeVersion: platform.operatingSystem == 'ios' ? '1.0.1' : '1.0.0',
+      unavailableReasons: const {
+        VisionDelegate.cpu: 'Live capture requires a supported camera and SDK.',
+        VisionDelegate.gpu:
+            'Live GPU inference requires an official platform SDK.',
+      },
+    );
 
 final _catalog = <GalleryTask>[
   GalleryTask(

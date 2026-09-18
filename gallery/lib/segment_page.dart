@@ -41,9 +41,7 @@ class _SegmentPageState extends State<SegmentPage> {
 
   Future<void> _open() async {
     try {
-      final model = await rootBundle.load(
-        'assets/models/${widget.task.model}',
-      );
+      final model = await rootBundle.load('assets/models/${widget.task.model}');
       final task = await InteractiveSegmenter.create(
         InteractiveSegmenterOptions(
           modelBytes: model.buffer.asUint8List(
@@ -124,7 +122,8 @@ class _SegmentPageState extends State<SegmentPage> {
   /// that mode. Say which gesture the selected tool expects.
   static String _hintFor(SegmentationBrushMode? brush) => switch (brush) {
     SegmentationBrushMode.negative => 'Tap or drag over an area to exclude it.',
-    SegmentationBrushMode.lasso => 'Draw a shape around a subject to select it.',
+    SegmentationBrushMode.lasso =>
+      'Draw a shape around a subject to select it.',
     _ => 'Tap or drag over a subject to include it.',
   };
 
@@ -177,55 +176,53 @@ class _SegmentPageState extends State<SegmentPage> {
                       ),
                     )
                   : editor == null || !editor.ready
-                      ? const Center(child: CircularProgressIndicator())
-                      : Center(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) => GestureDetector(
-                              onPanStart: (details) {
-                                final point = _pointFor(
-                                  details.localPosition,
-                                  constraints.biggest,
-                                );
-                                if (point != null) editor.begin(point);
-                              },
-                              onPanUpdate: (details) {
-                                final point = _pointFor(
-                                  details.localPosition,
-                                  constraints.biggest,
-                                );
-                                if (point != null) editor.extend(point);
-                              },
-                              onPanEnd: (_) => editor.end(),
-                              // A single point is never a valid lasso, so let
-                              // taps fall through rather than silently drop.
-                              onTapUp: editor.brush == SegmentationBrushMode.lasso
-                                  ? null
-                                  : (details) {
-                                      final point = _pointFor(
-                                        details.localPosition,
-                                        constraints.biggest,
-                                      );
-                                      if (point == null) return;
-                                      editor
-                                        ..begin(point)
-                                        ..end();
-                                    },
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image.file(
-                                    widget.assets.file(widget.task.sample),
-                                    fit: BoxFit.contain,
-                                  ),
-                                  if (_maskImage case final image?)
-                                    CustomPaint(
-                                      painter: _MaskPainter(image),
-                                    ),
-                                ],
+                  ? const Center(child: CircularProgressIndicator())
+                  : Center(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => GestureDetector(
+                          onPanStart: (details) {
+                            final point = _pointFor(
+                              details.localPosition,
+                              constraints.biggest,
+                            );
+                            if (point != null) editor.begin(point);
+                          },
+                          onPanUpdate: (details) {
+                            final point = _pointFor(
+                              details.localPosition,
+                              constraints.biggest,
+                            );
+                            if (point != null) editor.extend(point);
+                          },
+                          onPanEnd: (_) => editor.end(),
+                          // A single point is never a valid lasso, so let
+                          // taps fall through rather than silently drop.
+                          onTapUp: editor.brush == SegmentationBrushMode.lasso
+                              ? null
+                              : (details) {
+                                  final point = _pointFor(
+                                    details.localPosition,
+                                    constraints.biggest,
+                                  );
+                                  if (point == null) return;
+                                  editor
+                                    ..begin(point)
+                                    ..end();
+                                },
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.file(
+                                widget.assets.file(widget.task.sample),
+                                fit: BoxFit.contain,
                               ),
-                            ),
+                              if (_maskImage case final image?)
+                                CustomPaint(painter: _MaskPainter(image)),
+                            ],
                           ),
                         ),
+                      ),
+                    ),
             ),
           ),
           Padding(
@@ -236,8 +233,8 @@ class _SegmentPageState extends State<SegmentPage> {
                   editor?.lastInferenceMs == null
                       ? _hintFor(editor?.brush)
                       : '${editor!.lastInferenceMs!.toStringAsFixed(1)} ms  ·  '
-                          '${editor.completedRequests} requests, '
-                          '${editor.coalescedRequests} coalesced',
+                            '${editor.completedRequests} requests, '
+                            '${editor.coalescedRequests} coalesced',
                   style: theme.textTheme.bodySmall,
                   textAlign: TextAlign.center,
                 ),

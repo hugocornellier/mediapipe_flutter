@@ -27,6 +27,22 @@ verifies Google's pinned 1.0.0 wheel, prepares its official runtime, and opts
 Live Face Mesh, Live Hands and Live Pose into it. The ordinary package runtime
 rows remain unchanged.
 
+For Android, `python3 gallery/tool/prepare.py --target android/arm64` selects
+Google's released FaceLandmarker SDK and its Flutter plugin. Live Face Mesh
+supports CPU and GPU, with Android YUV camera conversion. A physical Pixel 7
+Test Lab run validates both delegates and front/back camera capture; see
+[the Android Test Lab guide](tool/ANDROID_FACE_TESTLAB.md) to reproduce it
+without owning an Android device.
+
+For Windows x64 and Linux x64, prepare with `--target windows/x64` or
+`--target linux/x64`, then run `flutter run -d windows --release` or
+`flutter run -d linux --release`. Live Face Mesh, Hands and Pose use CPU only.
+The hook extracts Google's checksum-pinned native library from its official
+wheel; the installed app does not need Python. `camera_desktop` provides native
+Media Foundation capture on Windows and GStreamer/V4L2 capture on Linux.
+Linux builds need `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev` and
+`gstreamer1.0-plugins-good` in addition to Flutter's desktop dependencies.
+
 ## What decides the tiles
 
 Three gates, in order:
@@ -43,18 +59,16 @@ Three gates, in order:
 Anything bundled but not validated, and anything validated without a screen, is
 listed in the about sheet with the package's own reason rather than hidden.
 
-Today that leaves two tiles on macOS: the live camera face mesh and MagicTouch.
-Everything else is bundled and reported but not demonstrated, either because it
-has no screen yet or because it waits on the numerical work in
-`upstream-issues.md` UP-004.
+The visible live tiles depend on the target: Face Mesh, Hands and Pose are
+available on desktop, while mobile SDK builds currently demonstrate Face Mesh.
+macOS also has the MagicTouch image demo.
 
 ## Live camera
 
-`lib/live/` is the face camera controller and mesh overlay from
-[the face example](../packages/mediapipe-task-vision/example), reused rather
-than reimplemented. The only change is that `start()` takes the model asset key
-from its caller, since the gallery bundles models under `assets/models/`.
-The live tile is macOS-only until the camera path is exercised elsewhere.
+`lib/live/` shares camera capture, serial VIDEO-mode inference, frame skipping,
+timings, camera switching, stop/start, cleanup and overlay geometry across live
+tasks. It handles desktop RGBA, Apple BGRA and Android YUV camera buffers.
+Windows and Linux expose CPU only; Apple and Android Face Mesh also expose GPU.
 
 ## Tests
 
@@ -71,3 +85,14 @@ These check the bundle the app was actually built with: that every visible tile
 can load its model and sample, and that the live demo's model resolves. Both
 derive their asset names from the catalog, so they cannot drift from what the
 screens ask for.
+
+The Desktop CPU tasks workflow also builds the actual Windows/Linux gallery,
+checks native camera plugin registration and enumeration, visits all live task
+runtimes in one process, and drives the Face Mesh page with supplied portrait
+frames through Google's real CPU task. It checks padded RGBA/BGRA, 478-point
+results, camera switching, stop/start, cleanup and a release gallery build.
+Hosted runners have no physical webcam: camera capture and visual mesh alignment
+still need a webcam check on each platform. To run that check, prepare the target
+then use `flutter run -d windows --release -t tool/live_face_camera_smoke.dart`
+(or `-d linux`). It processes twenty CPU camera frames twice and records JSON in
+the system temporary directory; put a face in view and check the face count.

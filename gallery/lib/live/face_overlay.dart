@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
-/// The camera mirrors both preview and pixels natively. Scale once, with no
-/// extra mirroring, cropping, coordinate clipping, or landmark smoothing.
+import 'camera_geometry.dart';
+
+/// Paints the face mesh over the preview.
+///
+/// Landmarks arrive normalized to the frame the camera delivered, which is not
+/// what the preview shows on a phone, so [transform] does the rotating,
+/// mirroring and fitting. No cropping or landmark smoothing.
 class FaceOverlay extends CustomPainter {
-  FaceOverlay(this.result, {required this.showMesh, required this.showPoints});
+  FaceOverlay(
+    this.result, {
+    required this.transform,
+    required this.showMesh,
+    required this.showPoints,
+  });
 
   final FaceLandmarkerResult? result;
+  final PreviewTransform transform;
   final bool showMesh;
   final bool showPoints;
 
@@ -31,8 +42,7 @@ class FaceOverlay extends CustomPainter {
     canvas.clipRect(Offset.zero & size);
     for (final face in result.faceLandmarks) {
       final positions = [
-        for (final landmark in face)
-          Offset(landmark.x * size.width, landmark.y * size.height),
+        for (final landmark in face) transform.map(landmark.x, landmark.y),
       ];
       void edges(List<(int, int)> connections, Paint paint) {
         final path = Path();
@@ -62,6 +72,7 @@ class FaceOverlay extends CustomPainter {
   @override
   bool shouldRepaint(FaceOverlay oldDelegate) =>
       oldDelegate.result != result ||
+      oldDelegate.transform != transform ||
       oldDelegate.showMesh != showMesh ||
       oldDelegate.showPoints != showPoints;
 }

@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name='' hostname='localhost' tests='4' failures='0' skipped='0' errors='0' time='1.019' timestamp='2026-09-18T06:57:17'>
+    <properties />
+    <testcase name='official Android CPU and GPU: face pixels, padding, optional outputs' classname='com.example.mediapipe_gallery.MainActivityTest' time='0.0' />
+    <testcase name='official Android VIDEO: tracking, rotation, queued frames, cleanup' classname='com.example.mediapipe_gallery.MainActivityTest' time='0.019' />
+    <testcase name='Android gallery opens Live Face Mesh and switches CPU/GPU' classname='com.example.mediapipe_gallery.MainActivityTest' time='1.0' />
+    <testcase name='physical Android camera: CPU to GPU to CPU, front and back' classname='com.example.mediapipe_gallery.MainActivityTest' time='0.0' />
+  </testsuite>
+</testsuites>

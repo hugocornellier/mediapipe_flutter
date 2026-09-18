@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
+import 'camera_geometry.dart';
+
 /// One set of landmarks and the official edges joining them.
 typedef LandmarkFigure = ({
   List<VisionLandmark> landmarks,
@@ -10,18 +12,20 @@ typedef LandmarkFigure = ({
 
 /// Paints any landmark task's output.
 ///
-/// The camera mirrors both preview and pixels natively, so coordinates are
-/// scaled once with no extra mirroring, cropping or clipping. Edge lists come
-/// from `landmark_connections.dart`, which is generated from the official API,
-/// so nothing here encodes a topology of its own.
+/// Landmarks are normalized to the frame the camera delivered, so [transform]
+/// rotates, mirrors and fits them onto the preview. Edge lists come from
+/// `landmark_connections.dart`, which is generated from the official API, so
+/// nothing here encodes a topology of its own.
 class LandmarkOverlay extends CustomPainter {
   const LandmarkOverlay(
     this.figures, {
+    required this.transform,
     required this.showEdges,
     required this.showPoints,
   });
 
   final List<LandmarkFigure> figures;
+  final PreviewTransform transform;
   final bool showEdges;
   final bool showPoints;
 
@@ -30,10 +34,7 @@ class LandmarkOverlay extends CustomPainter {
     for (final figure in figures) {
       final points = figure.landmarks;
       if (points.isEmpty) continue;
-      Offset at(int index) => Offset(
-        points[index].x * size.width,
-        points[index].y * size.height,
-      );
+      Offset at(int index) => transform.map(points[index].x, points[index].y);
       if (showEdges) {
         final stroke = Paint()
           ..color = figure.color
@@ -57,6 +58,7 @@ class LandmarkOverlay extends CustomPainter {
   @override
   bool shouldRepaint(LandmarkOverlay oldDelegate) =>
       oldDelegate.figures != figures ||
+      oldDelegate.transform != transform ||
       oldDelegate.showEdges != showEdges ||
       oldDelegate.showPoints != showPoints;
 }
@@ -64,11 +66,12 @@ class LandmarkOverlay extends CustomPainter {
 /// Figures for one result, or an empty list when nothing was detected.
 List<LandmarkFigure> figuresFor(Object? result) => switch (result) {
   final HandLandmarkerResult hands => [
-    for (var i = 0; i < hands.handLandmarks.length; i++) (
-      landmarks: hands.handLandmarks[i],
-      edges: HandLandmarkConnections.all,
-      color: i == 0 ? const Color(0xFF63E6BE) : const Color(0xFFFFD166),
-    ),
+    for (var i = 0; i < hands.handLandmarks.length; i++)
+      (
+        landmarks: hands.handLandmarks[i],
+        edges: HandLandmarkConnections.all,
+        color: i == 0 ? const Color(0xFF63E6BE) : const Color(0xFFFFD166),
+      ),
   ],
   final PoseLandmarkerResult poses => [
     for (final landmarks in poses.poseLandmarks)

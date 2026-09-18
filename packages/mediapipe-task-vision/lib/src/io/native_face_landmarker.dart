@@ -7,6 +7,7 @@ import '../../third_party/mediapipe/face_landmarker_bindings.dart' as mp;
 import '../interface/face_detector_types.dart';
 import '../interface/face_landmarker_types.dart';
 import 'native_frame_timings.dart';
+import 'native_desktop_runtime.dart';
 import 'native_ios_sdk.dart';
 import 'pixel_conversion.dart';
 
@@ -22,6 +23,7 @@ final class NativeFaceLandmarker {
         'this runtime supports CPU only.',
       );
     }
+    loadOfficialDesktopRuntime();
     using((arena) {
       final native = arena<mp.MpFaceLandmarkerOptions>();
       final base = native.ref.base_options;

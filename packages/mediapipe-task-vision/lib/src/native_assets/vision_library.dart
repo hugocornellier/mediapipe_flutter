@@ -15,6 +15,9 @@ enum VisionLibraryTarget {
 
   /// iOS simulator runtime with CPU support, built with the simulator SDK.
   iosSimulatorArm64,
+
+  /// iPhone runtime with CPU support, built with the device SDK.
+  iosArm64,
 }
 
 /// Immutable provenance expected from a runtime extracted from an official
@@ -57,6 +60,7 @@ final class OfficialWheelProvenance {
 VisionLibraryTarget visionLibraryTarget(String target) => switch (target) {
   'macos/arm64' => VisionLibraryTarget.macosArm64,
   'ios-simulator/arm64' => VisionLibraryTarget.iosSimulatorArm64,
+  'ios/arm64' => VisionLibraryTarget.iosArm64,
   _ => throw UnsupportedError(
     'mediapipe_flutter_vision has no native runtime validation for $target.',
   ),
@@ -91,11 +95,16 @@ Future<File> validateVisionLibrary(
   final manifestFile = File.fromUri(directory.uri.resolve('manifest.json'));
   final manifest = jsonDecode(await manifestFile.readAsString());
   final simulator = target == VisionLibraryTarget.iosSimulatorArm64;
+  final device = target == VisionLibraryTarget.iosArm64;
+  final expectedSdk = simulator
+      ? 'iphonesimulator'
+      : device
+      ? 'iphoneos'
+      : null;
   if (manifest is! Map<String, dynamic> ||
-      manifest['platform'] != (simulator ? 'ios' : 'macos') ||
+      manifest['platform'] != (simulator || device ? 'ios' : 'macos') ||
       manifest['architecture'] != 'arm64' ||
-      (simulator && manifest['ios_sdk'] != 'iphonesimulator') ||
-      (!simulator && manifest['ios_sdk'] != null) ||
+      manifest['ios_sdk'] != expectedSdk ||
       manifest['bytes'] != await library.length() ||
       (expectedSha256 != null && manifest['sha256'] != expectedSha256) ||
       (await sha256.bind(library.openRead()).first).toString() !=
@@ -112,6 +121,7 @@ Future<File> validateVisionLibrary(
     final packaging = manifest['packaging'];
     final files = manifest['files'];
     if (simulator ||
+        device ||
         expectedSha256 == null ||
         manifest['origin'] != 'official-pypi-wheel' ||
         manifest['upstream_version'] != officialWheel.version ||
@@ -139,14 +149,19 @@ Future<File> validateVisionLibrary(
       }
     }
   }
+  // Metal is expected on macOS. Neither iOS slice ships a GPU delegate, so
+  // both require CPU alone rather than being held to the desktop rule.
   final requiredDelegates =
       officialWheel?.delegates ??
-      (simulator ? const {'cpu'} : const {'cpu', 'gpu'});
+      (simulator || device ? const {'cpu'} : const {'cpu', 'gpu'});
   if (delegates is! List || !requiredDelegates.every(delegates.contains)) {
     throw StateError(
       simulator
           ? 'The iOS simulator requires a CPU runtime. '
                 'Build it with tool/build_ios_simulator.py.'
+          : device
+          ? 'The iOS device runtime requires a CPU runtime. '
+                'Build it with tool/build_ios_simulator.py --device.'
           : 'This package requires a CPU and Metal runtime. Rebuild the local '
                 'native library without --cpu-only, or use prebuilt: true.',
     );

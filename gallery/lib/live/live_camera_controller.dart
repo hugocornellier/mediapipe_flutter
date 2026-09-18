@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
+import 'camera_geometry.dart';
+import 'camera_frame.dart';
+
 /// The task-specific half of a live demo: how to build it, and how to run one
 /// frame through it. Everything else about live capture is identical between
 /// tasks and lives in [LiveCameraController].
@@ -17,7 +20,15 @@ abstract interface class LiveTask<T> {
   Future<void> open(VisionDelegate delegate, Uint8List modelBytes);
 
   /// Runs one frame. Called at most once at a time.
-  Future<T> detect(VisionImage frame, int timestampMilliseconds);
+  ///
+  /// [rotationDegrees] is the clockwise rotation that stands the frame upright;
+  /// MediaPipe applies it and still reports coordinates in the frame's own
+  /// space, which is what [PreviewTransform] expects.
+  Future<T> detect(
+    VisionImage frame,
+    int timestampMilliseconds, {
+    required int rotationDegrees,
+  });
 
   /// Releases native resources. Safe to call when never opened.
   Future<void> close();
@@ -49,6 +60,29 @@ class LiveCameraController<T> extends ChangeNotifier {
   bool changing = false;
   String? error;
   T? result;
+
+  /// Cameras this device offers, in the order the platform reports them.
+  List<CameraDescription> cameras = const [];
+
+  /// The selected camera, whether or not capture is running.
+  CameraDescription? description;
+
+  /// Size of the last frame as the camera delivered it, before rotation.
+  Size? frameSize;
+
+  /// Clockwise rotation applied to the last frame to stand it upright.
+  int frameRotationDegrees = 0;
+
+  /// Orientation the last frame's rotation was computed for.
+  DeviceOrientation deviceOrientation = DeviceOrientation.portraitUp;
+  String? _modelAsset;
+
+  /// Whether the demo is looking at the person holding the device.
+  bool get isFrontCamera =>
+      description?.lensDirection == CameraLensDirection.front;
+
+  /// Whether there is another camera to flip to.
+  bool get canSwitchCamera => cameras.length > 1;
   int processedFrames = 0;
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
@@ -57,6 +91,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   double _totalInferenceMilliseconds = 0;
   double _totalConversionMilliseconds = 0;
   double _totalFrameMilliseconds = 0;
+
   /// CPU by default, deliberately. Metal wins on back-to-back frames but
   /// loses at camera cadence, because it goes cold in the ~30 ms between them.
   /// Measured on an M4 Max at 1080p with one face: tight loop 4.03 CPU vs 3.45
@@ -68,20 +103,17 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// Mean inference time since capture last started. Starting is what happens
   /// when the delegate changes, so this compares like with like rather than
   /// mixing CPU and GPU frames into one figure.
-  double get averageInferenceMilliseconds => processedFrames == 0
-      ? 0
-      : _totalInferenceMilliseconds / processedFrames;
+  double get averageInferenceMilliseconds =>
+      processedFrames == 0 ? 0 : _totalInferenceMilliseconds / processedFrames;
 
   /// Mean time spent building a [VisionImage] from the camera plane.
-  double get averageConversionMilliseconds => processedFrames == 0
-      ? 0
-      : _totalConversionMilliseconds / processedFrames;
+  double get averageConversionMilliseconds =>
+      processedFrames == 0 ? 0 : _totalConversionMilliseconds / processedFrames;
 
   /// Mean wall time for a whole frame, so plumbing shows up as the gap between
   /// this and [averageInferenceMilliseconds].
-  double get averageFrameMilliseconds => processedFrames == 0
-      ? 0
-      : _totalFrameMilliseconds / processedFrames;
+  double get averageFrameMilliseconds =>
+      processedFrames == 0 ? 0 : _totalFrameMilliseconds / processedFrames;
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
       ? 0
       : processedFrames * 1000000 / _clock.elapsedMicroseconds;
@@ -100,12 +132,55 @@ class LiveCameraController<T> extends ChangeNotifier {
     if (!_closed) notifyListeners();
   }
 
-  Future<void> start(
-    CameraDescription description, {
-    VisionDelegate delegate = VisionDelegate.cpu,
-    required String modelAsset,
+  /// Finds the cameras and selects the one a live demo should open with.
+  ///
+  /// Front first: every live tile here looks at the person holding the device,
+  /// so the back camera is the deliberate choice rather than the default.
+  Future<List<CameraDescription>> findCameras() async {
+    final found = await availableCameras();
+    if (_closed) return found;
+    cameras = found;
+    description ??= found.isEmpty
+        ? null
+        : found.firstWhere(
+            (camera) => camera.lensDirection == CameraLensDirection.front,
+            orElse: () => found.first,
+          );
+    _changed();
+    return found;
+  }
+
+  /// Flips to the next camera, restarting capture when it was running.
+  Future<void> switchCamera() {
+    if (!canSwitchCamera || _closed) return Future.value();
+    final current = cameras.indexOf(description ?? cameras.first);
+    description = cameras[(current + 1) % cameras.length];
+    result = null;
+    frameSize = null;
+    if (!running) {
+      _changed();
+      return Future.value();
+    }
+    return start();
+  }
+
+  /// Starts capture on the selected camera.
+  ///
+  /// Every argument defaults to what the last start used, so flipping the
+  /// camera or changing the delegate does not make the caller restate the rest.
+  Future<void> start({
+    CameraDescription? description,
+    VisionDelegate? delegate,
+    String? modelAsset,
   }) {
     if (_closed) return Future.error(StateError('Camera demo is closed.'));
+    this.description = description ?? this.description;
+    final chosen = delegate ?? this.delegate;
+    final asset = _modelAsset = modelAsset ?? _modelAsset;
+    final selected = this.description;
+    if (selected == null || asset == null) {
+      return Future.error(StateError('No camera selected.'));
+    }
     final generation = ++_generation;
     running = false;
     changing = true;
@@ -116,10 +191,10 @@ class LiveCameraController<T> extends ChangeNotifier {
       await _release();
       if (_closed || generation != _generation) return;
       try {
-        this.delegate = delegate;
-        final data = await rootBundle.load(modelAsset);
+        this.delegate = chosen;
+        final data = await rootBundle.load(asset);
         await task.open(
-          delegate,
+          chosen,
           data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
         );
         _opened = true;
@@ -128,10 +203,12 @@ class LiveCameraController<T> extends ChangeNotifier {
           return;
         }
         final camera = CameraController(
-          description,
+          selected,
           ResolutionPreset.medium,
           enableAudio: false,
-          imageFormatGroup: ImageFormatGroup.bgra8888,
+          imageFormatGroup: defaultTargetPlatform == TargetPlatform.android
+              ? ImageFormatGroup.yuv420
+              : ImageFormatGroup.bgra8888,
         );
         _camera = camera;
         await camera.initialize();
@@ -140,6 +217,8 @@ class LiveCameraController<T> extends ChangeNotifier {
           return;
         }
         camera.addListener(_cameraChanged);
+        frameSize = null;
+        frameRotationDegrees = 0;
         processedFrames = 0;
         skippedFrames = 0;
         inferenceMilliseconds = 0;
@@ -200,29 +279,32 @@ class LiveCameraController<T> extends ChangeNotifier {
   ) async {
     final timer = Stopwatch()..start();
     try {
-      if (image.format.group != ImageFormatGroup.bgra8888 ||
-          image.planes.length != 1) {
-        throw StateError(
-          '${task.name} needs one BGRA or RGBA camera plane.',
-        );
-      }
-      final plane = image.planes.single;
-      final conversion = Stopwatch()..start();
-      final frame = VisionImage.fromPixels(
-        pixels: plane.bytes,
+      // The frame arrives in sensor layout on mobile, so work out the turn that
+      // stands it upright. MediaPipe applies it and still answers in the
+      // delivered frame's coordinates, so the overlay takes the same turn.
+      final orientation = _camera?.value.deviceOrientation ?? deviceOrientation;
+      final rotation = uprightRotationDegrees(
         width: image.width,
         height: image.height,
-        bytesPerRow: plane.bytesPerRow,
-        format: image.format.raw == 'RGBA'
-            ? VisionPixelFormat.rgba
-            : VisionPixelFormat.bgra,
+        sensorOrientation: _camera?.description.sensorOrientation ?? 0,
+        isFrontCamera: isFrontCamera,
+        deviceOrientation: orientation,
       );
+      final conversion = Stopwatch()..start();
+      final frame = visionImageFromCamera(image);
       conversion.stop();
       final inference = Stopwatch()..start();
-      final detection = await task.detect(frame, timestamp);
+      final detection = await task.detect(
+        frame,
+        timestamp,
+        rotationDegrees: rotation,
+      );
       inference.stop();
       if (_closed || generation != _generation) return;
       result = detection;
+      frameSize = Size(image.width.toDouble(), image.height.toDouble());
+      frameRotationDegrees = rotation;
+      deviceOrientation = orientation;
       // Split so the readout distinguishes the task's own work from what this
       // demo spends getting a camera frame to it: building the VisionImage,
       // and the isolate hop the task worker makes to keep native pointers off
@@ -308,8 +390,14 @@ String _message(Object error) {
   if (error is CameraException) {
     if (error.code.toLowerCase().contains('access') ||
         error.code.toLowerCase().contains('permission')) {
-      return 'Camera access is unavailable. Allow this app in System Settings → '
-          'Privacy & Security → Camera, then try again.';
+      final settings = switch (defaultTargetPlatform) {
+        TargetPlatform.windows => 'Settings → Privacy & security → Camera',
+        TargetPlatform.linux => 'your desktop or camera device permissions',
+        TargetPlatform.android => 'Settings → Apps → Permissions → Camera',
+        _ => 'System Settings → Privacy & Security → Camera',
+      };
+      return 'Camera access is unavailable. Allow this app in $settings, '
+          'then try again.';
     }
     return error.description ?? error.code;
   }
