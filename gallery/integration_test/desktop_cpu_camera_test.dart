@@ -62,6 +62,14 @@ void main() {
             .widget<LiveCameraView>(find.byType(LiveCameraView))
             .controller;
         final live = controller;
+        final firstFrames = <String, FaceLandmarkerResult>{};
+        live.addListener(() {
+          final result = live.result;
+          if (live.processedFrames == 1 && result is FaceLandmarkerResult) {
+            firstFrames.putIfAbsent(live.description!.name, () => result);
+          }
+        });
+        camera.deliverFrames = true;
         await _frames(tester, live);
         await tester.pump();
         expect(find.text('GPU'), findsNothing);
@@ -71,14 +79,14 @@ void main() {
 
         // Switch from the padded RGBA camera to padded BGRA without closing the
         // page. The same portrait must retain its face geometry and color order.
-        final before =
-            (live.result! as FaceLandmarkerResult).faceLandmarks.single;
         await tester.tap(find.byTooltip('Switch to back camera'));
         await tester.pump();
         await _frames(tester, live);
         await tester.pump();
-        final after =
-            (live.result! as FaceLandmarkerResult).faceLandmarks.single;
+        // Later VIDEO results depend on how many tracking frames arrived while
+        // the UI was pumping. Compare the first frame of each fresh task.
+        final before = firstFrames['supplied-rgba']!.faceLandmarks.single;
+        final after = firstFrames['supplied-bgra']!.faceLandmarks.single;
         for (var i = 0; i < before.length; i++) {
           expect(after[i].x, closeTo(before[i].x, 1e-4));
           expect(after[i].y, closeTo(before[i].y, 1e-4));
@@ -197,6 +205,7 @@ final class _SuppliedCamera extends CameraPlatform {
   int _nextId = 0;
   int activeStreams = 0;
   int disposed = 0;
+  bool deliverFrames = false;
 
   @override
   Future<List<CameraDescription>> availableCameras() async => const [
@@ -273,7 +282,7 @@ final class _SuppliedCamera extends CameraPlatform {
       onListen: () {
         activeStreams++;
         timer = Timer.periodic(const Duration(milliseconds: 33), (_) {
-          stream.add(frames[_indices[cameraId]!]);
+          if (deliverFrames) stream.add(frames[_indices[cameraId]!]);
         });
       },
       onCancel: () {
