@@ -134,7 +134,7 @@ Future<Map<String, Object?>> checkApi() async {
       }
     }
     checks.add('copied-padded-rgb-rgba-bgra');
-    for (final rotation in [0, 90, 180, 270]) {
+    for (final rotation in [0, 90, 180, 270, -90, 360, -360, 450]) {
       final result = await task.detectImage(image, rotationDegrees: rotation);
       require(
         result.imageWidth == original.imageWidth &&
@@ -196,7 +196,7 @@ Future<Map<String, Object?>> checkApi() async {
         VisionImage.fromFile('missing.jpg'),
         timestampMilliseconds: 4,
       ),
-      Object,
+      FaceLandmarkerException,
     );
     await rejects(
       () => video.detectForVideo(image, timestampMilliseconds: 4),
@@ -216,7 +216,7 @@ Future<Map<String, Object?>> checkApi() async {
     () => FaceLandmarker.create(
       FaceLandmarkerOptions(modelBytes: Uint8List.fromList([1])),
     ),
-    Object,
+    FaceLandmarkerException,
   );
   await rejects(
     () => FaceLandmarker.create(

@@ -19,5 +19,11 @@ subprocess.run([
     '-loop', '1', '-framerate', '10', '-t', '3', '-i', str(portrait),
     '-f', 'lavfi', '-t', '3', '-i', 'color=black:s=640x480:r=10',
     '-loop', '1', '-framerate', '10', '-t', '3', '-i', str(portrait),
-    '-filter_complex', filter_chain, '-map', '[out]', str(output),
+    '-filter_complex', filter_chain, '-map', '[out]',
+    '-r', '10', '-pix_fmt', 'yuv420p', str(output),
 ], check=True)
+with output.open('rb') as fixture:
+    header = fixture.readline().decode('ascii').strip()
+if not all(field in header.split() for field in ('W640', 'H480', 'F10:1', 'C420jpeg')):
+    raise RuntimeError(f'Unsupported Chrome Y4M camera header: {header}')
+print(f'Prepared Chrome webcam fixture: {header}; {output.stat().st_size} bytes')

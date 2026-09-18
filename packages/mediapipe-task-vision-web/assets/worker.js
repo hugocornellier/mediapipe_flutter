@@ -55,9 +55,10 @@ async function run(type, input) {
       }
       source = new ImageData(rgba, input.width, input.height);
     }
+    const processing = {rotationDegrees: ((input.rotation % 360) + 360) % 360};
     const result = input.timestamp == null
-      ? task.detect(source, {rotationDegrees: input.rotation})
-      : task.detectForVideo(source, input.timestamp, {rotationDegrees: input.rotation});
+      ? task.detect(source, processing)
+      : task.detectForVideo(source, input.timestamp, processing);
     return JSON.stringify({width: source.width, height: source.height,
       timestamp: input.timestamp, result});
   } finally {

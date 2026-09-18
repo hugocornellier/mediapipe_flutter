@@ -93,17 +93,34 @@ async function installCaptureObservations(page) {
     window.testCaptureTracks = [];
     window.testFrameCallbacks = new Set();
     window.testWorkers = [];
+    window.testCaptureDiagnostics = [];
     const NativeWorker = window.Worker;
     window.Worker = class extends NativeWorker {
       constructor(...args) {super(...args); window.testWorkers.push(this);}
     };
     const getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     navigator.mediaDevices.getUserMedia = async constraints => {
-      const stream = await getUserMedia(constraints);
+      let stream;
+      try {
+        stream = await getUserMedia(constraints);
+        window.testCaptureDiagnostics.push({stage: 'getUserMedia', status: 'passed', constraints,
+          settings: stream.getVideoTracks().map(t => t.getSettings())});
+      } catch (error) {
+        window.testCaptureDiagnostics.push({stage: 'getUserMedia', status: 'failed', name:error.name, message:error.message});
+        throw error;
+      }
       window.testCaptureTracks.push(...stream.getTracks());
       return stream;
     };
     const prototype = HTMLVideoElement.prototype;
+    const play = prototype.play;
+    prototype.play = async function(...args) {
+      try {return await play.apply(this,args);}
+      catch(error) {
+        window.testCaptureDiagnostics.push({stage:'video.play',status:'failed',name:error.name,message:error.message});
+        throw error;
+      }
+    };
     if (prototype.requestVideoFrameCallback) {
       const request = prototype.requestVideoFrameCallback;
       const cancel = prototype.cancelVideoFrameCallback;
@@ -264,6 +281,13 @@ try {
       for (const page of context.pages()) {
         try {
           fs.writeFileSync(path.join(evidence, 'failure-page.html'), await page.content());
+          fs.writeFileSync(path.join(evidence, 'capture-diagnostics.json'), JSON.stringify(await page.evaluate(() => ({
+            capture:window.testCaptureDiagnostics,
+            video: (() => {const v=document.querySelector('video'); return v ? {
+              width:v.videoWidth,height:v.videoHeight,readyState:v.readyState,frames:v.getAttribute('data-processed-frames'),
+              mediaError:v.error?.message,
+            }: null;})(),
+          })),null,2));
           await page.screenshot({path: path.join(evidence, 'failure.png')});
         } catch (_) {}
       }

@@ -25,6 +25,14 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
   Future<void>? _disposing;
   static Future<void>? _loaded;
 
+  static Future<T> _workerResult<T extends JSAny?>(JSPromise<T> promise) async {
+    try {
+      return await promise.toDart;
+    } catch (error) {
+      throw FaceLandmarkerException('$error');
+    }
+  }
+
   /// Installs the browser backend before the first public task is created.
   static void registerWith(Registrar registrar) {
     faceLandmarkerBackendFactory = create;
@@ -56,25 +64,27 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
       );
     }
     await _load();
-    final id = await _create(
-      {
-            'modelBytes': options.modelBytes == null
-                ? null
-                : Uint8List.fromList(options.modelBytes!).toJS,
-            'modelPath': options.modelPath == null
-                ? null
-                : Uri.base.resolve(options.modelPath!).toString(),
-            'runningMode': options.runningMode.name.toUpperCase(),
-            'numFaces': options.numFaces,
-            'minFaceDetectionConfidence': options.minFaceDetectionConfidence,
-            'minFacePresenceConfidence': options.minFacePresenceConfidence,
-            'minTrackingConfidence': options.minTrackingConfidence,
-            'outputFaceBlendshapes': options.outputFaceBlendshapes,
-            'outputFacialTransformationMatrixes':
-                options.outputFacialTransformationMatrixes,
-          }.jsify()!
-          as JSObject,
-    ).toDart;
+    final id = await _workerResult(
+      _create(
+        {
+              'modelBytes': options.modelBytes == null
+                  ? null
+                  : Uint8List.fromList(options.modelBytes!).toJS,
+              'modelPath': options.modelPath == null
+                  ? null
+                  : Uri.base.resolve(options.modelPath!).toString(),
+              'runningMode': options.runningMode.name.toUpperCase(),
+              'numFaces': options.numFaces,
+              'minFaceDetectionConfidence': options.minFaceDetectionConfidence,
+              'minFacePresenceConfidence': options.minFacePresenceConfidence,
+              'minTrackingConfidence': options.minTrackingConfidence,
+              'outputFaceBlendshapes': options.outputFaceBlendshapes,
+              'outputFacialTransformationMatrixes':
+                  options.outputFacialTransformationMatrixes,
+            }.jsify()!
+            as JSObject,
+      ),
+    );
     return WebFaceLandmarker._(id);
   }
 
@@ -83,7 +93,9 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
       return Future.error(StateError('FaceLandmarker has been disposed.'));
     }
     final result = _tail.then((_) async {
-      final json = await _detect(_id, input.jsify()! as JSObject).toDart;
+      final json = await _workerResult(
+        _detect(_id, input.jsify()! as JSObject),
+      );
       return decodeWebFaceResult(
         jsonDecode(json.toDart) as Map<String, dynamic>,
       );
@@ -129,6 +141,6 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
 
   @override
   Future<void> dispose() => _disposing ??= _tail.then((_) async {
-    await _close(_id).toDart;
+    await _workerResult(_close(_id));
   });
 }
