@@ -6,7 +6,8 @@ import 'face_overlay.dart';
 import 'landmark_overlay.dart';
 import 'live_camera_controller.dart';
 import 'live_tasks.dart';
-import 'live_registry_additions_web.dart' if (dart.library.io) 'live_registry_additions_native.dart';
+import 'live_registry_additions_web.dart'
+    if (dart.library.io) 'live_registry_additions_native.dart';
 
 /// The two things a live tile contributes beyond the shared controller.
 ///

@@ -206,13 +206,13 @@ class LiveCameraController<T> extends ChangeNotifier {
         }
         video.srcObject = _stream;
         _trackEnded = const web.EventStreamProvider<web.Event>('ended')
-            .forTarget(_stream!.getVideoTracks().toDart.first).listen((
-          _,
-        ) {
-          if (_closed || generation != _generation) return;
-          error = 'Camera disconnected. Reconnect it and press Start camera.';
-          unawaited(stop());
-        });
+            .forTarget(_stream!.getVideoTracks().toDart.first)
+            .listen((_) {
+              if (_closed || generation != _generation) return;
+              error =
+                  'Camera disconnected. Reconnect it and press Start camera.';
+              unawaited(stop());
+            });
         await video.play().toDart;
         if (video.videoWidth == 0 || video.videoHeight == 0) {
           await video.onLoadedMetadata.first.timeout(
