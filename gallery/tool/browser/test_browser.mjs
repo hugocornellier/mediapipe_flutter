@@ -17,9 +17,10 @@ const logs = [];
 const browsers = [];
 
 async function launch(deviceCount = 2, useFile = true) {
-  const localChrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
   const options = browserName === 'chromium' ? {
-    executablePath: process.platform === 'darwin' && fs.existsSync(localChrome) ? localChrome : undefined,
+    // The lightweight headless shell rejects getUserMedia. Full Chromium's
+    // modern headless mode exercises the same capture APIs as normal Chrome.
+    channel: 'chromium',
     args: ['--use-fake-device-for-media-stream=device-count=' + deviceCount,
       ...(useFile ? ['--use-file-for-fake-video-capture=' + path.join(repo, 'build/codex-tmp/web-camera.y4m')] : [])],
   } : {};
