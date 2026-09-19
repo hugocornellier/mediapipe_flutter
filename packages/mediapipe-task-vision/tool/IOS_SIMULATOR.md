@@ -35,8 +35,8 @@ flutter run -d <simulator-uuid>
 ```
 
 On iOS, the example opens a CPU image screen automatically. Choose **Portrait**,
-**Eyes**, or **Group**, and toggle the mesh. Results include detection counts,
-478 landmarks per mesh, irises, and 52 expression scores per face. The group
+**Eyes**, or **Group**, and toggle landmark connections. Results include detection counts,
+478 landmarks per face, irises, and 52 expression scores per face. The group
 image contains distant faces that the official short-range detector may miss;
 zero detections preserve the model's behavior. The app uses bundled fixture
 photos; it does not access a camera. macOS still opens the live-camera screen.

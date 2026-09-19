@@ -24,7 +24,7 @@ cd gallery && flutter run -d macos --release
 excludes the x86_64 simulator slice, and adds the camera entitlement and usage
 description, none of which `flutter create` provides. For macOS it also
 verifies Google's pinned 1.0.0 wheel, prepares its official runtime, and opts
-Live Face Mesh, Live Hands and Live Pose into it. The ordinary package runtime
+Live Face Landmarker, Live Hand Landmarker and Live Pose Landmarker into it. The ordinary package runtime
 rows remain unchanged.
 
 ## What decides the tiles
@@ -43,14 +43,14 @@ Three gates, in order:
 Anything bundled but not validated, and anything validated without a screen, is
 listed in the about sheet with the package's own reason rather than hidden.
 
-Today that leaves two tiles on macOS: the live camera face mesh and MagicTouch.
+Today that leaves two tiles on macOS: the live Face Landmarker and MagicTouch.
 Everything else is bundled and reported but not demonstrated, either because it
 has no screen yet or because it waits on the numerical work in
 `upstream-issues.md` UP-004.
 
 ## Live camera
 
-`lib/live/` is the face camera controller and mesh overlay from
+`lib/live/` is the Face Landmarker camera controller and landmark overlay from
 [the face example](../packages/mediapipe-task-vision/example), reused rather
 than reimplemented. The only change is that `start()` takes the model asset key
 from its caller, since the gallery bundles models under `assets/models/`.

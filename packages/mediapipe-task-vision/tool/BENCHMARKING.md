@@ -90,7 +90,7 @@ Measured on Apple M4 Max, macOS arm64, Dart 3.12.2, on 2026-09-12, using the
 | Face Landmarker | CPU | 9.05 / 8.79 | 9.79 / 9.14 |
 | Face Landmarker | Metal | 8.29 / 8.29 | 9.00 / 8.96 |
 
-Metal was slightly faster for the tracked mesh and slower for the small detector
+Metal was slightly faster for tracked facial landmarks and slower for the small detector
 in this workload. CPU remains the default. These are fixture replay timings on
 one Mac, not live-camera FPS, accuracy measurements, or a guarantee for other
 hardware. The pixel-copy interface still incurs CPU work with either delegate;

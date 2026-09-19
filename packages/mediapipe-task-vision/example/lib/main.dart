@@ -50,7 +50,7 @@ class _FaceCameraPageState extends State<FaceCameraPage>
   CameraDescription? selected;
   String? cameraError;
   bool loading = true;
-  bool showMesh = true;
+  bool showConnections = true;
   bool showPoints = false;
   VisionDelegate delegate = switch (const String.fromEnvironment(
     'FACE_CAMERA_DELEGATE',
@@ -129,7 +129,7 @@ class _FaceCameraPageState extends State<FaceCameraPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'MediaPipe · Face mesh',
+                  'MediaPipe · Face Landmarker',
                   style: TextStyle(
                     color: Color(0xff63e6be),
                     fontWeight: FontWeight.w600,
@@ -255,9 +255,10 @@ class _FaceCameraPageState extends State<FaceCameraPage>
                       icon: const Icon(Icons.refresh),
                     ),
                     FilterChip(
-                      label: const Text('Mesh'),
-                      selected: showMesh,
-                      onSelected: (value) => setState(() => showMesh = value),
+                      label: const Text('Connections'),
+                      selected: showConnections,
+                      onSelected: (value) =>
+                          setState(() => showConnections = value),
                     ),
                     FilterChip(
                       label: const Text('Points'),
@@ -298,7 +299,7 @@ class _FaceCameraPageState extends State<FaceCameraPage>
                                       child: CustomPaint(
                                         painter: FaceOverlay(
                                           session.result,
-                                          showMesh: showMesh,
+                                          showConnections: showConnections,
                                           showPoints: showPoints,
                                         ),
                                       ),
@@ -326,7 +327,7 @@ class _FaceCameraPageState extends State<FaceCameraPage>
                                       ? 'Opening camera…'
                                       : cameras.isEmpty
                                       ? 'No camera found. Connect one and refresh.'
-                                      : 'Start the camera to see the full face mesh.',
+                                      : 'Start the camera to see all facial landmarks.',
                                 ),
                               ],
                             ),
@@ -340,7 +341,7 @@ class _FaceCameraPageState extends State<FaceCameraPage>
                   children: [
                     Text('${session.result?.faceLandmarks.length ?? 0} faces'),
                     Text(
-                      '${session.framesPerSecond.toStringAsFixed(1)} mesh FPS',
+                      '${session.framesPerSecond.toStringAsFixed(1)} landmark FPS',
                     ),
                     Text(
                       '${session.inferenceMilliseconds.toStringAsFixed(1)} ms / frame',

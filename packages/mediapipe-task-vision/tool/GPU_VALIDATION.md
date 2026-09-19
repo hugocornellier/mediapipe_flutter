@@ -23,7 +23,7 @@ To reuse an existing reference environment, pass `--python /path/to/bin/python`.
 The generators still verify its runtime version and native library digest.
 
 Generation checks models, photos and exact raw fixture bytes. It never rewrites
-tracked goldens or mesh drawing connections when an output directory is supplied.
+tracked goldens or facial landmark drawing connections when an output directory is supplied.
 The results come only from Google's Python API, independently of the Dart task.
 An unsuccessful run removes the receipt so stale output cannot be accepted.
 

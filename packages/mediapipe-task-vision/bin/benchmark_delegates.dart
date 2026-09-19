@@ -38,9 +38,9 @@ Future<void> main(List<String> arguments) async {
         ? VisionDelegate.values
         : VisionDelegate.values.reversed;
     for (final delegate in delegates) {
-      for (final mesh in [false, true]) {
+      for (final useLandmarker in [false, true]) {
         final startup = Stopwatch()..start();
-        final detector = mesh
+        final detector = useLandmarker
             ? null
             : await FaceDetector.create(
                 FaceDetectorOptions(
@@ -49,7 +49,7 @@ Future<void> main(List<String> arguments) async {
                   delegate: delegate,
                 ),
               );
-        final landmarker = !mesh
+        final landmarker = !useLandmarker
             ? null
             : await FaceLandmarker.create(
                 FaceLandmarkerOptions(
@@ -70,7 +70,7 @@ Future<void> main(List<String> arguments) async {
               bytesPerRow: stride,
               format: VisionPixelFormat.bgra,
             );
-            final count = mesh
+            final count = useLandmarker
                 ? (await landmarker!.detectForVideo(
                     image,
                     timestampMilliseconds: i * 33,
@@ -87,7 +87,7 @@ Future<void> main(List<String> arguments) async {
           stdout.writeln(
             jsonEncode({
               'round': round + 1,
-              'task': mesh ? 'face_landmarker' : 'face_detector',
+              'task': useLandmarker ? 'face_landmarker' : 'face_detector',
               'delegate': delegate.name,
               'input': '1920x1080 padded BGRA portrait replay',
               'frames': frames,

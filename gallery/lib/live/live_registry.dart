@@ -30,12 +30,12 @@ const _demos = <String, LiveDemo>{
 
 LiveDemo? liveDemoFor(String id) => _demos[id];
 
-// The face mesh has its own painter: 478 points with tessellation, contours and
+// Face landmarks have their own painter: 478 points with connections, contours and
 // irises, rather than one skeleton of official edges.
 CustomPainter _faceOverlay(Object? result, bool edges, bool points) =>
     FaceOverlay(
       result as FaceLandmarkerResult?,
-      showMesh: edges,
+      showConnections: edges,
       showPoints: points,
     );
 

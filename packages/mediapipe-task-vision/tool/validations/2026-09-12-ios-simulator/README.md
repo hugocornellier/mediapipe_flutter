@@ -24,7 +24,7 @@ was captured earlier during the same implementation session, before the final
 deployment-metadata and documentation corrections.
 
 The integration tests preserve the existing official CPU reference tolerances:
-detector boxes within 1 pixel, scores/keypoints within `1e-5`; mesh coordinates
+detector boxes within 1 pixel, scores/keypoints within `1e-5`; landmark coordinates
 within `1e-4`, blendshapes within `0.002`, and transform entries within `0.005`.
 No models, task graphs, reference values or tolerance limits were changed.
 Coverage includes IMAGE/VIDEO, two faces, rotations, padded pixel formats,
@@ -32,7 +32,7 @@ tracking/loss/re-entry, errors, concurrent task libraries and queued disposal.
 Explicit GPU rejection is tested alongside successful subsequent CPU creation.
 
 The interactive image app also launched successfully and displayed the full
-478-point mesh, irises and 52 expression scores on bundled portraits. The UI
+478 facial landmarks, irises and 52 expression scores on bundled portraits. The UI
 uses the same public APIs exercised by the integration tests.
 
 ## Native provenance

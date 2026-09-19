@@ -29,6 +29,6 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Show a live face mesh from your camera on this Mac.</string>
+	<string>Show live facial landmarks from your camera on this Mac.</string>
 </dict>
 </plist>

@@ -19,9 +19,9 @@ Xcode build done.                                           14.7s
 00:00 +0: (setUpAll)
 00:00 +0: CPU detection matches every official IMAGE reference
 00:00 +1: CPU detection matches official VIDEO sequence
-00:00 +2: CPU image mesh matches official reference with 2 faces
-00:00 +3: CPU video mesh matches official reference with 1 faces
-00:00 +4: CPU video mesh matches official reference with 2 faces
+00:00 +2: CPU image Face Landmarker matches official reference with 2 faces
+00:00 +3: CPU video Face Landmarker matches official reference with 1 faces
+00:00 +4: CPU video Face Landmarker matches official reference with 2 faces
 00:00 +5: padded RGB, RGBA and BGRA preserve CPU task results together
 00:01 +6: GPU requests fail explicitly and leave CPU creation usable
 00:01 +7: queued video frames drain before disposal and errors do not poison CPU inference

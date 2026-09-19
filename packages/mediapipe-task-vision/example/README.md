@@ -1,6 +1,6 @@
 # MediaPipe Face Camera
 
-Live camera face mesh on macOS Apple Silicon using `camera_desktop` and the
+Live camera facial landmarks on macOS Apple Silicon using `camera_desktop` and the
 official MediaPipe v1.0.0 Face Landmarker. Requires Flutter 3.44.8 / Dart 3.12.2 and
 Xcode. macOS native runtimes download automatically when local builds are absent.
 The same example opens a CPU image demo on arm64 iOS simulators; follow the
@@ -32,10 +32,10 @@ These flags are opt-in. A normal launch starts idle with CPU selected.
 If access was previously denied, enable the app in System Settings → Privacy &
 Security → Camera. The example requests camera access only; audio is disabled.
 
-The preview shows all 478 landmarks as a connected mesh, with highlighted iris
-rings, and measured frame rate and latency. **Mesh** and **Points** toggle the
+The preview shows all 478 facial landmarks and their connections, with highlighted iris
+rings, and measured frame rate and latency. **Connections** and **Points** toggle the
 overlay. Use **Stop camera** to release capture. Frames are processed on the Mac
-and are not recorded or uploaded. This uses Google's unmodified FaceMesh V2
+and are not recorded or uploaded. This uses Google's unmodified Face Landmarker
 bundle, which includes a short-range face detector; small distant faces can be missed.
 
 ## Frame handling
@@ -46,7 +46,7 @@ each submitted frame a strictly increasing elapsed-time timestamp and allows
 one inference at a time, skipping incoming frames while busy. The worker converts
 BGRA to RGBA and removes camera row padding; MediaPipe handles all model
 preprocessing, inference, tracking, and coordinate projection. Blendshapes and
-transformation matrices are available through the package API; this mesh-only
+transformation matrices are available through the package API; this landmark-only
 demo leaves those optional outputs disabled.
 
 On macOS, `camera_desktop` mirrors the capture buffer used by both its preview

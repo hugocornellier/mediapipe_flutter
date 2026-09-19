@@ -76,7 +76,7 @@ void main() {
     (VisionRunningMode.video, 2),
   ]) {
     testWidgets(
-      'CPU ${configuration.$1.name} mesh matches official reference with ${configuration.$2} faces',
+      'CPU ${configuration.$1.name} Face Landmarker matches official reference with ${configuration.$2} faces',
       (tester) async {
         final reference = await fixtures.json(
           'face_landmarker/official_reference.json',
@@ -90,7 +90,7 @@ void main() {
             );
         final task = await FaceLandmarker.create(
           FaceLandmarkerOptions(
-            modelBytes: fixtures.meshModel,
+            modelBytes: fixtures.landmarkerModel,
             runningMode: configuration.$1,
             numFaces: configuration.$2,
             outputFaceBlendshapes: true,
@@ -111,7 +111,7 @@ void main() {
                     image,
                     rotationDegrees: frame['rotation'] as int,
                   );
-            _meshMatches(result, frame);
+            _landmarksMatch(result, frame);
           }
         } finally {
           await task.dispose();
@@ -129,21 +129,21 @@ void main() {
     final expectedDetection = (detectionReference['cases'] as List)
         .cast<Map<String, dynamic>>()
         .singleWhere((frame) => frame['name'] == 'rgb');
-    final meshReference = await fixtures.json(
+    final landmarkerReference = await fixtures.json(
       'face_landmarker/official_reference.json',
     );
-    final sequence = (meshReference['cases'] as List)
+    final sequence = (landmarkerReference['cases'] as List)
         .cast<Map<String, dynamic>>()
         .singleWhere((value) => value['mode'] == 'IMAGE');
-    final expectedMesh = (sequence['frames'] as List)
+    final expectedLandmarks = (sequence['frames'] as List)
         .cast<Map<String, dynamic>>()
         .singleWhere((frame) => frame['name'] == 'rgb');
     final detector = await FaceDetector.create(
       FaceDetectorOptions(modelBytes: fixtures.detectorModel),
     );
-    final mesh = await FaceLandmarker.create(
+    final landmarker = await FaceLandmarker.create(
       FaceLandmarkerOptions(
-        modelBytes: fixtures.meshModel,
+        modelBytes: fixtures.landmarkerModel,
         numFaces: 2,
         outputFaceBlendshapes: true,
         outputFacialTransformationMatrixes: true,
@@ -176,14 +176,14 @@ void main() {
           );
           // Both libraries coexist, with independent worker and native lifetimes.
           final pendingDetection = detector.detectImage(image);
-          final pendingMesh = mesh.detectImage(image);
+          final pendingLandmarks = landmarker.detectImage(image);
           _detectorMatches(await pendingDetection, expectedDetection);
-          _meshMatches(await pendingMesh, expectedMesh);
+          _landmarksMatch(await pendingLandmarks, expectedLandmarks);
         }
       }
     } finally {
       await detector.dispose();
-      await mesh.dispose();
+      await landmarker.dispose();
     }
   });
 
@@ -208,7 +208,7 @@ void main() {
     await expectLater(
       FaceLandmarker.create(
         FaceLandmarkerOptions(
-          modelBytes: fixtures.meshModel,
+          modelBytes: fixtures.landmarkerModel,
           delegate: VisionDelegate.gpu,
         ),
       ),
@@ -221,7 +221,7 @@ void main() {
       ),
     );
     final task = await FaceLandmarker.create(
-      FaceLandmarkerOptions(modelBytes: fixtures.meshModel),
+      FaceLandmarkerOptions(modelBytes: fixtures.landmarkerModel),
     );
     try {
       expect(
@@ -238,7 +238,7 @@ void main() {
     (tester) async {
       final task = await FaceLandmarker.create(
         FaceLandmarkerOptions(
-          modelBytes: fixtures.meshModel,
+          modelBytes: fixtures.landmarkerModel,
           runningMode: VisionRunningMode.video,
         ),
       );
@@ -290,10 +290,10 @@ void main() {
 }
 
 class _Fixtures {
-  _Fixtures(this.directory, this.detectorModel, this.meshModel, this.rgb);
+  _Fixtures(this.directory, this.detectorModel, this.landmarkerModel, this.rgb);
   final Directory directory;
   final Uint8List detectorModel;
-  final Uint8List meshModel;
+  final Uint8List landmarkerModel;
   final Uint8List rgb;
 
   static Future<Uint8List> bytes(String name) async {
@@ -303,7 +303,7 @@ class _Fixtures {
 
   static Future<_Fixtures> load() async {
     final detector = await bytes('assets/blaze_face_short_range.tflite');
-    final mesh = await bytes('assets/face_landmarker.task');
+    final landmarkerModel = await bytes('assets/face_landmarker.task');
     final rgb = await bytes(
       'assets/fixtures/face_detection/portrait-301x209.rgb',
     );
@@ -312,7 +312,7 @@ class _Fixtures {
       'b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f',
     );
     expect(
-      sha256.convert(mesh).toString(),
+      sha256.convert(landmarkerModel).toString(),
       '64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff',
     );
     expect(
@@ -322,7 +322,7 @@ class _Fixtures {
     return _Fixtures(
       await Directory.systemTemp.createTemp('mediapipe-ios-test-'),
       detector,
-      mesh,
+      landmarkerModel,
       rgb,
     );
   }
@@ -431,7 +431,10 @@ void _detectorMatches(
   }
 }
 
-void _meshMatches(FaceLandmarkerResult actual, Map<String, dynamic> expected) {
+void _landmarksMatch(
+  FaceLandmarkerResult actual,
+  Map<String, dynamic> expected,
+) {
   expect(actual.imageWidth, expected['width']);
   expect(actual.imageHeight, expected['height']);
   expect(actual.timestampMilliseconds, expected['timestamp_ms']);

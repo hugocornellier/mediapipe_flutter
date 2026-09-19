@@ -14,7 +14,7 @@ application assets.
 | Image | Intended coverage |
 | --- | --- |
 | `landmark-ex1.jpg` | Close-up portrait |
-| `mesh-ex1.jpeg` | High-resolution, non-square image |
+| `face-landmarks-ex1.jpeg` | High-resolution, non-square image |
 | `iris-detection-ex1.jpg` | Turned head |
 | `iris-detection-ex2.jpg` | Directional lighting and head covering |
 | `group-shot-bounding-box-ex1.jpeg` | Four visible faces, smaller faces, glasses |
@@ -31,7 +31,7 @@ produces zero at those settings despite containing four people; this is an
 intentional regression case for the short-range model.
 
 `portrait-301x209.rgb` is generated from the official decoder's pixels for
-`mesh-ex1.jpeg`, taking every twentieth row and column. Its hash is recorded in
+`face-landmarks-ex1.jpeg`, taking every twentieth row and column. Its hash is recorded in
 the reference JSON. It provides a compact odd-width RGB input that needs no
 decoder in tests. The generator also creates RGBA, rotated, and cropped/duplicated
 two-face inputs from those pixels, plus an all-zero blank input.

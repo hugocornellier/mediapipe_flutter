@@ -216,7 +216,7 @@ void main() {
             delegate: delegate,
           ),
         );
-        final mesh = await FaceLandmarker.create(
+        final landmarker = await FaceLandmarker.create(
           FaceLandmarkerOptions(
             modelPath: 'models/face_landmarker.task',
             delegate: delegate,
@@ -230,13 +230,15 @@ void main() {
           );
           expect((await detector.detectImage(portrait)).detections.length, 1);
           expect(
-            (await mesh.detectImage(portrait)).faceLandmarks.single.length,
+            (await landmarker.detectImage(
+              portrait,
+            )).faceLandmarks.single.length,
             478,
           );
           compare(await pending, entry);
         } finally {
           await detector.dispose();
-          await mesh.dispose();
+          await landmarker.dispose();
         }
       }
     },

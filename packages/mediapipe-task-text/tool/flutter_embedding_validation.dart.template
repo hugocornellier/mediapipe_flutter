@@ -86,7 +86,7 @@ Future<Map<String, Object>> validateEmbedding() async {
   final embedding = await EmbeddingGemma.create(EmbeddingGemmaOptions(modelPath: model));
   final segmenter = await InteractiveSegmenter.create(InteractiveSegmenterOptions(modelPath: _file('interactive_segmentation.task')));
   final detector = await FaceDetector.create(FaceDetectorOptions(modelPath: _file('blaze_face_short_range.tflite')));
-  final mesh = await FaceLandmarker.create(FaceLandmarkerOptions(modelPath: _file('face_landmarker.task')));
+  final landmarker = await FaceLandmarker.create(FaceLandmarkerOptions(modelPath: _file('face_landmarker.task')));
   final proofreader = await TextProofreader.create(TextProofreaderOptions(modelPath: _file('proofread_quant_200m.litertlm')));
   final summarizer = await TextSummarizer.create(TextSummarizerOptions(modelPath: _file('summarization_quant_200m_2modes.litertlm')));
   final classifier = await TextClassifier.create(TextClassifierOptions.fromAssetPath(_file('bert_classifier.tflite')));
@@ -107,7 +107,7 @@ Future<Map<String, Object>> validateEmbedding() async {
     final languagePending = language.detect('Quiero agua, por favor.');
     final portrait = VisionImage.fromFile(_file('landmark-ex1.jpg'));
     detections = (await detector.detectImage(portrait)).detections.length;
-    landmarks = (await mesh.detectImage(portrait)).faceLandmarks.single.length;
+    landmarks = (await landmarker.detectImage(portrait)).faceLandmarks.single.length;
     _check(detections == 1 && landmarks == 478, 'Face tasks failed during coexistence.');
     _check((await textPending).embeddings.single.dimensions == 768, 'Text failed during coexistence.');
     _check((await classificationPending).classifications.single.categories.first.categoryName == 'positive', 'Classifier failed during coexistence.');
@@ -133,7 +133,7 @@ Future<Map<String, Object>> validateEmbedding() async {
     await embedding.dispose();
     await segmenter.dispose();
     await detector.dispose();
-    await mesh.dispose();
+    await landmarker.dispose();
     await proofreader.dispose();
     await summarizer.dispose();
     await classifier.dispose();

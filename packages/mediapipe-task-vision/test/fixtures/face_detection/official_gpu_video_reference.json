@@ -8,7 +8,7 @@
   "running_mode": "VIDEO",
   "min_detection_confidence": 0.5,
   "min_suppression_threshold": 0.3,
-  "raw_derivation": "mesh-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
+  "raw_derivation": "face-landmarks-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
   "input_conversion": "RGB to RGBA with opaque alpha for Metal",
   "cases": [
     {

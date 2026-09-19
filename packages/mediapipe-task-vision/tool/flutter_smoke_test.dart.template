@@ -41,7 +41,7 @@ void main() {
             greaterThan(0.9),
           );
           final bundle = await rootBundle.load('assets/face_landmarker.task');
-          final mesh = await FaceLandmarker.create(
+          final landmarker = await FaceLandmarker.create(
             FaceLandmarkerOptions(
               delegate: delegate,
               modelBytes: bundle.buffer.asUint8List(
@@ -53,7 +53,7 @@ void main() {
             ),
           );
           try {
-            final landmarks = await mesh.detectImage(
+            final landmarks = await landmarker.detectImage(
               VisionImage.fromPixels(
                 pixels: pixels.buffer.asUint8List(
                   pixels.offsetInBytes,
@@ -71,7 +71,7 @@ void main() {
               hasLength(16),
             );
           } finally {
-            await mesh.dispose();
+            await landmarker.dispose();
           }
         } finally {
           await detector.dispose();

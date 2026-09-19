@@ -8,7 +8,7 @@
   "running_mode": "VIDEO",
   "score_threshold": 0.3,
   "max_results": 5,
-  "raw_derivation": "mesh-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
+  "raw_derivation": "face-landmarks-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
   "cases": [
     {
       "name": "rgb",

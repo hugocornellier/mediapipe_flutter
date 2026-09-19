@@ -125,8 +125,8 @@ def prepare(wheel, output):
         'sha256': ARTIFACT_SHA256,
         'files': {name: digest(data) for name, data in sorted(files.items())},
         'packaging': packaging,
-        'scope': ('Official runtime selected only for the gallery Live Face Mesh, '
-                  'Live Hands and Live Pose.'),
+        'scope': ('Official runtime selected only for the gallery Live Face Landmarker, '
+                  'Live Hand Landmarker and Live Pose Landmarker.'),
     }
     files['manifest.json'] = (json.dumps(manifest, indent=2) + '\n').encode()
     for name, data in files.items():

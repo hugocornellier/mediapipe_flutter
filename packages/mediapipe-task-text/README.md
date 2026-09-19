@@ -130,7 +130,7 @@ flutter test -d macos integration_test/demo_test.dart --reporter expanded
 
 `make example_embedding` launches similarity, proofreading and summarization tabs.
 `make test_embedding_macos` creates an isolated consumer, downloads all selected
-models/runtimes, and checks official embeddings plus simultaneous face/mesh and
+models/runtimes, and checks official embeddings plus simultaneous Face Landmarker and
 MagicTouch inference in debug and release. Bazel, CMake, Ninja and Python are
 blocked during consumer builds. CI runs this validation and publishes its logs.
 
@@ -244,7 +244,7 @@ a smaller token budget. Empty-input errors are checked separately in both modes
 and APIs. `example_embedding/test/text_summarizer_test.dart` also covers ABI,
 ownership, parallel task instances, queueing, cancellation, pause and disposal.
 `make test_embedding_macos` validates fresh debug/release apps and simultaneous
-all six text tasks, MagicTouch, face detector and face mesh inference with one
+all six text tasks, MagicTouch, Face Detector and Face Landmarker inference with one
 shared 1.0.1 runtime.
 
 ## Models and local dependencies

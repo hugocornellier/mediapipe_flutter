@@ -79,7 +79,7 @@ Future<void> main() async {
         );
         require(
           baseline.faceLandmarks.single.length == 478,
-          '$delegate incomplete mesh.',
+          '$delegate incomplete facial landmark result.',
         );
         require(
           baseline.faceBlendshapes.single.length == 52,

@@ -1,7 +1,7 @@
 # Official Face Landmarker references
 
 Generated with Google's `mediapipe==1.0.0` macOS arm64 wheel, CPU delegate,
-and the unmodified Face Landmarker float16 version 1 bundle (FaceMesh V2).
+and the unmodified Face Landmarker float16 version 1 bundle.
 The JSON records the model, wheel library, source revision, and raw-image hashes.
 Photographs and their provenance/license remain in [../face_detection](../face_detection).
 

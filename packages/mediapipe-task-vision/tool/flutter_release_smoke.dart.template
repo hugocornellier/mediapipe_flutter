@@ -50,7 +50,7 @@ Future<void> main() async {
           );
         }
         final bundle = await rootBundle.load('assets/face_landmarker.task');
-        final mesh = await FaceLandmarker.create(
+        final landmarker = await FaceLandmarker.create(
           FaceLandmarkerOptions(
             delegate: delegate,
             modelBytes: bundle.buffer.asUint8List(
@@ -64,7 +64,7 @@ Future<void> main() async {
         );
         try {
           for (var timestamp = 0; timestamp < 100; timestamp += 33) {
-            final landmarks = await mesh.detectForVideo(
+            final landmarks = await landmarker.detectForVideo(
               VisionImage.fromPixels(
                 pixels: pixels.buffer.asUint8List(
                   pixels.offsetInBytes,
@@ -86,7 +86,7 @@ Future<void> main() async {
             }
           }
         } finally {
-          await mesh.dispose();
+          await landmarker.dispose();
         }
       } finally {
         await detector.dispose();

@@ -109,22 +109,22 @@ I0000 00:00:1789213715.455888 29434027 gl_context.cc:385] GL version: 2.1 (2.1 M
 00:01 +66: test/face_landmarker_test.dart: cpu detector and landmarker coexist in one process with independent lifetimes
 W0000 00:00:1789213715.456430 29434231 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
 W0000 00:00:1789213715.459782 29434244 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
-00:01 +67: test/face_detector_test.dart: gpu official reference: mesh-ex1.jpeg
+00:01 +67: test/face_detector_test.dart: gpu official reference: face-landmarks-ex1.jpeg
 W0000 00:00:1789213715.500591 29434020 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
 I0000 00:00:1789213715.504792 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
 W0000 00:00:1789213715.505284 29434246 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
 W0000 00:00:1789213715.508634 29434259 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
-00:01 +68: test/face_detector_test.dart: gpu official reference: mesh-ex1.jpeg
+00:01 +68: test/face_detector_test.dart: gpu official reference: face-landmarks-ex1.jpeg
 W0000 00:00:1789213715.520659 29434020 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
 I0000 00:00:1789213715.523608 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
 W0000 00:00:1789213715.524115 29434262 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
 W0000 00:00:1789213715.527652 29434273 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
-00:01 +69: test/face_detector_test.dart: gpu official reference: mesh-ex1.jpeg
+00:01 +69: test/face_detector_test.dart: gpu official reference: face-landmarks-ex1.jpeg
 W0000 00:00:1789213715.539710 29434020 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
 I0000 00:00:1789213715.548828 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
 W0000 00:00:1789213715.549394 29434278 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
 W0000 00:00:1789213715.553160 29434278 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
-00:01 +70: test/face_detector_test.dart: gpu official reference: mesh-ex1.jpeg
+00:01 +70: test/face_detector_test.dart: gpu official reference: face-landmarks-ex1.jpeg
 W0000 00:00:1789213715.564641 29434020 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
 I0000 00:00:1789213715.567351 29434020 gl_context.cc:385] GL version: 2.1 (2.1 Metal - 90.5), renderer: Apple M4 Max
 W0000 00:00:1789213715.567831 29434297 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.

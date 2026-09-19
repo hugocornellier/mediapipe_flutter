@@ -86,7 +86,7 @@ def main():
         # Decimate the official decoder's RGB pixels to a small, odd-width input.
         # The resulting bytes are checked in so no test depends on a JPEG decoder.
         decoded = mp.Image.create_from_file(
-            str(FIXTURES / "mesh-ex1.jpeg")
+            str(FIXTURES / "face-landmarks-ex1.jpeg")
         )
         # numpy_view borrows native storage; retain its owner until copying.
         pixels = decoded.numpy_view()[::20, ::20, :3].copy()
@@ -125,7 +125,7 @@ def main():
         model_sha256=MODEL_SHA256,
         platform=f"{platform.system()} {platform.machine()}", delegate=args.delegate.upper(), running_mode="IMAGE",
         min_detection_confidence=0.5, min_suppression_threshold=0.3,
-        raw_derivation="mesh-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
+        raw_derivation="face-landmarks-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
         **({"input_conversion": "RGB to RGBA with opaque alpha for Metal"}
            if args.delegate == "gpu" else {}),
         cases=cases,

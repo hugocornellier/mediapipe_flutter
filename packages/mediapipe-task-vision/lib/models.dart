@@ -61,7 +61,7 @@ const blazeFaceShortRangeUrl =
 const blazeFaceShortRangeSha256 =
     'b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f';
 
-/// Official Face Landmarker float16 bundle, version 1 (FaceMesh V2).
+/// Official Face Landmarker float16 bundle, version 1.
 /// Contains the face detector, 478-landmark model, and blendshape model.
 const faceLandmarkerUrl =
     'https://storage.googleapis.com/mediapipe-models/face_landmarker/'

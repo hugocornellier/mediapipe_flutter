@@ -8,7 +8,7 @@
 * Reject macOS segmenter GPU requests explicitly because the official stroke shader fails.
 
 * Add local CPU runtime builds and Flutter IMAGE/VIDEO integration coverage for arm64 iOS simulators.
-* Add a simulator image demo with face detection, mesh, irises and optional expression/transform outputs.
+* Add a simulator image demo with face detection, 478 facial landmarks, irises and optional expression/transform outputs.
 * Keep simulator/device artifact selection distinct and reject unsupported iOS GPU requests explicitly.
 
 * Add per-task `VisionDelegate.cpu` / `.gpu` selection for Face Detector and Landmarker.

@@ -45,7 +45,7 @@ class _FaceFixturePageState extends State<FaceFixturePage> {
   Future<void>? _operation;
   String _selected = examples.keys.first;
   bool _busy = true;
-  bool _mesh = true;
+  bool _showConnections = true;
   String? _error;
   FaceDetectorResult? _detections;
   FaceLandmarkerResult? _landmarks;
@@ -72,12 +72,14 @@ class _FaceFixturePageState extends State<FaceFixturePage> {
           ),
         ),
       );
-      final meshModel = await rootBundle.load('assets/face_landmarker.task');
+      final landmarkerModel = await rootBundle.load(
+        'assets/face_landmarker.task',
+      );
       _landmarker = await FaceLandmarker.create(
         FaceLandmarkerOptions(
-          modelBytes: meshModel.buffer.asUint8List(
-            meshModel.offsetInBytes,
-            meshModel.lengthInBytes,
+          modelBytes: landmarkerModel.buffer.asUint8List(
+            landmarkerModel.offsetInBytes,
+            landmarkerModel.lengthInBytes,
           ),
           numFaces: 2,
           outputFaceBlendshapes: true,
@@ -191,7 +193,7 @@ class _FaceFixturePageState extends State<FaceFixturePage> {
                             CustomPaint(
                               painter: FaceOverlay(
                                 _landmarks,
-                                showMesh: _mesh,
+                                showConnections: _showConnections,
                                 showPoints: false,
                               ),
                             ),
@@ -213,9 +215,9 @@ class _FaceFixturePageState extends State<FaceFixturePage> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Show mesh'),
-              value: _mesh,
-              onChanged: (value) => setState(() => _mesh = value),
+              title: const Text('Show landmark connections'),
+              value: _showConnections,
+              onChanged: (value) => setState(() => _showConnections = value),
             ),
             const Text(
               'Bundled example photos · Processed on this device',

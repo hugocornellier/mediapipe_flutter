@@ -162,7 +162,7 @@ Future<void> main() async {
               (p) => !p.x.isFinite || !p.y.isFinite || !p.z.isFinite,
             )) {
           throw StateError(
-            'Portrait replay lost its complete mesh/optional outputs.',
+            'Portrait replay lost its complete landmark/optional outputs.',
           );
         }
         await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -280,7 +280,7 @@ class _SoakApp extends StatelessWidget {
                             CustomPaint(
                               painter: FaceOverlay(
                                 session.result,
-                                showMesh: true,
+                                showConnections: true,
                                 showPoints: false,
                               ),
                             ),

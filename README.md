@@ -34,7 +34,7 @@ match Google's output exactly; empty-input errors are preserved.
 
 The official MediaPipe v1.0.0 Face Detector and Face Landmarker run on macOS arm64
 in CPU and Metal GPU IMAGE/VIDEO modes, with tests against Google's Python reference outputs. A live
-camera example uses `camera_desktop`, with the full 478-point mesh and irises. Native builds use
+camera example uses `camera_desktop`, with all 478 facial landmarks and irises. Native builds use
 pinned upstream source and static OpenCV; no task pipeline or model is patched.
 Both tasks accept `delegate: VisionDelegate.cpu` (default) or `VisionDelegate.gpu`.
 The camera demo exposes the same choice; each task download contains both backends.
@@ -93,7 +93,7 @@ the hook's shared output directory. Partial or mismatched downloads are rejected
 Model files remain separate. Applications bundle or download only the models they
 need; runtime hooks do not fetch models. `make models` downloads the three pinned
 text models, BlazeFace short-range, and the complete Face Landmarker float16
-version-1 bundle (FaceMesh V2), plus the MagicTouch int8 version-1 task bundle
+version-1 Face Landmarker bundle, plus the MagicTouch int8 version-1 task bundle
 and EmbeddingGemma 300M, Proofreader 200M and Summarizer 200M version-1 models.
 
 GenAI's native library remains the inherited April/May 2024 Google-hosted build.

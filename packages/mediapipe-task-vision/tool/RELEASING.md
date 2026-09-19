@@ -84,7 +84,7 @@ modern stateful C API is not available in the public source build. See
 
 ## Gallery's official macOS landmark runtime
 
-The gallery alone opts Live Face Mesh, Live Hands and Live Pose into Google's
+The gallery alone opts Live Face Landmarker, Live Hand Landmarker and Live Pose Landmarker into Google's
 official 1.0.0 macOS arm64
 wheel runtime. `gallery/tool/prepare.py` runs
 `tool/prepare_official_macos_landmark_runtime.py`, which verifies the wheel,

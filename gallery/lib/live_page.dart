@@ -44,7 +44,7 @@ class _LivePageState extends State<LivePage> {
   CameraDescription? _selected;
   String? _error;
   bool _autoStarted = false;
-  bool _showMesh = true;
+  bool _showConnections = true;
   bool _showPoints = false;
 
   @override
@@ -110,9 +110,10 @@ class _LivePageState extends State<LivePage> {
         title: Text(widget.task.title),
         actions: [
           IconButton(
-            icon: Icon(_showMesh ? Icons.grid_on : Icons.grid_off),
+            icon: Icon(_showConnections ? Icons.grid_on : Icons.grid_off),
             tooltip: 'Connections',
-            onPressed: () => setState(() => _showMesh = !_showMesh),
+            onPressed: () =>
+                setState(() => _showConnections = !_showConnections),
           ),
           IconButton(
             icon: Icon(_showPoints ? Icons.blur_on : Icons.blur_off),
@@ -138,7 +139,7 @@ class _LivePageState extends State<LivePage> {
                             CustomPaint(
                               painter: _demo.overlay(
                                 controller.result,
-                                _showMesh,
+                                _showConnections,
                                 _showPoints,
                               ),
                             ),

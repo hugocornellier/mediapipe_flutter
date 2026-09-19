@@ -8,7 +8,7 @@
   "running_mode": "IMAGE",
   "min_detection_confidence": 0.5,
   "min_suppression_threshold": 0.3,
-  "raw_derivation": "mesh-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
+  "raw_derivation": "face-landmarks-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
   "input_conversion": "RGB to RGBA with opaque alpha for Metal",
   "cases": [
     {
@@ -76,7 +76,7 @@
       "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
     },
     {
-      "name": "mesh-ex1.jpeg",
+      "name": "face-landmarks-ex1.jpeg",
       "width": 6010,
       "height": 4180,
       "rotation_degrees": 0,
@@ -136,7 +136,7 @@
           ]
         }
       ],
-      "file": "mesh-ex1.jpeg",
+      "file": "face-landmarks-ex1.jpeg",
       "sha256": "c2ba880b592ddc41c57d9534c989be5db274e5c150c0c16d4a2b62cddcca6048"
     },
     {

@@ -4,17 +4,21 @@ import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 /// The camera mirrors both preview and pixels natively. Scale once, with no
 /// extra mirroring, cropping, coordinate clipping, or landmark smoothing.
 class FaceOverlay extends CustomPainter {
-  FaceOverlay(this.result, {required this.showMesh, required this.showPoints});
+  FaceOverlay(
+    this.result, {
+    required this.showConnections,
+    required this.showPoints,
+  });
 
   final FaceLandmarkerResult? result;
-  final bool showMesh;
+  final bool showConnections;
   final bool showPoints;
 
   @override
   void paint(Canvas canvas, Size size) {
     final result = this.result;
     if (result == null) return;
-    final mesh = Paint()
+    final connections = Paint()
       ..color = const Color(0x7063e6be)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.7;
@@ -44,8 +48,8 @@ class FaceOverlay extends CustomPainter {
         canvas.drawPath(path, paint);
       }
 
-      if (showMesh) {
-        edges(FaceLandmarkConnections.tessellation, mesh);
+      if (showConnections) {
+        edges(FaceLandmarkConnections.tessellation, connections);
         edges(FaceLandmarkConnections.contours, contour);
         edges(FaceLandmarkConnections.leftIris, iris);
         edges(FaceLandmarkConnections.rightIris, iris);
@@ -62,6 +66,6 @@ class FaceOverlay extends CustomPainter {
   @override
   bool shouldRepaint(FaceOverlay oldDelegate) =>
       oldDelegate.result != result ||
-      oldDelegate.showMesh != showMesh ||
+      oldDelegate.showConnections != showConnections ||
       oldDelegate.showPoints != showPoints;
 }

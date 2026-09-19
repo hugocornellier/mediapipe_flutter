@@ -8,7 +8,7 @@ No runtime pins, models, bindings, reference outputs or tolerances were changed.
 
 Google's [Face Landmarker guide](https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker)
 still links to the float16 Face Landmarker bundle containing BlazeFace,
-FaceMesh V2 (478 landmarks), and the 52-score blendshape model.
+the 478-landmark face model, and the 52-score blendshape model.
 Downloading its `float16/latest/face_landmarker.task` link produced exactly the
 same bytes as our pinned `float16/1/face_landmarker.task`:
 

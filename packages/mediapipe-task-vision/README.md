@@ -3,7 +3,7 @@
 Official MediaPipe Face Detector and Face Landmarker for Dart and Flutter on **macOS arm64**.
 This development version implements **CPU and Metal GPU IMAGE/VIDEO modes**. It accepts JPEG/image
 files or RGB/RGBA/BGRA pixels and returns face boxes, categories, and
-six keypoints, or a full 478-point face mesh including irises. Inference runs on
+six keypoints, or all 478 facial landmarks including irises. Inference runs on
 a worker isolate. Face Landmarker also exposes the official optional 52
 blendshape scores and 4×4 face transformation matrices.
 
@@ -34,8 +34,8 @@ updating, so an earlier task-owned framework is removed from the app bundle.
 The task uses the unmodified MediaPipe v1.0.0 Face Detector graph and its official
 BlazeFace short-range float16 model, version 1. MediaPipe performs image
 preprocessing, model inference, anchor decoding, suppression, and coordinate
-projection. Face Landmarker uses Google's complete float16 version-1 bundle
-(FaceMesh V2), including its own detector, landmark model, and expression model.
+projection. Face Landmarker uses Google's complete float16 version-1 bundle,
+including its own detector, landmark model, and expression model.
 It does not require a separate Dart Face Detector call. The Dart wrapper copies
 results and owns native resource cleanup.
 
@@ -100,7 +100,7 @@ of silently bundling an incompatible library.
 
 ## Dart API
 
-For the full mesh:
+For all 478 facial landmarks:
 
 ```dart
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
@@ -225,7 +225,7 @@ results, initialization failures, and resource lifecycle.
 Landmarker references cover every 3D coordinate, blendshape score, and transform
 in ten still images and two tracking sequences, plus both libraries running
 concurrently. Numeric tolerances and measured differences from Google's wheel
-are recorded in [the mesh reference notes](test/fixtures/face_landmarker/README.md).
+are recorded in [the Face Landmarker reference notes](test/fixtures/face_landmarker/README.md).
 
 Hosted CI generates GPU reference outputs with the pinned official Python wheel
 on the same runner, then runs the Dart suites against those outputs with the
@@ -285,7 +285,7 @@ hooks:
 `build/releases/face-detector-v1.0.0-2/`, with deterministic archive metadata,
 checksums, a public build manifest, a repository README, and release notes.
 It does not upload anything. See [tool/RELEASING.md](tool/RELEASING.md) for the
-release process; use `--task face_landmarker` to prepare the mesh runtime.
+release process; use `--task face_landmarker` to prepare the Face Landmarker runtime.
 Every rebuild must get a new tag and reviewed digests in
 `sdk_downloads.dart`; never replace the bytes behind an existing download URL.
 
@@ -294,7 +294,7 @@ returns zero detections at the default threshold. The test preserves that
 behavior. The derived close-up pair exercises two detections. Fixture provenance
 and oracle settings are in [test/fixtures/face_detection](test/fixtures/face_detection/).
 
-Regenerate detector bindings with `dart tool/generate_bindings.dart`, and mesh
+Regenerate Face Detector bindings with `dart tool/generate_bindings.dart`, and Face Landmarker
 bindings with `dart tool/generate_bindings.dart ffigen_face_landmarker.yaml`. Original upstream
 headers are checked in unchanged. The generator removes only C-linkage wrappers
 in temporary copies because ffigen 21 does not traverse C++ linkage blocks.
@@ -304,7 +304,7 @@ To regenerate references, create a separate Python 3.12 environment, install
 `mediapipe==1.0.0`, and run `tool/generate_face_detector_reference.py`. The
 script verifies the model, native wheel library, and fixture digests before
 writing goldens. Ordinary tests do not require Python MediaPipe.
-`tool/generate_face_landmarker_reference.py` generates the mesh references and
+`tool/generate_face_landmarker_reference.py` generates the Face Landmarker references and
 official drawing connections using the same pinned environment.
 Pass `--delegate gpu` to either generator to regenerate the separate Metal
 references. Source builds smoke-test both delegates and require a Metal creation
@@ -320,7 +320,7 @@ A camera plugin is not required for still-image inference.
 
 The [Flutter example](example/) uses `camera_desktop` for macOS capture and the
 official VIDEO-mode Face Landmarker on a worker isolate. It shows an uncropped
-preview with the full mesh, highlighted irises, optional points, and timing. Camera access is
+preview with all 478 facial landmarks, highlighted irises, optional points, and timing. Camera access is
 limited to the example; the task package remains a pure Dart/FFI dependency.
 The CPU/GPU selector recreates the task and camera session when changed.
 

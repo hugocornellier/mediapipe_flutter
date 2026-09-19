@@ -255,7 +255,7 @@ def pin_architecture(target):
                 info.write_text(text.replace(
                     '</dict>',
                     '\t<key>NSCameraUsageDescription</key>\n'
-                    '\t<string>Show a live face mesh from your camera on this '
+                    '\t<string>Show live facial landmarks from your camera on this '
                     'Mac.</string>\n</dict>'))
     if target.startswith('ios'):
         project = GALLERY / 'ios/Runner.xcodeproj/project.pbxproj'

@@ -100,7 +100,7 @@ def main():
             '// Licensed under the Apache License, Version 2.0.',
             '// Generated from MediaPipe v1.0.0 FaceLandmarksConnections.',
             '// Regenerate: tool/generate_face_landmarker_reference.py', '',
-            '/// Official mesh drawing edges, in the original landmark index order.',
+            '/// Official facial landmark drawing edges, in the original index order.',
             'abstract final class FaceLandmarkConnections {']
     for name, upstream in connections.items():
         edges = getattr(FaceLandmarksConnections, 'FACE_LANDMARKS_' + upstream)

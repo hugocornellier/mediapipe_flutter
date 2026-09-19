@@ -143,14 +143,14 @@ void _testDelegate(VisionDelegate delegate) {
           modelPath: 'models/blaze_face_short_range.tflite',
         ),
       );
-      final mesh = await FaceLandmarker.create(
+      final landmarker = await FaceLandmarker.create(
         FaceLandmarkerOptions(delegate: delegate, modelPath: _model),
       );
       try {
         for (var i = 0; i < 3; i++) {
           final results = await Future.wait<Object>([
             detector.detectImage(_image(rgbFrame)),
-            mesh.detectImage(_image(rgbFrame)),
+            landmarker.detectImage(_image(rgbFrame)),
           ]);
           expect(
             (results[0] as FaceDetectorResult).detections.single.keypoints,
@@ -163,12 +163,12 @@ void _testDelegate(VisionDelegate delegate) {
         }
         await detector.dispose();
         expect(
-          (await mesh.detectImage(_image(rgbFrame))).faceLandmarks.single,
+          (await landmarker.detectImage(_image(rgbFrame))).faceLandmarks.single,
           hasLength(478),
         );
       } finally {
         await detector.dispose();
-        await mesh.dispose();
+        await landmarker.dispose();
       }
     },
   );

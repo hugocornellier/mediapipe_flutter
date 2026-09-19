@@ -12,8 +12,8 @@
       "scenario": "close-up portrait"
     },
     {
-      "file": "mesh-ex1.jpeg",
-      "source_path": "assets/samples/mesh-ex1.jpeg",
+      "file": "face-landmarks-ex1.jpeg",
+      "source_path": "assets/samples/face-landmarks-ex1.jpeg",
       "sha256": "c2ba880b592ddc41c57d9534c989be5db274e5c150c0c16d4a2b62cddcca6048",
       "width": 6010,
       "height": 4180,

@@ -3,7 +3,7 @@
 // Generated from MediaPipe v1.0.0 FaceLandmarksConnections.
 // Regenerate: tool/generate_face_landmarker_reference.py
 
-/// Official mesh drawing edges, in the original landmark index order.
+/// Official facial landmark drawing edges, in the original index order.
 abstract final class FaceLandmarkConnections {
   /// Official tessellation connections (2556 edges).
   static const List<(int, int)> tessellation = [
