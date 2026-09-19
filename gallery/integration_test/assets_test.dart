@@ -65,7 +65,7 @@ void main() {
       // start() reports failures on the controller rather than throwing, which
       // is how this surfaced in the app as a message instead of a crash.
       await controller.start(
-        const CameraDescription(
+        description: const CameraDescription(
           name: 'gallery-integration-test',
           lensDirection: CameraLensDirection.front,
           sensorOrientation: 0,

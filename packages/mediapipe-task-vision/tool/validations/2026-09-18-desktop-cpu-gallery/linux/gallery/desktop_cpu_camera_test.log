@@ -1,0 +1,7 @@
+00:00 +0: loading /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/integration_test/desktop_cpu_camera_test.dart
+Building Linux application...                                   
+✓ Built build/linux/x64/debug/bundle/mediapipe_gallery
+00:00 +0: native desktop camera plugin registers and enumerates devices
+00:00 +1: gallery CPU camera: RGBA/BGRA, switching, stop/start and cleanup
+00:04 +2: (tearDownAll)
+00:04 +2: All tests passed!

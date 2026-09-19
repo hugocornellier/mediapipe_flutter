@@ -1,0 +1,632 @@
+Running build hooks...File modified during build. Build must be rerun.
+Running build hooks...00:00 +0: loading test/face_detector_test.dart
+00:00 +0: test/face_detector_test.dart: cpu (setUpAll)
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: Logging before InitGoogle() is written to STDERR
+W0000 00:00:1789742940.376752    5449 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +0: test/face_detector_test.dart: cpu task exposes the selected delegate
+00:00 +1: test/face_detector_test.dart: cpu official reference: landmark-ex1.jpg
+00:00 +2: test/face_detector_test.dart: cpu official reference: face-landmarks-ex1.jpeg
+00:00 +3: test/face_detector_test.dart: cpu official reference: iris-detection-ex1.jpg
+00:00 +4: test/face_detector_test.dart: cpu official reference: iris-detection-ex2.jpg
+00:00 +5: test/face_detector_test.dart: cpu official reference: group-shot-bounding-box-ex1.jpeg
+00:00 +6: test/native_assets/wheel_library_test.dart: linux/x64 cold extraction preserves notices and ignores Python paths
+00:00 +7: test/native_assets/wheel_library_test.dart: linux/x64 cold extraction preserves notices and ignores Python paths
+00:00 +8: test/native_assets/wheel_library_test.dart: linux/x64 cold extraction preserves notices and ignores Python paths
+00:00 +9: test/native_assets/wheel_library_test.dart: linux/x64 cold extraction preserves notices and ignores Python paths
+00:00 +10: test/native_assets/wheel_library_test.dart: linux/x64 cold extraction preserves notices and ignores Python paths
+00:00 +11: test/native_assets/wheel_library_test.dart: linux/x64 cold extraction preserves notices and ignores Python paths
+W0000 00:00:1789742940.967372    5456 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +12: test/face_detector_test.dart: cpu model bytes produce the same detections
+00:00 +13: test/face_detector_test.dart: cpu model bytes produce the same detections
+00:00 +14: test/face_detector_test.dart: cpu model bytes produce the same detections
+00:00 +15: test/face_detector_test.dart: cpu model bytes produce the same detections
+00:00 +16: test/face_detector_test.dart: cpu model bytes produce the same detections
+00:00 +17: test/face_detector_test.dart: cpu model bytes produce the same detections
+00:00 +18: test/native_assets/wheel_library_test.dart: windows/x64 offline cache validates all files and repairs corrupt notices
+W0000 00:00:1789742941.067510    5461 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +19: test/face_detector_test.dart: cpu queued requests complete before idempotent disposal
+00:00 +20: test/face_detector_test.dart: cpu queued requests complete before idempotent disposal
+00:00 +21: test/face_detector_test.dart: cpu queued requests complete before idempotent disposal
+00:00 +22: test/face_detector_test.dart: cpu queued requests complete before idempotent disposal
+00:00 +23: test/face_detector_test.dart: cpu missing image reports a native error and leaves the task usable
+00:00 +24: test/face_detector_test.dart: cpu invalid model initialization fails promptly without poisoning later tasks
+ERROR: The model is not a valid Flatbuffer buffer
+W0000 00:00:1789742941.223562    5472 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +25: test/face_detector_test.dart: cpu invalid input is rejected before crossing the native boundary
+00:01 +26: test/face_detector_test.dart: cpu pixel input owns an immutable snapshot
+00:01 +27: test/face_detector_test.dart: cpu video sequence matches the official VIDEO-mode reference
+W0000 00:00:1789742941.340223    5479 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +28: test/landmark_tasks_test.dart: (setUpAll)
+W0000 00:00:1789742941.452586    5484 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +29: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +30: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +31: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +32: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33: test/face_detector_test.dart: gpu task exposes the selected delegate
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~1: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~1: test/face_detector_test.dart: gpu official reference: landmark-ex1.jpg
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~2: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~2: test/face_detector_test.dart: gpu official reference: face-landmarks-ex1.jpeg
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~3: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~3: test/face_detector_test.dart: gpu official reference: iris-detection-ex1.jpg
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~4: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~4: test/face_detector_test.dart: gpu official reference: iris-detection-ex2.jpg
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~5: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~5: test/face_detector_test.dart: gpu official reference: group-shot-bounding-box-ex1.jpeg
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~6: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~6: test/face_detector_test.dart: gpu official reference: rgb
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~7: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~7: test/face_detector_test.dart: gpu official reference: rgba
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~8: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~8: test/face_detector_test.dart: gpu official reference: rgb-pair
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~9: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~9: test/face_detector_test.dart: gpu official reference: rgb-rotated
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~10: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~10: test/face_detector_test.dart: gpu official reference: blank
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~11: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~11: test/face_detector_test.dart: gpu model bytes produce the same detections
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~12: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~12: test/face_detector_test.dart: gpu queued requests complete before idempotent disposal
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~13: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~13: test/face_detector_test.dart: gpu missing image reports a native error and leaves the task usable
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~14: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~14: test/face_detector_test.dart: gpu invalid model initialization fails promptly without poisoning later tasks
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~15: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~15: test/face_detector_test.dart: gpu invalid input is rejected before crossing the native boundary
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~16: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~16: test/face_detector_test.dart: gpu pixel input owns an immutable snapshot
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~17: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~17: test/face_detector_test.dart: gpu video sequence matches the official VIDEO-mode reference
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~18: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~18: test/face_detector_test.dart: gpu video timestamps and mode mismatches fail without poisoning the task
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~19: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~19: test/face_detector_test.dart: gpu padded rgb camera pixels preserve official detections
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~20: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~20: test/face_detector_test.dart: gpu padded rgba camera pixels preserve official detections
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~21: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~21: test/face_detector_test.dart: gpu padded bgra camera pixels preserve official detections
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~22: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +33 ~22: test/face_detector_test.dart: gpu invalid camera strides fail before native allocation
+  Skip: GPU face inference is validated on macOS only.
+00:01 +33 ~23: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +34 ~23: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +34 ~23: test/face_detector_test.dart: (tearDownAll)
+MEDIAPIPE_REFERENCE_DELTAS face_detector {"cpu":{"bounding_box":{"maximum_absolute_error":0.0,"values":144,"path":null,"official":null,"measured":null},"categories":{"maximum_absolute_error":0.0,"values":36,"path":null,"official":null,"measured":null},"keypoints":{"maximum_absolute_error":0.0,"values":432,"path":null,"official":null,"measured":null}}}
+00:01 +34 ~23: test/landmark_tasks_test.dart: (setUpAll)
+00:01 +34 ~23: test/segmenter_tasks_test.dart: (setUpAll)
+W0000 00:00:1789742941.921840    5492 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742941.939415    5493 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +34 ~23: test/landmark_tasks_test.dart: official hand / file / thumb_up.jpg / {num_hands: 2}
+W0000 00:00:1789742941.978789    5499 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742941.983524    5491 landmark_projection_calculator.cc:81] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+00:01 +35 ~23: test/segmenter_tasks_test.dart: official image / rgb / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742942.100401    5505 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742942.117669    5505 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +36 ~23: test/segmenter_tasks_test.dart: official image / rgb / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742942.300863    5511 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742942.317253    5512 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:02 +37 ~23: test/landmark_tasks_test.dart: official hand / file / pose.jpg / {num_hands: 2}
+W0000 00:00:1789742942.400459    5516 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:02 +38 ~23: test/segmenter_tasks_test.dart: official image / rgba / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742942.442529    5521 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742942.459022    5522 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:02 +39 ~23: test/landmark_tasks_test.dart: official hand / rgb / thumb_up.jpg / {num_hands: 2}
+W0000 00:00:1789742942.749943    5526 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:02 +40 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742942.833033    5534 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742942.848147    5534 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:02 +41 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742943.004924    5540 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.015372    5541 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:02 +42 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742943.127713    5546 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.139323    5546 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:03 +43 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+I0000 00:00:1789742943.473482    5470 hand_gesture_recognizer_graph.cc:257] Custom gesture classifier is not defined.
+W0000 00:00:1789742943.484689    5552 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.494427    5553 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.495377    5552 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.495484    5552 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:03 +44 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+I0000 00:00:1789742943.602698    5487 hand_gesture_recognizer_graph.cc:257] Custom gesture classifier is not defined.
+W0000 00:00:1789742943.612891    5558 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.619015    5558 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.619687    5557 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.619769    5557 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:03 +45 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+I0000 00:00:1789742943.741191    5470 hand_gesture_recognizer_graph.cc:257] Custom gesture classifier is not defined.
+W0000 00:00:1789742943.751440    5565 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.761676    5566 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.762252    5564 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.762345    5564 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:03 +46 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+I0000 00:00:1789742943.881641    5487 hand_gesture_recognizer_graph.cc:257] Custom gesture classifier is not defined.
+W0000 00:00:1789742943.891538    5571 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.901835    5572 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.902453    5572 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742943.902524    5572 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:03 +47 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+I0000 00:00:1789742944.210338    5470 hand_gesture_recognizer_graph.cc:257] Custom gesture classifier is not defined.
+W0000 00:00:1789742944.221812    5577 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.228023    5577 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.228533    5579 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.228595    5579 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:04 +48 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+I0000 00:00:1789742944.387061    5470 hand_gesture_recognizer_graph.cc:257] Custom gesture classifier is not defined.
+W0000 00:00:1789742944.398563    5583 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.408859    5584 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.409447    5584 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.409519    5584 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:04 +49 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+I0000 00:00:1789742944.501804    5470 hand_gesture_recognizer_graph.cc:257] Custom gesture classifier is not defined.
+W0000 00:00:1789742944.513041    5589 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.522670    5590 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.523231    5588 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.523306    5588 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:04 +50 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742944.695258    5595 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.705695    5594 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:04 +51 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742944.844547    5601 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742944.856352    5600 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:04 +52 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742945.004798    5607 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742945.015487    5607 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:04 +53 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742945.296165    5613 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742945.309831    5613 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:05 +54 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742945.610538    5619 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742945.623039    5620 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:05 +55 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742945.914983    5625 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742945.932241    5626 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:05 +56 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742946.126404    5631 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.136639    5632 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:06 +57 ~23: test/landmark_tasks_test.dart: official pose / rotated / pose.jpg / {output_segmentation_masks: true}
+W0000 00:00:1789742946.447995    5636 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:06 +58 ~23: test/segmenter_tasks_test.dart: official image / blank / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742946.594348    5642 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.605820    5642 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.607957    5640 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.607998    5643 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.609723    5642 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.618048    5640 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.618158    5643 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:06 +59 ~23: test/segmenter_tasks_test.dart: official image / blank / {output_confidence_masks: true, output_category_mask: false}
+00:06 +60 ~23: test/landmark_tasks_test.dart: official holistic / file / right_hands.jpg / {output_face_blendshapes: true, output_segmentation_mask: true}
+W0000 00:00:1789742946.778412    5652 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.788600    5647 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.798663    5647 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.800799    5646 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.801233    5649 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.801687    5647 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.810813    5646 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742946.811016    5648 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:06 +61 ~23: test/segmenter_tasks_test.dart: official image / rotated / {output_confidence_masks: true, output_category_mask: false}
+00:06 +62 ~23: test/landmark_tasks_test.dart: official holistic / file / pose.jpg / {output_face_blendshapes: true, output_segmentation_mask: true}
+W0000 00:00:1789742947.108301    5664 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.161839    5658 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.172067    5657 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.173597    5659 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.174056    5657 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.174113    5658 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.184211    5659 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.188407    5660 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:06 +63 ~23: test/landmark_tasks_test.dart: official holistic / file / pose.jpg / {output_face_blendshapes: true, output_segmentation_mask: true}
+W0000 00:00:1789742947.238611    5668 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:07 +64 ~23: test/landmark_tasks_test.dart: official holistic / file / pose.jpg / {output_face_blendshapes: true, output_segmentation_mask: true}
+W0000 00:00:1789742947.353914    5672 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:07 +65 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: false, output_category_mask: true}
+00:07 +66 ~23: test/landmark_tasks_test.dart: official holistic / rgb / pose.jpg / {output_face_blendshapes: true, output_segmentation_mask: true}
+W0000 00:00:1789742947.637431    5682 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.660972    5677 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.672713    5677 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.674156    5679 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.674294    5676 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.676048    5678 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.683380    5679 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742947.683634    5676 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:07 +67 ~23: test/landmark_tasks_test.dart: official holistic / rgb / pose.jpg / {output_face_blendshapes: true, output_segmentation_mask: true}
+W0000 00:00:1789742947.746109    5688 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:07 +68 ~23: test/landmark_tasks_test.dart: official holistic / rgb / pose.jpg / {output_face_blendshapes: true, output_segmentation_mask: true}
+W0000 00:00:1789742947.864235    5692 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:07 +69 ~23: test/segmenter_tasks_test.dart: official image / rgb / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742947.988092    5698 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.006061    5696 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.008134    5696 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.008248    5697 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.010094    5698 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.018499    5697 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.022761    5698 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:07 +70 ~23: test/landmark_tasks_test.dart: official holistic / rgba / pose.jpg / {output_face_blendshapes: true, output_segmentation_mask: true}
+W0000 00:00:1789742948.237863    5703 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:07 +71 ~23: test/segmenter_tasks_test.dart: official image / rgba / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742948.347177    5709 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.358054    5709 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.359520    5708 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.360255    5709 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.360267    5707 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.370698    5707 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.372897    5709 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:08 +72 ~23: test/segmenter_tasks_test.dart: official image / rgba / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742948.563945    5715 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.573998    5715 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.575404    5716 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.576502    5713 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.576570    5714 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.582738    5714 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742948.583607    5716 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:08 +73 ~23: test/landmark_tasks_test.dart: official holistic / rotated / pose.jpg / {output_face_blendshapes: true, output_segmentation_mask: true}
+W0000 00:00:1789742948.595358    5719 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:09 +74 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742949.381926    5726 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.397986    5723 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.399981    5723 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.400150    5725 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.400413    5726 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.408772    5726 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.410509    5725 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:09 +75 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742949.563815    5729 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.574302    5731 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.576490    5731 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.578279    5730 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.576490    5729 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.590343    5730 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742949.591809    5731 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:09 +76 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742950.092404    5735 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.110023    5737 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.112130    5737 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.112163    5736 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.114994    5735 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.122215    5737 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.129135    5736 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:10 +77 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742950.556700    5742 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.574991    5741 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.577286    5743 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.577296    5741 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.579057    5742 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.587524    5743 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742950.592548    5741 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:10 +78 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742951.007423    5749 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.017819    5749 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.019767    5751 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.019931    5748 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.021309    5749 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.028782    5750 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.030363    5748 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:10 +79 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742951.345782    5755 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.355821    5755 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.357861    5755 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.358043    5754 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.358086    5757 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.366731    5756 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.368435    5757 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:11 +80 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742951.791957    5761 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.807681    5760 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.809708    5760 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.809857    5763 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.809860    5761 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.817961    5763 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742951.820029    5761 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:11 +81 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742952.226149    5768 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.236709    5769 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:12 +82 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742952.423156    5774 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.433583    5775 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.545067    5782 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.555571    5783 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:12 +83 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+I0000 00:00:1789742952.631665    5487 hand_gesture_recognizer_graph.cc:257] Custom gesture classifier is not defined.
+W0000 00:00:1789742952.641959    5788 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.647892    5788 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.648414    5788 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.648486    5788 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:12 +84 ~23: test/segmenter_tasks_test.dart: official image / file / {output_confidence_masks: true, output_category_mask: true}
+I0000 00:00:1789742952.848224    5487 hand_gesture_recognizer_graph.cc:257] Custom gesture classifier is not defined.
+W0000 00:00:1789742952.859396    5795 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.865466    5796 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.865958    5795 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.866015    5795 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:12 +85 ~23: test/landmark_tasks_test.dart: gesture native input/model errors leave later inference usable
+W0000 00:00:1789742952.914384    5801 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+I0000 00:00:1789742952.969051    5470 hand_gesture_recognizer_graph.cc:257] Custom gesture classifier is not defined.
+W0000 00:00:1789742952.982878    5809 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.988984    5809 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.989507    5809 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742952.989588    5809 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:12 +86 ~23: test/segmenter_tasks_test.dart: official image / blank / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742953.136826    5815 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.147092    5814 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:13 +87 ~23: test/segmenter_tasks_test.dart: official image / blank / {output_confidence_masks: true, output_category_mask: true}
+00:13 +88 ~23: test/landmark_tasks_test.dart: pose native input/model errors leave later inference usable
+W0000 00:00:1789742953.469038    5825 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.475214    5821 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.485526    5822 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.627757    5834 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.644407    5835 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:13 +89 ~23: test/segmenter_tasks_test.dart: official image / rotated / {output_confidence_masks: true, output_category_mask: true}
+W0000 00:00:1789742953.779391    5841 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.795546    5839 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.798134    5840 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.798256    5842 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.798361    5839 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.805222    5842 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742953.810817    5839 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:13 +90 ~23: test/landmark_tasks_test.dart: holistic video matches tracked and empty frames through queued disposal
+W0000 00:00:1789742953.903168    5845 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:13 +91 ~23: test/landmark_tasks_test.dart: holistic video matches tracked and empty frames through queued disposal
+W0000 00:00:1789742954.116490    5850 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:13 +92 ~23: test/segmenter_tasks_test.dart: official interactive / rgba / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742954.223477    5856 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.234401    5856 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.235991    5857 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.236327    5855 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.237751    5856 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.243269    5858 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.249859    5856 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:13 +93 ~23: test/landmark_tasks_test.dart: holistic native input/model errors leave later inference usable
+W0000 00:00:1789742954.294216    5861 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.416579    5868 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.426937    5871 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.429047    5870 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.429181    5868 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.430339    5871 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.439830    5868 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742954.440450    5871 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:14 +94 ~23: test/segmenter_tasks_test.dart: official interactive / file / {output_confidence_masks: true, output_category_mask: false}
+00:14 +95 ~23: test/segmenter_tasks_test.dart: official interactive / file / {output_confidence_masks: true, output_category_mask: false}
+00:14 +95 ~23: test/landmark_tasks_test.dart: (tearDownAll)
+MEDIAPIPE_REFERENCE_DELTAS hand {"cpu":{"landmarks":{"maximum_absolute_error":0.0,"values":1134,"path":null,"official":null,"measured":null},"other":{"maximum_absolute_error":0.0,"values":9,"path":null,"official":null,"measured":null}}}
+MEDIAPIPE_REFERENCE_DELTAS gesture {"cpu":{"landmarks":{"maximum_absolute_error":0.0,"values":1134,"path":null,"official":null,"measured":null},"other":{"maximum_absolute_error":0.0,"values":18,"path":null,"official":null,"measured":null}}}
+MEDIAPIPE_REFERENCE_DELTAS pose {"cpu":{"landmarks":{"maximum_absolute_error":0.0,"values":1980,"path":null,"official":null,"measured":null},"other":{"maximum_absolute_error":2.4751362487362982e-9,"values":12742,"path":"result.segmentation_masks[0].mean","official":0.07147276401519775,"measured":0.0714727615400615}}}
+MEDIAPIPE_REFERENCE_DELTAS holistic {"cpu":{"landmarks":{"maximum_absolute_error":0.0,"values":6150,"path":null,"official":null,"measured":null},"other":{"maximum_absolute_error":2.2429502782861377e-8,"values":22115,"path":"result.segmentation_mask.mean","official":0.23887020349502563,"measured":0.23887018106552285}}}
+00:14 +95 ~23: test/segmenter_tasks_test.dart: official interactive / file / {output_confidence_masks: true, output_category_mask: false}
+00:14 +96 ~23: test/segmenter_tasks_test.dart: official interactive / blank / {output_confidence_masks: true, output_category_mask: false}
+W0000 00:00:1789742954.671780    5878 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:14 +97 ~23: test/image_tasks_test.dart: CPU inference (setUpAll)
+W0000 00:00:1789742954.854841    5884 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:14 +98 ~23: test/image_tasks_test.dart: CPU inference (setUpAll)
+W0000 00:00:1789742955.043840    5889 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:14 +98 ~23: test/segmenter_tasks_test.dart: official interactive / rgb / {output_confidence_masks: false, output_category_mask: true}
+W0000 00:00:1789742955.092090    5896 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:14 +99 ~23: test/image_tasks_test.dart: CPU inference official classifier / rgb / {max_results: 3, score_threshold: 0.0}
+W0000 00:00:1789742955.211506    5901 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:14 +100 ~23: test/segmenter_tasks_test.dart: official interactive / rgba / {output_confidence_masks: false, output_category_mask: true}
+W0000 00:00:1789742955.241374    5906 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:15 +101 ~23: test/segmenter_tasks_test.dart: official interactive / rgba / {output_confidence_masks: false, output_category_mask: true}
+W0000 00:00:1789742955.369877    5911 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:15 +102 ~23: test/image_tasks_test.dart: CPU inference official classifier / file / {max_results: 3, score_threshold: 0.0}
+W0000 00:00:1789742955.420888    5915 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:15 +103 ~23: test/image_tasks_test.dart: CPU inference official classifier / file / {max_results: 3, score_threshold: 0.0}
+00:15 +104 ~23: test/segmenter_tasks_test.dart: official interactive / blank / {output_confidence_masks: false, output_category_mask: true}
+W0000 00:00:1789742955.726760    5920 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742955.727980    5924 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:15 +105 ~23: test/segmenter_tasks_test.dart: official interactive / blank / {output_confidence_masks: false, output_category_mask: true}
+W0000 00:00:1789742955.841310    5929 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:15 +106 ~23: test/image_tasks_test.dart: CPU inference official classifier / rotated / {max_results: 3, score_threshold: 0.0}
+W0000 00:00:1789742955.890135    5933 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:15 +107 ~23: test/segmenter_tasks_test.dart: official interactive / rotated / {output_confidence_masks: false, output_category_mask: true}
+W0000 00:00:1789742955.959992    5938 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:15 +108 ~23: test/image_tasks_test.dart: CPU inference official classifier / roi / {max_results: 3, score_threshold: 0.0}
+W0000 00:00:1789742956.044253    5942 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:15 +109 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: false} matches the official frames through queued disposal
+00:16 +110 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: false} matches the official frames through queued disposal
+00:16 +111 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: false} matches the official frames through queued disposal
+00:16 +112 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: false} matches the official frames through queued disposal
+00:16 +113 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: false} matches the official frames through queued disposal
+00:16 +114 ~23: test/image_tasks_test.dart: CPU inference official embedder / rotated / {l2_normalize: false, quantize: false}
+00:16 +115 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: false, output_category_mask: true} matches the official frames through queued disposal
+W0000 00:00:1789742956.720979    5968 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:16 +116 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: false, output_category_mask: true} matches the official frames through queued disposal
+00:16 +117 ~23: test/image_tasks_test.dart: CPU inference official embedder / rgb / {l2_normalize: true, quantize: false}
+W0000 00:00:1789742956.923487    5980 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:16 +118 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: true} matches the official frames through queued disposal
+00:16 +119 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: true} matches the official frames through queued disposal
+00:16 +120 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: true} matches the official frames through queued disposal
+00:16 +121 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: true} matches the official frames through queued disposal
+00:17 +122 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: true} matches the official frames through queued disposal
+00:17 +123 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: true} matches the official frames through queued disposal
+00:17 +124 ~23: test/segmenter_tasks_test.dart: image segmenter video / {output_confidence_masks: true, output_category_mask: true} matches the official frames through queued disposal
+00:17 +125 ~23: test/image_tasks_test.dart: CPU inference official embedder / rgba / {l2_normalize: true, quantize: true}
+00:17 +126 ~23: test/image_tasks_test.dart: CPU inference official embedder / rgba / {l2_normalize: true, quantize: true}
+W0000 00:00:1789742957.617585    6016 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:17 +127 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:17 +128 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:17 +129 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:17 +130 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:17 +131 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+W0000 00:00:1789742958.136166    6037 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:17 +132 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:18 +133 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+W0000 00:00:1789742958.396043    6046 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+ERROR: The model is not a valid Flatbuffer buffer
+00:18 +134 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:18 +135 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:18 +136 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:18 +137 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:18 +138 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:19 +139 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:19 +140 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:19 +141 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+ERROR: The model is not a valid Flatbuffer buffer
+00:19 +142 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:19 +143 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:19 +144 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:19 +145 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +146 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +147 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +148 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +149 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +150 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +151 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +152 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~23: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~23: test/object_detector_test.dart: gpu task exposes the selected delegate
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~24: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~24: test/object_detector_test.dart: gpu queued requests complete before idempotent disposal
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~25: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~25: test/object_detector_test.dart: gpu native input errors leave the detector usable
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~26: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~26: test/object_detector_test.dart: gpu invalid model initialization fails without poisoning later tasks
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~27: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~27: test/object_detector_test.dart: gpu matches the official result for landmark-ex1.jpg
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~28: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~28: test/object_detector_test.dart: gpu matches the official result for face-landmarks-ex1.jpeg
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~29: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~29: test/object_detector_test.dart: gpu matches the official result for iris-detection-ex1.jpg
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~30: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~30: test/object_detector_test.dart: gpu matches the official result for iris-detection-ex2.jpg
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~31: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~31: test/object_detector_test.dart: gpu matches the official result for group-shot-bounding-box-ex1.jpeg
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~32: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~32: test/object_detector_test.dart: gpu matches the official result for rgb
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~33: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~33: test/object_detector_test.dart: gpu matches the official result for rgba
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~34: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~34: test/object_detector_test.dart: gpu matches the official result for rgb-rotated
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~35: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~35: test/object_detector_test.dart: gpu matches the official result for blank
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~36: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~36: test/object_detector_test.dart: gpu video mode reproduces the official frame sequence
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~37: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +153 ~37: test/object_detector_test.dart: gpu image mode rejects a video call
+  Skip: GPU object inference is validated on macOS only.
+00:20 +153 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +154 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +155 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +156 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +157 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +158 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +159 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +160 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +161 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +162 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +163 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+00:20 +164 ~38: test/segmenter_tasks_test.dart: image native input/model errors leave later inference usable
+ERROR: The model is not a valid Flatbuffer buffer
+W0000 00:00:1789742961.370280    6097 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:21 +165 ~38: test/face_landmarker_test.dart: cpu (setUpAll)
+W0000 00:00:1789742961.456348    6102 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:21 +165 ~38: test/segmenter_tasks_test.dart: interactive native input/model errors leave later inference usable
+W0000 00:00:1789742961.513758    6104 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1789742961.518443    6109 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742961.533256    6111 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+ERROR: The model is not a valid Flatbuffer buffer
+W0000 00:00:1789742961.834459    6116 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:21 +166 ~38: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+W0000 00:00:1789742961.910533    6121 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742962.054577    6126 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:21 +167 ~38: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:21 +168 ~38: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:21 +169 ~38: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+W0000 00:00:1789742962.230832    6091 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1789742962.237190    6131 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742962.245339    6132 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:22 +170 ~38: test/face_landmarker_test.dart: cpu official VIDEO reference with 2 faces
+W0000 00:00:1789742962.376804    6091 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1789742962.380590    6137 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742962.388567    6137 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:22 +171 ~38: test/face_landmarker_test.dart: cpu model bytes are owned and optional outputs default to empty
+W0000 00:00:1789742962.552336    6091 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1789742962.556415    6142 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742962.566178    6144 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:22 +172 ~38: test/face_landmarker_test.dart: cpu detector and landmarker coexist in one process with independent lifetimes
+W0000 00:00:1789742962.661250    6149 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742962.662772    6104 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1789742962.666146    6154 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742962.677109    6155 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:22 +173 ~38: test/face_landmarker_test.dart: cpu padded rgb camera frames preserve the landmark coordinates
+W0000 00:00:1789742962.944641    6104 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1789742962.948391    6159 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742962.956572    6159 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:22 +174 ~38: test/face_landmarker_test.dart: cpu padded rgba camera frames preserve the landmark coordinates
+W0000 00:00:1789742963.050936    6091 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1789742963.054628    6166 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742963.062920    6167 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:22 +175 ~38: test/face_landmarker_test.dart: cpu padded bgra camera frames preserve the landmark coordinates
+W0000 00:00:1789742963.143753    6104 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1789742963.147406    6172 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742963.155803    6171 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:22 +176 ~38: test/face_landmarker_test.dart: cpu mode, timestamps, rotation and native errors leave video task usable
+W0000 00:00:1789742963.254588    6091 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1789742963.258347    6178 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742963.266642    6179 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:25 +177 ~38: test/face_landmarker_test.dart: cpu invalid initialization fails promptly; later creation still succeeds
+W0000 00:00:1789742965.341574    6091 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1789742965.345055    6186 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1789742965.353353    6187 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:25 +178 ~38: test/face_landmarker_test.dart: cpu options reject malformed model sources, face counts and thresholds
+00:25 +179 ~38: test/face_landmarker_test.dart: cpu (tearDownAll)
+00:25 +179 ~38: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~39: test/face_landmarker_test.dart: gpu official VIDEO reference with 1 faces
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~40: test/face_landmarker_test.dart: gpu official VIDEO reference with 2 faces
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~41: test/face_landmarker_test.dart: gpu model bytes are owned and optional outputs default to empty
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~42: test/face_landmarker_test.dart: gpu detector and landmarker coexist in one process with independent lifetimes
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~43: test/face_landmarker_test.dart: gpu padded rgb camera frames preserve the landmark coordinates
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~44: test/face_landmarker_test.dart: gpu padded rgba camera frames preserve the landmark coordinates
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~45: test/face_landmarker_test.dart: gpu padded bgra camera frames preserve the landmark coordinates
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~46: test/face_landmarker_test.dart: gpu mode, timestamps, rotation and native errors leave video task usable
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~47: test/face_landmarker_test.dart: gpu invalid initialization fails promptly; later creation still succeeds
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~48: test/face_landmarker_test.dart: gpu options reject malformed model sources, face counts and thresholds
+  Skip: GPU face inference is validated on macOS only.
+00:25 +179 ~49: test/face_landmarker_test.dart: CPU is the default delegate
+00:25 +180 ~49: test/face_landmarker_test.dart: (tearDownAll)
+MEDIAPIPE_REFERENCE_DELTAS face_landmarker {"cpu":{"face_blendshapes":{"maximum_absolute_error":0.0,"values":1144,"path":null,"official":null,"measured":null},"face_landmarks":{"maximum_absolute_error":0.0,"values":32982,"path":null,"official":null,"measured":null},"facial_transformation_matrixes":{"maximum_absolute_error":0.0,"values":352,"path":null,"official":null,"measured":null}}}
+00:25 +180 ~49: All tests passed!

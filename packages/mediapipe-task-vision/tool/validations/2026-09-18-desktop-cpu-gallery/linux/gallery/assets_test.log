@@ -1,0 +1,7 @@
+00:00 +0: loading /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/integration_test/assets_test.dart
+Building Linux application...                                   
+✓ Built build/linux/x64/debug/bundle/mediapipe_gallery
+00:00 +0: every visible tile can load its model and sample
+00:00 +1: every live demo loads its model before touching a camera
+00:00 +2: (tearDownAll)
+00:00 +2: All tests passed!

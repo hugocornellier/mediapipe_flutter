@@ -1,0 +1,20 @@
+File modified during build. Build must be rerun.
+
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_frame_test.dart: YUV planes retain odd dimensions, independent row/pixel strides and truncated padding
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_frame_test.dart: YUV chroma order produces red rather than blue
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_frame_test.dart: incomplete plane is rejected
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: uprightRotationDegrees leaves desktop frames alone
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: uprightRotationDegrees turns a landscape iOS frame upright only in portrait
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: uprightRotationDegrees leaves an already portrait-shaped iOS frame alone
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: uprightRotationDegrees combines sensor and device rotation on Android, signed by lens
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: previewIsMirrored flips only where the preview and the buffers disagree
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: previewAspectRatio inverts the sensor ratio in portrait, matching CameraPreview
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform maps a quarter turn the way MediaPipe rotates the frame
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform is the identity when nothing rotates or mirrors
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform mirrors x and leaves y alone
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform rotating a corner three quarters lands on the opposite corner
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform half a turn sends each corner to its diagonal
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform covers the box and centres the axis that overflows
+✅ D:/a/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform survives a frame or a box with no area
+
+🎉 16 tests passed.

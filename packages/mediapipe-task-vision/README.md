@@ -9,14 +9,20 @@ blendshape scores and 4×4 face transformation matrices.
 
 An **arm64 iOS simulator CPU** development target is also available, using the
 same Dart API and official task graphs. It currently requires a local native
-build; simulator archives are not published. Physical iOS devices and simulator
-GPU inference are not supported yet. See [the simulator guide](tool/IOS_SIMULATOR.md).
+build; simulator archives are not published. The opt-in
+[official iOS SDK adapter](tool/IOS_OFFICIAL_SDK.md) also provides CPU/Metal
+face tasks, including physical-device camera validation. See
+[the simulator guide](tool/IOS_SIMULATOR.md) for the source-built CPU path.
 
 CI builds the iOS simulator face runtime from pinned source and tests a fresh
 Flutter consumer. Android face CI builds x86_64 from source and tests an emulator
-with debug/release APKs. Android requires a verified local native build; it has
-no public runtime download. See [the Android guide](tool/ANDROID.md). Physical
-mobile devices, camera use and mobile GPU inference remain unvalidated.
+with debug/release APKs. That source-built path requires a verified local native
+build; see [the Android guide](tool/ANDROID.md). Flutter FaceLandmarker apps can
+instead use the [official Android SDK plugin](../mediapipe-task-vision-android/README.md),
+which provides CPU/GPU IMAGE/VIDEO inference without a local C++ build.
+The physical Pixel 7 / Android 13 Test Lab campaign validates both delegates,
+including front/back camera frames and delegate switching; see
+[the Test Lab guide](../../gallery/tool/ANDROID_FACE_TESTLAB.md).
 
 **MagicTouch Interactive Segmenter** is an optional macOS arm64 CPU task using
 Google's modern stateful 1.0.1 API and official int8 version-1 task bundle.

@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name='' hostname='localhost' tests='3' failures='0' skipped='0' errors='0' time='0.356' timestamp='2026-09-18T06:51:07'>
+    <properties />
+    <testcase name='official Android CPU and GPU: face pixels, padding, optional outputs' classname='com.example.mediapipe_gallery.MainActivityTest' time='0.038' />
+    <testcase name='official Android VIDEO: tracking, rotation, queued frames, cleanup' classname='com.example.mediapipe_gallery.MainActivityTest' time='0.318' />
+    <testcase name='physical Android camera: CPU to GPU to CPU, front and back' classname='com.example.mediapipe_gallery.MainActivityTest' time='0.0' />
+  </testsuite>
+</testsuites>

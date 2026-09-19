@@ -1,0 +1,6 @@
+00:00 +0: loading D:/a/mediapipe_flutter/mediapipe_flutter/gallery/integration_test/runtime_test.dart
+Building Windows application...                                    14.4s
+√ Built build\windows\x64\runner\Debug\mediapipe_gallery.exe
+00:00 +0: tiles that use different native assets coexist
+00:01 +1: (tearDownAll)
+00:01 +1: All tests passed!

@@ -1,0 +1,6 @@
+00:00 +0: loading D:/a/mediapipe_flutter/mediapipe_flutter/build/codex-tmp/desktop-windows-7lzx1f4x/app/integration_test/face_test.dart
+Building Windows application...                                    38.5s
+√ Built build\windows\x64\runner\Debug\mediapipe_desktop_smoke.exe
+00:00 +0: bundled cpu face runtimes process a real portrait together
+00:00 +1: (tearDownAll)
+00:00 +1: All tests passed!

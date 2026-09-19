@@ -1,0 +1,7 @@
+00:00 +0: loading D:/a/mediapipe_flutter/mediapipe_flutter/gallery/integration_test/desktop_cpu_camera_test.dart
+Building Windows application...                                    14.2s
+√ Built build\windows\x64\runner\Debug\mediapipe_gallery.exe
+00:00 +0: native desktop camera plugin registers and enumerates devices
+00:00 +1: gallery CPU camera: RGBA/BGRA, switching, stop/start and cleanup
+00:03 +2: (tearDownAll)
+00:03 +2: All tests passed!

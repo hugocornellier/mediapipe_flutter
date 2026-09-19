@@ -1,0 +1,34 @@
+{
+  "run_id": 35358366302,
+  "source_commit": "1197b103b69ca5237a26eabf49fd4df94d9a95b9",
+  "branch": "codex/windows-linux-cpu-gallery-20260918",
+  "run_url": "https://github.com/hugocornellier/mediapipe_flutter/actions/runs/35358366302",
+  "platforms": {
+    "linux": {
+      "job_id": 105643216735,
+      "artifact_id": 10553671536,
+      "archive_sha256": "b573b39f9b88737b49b9271c93cb8325155cc3d8dd38de9327599b80d1f1fd65"
+    },
+    "windows": {
+      "job_id": 105643216347,
+      "artifact_id": 10554076047,
+      "archive_sha256": "639ac82cb8648d9b324b18bd6650ce47bbbd8ef6d73818157636af576872e610"
+    }
+  },
+  "tested_source_sha256": {
+    ".github/workflows/desktop.yaml": "ec575af59830020342ac3611f93e6935134805224b0e4e9d2412ad3dea84ccec",
+    "gallery/tool/prepare.py": "52fa81301d60bde60db5d19e67e530194033944fc9384c7a0cfd86b991fb00cd",
+    "gallery/tool/test_desktop.py": "e0932b9d12a1348ec8ce994d84e9cf7b0c021e5a10019a02d0af83e86bab9d36",
+    "gallery/integration_test/desktop_cpu_camera_test.dart": "34d6404f9cc2b20366cb196e1131e12318549b77ab676f2c07860d4119ac96c8",
+    "gallery/integration_test/runtime_test.dart": "567ba3083f67bac64849a77ee1c11dfedcf2a6f371e2c28a0adb41b92122296e",
+    "gallery/lib/catalog.dart": "0e3b9226dcc4ff48ee3861a51729bc0735a405d8bc646c22a034be797a2eb5bf",
+    "gallery/lib/live/live_camera_controller.dart": "1407ca88b03e332ae2fd9e2eaaebf3b3422fe76bc99d2feb9aae61f21faba71b",
+    "gallery/lib/live/camera_frame.dart": "94ca7a2be1dfba283a885edf2fa60559bf31e4e339b97548202f230d15a70fe7",
+    "gallery/lib/live_page.dart": "3a6e3a38611e0e00b6acc39ec5b694c2cb98af0e8676fac8fea956d733d89913",
+    "packages/mediapipe-task-vision/hook/build.dart": "c2f708a1ff420325953c679408fc50e4095f671d661bd952f84b0b0ff7ac0836",
+    "packages/mediapipe-task-vision/lib/src/io/native_desktop_runtime.dart": "00ca21aea251ce1d07d76cf7f8e0b0ea7e82a0178b117d6fbed7f368398dee50",
+    "packages/mediapipe-task-vision/lib/src/io/native_face_detector.dart": "f2a924e9313f422069e16bd79d5691e111f3967cee3f487166015d321e43b8c9",
+    "packages/mediapipe-task-vision/lib/src/io/native_face_landmarker.dart": "b525cdbcfb27cc91a7b2f6d9a1287a0de8f048ab26ad87771ba02d40da3e5383"
+  },
+  "physical_webcam_tested": false
+}

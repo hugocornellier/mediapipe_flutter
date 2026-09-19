@@ -1,0 +1,16 @@
+{
+  "target": "windows/x64",
+  "delegates": [
+    "cpu"
+  ],
+  "runtime": "libmediapipe.dll",
+  "runtime_sha256": "a8970c645c8c87c25ec9965cb5c898e803c6c42f7192b7de9a0541c62ae48cef",
+  "checks": [
+    "native-camera-registration-and-enumeration",
+    "assets",
+    "cross-task-runtime-coexistence",
+    "gallery-supplied-camera-rgba-bgra-switch-restart-cleanup",
+    "release-build"
+  ],
+  "physical_webcam_tested": false
+}

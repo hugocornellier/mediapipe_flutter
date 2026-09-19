@@ -1,0 +1,20 @@
+File modified during build. Build must be rerun.
+
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: uprightRotationDegrees leaves desktop frames alone
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: uprightRotationDegrees turns a landscape iOS frame upright only in portrait
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: uprightRotationDegrees leaves an already portrait-shaped iOS frame alone
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: uprightRotationDegrees combines sensor and device rotation on Android, signed by lens
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: previewIsMirrored flips only where the preview and the buffers disagree
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: previewAspectRatio inverts the sensor ratio in portrait, matching CameraPreview
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform maps a quarter turn the way MediaPipe rotates the frame
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform is the identity when nothing rotates or mirrors
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform mirrors x and leaves y alone
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform rotating a corner three quarters lands on the opposite corner
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform half a turn sends each corner to its diagonal
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform covers the box and centres the axis that overflows
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_geometry_test.dart: PreviewTransform survives a frame or a box with no area
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_frame_test.dart: YUV planes retain odd dimensions, independent row/pixel strides and truncated padding
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_frame_test.dart: YUV chroma order produces red rather than blue
+✅ /home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/test/camera_frame_test.dart: incomplete plane is rejected
+
+🎉 16 tests passed.

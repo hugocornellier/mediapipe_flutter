@@ -36,11 +36,13 @@ void main() {
   });
 
   test('targets without any runtime name the published ones', () {
+    // Both iOS slices now have a row, so neither belongs here. A target that
+    // has a row but no published archive fails later, and differently: the
+    // unpublished-release test below covers that.
     for (final (os, architecture) in [
       (OS.linux, Architecture.arm64),
       (OS.windows, Architecture.arm64),
       (OS.android, Architecture.arm),
-      (OS.iOS, Architecture.arm64),
       (OS.macOS, Architecture.x64),
     ]) {
       expect(
@@ -87,15 +89,20 @@ void main() {
     );
     expect(unpublished, isNotEmpty, reason: 'No unpublished row to exercise');
     for (final release in unpublished) {
+      // Build each row on its own target. The two iOS slices are separate
+      // artifacts built with different SDKs, so asking for the wrong one here
+      // silently exercises a different row than the one under test.
+      final simulator = release.target.startsWith('ios-simulator');
+      final device = release.target == 'ios/arm64';
       // `prebuilt: true` forces the download path, which an unpublished row
       // cannot satisfy. This keeps the test independent of whether the
       // maintainer running it happens to have a local source build.
       expect(
         testCodeBuildHook(
           mainMethod: hook.main,
-          targetOS: release.target.startsWith('ios-') ? OS.iOS : OS.macOS,
+          targetOS: simulator || device ? OS.iOS : OS.macOS,
           targetArchitecture: Architecture.arm64,
-          targetIOSSdk: IOSSdk.iPhoneSimulator,
+          targetIOSSdk: device ? IOSSdk.iPhoneOS : IOSSdk.iPhoneSimulator,
           userDefines: defines({
             'tasks': [release.tasks.first],
             'prebuilt': true,

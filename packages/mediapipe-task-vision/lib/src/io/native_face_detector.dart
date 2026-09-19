@@ -8,6 +8,7 @@ import '../../third_party/mediapipe/mediapipe_flutter_vision_bindings.dart'
 import '../interface/face_detector_types.dart';
 import 'pixel_conversion.dart';
 import 'native_ios_sdk.dart';
+import 'native_desktop_runtime.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceDetector {
@@ -21,6 +22,7 @@ final class NativeFaceDetector {
         'this runtime supports CPU only.',
       );
     }
+    loadOfficialDesktopRuntime();
     using((arena) {
       final native = arena<mp.MpFaceDetectorOptions>();
       final base = native.ref.base_options;

@@ -1,0 +1,16 @@
+{
+  "target": "linux/x64",
+  "delegates": [
+    "cpu"
+  ],
+  "runtime": "lib/libmediapipe.so",
+  "runtime_sha256": "35ef4187d381addb1309f0f9dedd32613127fa98d1ad1f5ddeea57595cdbcaf0",
+  "checks": [
+    "native-camera-registration-and-enumeration",
+    "assets",
+    "cross-task-runtime-coexistence",
+    "gallery-supplied-camera-rgba-bgra-switch-restart-cleanup",
+    "release-build"
+  ],
+  "physical_webcam_tested": false
+}

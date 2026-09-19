@@ -1,0 +1,6 @@
+00:00 +0: loading /home/runner/work/mediapipe_flutter/mediapipe_flutter/build/codex-tmp/desktop-linux-njww0ja8/app/integration_test/face_test.dart
+Building Linux application...                                   
+✓ Built build/linux/x64/debug/bundle/mediapipe_desktop_smoke
+00:00 +0: bundled cpu face runtimes process a real portrait together
+00:00 +1: (tearDownAll)
+00:00 +1: All tests passed!

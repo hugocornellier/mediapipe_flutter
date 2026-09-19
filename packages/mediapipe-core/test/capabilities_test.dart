@@ -101,7 +101,10 @@ void main() {
     () async {
       final platform = await currentTaskPlatform();
       expect(platform.operatingSystem, isNotEmpty);
-      if (platform.operatingSystem == 'macos') {
+      // Both Darwin systems answer kern.osproductversion, and a capability
+      // table that carries a minimum version needs it on either one.
+      if (platform.operatingSystem == 'macos' ||
+          platform.operatingSystem == 'ios') {
         expect(platform.version, matches(r'^\d+(\.\d+)*$'));
         expect(platform.architecture, anyOf('arm64', 'x64'));
       }

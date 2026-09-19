@@ -1,0 +1,15 @@
+{
+  "gallery/build/app/outputs/apk/debug/app-debug.apk": "16b20ee356bce7e503a52b9c17d07d6819f88b08c47256ae4dd0fdd092503cce",
+  "gallery/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk": "a0d955697a30be26ffca5d324967900f2cc7eced74b46cd8923e7a3cc548f749",
+  "gallery/integration_test/android_face_landmarker_test.dart": "a5c9feb66aca152e3532af657d6d8e32d9827b821013909760736383a499d109",
+  "gallery/lib/catalog.dart": "659fe406a259fe167d35da0419aca3eeafe4056a6303c967aae5ff8f2444d0d1",
+  "gallery/lib/live/live_camera_controller.dart": "e7d618e28dacd4c5b3b3342012c551716c8c255b83e23b300529e9063064151a",
+  "gallery/lib/live/camera_frame.dart": "94ca7a2be1dfba283a885edf2fa60559bf31e4e339b97548202f230d15a70fe7",
+  "packages/mediapipe-task-vision/hook/build.dart": "d4c043a4cd377c803dacd95786b24e4d57c6ea80a1dc6bc91ccc5ca05665a61e",
+  "packages/mediapipe-task-vision/lib/src/io/face_landmarker.dart": "056e47a06ee1fc2a6fe96033be62d577cbbf05379ac9e7499098e1d51f35f867",
+  "packages/mediapipe-task-vision/lib/face_landmarker_backend.dart": "b2bcd59f1e6b0615828c7dc111199b3a9e30a9fd39eb71a814a8bcabcc3a1d2e",
+  "packages/mediapipe-task-vision-android/android/build.gradle": "ed1f6ce67304fad78c4a923d5ee2ef52330032569ebf078952a0ba6d0f38e71d",
+  "packages/mediapipe-task-vision-android/android/src/main/AndroidManifest.xml": "343d5be1ac17cdd45d1a2f2ddc616c509290e655869125a9422a96d88aa66066",
+  "packages/mediapipe-task-vision-android/android/src/main/java/dev/mediapipe/flutter/vision/MediaPipeVisionPlugin.java": "a01425df076988e5eb6e41850458416a6b70a4a64e25d24554d6c7422f3d37a5",
+  "packages/mediapipe-task-vision-android/lib/mediapipe_flutter_vision_android.dart": "eea524aa53d1cd7081a82dc0e794067d6de90438052356afda129662c6ed9df0"
+}

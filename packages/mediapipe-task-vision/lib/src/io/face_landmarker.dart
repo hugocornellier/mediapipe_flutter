@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:isolate';
+import 'dart:io';
 
+import '../../face_landmarker_backend.dart';
 import '../interface/face_detector_types.dart';
 import '../interface/face_landmarker_types.dart';
 import 'native_face_landmarker.dart';
@@ -8,12 +10,17 @@ import 'native_face_landmarker.dart';
 /// Official MediaPipe Face Landmarker, with inference serialized on a worker isolate.
 ///
 /// Supports CPU/Metal on macOS and with the official iOS SDK adapter.
+/// Android CPU/GPU uses the mediapipe_flutter_vision_android Flutter plugin.
 /// Source-built iOS runtimes support CPU only.
 /// Both targets support IMAGE/VIDEO modes. Await [dispose].
 final class FaceLandmarker {
   FaceLandmarker._(this.runningMode, this.delegate) {
     _events.listen(_receive);
   }
+
+  FaceLandmarker._platform(this.runningMode, this.delegate, this._backend);
+
+  FaceLandmarkerBackend? _backend;
 
   final _events = ReceivePort();
   final _ready = Completer<void>();
@@ -34,6 +41,13 @@ final class FaceLandmarker {
 
   /// Load an official model and initialize MediaPipe off the calling isolate.
   static Future<FaceLandmarker> create(FaceLandmarkerOptions options) async {
+    if (Platform.isAndroid && faceLandmarkerBackendFactory != null) {
+      return FaceLandmarker._platform(
+        options.runningMode,
+        options.delegate,
+        await faceLandmarkerBackendFactory!(options),
+      );
+    }
     final detector = FaceLandmarker._(options.runningMode, options.delegate);
     try {
       await Isolate.spawn(
@@ -116,6 +130,11 @@ final class FaceLandmarker {
   }
 
   Future<FaceLandmarkerResult?> _request((VisionImage, int, int?)? input) {
+    if (_backend case final backend?) {
+      return input == null
+          ? backend.dispose().then((_) => null)
+          : backend.detect(input.$1, input.$2, input.$3);
+    }
     final id = _nextId++;
     final completer = Completer<FaceLandmarkerResult?>();
     _pending[id] = completer;
@@ -133,6 +152,14 @@ final class FaceLandmarker {
   }
 
   Future<void> _close() async {
+    if (_backend != null) {
+      try {
+        await _request(null);
+      } finally {
+        _events.close();
+      }
+      return;
+    }
     try {
       if (_failure == null) await _request(null);
     } finally {

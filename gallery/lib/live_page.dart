@@ -1,11 +1,12 @@
 import 'dart:async';
 
-import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 import 'catalog.dart';
 import 'live/live_camera_controller.dart';
+import 'live/live_camera_view.dart';
 import 'live/live_registry.dart';
 
 /// One live camera demo, whichever task the tile names.
@@ -40,8 +41,6 @@ class _LivePageState extends State<LivePage> {
           .toList()
         ..sort((a, b) => a.index.compareTo(b.index));
 
-  List<CameraDescription> _cameras = const [];
-  CameraDescription? _selected;
   String? _error;
   bool _autoStarted = false;
   bool _showConnections = true;
@@ -60,15 +59,17 @@ class _LivePageState extends State<LivePage> {
 
   Future<void> _findCameras() async {
     try {
-      final cameras = await availableCameras();
+      await _controller.findCameras();
       if (!mounted) return;
-      setState(() {
-        _cameras = cameras;
-        _selected = cameras.isEmpty ? null : cameras.first;
-      });
+      if (_controller.cameras.isEmpty) {
+        setState(
+          () => _error = 'No camera found. Connect a webcam and try again.',
+        );
+        return;
+      }
       // Open the demo already running. Guarded so that pressing Stop, or
       // switching delegate, is never undone by a later rebuild.
-      if (_selected != null && !_autoStarted) {
+      if (_controller.description != null && !_autoStarted) {
         _autoStarted = true;
         unawaited(_start());
       }
@@ -86,14 +87,17 @@ class _LivePageState extends State<LivePage> {
   }
 
   Future<void> _start() async {
-    final camera = _selected;
-    if (camera == null) return;
+    if (_controller.description == null) return;
     try {
-      await _controller.start(
-        camera,
-        delegate: _controller.delegate,
-        modelAsset: 'assets/models/${widget.task.model}',
-      );
+      await _controller.start(modelAsset: 'assets/models/${widget.task.model}');
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    }
+  }
+
+  Future<void> _flipCamera() async {
+    try {
+      await _controller.switchCamera();
     } on Object catch (error) {
       if (mounted) setState(() => _error = '$error');
     }
@@ -103,12 +107,23 @@ class _LivePageState extends State<LivePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final controller = _controller;
-    final camera = controller.camera;
     final busy = controller.changing;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.task.title),
         actions: [
+          if (controller.canSwitchCamera)
+            IconButton(
+              icon: Icon(
+                defaultTargetPlatform == TargetPlatform.iOS
+                    ? Icons.flip_camera_ios
+                    : Icons.flip_camera_android,
+              ),
+              tooltip: controller.isFrontCamera
+                  ? 'Switch to back camera'
+                  : 'Switch to front camera',
+              onPressed: busy ? null : _flipCamera,
+            ),
           IconButton(
             icon: Icon(_showConnections ? Icons.grid_on : Icons.grid_off),
             tooltip: 'Connections',
@@ -128,36 +143,24 @@ class _LivePageState extends State<LivePage> {
             child: Container(
               color: Colors.black,
               width: double.infinity,
-              child: camera != null && camera.value.isInitialized
-                  ? Center(
-                      child: AspectRatio(
-                        aspectRatio: camera.value.aspectRatio,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            CameraPreview(camera),
-                            CustomPaint(
-                              painter: _demo.overlay(
-                                controller.result,
-                                _showConnections,
-                                _showPoints,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : Center(
-                      child: Text(
-                        _error ??
-                            controller.error ??
-                            (_cameras.isEmpty
-                                ? 'Looking for a camera…'
-                                : 'Press Start to begin.'),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                    ),
+              child: LiveCameraView(
+                controller: controller,
+                painter: (transform) => _demo.overlay(
+                  controller.result,
+                  transform,
+                  _showConnections,
+                  _showPoints,
+                ),
+                placeholder: Text(
+                  _error ??
+                      controller.error ??
+                      (controller.cameras.isEmpty
+                          ? 'Looking for a camera…'
+                          : 'Press Start to begin.'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ),
             ),
           ),
           Padding(
@@ -184,20 +187,6 @@ class _LivePageState extends State<LivePage> {
                   alignment: WrapAlignment.center,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    if (_cameras.length > 1)
-                      DropdownButton<CameraDescription>(
-                        value: _selected,
-                        onChanged: busy
-                            ? null
-                            : (value) => setState(() => _selected = value),
-                        items: [
-                          for (final camera in _cameras)
-                            DropdownMenuItem(
-                              value: camera,
-                              child: Text(camera.name),
-                            ),
-                        ],
-                      ),
                     if (_delegates.length > 1)
                       SegmentedButton<VisionDelegate>(
                         segments: [
@@ -222,7 +211,7 @@ class _LivePageState extends State<LivePage> {
                               },
                       ),
                     FilledButton.icon(
-                      onPressed: busy || _selected == null
+                      onPressed: busy || controller.description == null
                           ? null
                           : controller.running
                           ? () => controller.stop()
