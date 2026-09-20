@@ -1,0 +1,33 @@
+{
+  "0": {
+    "packages/mediapipe-task-vision/native/ios/face_sdk_bridge.mm": true,
+    "packages/mediapipe-task-vision/lib/src/io/native_ios_sdk.dart": true,
+    "gallery/tool/ios_face_benchmark.dart": true,
+    "build/codex-tmp/ios-face-benchmark/apps/0/Runner.app/Frameworks/App.framework/App": true,
+    "build/codex-tmp/ios-face-benchmark/apps/0/Runner.app/Frameworks/mediapipe_ios.framework/mediapipe_ios": true
+  },
+  "1": {
+    "packages/mediapipe-task-vision/native/ios/face_sdk_bridge.mm": true,
+    "packages/mediapipe-task-vision/lib/src/io/native_ios_sdk.dart": true,
+    "packages/mediapipe-task-vision/lib/src/io/native_face_landmarker.dart": true,
+    "gallery/tool/ios_face_benchmark.dart": true,
+    "build/codex-tmp/ios-face-benchmark/apps/1/Runner.app/Frameworks/App.framework/App": true,
+    "build/codex-tmp/ios-face-benchmark/apps/1/Runner.app/Frameworks/mediapipe_ios.framework/mediapipe_ios": true
+  },
+  "2": {
+    "packages/mediapipe-task-vision/native/ios/face_sdk_bridge.mm": true,
+    "packages/mediapipe-task-vision/lib/src/io/native_ios_sdk.dart": true,
+    "packages/mediapipe-task-vision/lib/src/io/native_face_landmarker.dart": true,
+    "gallery/tool/ios_face_benchmark.dart": true,
+    "build/codex-tmp/ios-face-benchmark/apps/2/Runner.app/Frameworks/App.framework/App": true,
+    "build/codex-tmp/ios-face-benchmark/apps/2/Runner.app/Frameworks/mediapipe_ios.framework/mediapipe_ios": true
+  },
+  "3": {
+    "packages/mediapipe-task-vision/native/ios/face_sdk_bridge.mm": true,
+    "packages/mediapipe-task-vision/lib/src/io/native_ios_sdk.dart": true,
+    "packages/mediapipe-task-vision/lib/src/io/native_face_landmarker.dart": true,
+    "gallery/tool/ios_face_benchmark.dart": true,
+    "build/codex-tmp/ios-face-benchmark/apps/3/Runner.app/Frameworks/App.framework/App": true,
+    "build/codex-tmp/ios-face-benchmark/apps/3/Runner.app/Frameworks/mediapipe_ios.framework/mediapipe_ios": true
+  }
+}

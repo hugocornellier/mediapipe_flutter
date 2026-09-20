@@ -6,3 +6,8 @@ third_party/NOTICE -text -whitespace
 
 # Validation receipts are byte-for-byte evidence; retain Windows CRLF and logs.
 tool/validations/2026-09-18-desktop-cpu-gallery/** -text -whitespace
+
+# Preserve benchmark fixtures and the checksummed raw-results archive verbatim.
+tool/benchmarks/2026-09-18-independent-storage-audit/**/*.bin binary
+tool/benchmarks/2026-09-18-independent-storage-audit/**/*.png binary
+tool/benchmarks/2026-09-18-independent-storage-audit/*.tar.gz binary

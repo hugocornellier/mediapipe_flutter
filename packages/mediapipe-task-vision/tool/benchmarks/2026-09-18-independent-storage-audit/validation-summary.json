@@ -1,0 +1,136 @@
+{
+  "ios": [
+    {
+      "artifact": "base",
+      "complete": true,
+      "stride_checks_pass": true,
+      "image_alternation_pass": true,
+      "same_delegate_reference_and_video_exact": true,
+      "lifecycle_rss_delta_bytes": {
+        "cpu/lifecycle_rss_bytes": -14204928,
+        "gpu/lifecycle_rss_bytes": 622592
+      },
+      "leftover_bridge_model_tasks": [],
+      "official_ios_runtime": true
+    },
+    {
+      "artifact": "m0",
+      "complete": true,
+      "stride_checks_pass": true,
+      "image_alternation_pass": true,
+      "same_delegate_reference_and_video_exact": true,
+      "lifecycle_rss_delta_bytes": {
+        "cpu/lifecycle_rss_bytes": 3080192,
+        "gpu/lifecycle_rss_bytes": -9633792
+      },
+      "leftover_bridge_model_tasks": [],
+      "official_ios_runtime": true
+    },
+    {
+      "artifact": "m1",
+      "complete": true,
+      "stride_checks_pass": true,
+      "image_alternation_pass": true,
+      "same_delegate_reference_and_video_exact": true,
+      "lifecycle_rss_delta_bytes": {
+        "cpu/lifecycle_rss_bytes": -4898816,
+        "gpu/lifecycle_rss_bytes": -6258688
+      },
+      "leftover_bridge_model_tasks": [],
+      "official_ios_runtime": true
+    },
+    {
+      "artifact": "m2",
+      "complete": true,
+      "stride_checks_pass": true,
+      "image_alternation_pass": true,
+      "same_delegate_reference_and_video_exact": true,
+      "lifecycle_rss_delta_bytes": {
+        "cpu/lifecycle_rss_bytes": -5783552,
+        "gpu/lifecycle_rss_bytes": -5570560
+      },
+      "leftover_bridge_model_tasks": [],
+      "official_ios_runtime": true
+    },
+    {
+      "artifact": "m3",
+      "complete": true,
+      "stride_checks_pass": true,
+      "image_alternation_pass": true,
+      "same_delegate_reference_and_video_exact": true,
+      "lifecycle_rss_delta_bytes": {
+        "cpu/lifecycle_rss_bytes": -13647872,
+        "gpu/lifecycle_rss_bytes": -7094272
+      },
+      "leftover_bridge_model_tasks": [],
+      "official_ios_runtime": true
+    }
+  ],
+  "macos": [
+    {
+      "artifact": "base",
+      "complete": true,
+      "stride_checks_pass": true,
+      "image_alternation_pass": true,
+      "same_delegate_reference_and_video_exact": true,
+      "lifecycle_rss_delta_bytes": {
+        "cpu/lifecycle_rss_bytes": 12648448,
+        "gpu/lifecycle_rss_bytes": 11288576
+      },
+      "leftover_bridge_model_tasks": [],
+      "official_ios_runtime": false
+    },
+    {
+      "artifact": "m0",
+      "complete": true,
+      "stride_checks_pass": true,
+      "image_alternation_pass": true,
+      "same_delegate_reference_and_video_exact": true,
+      "lifecycle_rss_delta_bytes": {
+        "cpu/lifecycle_rss_bytes": 12468224,
+        "gpu/lifecycle_rss_bytes": 10190848
+      },
+      "leftover_bridge_model_tasks": [],
+      "official_ios_runtime": false
+    },
+    {
+      "artifact": "m1",
+      "complete": true,
+      "stride_checks_pass": true,
+      "image_alternation_pass": true,
+      "same_delegate_reference_and_video_exact": true,
+      "lifecycle_rss_delta_bytes": {
+        "cpu/lifecycle_rss_bytes": 11845632,
+        "gpu/lifecycle_rss_bytes": 9568256
+      },
+      "leftover_bridge_model_tasks": [],
+      "official_ios_runtime": false
+    },
+    {
+      "artifact": "m2",
+      "complete": true,
+      "stride_checks_pass": true,
+      "image_alternation_pass": true,
+      "same_delegate_reference_and_video_exact": true,
+      "lifecycle_rss_delta_bytes": {
+        "cpu/lifecycle_rss_bytes": 15106048,
+        "gpu/lifecycle_rss_bytes": 9322496
+      },
+      "leftover_bridge_model_tasks": [],
+      "official_ios_runtime": false
+    },
+    {
+      "artifact": "m3",
+      "complete": true,
+      "stride_checks_pass": true,
+      "image_alternation_pass": true,
+      "same_delegate_reference_and_video_exact": true,
+      "lifecycle_rss_delta_bytes": {
+        "cpu/lifecycle_rss_bytes": 11829248,
+        "gpu/lifecycle_rss_bytes": 9306112
+      },
+      "leftover_bridge_model_tasks": [],
+      "official_ios_runtime": false
+    }
+  ]
+}

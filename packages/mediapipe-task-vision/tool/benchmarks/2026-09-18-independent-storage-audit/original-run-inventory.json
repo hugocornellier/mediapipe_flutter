@@ -1,0 +1,194 @@
+[
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/baseline-initial.json",
+    "variant": 0,
+    "started_at": "2026-09-18T07:30:51.658418Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/00-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T07:35:36.958454Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/01-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T07:36:24.579890Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/02-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T07:37:12.715951Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/03-v1.json",
+    "variant": 1,
+    "started_at": "2026-09-18T07:38:01.521855Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/04-v1-rejected-thermal.json",
+    "variant": 1,
+    "started_at": "2026-09-18T07:38:49.831219Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 1
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/04-v1.json",
+    "variant": 1,
+    "started_at": "2026-09-18T07:41:53.519540Z",
+    "complete": "complete",
+    "canonical_pixels": false,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/05-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T07:43:32.654340Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/06-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T07:45:07.678004Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/07-v2.json",
+    "variant": 2,
+    "started_at": "2026-09-18T07:46:46.386682Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/08-v2.json",
+    "variant": 2,
+    "started_at": "2026-09-18T07:48:21.036979Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/09-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T07:50:02.216077Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/10-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T07:51:37.243238Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/11-v3.json",
+    "variant": 3,
+    "started_at": "2026-09-18T07:53:17.753137Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/12-v3.json",
+    "variant": 3,
+    "started_at": "2026-09-18T07:54:52.947773Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/campaign/13-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T07:56:32.679586Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/staging-unplugged/00-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T07:58:20.968361Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/staging-unplugged/01-v1.json",
+    "variant": 1,
+    "started_at": "2026-09-18T07:59:45.518963Z",
+    "complete": "complete",
+    "canonical_pixels": false,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/staging-unplugged/02-v1.json",
+    "variant": 1,
+    "started_at": "2026-09-18T08:01:05.954434Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/staging-unplugged/03-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T08:02:30.350005Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/staging-unplugged-verified/00-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T08:04:05.716917Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/staging-unplugged-verified/01-v1.json",
+    "variant": 1,
+    "started_at": "2026-09-18T08:05:30.460146Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/staging-unplugged-verified/02-v1.json",
+    "variant": 1,
+    "started_at": "2026-09-18T08:06:50.704160Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  },
+  {
+    "file": "build/codex-tmp/ios-face-benchmark/staging-unplugged-verified/03-v0.json",
+    "variant": 0,
+    "started_at": "2026-09-18T08:08:14.491537Z",
+    "complete": "complete",
+    "canonical_pixels": true,
+    "maximum_thermal_state": 0
+  }
+]

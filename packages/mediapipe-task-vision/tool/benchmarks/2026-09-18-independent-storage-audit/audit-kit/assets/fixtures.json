@@ -1,0 +1,22 @@
+{
+  "source": "portrait.jpg",
+  "source_sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec",
+  "fixtures": [
+    {
+      "file": "portrait_480x640_bgra.bin",
+      "width": 480,
+      "height": 640,
+      "stride": 1936,
+      "bytes": 1239040,
+      "sha256": "ff4ec3d50a0a04c57c8f0cc4e87458c6920f0dffe03265b92b1de0b8765b4d7c"
+    },
+    {
+      "file": "portrait_1080x1920_bgra.bin",
+      "width": 1080,
+      "height": 1920,
+      "stride": 4336,
+      "bytes": 8325120,
+      "sha256": "ed31c24aa39df247449716a4d993f44cc37e3611426bd3e652049a6d1c21cd8f"
+    }
+  ]
+}

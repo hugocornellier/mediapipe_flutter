@@ -1,0 +1,365 @@
+{
+  "baseline_reports": [
+    "campaign/06-v0.json",
+    "campaign/09-v0.json",
+    "campaign/10-v0.json",
+    "campaign/13-v0.json",
+    "staging-unplugged/00-v0.json",
+    "staging-unplugged/03-v0.json",
+    "staging-unplugged-verified/00-v0.json",
+    "staging-unplugged-verified/03-v0.json"
+  ],
+  "candidate_reports": {
+    "staging": [
+      "staging-unplugged/02-v1.json",
+      "staging-unplugged-verified/01-v1.json",
+      "staging-unplugged-verified/02-v1.json"
+    ],
+    "pool": [
+      "campaign/07-v2.json",
+      "campaign/08-v2.json"
+    ],
+    "both": [
+      "campaign/11-v3.json",
+      "campaign/12-v3.json"
+    ]
+  },
+  "comparison": [
+    {
+      "case": "1080x1920/cpu/33ms/public_api",
+      "baseline_mean_ms": 12.114408333333333,
+      "baseline_sd_ms": 0.07234452775883618,
+      "baseline_means_ms": [
+        11.994627777777778,
+        12.1155,
+        12.042333333333334,
+        12.204566666666667,
+        12.130472222222222,
+        12.097466666666667,
+        12.205583333333333,
+        12.124716666666666
+      ],
+      "candidates": {
+        "staging": {
+          "launch_means_ms": [
+            12.235627777777777,
+            12.032344444444444,
+            12.120394444444445
+          ],
+          "reduction_percent": -0.12420930356804583,
+          "all_candidates_beat_all_baselines": false
+        },
+        "pool": {
+          "launch_means_ms": [
+            12.136355555555555,
+            12.042877777777777
+          ],
+          "reduction_percent": 0.20464612042547792,
+          "all_candidates_beat_all_baselines": false
+        },
+        "both": {
+          "launch_means_ms": [
+            12.18715,
+            12.144372222222222
+          ],
+          "reduction_percent": -0.423898356112673,
+          "all_candidates_beat_all_baselines": false
+        }
+      }
+    },
+    {
+      "case": "1080x1920/cpu/tight/public_api",
+      "baseline_mean_ms": 9.975933333333334,
+      "baseline_sd_ms": 0.1231431198718843,
+      "baseline_means_ms": [
+        10.082094444444444,
+        9.98338888888889,
+        10.159277777777778,
+        9.794538888888889,
+        9.975455555555556,
+        10.013622222222223,
+        9.812327777777778,
+        9.986761111111111
+      ],
+      "candidates": {
+        "staging": {
+          "launch_means_ms": [
+            9.766033333333333,
+            9.755077777777778,
+            9.806005555555556
+          ],
+          "reduction_percent": 2.007108218222975,
+          "all_candidates_beat_all_baselines": false
+        },
+        "pool": {
+          "launch_means_ms": [
+            9.444166666666666,
+            9.563883333333333
+          ],
+          "reduction_percent": 4.730467992969767,
+          "all_candidates_beat_all_baselines": true
+        },
+        "both": {
+          "launch_means_ms": [
+            9.292294444444444,
+            9.350583333333333
+          ],
+          "reduction_percent": 6.560733944136676,
+          "all_candidates_beat_all_baselines": true
+        }
+      }
+    },
+    {
+      "case": "1080x1920/gpu/33ms/public_api",
+      "baseline_mean_ms": 18.394044444444443,
+      "baseline_sd_ms": 0.2679899348250757,
+      "baseline_means_ms": [
+        18.43975,
+        18.387977777777778,
+        17.93627777777778,
+        18.70121111111111,
+        18.24462777777778,
+        18.163194444444443,
+        18.65437777777778,
+        18.624938888888888
+      ],
+      "candidates": {
+        "staging": {
+          "launch_means_ms": [
+            18.53166111111111,
+            18.349844444444443,
+            18.30785
+          ],
+          "reduction_percent": -0.013087972113345892,
+          "all_candidates_beat_all_baselines": false
+        },
+        "pool": {
+          "launch_means_ms": [
+            18.393744444444444,
+            18.23846111111111
+          ],
+          "reduction_percent": 0.4237331648407783,
+          "all_candidates_beat_all_baselines": false
+        },
+        "both": {
+          "launch_means_ms": [
+            18.306205555555554,
+            18.311444444444444
+          ],
+          "reduction_percent": 0.46329911130655876,
+          "all_candidates_beat_all_baselines": false
+        }
+      }
+    },
+    {
+      "case": "1080x1920/gpu/tight/public_api",
+      "baseline_mean_ms": 10.90816875,
+      "baseline_sd_ms": 0.11963194456307513,
+      "baseline_means_ms": [
+        10.774933333333333,
+        10.995733333333334,
+        10.7625,
+        11.035211111111112,
+        10.954527777777777,
+        11.020994444444444,
+        10.765794444444445,
+        10.955655555555555
+      ],
+      "candidates": {
+        "staging": {
+          "launch_means_ms": [
+            10.671927777777778,
+            10.947916666666666,
+            10.615144444444445
+          ],
+          "reduction_percent": 1.4958739403779675,
+          "all_candidates_beat_all_baselines": false
+        },
+        "pool": {
+          "launch_means_ms": [
+            10.49685,
+            10.3174
+          ],
+          "reduction_percent": 4.593289318154337,
+          "all_candidates_beat_all_baselines": true
+        },
+        "both": {
+          "launch_means_ms": [
+            10.407961111111112,
+            10.178116666666666
+          ],
+          "reduction_percent": 5.639167079360696,
+          "all_candidates_beat_all_baselines": true
+        }
+      }
+    },
+    {
+      "case": "480x640/cpu/33ms/public_api",
+      "baseline_mean_ms": 12.166322222222222,
+      "baseline_sd_ms": 0.06739013732339165,
+      "baseline_means_ms": [
+        12.180305555555556,
+        12.250944444444444,
+        12.190533333333333,
+        12.035766666666667,
+        12.10666111111111,
+        12.207155555555556,
+        12.204333333333333,
+        12.154877777777777
+      ],
+      "candidates": {
+        "staging": {
+          "launch_means_ms": [
+            12.101983333333333,
+            12.02598888888889,
+            12.141305555555556
+          ],
+          "reduction_percent": 0.6293024429610883,
+          "all_candidates_beat_all_baselines": false
+        },
+        "pool": {
+          "launch_means_ms": [
+            12.23945,
+            12.243505555555556
+          ],
+          "reduction_percent": -0.6177343833478455,
+          "all_candidates_beat_all_baselines": false
+        },
+        "both": {
+          "launch_means_ms": [
+            12.165366666666667,
+            12.231011111111112
+          ],
+          "reduction_percent": -0.2619252234538294,
+          "all_candidates_beat_all_baselines": false
+        }
+      }
+    },
+    {
+      "case": "480x640/cpu/tight/public_api",
+      "baseline_mean_ms": 7.094531944444444,
+      "baseline_sd_ms": 0.052555809737128104,
+      "baseline_means_ms": [
+        7.189877777777777,
+        7.0863555555555555,
+        7.159344444444445,
+        7.058822222222222,
+        7.067061111111111,
+        7.0777833333333335,
+        7.081638888888889,
+        7.035372222222223
+      ],
+      "candidates": {
+        "staging": {
+          "launch_means_ms": [
+            7.11305,
+            7.039494444444444,
+            7.09025
+          ],
+          "reduction_percent": 0.19170345654180299,
+          "all_candidates_beat_all_baselines": false
+        },
+        "pool": {
+          "launch_means_ms": [
+            6.985438888888889,
+            6.992127777777778
+          ],
+          "reduction_percent": 1.4905650145661808,
+          "all_candidates_beat_all_baselines": true
+        },
+        "both": {
+          "launch_means_ms": [
+            6.939472222222222,
+            6.912105555555556
+          ],
+          "reduction_percent": 2.3784945487164144,
+          "all_candidates_beat_all_baselines": true
+        }
+      }
+    },
+    {
+      "case": "480x640/gpu/33ms/public_api",
+      "baseline_mean_ms": 16.623361111111112,
+      "baseline_sd_ms": 0.3810191605027157,
+      "baseline_means_ms": [
+        16.86296111111111,
+        16.79906666666667,
+        16.996927777777778,
+        16.2053,
+        16.86013888888889,
+        16.257433333333335,
+        16.946633333333335,
+        16.058427777777776
+      ],
+      "candidates": {
+        "staging": {
+          "launch_means_ms": [
+            16.703611111111112,
+            16.410155555555555,
+            17.088105555555554
+          ],
+          "reduction_percent": -0.6653064657445862,
+          "all_candidates_beat_all_baselines": false
+        },
+        "pool": {
+          "launch_means_ms": [
+            16.560372222222224,
+            17.11916666666667
+          ],
+          "reduction_percent": -1.3018325950260756,
+          "all_candidates_beat_all_baselines": false
+        },
+        "both": {
+          "launch_means_ms": [
+            15.876544444444445,
+            16.62828888888889
+          ],
+          "reduction_percent": 2.2314647559241396,
+          "all_candidates_beat_all_baselines": false
+        }
+      }
+    },
+    {
+      "case": "480x640/gpu/tight/public_api",
+      "baseline_mean_ms": 7.222450694444444,
+      "baseline_sd_ms": 0.13235014378312396,
+      "baseline_means_ms": [
+        7.094961111111111,
+        7.165066666666666,
+        7.004927777777778,
+        7.3245,
+        7.303738888888889,
+        7.225016666666667,
+        7.243261111111111,
+        7.4181333333333335
+      ],
+      "candidates": {
+        "staging": {
+          "launch_means_ms": [
+            7.258216666666667,
+            7.394872222222222,
+            7.329172222222223
+          ],
+          "reduction_percent": -1.4533803049243454,
+          "all_candidates_beat_all_baselines": false
+        },
+        "pool": {
+          "launch_means_ms": [
+            7.0880833333333335,
+            6.80375
+          ],
+          "reduction_percent": 3.828811569326307,
+          "all_candidates_beat_all_baselines": false
+        },
+        "both": {
+          "launch_means_ms": [
+            7.283038888888889,
+            6.848022222222222
+          ],
+          "reduction_percent": 2.1726716529832824,
+          "all_candidates_beat_all_baselines": false
+        }
+      }
+    }
+  ]
+}
