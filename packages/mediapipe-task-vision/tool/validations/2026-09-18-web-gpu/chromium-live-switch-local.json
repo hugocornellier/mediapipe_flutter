@@ -1,0 +1,27 @@
+{
+  "browser": "chromium",
+  "delegate": "CPU",
+  "suite": "camera",
+  "checks": [
+    "real-getusermedia-y4m-face-blank-recovery-timestamps",
+    "portrait-and-landscape-preview-aspect-ratio",
+    "live-cpu-gpu-cpu-switch-face-inference-worker-cleanup",
+    "stop-restart-navigation-tracks-workers-callback-cleanup",
+    "browser-permission-denied-and-worker-cleanup",
+    "native-browser-device-switch-and-mirroring",
+    "worker-error-rejects-pending-requests-and-releases-capture",
+    "worker-error-restart-and-simulated-track-ended-cleanup",
+    "browser-no-video-device-and-worker-cleanup"
+  ],
+  "physical_webcam_tested": false,
+  "software_webgl": false,
+  "browser_version": "153.0.8010.12",
+  "camera": {
+    "width": 640,
+    "height": 480,
+    "timestamp": 1211,
+    "frames": 12,
+    "mirror": "scaleX(-1)"
+  },
+  "status": "passed"
+}

@@ -11,6 +11,10 @@ environment:
 platforms:
   macos:
   ios:
+  android:
+  windows:
+  linux:
+  web:
 
 dependencies:
   archive: ^4.2.0

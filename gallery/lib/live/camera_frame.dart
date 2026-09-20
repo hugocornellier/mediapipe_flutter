@@ -72,18 +72,18 @@ Uint8List yuv420ToRgba({
   validate(u, (width + 1) ~/ 2, (height + 1) ~/ 2, uvRowStride, uvPixelStride);
   validate(v, (width + 1) ~/ 2, (height + 1) ~/ 2, vRowStride, vPixelStride);
   final rgba = Uint8List(width * height * 4);
+  // dart2js bitwise shifts can treat negative intermediates as unsigned.
+  // Floor division matches the VM's arithmetic right shift on every platform.
+  int byte(int numerator) => (numerator / 256).floor().clamp(0, 255);
   for (var row = 0; row < height; row++) {
     for (var col = 0; col < width; col++) {
       final luma = y[row * yRowStride + col * yPixelStride] - 16;
       final cb = u[(row ~/ 2) * uvRowStride + (col ~/ 2) * uvPixelStride] - 128;
       final cr = v[(row ~/ 2) * vRowStride + (col ~/ 2) * vPixelStride] - 128;
       final i = (row * width + col) * 4;
-      rgba[i] = ((298 * luma + 409 * cr + 128) >> 8).clamp(0, 255);
-      rgba[i + 1] = ((298 * luma - 100 * cb - 208 * cr + 128) >> 8).clamp(
-        0,
-        255,
-      );
-      rgba[i + 2] = ((298 * luma + 516 * cb + 128) >> 8).clamp(0, 255);
+      rgba[i] = byte(298 * luma + 409 * cr + 128);
+      rgba[i + 1] = byte(298 * luma - 100 * cb - 208 * cr + 128);
+      rgba[i + 2] = byte(298 * luma + 516 * cb + 128);
       rgba[i + 3] = 255;
     }
   }

@@ -1,0 +1,30 @@
+name: mediapipe_flutter_vision_web
+description: Official MediaPipe browser FaceLandmarker adapter.
+version: 0.0.1
+publish_to: none
+environment:
+  sdk: ^3.12.0
+  flutter: '>=3.44.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  mediapipe_flutter_vision:
+    path: ../mediapipe-task-vision
+  web: ^1.1.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+flutter:
+  plugin:
+    platforms:
+      web:
+        pluginClass: WebFaceLandmarker
+        fileName: mediapipe_flutter_vision_web.dart
+  assets:
+    - assets/bridge.js
+    - assets/worker.js
+    - assets/runtime/
+    - assets/runtime/wasm/

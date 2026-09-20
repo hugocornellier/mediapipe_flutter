@@ -112,6 +112,8 @@ def _tasks_of(block):
 
 def available_tasks(target):
     """Tasks whose runtime this target can actually obtain."""
+    if target == 'web':
+        return {'face_landmarker'}
     source = (VISION / 'sdk_downloads.dart').read_text()
     if target in ('ios/arm64', 'ios-simulator/arm64'):
         # Google's public SDK supplies these tasks without a maintainer build.
@@ -142,6 +144,8 @@ def available_tasks(target):
 
 
 def prepare(target, selected):
+    if target == 'web':
+        subprocess.run([sys.executable, '-B', str(REPO / 'packages/mediapipe-task-vision-web/tool/prepare_model.py')], check=True)
     assets = GALLERY / 'assets/models'
     if assets.exists():
         shutil.rmtree(assets)
@@ -177,6 +181,8 @@ def prepare(target, selected):
                                'pose_landmarker'} & bundled.keys())
     official_android = (target.startswith('android')
                         and set(bundled) == {'face_landmarker'})
+    if target == 'web':
+        subprocess.run([sys.executable, '-B', str(REPO / 'packages/mediapipe-task-vision-web/tool/prepare_runtime.py')], check=True)
     manifest = {
         'target': target,
         'tasks': sorted(bundled),
@@ -187,6 +193,7 @@ def prepare(target, selected):
             & bundled.keys()) if official_landmarks else [],
         'official_ios_sdk': '1.0.1' if target.startswith('ios') else None,
         'official_android_sdk': '1.0.0' if official_android else None,
+        'official_web_sdk': '1.0.1' if target == 'web' else None,
     }
     (GALLERY / 'assets/manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
 
@@ -197,10 +204,13 @@ def prepare(target, selected):
     # camera itself supplies the mobile implementations.
     camera = ('  camera: ^0.12.1\n  camera_desktop: ^1.2.1'
               if target in ('macos/arm64', 'linux/x64', 'windows/x64')
-              else '  camera: ^0.12.1' if target.startswith(('ios', 'android')) else '')
+              else '  camera: ^0.12.1' if target == 'web' or target.startswith(('ios', 'android')) else '')
     android_plugin = ('''  mediapipe_flutter_vision_android:
     path: ../packages/mediapipe-task-vision-android
 ''' if official_android else '')
+    web_plugin = ('''  mediapipe_flutter_vision_web:
+    path: ../packages/mediapipe-task-vision-web
+''' if target == 'web' else '')
     # The hook refuses the stateful MagicTouch task unless its shared runtime is
     # opted into explicitly, on the core package rather than the vision one.
     core = ('    mediapipe_flutter_core:\n      tasks_runtime: true\n'
@@ -227,7 +237,8 @@ dependencies:
     sdk: flutter
   mediapipe_flutter_vision:
     path: ../packages/mediapipe-task-vision
-{android_plugin}{camera}
+  web: ^1.1.1
+{android_plugin}{web_plugin}{camera}
 
 dev_dependencies:
   camera_platform_interface: ^2.13.1

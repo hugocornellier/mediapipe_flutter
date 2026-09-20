@@ -5,10 +5,48 @@ import 'package:mediapipe_flutter_core/capabilities.dart';
 import 'src/capabilities/official_runtime_stub.dart'
     if (dart.library.io) 'src/capabilities/official_runtime_io.dart';
 import 'src/interface/vision_types.dart';
+import 'face_landmarker_backend.dart';
 
 export 'package:mediapipe_flutter_core/capabilities.dart'
     show TaskCapabilities, TaskPlatform;
 export 'src/interface/vision_types.dart' show VisionDelegate;
+
+/// Query official FaceLandmarker platform support without creating a task.
+Future<TaskCapabilities<VisionDelegate>>
+queryFaceLandmarkerCapabilities() async =>
+    faceLandmarkerCapabilitiesForPlatform(await currentTaskPlatform());
+
+/// Browser/Android support requires the corresponding registered SDK adapter.
+TaskCapabilities<VisionDelegate> faceLandmarkerCapabilitiesForPlatform(
+  TaskPlatform platform,
+) => TaskCapabilities.onTargets(
+  platform: platform,
+  delegates: {
+    VisionDelegate.cpu: {
+      'macos/arm64': null,
+      'linux/x64': null,
+      'windows/x64': null,
+      'ios/arm64': '15.0',
+      if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
+      if (faceLandmarkerBackendFactory != null) 'web/unknown': null,
+    },
+    VisionDelegate.gpu: {
+      'macos/arm64': '14.0',
+      'ios/arm64': '15.0',
+      if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
+      if (faceLandmarkerBackendFactory != null) 'web/unknown': null,
+    },
+  },
+  runtimeVersion: {'ios', 'web'}.contains(platform.operatingSystem)
+      ? '1.0.1'
+      : '1.0.0',
+  unavailableReasons: const {
+    VisionDelegate.cpu:
+        'FaceLandmarker requires a supported official runtime and its platform adapter.',
+    VisionDelegate.gpu:
+        'GPU requires Apple or Android SDKs, or the web adapter with worker WebGL 2 support.',
+  },
+);
 
 /// Query the validated Hand, Gesture, Pose and Holistic task runtimes.
 ///

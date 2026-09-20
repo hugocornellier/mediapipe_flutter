@@ -47,7 +47,8 @@ final class FaceLandmarkerOptions {
     }
   }
 
-  /// Filesystem path to Google's .task bundle, not a Flutter asset key.
+  /// Filesystem path on native targets, or a browser-accessible URL on web.
+  /// Flutter asset keys must be loaded through rootBundle into [modelBytes].
   final String? modelPath;
 
   /// Owned, read-only model bytes, useful with Flutter's rootBundle.

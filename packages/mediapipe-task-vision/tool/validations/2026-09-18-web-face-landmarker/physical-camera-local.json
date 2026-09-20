@@ -1,0 +1,47 @@
+{
+  "url": "http://localhost:8866/mediapipe_flutter/",
+  "fake_camera": false,
+  "browser": "153.0.8010.52",
+  "sessions": [
+    {
+      "width": 640,
+      "height": 480,
+      "frames": 20,
+      "faces": 1,
+      "landmarks": 478,
+      "devices": [
+        {
+          "label": "MacBook Pro Camera (0000:0001)",
+          "settings": {
+            "aspectRatio": 1.3333333333333333,
+            "frameRate": 30,
+            "height": 480,
+            "resizeMode": "none",
+            "width": 640
+          }
+        }
+      ]
+    },
+    {
+      "width": 640,
+      "height": 480,
+      "frames": 21,
+      "faces": 1,
+      "landmarks": 478,
+      "devices": [
+        {
+          "label": "MacBook Pro Camera (0000:0001)",
+          "settings": {
+            "aspectRatio": 1.3333333333333333,
+            "frameRate": 30,
+            "height": 480,
+            "resizeMode": "none",
+            "width": 640
+          }
+        }
+      ]
+    }
+  ],
+  "status": "passed",
+  "source_commit": "89f338675f102c2a0be6c35c1ef1ee816e904454"
+}

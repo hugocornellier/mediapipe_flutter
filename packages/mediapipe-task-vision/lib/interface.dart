@@ -3,3 +3,4 @@
 // found in the LICENSE file.
 
 export 'src/interface/interface.dart';
+export 'src/interface/face_landmarker_types.dart';

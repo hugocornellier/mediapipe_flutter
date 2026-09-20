@@ -6,6 +6,8 @@ import 'face_overlay.dart';
 import 'landmark_overlay.dart';
 import 'live_camera_controller.dart';
 import 'live_tasks.dart';
+import 'live_registry_additions_web.dart'
+    if (dart.library.io) 'live_registry_additions_native.dart';
 
 /// The two things a live tile contributes beyond the shared controller.
 ///
@@ -23,19 +25,12 @@ typedef LiveDemo = ({
 });
 
 /// Keyed by catalog tile id.
-const _demos = <String, LiveDemo>{
+final _demos = <String, LiveDemo>{
   'face_landmarker_live': (
     task: FaceLandmarkerLiveTask.new,
     overlay: _faceOverlay,
   ),
-  'hand_landmarker_live': (
-    task: HandLandmarkerLiveTask.new,
-    overlay: _landmarkOverlay,
-  ),
-  'pose_landmarker_live': (
-    task: PoseLandmarkerLiveTask.new,
-    overlay: _landmarkOverlay,
-  ),
+  ...additionalLiveDemos(_landmarkOverlay),
 };
 
 LiveDemo? liveDemoFor(String id) => _demos[id];
