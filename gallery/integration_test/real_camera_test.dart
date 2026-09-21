@@ -245,16 +245,28 @@ Future<void> _writeReport(
   Map<String, Object?> report,
 ) async {
   binding.reportData = {...?binding.reportData, 'real_camera': report};
-  final path = Platform.environment['MEDIAPIPE_CAMERA_REPORT'];
-  if (path != null) {
-    final file = File(path);
-    await file.parent.create(recursive: true);
-    await file.writeAsString(
-      '${const JsonEncoder.withIndent('  ').convert(report)}\n',
-    );
-  }
+  // The console line is the record of last resort: sandboxed macOS and iOS
+  // apps cannot write outside their container, so print before writing.
   // ignore: avoid_print
   print('REAL_CAMERA ${jsonEncode(report)}');
+  final path = Platform.environment['MEDIAPIPE_CAMERA_REPORT'];
+  if (path == null) return;
+  final json = '${const JsonEncoder.withIndent('  ').convert(report)}\n';
+  try {
+    final file = File(path);
+    await file.parent.create(recursive: true);
+    await file.writeAsString(json);
+  } on FileSystemException catch (error) {
+    final fallback = File(
+      '${Directory.systemTemp.path}/real-camera-report.json',
+    );
+    await fallback.writeAsString(json);
+    // ignore: avoid_print
+    print(
+      'REAL_CAMERA_REPORT_PATH ${fallback.path} (requested $path: '
+      '${error.osError?.message ?? error.message})',
+    );
+  }
 }
 
 /// Where a screenshot that includes the camera texture can come from.

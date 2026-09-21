@@ -1,0 +1,45 @@
+{
+  "platform": "macos",
+  "started": "2026-09-21T21:18:19.372007Z",
+  "cameras": [
+    {
+      "name": "MacBook Pro Camera",
+      "lens": "external",
+      "sensor_orientation": 0
+    }
+  ],
+  "first_session": {
+    "camera": "MacBook Pro Camera",
+    "delegate": "cpu",
+    "processed_frames": 386,
+    "skipped_frames": 0,
+    "face_frames": 12,
+    "landmarks": 478,
+    "frame_size": [
+      1920.0,
+      1080.0
+    ],
+    "frame_rotation": 0,
+    "average_inference_ms": 6.674927461139897,
+    "average_frame_ms": 7.679150259067357,
+    "error": null
+  },
+  "alignment": "no screenshot transport on this platform",
+  "second_session": {
+    "camera": "MacBook Pro Camera",
+    "delegate": "cpu",
+    "processed_frames": 38,
+    "skipped_frames": 0,
+    "face_frames": 12,
+    "landmarks": 478,
+    "frame_size": [
+      1920.0,
+      1080.0
+    ],
+    "frame_rotation": 0,
+    "average_inference_ms": 8.351263157894735,
+    "average_frame_ms": 9.63113157894737,
+    "error": null
+  },
+  "finished": "2026-09-21T21:18:35.792583Z"
+}
