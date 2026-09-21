@@ -1,0 +1,86 @@
+name: Linux real camera
+
+# The desktop workflow injects frames through the camera platform interface.
+# This one opens a genuine V4L2 device: v4l2loopback exposes /dev/video10 and
+# ffmpeg streams the licensed portrait fixture into it, so camera_desktop's
+# GStreamer capture, the gallery's live controller, Google's CPU task and the
+# preview all run as shipped, with a face in view. The overlay-alignment oracle
+# then compares what the overlay draws with the face visible on the X screen.
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main, feat/face-landmarker-hardening]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: linux-camera-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-camera:
+    name: Face Landmarker / Linux x64 real V4L2 camera
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      MEDIAPIPE_CAMERA_REPORT: ${{ github.workspace }}/build/codex-tmp/gallery-real-camera-linux/report.json
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Flutter host, camera, virtual device and screenshot dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev xvfb \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good \
+            ffmpeg imagemagick v4l-utils "linux-headers-$(uname -r)" v4l2loopback-dkms
+      - name: Create the loopback camera and stream the portrait into it
+        run: |
+          sudo modprobe v4l2loopback devices=1 video_nr=10 card_label="MediaPipe Fixture" exclusive_caps=1
+          ls -l /dev/video10
+          portrait=packages/mediapipe-task-vision/test/fixtures/face_detection/landmark-ex1.jpg
+          nohup ffmpeg -hide_banner -loglevel error -re -loop 1 -framerate 15 -i "$portrait" \
+            -vf "scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2,format=yuv420p" \
+            -f v4l2 /dev/video10 > build-ffmpeg.log 2>&1 &
+          sleep 3
+          v4l2-ctl --list-devices
+          v4l2-ctl -d /dev/video10 --all | head -40
+      - name: Download the official Face Landmarker model
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_face_landmarker.dart
+      - name: Prepare the Linux gallery with the face task only
+        run: python3 -B gallery/tool/prepare.py --target linux/x64 --tasks face_landmarker
+      - name: Analyze the camera test and oracle
+        working-directory: gallery
+        run: |
+          flutter pub get
+          flutter analyze integration_test/real_camera_test.dart integration_test/support
+      - name: Run the gallery against the real camera under Xvfb
+        working-directory: gallery
+        run: |
+          xvfb-run -a -s "-screen 0 1600x1000x24" \
+            flutter test -d linux integration_test/real_camera_test.dart --reporter expanded
+      - name: Show the record
+        if: always()
+        run: |
+          cat "$MEDIAPIPE_CAMERA_REPORT" || true
+          tail -20 build-ffmpeg.log || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-real-camera-evidence
+          path: |
+            build/codex-tmp/gallery-real-camera-linux/
+            build-ffmpeg.log
+          if-no-files-found: warn
