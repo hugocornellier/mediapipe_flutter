@@ -57,14 +57,20 @@ jobs:
             make -C /tmp/v4l2loopback
             sudo insmod /tmp/v4l2loopback/v4l2loopback.ko $options
           fi
+          # The node is created root-only; the producer and the app run as runner.
+          sudo chmod 666 /dev/video10
           ls -l /dev/video10
           portrait=packages/mediapipe-task-vision/test/fixtures/face_detection/landmark-ex1.jpg
           nohup ffmpeg -hide_banner -loglevel error -re -loop 1 -framerate 15 -i "$portrait" \
             -vf "scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2,format=yuv420p" \
             -f v4l2 /dev/video10 > build-ffmpeg.log 2>&1 &
-          sleep 3
-          v4l2-ctl --list-devices
-          v4l2-ctl -d /dev/video10 --all | head -40
+          echo $! > build-ffmpeg.pid
+          sleep 4
+          if ! kill -0 "$(cat build-ffmpeg.pid)" 2>/dev/null; then
+            echo 'ffmpeg producer exited'; cat build-ffmpeg.log; exit 1
+          fi
+          v4l2-ctl --list-devices || true
+          v4l2-ctl -d /dev/video10 --all | head -40 || true
       - name: Download the official Face Landmarker model
         working-directory: packages/mediapipe-task-vision
         run: |
