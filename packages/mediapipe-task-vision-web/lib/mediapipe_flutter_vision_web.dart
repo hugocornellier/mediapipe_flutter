@@ -51,7 +51,14 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
       ready.completeError(StateError('Unable to load MediaPipe web bridge.'));
     });
     web.document.head!.append(script);
-    await ready.future.timeout(const Duration(seconds: 60));
+    try {
+      await ready.future.timeout(const Duration(seconds: 60));
+    } catch (_) {
+      // A transient script failure must not poison every later create call.
+      script.remove();
+      _loaded = null;
+      rethrow;
+    }
   }();
 
   /// Creates one official browser task with the requested CPU or GPU delegate.

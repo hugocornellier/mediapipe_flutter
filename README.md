@@ -58,8 +58,12 @@ arm64 iOS simulator CPU target; simulator archives are not yet published.
 The iOS and Android workflows build pinned runtimes from source and test face
 CPU inference in fresh Flutter consumers on a simulator/emulator. Android CI
 uses x86_64 and checks debug/release APKs; iOS CI uses an arm64 simulator and
-checks embedded frameworks and a standalone debug app. Physical mobile devices,
-mobile GPU inference and camera use remain untested.
+checks embedded frameworks and a standalone debug app. Face Landmarker CPU and
+GPU inference and live camera capture have been exercised on a physical
+iPhone 15 Pro and a Pixel 7 in Firebase Test Lab; both records note that no
+face was in view of the physical camera. The per-platform live-camera status
+is tracked in the vision package's
+[Face Landmarker status matrix](packages/mediapipe-task-vision/tool/FACE_LANDMARKER_STATUS.md).
 
 **Linux x64 and Windows x64 run eleven vision tasks on CPU**, served by pinned
 official MediaPipe 1.0.0 wheels: Face Detector, Face Landmarker, Object Detector,

@@ -299,7 +299,7 @@ Evidence and prior validation artifacts are documented in
 `packages/mediapipe-task-vision/tool/validations/2026-09-12-interactive-segmenter/`.
 Morning commit `72711df` corrected attribution to a single runtime version.
 
-## UP-009 — Combined iOS simulator CPU runtime has reference differences beyond face tasks
+## UP-011 — Combined iOS simulator CPU runtime has reference differences beyond face tasks
 
 **Status:** measured compatibility finding on 2026-09-16; not established as an
 upstream bug. Face Detector and Face Landmarker remain validated. Other source
@@ -343,7 +343,7 @@ string naming OpenCV 4.13.0, whereas the local builders pin OpenCV 4.12.0. That
 embedded string also describes a Linux x64 build, so it is not sufficient evidence
 of the Mac binary's actual build configuration or of a cause for these differences.
 
-## UP010 — Android combined runtime needs C API export isolation
+## UP-012 — Android combined runtime needs C API export isolation
 
 Observed September 16 with pinned MediaPipe v1.0.0, NDK 28.2.13676358,
 OpenCV 4.12.0's Android SDK, and an arm64 Android 16 emulator using 16 KB pages.
