@@ -89,8 +89,13 @@ jobs:
           flutter analyze integration_test/real_camera_test.dart integration_test/support
       - name: Run the gallery against the real camera under Xvfb
         working-directory: gallery
+        # The hosted runner lets only root open the V4L2 node whatever its mode
+        # bits (the producer above also needed root), so the app runs as root.
+        # CI=true keeps the Flutter tool's root warning quiet; HOME and PATH
+        # carry the SDK and pub cache across.
         run: |
-          xvfb-run -a -s "-screen 0 1600x1000x24" \
+          sudo -E env "PATH=$PATH" HOME="$HOME" CI=true \
+            xvfb-run -a -s "-screen 0 1600x1000x24" \
             flutter test -d linux integration_test/real_camera_test.dart --reporter expanded
       - name: Show the record
         if: always()
