@@ -152,14 +152,19 @@ void main() {
             1,
             reason: 'the on-screen preview must show one face',
           );
+          final verdict =
+              'median ${measurement.median.toStringAsFixed(4)}, max '
+              '${measurement.maximum.toStringAsFixed(4)}; the mirrored '
+              'hypothesis scores ${measurement.medianIfMirrored.toStringAsFixed(4)}';
+          expect(
+            measurement.median,
+            lessThanOrEqualTo(alignmentTolerance),
+            reason: 'overlay is off the on-screen face: $verdict',
+          );
           expect(
             measurement.maximum,
-            lessThanOrEqualTo(alignmentTolerance),
-            reason:
-                'overlay is off the on-screen face: median '
-                '${measurement.median.toStringAsFixed(4)}, max '
-                '${measurement.maximum.toStringAsFixed(4)}; the mirrored '
-                'hypothesis scores ${measurement.medianIfMirrored.toStringAsFixed(4)}',
+            lessThanOrEqualTo(alignmentOutlierTolerance),
+            reason: 'one probe is far off the on-screen face: $verdict',
           );
         } else {
           report['alignment'] = 'no screenshot transport on this platform';

@@ -30,6 +30,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   int _generation = 0;
   int _lastTimestamp = -1;
   bool _closed = false;
+  bool _disposed = false;
 
   CameraController? get camera => _camera;
   bool running = false;
@@ -105,7 +106,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   }
 
   void _changed() {
-    if (!_closed) notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   /// Finds the cameras and selects the one a live demo should open with.
@@ -321,6 +322,10 @@ class LiveCameraController<T> extends ChangeNotifier {
     final camera = _camera;
     _camera = null;
     camera?.removeListener(_cameraChanged);
+    // Tell the view now, before any await: CameraPreview listens to the
+    // controller and would otherwise rebuild on it after dispose() and throw.
+    // Rebuilding the ancestor first unmounts that preview instead.
+    if (camera != null) _changed();
     if (camera != null) {
       try {
         if (camera.value.isStreamingImages) await camera.stopImageStream();
@@ -358,6 +363,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   @override
   void dispose() {
     unawaited(close());
+    _disposed = true;
     super.dispose();
   }
 }

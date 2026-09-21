@@ -213,7 +213,12 @@ void main() {
       expect(task.closed, 1);
       expect(camera.disposed, 1);
       expect(camera.activeStreams, 0);
-      expect(notified, 0, reason: 'nothing notifies after close');
+      expect(controller.camera, isNull);
+      expect(
+        notified,
+        1,
+        reason: 'exactly one notification drops the preview before dispose',
+      );
       await expectLater(
         controller.start(),
         throwsA(isA<StateError>()),

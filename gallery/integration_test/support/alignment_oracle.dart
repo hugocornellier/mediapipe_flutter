@@ -26,12 +26,15 @@ import 'package:mediapipe_gallery/live/live_camera_view.dart';
 /// Nose tip, chin, forehead, iris centres, mouth corners, outer eye corners.
 const alignmentProbes = <int>[1, 152, 10, 468, 473, 61, 291, 33, 263];
 
-/// Accept this much disagreement, as a fraction of the preview diagonal.
+/// Accept this much median disagreement, as a fraction of the preview
+/// diagonal, and [alignmentOutlierTolerance] for any single probe.
 ///
 /// VIDEO tracking versus a fresh IMAGE pass over rescaled screen pixels
-/// differs by a few tenths of a percent on the fixture; the failure modes the
-/// oracle exists for are tens of percent.
+/// differs by a few tenths of a percent on the fixture, with the chin the
+/// least stable probe (1.9% on hosted Linux). The failure modes the oracle
+/// exists for move every probe together by tens of percent.
 const alignmentTolerance = 0.015;
+const alignmentOutlierTolerance = 0.03;
 
 /// Decoded RGBA pixels.
 typedef RgbaImage = ({Uint8List rgba, int width, int height});
@@ -88,12 +91,16 @@ final class AlignmentMeasurement {
   double get maximum => distances.values.fold(0.0, (a, b) => math.max(a, b));
   double get medianIfMirrored => _median(distancesIfMirrored.values);
 
-  bool get aligned => observedFaces == 1 && maximum <= alignmentTolerance;
+  bool get aligned =>
+      observedFaces == 1 &&
+      median <= alignmentTolerance &&
+      maximum <= alignmentOutlierTolerance;
 
   Map<String, Object?> toJson() => {
     'observed_faces': observedFaces,
     'crop_size': [cropSize.width, cropSize.height],
     'tolerance': alignmentTolerance,
+    'outlier_tolerance': alignmentOutlierTolerance,
     'median': median,
     'maximum': maximum,
     'median_if_mirrored': medianIfMirrored,
