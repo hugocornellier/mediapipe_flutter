@@ -9,6 +9,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# A newer push on the same branch supersedes the queued matrix; the hosted
+# macOS pool is small enough that stale runs otherwise starve the latest one.
+concurrency:
+  group: desktop-cpu-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   face-tasks:
     name: Vision tasks / ${{ matrix.os }} x64 CPU

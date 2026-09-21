@@ -9,6 +9,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# A newer push on the same branch supersedes the queued matrix; the hosted
+# macOS pool is small enough that stale runs otherwise starve the latest one.
+concurrency:
+  group: android-emulator-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   emulator-consumer:
     name: Face tasks / fresh x64 Android emulator consumer
