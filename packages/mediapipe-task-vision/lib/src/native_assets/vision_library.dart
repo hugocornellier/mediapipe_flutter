@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
@@ -7,6 +8,57 @@ import 'package:mediapipe_flutter_core/native_assets.dart';
 
 const _mediaPipeRevision = '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120';
 const _openCvRevision = '49486f61fb25722cbcf586b7f4320921d46fb38e';
+
+/// SHA-256 of a signed thin arm64 Mach-O with its code signature masked out.
+///
+/// `codesign` rewrites exactly three things when it re-signs a dylib: the
+/// signature blob at the end of `__LINKEDIT`, that segment's `vmsize` and
+/// `filesize`, and `LC_CODE_SIGNATURE`'s `dataoff` and `datasize`. Different
+/// Xcode releases emit different blobs, so a pin on the signed file breaks
+/// with every toolchain update. This digest covers everything before the blob
+/// with those fields zeroed: the header including rewritten install names,
+/// code, data and fixups, and nothing the signer chooses. It matches
+/// `tool/macho_metadata.py`'s `unsigned_sha256`.
+String unsignedMachOSha256(Uint8List data) {
+  final view = ByteData.sublistView(data);
+  if (data.length < 32 || view.getUint32(0, Endian.little) != 0xfeedfacf) {
+    throw const FormatException('Expected a thin little-endian Mach-O 64.');
+  }
+  final image = Uint8List.fromList(data);
+  final commands = view.getUint32(16, Endian.little);
+  var position = 32;
+  var end = data.length;
+  for (var i = 0; i < commands; i++) {
+    if (position + 8 > data.length) {
+      throw const FormatException('Truncated Mach-O load commands.');
+    }
+    final command = view.getUint32(position, Endian.little);
+    final length = view.getUint32(position + 4, Endian.little);
+    if (command == 0x19 &&
+        position + 56 <= data.length &&
+        _segmentName(data, position + 8) == '__LINKEDIT') {
+      // vmsize at +32 and filesize at +48; fileoff between them stays.
+      image.fillRange(position + 32, position + 40, 0);
+      image.fillRange(position + 48, position + 56, 0);
+    }
+    if (command == 0x1d && position + 16 <= data.length) {
+      end = view.getUint32(position + 8, Endian.little);
+      image.fillRange(position + 8, position + 16, 0);
+    }
+    if (length < 8) throw const FormatException('Invalid Mach-O load command.');
+    position += length;
+  }
+  if (end > data.length) {
+    throw const FormatException('Mach-O signature offset past end of file.');
+  }
+  return sha256.convert(Uint8List.sublistView(image, 0, end)).toString();
+}
+
+String _segmentName(Uint8List data, int offset) {
+  final bytes = data.sublist(offset, offset + 16);
+  final terminator = bytes.indexOf(0);
+  return ascii.decode(terminator < 0 ? bytes : bytes.sublist(0, terminator));
+}
 
 /// Supported native artifact targets. Simulator and device ARM64 are distinct.
 enum VisionLibraryTarget {
@@ -101,12 +153,19 @@ Future<File> validateVisionLibrary(
       : device
       ? 'iphoneos'
       : null;
+  // A source-built or downloaded archive pins the whole file. A locally
+  // re-signed official wheel pins the unsigned image instead, since its signed
+  // bytes depend on the Xcode that signed it; the whole-file digest is still
+  // checked against the manifest so a damaged cache is never loaded.
+  final pinsSignedFile = officialWheel == null;
   if (manifest is! Map<String, dynamic> ||
       manifest['platform'] != (simulator || device ? 'ios' : 'macos') ||
       manifest['architecture'] != 'arm64' ||
       manifest['ios_sdk'] != expectedSdk ||
       manifest['bytes'] != await library.length() ||
-      (expectedSha256 != null && manifest['sha256'] != expectedSha256) ||
+      (pinsSignedFile &&
+          expectedSha256 != null &&
+          manifest['sha256'] != expectedSha256) ||
       (await sha256.bind(library.openRead()).first).toString() !=
           manifest['sha256']) {
     throw StateError('MediaPipe native artifact provenance/hash mismatch.');
@@ -134,11 +193,23 @@ Future<File> validateVisionLibrary(
         packaging['install_name'] != '@rpath/libmediapipe.dylib' ||
         packaging['section_layout_unchanged'] != true ||
         files is! Map<String, dynamic> ||
-        files[libraryName] != expectedSha256 ||
+        files[libraryName] != manifest['sha256'] ||
+        manifest['unsigned_sha256'] != expectedSha256 ||
         officialWheel.notices.entries.any(
           (notice) => files[notice.key] != notice.value,
         )) {
       throw StateError('Official MediaPipe wheel provenance/hash mismatch.');
+    }
+    final String unsigned;
+    try {
+      unsigned = unsignedMachOSha256(await library.readAsBytes());
+    } on FormatException {
+      throw StateError('Official MediaPipe library is not a signed Mach-O.');
+    }
+    if (unsigned != expectedSha256) {
+      throw StateError(
+        'Official MediaPipe library unsigned-image hash mismatch.',
+      );
     }
     for (final notice in officialWheel.notices.entries) {
       final file = File.fromUri(directory.uri.resolve(notice.key));

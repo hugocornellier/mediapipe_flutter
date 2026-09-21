@@ -66,6 +66,11 @@ final class VisionRuntimeRelease {
   final String libraryName;
 
   /// SHA-256 of the library, pinned independently of the downloaded manifest.
+  ///
+  /// For a release with [officialWheel] set, the library is re-signed locally
+  /// and this is the digest of its unsigned image (`unsignedMachOSha256`),
+  /// which does not change with the Xcode that signs it. Other releases pin
+  /// the whole file.
   final String librarySha256;
 
   /// Primary code asset name, without the package prefix. Combined runtimes
@@ -92,8 +97,10 @@ const officialMacosLandmarkRuntime = VisionRuntimeRelease(
   tasks: {'face_landmarker', 'hand_landmarker', 'pose_landmarker'},
   archive: null,
   libraryName: 'libmediapipe.dylib',
+  // Unsigned-image digest; tool/prepare_official_macos_landmark_runtime.py
+  // pins the same value and records the signed digest in the manifest.
   librarySha256:
-      '41e98323ac91465270d0ae6348e9bf7d8fd9b3973521838f44ee1d61271607f9',
+      'b4c9e10a77fabea6ecbd88f93686ee9414c01762531eb3d487240958b2327fdc',
   assetName: 'official_landmarks.dylib',
   localBuildDirectory: 'build/native/official-macos-landmarks/',
   officialWheel: OfficialWheelProvenance(
