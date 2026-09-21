@@ -16,7 +16,9 @@ void loadOfficialDesktopRuntime() {
           _errorFree,
         ) ==
         nullptr) {
-      throw StateError('The official desktop runtime has no error-free export.');
+      throw StateError(
+        'The official desktop runtime has no error-free export.',
+      );
     }
   }
 }

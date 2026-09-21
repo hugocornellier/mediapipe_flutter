@@ -105,9 +105,7 @@ Future<void> main() async {
     'device_start': start,
     'runs': <Map<String, Object?>>[],
   };
-  final output = File(
-    '${Directory.systemTemp.path}/storage-audit-$token.json',
-  );
+  final output = File('${Directory.systemTemp.path}/storage-audit-$token.json');
   Future<void> save() => output.writeAsString(jsonEncode(report), flush: true);
   stdout.writeln('STORAGE_AUDIT_REPORT ${output.path}');
 
@@ -278,7 +276,10 @@ Map<String, Object?> _profile(
       clock.stop();
       _validate(result, f, i * 33);
       if (i >= _warmup) {
-        samples.add({...timings.microseconds, 'total': clock.elapsedMicroseconds});
+        samples.add({
+          ...timings.microseconds,
+          'total': clock.elapsedMicroseconds,
+        });
         outputs.add(result);
       }
     }
@@ -536,7 +537,8 @@ final class _Fixture {
   _Fixture(this.width, this.height, this.stride, this.pixels, this.sha);
 
   factory _Fixture.blank(int width, int height, int stride) {
-    final pixels = Uint8List(stride * height)..fillRange(0, stride * height, 0xa5);
+    final pixels = Uint8List(stride * height)
+      ..fillRange(0, stride * height, 0xa5);
     for (var y = 0; y < height; y++) {
       for (var x = 0; x < width; x++) {
         final d = y * stride + x * 4;
@@ -544,7 +546,13 @@ final class _Fixture {
         pixels[d + 3] = 0xff;
       }
     }
-    return _Fixture(width, height, stride, pixels, sha256.convert(pixels).toString());
+    return _Fixture(
+      width,
+      height,
+      stride,
+      pixels,
+      sha256.convert(pixels).toString(),
+    );
   }
 
   final int width, height, stride;
