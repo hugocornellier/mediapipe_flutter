@@ -21,9 +21,8 @@ Columns, in the order a frame travels:
   rotation mid-session.
 - **Soak**: a sustained session without memory growth or thermal failure.
 
-Symbols: ✅ recorded, ⚠️ partial (see note), ❌ nothing recorded, 🔄 job
-exists and is being brought up, 🧑 needs a person or a device that hosted CI
-cannot provide.
+Symbols: ✅ recorded, ⚠️ partial (see note), ❌ nothing recorded, 🧑 needs a
+person or a device that hosted CI cannot provide.
 
 | Platform | Reference | Lifecycle | Injected pipeline | Real capture | Face in view | Alignment oracle | Background / rotate | Soak |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -33,7 +32,7 @@ cannot provide.
 | macOS arm64 | ✅ CPU + Metal [3] | ✅ [3] | ✅ unit + desktop test | ⚠️ developer machine only, no retained record [4] | 🧑 seen by the developer, not recorded | 🧑 `real_camera_test.dart` has no screenshot transport on macOS; visual check | ❌ | ⚠️ `tool/test_camera_soak.py` exists, no retained run |
 | iOS arm64 (device) | ✅ CPU + Metal, iPhone 15 Pro [5] | ✅ [5] | ✅ | ✅ 21 front-camera frames per delegate [5] | 🧑 no face was in view [5] | 🧑 run `real_camera_test.dart` on the phone with a face in view | ❌ | ❌ |
 | Android arm64 (device) | ✅ CPU + GPU, Pixel 7 Test Lab [6] | ✅ [6] | ✅ | ✅ front and back, CPU and GPU [6] | 🧑 rack camera saw no face [6] | 🧑 needs a device with a face in view, or the emulator webcam job (planned) | ❌ rotation and backgrounding explicitly untested [6] | ❌ |
-| Linux x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | 🔄 `linux-camera.yaml`: v4l2loopback fed by ffmpeg, in progress on PR #13 | 🔄 same job | 🔄 same job, X11 screenshot with calibration | ❌ | ❌ |
+| Linux x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ✅ real V4L2 device in CI, every push [8] | ✅ 12+ face frames per session [8] | ✅ median 0.24%, mirrored 8% [8] | ❌ | ❌ |
 | Windows x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ❌ no hosted virtual camera for Media Foundation | 🧑 | 🧑 | ❌ | ❌ |
 
 Hardware-free coverage that runs on every platform in `flutter test`:
@@ -53,6 +52,7 @@ cover the projection math and pixel conversion.
 5. `validations/2026-09-17-ios-official-gpu/` (`camera-smoke.json`).
 6. `validations/2026-09-18-android-face-sdk/`.
 7. `validations/2026-09-18-desktop-cpu-gallery/`.
+8. `validations/2026-09-21-linux-real-camera/` and the `Linux real camera` workflow.
 
 ## Filling the 🧑 cells
 

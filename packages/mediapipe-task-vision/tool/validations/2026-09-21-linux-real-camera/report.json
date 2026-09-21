@@ -1,0 +1,87 @@
+{
+  "platform": "linux",
+  "started": "2026-09-21T20:21:31.762048Z",
+  "view_on_screen": [
+    0.0,
+    0.0,
+    1280.0,
+    720.0
+  ],
+  "pixels_per_logical": 1.0,
+  "cameras": [
+    {
+      "name": "MediaPipe_Fixture (/dev/video10)",
+      "lens": "external",
+      "sensor_orientation": 0
+    }
+  ],
+  "first_session": {
+    "camera": "MediaPipe_Fixture (/dev/video10)",
+    "delegate": "cpu",
+    "processed_frames": 24,
+    "skipped_frames": 1,
+    "face_frames": 12,
+    "landmarks": 478,
+    "frame_size": [
+      640.0,
+      480.0
+    ],
+    "frame_rotation": 0,
+    "average_inference_ms": 16.665125,
+    "average_frame_ms": 17.669083333333333,
+    "error": null
+  },
+  "alignment": {
+    "observed_faces": 1,
+    "crop_size": [
+      746.0,
+      560.0
+    ],
+    "tolerance": 0.015,
+    "outlier_tolerance": 0.03,
+    "median": 0.002388703683504101,
+    "maximum": 0.01939731588100591,
+    "median_if_mirrored": 0.08035442493696189,
+    "aligned": true,
+    "distances": {
+      "1": 0.002124270465952157,
+      "152": 0.01939731588100591,
+      "10": 0.00487713773305453,
+      "468": 0.002388703683504101,
+      "473": 0.0011183977992743628,
+      "61": 0.004226817889398408,
+      "291": 0.0029485284850258872,
+      "33": 0.0017337635045982485,
+      "263": 0.0006618105692206077
+    },
+    "overlay_box_logical": [
+      266.6666666666667,
+      56.0,
+      746.6666666666665,
+      560.0
+    ],
+    "frame_size": [
+      640.0,
+      480.0
+    ],
+    "frame_rotation": 0,
+    "mirror": false
+  },
+  "second_session": {
+    "camera": "MediaPipe_Fixture (/dev/video10)",
+    "delegate": "cpu",
+    "processed_frames": 19,
+    "skipped_frames": 0,
+    "face_frames": 12,
+    "landmarks": 478,
+    "frame_size": [
+      640.0,
+      480.0
+    ],
+    "frame_rotation": 0,
+    "average_inference_ms": 12.608052631578948,
+    "average_frame_ms": 13.326631578947367,
+    "error": null
+  },
+  "finished": "2026-09-21T20:21:39.041204Z"
+}
