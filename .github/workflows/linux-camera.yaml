@@ -46,31 +46,35 @@ jobs:
       - name: Create the loopback camera and stream the portrait into it
         run: |
           # The hosted Azure kernel ships videodev in linux-modules-extra, and
-          # Ubuntu's packaged v4l2loopback can trail the running kernel, so load
-          # the dependency first and fall back to the upstream module source.
+          # Ubuntu's packaged v4l2loopback trails 6.x kernels, so build the
+          # maintained upstream module against the running kernel.
           sudo apt-get install -y "linux-modules-extra-$(uname -r)" || true
           sudo modprobe videodev
-          options='devices=1 video_nr=10 card_label=MediaPipe_Fixture exclusive_caps=1'
-          if ! sudo modprobe v4l2loopback $options; then
-            sudo dmesg | tail -5 || true
-            git clone --quiet --depth 1 https://github.com/umlaeute/v4l2loopback.git /tmp/v4l2loopback
-            make -C /tmp/v4l2loopback
-            sudo insmod /tmp/v4l2loopback/v4l2loopback.ko $options
-          fi
+          git clone --quiet --depth 1 https://github.com/umlaeute/v4l2loopback.git /tmp/v4l2loopback
+          make -C /tmp/v4l2loopback > /tmp/v4l2loopback-build.log 2>&1 || { cat /tmp/v4l2loopback-build.log; exit 1; }
+          sudo insmod /tmp/v4l2loopback/v4l2loopback.ko devices=1 video_nr=10 card_label=MediaPipe_Fixture exclusive_caps=1
+          modinfo /tmp/v4l2loopback/v4l2loopback.ko | grep -E '^(version|vermagic)' || true
           # The node is created root-only; the producer and the app run as runner.
           sudo chmod 666 /dev/video10
           ls -l /dev/video10
+          id
           portrait=packages/mediapipe-task-vision/test/fixtures/face_detection/landmark-ex1.jpg
-          nohup ffmpeg -hide_banner -loglevel error -re -loop 1 -framerate 15 -i "$portrait" \
-            -vf "scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2,format=yuv420p" \
-            -f v4l2 /dev/video10 > build-ffmpeg.log 2>&1 &
-          echo $! > build-ffmpeg.pid
-          sleep 4
-          if ! kill -0 "$(cat build-ffmpeg.pid)" 2>/dev/null; then
-            echo 'ffmpeg producer exited'; cat build-ffmpeg.log; exit 1
+          produce() {
+            "$@" ffmpeg -hide_banner -loglevel error -re -loop 1 -framerate 15 -i "$portrait" \
+              -vf "scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2,format=yuv420p" \
+              -f v4l2 /dev/video10 > build-ffmpeg.log 2>&1 &
+            echo $! > build-ffmpeg.pid
+            sleep 4
+            kill -0 "$(cat build-ffmpeg.pid)" 2>/dev/null
+          }
+          if produce; then
+            echo 'producer running as runner'
+          else
+            echo 'producer failed as runner:'; cat build-ffmpeg.log; sudo dmesg | tail -15 || true
+            if produce sudo; then echo 'producer running as root'; else echo 'producer failed as root:'; cat build-ffmpeg.log; exit 1; fi
           fi
           v4l2-ctl --list-devices || true
-          v4l2-ctl -d /dev/video10 --all | head -40 || true
+          v4l2-ctl -d /dev/video10 --all | head -30 || true
       - name: Download the official Face Landmarker model
         working-directory: packages/mediapipe-task-vision
         run: |
