@@ -29,7 +29,7 @@ person or a device that hosted CI cannot provide.
 | Web (Chrome) | ✅ CPU + GPU, zero error [1] | ✅ [1] | ✅ file-backed webcam in CI [1] | ✅ CI fake device and two real MacBook sessions [1][2] | ✅ real MacBook, CPU and GPU [1][2] | ❌ not yet in `test_browser.mjs` | ⚠️ track-ended and worker restart only [1] | ❌ |
 | Web (Firefox) | ✅ CPU [1] | ✅ [1] | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Web (Safari) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| macOS arm64 | ✅ CPU + Metal [3] | ✅ [3] | ✅ unit + desktop test | ✅ built-in camera, 1080p, stop/restart [9] | ✅ 478 landmarks on a person, 6.7 ms CPU [9] | 🧑 no screenshot transport on desktop macOS; visual check | ❌ | ⚠️ `tool/test_camera_soak.py` exists, no retained run |
+| macOS arm64 | ✅ CPU + Metal [3] | ✅ [3] | ✅ unit + desktop test | ✅ built-in camera, 1080p, stop/restart [9] | ✅ 478 landmarks on a person, 6.7 ms CPU [9] | ⚠️ visually confirmed by the maintainer on 2026-09-21, CPU and Metal, release build [9]; no screenshot transport for an automated oracle on desktop macOS | ❌ | ⚠️ `tool/test_camera_soak.py` exists, no retained run |
 | iOS arm64 (device) | ✅ CPU + Metal, iPhone 15 Pro [5] | ✅ [5] | ✅ | ✅ 21 front-camera frames per delegate [5] | 🧑 no face was in view [5] | 🧑 run `real_camera_test.dart` on the phone with a face in view | ❌ | ❌ |
 | Android arm64 (device) | ✅ CPU + GPU, Pixel 7 Test Lab [6] | ✅ [6] | ✅ | ✅ front and back, CPU and GPU [6] | 🧑 rack camera saw no face [6] | 🧑 needs a device with a face in view, or the emulator webcam job (planned) | ❌ rotation and backgrounding explicitly untested [6] | ❌ |
 | Linux x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ✅ real V4L2 device in CI, every push [8] | ✅ 12+ face frames per session [8] | ✅ median 0.24%, mirrored 8% [8] | ❌ | ❌ |

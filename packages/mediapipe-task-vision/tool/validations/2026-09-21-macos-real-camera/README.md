@@ -17,8 +17,10 @@ camera for the run.
 - No errors and no widget exceptions.
 
 The overlay-alignment oracle does not run on macOS because `integration_test`
-has no screenshot transport for desktop macOS; alignment there remains a
-visual check on the Live Face Landmarker page.
+has no screenshot transport for desktop macOS. The maintainer checked
+alignment visually the same day on the release gallery build: the mesh sat on
+the eyes, lips and jawline, followed sideways movement in the same direction
+as the preview, and stayed in place across the CPU to Metal switch.
 
 Two environment facts surfaced by this run and fixed in the same change:
 Xcode 27 rejects the Flutter template's 10.15 deployment target (the gallery
