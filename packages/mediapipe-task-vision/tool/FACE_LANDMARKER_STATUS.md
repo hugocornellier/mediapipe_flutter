@@ -1,0 +1,104 @@
+# Face Landmarker live-camera status
+
+One table for the question "does Face Landmarker work on a live camera on this
+platform, and how do we know". Every cell links to the record that proves it
+or says plainly that nothing proves it yet. Update this file in the same
+commit as the evidence; the README defers to it.
+
+Columns, in the order a frame travels:
+
+- **Reference**: official IMAGE/VIDEO outputs match Google's own API for the
+  same runtime version on the same machine.
+- **Lifecycle**: create, queued frames, timestamps, delegate switch, disposal.
+- **Injected pipeline**: the real gallery controller, conversion, worker and
+  task, with frames supplied through the camera platform interface.
+- **Real capture**: the platform's actual camera plugin opened a real device.
+- **Face in view**: that real device showed a face and the task found it.
+- **Alignment oracle**: the on-screen preview was screenshotted and the
+  overlay's projection matched a fresh IMAGE pass over those pixels
+  (`gallery/integration_test/support/alignment_oracle.dart`).
+- **Background / rotate**: capture survives app backgrounding and a device
+  rotation mid-session.
+- **Soak**: a sustained session without memory growth or thermal failure.
+
+Symbols: ✅ recorded, ⚠️ partial (see note), ❌ nothing recorded, 🔄 job
+exists and is being brought up, 🧑 needs a person or a device that hosted CI
+cannot provide.
+
+| Platform | Reference | Lifecycle | Injected pipeline | Real capture | Face in view | Alignment oracle | Background / rotate | Soak |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Web (Chrome) | ✅ CPU + GPU, zero error [1] | ✅ [1] | ✅ file-backed webcam in CI [1] | ✅ CI fake device and two real MacBook sessions [1][2] | ✅ real MacBook, CPU and GPU [1][2] | ❌ not yet in `test_browser.mjs` | ⚠️ track-ended and worker restart only [1] | ❌ |
+| Web (Firefox) | ✅ CPU [1] | ✅ [1] | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Web (Safari) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| macOS arm64 | ✅ CPU + Metal [3] | ✅ [3] | ✅ unit + desktop test | ⚠️ developer machine only, no retained record [4] | 🧑 seen by the developer, not recorded | 🧑 `real_camera_test.dart` has no screenshot transport on macOS; visual check | ❌ | ⚠️ `tool/test_camera_soak.py` exists, no retained run |
+| iOS arm64 (device) | ✅ CPU + Metal, iPhone 15 Pro [5] | ✅ [5] | ✅ | ✅ 21 front-camera frames per delegate [5] | 🧑 no face was in view [5] | 🧑 run `real_camera_test.dart` on the phone with a face in view | ❌ | ❌ |
+| Android arm64 (device) | ✅ CPU + GPU, Pixel 7 Test Lab [6] | ✅ [6] | ✅ | ✅ front and back, CPU and GPU [6] | 🧑 rack camera saw no face [6] | 🧑 needs a device with a face in view, or the emulator webcam job (planned) | ❌ rotation and backgrounding explicitly untested [6] | ❌ |
+| Linux x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | 🔄 `linux-camera.yaml`: v4l2loopback fed by ffmpeg, in progress on PR #13 | 🔄 same job | 🔄 same job, X11 screenshot with calibration | ❌ | ❌ |
+| Windows x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ❌ no hosted virtual camera for Media Foundation | 🧑 | 🧑 | ❌ | ❌ |
+
+Hardware-free coverage that runs on every platform in `flutter test`:
+`gallery/test/live_camera_controller_test.dart` pins frame skipping,
+timestamp monotonicity, stop draining in-flight inference, superseded starts,
+failure handling, camera switching and idempotent close against a scripted
+camera platform; `camera_geometry_test.dart` and `camera_frame_test.dart`
+cover the projection math and pixel conversion.
+
+## Records
+
+1. `validations/2026-09-18-web-face-landmarker/` and the Web workflow.
+2. `validations/2026-09-18-web-gpu/` (`physical-camera-gpu-local.json`).
+3. `validations/2026-09-14-face-landmarker-1.0.1/` and the macOS workflow's
+   GPU comparison job.
+4. Commit `6d38854` records 1080p CPU/Metal cadence measurements on an M4 Max.
+5. `validations/2026-09-17-ios-official-gpu/` (`camera-smoke.json`).
+6. `validations/2026-09-18-android-face-sdk/`.
+7. `validations/2026-09-18-desktop-cpu-gallery/`.
+
+## Filling the 🧑 cells
+
+**iOS, ten minutes with the phone in hand.** Prepare for the device, run the
+real-camera test with your face in view, and keep the report:
+
+```sh
+python3 -B gallery/tool/prepare.py --target ios/arm64 --tasks face_landmarker
+cd gallery && flutter pub get
+MEDIAPIPE_CAMERA_REPORT=$PWD/../build/codex-tmp/ios-real-camera/report.json \
+  flutter test -d <iphone-id> integration_test/real_camera_test.dart --reporter expanded
+```
+
+The test takes a native screenshot, so the alignment oracle runs on the phone.
+Copy `report.json` to `validations/<date>-ios-real-camera/` and update the row.
+
+**macOS, five minutes.** `real_camera_test.dart` records capture and face
+frames but cannot screenshot the preview texture on macOS, so alignment stays a
+visual check. Run it and the soak once and keep both reports:
+
+```sh
+python3 -B gallery/tool/prepare.py --target macos/arm64 --tasks face_landmarker
+cd gallery && MEDIAPIPE_CAMERA_REPORT=$PWD/../build/codex-tmp/macos-real-camera/report.json \
+  flutter test -d macos integration_test/real_camera_test.dart --reporter expanded
+cd ../packages/mediapipe-task-vision && python3 -B tool/test_camera_soak.py
+```
+
+Known blocker on 2026-09-21: with Xcode 27.0, `prepare_official_macos_landmark_runtime.py`
+fails with "Prepared library checksum mismatch" because the newer `codesign`
+emits a different signature blob (the prepared dylib is 18 KB smaller than
+the pinned artifact). The pin should cover the signature-stripped code, not
+the signed output; until then prepare on the Xcode version that produced the
+pin or re-pin deliberately.
+
+**Windows.** Any Windows machine with a webcam:
+
+```sh
+python -B gallery/tool/prepare.py --target windows/x64 --tasks face_landmarker
+cd gallery && flutter run -d windows --release -t tool/live_face_camera_smoke.dart
+```
+
+Then open the ordinary Live Face Landmarker page and confirm the overlay sits
+on your face; `previewIsMirrored` assumes Windows mirrors the preview
+unconditionally, which is exactly the kind of assumption this checks.
+
+**Android with a face.** Either a physical device you can point at a person,
+or the planned emulator job: the same v4l2loopback device passed through with
+`-camera-front webcam0 -camera-back webcam0` on the existing x86_64 emulator
+runner, running `real_camera_test.dart` with the official SDK adapter.
