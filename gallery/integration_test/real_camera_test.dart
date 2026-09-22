@@ -14,15 +14,17 @@ import 'package:mediapipe_gallery/main.dart';
 import 'support/alignment_oracle.dart';
 
 // A real camera must be in front of this test, showing a face. On hosted
-// Linux that is a v4l2loopback device fed by ffmpeg; on a phone it is you.
+// Linux that is a v4l2loopback device fed by ffmpeg, on hosted Windows a Media
+// Foundation virtual camera (tool/windows/vcam); on a phone it is you.
 // Nothing is replaced: the platform camera plugin, the gallery, the
 // controller, the worker and Google's task all run as shipped.
 //
 // The overlay-alignment oracle needs a screenshot that includes the camera
 // preview texture. Android and iOS take one natively through integration_test;
-// Linux under Xvfb grabs the X root window, after calibrating where the Flutter
-// view sits on it with a solid-colour frame. Other platforms record capture and
-// face counts and skip the oracle.
+// Linux under Xvfb grabs the X root window and Windows copies the desktop,
+// both after calibrating where the Flutter view sits on the screen with a
+// solid-colour frame. macOS records capture and face counts and skips the
+// oracle.
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -36,41 +38,43 @@ void main() {
       final screenshots = _Screenshots(binding);
       Rect? viewOnScreen;
       var pixelsPerLogical = tester.view.devicePixelRatio;
-      if (screenshots.calibrates) {
-        // Locate the Flutter view on the screen before the gallery opens.
-        const marker = Color(0xFFFF00FF);
-        await tester.pumpWidget(const ColoredBox(color: marker));
-        await tester.pump();
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 700)),
-        );
-        final shot = await tester.runAsync(screenshots.take);
-        viewOnScreen = boundsOfColor(shot!, marker);
-        expect(viewOnScreen, isNotNull, reason: 'Flutter view not on screen');
-        final logical = tester.view.physicalSize / tester.view.devicePixelRatio;
-        pixelsPerLogical = viewOnScreen!.width / logical.width;
-        report['view_on_screen'] = [
-          viewOnScreen.left,
-          viewOnScreen.top,
-          viewOnScreen.width,
-          viewOnScreen.height,
-        ];
-        report['pixels_per_logical'] = pixelsPerLogical;
-      }
-
-      final cameras = await tester.runAsync(availableCameras);
-      report['cameras'] = [
-        for (final camera in cameras!)
-          {
-            'name': camera.name,
-            'lens': camera.lensDirection.name,
-            'sensor_orientation': camera.sensorOrientation,
-          },
-      ];
-      expect(cameras, isNotEmpty, reason: 'this test needs a real camera');
-
       LiveCameraController<Object?>? controller;
       try {
+        if (screenshots.calibrates) {
+          // Locate the Flutter view on the screen before the gallery opens.
+          const marker = Color(0xFFFF00FF);
+          await tester.pumpWidget(const ColoredBox(color: marker));
+          await tester.pump();
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 700)),
+          );
+          final shot = (await tester.runAsync(screenshots.take))!;
+          viewOnScreen = boundsOfColor(shot, marker);
+          report['screen_size'] = [shot.width, shot.height];
+          expect(viewOnScreen, isNotNull, reason: 'Flutter view not on screen');
+          final logical =
+              tester.view.physicalSize / tester.view.devicePixelRatio;
+          pixelsPerLogical = viewOnScreen!.width / logical.width;
+          report['view_on_screen'] = [
+            viewOnScreen.left,
+            viewOnScreen.top,
+            viewOnScreen.width,
+            viewOnScreen.height,
+          ];
+          report['pixels_per_logical'] = pixelsPerLogical;
+        }
+
+        final cameras = await tester.runAsync(availableCameras);
+        report['cameras'] = [
+          for (final camera in cameras!)
+            {
+              'name': camera.name,
+              'lens': camera.lensDirection.name,
+              'sensor_orientation': camera.sensorOrientation,
+            },
+        ];
+        expect(cameras, isNotEmpty, reason: 'this test needs a real camera');
+
         await tester.pumpWidget(const GalleryApp());
         for (
           var i = 0;
@@ -186,6 +190,10 @@ void main() {
         report['second_session'] = second;
         expect(live.running, isTrue);
         expect(second['face_frames'], greaterThanOrEqualTo(10));
+      } catch (error) {
+        // The record says why it failed; the test still fails.
+        report['error'] = '$error';
+        rethrow;
       } finally {
         await tester.runAsync(() async => await controller?.close());
         await tester.pumpWidget(const MaterialApp(home: SizedBox()));
@@ -274,25 +282,35 @@ final class _Screenshots {
   _Screenshots(this.binding);
   final IntegrationTestWidgetsFlutterBinding binding;
 
-  /// Linux under X11: grab the root window, so calibrate the view's position.
+  /// Linux under X11 grabs the root window and Windows the desktop, so both
+  /// calibrate the view's position first.
   bool get calibrates =>
-      Platform.isLinux && Platform.environment['DISPLAY'] != null;
+      (Platform.isLinux && Platform.environment['DISPLAY'] != null) ||
+      Platform.isWindows;
 
   bool get available => calibrates || Platform.isAndroid || Platform.isIOS;
 
   Future<RgbaImage> take() async {
     if (calibrates) {
       final path =
-          '${Directory.systemTemp.path}/real-camera-${DateTime.now().microsecondsSinceEpoch}.png';
-      final grab = await Process.run('import', [
-        '-window',
-        'root',
-        '-depth',
-        '8',
-        'png:$path',
-      ]);
+          '${Directory.systemTemp.path}${Platform.pathSeparator}'
+          'real-camera-${DateTime.now().microsecondsSinceEpoch}.png';
+      final grab = Platform.isWindows
+          ? await Process.run('powershell', [
+              '-NoProfile',
+              '-NonInteractive',
+              '-Command',
+              _windowsScreenshot(path),
+            ])
+          : await Process.run('import', [
+              '-window',
+              'root',
+              '-depth',
+              '8',
+              'png:$path',
+            ]);
       if (grab.exitCode != 0) {
-        throw StateError('import failed: ${grab.stderr}');
+        throw StateError('screenshot failed: ${grab.stderr}');
       }
       final bytes = await File(path).readAsBytes();
       await File(path).delete();
@@ -316,3 +334,20 @@ final class _Screenshots {
     );
   }
 }
+
+/// PowerShell that copies the primary screen to [path] as a PNG with GDI+.
+/// The process declares itself DPI aware first, so a scaled display is
+/// captured in physical pixels, the space the calibration frame is found in.
+String _windowsScreenshot(String path) => [
+  'Add-Type -AssemblyName System.Windows.Forms, System.Drawing',
+  "Add-Type -Namespace Native -Name Dpi -MemberDefinition '"
+      '[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+      "'",
+  '[Native.Dpi]::SetProcessDPIAware() | Out-Null',
+  r'$bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds',
+  r'$bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height',
+  r'$graphics = [System.Drawing.Graphics]::FromImage($bitmap)',
+  r'$graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)',
+  "\$bitmap.Save('${path.replaceAll("'", "''")}', "
+      '[System.Drawing.Imaging.ImageFormat]::Png)',
+].join('\n');
