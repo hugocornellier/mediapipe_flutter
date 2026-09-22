@@ -13,6 +13,7 @@
 // the runtime settle). The window opens at the main display's origin, so every
 // run paints at that display's refresh rate (recorded as `refresh`); a
 // ProMotion display would switch between 60 and 120 Hz with the page's load.
+// --screenshot saves the preview with its overlay next to the result.
 import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -177,6 +178,10 @@ try {
     }
   }
 
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  if (options.screenshot) {
+    await page.locator('video').screenshot({path: path.join(here, 'results', `${options.label}-${stamp}.png`)});
+  }
   const git = (...args) => execFileSync('git', args, {cwd: repo}).toString().trim();
   const result = {
     label: options.label,
@@ -193,7 +198,7 @@ try {
     blocks,
   };
   const out = path.join(here, 'results',
-    `${options.label}-${result.environment.startedAt.replace(/[:.]/g, '-')}.json`);
+    `${options.label}-${stamp}.json`);
   fs.mkdirSync(path.dirname(out), {recursive: true});
   fs.writeFileSync(out, JSON.stringify(result) + '\n');
 
