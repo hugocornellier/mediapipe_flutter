@@ -389,6 +389,7 @@ class LiveCameraController<T> extends ChangeNotifier {
         _totalFrame += frameMilliseconds;
         _changed();
         if (trace != null) {
+          trace.handled = PipelineTrace.now();
           trace.faces = detected is FaceLandmarkerResult
               ? detected.faceLandmarks.length
               : -1;

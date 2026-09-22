@@ -111,6 +111,8 @@ function stages(frame, worker, origin) {
     transport: worker ? frame.detected - frame.bitmap - worker.inference - worker.serialize : null,
     toWorker: worker ? toMain(worker.received) - frame.bitmap : null,
     fromWorker: worker ? frame.detected - toMain(worker.sent) : null,
+    // Main-thread work between the result and the frame: publishing it.
+    handle: frame.handled - frame.detected,
     waitFrame: frame.frame - frame.detected,
     render: frame.built - frame.frame,
     present: frame.painted - frame.built,
@@ -120,8 +122,8 @@ function stages(frame, worker, origin) {
   };
 }
 const keys = ['e2e', 'queue', 'capture', 'roundTrip', 'detectDone', 'inference', 'serialize', 'transport',
-  'toWorker', 'fromWorker', 'waitFrame', 'render', 'present', 'refresh', 'sinceCapture'];
-const shown = ['e2e', 'detectDone', 'capture', 'inference', 'transport', 'render'];
+  'toWorker', 'fromWorker', 'handle', 'waitFrame', 'render', 'present', 'refresh', 'sinceCapture'];
+const shown = ['e2e', 'detectDone', 'capture', 'inference', 'transport', 'handle', 'render'];
 function summarize(rows) {
   const summary = {};
   for (const key of keys) {
