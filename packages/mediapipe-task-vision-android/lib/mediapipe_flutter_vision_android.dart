@@ -8,6 +8,7 @@ final class AndroidFaceLandmarker implements FaceLandmarkerBackend {
   static const _channel = MethodChannel('mediapipe_flutter_vision/android');
   final int _id;
 
+  /// Installs the Android SDK backend before the first public task is created.
   static void registerWith() {
     faceLandmarkerBackendFactory = _create;
   }

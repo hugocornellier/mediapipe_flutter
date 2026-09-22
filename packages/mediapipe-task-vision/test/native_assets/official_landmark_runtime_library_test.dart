@@ -5,14 +5,19 @@ import 'package:crypto/crypto.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
 import 'package:test/test.dart';
 
+import 'synthetic_macho.dart';
+
 void main() {
   late Directory directory;
   late File library;
   late OfficialWheelProvenance provenance;
-  final libraryBytes = utf8.encode('official library');
+  // A locally re-signed official library pins its unsigned image; the signed
+  // file's digest is only recorded, since it depends on the signing Xcode.
+  final libraryBytes = syntheticSignedMachO();
   final licenseBytes = utf8.encode('official license');
   final noticeBytes = utf8.encode('official notice');
   final libraryHash = sha256.convert(libraryBytes).toString();
+  final unsignedHash = unsignedMachOSha256(libraryBytes);
 
   setUp(() async {
     directory = await Directory.systemTemp.createTemp(
@@ -52,6 +57,7 @@ void main() {
         'delegates': ['cpu', 'gpu'],
         'bytes': libraryBytes.length,
         'sha256': libraryHash,
+        'unsigned_sha256': unsignedHash,
         'files': {'libmediapipe.dylib': libraryHash, ...provenance.notices},
         'packaging': {
           'install_name': '@rpath/libmediapipe.dylib',
@@ -67,11 +73,76 @@ void main() {
     expect(
       (await validateVisionLibrary(
         directory,
-        expectedSha256: libraryHash,
+        expectedSha256: unsignedHash,
         libraryName: 'libmediapipe.dylib',
         officialWheel: provenance,
       )).path,
       library.path,
+    );
+  });
+
+  test('accepts the same image re-signed by a different toolchain', () async {
+    // Same header, code and data; a different signature blob and therefore a
+    // different whole-file digest, exactly what a newer Xcode produces.
+    final resigned = syntheticSignedMachO(signature: [5, 5, 5, 5, 5, 5, 5, 5]);
+    await library.writeAsBytes(resigned);
+    final manifestFile = File.fromUri(directory.uri.resolve('manifest.json'));
+    final manifest =
+        jsonDecode(await manifestFile.readAsString()) as Map<String, dynamic>;
+    final resignedHash = sha256.convert(resigned).toString();
+    manifest['bytes'] = resigned.length;
+    manifest['sha256'] = resignedHash;
+    (manifest['files'] as Map<String, dynamic>)['libmediapipe.dylib'] =
+        resignedHash;
+    await manifestFile.writeAsString(jsonEncode(manifest));
+    expect(
+      (await validateVisionLibrary(
+        directory,
+        expectedSha256: unsignedHash,
+        libraryName: 'libmediapipe.dylib',
+        officialWheel: provenance,
+      )).path,
+      library.path,
+    );
+  });
+
+  test('rejects a library whose unsigned image differs from the pin', () async {
+    // The manifest is internally consistent, so only the pin catches this.
+    final tampered = syntheticSignedMachO(payload: [9, 9, 9, 9]);
+    await library.writeAsBytes(tampered);
+    final manifestFile = File.fromUri(directory.uri.resolve('manifest.json'));
+    final manifest =
+        jsonDecode(await manifestFile.readAsString()) as Map<String, dynamic>;
+    final tamperedHash = sha256.convert(tampered).toString();
+    manifest['sha256'] = tamperedHash;
+    (manifest['files'] as Map<String, dynamic>)['libmediapipe.dylib'] =
+        tamperedHash;
+    await manifestFile.writeAsString(jsonEncode(manifest));
+    await expectLater(
+      validateVisionLibrary(
+        directory,
+        expectedSha256: unsignedHash,
+        libraryName: 'libmediapipe.dylib',
+        officialWheel: provenance,
+      ),
+      throwsStateError,
+    );
+  });
+
+  test('rejects a signed-file digest that disagrees with the file', () async {
+    final manifestFile = File.fromUri(directory.uri.resolve('manifest.json'));
+    final manifest =
+        jsonDecode(await manifestFile.readAsString()) as Map<String, dynamic>;
+    manifest['sha256'] = '0' * 64;
+    await manifestFile.writeAsString(jsonEncode(manifest));
+    await expectLater(
+      validateVisionLibrary(
+        directory,
+        expectedSha256: unsignedHash,
+        libraryName: 'libmediapipe.dylib',
+        officialWheel: provenance,
+      ),
+      throwsStateError,
     );
   });
 
@@ -93,7 +164,7 @@ void main() {
     await expectLater(
       validateVisionLibrary(
         directory,
-        expectedSha256: libraryHash,
+        expectedSha256: unsignedHash,
         libraryName: 'libmediapipe.dylib',
         officialWheel: provenance,
       ),

@@ -20,7 +20,7 @@ checks. Physical-device inference is untested and remains unsupported.
 Both use a scoped KleidiAI compiler workaround for the non-streaming SVE crash
 observed in the initial simulator build. An isolated eleven-task experimental
 run finished without that crash: 107 passed, 56 reference failures, 49 skipped.
-Only the two face tasks are declared supported; see UP009 in
+Only the two face tasks are declared supported; see UP-011 in
 [`upstream-issues.md`](../../../../../upstream-issues.md).
 
 Reproduce from the repository root with an installed simulator:

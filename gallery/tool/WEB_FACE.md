@@ -53,8 +53,11 @@ inputs, owned results, invalid models, modes, timestamps, failed-frame recovery
 and queued disposal. The camera suite checks actual `getUserMedia` capture,
 face/blank/face recovery, responsive preview sizing, two-device selection,
 mirroring, permission denial, missing cameras, worker failure/restart, simulated
-track-ended events, and track/worker/callback cleanup. Evidence goes to the
-ignored `build/codex-tmp/web-browser-*` folders and Actions artifacts.
+track-ended events, and track/worker/callback cleanup. It also screenshots the
+preview with the overlay hidden and requires the overlay's landmarks within
+1.5% (median) of the face the official IMAGE task finds in those pixels, the
+native oracle's criterion. Evidence goes to the ignored
+`build/codex-tmp/web-browser-*` folders and Actions artifacts.
 
 A MacBook Pro physical webcam has separately returned one face with 478
 landmarks across two stop/start sessions. CI webcams are supplied browser

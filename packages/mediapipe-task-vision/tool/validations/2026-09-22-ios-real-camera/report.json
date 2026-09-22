@@ -1,0 +1,95 @@
+{
+  "platform": "ios",
+  "started": "2026-09-22T09:58:54.556049Z",
+  "cameras": [
+    {
+      "name": "com.apple.avfoundation.avcapturedevice.built-in_video:0",
+      "lens": "back",
+      "sensor_orientation": 90
+    },
+    {
+      "name": "com.apple.avfoundation.avcapturedevice.built-in_video:1",
+      "lens": "front",
+      "sensor_orientation": 90
+    },
+    {
+      "name": "com.apple.avfoundation.avcapturedevice.built-in_video:2",
+      "lens": "back",
+      "sensor_orientation": 90
+    },
+    {
+      "name": "com.apple.avfoundation.avcapturedevice.built-in_video:5",
+      "lens": "back",
+      "sensor_orientation": 90
+    }
+  ],
+  "first_session": {
+    "camera": "com.apple.avfoundation.avcapturedevice.built-in_video:1",
+    "delegate": "cpu",
+    "processed_frames": 116,
+    "skipped_frames": 2,
+    "face_frames": 12,
+    "landmarks": 478,
+    "frame_size": [
+      480.0,
+      640.0
+    ],
+    "frame_rotation": 0,
+    "average_inference_ms": 4.583129310344828,
+    "average_frame_ms": 4.767353448275861,
+    "error": null
+  },
+  "alignment": {
+    "observed_faces": 1,
+    "crop_size": [
+      1179.0,
+      1572.0
+    ],
+    "tolerance": 0.015,
+    "outlier_tolerance": 0.03,
+    "median": 0.0014596314346791417,
+    "maximum": 0.0024573713655081496,
+    "median_if_mirrored": 0.051158235365163236,
+    "aligned": true,
+    "distances": {
+      "1": 0.0005838814853329702,
+      "152": 0.0014596314346791417,
+      "10": 0.0018091429808616884,
+      "468": 0.0009676692562145056,
+      "473": 0.0020195621737612727,
+      "61": 0.001461917916546941,
+      "291": 0.0012532121996681805,
+      "33": 0.0010996370400245651,
+      "263": 0.0024573713655081496
+    },
+    "overlay_box_logical": [
+      0.0,
+      161.5,
+      393.0,
+      524.0
+    ],
+    "frame_size": [
+      480.0,
+      640.0
+    ],
+    "frame_rotation": 0,
+    "mirror": false
+  },
+  "second_session": {
+    "camera": "com.apple.avfoundation.avcapturedevice.built-in_video:1",
+    "delegate": "cpu",
+    "processed_frames": 29,
+    "skipped_frames": 0,
+    "face_frames": 12,
+    "landmarks": 478,
+    "frame_size": [
+      480.0,
+      640.0
+    ],
+    "frame_rotation": 0,
+    "average_inference_ms": 9.175413793103449,
+    "average_frame_ms": 9.312896551724139,
+    "error": null
+  },
+  "finished": "2026-09-22T09:59:13.205896Z"
+}

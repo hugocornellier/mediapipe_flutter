@@ -12,6 +12,9 @@ REPO = GALLERY.parent
 
 
 def main():
+    # Flutter emits Unicode build markers; Windows CI defaults to cp1252.
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
     target = {'Linux': 'linux', 'Windows': 'windows'}.get(platform.system())
     if target is None or platform.machine().lower() not in ('amd64', 'x86_64'):
         raise SystemExit('Run this validation on Windows x64 or Linux x64.')

@@ -1,7 +1,14 @@
 SHELL := /bin/bash
 DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-text packages/mediapipe-task-genai packages/mediapipe-task-vision tool/builder tool/task_benchmarks
-FLUTTER_PACKAGES := packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter
+FLUTTER_PACKAGES := packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter packages/mediapipe-task-vision-android packages/mediapipe-task-vision-web
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
+# The gallery's pubspec is generated per target by gallery/tool/prepare.py, so
+# it is format-checked without package resolution and analyzed by the
+# platform workflows after preparation.
+GALLERY_SOURCES := lib test integration_test tool
+# The web adapter's pubspec lists its generated runtime asset directories, so
+# it is likewise analyzed by the web workflow after prepare_runtime.py.
+ANALYZE_PACKAGES := $(filter-out packages/mediapipe-task-vision-web,$(ALL_PACKAGES))
 VISION_NATIVE_ARGS ?=
 
 .PHONY: get models native_vision release_vision analyze format check_format generate generate_core generate_text generate_genai generate_vision test test_only test_core test_text test_vision test_vision_flutter test_vision_prebuilt test_examples build_text build_vision_camera example_text example_vision ci headers sdks
@@ -35,13 +42,15 @@ release_vision:
 	cd packages/mediapipe-task-vision && python3 tool/prepare_native_release.py
 
 analyze:
-	@for package in $(ALL_PACKAGES); do (cd "$$package" && dart analyze --fatal-infos) || exit $$?; done
+	@for package in $(ANALYZE_PACKAGES); do (cd "$$package" && dart analyze --fatal-infos) || exit $$?; done
 
 format:
 	@for package in $(ALL_PACKAGES); do (cd "$$package" && dart format .) || exit $$?; done
+	@cd gallery && dart format $(GALLERY_SOURCES)
 
 check_format:
 	@for package in $(ALL_PACKAGES); do (cd "$$package" && dart format --output=none --set-exit-if-changed .) || exit $$?; done
+	@cd gallery && dart format --output=none --set-exit-if-changed $(GALLERY_SOURCES)
 
 # Regenerate against the checked-in headers, never a floating upstream checkout.
 generate:

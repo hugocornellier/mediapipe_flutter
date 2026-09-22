@@ -9,6 +9,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# A newer push on the same branch supersedes the queued matrix; the hosted
+# macOS pool is small enough that stale runs otherwise starve the latest one.
+concurrency:
+  group: ios-simulator-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   simulator-consumer:
     name: Face tasks / fresh arm64 iOS simulator consumer

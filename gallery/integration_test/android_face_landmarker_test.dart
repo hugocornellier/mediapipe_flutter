@@ -214,47 +214,49 @@ void main() {
     timeout: const Timeout(Duration(minutes: 3)),
   );
 
-  testWidgets('physical Android camera: CPU to GPU to CPU, front and back', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: Text('Testing Android Face Landmarker')),
-      ),
-    );
-    await tester.runAsync(() async {
-      final controller = LiveCameraController<FaceLandmarkerResult>(
-        FaceLandmarkerLiveTask(),
+  testWidgets(
+    'physical Android camera: CPU to GPU to CPU, front and back',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: Text('Testing Android Face Landmarker')),
+        ),
       );
-      try {
-        final cameras = await controller.findCameras();
-        expect(cameras, isNotEmpty);
-        for (final delegate in [
-          VisionDelegate.cpu,
-          VisionDelegate.gpu,
-          VisionDelegate.cpu,
-        ]) {
-          await controller.start(
-            delegate: delegate,
-            modelAsset: 'assets/models/face_landmarker.task',
-          );
-          await _frames(controller);
-          _cameraReport(controller);
+      await tester.runAsync(() async {
+        final controller = LiveCameraController<FaceLandmarkerResult>(
+          FaceLandmarkerLiveTask(),
+        );
+        try {
+          final cameras = await controller.findCameras();
+          expect(cameras, isNotEmpty);
+          for (final delegate in [
+            VisionDelegate.cpu,
+            VisionDelegate.gpu,
+            VisionDelegate.cpu,
+          ]) {
+            await controller.start(
+              delegate: delegate,
+              modelAsset: 'assets/models/face_landmarker.task',
+            );
+            await _frames(controller);
+            _cameraReport(controller);
+          }
+          if (controller.canSwitchCamera) {
+            await controller.switchCamera();
+            await _frames(controller);
+            _cameraReport(controller);
+            await controller.start(delegate: VisionDelegate.gpu);
+            await _frames(controller);
+            _cameraReport(controller);
+          }
+        } finally {
+          await controller.close();
+          controller.dispose();
         }
-        if (controller.canSwitchCamera) {
-          await controller.switchCamera();
-          await _frames(controller);
-          _cameraReport(controller);
-          await controller.start(delegate: VisionDelegate.gpu);
-          await _frames(controller);
-          _cameraReport(controller);
-        }
-      } finally {
-        await controller.close();
-        controller.dispose();
-      }
-    });
-  }, timeout: const Timeout(Duration(minutes: 4)));
+      });
+    },
+    timeout: const Timeout(Duration(minutes: 4)),
+  );
 
   testWidgets(
     'Android gallery opens Live Face Landmarker and switches CPU/GPU',

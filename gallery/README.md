@@ -54,13 +54,13 @@ Linux builds need `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev` and
 
 Three gates, in order:
 
-1. **Bundled** — `tool/prepare.py` reads `sdk_downloads.dart` and selects the
+1. **Bundled**: `tool/prepare.py` reads `sdk_downloads.dart` and selects the
    tasks whose runtime this target can actually obtain. Unpublished runtimes
    count only when a maintainer build is present in the package.
-2. **Validated** — `lib/catalog.dart` asks the package's own capability query.
+2. **Validated**: `lib/catalog.dart` asks the package's own capability query.
    Nothing restates support by hand, so a task validated on a new platform
    appears here with no code change.
-3. **Demonstrable** — a screen of its own, which is what `GalleryDemo` names.
+3. **Demonstrable**: a screen of its own, which is what `GalleryDemo` names.
    Entries without one are known to the gallery but never become tiles.
 
 Anything bundled but not validated, and anything validated without a screen, is
@@ -101,8 +101,13 @@ checks native camera plugin registration and enumeration, visits all live task
 runtimes in one process, and drives the Face Landmarks page with supplied portrait
 frames through Google's real CPU task. It checks padded RGBA/BGRA, 478-point
 results, camera switching, stop/start, cleanup and a release gallery build.
-Hosted runners have no physical webcam: camera capture and visual landmark alignment
-still need a webcam check on each platform. To check capture, prepare the target
+Hosted runners have no physical webcam, so the real-camera workflows supply one:
+Linux streams the licensed portrait into a v4l2loopback device and Windows
+registers a Media Foundation virtual camera showing it (`tool/windows/vcam`).
+Both run `integration_test/real_camera_test.dart`, which checks capture, a face
+across stop/restart, and overlay alignment against the on-screen preview; the
+status matrix links the records. A physical webcam still differs in formats and
+exposure, so a manual pass remains useful. To check capture, prepare the target
 then use `flutter run -d windows --release -t tool/live_face_camera_smoke.dart`
 (or `-d linux`). It processes twenty CPU camera frames twice and records JSON in
 the system temporary directory; put a face in view and check the face count.

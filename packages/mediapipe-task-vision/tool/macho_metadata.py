@@ -39,6 +39,36 @@ def inspect(data):
     return first, signature, first - position, dependencies, sections
 
 
+def unsigned_sha256(data):
+    """SHA-256 of a signed thin Mach-O with its code signature masked out.
+
+    codesign rewrites exactly three things when it re-signs a dylib: the
+    signature blob at the end of __LINKEDIT, that segment's vmsize/filesize,
+    and LC_CODE_SIGNATURE's dataoff/datasize. Different Xcode releases emit
+    different blobs, so a pin on the signed file breaks with a toolchain
+    update. Hashing everything before the blob, with those fields zeroed,
+    pins the header (including the rewritten install names), code, data and
+    fixups, and nothing the signer chooses. The Dart hook computes the same
+    digest in unsignedMachOSha256.
+    """
+    if struct.unpack_from('<I', data)[0] != 0xfeedfacf:
+        raise ValueError('Expected thin little-endian Mach-O 64')
+    count = struct.unpack_from('<I', data, 16)[0]
+    image = bytearray(data)
+    position, end = 32, len(data)
+    for _ in range(count):
+        command, length = struct.unpack_from('<II', data, position)
+        if command == 0x19 and data[position + 8:position + 24].rstrip(b'\0') == b'__LINKEDIT':
+            # vmsize at +32 and filesize at +48; fileoff between them stays.
+            image[position + 32:position + 40] = bytes(8)
+            image[position + 48:position + 56] = bytes(8)
+        if command == 0x1d:
+            end = struct.unpack_from('<I', data, position + 8)[0]
+            image[position + 8:position + 16] = bytes(8)
+        position += length
+    return hashlib.sha256(image[:end]).hexdigest()
+
+
 def install_name(data):
     """Return the thin dylib's LC_ID_DYLIB string."""
     count = struct.unpack_from('<I', data, 16)[0]

@@ -5,7 +5,10 @@ and GPU reference generators.  This tool extracts only the native library and
 its upstream notices.  It corrects Google's stale LC_ID_DYLIB, shortens
 equivalent system-framework paths to leave Flutter's install-name capacity,
 applies an ad-hoc signature, and verifies that code, data, sections and fixups
-are unchanged.  Nothing is published by this tool.
+are unchanged.  The pinned identity is the unsigned image (everything before
+the signature blob, with the two sizes codesign rewrites masked), so a new
+Xcode changes the recorded file hash but not the pin.  Nothing is published by
+this tool.
 """
 import argparse
 import hashlib
@@ -17,7 +20,7 @@ import urllib.request
 import zipfile
 
 from cpu_reference import MACOS_WHEEL
-from macho_metadata import rewrite_install_name
+from macho_metadata import rewrite_install_name, unsigned_sha256
 
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
@@ -27,7 +30,10 @@ UPSTREAM_LIBRARY = 'mediapipe/tasks/c/libmediapipe.dylib'
 LIBRARY_NAME = 'libmediapipe.dylib'
 INSTALL_NAME = '@rpath/libmediapipe.dylib'
 ORIGINAL_INSTALL_NAME = '@rpath/libmediapipe_source.so'
-ARTIFACT_SHA256 = '41e98323ac91465270d0ae6348e9bf7d8fd9b3973521838f44ee1d61271607f9'
+# Unsigned-image digest of the prepared library; see macho_metadata.unsigned_sha256.
+# The signed file's digest depends on the Xcode that signed it and is only
+# recorded in the manifest.
+UNSIGNED_SHA256 = 'b4c9e10a77fabea6ecbd88f93686ee9414c01762531eb3d487240958b2327fdc'
 MINIMUM_OS = '14.0'
 NOTICE_SHA256 = {
     'LICENSE': '8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8',
@@ -107,9 +113,11 @@ def prepare(wheel, output):
     if packaging['original_install_name'] != ORIGINAL_INSTALL_NAME:
         raise ValueError('Official library install name changed upstream')
     prepared = library.read_bytes()
-    if digest(prepared) != ARTIFACT_SHA256:
-        raise ValueError('Prepared library checksum mismatch')
+    if unsigned_sha256(prepared) != UNSIGNED_SHA256:
+        raise ValueError('Prepared library unsigned-image checksum mismatch')
     files[LIBRARY_NAME] = prepared
+    toolchain = subprocess.check_output(
+        ['xcodebuild', '-version'], text=True).splitlines()[0]
     manifest = {
         'origin': 'official-pypi-wheel',
         'upstream_version': VERSION,
@@ -122,7 +130,9 @@ def prepare(wheel, output):
         'minimum_os': MINIMUM_OS,
         'delegates': ['cpu', 'gpu'],
         'bytes': len(prepared),
-        'sha256': ARTIFACT_SHA256,
+        'sha256': digest(prepared),
+        'unsigned_sha256': UNSIGNED_SHA256,
+        'signing_toolchain': toolchain,
         'files': {name: digest(data) for name, data in sorted(files.items())},
         'packaging': packaging,
         'scope': ('Official runtime selected only for the gallery Live Face Landmarker, '

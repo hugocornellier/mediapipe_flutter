@@ -9,6 +9,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# A newer push on the same branch supersedes the queued matrix; the hosted
+# macOS pool is small enough that stale runs otherwise starve the latest one.
+concurrency:
+  group: macos-tasks-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   modern-task-matrix:
     name: Modern tasks / options and sustained CPU inference
@@ -161,6 +167,24 @@ jobs:
           name: mediapipe-face-tasks-1.0.0-macos-arm64
           path: packages/mediapipe-task-vision/build/native/**/*.tar.gz
           if-no-files-found: error
+
+  official-runtime-pin:
+    name: Official macOS landmark runtime / pin survives this runner's Xcode
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare the official runtime and check the unsigned-image pin
+        # The prepared dylib is re-signed by whichever Xcode is present. The
+        # pin covers the unsigned image, so this must pass on every Xcode; the
+        # manifest records which one signed it.
+        run: |
+          xcodebuild -version | head -1
+          python3 -B packages/mediapipe-task-vision/tool/prepare_official_macos_landmark_runtime.py \
+            | python3 -c "import json,sys; t=sys.stdin.read(); m=json.loads(t[t.index('{'):])['manifest']; print('signed', m['sha256'][:16], 'unsigned', m['unsigned_sha256'][:16], m['signing_toolchain'])"
 
   prebuilt-consumer:
     name: Fresh Flutter consumer / public runtime download
