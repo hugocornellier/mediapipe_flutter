@@ -213,9 +213,10 @@ final class _SuppliedCamera extends CameraPlatform {
       lensDirection: CameraLensDirection.front,
       sensorOrientation: 0,
     ),
+    // The flip control appears only when a front and a back camera exist.
     CameraDescription(
       name: 'supplied-bgra',
-      lensDirection: CameraLensDirection.external,
+      lensDirection: CameraLensDirection.back,
       sensorOrientation: 0,
     ),
   ];
