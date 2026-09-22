@@ -1,0 +1,87 @@
+commit 5936e787d1a187eab6ac9694fd9b07cd4b245fa5
+Author: hugocornellier <hugo.cornellier@gmail.com>
+Date:   Tue Sep 22 16:24:39 2026 -0300
+
+    perf(web): capture live frames as VideoFrame where supported
+
+diff --git a/gallery/lib/web/live_camera_controller.dart b/gallery/lib/web/live_camera_controller.dart
+index 6fd03ea..bff96ec 100644
+--- a/gallery/lib/web/live_camera_controller.dart
++++ b/gallery/lib/web/live_camera_controller.dart
+@@ -335,7 +335,8 @@ class LiveCameraController<T> extends ChangeNotifier {
+     final timestamp = math.max(_lastTimestamp + 1, _clock.elapsedMilliseconds);
+     _lastTimestamp = timestamp;
+     _frame = () async {
+-      web.ImageBitmap? bitmap;
++      JSObject? source;
++      void Function()? release;
+       final trace = PipelineTrace.enabled
+           ? (PipelineFrame(timestamp, delegate.name, arrived, captured)
+               ..started = PipelineTrace.now())
+@@ -343,8 +344,21 @@ class LiveCameraController<T> extends ChangeNotifier {
+       final whole = Stopwatch()..start();
+       try {
+         final conversion = Stopwatch()..start();
+-        bitmap = await web.window.createImageBitmap(video).toDart;
+-        final width = bitmap.width, height = bitmap.height;
++        final int width, height;
++        if (_videoFrames) {
++          // Wraps the decoded camera frame without drawing it to a bitmap.
++          final frame = web.VideoFrame(video);
++          source = frame;
++          release = () => frame.close();
++          width = frame.displayWidth;
++          height = frame.displayHeight;
++        } else {
++          final bitmap = await web.window.createImageBitmap(video).toDart;
++          source = bitmap;
++          release = () => bitmap.close();
++          width = bitmap.width;
++          height = bitmap.height;
++        }
+         conversion.stop();
+         trace?.bitmap = PipelineTrace.now();
+         if (_closed || generation != _generation) return;
+@@ -354,7 +368,7 @@ class LiveCameraController<T> extends ChangeNotifier {
+         }
+         final inference = Stopwatch()..start();
+         final detected = await browserTask.detectBrowserFrame(
+-          bitmap,
++          source,
+           width,
+           height,
+           timestamp,
+@@ -420,7 +434,7 @@ class LiveCameraController<T> extends ChangeNotifier {
+           unawaited(_enqueue(_release));
+         }
+       } finally {
+-        bitmap?.close();
++        release?.call();
+         _frame = null;
+       }
+     }();
+@@ -501,6 +515,8 @@ class LiveCameraController<T> extends ChangeNotifier {
+   }
+ }
+ 
++final bool _videoFrames = globalContext.has('VideoFrame');
++
+ bool get _isMobileBrowser {
+   if (defaultTargetPlatform == TargetPlatform.android ||
+       defaultTargetPlatform == TargetPlatform.iOS) {
+diff --git a/packages/mediapipe-task-vision-web/assets/worker.js b/packages/mediapipe-task-vision-web/assets/worker.js
+index e230bfa..9878f2e 100644
+--- a/packages/mediapipe-task-vision-web/assets/worker.js
++++ b/packages/mediapipe-task-vision-web/assets/worker.js
+@@ -77,8 +77,9 @@ async function run(type, input, timing) {
+       ? task.detect(source, processing)
+       : task.detectForVideo(source, input.timestamp, processing);
+     const inferred = performance.now();
+-    const json = JSON.stringify({width: source.width, height: source.height,
+-      timestamp: input.timestamp, result});
++    // A VideoFrame reports its size as displayWidth/displayHeight.
++    const json = JSON.stringify({width: source.displayWidth ?? source.width,
++      height: source.displayHeight ?? source.height, timestamp: input.timestamp, result});
+     timing.inference = inferred - started;
+     timing.serialize = performance.now() - inferred;
+     timing.timestamp = input.timestamp;
