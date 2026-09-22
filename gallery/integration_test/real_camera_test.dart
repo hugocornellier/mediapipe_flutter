@@ -38,41 +38,43 @@ void main() {
       final screenshots = _Screenshots(binding);
       Rect? viewOnScreen;
       var pixelsPerLogical = tester.view.devicePixelRatio;
-      if (screenshots.calibrates) {
-        // Locate the Flutter view on the screen before the gallery opens.
-        const marker = Color(0xFFFF00FF);
-        await tester.pumpWidget(const ColoredBox(color: marker));
-        await tester.pump();
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 700)),
-        );
-        final shot = await tester.runAsync(screenshots.take);
-        viewOnScreen = boundsOfColor(shot!, marker);
-        expect(viewOnScreen, isNotNull, reason: 'Flutter view not on screen');
-        final logical = tester.view.physicalSize / tester.view.devicePixelRatio;
-        pixelsPerLogical = viewOnScreen!.width / logical.width;
-        report['view_on_screen'] = [
-          viewOnScreen.left,
-          viewOnScreen.top,
-          viewOnScreen.width,
-          viewOnScreen.height,
-        ];
-        report['pixels_per_logical'] = pixelsPerLogical;
-      }
-
-      final cameras = await tester.runAsync(availableCameras);
-      report['cameras'] = [
-        for (final camera in cameras!)
-          {
-            'name': camera.name,
-            'lens': camera.lensDirection.name,
-            'sensor_orientation': camera.sensorOrientation,
-          },
-      ];
-      expect(cameras, isNotEmpty, reason: 'this test needs a real camera');
-
       LiveCameraController<Object?>? controller;
       try {
+        if (screenshots.calibrates) {
+          // Locate the Flutter view on the screen before the gallery opens.
+          const marker = Color(0xFFFF00FF);
+          await tester.pumpWidget(const ColoredBox(color: marker));
+          await tester.pump();
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 700)),
+          );
+          final shot = (await tester.runAsync(screenshots.take))!;
+          viewOnScreen = boundsOfColor(shot, marker);
+          report['screen_size'] = [shot.width, shot.height];
+          expect(viewOnScreen, isNotNull, reason: 'Flutter view not on screen');
+          final logical =
+              tester.view.physicalSize / tester.view.devicePixelRatio;
+          pixelsPerLogical = viewOnScreen!.width / logical.width;
+          report['view_on_screen'] = [
+            viewOnScreen.left,
+            viewOnScreen.top,
+            viewOnScreen.width,
+            viewOnScreen.height,
+          ];
+          report['pixels_per_logical'] = pixelsPerLogical;
+        }
+
+        final cameras = await tester.runAsync(availableCameras);
+        report['cameras'] = [
+          for (final camera in cameras!)
+            {
+              'name': camera.name,
+              'lens': camera.lensDirection.name,
+              'sensor_orientation': camera.sensorOrientation,
+            },
+        ];
+        expect(cameras, isNotEmpty, reason: 'this test needs a real camera');
+
         await tester.pumpWidget(const GalleryApp());
         for (
           var i = 0;
@@ -188,6 +190,10 @@ void main() {
         report['second_session'] = second;
         expect(live.running, isTrue);
         expect(second['face_frames'], greaterThanOrEqualTo(10));
+      } catch (error) {
+        // The record says why it failed; the test still fails.
+        report['error'] = '$error';
+        rethrow;
       } finally {
         await tester.runAsync(() async => await controller?.close());
         await tester.pumpWidget(const MaterialApp(home: SizedBox()));

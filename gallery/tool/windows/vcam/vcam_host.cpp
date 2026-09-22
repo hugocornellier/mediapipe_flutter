@@ -1,9 +1,10 @@
 // Hosts the MediaPipe fixture camera for a CI job, and inspects it.
 //
-//   vcam_host start [--all-users] [--system]
+//   vcam_host start [--all-users] [--system] | start --auto
 //       Creates and starts the virtual camera, then keeps it alive until the
 //       process ends (session lifetime) or the named event
-//       Local\MediaPipeFixtureCameraStop is set.
+//       Local\MediaPipeFixtureCameraStop is set. --auto tries current-user
+//       session, all-users session and all-users system scopes in turn.
 //   vcam_host list
 //       Prints every video capture device; exits 0 only when the fixture
 //       camera is among them.
@@ -95,23 +96,46 @@ int List() {
   return present ? 0 : 2;
 }
 
-int Start(bool allUsers, bool system) {
+struct Scope {
+  bool allUsers;
+  bool system;
+};
+
+// Creates and starts the camera for `scope`; null when either step fails.
+ComPtr<IMFVirtualCamera> Create(Scope scope) {
   Log(L"creating %s: access=%s lifetime=%s source=%s",
-      MEDIAPIPE_FIXTURE_CAMERA_NAME, allUsers ? L"all-users" : L"current-user",
-      system ? L"system" : L"session", MEDIAPIPE_FIXTURE_CAMERA_CLSID);
+      MEDIAPIPE_FIXTURE_CAMERA_NAME,
+      scope.allUsers ? L"all-users" : L"current-user",
+      scope.system ? L"system" : L"session", MEDIAPIPE_FIXTURE_CAMERA_CLSID);
   ComPtr<IMFVirtualCamera> camera;
   HRESULT hr = MFCreateVirtualCamera(
       MFVirtualCameraType_SoftwareCameraSource,
-      system ? MFVirtualCameraLifetime_System : MFVirtualCameraLifetime_Session,
-      allUsers ? MFVirtualCameraAccess_AllUsers
-               : MFVirtualCameraAccess_CurrentUser,
+      scope.system ? MFVirtualCameraLifetime_System
+                   : MFVirtualCameraLifetime_Session,
+      scope.allUsers ? MFVirtualCameraAccess_AllUsers
+                     : MFVirtualCameraAccess_CurrentUser,
       MEDIAPIPE_FIXTURE_CAMERA_NAME, MEDIAPIPE_FIXTURE_CAMERA_CLSID, nullptr, 0,
       &camera);
   Log(L"MFCreateVirtualCamera: 0x%08X", hr);
-  if (FAILED(hr)) return 3;
+  if (FAILED(hr)) return nullptr;
   hr = camera->Start(nullptr);
   Log(L"IMFVirtualCamera::Start: 0x%08X", hr);
-  if (FAILED(hr)) return 4;
+  if (FAILED(hr)) {
+    camera->Shutdown();
+    return nullptr;
+  }
+  return camera;
+}
+
+// With `scopes` holding more than one entry, tries each in turn and keeps the
+// first camera that starts.
+int Start(const std::vector<Scope>& scopes) {
+  ComPtr<IMFVirtualCamera> camera;
+  for (const Scope& scope : scopes) {
+    camera = Create(scope);
+    if (camera) break;
+  }
+  if (!camera) return 4;
   List();
   Log(L"VCAM_READY");
   HANDLE stop =
@@ -358,8 +382,8 @@ bool HasFlag(int argc, wchar_t** argv, const wchar_t* flag) {
 
 int wmain(int argc, wchar_t** argv) {
   if (argc < 2) {
-    Log(L"usage: vcam_host start [--all-users] [--system] | list | smoke "
-        L"[frames] [frame.bmp]");
+    Log(L"usage: vcam_host start [--all-users] [--system] | start --auto | "
+        L"list | smoke [frames] [frame.bmp]");
     return 1;
   }
   HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -371,8 +395,10 @@ int wmain(int argc, wchar_t** argv) {
   const std::wstring command = argv[1];
   int code = 1;
   if (command == L"start") {
-    code = Start(HasFlag(argc, argv, L"--all-users"),
-                 HasFlag(argc, argv, L"--system"));
+    code = HasFlag(argc, argv, L"--auto")
+               ? Start({{false, false}, {true, false}, {true, true}})
+               : Start({{HasFlag(argc, argv, L"--all-users"),
+                         HasFlag(argc, argv, L"--system")}});
   } else if (command == L"list") {
     code = List();
   } else if (command == L"smoke") {

@@ -40,12 +40,37 @@ jobs:
           New-Item -ItemType Directory -Force $env:EVIDENCE | Out-Null
           $feature = Install-WindowsFeature Server-Media-Foundation
           "Server-Media-Foundation: success=$($feature.Success) restart=$($feature.RestartNeeded) exit=$($feature.ExitCode)"
-          Start-Service FrameServer
-          Get-Service FrameServer, FrameServerMonitor | Format-Table Name, Status, StartType -AutoSize | Out-String
-          # Desktop (non-packaged) apps may use the camera for this user.
-          $consent = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\webcam\NonPackaged'
-          New-Item -Force $consent | Out-Null
-          Set-ItemProperty $consent -Name Value -Value Allow
+          # Camera privacy, policy and Media Foundation state as the image has it.
+          $store = 'SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\webcam'
+          foreach ($key in "HKLM\$store", "HKCU\$store", 'HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy',
+                           'HKLM\SOFTWARE\Microsoft\Windows Media Foundation\Platform', 'HKLM\SOFTWARE\Microsoft\Windows Media Foundation\FrameServer') {
+            "--- $key"
+            reg query $key /s 2>&1 | Out-String
+          }
+          # MFCreateVirtualCamera is subject to the webcam privacy control:
+          # allow the device, this user and desktop apps, as Settings would.
+          foreach ($key in "HKLM:\$store", "HKCU:\$store", "HKCU:\$store\NonPackaged") {
+            if (-not (Test-Path $key)) { New-Item $key -Force | Out-Null }
+            Set-ItemProperty $key -Name Value -Value Allow
+          }
+          $policy = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy'
+          if ((Get-ItemProperty $policy -ErrorAction SilentlyContinue).LetAppsAccessCamera -eq 2) {
+            Set-ItemProperty $policy -Name LetAppsAccessCamera -Value 1
+            'AppPrivacy LetAppsAccessCamera was force-deny; set to force-allow'
+          }
+          foreach ($service in 'camsvc', 'FrameServer', 'FrameServerMonitor') {
+            try { Restart-Service $service -Force -ErrorAction Stop } catch { "$service start: $($_.Exception.Message)" }
+          }
+          Get-Service camsvc, FrameServer, FrameServerMonitor | Format-Table Name, Status, StartType -AutoSize | Out-String
+          # Turn on the camera-related event channels so a failure leaves a trace.
+          Get-WinEvent -ListLog * -ErrorAction SilentlyContinue |
+            Where-Object { $_.LogName -match 'MediaFoundation|FrameServer|Camera|Capture|CapabilityAccess|Kernel-PnP' } |
+            ForEach-Object {
+              if (-not $_.IsEnabled -and $_.LogType -in 'Operational', 'Administrative') {
+                try { $_.IsEnabled = $true; $_.SaveChanges() } catch {}
+              }
+              "$($_.LogName): $($_.LogType), enabled=$($_.IsEnabled), records=$($_.RecordCount)"
+            }
           # The gallery window is 1280x720 at (10, 10); the screenshot oracle
           # needs all of it on screen.
           Add-Type -AssemblyName System.Windows.Forms, System.Drawing
@@ -67,6 +92,7 @@ jobs:
             }
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern bool EnumDisplaySettings(string device, int mode, ref DEVMODE devMode);
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int ChangeDisplaySettings(ref DEVMODE devMode, int flags);
+            [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
             public static int Resize(int width, int height) {
               var mode = new DEVMODE();
               mode.dmSize = (short)Marshal.SizeOf(typeof(DEVMODE));
@@ -77,7 +103,9 @@ jobs:
           }
           '@
           "ChangeDisplaySettings 1920x1080: $([Display]::Resize(1920, 1080))"
-          "Screen after: $([System.Windows.Forms.Screen]::PrimaryScreen.Bounds)"
+          # Forms caches the screen list; ask Win32 and WMI afresh.
+          "Screen after: $([Display]::GetSystemMetrics(0))x$([Display]::GetSystemMetrics(1))"
+          Get-CimInstance Win32_VideoController | Format-List Name, CurrentHorizontalResolution, CurrentVerticalResolution | Out-String
           "DPI: $([System.Drawing.Graphics]::FromHwnd([IntPtr]::Zero).DpiX)"
       - name: Build the fixture camera
         run: gallery/tool/windows/vcam/build.ps1 -Out $env:VCAM
@@ -90,7 +118,7 @@ jobs:
           reg query 'HKLM\SOFTWARE\Classes\CLSID\{40A27443-E72D-4A75-9ED4-0FCEFDA4D712}' /s
           if ($register.ExitCode) { exit 1 }
           $log = "$env:EVIDENCE\vcam-host.log"
-          $vcamHost = Start-Process "$env:VCAM\vcam_host.exe" -ArgumentList 'start' -PassThru -WindowStyle Hidden `
+          $vcamHost = Start-Process "$env:VCAM\vcam_host.exe" -ArgumentList 'start', '--auto' -PassThru -WindowStyle Hidden `
             -RedirectStandardOutput $log -RedirectStandardError "$env:EVIDENCE\vcam-host.err"
           $deadline = (Get-Date).AddSeconds(60)
           while ((Get-Date) -lt $deadline -and -not $vcamHost.HasExited) {
@@ -149,7 +177,11 @@ jobs:
           Get-Content "$env:EVIDENCE\vcam-host.log" -ErrorAction SilentlyContinue
           Get-Process vcam_host -ErrorAction SilentlyContinue | Format-Table Id, StartTime -AutoSize | Out-String
           Get-Content $env:MEDIAPIPE_CAMERA_REPORT -ErrorAction SilentlyContinue
-          $logs = Get-WinEvent -ListLog *MediaFoundation*, *FrameServer*, *Camera*, *Capture* -ErrorAction SilentlyContinue | Where-Object RecordCount
+          Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match 'MediaPipe|Virtual Camera' } |
+            Format-Table Status, Class, FriendlyName, InstanceId -AutoSize | Out-String -Width 220
+          Get-Service camsvc, FrameServer, FrameServerMonitor | Format-Table Name, Status -AutoSize | Out-String
+          $logs = Get-WinEvent -ListLog * -ErrorAction SilentlyContinue |
+            Where-Object { $_.LogName -match 'MediaFoundation|FrameServer|Camera|Capture|CapabilityAccess|Kernel-PnP' -and $_.RecordCount }
           foreach ($log in $logs) {
             "=== $($log.LogName) ($($log.RecordCount))"
             Get-WinEvent -LogName $log.LogName -MaxEvents 40 -ErrorAction SilentlyContinue | Format-List TimeCreated, Id, LevelDisplayName, Message | Out-String -Width 220
