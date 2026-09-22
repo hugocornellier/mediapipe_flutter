@@ -278,8 +278,8 @@ async function iosUserAgentCpuCheck() {
   }
 }
 
-async function installCaptureObservations(page) {
-  await page.addInitScript(() => {
+async function installCaptureObservations(page, emulateMobileFacing = false) {
+  await page.addInitScript(emulateFacing => {
     window.testCaptureTracks = [];
     window.testFrameCallbacks = new Set();
     window.testWorkers = [];
@@ -292,7 +292,16 @@ async function installCaptureObservations(page) {
     navigator.mediaDevices.getUserMedia = async constraints => {
       let stream;
       try {
-        stream = await getUserMedia(constraints);
+        let requested = constraints;
+        const facing = constraints.video?.facingMode;
+        const direction = typeof facing === 'string' ? facing : facing?.exact ?? facing?.ideal;
+        if (emulateFacing && direction) {
+          const devices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+          const target = direction === 'environment' ? devices[1] ?? devices[0] : devices[0];
+          requested = {...constraints, video: {...constraints.video, facingMode: undefined,
+            deviceId: {exact: target.deviceId}}};
+        }
+        stream = await getUserMedia(requested);
         window.testCaptureDiagnostics.push({stage: 'getUserMedia', status: 'passed', constraints,
           settings: stream.getVideoTracks().map(t => t.getSettings())});
       } catch (error) {
@@ -327,7 +336,7 @@ async function installCaptureObservations(page) {
         return cancel.call(this, id);
       };
     }
-  });
+  }, emulateMobileFacing);
 }
 
 async function cameraChecks() {
@@ -387,18 +396,18 @@ async function cameraChecks() {
     document.querySelector('video')?.getAttribute('data-landmarks') === '478');
   assert.equal(await page.evaluate(() => mediapipeVision.stats().activeWorkers), 1);
   report.checks.push('live-cpu-gpu-cpu-switch-face-inference-worker-cleanup');
-  await page.getByRole('button', {name: 'Stop camera'}).click();
+  await page.getByRole('button', {name: 'Back', exact: true}).click();
   await wait(page, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended') &&
     window.testFrameCallbacks.size === 0);
-  await page.getByRole('button', {name: 'Start camera'}).click();
+  await page.getByRole('group', {name: /Live Face Landmarker/}).click();
   await wait(page, () => document.querySelector('video')?.getAttribute('data-landmarks') === '478');
   await page.getByRole('button', {name: 'Back', exact: true}).click();
   await wait(page, () => mediapipeVision.stats().activeWorkers === 0 &&
     mediapipeVision.stats().pendingRequests === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended') &&
     window.testFrameCallbacks.size === 0);
-  report.checks.push('stop-restart-navigation-tracks-workers-callback-cleanup');
+  report.checks.push('automatic-start-navigation-tracks-workers-callback-cleanup');
   await context.close();
 
   const denied = await browser.newContext();
@@ -417,11 +426,13 @@ async function cameraChecks() {
   // File-backed Chrome capture exposes one device. Use Chrome's built-in
   // pattern cameras for native enumeration/device-selection coverage.
   const multiple = await launch(2, false);
-  const multipleContext = await multiple.newContext();
+  const multipleContext = await multiple.newContext({
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/153.0 Mobile/15E148 Safari/604.1',
+  });
   await multipleContext.grantPermissions(['camera'], {origin: new URL(base).origin});
   const multiplePage = await multipleContext.newPage();
   observe(multiplePage);
-  await installCaptureObservations(multiplePage);
+  await installCaptureObservations(multiplePage, true);
   await multiplePage.goto(base);
   await multiplePage.getByRole('group', {name: /Live Face Landmarker/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 12);
@@ -432,10 +443,15 @@ async function cameraChecks() {
   const secondDevice = await multiplePage.evaluate(() => window.testCaptureTracks.at(-1).getSettings().deviceId);
   assert.notEqual(firstDevice, secondDevice);
   assert.ok(await multiplePage.evaluate(() => window.testCaptureTracks.some(t => t.readyState === 'ended')));
+  await multiplePage.getByRole('button', {name: 'Switch to front camera'}).click();
+  await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 12 &&
+    document.querySelector('video')?.style.transform === 'scaleX(-1)');
+  const thirdDevice = await multiplePage.evaluate(() => window.testCaptureTracks.at(-1).getSettings().deviceId);
+  assert.equal(thirdDevice, firstDevice);
   await multiplePage.getByRole('button', {name: 'Back', exact: true}).click();
   await wait(multiplePage, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended'));
-  report.checks.push('native-browser-device-switch-and-mirroring');
+  report.checks.push('mobile-browser-front-back-front-switch-and-mirroring');
   // Trigger the actual worker error handler while gallery capture is active.
   await multiplePage.getByRole('group', {name: /Live Face Landmarker/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 3);
@@ -448,7 +464,8 @@ async function cameraChecks() {
   await wait(multiplePage, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended'));
   report.checks.push('worker-error-rejects-pending-requests-and-releases-capture');
-  await multiplePage.getByRole('button', {name: 'Start camera'}).click();
+  await multiplePage.getByRole('button', {name: 'Back', exact: true}).click();
+  await multiplePage.getByRole('group', {name: /Live Face Landmarker/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 3);
   await multiplePage.evaluate(() => {
     window.testCaptureTracks.find(t => t.readyState === 'live').dispatchEvent(new Event('ended'));
@@ -456,7 +473,7 @@ async function cameraChecks() {
   await multiplePage.getByText(/Camera disconnected/).waitFor();
   await wait(multiplePage, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended'));
-  report.checks.push('worker-error-restart-and-simulated-track-ended-cleanup');
+  report.checks.push('worker-error-reopen-and-simulated-track-ended-cleanup');
   await multiple.close();
 
   const missing = await launch(0, false);

@@ -56,7 +56,7 @@ jobs:
         run: |
           flutter pub get
           flutter analyze lib tool/web_api_probe.dart
-          flutter test --platform chrome test/camera_geometry_test.dart test/camera_frame_test.dart
+          flutter test --platform chrome test/camera_geometry_test.dart test/camera_frame_test.dart test/camera_selection_test.dart
       - name: Build release gallery and API probe
         working-directory: gallery
         run: |

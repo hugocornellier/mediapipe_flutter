@@ -8,6 +8,7 @@ import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 import 'camera_geometry.dart';
 import 'camera_frame.dart';
+import 'camera_selection.dart';
 import 'live_task.dart';
 
 /// Owns camera capture and one official VIDEO-mode task.
@@ -59,7 +60,7 @@ class LiveCameraController<T> extends ChangeNotifier {
       description?.lensDirection == CameraLensDirection.front;
 
   /// Whether there is another camera to flip to.
-  bool get canSwitchCamera => cameras.length > 1;
+  bool get canSwitchCamera => hasFrontAndBackCameras(cameras);
   int processedFrames = 0;
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
@@ -127,11 +128,10 @@ class LiveCameraController<T> extends ChangeNotifier {
     return found;
   }
 
-  /// Flips to the next camera, restarting capture when it was running.
+  /// Flips directly between the front and back cameras.
   Future<void> switchCamera() {
     if (!canSwitchCamera || _closed) return Future.value();
-    final current = cameras.indexOf(description ?? cameras.first);
-    description = cameras[(current + 1) % cameras.length];
+    description = oppositeFacingCamera(cameras, description);
     result = null;
     frameSize = null;
     if (!running) {

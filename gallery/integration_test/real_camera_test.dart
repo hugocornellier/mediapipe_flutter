@@ -29,7 +29,7 @@ void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'real camera: capture, face in view, overlay alignment, stop/start',
+    'real camera: capture, face in view, overlay alignment, and restart',
     (tester) async {
       final report = <String, Object?>{
         'platform': Platform.operatingSystem,
@@ -174,9 +174,9 @@ void main() {
           report['alignment'] = 'no screenshot transport on this platform';
         }
 
-        // Phase 3: stop, restart, and confirm the camera is really released.
-        await tester.tap(find.text('Stop camera'));
-        await tester.pump();
+        // Phase 3: exercise the internal lifecycle without exposing controls.
+        expect(find.byType(FilledButton), findsNothing);
+        await tester.runAsync(live.stop);
         await tester.runAsync(() async {
           while (live.changing) {
             await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -184,8 +184,7 @@ void main() {
         });
         await tester.pump();
         expect(live.running, isFalse);
-        await tester.tap(find.text('Start camera'));
-        await tester.pump();
+        await tester.runAsync(live.start);
         final second = await _faceFrames(tester, live);
         report['second_session'] = second;
         expect(live.running, isTrue);

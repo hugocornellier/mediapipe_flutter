@@ -151,15 +151,14 @@ class _LivePageState extends State<LivePage> {
                   _showConnections,
                   _showPoints,
                 ),
-                placeholder: Text(
-                  _error ??
-                      controller.error ??
-                      (controller.cameras.isEmpty
-                          ? 'Looking for a camera…'
-                          : 'Press Start to begin.'),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70),
-                ),
+                placeholder: switch (_error ?? controller.error) {
+                  final String error => Text(
+                    error,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  null => const CircularProgressIndicator(),
+                },
               ),
             ),
           ),
@@ -210,19 +209,6 @@ class _LivePageState extends State<LivePage> {
                                 }
                               },
                       ),
-                    FilledButton.icon(
-                      onPressed: busy || controller.description == null
-                          ? null
-                          : controller.running
-                          ? () => controller.stop()
-                          : _start,
-                      icon: Icon(
-                        controller.running ? Icons.stop : Icons.play_arrow,
-                      ),
-                      label: Text(
-                        controller.running ? 'Stop camera' : 'Start camera',
-                      ),
-                    ),
                   ],
                 ),
               ],

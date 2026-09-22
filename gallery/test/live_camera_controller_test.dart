@@ -179,6 +179,39 @@ void main() {
     expect(controller.running, isTrue);
   });
 
+  test(
+    'switching skips additional cameras facing the same direction',
+    () async {
+      camera = ScriptedCamera(
+        cameras: const [
+          CameraDescription(
+            name: 'front',
+            lensDirection: CameraLensDirection.front,
+            sensorOrientation: 0,
+          ),
+          CameraDescription(
+            name: 'back-wide',
+            lensDirection: CameraLensDirection.back,
+            sensorOrientation: 0,
+          ),
+          CameraDescription(
+            name: 'back-ultrawide',
+            lensDirection: CameraLensDirection.back,
+            sensorOrientation: 0,
+          ),
+        ],
+      );
+      CameraPlatform.instance = camera;
+      controller = LiveCameraController<int>(task);
+
+      await started();
+      await controller.switchCamera();
+      await controller.switchCamera();
+
+      expect(camera.created, ['front', 'back-wide', 'front']);
+    },
+  );
+
   test('switching while stopped only changes the selection', () async {
     await controller.findCameras();
     await controller.switchCamera();
