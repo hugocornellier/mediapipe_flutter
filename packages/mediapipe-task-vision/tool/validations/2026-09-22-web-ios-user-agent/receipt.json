@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "date": "2026-09-22",
+  "repository": "hugocornellier/mediapipe_flutter",
+  "workflow": ".github/workflows/web.yaml",
+  "baseline_commit": "ec94349cabbc0a468ebfe78dabb844b5c871d2e0",
+  "scratch_branch": "ci/web-ios-ua",
+  "host": {
+    "os": "ubuntu-24.04",
+    "flutter": "3.44.8"
+  },
+  "regression": {
+    "file": "gallery/tool/browser/test_browser.mjs",
+    "sha256": "6bbed5ad39bdf7789c61d3071289df00ea92d2714c0f3332bf82c6f622f1e528",
+    "unchanged_between_red_and_green": true,
+    "override_method": "browser.newContext({userAgent})",
+    "actual_task_worker_user_agent_verified": true,
+    "document_type": "undefined",
+    "offscreen_canvas_type": "function",
+    "physical_ios_tested": false,
+    "playwright_webkit_tested": false
+  },
+  "worker": {
+    "file": "packages/mediapipe-task-vision-web/assets/worker.js",
+    "baseline_and_red_git_blob": "15a2ae3fe0b90f4b3cb8cacd0c818c70c0e1aa2c",
+    "baseline_and_red_sha256": "b8511e7f40bcca4d88f2536914b70ade33dd27161266c81ebd08bd27a149642e",
+    "fixed_sha256": "1d9b71408206e9404d11d8747e7e0b20c8299826b07ccc07e25cf46baaa87279"
+  },
+  "workflow_unchanged_sha256": "de306b14671dccf82752c2aa7a04b17d128099e3701e1fac918650d8144c196b",
+  "red": {
+    "run_id": 35731757565,
+    "url": "https://github.com/hugocornellier/mediapipe_flutter/actions/runs/35731757565",
+    "commit": "472034922e4949442a4190003873ded25f1de115",
+    "browser_job_id": 106758815763,
+    "browser_conclusion": "failure",
+    "failure_step": "Browser runtime and webcam integration",
+    "exact_error": "FaceLandmarkerException(null): Error: document is not defined",
+    "fix_present": false,
+    "artifact": {
+      "name": "web-face-evidence",
+      "id": 10695149826,
+      "size_in_bytes": 36114,
+      "sha256": "a01c90090cba3977cb93450155b5375d7c6d898ef723de9856022b689304af8d"
+    }
+  },
+  "green": {
+    "run_id": 35732668310,
+    "url": "https://github.com/hugocornellier/mediapipe_flutter/actions/runs/35732668310",
+    "commit": "a3f88a10a6f3dc166d24fb99a15bef94621fb007",
+    "browser_job_id": 106761921766,
+    "browser_conclusion": "success",
+    "workflow_conclusion": "failure",
+    "deploy_job_id": 106763948824,
+    "deploy_conclusion": "failure",
+    "deploy_annotation": "Branch \"ci/web-ios-ua\" is not allowed to deploy to github-pages due to environment protection rules.",
+    "verify_deployment_conclusion": "skipped",
+    "fix_present": true,
+    "artifact": {
+      "name": "web-face-evidence",
+      "id": 10696636855,
+      "size_in_bytes": 2468468,
+      "sha256": "aa5636b055732269c1453d1a27e59687b71f37f0677fdc05030fa349c5aae526"
+    },
+    "suites": [
+      {
+        "browser": "chromium",
+        "version": "153.0.8010.12",
+        "delegate": "CPU",
+        "suite": "all",
+        "checks": 18,
+        "status": "passed"
+      },
+      {
+        "browser": "chromium",
+        "version": "153.0.8010.12",
+        "delegate": "GPU",
+        "suite": "api",
+        "checks": 7,
+        "status": "passed"
+      },
+      {
+        "browser": "firefox",
+        "version": "155.0",
+        "delegate": "CPU",
+        "suite": "api",
+        "checks": 7,
+        "status": "passed"
+      }
+    ]
+  },
+  "dispatches_used_before_landing": {
+    "red": 1,
+    "green": 1
+  },
+  "public_deployment_proven_by_this_record": false,
+  "remaining": [
+    "Physical iOS Firefox CPU and GPU tests after deployment",
+    "Physical iOS Safari CPU and GPU tests after deployment",
+    "Exact Safari GPU error if it still fails",
+    "Firefox iOS preview letterboxing remains unchanged and out of scope"
+  ]
+}

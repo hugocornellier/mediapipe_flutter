@@ -1,0 +1,11 @@
+{
+  "README.md": "b92b15d27f1534364fac35404f62543cdad4e7a792563cdec3f2bf8cbdcd75ac",
+  "red-job-excerpt.txt": "6ef52412727f32fe747aaab3690c653d3f9e8ae63fcbb1f552f5351ca29c4f08",
+  "receipt.json": "8e33aaa778057d31726e996ca3bdbb7d55496e80e04f7e974f251b95e83b9726",
+  "red-report.json": "25640feb56bf0ce35fe8e03a9fc014f7c3fa6ca8d7cbecc2ecd37d5ef0dd4ed7",
+  "red-ios-user-agent-cpu.json": "77cc197dde58130893edd49bd3c9a31abdb3c139ea332fcc32ad02b5e9023a3b",
+  "green-chromium-cpu-report.json": "660a95d9fd9512a063455534980db55364dfe0d4cf4489197e0b9fde3f63863b",
+  "green-ios-user-agent-cpu.json": "530f55832162fc4f21461df7b4c2d66e2eca54c514bd76f2f35716fa8e1b9e62",
+  "green-chromium-gpu-report.json": "1babd78dc1d1e8d76187cde491bd0e68b7ae8abdcb5f61c1ff703fdde9a8a216",
+  "green-firefox-cpu-report.json": "2ad90f5405fa3295e88ff144d13abb4fc360b2da93f9d2c85d0d4295e24587f6"
+}
