@@ -225,6 +225,59 @@ async function apiChecks() {
   await browser.close();
 }
 
+async function iosUserAgentCpuCheck() {
+  const userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/133.0 Mobile/15E148 Safari/605.1.15';
+  const browser = await launch();
+  const context = await browser.newContext({userAgent});
+  const page = await context.newPage();
+  observe(page);
+  // Failed creation terminates the worker before Playwright can inspect it.
+  // Hold only the create request, then release it unchanged after observation.
+  await page.addInitScript(() => {
+    const postMessage = Worker.prototype.postMessage;
+    const pending = [];
+    Worker.prototype.postMessage = function(...args) {
+      if (args[0]?.type === 'create') pending.push([this, args]);
+      else postMessage.apply(this, args);
+    };
+    window.testResumeTaskCreation = () => {
+      Worker.prototype.postMessage = postMessage;
+      for (const [worker, args] of pending) postMessage.apply(worker, args);
+    };
+  });
+  const result = report.ios_user_agent_cpu = {
+    override_method: 'browser-context',
+    requested_user_agent: userAgent,
+    physical_ios_tested: false,
+  };
+  // Inspect the actual module worker used by the Dart API, not just the page.
+  const workerState = page.waitForEvent('worker', {
+    predicate: worker => worker.url().endsWith('/mediapipe_flutter_vision_web/assets/worker.js'),
+  }).then(worker => worker.evaluate(() => ({
+    user_agent: navigator.userAgent,
+    document_type: typeof document,
+    offscreen_canvas_type: typeof OffscreenCanvas,
+  })));
+  try {
+    await page.goto(apiBase);
+    result.worker = await workerState;
+    assert.equal(result.worker.user_agent, userAgent, 'iOS Firefox UA must reach the task worker');
+    assert.equal(result.worker.document_type, 'undefined');
+    assert.equal(result.worker.offscreen_canvas_type, 'function');
+    await page.evaluate(() => window.testResumeTaskCreation());
+    await wait(page, () => window.mediapipeApiTestReport);
+    result.api = await page.evaluate(() => window.mediapipeApiTestReport);
+    assert.equal(result.api.status, 'passed',
+      'iOS Firefox UA CPU task must construct and run: ' + (result.api.error || JSON.stringify(result.api)));
+    assert.equal(await page.evaluate(() => mediapipeVision.stats().activeWorkers), 0);
+    report.checks.push('ios-firefox-user-agent-cpu-worker-construction-and-inference');
+  } finally {
+    fs.writeFileSync(path.join(evidence, 'ios-user-agent-cpu.json'), JSON.stringify(result, null, 2));
+    await context.close();
+    await browser.close();
+  }
+}
+
 async function installCaptureObservations(page) {
   await page.addInitScript(() => {
     window.testCaptureTracks = [];
@@ -421,6 +474,9 @@ async function cameraChecks() {
 
 try {
   if (suite === 'all' || suite === 'api') await apiChecks();
+  if ((suite === 'all' || suite === 'api') && browserName === 'chromium' && delegate === 'CPU') {
+    await iosUserAgentCpuCheck();
+  }
   if (suite === 'all' || suite === 'camera') await cameraChecks();
   assert.equal(logs.filter(entry => entry.type === 'pageerror').length, 0, JSON.stringify(logs));
   report.status = 'passed';
