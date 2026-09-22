@@ -202,7 +202,7 @@ def prepare(target, selected):
         + [f'    - assets/samples/{name}' for name in sorted(SAMPLES.values())])
     # camera_desktop supplies native desktop preview and raw image streaming;
     # camera itself supplies the mobile implementations.
-    camera = ('  camera: ^0.12.1\n  camera_desktop: ^1.2.1'
+    camera = ('  camera: ^0.12.1\n  camera_desktop: ^1.2.2'
               if target in ('macos/arm64', 'linux/x64', 'windows/x64')
               else '  camera: ^0.12.1' if target == 'web' or target.startswith(('ios', 'android')) else '')
     android_plugin = ('''  mediapipe_flutter_vision_android:
