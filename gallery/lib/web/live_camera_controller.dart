@@ -8,11 +8,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:web/web.dart' as web;
+import '../live/camera_selection.dart';
 import '../live/live_task.dart';
 
 extension type _VideoCallbacks(JSObject object) implements JSObject {
   external int requestVideoFrameCallback(JSFunction callback);
   external void cancelVideoFrameCallback(int handle);
+}
+
+extension type _TrackSettings(JSObject object) implements JSObject {
+  external String? get facingMode;
 }
 
 /// Browser capture with the same gallery lifecycle, controls and result painter.
@@ -68,7 +73,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   double _totalInference = 0, _totalConversion = 0, _totalFrame = 0;
   bool get isFrontCamera =>
       description?.lensDirection == CameraLensDirection.front;
-  bool get canSwitchCamera => cameras.length > 1;
+  bool get canSwitchCamera => hasFrontAndBackCameras(cameras);
   double get averageInferenceMilliseconds =>
       processedFrames == 0 ? 0 : _totalInference / processedFrames;
   double get averageConversionMilliseconds =>
@@ -113,33 +118,44 @@ class LiveCameraController<T> extends ChangeNotifier {
         (await web.window.navigator.mediaDevices.enumerateDevices().toDart)
             .toDart;
     final found = <CameraDescription>[];
+    final settings = _stream!.getVideoTracks().toDart.first.getSettings();
+    final activeDirection =
+        _directionFromFacingMode(_TrackSettings(settings).facingMode) ??
+        description?.lensDirection;
     for (final device in devices.where((d) => d.kind == 'videoinput')) {
       final label = device.label.toLowerCase();
+      final direction = device.deviceId == settings.deviceId
+          ? activeDirection ?? _directionFromLabel(label)
+          : _directionFromLabel(label);
       found.add(
         CameraDescription(
           name: device.deviceId,
-          lensDirection: label.contains('back') || label.contains('rear')
-              ? CameraLensDirection.back
-              : found.isEmpty
-              ? CameraLensDirection.front
-              : CameraLensDirection.external,
+          lensDirection: direction ?? CameraLensDirection.external,
           sensorOrientation: 0,
         ),
       );
     }
     if (found.isEmpty) return;
+    if (_isMobileBrowser && found.length > 1) {
+      if (cameraForLensDirection(found, CameraLensDirection.front) == null) {
+        found.add(_facingCamera(CameraLensDirection.front));
+      }
+      if (cameraForLensDirection(found, CameraLensDirection.back) == null) {
+        found.add(_facingCamera(CameraLensDirection.back));
+      }
+    }
     cameras = found;
-    final settings = _stream!.getVideoTracks().toDart.first.getSettings();
     description = found.firstWhere(
       (c) => c.name == settings.deviceId,
-      orElse: () => found.first,
+      orElse: () => activeDirection == null
+          ? found.first
+          : cameraForLensDirection(found, activeDirection) ?? found.first,
     );
   }
 
   Future<void> switchCamera() {
     if (!canSwitchCamera || _closed) return Future.value();
-    final index = cameras.indexOf(description ?? cameras.first);
-    description = cameras[(index + 1) % cameras.length];
+    description = oppositeFacingCamera(cameras, description);
     result = null;
     if (running) return start();
     _changed();
@@ -187,8 +203,16 @@ class LiveCameraController<T> extends ChangeNotifier {
         final constraints = <String, Object>{
           'width': {'ideal': 640},
           'height': {'ideal': 480},
-          if (selected.name == 'default')
-            'facingMode': 'user'
+          if (selected.lensDirection == CameraLensDirection.front ||
+              selected.lensDirection == CameraLensDirection.back)
+            'facingMode': {
+              (_isMobileBrowser && selected.name != 'default'
+                      ? 'exact'
+                      : 'ideal'):
+                  selected.lensDirection == CameraLensDirection.front
+                  ? 'user'
+                  : 'environment',
+            }
           else
             'deviceId': {'exact': selected.name},
         };
@@ -209,8 +233,7 @@ class LiveCameraController<T> extends ChangeNotifier {
             .forTarget(_stream!.getVideoTracks().toDart.first)
             .listen((_) {
               if (_closed || generation != _generation) return;
-              error =
-                  'Camera disconnected. Reconnect it and press Start camera.';
+              error = 'Camera disconnected. Reconnect it and reopen this page.';
               unawaited(stop());
             });
         await video.play().toDart;
@@ -425,10 +448,10 @@ class LiveCameraController<T> extends ChangeNotifier {
   String _message(Object failure) {
     final text = failure.toString();
     if (text.contains('NotAllowedError')) {
-      return 'Camera permission denied. Allow camera access in your browser and press Start camera.';
+      return 'Camera permission denied. Allow camera access in your browser, then reopen this page.';
     }
     if (text.contains('NotFoundError')) {
-      return 'No camera found. Connect a webcam and press Start camera.';
+      return 'No camera found. Connect a webcam and reopen this page.';
     }
     if (text.contains('NotReadableError')) {
       return 'Camera is unavailable or in use by another application.';
@@ -438,4 +461,48 @@ class LiveCameraController<T> extends ChangeNotifier {
     }
     return text;
   }
+}
+
+bool get _isMobileBrowser {
+  if (defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS) {
+    return true;
+  }
+  final userAgent = web.window.navigator.userAgent.toLowerCase();
+  return userAgent.contains('android') ||
+      userAgent.contains('iphone') ||
+      userAgent.contains('ipad') ||
+      userAgent.contains('ipod') ||
+      (userAgent.contains('macintosh') &&
+          web.window.navigator.maxTouchPoints > 1);
+}
+
+CameraDescription _facingCamera(CameraLensDirection direction) =>
+    CameraDescription(
+      name: direction == CameraLensDirection.front
+          ? 'browser-default-front'
+          : 'browser-default-back',
+      lensDirection: direction,
+      sensorOrientation: 0,
+    );
+
+CameraLensDirection? _directionFromFacingMode(String? facingMode) =>
+    switch (facingMode) {
+      'user' => CameraLensDirection.front,
+      'environment' => CameraLensDirection.back,
+      _ => null,
+    };
+
+CameraLensDirection? _directionFromLabel(String label) {
+  if (label.contains('back') ||
+      label.contains('rear') ||
+      label.contains('environment')) {
+    return CameraLensDirection.back;
+  }
+  if (label.contains('front') ||
+      label.contains('user') ||
+      label.contains('face')) {
+    return CameraLensDirection.front;
+  }
+  return null;
 }

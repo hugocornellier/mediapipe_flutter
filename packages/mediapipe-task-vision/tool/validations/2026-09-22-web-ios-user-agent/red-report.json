@@ -1,0 +1,39 @@
+{
+  "browser": "chromium",
+  "delegate": "CPU",
+  "suite": "all",
+  "checks": [
+    "official-image-landmarks-blendshapes-matrix",
+    "copied-padded-rgb-rgba-bgra",
+    "all-four-rotations",
+    "owned-results-mode-validation-idempotent-disposal",
+    "video-queue-timestamps-failed-frame-recovery-disposal",
+    "invalid-model-explicit-error",
+    "same-browser-official-js-reference"
+  ],
+  "physical_webcam_tested": false,
+  "software_webgl": true,
+  "browser_version": "153.0.8010.12",
+  "official_js_maximum_absolute_error": {
+    "landmarks": 0,
+    "blendshapes": 0,
+    "matrix": 0
+  },
+  "ios_user_agent_cpu": {
+    "override_method": "browser-context",
+    "requested_user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/133.0 Mobile/15E148 Safari/605.1.15",
+    "physical_ios_tested": false,
+    "worker": {
+      "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/133.0 Mobile/15E148 Safari/605.1.15",
+      "document_type": "undefined",
+      "offscreen_canvas_type": "function"
+    },
+    "api": {
+      "status": "failed",
+      "error": "FaceLandmarkerException(null): Error: document is not defined",
+      "stack": "\n    at Object.f (http://localhost:8866/api-probe/main.dart.js:3405:20)\n    at http://localhost:8866/api-probe/main.dart.js:17217:9\n    at a_a.a (http://localhost:8866/api-probe/main.dart.js:4670:63)\n    at a_a.$2 (http://localhost:8866/api-probe/main.dart.js:28278:14)\n    at ZG.$2 (http://localhost:8866/api-probe/main.dart.js:28275:16)\n    at Yl.XD (http://localhost:8866/api-probe/main.dart.js:28931:33)\n    at Yl.Fm (http://localhost:8866/api-probe/main.dart.js:28934:13)\n    at fz.Uj (http://localhost:8866/api-probe/main.dart.js:28495:18)\n    at WU.$0 (http://localhost:8866/api-probe/main.dart.js:28663:36)\n    at Object.kz (http://localhost:8866/api-probe/main.dart.js:4765:76)"
+    }
+  },
+  "status": "failed",
+  "error": "AssertionError [ERR_ASSERTION]: iOS Firefox UA CPU task must construct and run: FaceLandmarkerException(null): Error: document is not defined\n\n'failed' !== 'passed'\n\n    at iosUserAgentCpuCheck (file:///home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/tool/browser/test_browser.mjs:270:12)\n    at async file:///home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/tool/browser/test_browser.mjs:478:5"
+}

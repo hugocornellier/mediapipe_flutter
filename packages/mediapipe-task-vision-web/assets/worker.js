@@ -18,16 +18,21 @@ async function run(type, input) {
     const files = await FilesetResolver.forVisionTasks(new URL('./runtime/wasm', import.meta.url).href, true);
     const {modelBytes, modelPath, delegate, ...settings} = input;
     if (delegate !== 'CPU' && delegate !== 'GPU') throw new Error('Invalid FaceLandmarker delegate');
-    let canvas;
-    if (delegate === 'GPU') {
-      canvas = new OffscreenCanvas(1, 1);
-      if (!canvas.getContext('webgl2')) {
-        throw new Error('GPU FaceLandmarker requires WebGL 2 in a browser worker. Select CPU or enable browser hardware acceleration.');
-      }
+    if (typeof OffscreenCanvas === 'undefined') {
+      throw new Error('FaceLandmarker requires OffscreenCanvas in a browser worker.');
+    }
+    // The bundled runtime picks its own canvas by sniffing the user agent, and
+    // reads every WebKit browser without a Version/NN token as Safari 16. Firefox
+    // and Chrome on iOS land there, and its fallback calls document.createElement
+    // inside a worker, where there is no document. Supplying the canvas keeps that
+    // branch unreachable.
+    const canvas = new OffscreenCanvas(1, 1);
+    if (delegate === 'GPU' && !canvas.getContext('webgl2')) {
+      throw new Error('GPU FaceLandmarker requires WebGL 2 in a browser worker. Select CPU or enable browser hardware acceleration.');
     }
     task = await FaceLandmarker.createFromOptions(files, {
       ...settings,
-      ...(canvas ? {canvas} : {}),
+      canvas,
       baseOptions: {
         delegate,
         ...(modelBytes ? {modelAssetBuffer: modelBytes} : {modelAssetPath: modelPath}),

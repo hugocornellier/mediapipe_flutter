@@ -1,0 +1,15 @@
+{
+  "override_method": "browser-context",
+  "requested_user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/133.0 Mobile/15E148 Safari/605.1.15",
+  "physical_ios_tested": false,
+  "worker": {
+    "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/133.0 Mobile/15E148 Safari/605.1.15",
+    "document_type": "undefined",
+    "offscreen_canvas_type": "function"
+  },
+  "api": {
+    "status": "failed",
+    "error": "FaceLandmarkerException(null): Error: document is not defined",
+    "stack": "\n    at Object.f (http://localhost:8866/api-probe/main.dart.js:3405:20)\n    at http://localhost:8866/api-probe/main.dart.js:17217:9\n    at a_a.a (http://localhost:8866/api-probe/main.dart.js:4670:63)\n    at a_a.$2 (http://localhost:8866/api-probe/main.dart.js:28278:14)\n    at ZG.$2 (http://localhost:8866/api-probe/main.dart.js:28275:16)\n    at Yl.XD (http://localhost:8866/api-probe/main.dart.js:28931:33)\n    at Yl.Fm (http://localhost:8866/api-probe/main.dart.js:28934:13)\n    at fz.Uj (http://localhost:8866/api-probe/main.dart.js:28495:18)\n    at WU.$0 (http://localhost:8866/api-probe/main.dart.js:28663:36)\n    at Object.kz (http://localhost:8866/api-probe/main.dart.js:4765:76)"
+  }
+}

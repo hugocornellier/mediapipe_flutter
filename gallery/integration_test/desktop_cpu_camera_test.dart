@@ -34,7 +34,7 @@ void main() {
   });
 
   testWidgets(
-    'gallery CPU camera: RGBA/BGRA, switching, stop/start and cleanup',
+    'gallery CPU camera: RGBA/BGRA, switching, restart and cleanup',
     (tester) async {
       final original = CameraPlatform.instance;
       final frames = await tester.runAsync(_portraitFrames);
@@ -94,8 +94,8 @@ void main() {
         expect(live.description!.name, 'supplied-bgra');
         expect(camera.disposed, 1);
 
-        await tester.tap(find.text('Stop camera'));
-        await tester.pump();
+        expect(find.byType(FilledButton), findsNothing);
+        await tester.runAsync(live.stop);
         await tester.runAsync(() async {
           while (live.changing) {
             await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -104,8 +104,7 @@ void main() {
         await tester.pump();
         expect(live.running, isFalse);
         expect(camera.activeStreams, 0);
-        await tester.tap(find.text('Start camera'));
-        await tester.pump();
+        await tester.runAsync(live.start);
         await _frames(tester, live);
         await tester.pump();
         expect(live.running, isTrue);
@@ -214,9 +213,10 @@ final class _SuppliedCamera extends CameraPlatform {
       lensDirection: CameraLensDirection.front,
       sensorOrientation: 0,
     ),
+    // The flip control appears only when a front and a back camera exist.
     CameraDescription(
       name: 'supplied-bgra',
-      lensDirection: CameraLensDirection.external,
+      lensDirection: CameraLensDirection.back,
       sensorOrientation: 0,
     ),
   ];

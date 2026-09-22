@@ -42,6 +42,12 @@ face by the side of the picture, so both oracles now read each hypothesis
 under the labels it implies [11]; direct medians are unchanged and the Linux
 job's mirrored figure is now 4.8%.
 
+iOS Firefox user-agent CPU initialization is regression-tested in Chromium
+CI [13]: the actual task worker receives the iOS UA and completes construction
+and inference without a document. This is not physical iOS validation. The
+four iOS Firefox/Safari CPU/GPU hand tests remain pending after deployment;
+Safari GPU and the reported Firefox preview letterboxing are not resolved.
+
 Hardware-free coverage that runs on every platform in `flutter test`:
 `gallery/test/live_camera_controller_test.dart` pins frame skipping,
 timestamp monotonicity, stop draining in-flight inference, superseded starts,
@@ -64,6 +70,8 @@ cover the projection math and pixel conversion.
 10. `validations/2026-09-22-ios-real-camera/`.
 11. `validations/2026-09-22-web-alignment/` and the Web workflow.
 12. `validations/2026-09-22-windows-real-camera/` and the `Windows real camera` workflow.
+13. `validations/2026-09-22-web-ios-user-agent/`: red/green CPU worker regression,
+    plus existing Chromium CPU/GPU and Firefox CPU checks.
 
 ## Filling the 🧑 cells
 

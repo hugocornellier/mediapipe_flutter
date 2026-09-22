@@ -1,0 +1,14 @@
+2026-09-22T13:14:28.5077785Z AssertionError [ERR_ASSERTION]: iOS Firefox UA CPU task must construct and run: FaceLandmarkerException(null): Error: document is not defined
+2026-09-22T13:14:28.5078625Z
+2026-09-22T13:14:28.5078771Z 'failed' !== 'passed'
+2026-09-22T13:14:28.5078941Z
+2026-09-22T13:14:28.5079477Z     at iosUserAgentCpuCheck (file:///home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/tool/browser/test_browser.mjs:270:12)
+2026-09-22T13:14:28.5080471Z     at async file:///home/runner/work/mediapipe_flutter/mediapipe_flutter/gallery/tool/browser/test_browser.mjs:478:5 {
+2026-09-22T13:14:28.5081052Z   generatedMessage: false,
+2026-09-22T13:14:28.5081345Z   code: 'ERR_ASSERTION',
+2026-09-22T13:14:28.5081613Z   actual: 'failed',
+2026-09-22T13:14:28.5081860Z   expected: 'passed',
+2026-09-22T13:14:28.5082121Z   operator: 'strictEqual',
+2026-09-22T13:14:28.5082379Z   diff: 'simple'
+2026-09-22T13:14:28.5082611Z }
+2026-09-22T13:14:33.5299099Z ##[error]Process completed with exit code 1.

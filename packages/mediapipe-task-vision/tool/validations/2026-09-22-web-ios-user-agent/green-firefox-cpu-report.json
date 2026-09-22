@@ -1,0 +1,23 @@
+{
+  "browser": "firefox",
+  "delegate": "CPU",
+  "suite": "api",
+  "checks": [
+    "official-image-landmarks-blendshapes-matrix",
+    "copied-padded-rgb-rgba-bgra",
+    "all-four-rotations",
+    "owned-results-mode-validation-idempotent-disposal",
+    "video-queue-timestamps-failed-frame-recovery-disposal",
+    "invalid-model-explicit-error",
+    "same-browser-official-js-reference"
+  ],
+  "physical_webcam_tested": false,
+  "software_webgl": false,
+  "browser_version": "155.0",
+  "official_js_maximum_absolute_error": {
+    "landmarks": 0,
+    "blendshapes": 0,
+    "matrix": 0
+  },
+  "status": "passed"
+}
