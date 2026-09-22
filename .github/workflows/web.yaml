@@ -2,7 +2,7 @@ name: Web FaceLandmarker
 
 on:
   push:
-    branches: [main, feat/web-face-landmarker]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -83,7 +83,7 @@ jobs:
 
   deploy:
     needs: browser
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/web-face-landmarker')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
