@@ -13,7 +13,13 @@ import 'src/result.dart';
 @JS('mediapipeVision.create')
 external JSPromise<JSNumber> _create(JSObject options);
 @JS('mediapipeVision.detect')
-external JSPromise<JSString> _detect(JSNumber id, JSObject input);
+external JSPromise<_Detection> _detect(JSNumber id, JSObject input);
+
+/// A worker result: JSON, plus the face landmarks packed when possible.
+extension type _Detection(JSObject _) implements JSObject {
+  external JSString get json;
+  external JSFloat64Array? get landmarks;
+}
 @JS('mediapipeVision.close')
 external JSPromise<JSAny?> _close(JSNumber id);
 
@@ -96,11 +102,12 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
       return Future.error(StateError('FaceLandmarker has been disposed.'));
     }
     final result = _tail.then((_) async {
-      final json = await _workerResult(
+      final detection = await _workerResult(
         _detect(_id, input.jsify()! as JSObject),
       );
       return decodeWebFaceResult(
-        jsonDecode(json.toDart) as Map<String, dynamic>,
+        jsonDecode(detection.json.toDart) as Map<String, dynamic>,
+        landmarks: detection.landmarks?.toDart,
       );
     });
     _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
