@@ -50,6 +50,134 @@ async function wait(page, condition, timeout = 60000) {
   await page.waitForFunction(condition, null, {timeout});
 }
 
+// Same criterion as gallery/integration_test/support/alignment_oracle.dart:
+// median probe deviation, and any single probe, as a fraction of the preview
+// diagonal.
+const alignmentTolerance = 0.015;
+const alignmentOutlierTolerance = 0.03;
+// The IMAGE task labels landmarks by the side of the picture they appear on,
+// so on a preview that mirrors the analysed frame it reports each probe's
+// left/right partner. Same table as alignmentMirrorPartners in the Dart oracle.
+const alignmentMirrorPartners = {1: 1, 152: 152, 10: 10, 468: 473, 473: 468, 61: 291, 291: 61, 33: 263, 263: 33};
+
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+// Google's official IMAGE task, run in the page over PNG screenshot pixels.
+async function detectScreenshot(page, png) {
+  return page.evaluate(async base64 => {
+    const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
+    const {FilesetResolver, FaceLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
+    const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
+    const task = await FaceLandmarker.createFromOptions(files, {
+      baseOptions: {delegate: 'CPU', modelAssetPath: new URL('assets/assets/models/face_landmarker.task', document.baseURI).href},
+      runningMode: 'IMAGE', numFaces: 1,
+    });
+    const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    const bitmap = await createImageBitmap(new Blob([bytes], {type: 'image/png'}));
+    try {
+      const result = task.detect(bitmap);
+      return {width: bitmap.width, height: bitmap.height, faces: result.faceLandmarks.length,
+        landmarks: result.faceLandmarks[0]?.map(p => [p.x, p.y]) ?? []};
+    } finally {bitmap.close(); task.close();}
+  }, png.toString('base64'));
+}
+
+// The Dart overlay-alignment oracle, in the browser. Screenshot the preview
+// with the overlay hidden, run the official IMAGE task over those pixels and
+// compare the face it finds with where the overlay draws the live result. The
+// web view publishes the probes from the painter's own transform, relative to
+// the overlay's box on the page; the screenshot is cropped to that box, so a
+// video that is not under its overlay fails too. The mirrored hypothesis
+// reflects each probe about the fitted frame's centre line, as the Dart
+// oracle does, so a failure says which one the screen matches; each
+// hypothesis reads the on-screen landmarks under the labels it implies.
+async function alignmentCheck(page) {
+  const overlay = () => page.locator('video').evaluate(video => ({
+    faces: video.getAttribute('data-face-count'),
+    box: JSON.parse(video.getAttribute('data-overlay-box')),
+    frame: JSON.parse(video.getAttribute('data-frame-box')),
+    probes: JSON.parse(video.getAttribute('data-probes')),
+    mirror: video.getAttribute('data-mirror') === 'true',
+    rotation: Number(video.getAttribute('data-rotation')),
+    video: (({x, y, width, height}) => [x, y, width, height])(video.getBoundingClientRect()),
+    videoTransform: video.style.transform,
+    dpr: window.devicePixelRatio,
+  }));
+  const connections = page.getByRole('button', {name: 'Connections'});
+  await connections.click();
+  // Keep the pointer, and any tooltip it raises, away from the preview.
+  await page.mouse.move(1, page.viewportSize().height - 1);
+  try {
+    for (let attempt = 1; ; attempt++) {
+      await wait(page, () => {
+        const video = document.querySelector('video');
+        return video?.getAttribute('data-face-count') === '1' && video.hasAttribute('data-probes');
+      });
+      // Two animation frames: Flutter has painted the hidden overlay.
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const before = await overlay();
+      const x = Math.floor(before.box[0]), y = Math.floor(before.box[1]);
+      const clip = {x, y, width: Math.ceil(before.box[0] + before.box[2]) - x,
+        height: Math.ceil(before.box[1] + before.box[3]) - y};
+      const png = await page.screenshot({clip});
+      const after = await overlay();
+      const observed = await detectScreenshot(page, png);
+      // The fixture alternates face and blank; retry a capture that met a blank.
+      if ((after.faces !== '1' || observed.faces !== 1) && attempt < 5) continue;
+      fs.writeFileSync(path.join(evidence, 'alignment-preview-without-overlay.png'), png);
+      const measurement = {
+        observed_faces: observed.faces,
+        crop_size: [observed.width, observed.height],
+        tolerance: alignmentTolerance,
+        outlier_tolerance: alignmentOutlierTolerance,
+        attempts: attempt,
+        overlay_box_css: before.box,
+        video_rect_css: before.video,
+        frame_box_css: before.frame,
+        device_pixel_ratio: before.dpr,
+        frame_rotation: before.rotation,
+        mirror: before.mirror,
+        video_transform: before.videoTransform,
+      };
+      if (observed.faces !== 1) return measurement;
+      const {dpr} = before;
+      const diagonal = Math.hypot(before.box[2], before.box[3]) * dpr;
+      const axis = before.frame[0] + before.frame[2] / 2;
+      const distance = (index, mirror, probeX, probeY) => {
+        const [seenX, seenY] = observed.landmarks[mirror ? alignmentMirrorPartners[index] : index];
+        return Math.hypot((before.box[0] - clip.x + probeX) * dpr - seenX * observed.width,
+          (before.box[1] - clip.y + probeY) * dpr - seenY * observed.height) / diagonal;
+      };
+      const distances = {}, mirrored = {};
+      let drift = 0;
+      for (const [index, [probeX, probeY]] of Object.entries(before.probes)) {
+        assert.ok(index in alignmentMirrorPartners, 'no mirror partner for probe ' + index);
+        distances[index] = distance(index, before.mirror, probeX, probeY);
+        mirrored[index] = distance(index, !before.mirror, 2 * axis - probeX, probeY);
+        const [laterX, laterY] = after.probes?.[index] ?? [probeX, probeY];
+        drift = Math.max(drift, Math.hypot(laterX - probeX, laterY - probeY));
+      }
+      Object.assign(measurement, {
+        median: median(Object.values(distances)),
+        maximum: Math.max(...Object.values(distances)),
+        median_if_mirrored: median(Object.values(mirrored)),
+        probe_drift_during_capture_css: drift,
+        distances,
+        distances_if_mirrored: mirrored,
+      });
+      measurement.aligned = measurement.median <= alignmentTolerance &&
+        measurement.maximum <= alignmentOutlierTolerance;
+      return measurement;
+    }
+  } finally {
+    await connections.click();
+  }
+}
+
 async function apiChecks() {
   const browser = await launch();
   const page = await browser.newPage();
@@ -174,6 +302,13 @@ async function cameraChecks() {
   assert.equal(report.camera.height, 480);
   assert.equal(report.camera.mirror, 'scaleX(-1)');
   await page.screenshot({path: path.join(evidence, 'camera-face.png')});
+  const alignment = report.alignment = await alignmentCheck(page);
+  const verdict = `median ${alignment.median?.toFixed(4)}, max ${alignment.maximum?.toFixed(4)}; ` +
+    `the mirrored hypothesis scores ${alignment.median_if_mirrored?.toFixed(4)}`;
+  assert.equal(alignment.observed_faces, 1, 'the on-screen preview must show one face');
+  assert.ok(alignment.median <= alignmentTolerance, 'overlay is off the on-screen face: ' + verdict);
+  assert.ok(alignment.maximum <= alignmentOutlierTolerance, 'one probe is far off the on-screen face: ' + verdict);
+  report.checks.push('overlay-alignment-oracle-on-screen-pixels');
   await wait(page, () => document.querySelector('video')?.getAttribute('data-face-count') === '0');
   await wait(page, () => document.querySelector('video')?.getAttribute('data-landmarks') === '478');
   assert.ok(await page.locator('video').evaluate(v => Number(v.getAttribute('data-timestamp'))) > report.camera.timestamp);

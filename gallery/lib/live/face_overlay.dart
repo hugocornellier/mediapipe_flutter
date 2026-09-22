@@ -3,6 +3,10 @@ import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 import 'camera_geometry.dart';
 
+/// Landmarks the overlay-alignment oracles compare with the on-screen face:
+/// nose tip, chin, forehead, iris centres, mouth corners, outer eye corners.
+const faceAlignmentProbes = <int>[1, 152, 10, 468, 473, 61, 291, 33, 263];
+
 /// Paints the facial landmarks and their connections over the preview.
 ///
 /// Landmarks arrive normalized to the frame the camera delivered, which is not

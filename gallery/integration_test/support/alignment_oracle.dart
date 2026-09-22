@@ -19,12 +19,37 @@ import 'package:mediapipe_gallery/live/live_camera_view.dart';
 /// that gap without a person: it screenshots the preview with the overlay
 /// hidden, runs the same official IMAGE-mode task over those on-screen pixels,
 /// and compares the face it finds there with where the overlay would draw the
-/// live result. A wrong mirror puts the two on opposite sides of the box, a
-/// wrong rotation puts them a quarter turn apart, and a wrong crop drifts them
-/// toward an edge; all three fail the tolerance by an order of magnitude.
+/// live result. A wrong rotation puts the two a quarter turn apart and a wrong
+/// crop drifts them toward an edge, both by tens of percent. A wrong mirror
+/// reflects the face about the frame's centre line, so it moves every probe by
+/// twice the face's distance from that line (roughly 5% of the diagonal for
+/// the fixture, whose face sits near the middle).
+///
+/// Across a mirror the IMAGE task does not keep the subject's left and right:
+/// it labels landmarks by the side of the picture they appear on, so on a
+/// preview that mirrors the analysed frame it reports the live landmark's
+/// partner ([alignmentMirrorPartners]). Each hypothesis is compared under the
+/// labels it implies.
 
 /// Nose tip, chin, forehead, iris centres, mouth corners, outer eye corners.
-const alignmentProbes = <int>[1, 152, 10, 468, 473, 61, 291, 33, 263];
+/// Shared with the web view, which publishes them for the browser oracle.
+const alignmentProbes = faceAlignmentProbes;
+
+/// Each probe's left/right partner in the face mesh; midline probes are their
+/// own. Run on the fixture and on its horizontal flip, the official IMAGE task
+/// puts landmark 33 of the flip where the reflection of the original's 263 is
+/// (0.3% of the diagonal), not the original's 33 (17.6%).
+const alignmentMirrorPartners = <int, int>{
+  1: 1,
+  152: 152,
+  10: 10,
+  468: 473,
+  473: 468,
+  61: 291,
+  291: 61,
+  33: 263,
+  263: 33,
+};
 
 /// Accept this much median disagreement, as a fraction of the preview
 /// diagonal, and [alignmentOutlierTolerance] for any single probe.
@@ -234,9 +259,11 @@ Future<AlignmentMeasurement> measureAlignment({
   double distance(PreviewTransform hypothesis, int index) {
     final expected =
         hypothesis.map(liveFace[index].x, liveFace[index].y) * pixelsPerLogical;
+    // A hypothesis that mirrors the preview also implies mirrored labels.
+    final label = hypothesis.mirror ? alignmentMirrorPartners[index]! : index;
     final seen = Offset(
-      observed[index].x * size.width,
-      observed[index].y * size.height,
+      observed[label].x * size.width,
+      observed[label].y * size.height,
     );
     return (expected - seen).distance / diagonal;
   }
