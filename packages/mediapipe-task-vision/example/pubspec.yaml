@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   camera: ^0.12.1
-  camera_desktop: ^1.2.1
+  camera_desktop: ^1.2.2
   mediapipe_flutter_vision:
     path: ..
   flutter:
