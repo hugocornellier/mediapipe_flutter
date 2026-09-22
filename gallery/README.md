@@ -54,13 +54,13 @@ Linux builds need `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev` and
 
 Three gates, in order:
 
-1. **Bundled** — `tool/prepare.py` reads `sdk_downloads.dart` and selects the
+1. **Bundled**: `tool/prepare.py` reads `sdk_downloads.dart` and selects the
    tasks whose runtime this target can actually obtain. Unpublished runtimes
    count only when a maintainer build is present in the package.
-2. **Validated** — `lib/catalog.dart` asks the package's own capability query.
+2. **Validated**: `lib/catalog.dart` asks the package's own capability query.
    Nothing restates support by hand, so a task validated on a new platform
    appears here with no code change.
-3. **Demonstrable** — a screen of its own, which is what `GalleryDemo` names.
+3. **Demonstrable**: a screen of its own, which is what `GalleryDemo` names.
    Entries without one are known to the gallery but never become tiles.
 
 Anything bundled but not validated, and anything validated without a screen, is
