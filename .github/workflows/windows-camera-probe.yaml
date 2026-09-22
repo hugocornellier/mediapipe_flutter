@@ -1,0 +1,61 @@
+name: Windows camera probe
+
+# Fact-finding only: can a hosted Windows runner host a Media Foundation
+# virtual camera, so the Windows gallery could open a real capture device in
+# CI the way Linux does with v4l2loopback? Records what the runner has; builds
+# nothing and changes nothing in the repository.
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/face-landmarker-hardening]
+    paths: ['.github/workflows/windows-camera-probe.yaml']
+
+jobs:
+  probe:
+    name: Media Foundation virtual camera prerequisites / windows-2025
+    runs-on: windows-2025
+    timeout-minutes: 10
+    steps:
+      - name: OS, session and Media Foundation facts
+        shell: pwsh
+        run: |
+          $os = Get-CimInstance Win32_OperatingSystem
+          "OS: $($os.Caption) build $($os.BuildNumber) ($($os.ProductType))"
+          "Session: $((Get-Process -Id $PID).SessionId)  Interactive: $([Environment]::UserInteractive)  User: $env:USERNAME"
+          "--- Media Foundation feature and binaries ---"
+          Get-WindowsFeature Server-Media-Foundation -ErrorAction SilentlyContinue | Format-Table Name, InstallState -AutoSize | Out-String
+          foreach ($dll in 'mfplat.dll','mf.dll','mfsensorgroup.dll','FrameServer.dll','FrameServerClient.dll','mfcore.dll') {
+            $p = Join-Path $env:SystemRoot "System32\$dll"
+            if (Test-Path $p) { "present  $dll  $((Get-Item $p).VersionInfo.FileVersion)" } else { "MISSING  $dll" }
+          }
+          "--- Frame Server service (required by MFCreateVirtualCamera) ---"
+          $svc = Get-Service -Name FrameServer -ErrorAction SilentlyContinue
+          if ($svc) { "FrameServer: $($svc.Status) startType=$((Get-CimInstance Win32_Service -Filter "Name='FrameServer'").StartMode)" } else { "FrameServer: NOT INSTALLED" }
+          $svc2 = Get-Service -Name FrameServerMonitor -ErrorAction SilentlyContinue
+          if ($svc2) { "FrameServerMonitor: $($svc2.Status)" } else { "FrameServerMonitor: NOT INSTALLED" }
+          if ($svc -and $svc.Status -ne 'Running') {
+            try { Start-Service FrameServer -ErrorAction Stop; "FrameServer started on demand: $((Get-Service FrameServer).Status)" } catch { "FrameServer start failed: $($_.Exception.Message)" }
+          }
+          "--- MFCreateVirtualCamera export ---"
+          $sig = @'
+          using System; using System.Runtime.InteropServices;
+          public static class K { [DllImport("kernel32", SetLastError=true)] public static extern IntPtr LoadLibrary(string n); [DllImport("kernel32", SetLastError=true)] public static extern IntPtr GetProcAddress(IntPtr h, string n); }
+          '@
+          Add-Type -TypeDefinition $sig
+          $h = [K]::LoadLibrary('mfsensorgroup.dll')
+          if ($h -eq [IntPtr]::Zero) { "mfsensorgroup.dll: cannot load" } else { $fn = [K]::GetProcAddress($h, 'MFCreateVirtualCamera'); "MFCreateVirtualCamera export: $(if ($fn -ne [IntPtr]::Zero) {'present'} else {'ABSENT'})" }
+          "--- Camera privacy consent (desktop apps) ---"
+          foreach ($k in 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\webcam','HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\webcam') {
+            if (Test-Path $k) { "$k Value=$((Get-ItemProperty $k).Value)" } else { "$k (absent)" }
+          }
+          "--- Existing capture devices ---"
+          Get-PnpDevice -Class Camera, Image -ErrorAction SilentlyContinue | Format-Table Status, Class, FriendlyName -AutoSize | Out-String
+          "--- Toolchain for a COM media source ---"
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          "Visual Studio: $vs"
+          Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\Include" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name | ForEach-Object { "Windows SDK: $_" }
+          "screenshot capable: $([bool]([System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')))"
