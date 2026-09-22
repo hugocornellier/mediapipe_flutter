@@ -10,6 +10,8 @@ const browserName = argumentsMap.browser || 'chromium';
 const suite = argumentsMap.suite || 'all';
 const delegate = argumentsMap.delegate === 'gpu' ? 'GPU' : 'CPU';
 const base = argumentsMap['base-url'] || 'http://localhost:8866/mediapipe_flutter/';
+// The gallery publishes its per-frame state for these checks only on request.
+const gallery = base + (base.includes('?') ? '&' : '?') + 'test-hooks';
 const apiBase = argumentsMap['api-url'] || 'http://localhost:8866/api-probe/';
 const evidence = path.join(repo, 'build/codex-tmp/web-browser-' + browserName + (delegate === 'GPU' ? '-gpu' : ''));
 fs.mkdirSync(evidence, {recursive: true});
@@ -347,7 +349,7 @@ async function cameraChecks() {
   const page = await context.newPage();
   observe(page);
   await installCaptureObservations(page);
-  await page.goto(base);
+  await page.goto(gallery);
   await page.getByRole('group', {name: /Live Face Landmarker/}).click();
   await wait(page, () => {
     const video = document.querySelector('video');
@@ -414,7 +416,7 @@ async function cameraChecks() {
   await denied.grantPermissions([], {origin: new URL(base).origin});
   const deniedPage = await denied.newPage();
   observe(deniedPage);
-  await deniedPage.goto(base);
+  await deniedPage.goto(gallery);
   await deniedPage.getByRole('group', {name: /Live Face Landmarker/}).click();
   await deniedPage.getByText(/Camera permission denied/).waitFor();
   await wait(deniedPage, () => mediapipeVision.stats().activeWorkers === 0);
@@ -433,7 +435,7 @@ async function cameraChecks() {
   const multiplePage = await multipleContext.newPage();
   observe(multiplePage);
   await installCaptureObservations(multiplePage, true);
-  await multiplePage.goto(base);
+  await multiplePage.goto(gallery);
   await multiplePage.getByRole('group', {name: /Live Face Landmarker/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 12);
   const firstDevice = await multiplePage.evaluate(() => window.testCaptureTracks.at(-1).getSettings().deviceId);
@@ -481,7 +483,7 @@ async function cameraChecks() {
   await missingContext.grantPermissions(['camera'], {origin: new URL(base).origin});
   const missingPage = await missingContext.newPage();
   observe(missingPage);
-  await missingPage.goto(base);
+  await missingPage.goto(gallery);
   await missingPage.getByRole('group', {name: /Live Face Landmarker/}).click();
   await missingPage.getByText(/No camera found/).waitFor();
   await wait(missingPage, () => mediapipeVision.stats().activeWorkers === 0);

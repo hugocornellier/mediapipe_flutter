@@ -6,14 +6,16 @@ self.onmessage = ({data}) => {
   // Serialize initialization, frames and shutdown on the owning worker.
   operations = operations.then(async () => {
     try {
-      const result = await run(data.type, data.input);
-      self.postMessage({id: data.id, result});
+      const timing = {received: performance.timeOrigin + performance.now()};
+      const result = await run(data.type, data.input, timing);
+      timing.sent = performance.timeOrigin + performance.now();
+      self.postMessage({id: data.id, result, timing}, result?.landmarks ? [result.landmarks.buffer] : []);
     } catch (error) {
       self.postMessage({id: data.id, error: error?.message || String(error)});
     }
   });
 };
-async function run(type, input) {
+async function run(type, input, timing) {
   if (type === 'create') {
     const files = await FilesetResolver.forVisionTasks(new URL('./runtime/wasm', import.meta.url).href, true);
     const {modelBytes, modelPath, delegate, ...settings} = input;
@@ -70,12 +72,39 @@ async function run(type, input) {
       source = new ImageData(rgba, input.width, input.height);
     }
     const processing = {rotationDegrees: ((input.rotation % 360) + 360) % 360};
+    const started = performance.now();
     const result = input.timestamp == null
       ? task.detect(source, processing)
       : task.detectForVideo(source, input.timestamp, processing);
-    return JSON.stringify({width: source.width, height: source.height,
-      timestamp: input.timestamp, result});
+    const inferred = performance.now();
+    const packed = pack(result);
+    const json = JSON.stringify({width: source.width, height: source.height,
+      timestamp: input.timestamp, counts: packed?.counts,
+      result: packed ? {...result, faceLandmarks: []} : result});
+    timing.inference = inferred - started;
+    timing.serialize = performance.now() - inferred;
+    timing.timestamp = input.timestamp;
+    return {json, landmarks: packed?.values};
   } finally {
     owned?.close();
   }
+}
+// Face landmarks as x, y, z, visibility, presence per point (NaN when absent),
+// transferred rather than serialized. Named landmarks stay in the JSON.
+function pack(result) {
+  const faces = result.faceLandmarks ?? [];
+  if (faces.some(face => face.some(point => point.name != null))) return null;
+  const counts = faces.map(face => face.length);
+  const values = new Float64Array(counts.reduce((a, b) => a + b, 0) * 5);
+  let at = 0;
+  for (const face of faces) {
+    for (const point of face) {
+      values[at++] = point.x;
+      values[at++] = point.y;
+      values[at++] = point.z;
+      values[at++] = point.visibility ?? NaN;
+      values[at++] = point.presence ?? NaN;
+    }
+  }
+  return {counts, values};
 }

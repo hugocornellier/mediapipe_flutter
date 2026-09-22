@@ -1,0 +1,9 @@
+ 1/24 pre1 CPU: e2e 33.778, detectDone 10.316, capture 0.148, inference 9.678, transport 0.263, handle 0.028, render 3.601, faces 1000/1000
+ 2/24 fix13 CPU: e2e 33.748, detectDone 10.207, capture 0.130, inference 9.628, transport 0.226, handle 0.024, render 2.579, faces 1000/1000
+ 3/24 fix134 CPU: e2e 33.759, detectDone 10.205, capture 0.132, inference 9.616, transport 0.228, handle 0.015, render 2.564, faces 1000/1000
+ 4/24 fix134 CPU: e2e 33.744, detectDone 10.383, capture 0.126, inference 9.818, transport 0.215, handle 0.015, render 2.523, faces 1000/1000
+ 5/24 fix13 CPU: e2e 33.739, detectDone 9.492, capture 0.136, inference 8.915, transport 0.234, handle 0.025, render 2.551, faces 1000/1000
+ 6/24 pre1 CPU: e2e 33.735, detectDone 9.775, capture 0.135, inference 9.206, transport 0.232, handle 0.025, render 3.199, faces 1000/1000
+ 7/24 pre1 GPU: e2e 33.759, detectDone 11.528, capture 0.133, inference 10.935, transport 0.256, handle 0.028, render 3.868, faces 1000/1000
+ 8/24 fix13 GPU: e2e 33.770, detectDone 11.729, capture 0.137, inference 11.100, transport 0.266, handle 0.028, render 3.131, faces 1000/1000
+ 9/24 fix134 GPU: e2e 33.766, detectDone 11.665, capture 0.138, inference 11.034, transport 0.272, handle 0.018, render 2.979, faces 1000/1000

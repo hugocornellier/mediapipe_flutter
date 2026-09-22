@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+import 'dart:ui' show PointMode;
+
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
@@ -48,14 +51,22 @@ class FaceOverlay extends CustomPainter {
       final positions = [
         for (final landmark in face) transform.map(landmark.x, landmark.y),
       ];
+      // One draw call per group: segment endpoints as x0, y0, x1, y1, ...
       void edges(List<(int, int)> connections, Paint paint) {
-        final path = Path();
+        final points = Float32List(connections.length * 4);
+        var length = 0;
         for (final (start, end) in connections) {
           if (start >= positions.length || end >= positions.length) continue;
-          path.moveTo(positions[start].dx, positions[start].dy);
-          path.lineTo(positions[end].dx, positions[end].dy);
+          points[length++] = positions[start].dx;
+          points[length++] = positions[start].dy;
+          points[length++] = positions[end].dx;
+          points[length++] = positions[end].dy;
         }
-        canvas.drawPath(path, paint);
+        canvas.drawRawPoints(
+          PointMode.lines,
+          Float32List.sublistView(points, 0, length),
+          paint,
+        );
       }
 
       if (showConnections) {
