@@ -14,6 +14,9 @@
 // run paints at that display's refresh rate (recorded as `refresh`); a
 // ProMotion display would switch between 60 and 120 Hz with the page's load.
 // --screenshot saves the preview with its overlay next to the result.
+// --isolated serves the page cross-origin isolated (COOP and COEP headers), so
+// performance.now() resolves to about 5 us instead of Chrome's 100 us. Compare
+// only runs made in the same mode.
 import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -64,7 +67,9 @@ const server = http.createServer((request, response) => {
   if (!file.startsWith(bundle) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
     return response.writeHead(404).end();
   }
-  response.writeHead(200, {'content-type': types[path.extname(file)] || 'application/octet-stream'});
+  response.writeHead(200, {'content-type': types[path.extname(file)] || 'application/octet-stream',
+    ...(options.isolated ? {'cross-origin-opener-policy': 'same-origin',
+      'cross-origin-embedder-policy': 'require-corp'} : {})});
   fs.createReadStream(file).pipe(response);
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -133,6 +138,8 @@ try {
     mediapipeVision.onTiming = timing => window.__workerTimings.push(timing);
   });
   const origin = await page.evaluate(() => performance.timeOrigin);
+  const isolated = await page.evaluate(() => crossOriginIsolated);
+  if (Boolean(options.isolated) !== isolated) throw new Error(`crossOriginIsolated is ${isolated}`);
   const drain = () => page.evaluate(() => {
     const workers = window.__workerTimings;
     window.__workerTimings = [];
@@ -185,7 +192,7 @@ try {
   const git = (...args) => execFileSync('git', args, {cwd: repo}).toString().trim();
   const result = {
     label: options.label,
-    settings: {order, rounds, timedFrames, warmup, camera: '640x480 at 30 fps (Chrome fake device, Y4M)'},
+    settings: {order, rounds, timedFrames, warmup, isolated, camera: '640x480 at 30 fps (Chrome fake device, Y4M)'},
     environment: {
       startedAt: new Date().toISOString(),
       commit: git('rev-parse', '--short', 'HEAD'),
@@ -202,7 +209,7 @@ try {
   fs.mkdirSync(path.dirname(out), {recursive: true});
   fs.writeFileSync(out, JSON.stringify(result) + '\n');
 
-  console.log(`\n${options.label} (${result.environment.commit}${result.environment.dirty ? ', dirty' : ''}), ` +
+  console.log(`\n${options.label}${isolated ? ' [isolated]' : ''} (${result.environment.commit}${result.environment.dirty ? ', dirty' : ''}), ` +
     `${result.environment.browser}: pooled median/mean ms`);
   for (const [delegate, summary] of Object.entries(result.pooled)) {
     console.log(`  ${delegate}: ` + keys.filter(key => summary[key])
