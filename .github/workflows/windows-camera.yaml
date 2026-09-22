@@ -109,16 +109,47 @@ jobs:
           "DPI: $([System.Drawing.Graphics]::FromHwnd([IntPtr]::Zero).DpiX)"
       - name: Build the fixture camera
         run: gallery/tool/windows/vcam/build.ps1 -Out $env:VCAM
-      - name: Register the media source and start the fixture camera
+      - name: Register the media source
         run: |
-          # The Frame Server services load the DLL, so they must be able to read it.
-          icacls $env:VCAM /grant '*S-1-1-0:(OI)(CI)RX' | Out-Null
+          # The Frame Server services (Local Service and Local System) load the
+          # DLL, so they must be able to read it.
+          icacls $env:VCAM /grant '*S-1-1-0:(OI)(CI)RX'
+          icacls "$env:VCAM\mediapipe_vcam.dll"
           $register = Start-Process regsvr32.exe -ArgumentList '/s', "$env:VCAM\mediapipe_vcam.dll" -Wait -PassThru
           "regsvr32: $($register.ExitCode)"
           reg query 'HKLM\SOFTWARE\Classes\CLSID\{40A27443-E72D-4A75-9ED4-0FCEFDA4D712}' /s
           if ($register.ExitCode) { exit 1 }
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download the official Face Landmarker model
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_face_landmarker.dart
+      - name: Prepare the Windows gallery with the face task only
+        run: python -B gallery/tool/prepare.py --target windows/x64 --tasks face_landmarker
+      - name: Analyze the camera test and oracle
+        working-directory: gallery
+        run: |
+          flutter pub get
+          flutter analyze integration_test/real_camera_test.dart integration_test/support
+      - name: Start the fixture camera and run the gallery against it
+        working-directory: gallery
+        env:
+          # camera_desktop's own trace of engine events and media types.
+          CAMERA_DESKTOP_LOG: '1'
+        run: |
+          # The camera has session lifetime: it exists while vcam_host runs,
+          # and the host did not outlive the step that started it, so the
+          # host, the frame check and the test share this step.
           $log = "$env:EVIDENCE\vcam-host.log"
-          $vcamHost = Start-Process "$env:VCAM\vcam_host.exe" -ArgumentList 'start', '--auto' -PassThru -WindowStyle Hidden `
+          $vcamHost = Start-Process "$env:VCAM\vcam_host.exe" -ArgumentList 'start' -PassThru -WindowStyle Hidden `
             -RedirectStandardOutput $log -RedirectStandardError "$env:EVIDENCE\vcam-host.err"
           $deadline = (Get-Date).AddSeconds(60)
           while ((Get-Date) -lt $deadline -and -not $vcamHost.HasExited) {
@@ -127,50 +158,20 @@ jobs:
           }
           Get-Content $log -ErrorAction SilentlyContinue
           if ($vcamHost.HasExited) { "vcam_host exited with $($vcamHost.ExitCode)"; Get-Content "$env:EVIDENCE\vcam-host.err" -ErrorAction SilentlyContinue; exit 1 }
-          & "$env:VCAM\vcam_host.exe" list
-          $listed = $LASTEXITCODE
           Get-PnpDevice -Class Camera -ErrorAction SilentlyContinue | Format-Table Status, Class, FriendlyName, InstanceId -AutoSize | Out-String -Width 220
-          if ($listed) { exit 1 }
-      - name: Read frames from the fixture camera
-        run: |
+          & "$env:VCAM\vcam_host.exe" list
+          if ($LASTEXITCODE) { exit 1 }
           & "$env:VCAM\vcam_host.exe" smoke 60 "$env:EVIDENCE\vcam-frame.bmp"
           if ($LASTEXITCODE) { exit 1 }
-      # Diagnostic iteration: the Flutter steps run even when the camera steps
-      # fail, so the screenshot calibration is exercised either way.
-      - uses: subosito/flutter-action@v2
-        if: always()
-        with:
-          flutter-version: '3.44.8'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v5
-        if: always()
-        with:
-          python-version: '3.12'
-      - name: Download the official Face Landmarker model
-        if: always()
-        working-directory: packages/mediapipe-task-vision
-        run: |
-          dart pub get
-          dart tool/download_face_landmarker.dart
-      - name: Prepare the Windows gallery with the face task only
-        if: always()
-        run: python -B gallery/tool/prepare.py --target windows/x64 --tasks face_landmarker
-      - name: Analyze the camera test and oracle
-        if: always()
-        working-directory: gallery
-        run: |
-          flutter pub get
-          flutter analyze integration_test/real_camera_test.dart integration_test/support
-      - name: Run the gallery against the fixture camera
-        if: always()
-        working-directory: gallery
-        run: flutter test -d windows integration_test/real_camera_test.dart --reporter expanded
+          flutter test -d windows integration_test/real_camera_test.dart --reporter expanded
+          $status = $LASTEXITCODE
+          "vcam_host still running after the test: $(-not $vcamHost.HasExited)"
+          exit $status
       - name: Check the record names the fixture camera
         run: |
           $report = Get-Content $env:MEDIAPIPE_CAMERA_REPORT -Raw | ConvertFrom-Json
           "first session camera: $($report.first_session.camera)"
-          if ($report.first_session.camera -notlike 'MediaPipe Fixture (*') { exit 1 }
+          if ($report.first_session.camera -notlike 'MediaPipe Fixture (Windows Virtual Camera) (*') { exit 1 }
       - name: Diagnostics
         if: always()
         run: |

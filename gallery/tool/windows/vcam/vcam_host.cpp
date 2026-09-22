@@ -86,11 +86,16 @@ std::vector<Device> VideoDevices() {
   return devices;
 }
 
+// The pipeline appends " (Windows Virtual Camera)" to the friendly name.
+bool IsFixture(const Device& device) {
+  return device.name.rfind(MEDIAPIPE_FIXTURE_CAMERA_NAME, 0) == 0;
+}
+
 int List() {
   bool present = false;
   for (const Device& device : VideoDevices()) {
     Log(L"device: %s | %s", device.name.c_str(), device.link.c_str());
-    present = present || device.name == MEDIAPIPE_FIXTURE_CAMERA_NAME;
+    present = present || IsFixture(device);
   }
   Log(present ? L"fixture camera: present" : L"fixture camera: ABSENT");
   return present ? 0 : 2;
@@ -140,7 +145,11 @@ int Start(const std::vector<Scope>& scopes) {
   Log(L"VCAM_READY");
   HANDLE stop =
       CreateEventW(nullptr, TRUE, FALSE, L"Local\\MediaPipeFixtureCameraStop");
-  WaitForSingleObject(stop, INFINITE);
+  // A heartbeat, so the log shows how long the camera stayed up.
+  for (int seconds = 30; WaitForSingleObject(stop, 30'000) == WAIT_TIMEOUT;
+       seconds += 30) {
+    Log(L"alive %d s", seconds);
+  }
   Log(L"stopping: 0x%08X", camera->Stop());
   Log(L"removing: 0x%08X", camera->Remove());
   camera->Shutdown();
@@ -246,7 +255,7 @@ bool WriteBitmap(const wchar_t* path, const std::vector<BYTE>& bgrx) {
 int Smoke(int frames, const wchar_t* bitmap) {
   std::wstring link;
   for (const Device& device : VideoDevices()) {
-    if (device.name == MEDIAPIPE_FIXTURE_CAMERA_NAME) link = device.link;
+    if (IsFixture(device)) link = device.link;
   }
   if (link.empty()) {
     Log(L"smoke: the fixture camera is not enumerated");
