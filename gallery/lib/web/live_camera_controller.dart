@@ -12,6 +12,7 @@ import 'package:web/web.dart' as web;
 import '../live/camera_selection.dart';
 import '../live/live_task.dart';
 import 'pipeline_trace.dart';
+import 'test_hooks.dart';
 
 extension type _VideoCallbacks(JSObject object) implements JSObject {
   external int requestVideoFrameCallback(JSFunction callback);
@@ -366,20 +367,25 @@ class LiveCameraController<T> extends ChangeNotifier {
         frameSize = Size(width.toDouble(), height.toDouble());
         result = detected;
         processedFrames++;
-        video.setAttribute('data-processed-frames', processedFrames.toString());
-        video.setAttribute('data-delegate', delegate.name);
-        video.setAttribute('data-timestamp', timestamp.toString());
-        if (detected is FaceLandmarkerResult) {
+        if (testHooks) {
           video.setAttribute(
-            'data-face-count',
-            detected.faceLandmarks.length.toString(),
+            'data-processed-frames',
+            processedFrames.toString(),
           );
-          video.setAttribute(
-            'data-landmarks',
-            detected.faceLandmarks.isEmpty
-                ? '0'
-                : detected.faceLandmarks.first.length.toString(),
-          );
+          video.setAttribute('data-delegate', delegate.name);
+          video.setAttribute('data-timestamp', timestamp.toString());
+          if (detected is FaceLandmarkerResult) {
+            video.setAttribute(
+              'data-face-count',
+              detected.faceLandmarks.length.toString(),
+            );
+            video.setAttribute(
+              'data-landmarks',
+              detected.faceLandmarks.isEmpty
+                  ? '0'
+                  : detected.faceLandmarks.first.length.toString(),
+            );
+          }
         }
         conversionMilliseconds = conversion.elapsedMicroseconds / 1000;
         inferenceMilliseconds = inference.elapsedMicroseconds / 1000;

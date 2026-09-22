@@ -6,6 +6,7 @@ import 'package:web/web.dart' as web;
 import '../live/camera_geometry.dart';
 import '../live/face_overlay.dart';
 import 'live_camera_controller.dart';
+import 'test_hooks.dart';
 
 /// Preview and Flutter landmarks use identical intrinsic dimensions and mirroring.
 class LiveCameraView extends StatelessWidget {
@@ -51,7 +52,7 @@ class LiveCameraView extends StatelessWidget {
                   viewSize: constraints.biggest,
                   mirror: controller.isFrontCamera,
                 );
-                _publishProbes(context, transform);
+                if (testHooks) _publishProbes(context, transform);
                 final overlay = painter(transform);
                 return overlay == null
                     ? const SizedBox.shrink()
