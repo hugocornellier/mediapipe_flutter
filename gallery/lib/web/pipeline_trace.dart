@@ -32,7 +32,8 @@ abstract final class PipelineTrace {
 /// One processed camera frame. [arrived] is when the browser handed the page
 /// the frame; [captured] is the camera's capture time where the browser
 /// reports one. [frame] is the start (vsync) of the Flutter frame that
-/// painted the result and [built] its end, rendering included.
+/// painted the result and [built] the end of that frame's task: rendering
+/// and every post-frame callback included.
 class PipelineFrame {
   PipelineFrame(this.timestamp, this.delegate, this.arrived, this.captured);
   final int timestamp;

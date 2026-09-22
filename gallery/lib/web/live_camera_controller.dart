@@ -393,9 +393,10 @@ class LiveCameraController<T> extends ChangeNotifier {
               ? detected.faceLandmarks.length
               : -1;
           // The frame that paints this result, then the next browser frame,
-          // by which time the compositor has taken it.
+          // by which time the compositor has taken it. The microtask runs once
+          // the frame's task ends, after every post-frame callback.
           SchedulerBinding.instance.addPostFrameCallback((_) {
-            trace.built = PipelineTrace.now();
+            scheduleMicrotask(() => trace.built = PipelineTrace.now());
             trace.frame =
                 SchedulerBinding
                     .instance
