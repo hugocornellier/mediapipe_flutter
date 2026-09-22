@@ -1,0 +1,150 @@
+{
+  "host": "MacBook Pro (Apple silicon), macOS 27.0, Playwright 1.63.0 full Chromium, headless",
+  "build": "flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn, Flutter 3.44.8, sources of commit 65778cd",
+  "webcam": "Chrome file-backed fake capture, build/codex-tmp/web-camera.y4m from gallery/tool/browser/prepare_camera.py",
+  "as_committed": {
+    "status": "passed",
+    "browser_version": "153.0.8010.12",
+    "checks_passed": 17,
+    "error": null,
+    "camera": {
+      "width": 640,
+      "height": 480,
+      "timestamp": 1203,
+      "frames": 12,
+      "mirror": "scaleX(-1)"
+    },
+    "alignment": {
+      "observed_faces": 1,
+      "crop_size": [
+        748,
+        560
+      ],
+      "tolerance": 0.015,
+      "outlier_tolerance": 0.03,
+      "attempts": 1,
+      "overlay_box_css": [
+        266.6666666666667,
+        56,
+        746.6666666666666,
+        560
+      ],
+      "video_rect_css": [
+        266.6666564941406,
+        56,
+        746.65625,
+        560
+      ],
+      "frame_box_css": [
+        0,
+        5.684341886080802e-14,
+        746.6666666666665,
+        559.9999999999999
+      ],
+      "device_pixel_ratio": 1,
+      "frame_rotation": 0,
+      "mirror": true,
+      "video_transform": "scaleX(-1)",
+      "median": 0.0030633275022271846,
+      "maximum": 0.015470613835922508,
+      "median_if_mirrored": 0.04659647404032903,
+      "probe_drift_during_capture_css": 0.4978473436355823,
+      "distances": {
+        "1": 0.0032056778635462103,
+        "10": 0.005029359747102464,
+        "33": 0.0010835228973107322,
+        "61": 0.0030633275022271846,
+        "152": 0.015470613835922508,
+        "263": 0.002173712183856801,
+        "291": 0.004583379746444427,
+        "468": 0.00026900840052152734,
+        "473": 0.0004757487457957578
+      },
+      "distances_if_mirrored": {
+        "1": 0.048085667165229176,
+        "10": 0.07897515184503645,
+        "33": 0.049076872092057154,
+        "61": 0.02485106950745001,
+        "152": 0.01678043175887616,
+        "263": 0.05075351976818141,
+        "291": 0.028235362127484596,
+        "468": 0.04659647404032903,
+        "473": 0.04606304417711388
+      },
+      "aligned": true
+    }
+  },
+  "sabotaged": {
+    "change": "gallery/lib/web/live_camera_view.dart: mirror: !controller.isFrontCamera (reverted before commit)",
+    "status": "failed",
+    "browser_version": "153.0.8010.12",
+    "checks_passed": 0,
+    "error": "AssertionError [ERR_ASSERTION]: overlay is off the on-screen face: median 0.0467, max 0.0790; the mirrored hypothesis scores 0.0032",
+    "camera": {
+      "width": 640,
+      "height": 480,
+      "timestamp": 1213,
+      "frames": 12,
+      "mirror": "scaleX(-1)"
+    },
+    "alignment": {
+      "observed_faces": 1,
+      "crop_size": [
+        748,
+        560
+      ],
+      "tolerance": 0.015,
+      "outlier_tolerance": 0.03,
+      "attempts": 1,
+      "overlay_box_css": [
+        266.6666666666667,
+        56,
+        746.6666666666666,
+        560
+      ],
+      "video_rect_css": [
+        266.6666564941406,
+        56,
+        746.65625,
+        560
+      ],
+      "frame_box_css": [
+        0,
+        5.684341886080802e-14,
+        746.6666666666665,
+        559.9999999999999
+      ],
+      "device_pixel_ratio": 1,
+      "frame_rotation": 0,
+      "mirror": false,
+      "video_transform": "scaleX(-1)",
+      "median": 0.04668817736622695,
+      "maximum": 0.07897393540070816,
+      "median_if_mirrored": 0.003186896222315144,
+      "probe_drift_during_capture_css": 0,
+      "distances": {
+        "1": 0.048077562324057826,
+        "10": 0.07897393540070816,
+        "33": 0.04910921149011424,
+        "61": 0.025002272070061834,
+        "152": 0.016316179031211242,
+        "263": 0.0507161113363659,
+        "291": 0.02781036920646635,
+        "468": 0.04668817736622695,
+        "473": 0.04604078282242068
+      },
+      "distances_if_mirrored": {
+        "1": 0.003186896222315144,
+        "10": 0.004915239690067595,
+        "33": 0.0010413794605687705,
+        "61": 0.0032487484500676213,
+        "152": 0.014966034378973979,
+        "263": 0.0021437013275675022,
+        "291": 0.00411778055238439,
+        "468": 0.0003471000797601622,
+        "473": 0.00048652069544370734
+      },
+      "aligned": false
+    }
+  }
+}

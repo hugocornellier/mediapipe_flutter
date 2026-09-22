@@ -16,7 +16,8 @@ Columns, in the order a frame travels:
 - **Face in view**: that real device showed a face and the task found it.
 - **Alignment oracle**: the on-screen preview was screenshotted and the
   overlay's projection matched a fresh IMAGE pass over those pixels
-  (`gallery/integration_test/support/alignment_oracle.dart`).
+  (`gallery/integration_test/support/alignment_oracle.dart`; on web the same
+  check in `gallery/tool/browser/test_browser.mjs`).
 - **Background / rotate**: capture survives app backgrounding and a device
   rotation mid-session.
 - **Soak**: a sustained session without memory growth or thermal failure.
@@ -26,7 +27,7 @@ person or a device that hosted CI cannot provide.
 
 | Platform | Reference | Lifecycle | Injected pipeline | Real capture | Face in view | Alignment oracle | Background / rotate | Soak |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Web (Chrome) | ✅ CPU + GPU, zero error [1] | ✅ [1] | ✅ file-backed webcam in CI [1] | ✅ CI fake device and two real MacBook sessions [1][2] | ✅ real MacBook, CPU and GPU [1][2] | ❌ not yet in `test_browser.mjs` | ⚠️ track-ended and worker restart only [1] | ❌ |
+| Web (Chrome) | ✅ CPU + GPU, zero error [1] | ✅ [1] | ✅ file-backed webcam in CI [1] | ✅ CI fake device and two real MacBook sessions [1][2] | ✅ real MacBook, CPU and GPU [1][2] | ✅ CI on every pull request, fake webcam, CPU: median 0.35%, mirrored 4.6% [11]; the repeat against the deployed site waits for the next deploy from `main` | ⚠️ track-ended and worker restart only [1] | ❌ |
 | Web (Firefox) | ✅ CPU [1] | ✅ [1] | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Web (Safari) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | macOS arm64 | ✅ CPU + Metal [3] | ✅ [3] | ✅ unit + desktop test | ✅ built-in camera, 1080p, stop/restart [9] | ✅ 478 landmarks on a person, 6.7 ms CPU [9] | ⚠️ visually confirmed by the maintainer on 2026-09-21, CPU and Metal, release build [9]; no screenshot transport for an automated oracle on desktop macOS | ❌ | ⚠️ `tool/test_camera_soak.py` exists, no retained run |
@@ -34,6 +35,12 @@ person or a device that hosted CI cannot provide.
 | Android arm64 (device) | ✅ CPU + GPU, Pixel 7 Test Lab [6] | ✅ [6] | ✅ | ✅ front and back, CPU and GPU [6] | 🧑 rack camera saw no face [6] | 🧑 needs a device with a face in view, or the emulator webcam job (planned) | ❌ rotation and backgrounding explicitly untested [6] | ❌ |
 | Linux x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ✅ real V4L2 device in CI, every push [8] | ✅ 12+ face frames per session [8] | ✅ median 0.24%, mirrored 8% [8] | ❌ | ❌ |
 | Windows x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ❌ no hosted virtual camera for Media Foundation | 🧑 | 🧑 | ❌ | ❌ |
+
+Mirrored-hypothesis figures recorded before 2026-09-22 (Linux 8%, iOS 5.1%)
+compared landmarks under the same labels. The IMAGE task labels a mirrored
+face by the side of the picture, so both oracles now read each hypothesis
+under the labels it implies [11]; direct medians are unchanged and the Linux
+job's mirrored figure is now 4.8%.
 
 Hardware-free coverage that runs on every platform in `flutter test`:
 `gallery/test/live_camera_controller_test.dart` pins frame skipping,
@@ -55,6 +62,7 @@ cover the projection math and pixel conversion.
 8. `validations/2026-09-21-linux-real-camera/` and the `Linux real camera` workflow.
 9. `validations/2026-09-21-macos-real-camera/`.
 10. `validations/2026-09-22-ios-real-camera/`.
+11. `validations/2026-09-22-web-alignment/` and the Web workflow.
 
 ## Filling the 🧑 cells
 

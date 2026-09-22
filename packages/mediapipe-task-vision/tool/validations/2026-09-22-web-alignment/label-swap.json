@@ -1,0 +1,49 @@
+{
+  "image": "gallery assets/samples/portrait.jpg (landmark-ex1.jpg)",
+  "image_size": [
+    1280,
+    853
+  ],
+  "browser": "chromium 153.0.8010.12",
+  "delegate": "CPU",
+  "running_mode": "IMAGE",
+  "unit": "fraction of the image diagonal",
+  "probes": {
+    "1": {
+      "same_label": 0.005354424357302977,
+      "partner_label": 0.005354424357302977
+    },
+    "10": {
+      "same_label": 0.004447760563707983,
+      "partner_label": 0.004447760563707983
+    },
+    "33": {
+      "same_label": 0.1757470263020193,
+      "partner_label": 0.0031507299243802053
+    },
+    "61": {
+      "same_label": 0.0839526394859018,
+      "partner_label": 0.006116218383329314
+    },
+    "152": {
+      "same_label": 0.005390243999272205,
+      "partner_label": 0.005390243999272205
+    },
+    "263": {
+      "same_label": 0.17669794894343926,
+      "partner_label": 0.0011255042389891853
+    },
+    "291": {
+      "same_label": 0.08630993666248883,
+      "partner_label": 0.0024230223350994663
+    },
+    "468": {
+      "same_label": 0.12463051934951898,
+      "partner_label": 0.00214732199565722
+    },
+    "473": {
+      "same_label": 0.1255125893677728,
+      "partner_label": 0.0009403044255904941
+    }
+  }
+}

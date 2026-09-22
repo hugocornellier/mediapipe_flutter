@@ -80,7 +80,10 @@ Firefox uses Xvfb and Mesa software WebGL on hosted Linux for the official CPU
 task's image preprocessing; this does not validate the GPU inference delegate.
 The public Pages job publishes the exact tested release artifact, then repeats
 camera/lifecycle checks against the deployed HTTPS URL. `build-info.json`
-records its source SHA and runtime/model provenance.
+records its source SHA and runtime/model provenance. The camera checks include
+overlay alignment: the preview is screenshotted with the overlay hidden and
+the landmarks the overlay draws must land on the face Google's IMAGE task
+finds in those pixels.
 
 This adapter and the official MediaPipe distribution use Apache-2.0; the
 repository's upstream notices and model/sample provenance are retained.
