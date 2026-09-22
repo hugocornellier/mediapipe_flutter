@@ -1,0 +1,91 @@
+{
+  "platform": "windows",
+  "started": "2026-09-22T11:35:59.065681Z",
+  "screen_size": [
+    1920,
+    1080
+  ],
+  "view_on_screen": [
+    18.0,
+    41.0,
+    1264.0,
+    681.0
+  ],
+  "pixels_per_logical": 1.0,
+  "cameras": [
+    {
+      "name": "MediaPipe Fixture (Windows Virtual Camera) (\\\\?\\swd#vcamdevapi#5e0bea8ce0d09afa3fded1e291631cecc046c240911239080c8280c2ac44ea83#{e5323777-f976-4f5b-9b55-b94699c46e44}\\{fcebba03-9d13-4c13-9940-cc84fcd132d1})",
+      "lens": "front",
+      "sensor_orientation": 0
+    }
+  ],
+  "first_session": {
+    "camera": "MediaPipe Fixture (Windows Virtual Camera) (\\\\?\\swd#vcamdevapi#5e0bea8ce0d09afa3fded1e291631cecc046c240911239080c8280c2ac44ea83#{e5323777-f976-4f5b-9b55-b94699c46e44}\\{fcebba03-9d13-4c13-9940-cc84fcd132d1})",
+    "delegate": "cpu",
+    "processed_frames": 37,
+    "skipped_frames": 6,
+    "face_frames": 12,
+    "landmarks": 478,
+    "frame_size": [
+      640.0,
+      480.0
+    ],
+    "frame_rotation": 0,
+    "average_inference_ms": 18.563297297297296,
+    "average_frame_ms": 19.5441081081081,
+    "error": null
+  },
+  "alignment": {
+    "observed_faces": 1,
+    "crop_size": [
+      694.0,
+      521.0
+    ],
+    "tolerance": 0.015,
+    "outlier_tolerance": 0.03,
+    "median": 0.003082388384902122,
+    "maximum": 0.014452193937673795,
+    "median_if_mirrored": 0.04646812049485879,
+    "aligned": true,
+    "distances": {
+      "1": 0.0037728364090437094,
+      "152": 0.014452193937673795,
+      "10": 0.004781013626347363,
+      "468": 0.0003060062470285807,
+      "473": 0.000691174587023889,
+      "61": 0.003082388384902122,
+      "291": 0.005398524307483027,
+      "33": 0.0013635694364956313,
+      "263": 0.0023501842471457634
+    },
+    "overlay_box_logical": [
+      284.6666666666667,
+      56.0,
+      694.6666666666665,
+      521.0
+    ],
+    "frame_size": [
+      640.0,
+      480.0
+    ],
+    "frame_rotation": 0,
+    "mirror": true
+  },
+  "second_session": {
+    "camera": "MediaPipe Fixture (Windows Virtual Camera) (\\\\?\\swd#vcamdevapi#5e0bea8ce0d09afa3fded1e291631cecc046c240911239080c8280c2ac44ea83#{e5323777-f976-4f5b-9b55-b94699c46e44}\\{fcebba03-9d13-4c13-9940-cc84fcd132d1})",
+    "delegate": "cpu",
+    "processed_frames": 37,
+    "skipped_frames": 3,
+    "face_frames": 12,
+    "landmarks": 478,
+    "frame_size": [
+      640.0,
+      480.0
+    ],
+    "frame_rotation": 0,
+    "average_inference_ms": 16.66032432432433,
+    "average_frame_ms": 17.715972972972974,
+    "error": null
+  },
+  "finished": "2026-09-22T11:36:07.575234Z"
+}

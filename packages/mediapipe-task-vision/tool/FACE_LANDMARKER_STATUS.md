@@ -34,7 +34,7 @@ person or a device that hosted CI cannot provide.
 | iOS arm64 (device) | ✅ CPU + Metal, iPhone 15 Pro [5] | ✅ [5] | ✅ | ✅ front camera, 480x640, stop/restart [5][10] | ✅ 478 landmarks on a person, 4.6 ms CPU [10] | ✅ native screenshot oracle: median 0.15%, mirrored 5.1% [10] | ❌ | ❌ |
 | Android arm64 (device) | ✅ CPU + GPU, Pixel 7 Test Lab [6] | ✅ [6] | ✅ | ✅ front and back, CPU and GPU [6] | 🧑 rack camera saw no face [6] | 🧑 needs a device with a face in view, or the emulator webcam job (planned) | ❌ rotation and backgrounding explicitly untested [6] | ❌ |
 | Linux x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ✅ real V4L2 device in CI, every push [8] | ✅ 12+ face frames per session [8] | ✅ median 0.24%, mirrored 8% [8] | ❌ | ❌ |
-| Windows x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ❌ no hosted virtual camera for Media Foundation | 🧑 | 🧑 | ❌ | ❌ |
+| Windows x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ✅ Media Foundation virtual camera in CI, every pull request [12] | ✅ 12 face frames per session [12] | ✅ median 0.31%, mirrored 4.6% [12] | ❌ | ❌ |
 
 Mirrored-hypothesis figures recorded before 2026-09-22 (Linux 8%, iOS 5.1%)
 compared landmarks under the same labels. The IMAGE task labels a mirrored
@@ -63,6 +63,7 @@ cover the projection math and pixel conversion.
 9. `validations/2026-09-21-macos-real-camera/`.
 10. `validations/2026-09-22-ios-real-camera/`.
 11. `validations/2026-09-22-web-alignment/` and the Web workflow.
+12. `validations/2026-09-22-windows-real-camera/` and the `Windows real camera` workflow.
 
 ## Filling the 🧑 cells
 
@@ -95,16 +96,16 @@ bytes, so the official runtime is now pinned by its unsigned image
 (`unsignedMachOSha256`, same digest in Python and Dart) and the gallery's
 macOS deployment target is 14.0, the runtime's minimum.
 
-**Windows.** Any Windows machine with a webcam:
+**Windows (done in CI 2026-09-22).** The `Windows real camera` workflow builds
+the Media Foundation fixture camera in `gallery/tool/windows/vcam`, allows
+camera access, and runs `real_camera_test.dart` against it with the desktop
+screenshot oracle; its README covers running it on a Windows 11 machine. A
+physical webcam is still worth one manual pass, since its formats differ:
 
 ```sh
 python -B gallery/tool/prepare.py --target windows/x64 --tasks face_landmarker
 cd gallery && flutter run -d windows --release -t tool/live_face_camera_smoke.dart
 ```
-
-Then open the ordinary Live Face Landmarker page and confirm the overlay sits
-on your face; `previewIsMirrored` assumes Windows mirrors the preview
-unconditionally, which is exactly the kind of assumption this checks.
 
 **Android with a face.** Either a physical device you can point at a person,
 or the planned emulator job: the same v4l2loopback device passed through with
