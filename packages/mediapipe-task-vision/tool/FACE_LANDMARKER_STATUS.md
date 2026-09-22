@@ -32,7 +32,7 @@ person or a device that hosted CI cannot provide.
 | Web (Safari) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | macOS arm64 | ✅ CPU + Metal [3] | ✅ [3] | ✅ unit + desktop test | ✅ built-in camera, 1080p, stop/restart [9] | ✅ 478 landmarks on a person, 6.7 ms CPU [9] | ⚠️ visually confirmed by the maintainer on 2026-09-21, CPU and Metal, release build [9]; no screenshot transport for an automated oracle on desktop macOS | ❌ | ⚠️ `tool/test_camera_soak.py` exists, no retained run |
 | iOS arm64 (device) | ✅ CPU + Metal, iPhone 15 Pro [5] | ✅ [5] | ✅ | ✅ front camera, 480x640, stop/restart [5][10] | ✅ 478 landmarks on a person, 4.6 ms CPU [10] | ✅ native screenshot oracle: median 0.15%, mirrored 5.1% [10] | ❌ | ❌ |
-| Android arm64 (device) | ✅ CPU + GPU, Pixel 7 Test Lab [6] | ✅ [6] | ✅ | ✅ front and back, CPU and GPU [6] | 🧑 rack camera saw no face [6] | 🧑 needs a device with a face in view, or the emulator webcam job (planned) | ❌ rotation and backgrounding explicitly untested [6] | ❌ |
+| Android arm64 (device) | ✅ CPU + GPU, Pixel 7 Test Lab [6] | ✅ [6] | ✅ | ✅ front and back, CPU and GPU [6] | 🧑 rack camera saw no face [6] | 🧑 needs a device with a face in view; hosted emulators expose no passed-through webcam [14] | ❌ rotation and backgrounding explicitly untested [6] | ❌ |
 | Linux x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ✅ real V4L2 device in CI, every push [8] | ✅ 12+ face frames per session [8] | ✅ median 0.24%, mirrored 8% [8] | ❌ | ❌ |
 | Windows x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ✅ Media Foundation virtual camera in CI, every pull request [12] | ✅ 12 face frames per session [12] | ✅ median 0.31%, mirrored 4.6% [12] | ❌ | ❌ |
 
@@ -72,6 +72,8 @@ cover the projection math and pixel conversion.
 12. `validations/2026-09-22-windows-real-camera/` and the `Windows real camera` workflow.
 13. `validations/2026-09-22-web-ios-user-agent/`: red/green CPU worker regression,
     plus existing Chromium CPU/GPU and Firefox CPU checks.
+14. `validations/2026-09-22-android-emulator-webcam-probe/`: negative result,
+    0 guest cameras on API 30, 33, 34 and 35.
 
 ## Filling the 🧑 cells
 
@@ -115,7 +117,8 @@ python -B gallery/tool/prepare.py --target windows/x64 --tasks face_landmarker
 cd gallery && flutter run -d windows --release -t tool/live_face_camera_smoke.dart
 ```
 
-**Android with a face.** Either a physical device you can point at a person,
-or the planned emulator job: the same v4l2loopback device passed through with
-`-camera-front webcam0 -camera-back webcam0` on the existing x86_64 emulator
-runner, running `real_camera_test.dart` with the official SDK adapter.
+**Android with a face.** A physical device you can point at a person,
+running `real_camera_test.dart` with the official SDK adapter. The emulator
+route was tried on 2026-09-22 and does not work on hosted runners: the
+v4l2loopback device reaches the emulator as `webcam0`, but the guest reports
+0 cameras on every image tried [14].

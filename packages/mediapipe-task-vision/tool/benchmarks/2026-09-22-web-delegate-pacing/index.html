@@ -1,0 +1,341 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Face Landmarker delegate pacing</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font: 14px/1.45 system-ui, sans-serif; margin: 24px auto; max-width: 980px; padding: 0 16px; color: #1d1d1f; background: #fff; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { margin: 6px 0; }
+  button { font: inherit; padding: 6px 14px; }
+  #status { margin: 12px 0; font-variant-numeric: tabular-nums; }
+  table { border-collapse: collapse; margin: 12px 0; font-variant-numeric: tabular-nums; }
+  th, td { border-bottom: 1px solid #ddd; padding: 4px 10px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  textarea { width: 100%; height: 160px; font: 12px ui-monospace, monospace; }
+  .note { color: #555; }
+</style>
+
+<h1>Face Landmarker: CPU vs GPU at different call rates</h1>
+<p class="note">Google's <code>@mediapipe/tasks-vision</code> FaceLandmarker in a worker, timed exactly like the
+<a href="https://google-ai-edge.github.io/mediapipe-samples-web/#/vision/face_landmarker">official demo</a>
+(<code>performance.now()</code> around <code>detectForVideo()</code> only), on a fixed 640x480 clip instead of a camera.
+Each condition runs CPU, GPU, GPU, CPU. Keep this tab visible and the machine idle for about four minutes.</p>
+<p><button id="run">Run benchmark</button></p>
+<div id="status">Idle.</div>
+<div id="results"></div>
+<textarea id="json" readonly placeholder="Results JSON appears here"></textarea>
+<p><button id="copy" disabled>Copy JSON</button></p>
+
+<script type="module">
+const query = new URLSearchParams(location.search);
+const settings = {
+  lib: query.get('lib') || 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1',
+  model: query.get('model') ||
+    'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+  image: query.get('image') || '../../../test/fixtures/face_detection/landmark-ex1.jpg',
+  imageFallback: 'https://raw.githubusercontent.com/hugocornellier/mediapipe_flutter/main/' +
+    'packages/mediapipe-task-vision/test/fixtures/face_detection/landmark-ex1.jpg',
+  warmup: Number(query.get('warmup') || 60),
+  samples: Number(query.get('samples') || 300),
+  // Milliseconds between call starts; 0 calls back to back.
+  periods: (query.get('periods') || '0,16.667,33.333').split(',').map(Number),
+  outputs: (query.get('outputs') || 'demo,minimal').split(','),
+  // Background work during the run, a stand-in for something like a video
+  // call: 'gpu[:iterations]' animates a small WebGL canvas, 'cpu[:threads]'
+  // spins busy workers. Comma-separate to combine.
+  load: query.get('load') || 'none',
+};
+const status = document.getElementById('status');
+const state = window.__benchmark = {done: false, result: null, error: null};
+
+// Runs inside the worker. Kept as a function so the page is a single file.
+function workerMain() {
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const stats = values => {
+    if (!values.length) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const at = q => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
+    const round = x => Math.round(x * 1000) / 1000;
+    return {n: sorted.length, median: round(at(0.5)), mean: round(values.reduce((a, b) => a + b, 0) / values.length),
+            p10: round(at(0.1)), p90: round(at(0.9)), min: round(sorted[0]), max: round(sorted[sorted.length - 1])};
+  };
+  const gpuInfo = () => {
+    try {
+      const gl = new OffscreenCanvas(1, 1).getContext('webgl2');
+      if (!gl) return {webgl2: false};
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      const info = {webgl2: true,
+                    vendor: gl.getParameter(ext ? ext.UNMASKED_VENDOR_WEBGL : gl.VENDOR),
+                    renderer: gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER)};
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      return info;
+    } catch (error) {
+      return {error: String(error)};
+    }
+  };
+  let lastTimestamp = 0;
+  const timestamp = () => {
+    const now = performance.now();
+    lastTimestamp = now > lastTimestamp ? now : lastTimestamp + 1;
+    return lastTimestamp;
+  };
+
+  async function block(task, frames, period, warmup, samples) {
+    const durations = [], gaps = [];
+    let faces = 0, previousEnd = null, next = performance.now();
+    for (let i = 0; i < warmup + samples; i++) {
+      if (period > 0) {
+        next += period;
+        const wait = next - performance.now();
+        if (wait > 0) await sleep(wait);
+        else if (wait < -period) next = performance.now();
+      }
+      const start = performance.now();
+      const result = task.detectForVideo(frames[i % frames.length], timestamp());
+      const end = performance.now();
+      if (i >= warmup) {
+        durations.push(end - start);
+        if (previousEnd !== null) gaps.push(start - previousEnd);
+        if (result.faceLandmarks.length === 1 && result.faceLandmarks[0].length === 478) faces++;
+      }
+      previousEnd = end;
+    }
+    return {durations, gaps, faces};
+  }
+
+  self.onmessage = async ({data}) => {
+    const {lib, model, frames, warmup, samples, periods, outputs} = data;
+    const progress = text => self.postMessage({type: 'progress', text});
+    try {
+      const {FilesetResolver, FaceLandmarker} = await import(`${lib}/vision_bundle.mjs`);
+      const fileset = await FilesetResolver.forVisionTasks(`${lib}/wasm`, true);
+      const modelBytes = new Uint8Array(await (await fetch(model)).arrayBuffer());
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', modelBytes));
+      const result = {
+        worker: {gpu: gpuInfo(), crossOriginIsolated: self.crossOriginIsolated},
+        model: {url: model, sha256: [...digest].map(b => b.toString(16).padStart(2, '0')).join(''), bytes: modelBytes.length},
+        init: {}, blocks: [],
+      };
+      const outputSets = {
+        demo: {outputFaceBlendshapes: true, outputFacialTransformationMatrixes: true},
+        minimal: {outputFaceBlendshapes: false, outputFacialTransformationMatrixes: false},
+      };
+      const order = ['CPU', 'GPU', 'GPU', 'CPU'];
+      const total = outputs.length * periods.length * order.length;
+      for (const name of outputs) {
+        const tasks = {};
+        for (const delegate of ['CPU', 'GPU']) {
+          progress(`Creating the ${delegate} task (${name} outputs)`);
+          const started = performance.now();
+          // Same options as the demo's worker, including its fresh WASM instance
+          // per task; no CPU fallback here, so a GPU number is never a CPU
+          // number in disguise.
+          const files = {...fileset, wasmLoaderPath: `${fileset.wasmLoaderPath}?cb=${Date.now()}`};
+          tasks[delegate] = await FaceLandmarker.createFromOptions(files, {
+            baseOptions: {modelAssetBuffer: modelBytes.slice(), delegate},
+            runningMode: 'VIDEO', numFaces: 1,
+            minFaceDetectionConfidence: 0.5, minFacePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
+            ...outputSets[name],
+          });
+          result.init[`${name}/${delegate}`] = Math.round(performance.now() - started);
+        }
+        for (const period of periods) {
+          const seen = {CPU: 0, GPU: 0};
+          for (const delegate of order) {
+            progress(`Block ${result.blocks.length + 1}/${total}: ${name}, ${period ? `${period} ms apart` : 'back to back'}, ${delegate}`);
+            const run = await block(tasks[delegate], frames, period, warmup, samples);
+            result.blocks.push({outputs: name, period, delegate, repeat: ++seen[delegate],
+                                inference: stats(run.durations), idleGap: stats(run.gaps),
+                                faceFrames: run.faces, samples: run.durations.map(x => Math.round(x * 1000) / 1000)});
+          }
+        }
+        for (const task of Object.values(tasks)) task.close();
+      }
+      self.postMessage({type: 'done', result});
+    } catch (error) {
+      self.postMessage({type: 'error', message: String(error?.stack || error)});
+    }
+  };
+}
+
+async function loadImage() {
+  for (const url of [settings.image, settings.imageFallback]) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return {url, bitmap: await createImageBitmap(await response.blob())};
+    } catch (_) {}
+  }
+  throw new Error('Could not load the portrait');
+}
+
+// A 60-frame clip of the portrait with a small, smooth head motion, so VIDEO
+// mode tracks a moving face. createImageBitmap on a default (accelerated)
+// canvas gives GPU-backed bitmaps, like the demo's createImageBitmap(video).
+async function makeClip(image) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 480;
+  const context = canvas.getContext('2d');
+  const scale = Math.min(640 / image.width, 480 / image.height);
+  const frames = [];
+  for (let i = 0; i < 60; i++) {
+    const phase = 2 * Math.PI * i / 60;
+    context.fillStyle = '#000';
+    context.fillRect(0, 0, 640, 480);
+    context.save();
+    context.translate(320 + 8 * Math.sin(phase), 240 + 5 * Math.sin(2 * phase));
+    context.rotate(2 * Math.PI / 180 * Math.sin(phase));
+    context.drawImage(image, -image.width * scale / 2, -image.height * scale / 2,
+                      image.width * scale, image.height * scale);
+    context.restore();
+    frames.push(await createImageBitmap(canvas));
+  }
+  return frames;
+}
+
+function startLoad(spec) {
+  const stops = spec.split(',').map(kind => kind.startsWith('gpu') ? startGpuLoad(Number(kind.split(':')[1] || 64))
+    : kind.startsWith('cpu') ? startCpuLoad(Number(kind.split(':')[1] || 1)) : () => {});
+  return () => stops.forEach(stop => stop());
+}
+
+function startCpuLoad(threads) {
+  const source = 'let x = 1; for (;;) x = (x * 1664525 + 1013904223) | 0;';
+  const url = URL.createObjectURL(new Blob([source], {type: 'text/javascript'}));
+  const workers = Array.from({length: threads}, () => new Worker(url));
+  return () => workers.forEach(worker => worker.terminate());
+}
+
+function startGpuLoad(iterations) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 256;
+  canvas.style.cssText = 'position:fixed;right:12px;bottom:12px;width:96px;height:96px';
+  document.body.append(canvas);
+  const gl = canvas.getContext('webgl2');
+  const program = gl.createProgram();
+  for (const [type, source] of [
+    [gl.VERTEX_SHADER, `#version 300 es
+      void main() { gl_Position = vec4(vec2(gl_VertexID & 1, gl_VertexID >> 1) * 4.0 - 1.0, 0, 1); }`],
+    [gl.FRAGMENT_SHADER, `#version 300 es
+      precision highp float; uniform float t; out vec4 color;
+      void main() {
+        vec2 uv = gl_FragCoord.xy / 256.0; float v = 0.0;
+        for (int i = 0; i < ${iterations}; i++) v += sin(uv.x * float(i) + t) * cos(uv.y * float(i) - t);
+        color = vec4(fract(v), uv, 1);
+      }`]]) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    gl.attachShader(program, shader);
+  }
+  gl.linkProgram(program);
+  gl.useProgram(program);
+  const time = gl.getUniformLocation(program, 't');
+  let id = 0;
+  const frame = now => {
+    gl.uniform1f(time, now / 1000);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    id = requestAnimationFrame(frame);
+  };
+  id = requestAnimationFrame(frame);
+  return () => { cancelAnimationFrame(id); canvas.remove(); };
+}
+
+async function refreshRate() {
+  const times = [];
+  await new Promise(resolve => {
+    const tick = t => { times.push(t); times.length < 61 ? requestAnimationFrame(tick) : resolve(); };
+    requestAnimationFrame(tick);
+  });
+  const deltas = times.slice(1).map((t, i) => t - times[i]).sort((a, b) => a - b);
+  return Math.round(1000 / deltas[deltas.length >> 1]);
+}
+
+async function environment() {
+  const data = {
+    userAgent: navigator.userAgent, hardwareConcurrency: navigator.hardwareConcurrency,
+    deviceMemory: navigator.deviceMemory ?? null, devicePixelRatio: devicePixelRatio,
+    screen: `${screen.width}x${screen.height}`, displayRefreshHz: await refreshRate(),
+    webdriver: navigator.webdriver === true, startedAt: new Date().toISOString(),
+  };
+  try {
+    data.userAgentData = await navigator.userAgentData?.getHighEntropyValues(
+      ['architecture', 'model', 'platformVersion', 'fullVersionList']);
+  } catch (_) {}
+  try {
+    const battery = await navigator.getBattery?.();
+    if (battery) data.battery = {charging: battery.charging, level: battery.level};
+  } catch (_) {}
+  return data;
+}
+
+function render(result) {
+  const cell = s => s ? `${s.median.toFixed(2)} <span class="note">(${s.p10.toFixed(1)}-${s.p90.toFixed(1)})</span>` : '-';
+  const pooled = (outputs, period, delegate) => {
+    const values = result.blocks.filter(b => b.outputs === outputs && b.period === period && b.delegate === delegate)
+      .flatMap(b => b.samples).sort((a, b) => a - b);
+    const at = q => values[Math.min(values.length - 1, Math.floor(q * values.length))];
+    return values.length ? {median: at(0.5), p10: at(0.1), p90: at(0.9)} : null;
+  };
+  let html = '';
+  for (const outputs of settings.outputs) {
+    html += `<h3>${outputs === 'demo' ? 'Demo outputs (blendshapes + matrices)' : 'Landmarks only'}</h3>
+      <table><tr><th>Call spacing</th><th>CPU median ms (p10-p90)</th><th>GPU median ms (p10-p90)</th><th>GPU − CPU</th></tr>`;
+    for (const period of settings.periods) {
+      const cpu = pooled(outputs, period, 'CPU'), gpu = pooled(outputs, period, 'GPU');
+      html += `<tr><td>${period ? `${period} ms (${Math.round(1000 / period)} fps)` : 'back to back'}</td>
+        <td>${cell(cpu)}</td><td>${cell(gpu)}</td><td>${cpu && gpu ? (gpu.median - cpu.median).toFixed(2) : '-'}</td></tr>`;
+    }
+    html += '</table>';
+  }
+  html += `<p class="note">${result.worker.gpu.renderer ?? 'unknown GPU'} · ${result.environment.userAgent}</p>`;
+  document.getElementById('results').innerHTML = html;
+}
+
+async function run() {
+  document.getElementById('run').disabled = true;
+  let hidden = 0, stopLoad = () => {};
+  const onVisibility = () => { if (document.visibilityState !== 'visible') hidden++; };
+  document.addEventListener('visibilitychange', onVisibility);
+  try {
+    status.textContent = 'Measuring the display and loading the portrait';
+    const env = await environment();
+    const image = await loadImage();
+    const frames = await makeClip(image.bitmap);
+    stopLoad = startLoad(settings.load);
+    const source = `(${workerMain.toString()})();`;
+    const worker = new Worker(URL.createObjectURL(new Blob([source], {type: 'text/javascript'})), {type: 'module'});
+    const result = await new Promise((resolve, reject) => {
+      worker.onmessage = ({data}) => {
+        if (data.type === 'progress') status.textContent = data.text;
+        else if (data.type === 'done') resolve(data.result);
+        else if (data.type === 'error') reject(new Error(data.message));
+      };
+      worker.onerror = event => reject(new Error(event.message || 'worker failed to start'));
+      worker.postMessage({lib: settings.lib, model: settings.model, frames, warmup: settings.warmup,
+                          samples: settings.samples, periods: settings.periods, outputs: settings.outputs}, frames);
+    });
+    worker.terminate();
+    result.environment = {...env, finishedAt: new Date().toISOString(), hiddenDuringRun: hidden};
+    result.settings = {...settings, image: image.url, clip: '60 frames, 640x480, portrait with ±8 px / ±2° motion'};
+    render(result);
+    const json = JSON.stringify(result);
+    document.getElementById('json').value = json;
+    document.getElementById('copy').disabled = false;
+    status.textContent = hidden ? 'Done, but the tab was hidden during the run: repeat it with the tab visible.' : 'Done.';
+    state.result = result;
+  } catch (error) {
+    state.error = String(error?.stack || error);
+    status.textContent = `Failed: ${error.message}`;
+  } finally {
+    stopLoad();
+    document.removeEventListener('visibilitychange', onVisibility);
+    document.getElementById('run').disabled = false;
+    state.done = true;
+  }
+}
+
+document.getElementById('run').onclick = run;
+document.getElementById('copy').onclick = () => navigator.clipboard.writeText(document.getElementById('json').value);
+if (query.get('auto') === '1') run();
+</script>
