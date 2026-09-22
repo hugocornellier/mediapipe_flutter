@@ -30,7 +30,7 @@ person or a device that hosted CI cannot provide.
 | Web (Firefox) | ✅ CPU [1] | ✅ [1] | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Web (Safari) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | macOS arm64 | ✅ CPU + Metal [3] | ✅ [3] | ✅ unit + desktop test | ✅ built-in camera, 1080p, stop/restart [9] | ✅ 478 landmarks on a person, 6.7 ms CPU [9] | ⚠️ visually confirmed by the maintainer on 2026-09-21, CPU and Metal, release build [9]; no screenshot transport for an automated oracle on desktop macOS | ❌ | ⚠️ `tool/test_camera_soak.py` exists, no retained run |
-| iOS arm64 (device) | ✅ CPU + Metal, iPhone 15 Pro [5] | ✅ [5] | ✅ | ✅ 21 front-camera frames per delegate [5] | 🧑 no face was in view [5] | 🧑 run `real_camera_test.dart` on the phone with a face in view | ❌ | ❌ |
+| iOS arm64 (device) | ✅ CPU + Metal, iPhone 15 Pro [5] | ✅ [5] | ✅ | ✅ front camera, 480x640, stop/restart [5][10] | ✅ 478 landmarks on a person, 4.6 ms CPU [10] | ✅ native screenshot oracle: median 0.15%, mirrored 5.1% [10] | ❌ | ❌ |
 | Android arm64 (device) | ✅ CPU + GPU, Pixel 7 Test Lab [6] | ✅ [6] | ✅ | ✅ front and back, CPU and GPU [6] | 🧑 rack camera saw no face [6] | 🧑 needs a device with a face in view, or the emulator webcam job (planned) | ❌ rotation and backgrounding explicitly untested [6] | ❌ |
 | Linux x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ✅ real V4L2 device in CI, every push [8] | ✅ 12+ face frames per session [8] | ✅ median 0.24%, mirrored 8% [8] | ❌ | ❌ |
 | Windows x64 | ✅ CPU [7] | ✅ [7] | ✅ [7] | ❌ no hosted virtual camera for Media Foundation | 🧑 | 🧑 | ❌ | ❌ |
@@ -54,11 +54,12 @@ cover the projection math and pixel conversion.
 7. `validations/2026-09-18-desktop-cpu-gallery/`.
 8. `validations/2026-09-21-linux-real-camera/` and the `Linux real camera` workflow.
 9. `validations/2026-09-21-macos-real-camera/`.
+10. `validations/2026-09-22-ios-real-camera/`.
 
 ## Filling the 🧑 cells
 
-**iOS, ten minutes with the phone in hand.** Prepare for the device, run the
-real-camera test with your face in view, and keep the report:
+**iOS (done 2026-09-22; repeat after camera-path changes).** Prepare for the
+device, run the real-camera test with your face in view, and keep the report:
 
 ```sh
 python3 -B gallery/tool/prepare.py --target ios/arm64 --tasks face_landmarker
@@ -70,9 +71,9 @@ MEDIAPIPE_CAMERA_REPORT=$PWD/../build/codex-tmp/ios-real-camera/report.json \
 The test takes a native screenshot, so the alignment oracle runs on the phone.
 Copy `report.json` to `validations/<date>-ios-real-camera/` and update the row.
 
-**macOS, five minutes.** `real_camera_test.dart` records capture and face
-frames but cannot screenshot the preview texture on macOS, so alignment stays a
-visual check. Run it and the soak once and keep both reports:
+**macOS (camera done 2026-09-21; soak still open).** `real_camera_test.dart`
+records capture and face frames but cannot screenshot the preview texture on
+macOS, so alignment stays a visual check. The soak has not been retained yet:
 
 ```sh
 python3 -B gallery/tool/prepare.py --target macos/arm64 --tasks face_landmarker
