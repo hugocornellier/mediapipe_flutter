@@ -5,11 +5,13 @@ import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:web/web.dart' as web;
 import '../live/camera_selection.dart';
 import '../live/live_task.dart';
+import 'pipeline_trace.dart';
 
 extension type _VideoCallbacks(JSObject object) implements JSObject {
   external int requestVideoFrameCallback(JSFunction callback);
@@ -18,6 +20,10 @@ extension type _VideoCallbacks(JSObject object) implements JSObject {
 
 extension type _TrackSettings(JSObject object) implements JSObject {
   external String? get facingMode;
+}
+
+extension type _FrameMetadata(JSObject object) implements JSObject {
+  external double? get captureTime;
 }
 
 /// Browser capture with the same gallery lifecycle, controls and result painter.
@@ -284,9 +290,13 @@ class LiveCameraController<T> extends ChangeNotifier {
         web.document.visibilityState == 'hidden') {
       return;
     }
-    final callback = ((JSAny? _, JSAny? _) {
+    final callback = ((JSNumber now, JSObject? metadata) {
       _callback = null;
-      _onFrame(generation);
+      _onFrame(
+        generation,
+        now.toDartDouble,
+        metadata == null ? null : _FrameMetadata(metadata).captureTime,
+      );
     }).toJS;
     if (video.has('requestVideoFrameCallback')) {
       _videoCallback = true;
@@ -294,9 +304,9 @@ class LiveCameraController<T> extends ChangeNotifier {
     } else {
       _videoCallback = false;
       _callback = web.window.requestAnimationFrame(
-        ((double _) {
+        ((double now) {
           _callback = null;
-          _onFrame(generation);
+          _onFrame(generation, now, null);
         }).toJS,
       );
     }
@@ -313,7 +323,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     }
   }
 
-  void _onFrame(int generation) {
+  void _onFrame(int generation, double arrived, double? captured) {
     if (_closed || !running || generation != _generation) return;
     _schedule(generation);
     if (video.currentTime == _lastVideoTime) return;
@@ -326,12 +336,17 @@ class LiveCameraController<T> extends ChangeNotifier {
     _lastTimestamp = timestamp;
     _frame = () async {
       web.ImageBitmap? bitmap;
+      final trace = PipelineTrace.enabled
+          ? (PipelineFrame(timestamp, delegate.name, arrived, captured)
+              ..started = PipelineTrace.now())
+          : null;
       final whole = Stopwatch()..start();
       try {
         final conversion = Stopwatch()..start();
         bitmap = await web.window.createImageBitmap(video).toDart;
         final width = bitmap.width, height = bitmap.height;
         conversion.stop();
+        trace?.bitmap = PipelineTrace.now();
         if (_closed || generation != _generation) return;
         final browserTask = task;
         if (browserTask is! BrowserLiveTask<T>) {
@@ -346,6 +361,7 @@ class LiveCameraController<T> extends ChangeNotifier {
         );
         inference.stop();
         whole.stop();
+        trace?.detected = PipelineTrace.now();
         if (_closed || generation != _generation) return;
         frameSize = Size(width.toDouble(), height.toDouble());
         result = detected;
@@ -372,6 +388,28 @@ class LiveCameraController<T> extends ChangeNotifier {
         _totalInference += inferenceMilliseconds;
         _totalFrame += frameMilliseconds;
         _changed();
+        if (trace != null) {
+          trace.faces = detected is FaceLandmarkerResult
+              ? detected.faceLandmarks.length
+              : -1;
+          // The frame that paints this result, then the next browser frame,
+          // by which time the compositor has taken it.
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            trace.built = PipelineTrace.now();
+            trace.frame =
+                SchedulerBinding
+                    .instance
+                    .currentSystemFrameTimeStamp
+                    .inMicroseconds /
+                1000;
+            web.window.requestAnimationFrame(
+              ((double _) {
+                trace.painted = PipelineTrace.now();
+                PipelineTrace.add(trace);
+              }).toJS,
+            );
+          });
+        }
       } catch (failure) {
         if (!_closed && generation == _generation) {
           error = _message(failure);
