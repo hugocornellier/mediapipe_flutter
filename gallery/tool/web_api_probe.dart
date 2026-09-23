@@ -224,7 +224,111 @@ Future<Map<String, Object?>> checkApi() async {
     FaceLandmarkerException,
   );
   checks.add('invalid-model-explicit-error');
-  return {'status': 'passed', 'checks': checks, 'image': copied(original)};
+  final hand = await checkHandApi(delegate, checks);
+  return {
+    'status': 'passed',
+    'checks': checks,
+    'image': copied(original),
+    'hand': hand,
+  };
+}
+
+/// The same public contract for Hand Landmarker on the official web runtime.
+Future<Map<String, Object?>> checkHandApi(
+  VisionDelegate delegate,
+  List<String> checks,
+) async {
+  final data = await rootBundle.load('assets/models/hand_landmarker.task');
+  final model = Uint8List.fromList(
+    data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+  );
+  final image = VisionImage.fromFile(
+    Uri.base.resolve('assets/assets/samples/hands.jpg').toString(),
+  );
+  final task = await HandLandmarker.create(
+    HandLandmarkerOptions(delegate: delegate, modelBytes: model, numHands: 2),
+  );
+  late HandLandmarkerResult result;
+  try {
+    result = await task.detectImage(image);
+    require(result.handLandmarks.isNotEmpty, 'Expected a hand');
+    require(
+      result.handLandmarks.every((hand) => hand.length == 21) &&
+          result.handWorldLandmarks.every((hand) => hand.length == 21) &&
+          result.handedness.length == result.handLandmarks.length,
+      'Expected 21 image and world landmarks and handedness per hand',
+    );
+    for (final rotation in [90, 180, 270, -90]) {
+      final rotated = await task.detectImage(image, rotationDegrees: rotation);
+      require(
+        rotated.imageWidth == result.imageWidth &&
+            rotated.imageHeight == result.imageHeight,
+        'Rotation changed hand input dimensions',
+      );
+    }
+    await rejects(
+      () => task.detectForVideo(image, timestampMilliseconds: 1),
+      StateError,
+    );
+  } finally {
+    await task.dispose();
+  }
+  await rejects(() => task.detectImage(image), StateError);
+  checks.add('hand-image-world-landmarks-handedness-rotation-disposal');
+  final video = await HandLandmarker.create(
+    HandLandmarkerOptions(
+      delegate: delegate,
+      modelBytes: model,
+      numHands: 2,
+      runningMode: VisionRunningMode.video,
+    ),
+  );
+  try {
+    final frames = await Future.wait([
+      for (final t in [1, 2, 3])
+        video.detectForVideo(image, timestampMilliseconds: t),
+    ]);
+    require(
+      frames.every((r) => r.handLandmarks.isNotEmpty) &&
+          frames.last.timestampMilliseconds == 3,
+      'Queued hand VIDEO failed',
+    );
+    await rejects(
+      () => video.detectForVideo(
+        VisionImage.fromFile('missing.jpg'),
+        timestampMilliseconds: 4,
+      ),
+      VisionTaskException,
+    );
+    final recovery = video.detectForVideo(image, timestampMilliseconds: 5);
+    await video.dispose();
+    require(
+      (await recovery).handLandmarks.isNotEmpty,
+      'Dispose lost a pending hand result',
+    );
+  } finally {
+    await video.dispose();
+  }
+  await rejects(
+    () => HandLandmarker.create(
+      HandLandmarkerOptions(modelBytes: Uint8List.fromList([1])),
+    ),
+    VisionTaskException,
+  );
+  checks.add('hand-video-queue-failed-frame-recovery-invalid-model');
+  return {
+    'width': result.imageWidth,
+    'height': result.imageHeight,
+    'landmarks': [
+      for (final hand in result.handLandmarks)
+        for (final p in hand) [p.x, p.y, p.z],
+    ],
+    'world': [
+      for (final hand in result.handWorldLandmarks)
+        for (final p in hand) [p.x, p.y, p.z],
+    ],
+    'handedness': [for (final hand in result.handedness) hand.first.score],
+  };
 }
 
 Future<void> main() async {

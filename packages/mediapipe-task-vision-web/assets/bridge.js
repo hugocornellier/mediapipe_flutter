@@ -76,7 +76,7 @@
       const state = workers.get(id);
       if (!state) {
         input.bitmap?.close();
-        return Promise.reject(new Error('FaceLandmarker is closed'));
+        return Promise.reject(new Error('MediaPipe task is closed'));
       }
       return request(state, 'detect', input);
     },
@@ -84,7 +84,7 @@
       const state = workers.get(id);
       if (!state) return;
       try { await request(state, 'close'); }
-      finally { fail(state, new Error('FaceLandmarker is closed')); }
+      finally { fail(state, new Error('MediaPipe task is closed')); }
     },
     // Read-only diagnostics used by release-browser tests.
     stats() {

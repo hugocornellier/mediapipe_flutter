@@ -9,13 +9,32 @@ const argumentsMap = Object.fromEntries(process.argv.slice(2).map(arg => arg.rep
 const browserName = argumentsMap.browser || 'chromium';
 const suite = argumentsMap.suite || 'all';
 const delegate = argumentsMap.delegate === 'gpu' ? 'GPU' : 'CPU';
+// The live demo the camera suite drives. Probes and mirror partners match
+// AlignmentProbes in gallery/lib/live/live_subjects.dart: the official IMAGE
+// task labels a face's landmarks by the side of the picture they appear on,
+// so across a mirror it reports each probe's left/right partner, while a hand
+// keeps its numbering (only its handedness flips).
+const TASKS = {
+  face: {tile: /Live Face Landmarker/, points: '478', fixture: 'web-camera.y4m',
+    task: 'FaceLandmarker', model: 'face_landmarker.task', landmarks: 'faceLandmarks',
+    options: {numFaces: 1},
+    partners: {1: 1, 152: 152, 10: 10, 468: 473, 473: 468, 61: 291, 291: 61, 33: 263, 263: 33}},
+  hand: {tile: /Live Hand Landmarker/, points: '21', fixture: 'web-camera-hand.y4m',
+    task: 'HandLandmarker', model: 'hand_landmarker.task', landmarks: 'landmarks',
+    options: {numHands: 2},
+    partners: {0: 0, 4: 4, 8: 8, 12: 12, 16: 16, 20: 20, 5: 5, 17: 17}},
+};
+const taskName = argumentsMap.task || 'face';
+const subject = TASKS[taskName];
+assert.ok(subject, 'Unknown --task ' + taskName);
 const base = argumentsMap['base-url'] || 'http://localhost:8866/mediapipe_flutter/';
 // The gallery publishes its per-frame state for these checks only on request.
 const gallery = base + (base.includes('?') ? '&' : '?') + 'test-hooks';
 const apiBase = argumentsMap['api-url'] || 'http://localhost:8866/api-probe/';
-const evidence = path.join(repo, 'build/codex-tmp/web-browser-' + browserName + (delegate === 'GPU' ? '-gpu' : ''));
+const evidence = path.join(repo, 'build/codex-tmp/web-browser-' + browserName +
+  (delegate === 'GPU' ? '-gpu' : '') + (taskName === 'face' ? '' : '-' + taskName));
 fs.mkdirSync(evidence, {recursive: true});
-const report = {browser: browserName, delegate, suite, checks: [], physical_webcam_tested: false,
+const report = {browser: browserName, delegate, suite, task: taskName, checks: [], physical_webcam_tested: false,
   software_webgl: browserName === 'chromium' && process.platform === 'linux'};
 const logs = [];
 const browsers = [];
@@ -27,7 +46,7 @@ async function launch(deviceCount = 2, useFile = true) {
     channel: 'chromium',
     args: ['--use-fake-device-for-media-stream=device-count=' + deviceCount,
       ...(process.platform === 'linux' ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
-      ...(useFile ? ['--use-file-for-fake-video-capture=' + path.join(repo, 'build/codex-tmp/web-camera.y4m')] : [])],
+      ...(useFile ? ['--use-file-for-fake-video-capture=' + path.join(repo, 'build/codex-tmp', subject.fixture)] : [])],
   } : {
     // Hosted Linux has no GPU. Permit Mesa's software WebGL context for the
     // official CPU task's image upload/preprocessing (not GPU inference).
@@ -48,8 +67,9 @@ function observe(page) {
   });
 }
 
-async function wait(page, condition, timeout = 60000) {
-  await page.waitForFunction(condition, null, {timeout});
+// [arg] is passed to [condition], which runs in the page.
+async function wait(page, condition, arg = null, timeout = 60000) {
+  await page.waitForFunction(condition, arg, {timeout});
 }
 
 // Same criterion as gallery/integration_test/support/alignment_oracle.dart:
@@ -57,10 +77,6 @@ async function wait(page, condition, timeout = 60000) {
 // diagonal.
 const alignmentTolerance = 0.015;
 const alignmentOutlierTolerance = 0.03;
-// The IMAGE task labels landmarks by the side of the picture they appear on,
-// so on a preview that mirrors the analysed frame it reports each probe's
-// left/right partner. Same table as alignmentMirrorPartners in the Dart oracle.
-const alignmentMirrorPartners = {1: 1, 152: 152, 10: 10, 468: 473, 473: 468, 61: 291, 291: 61, 33: 263, 263: 33};
 
 function median(values) {
   const sorted = [...values].sort((a, b) => a - b);
@@ -70,27 +86,28 @@ function median(values) {
 
 // Google's official IMAGE task, run in the page over PNG screenshot pixels.
 async function detectScreenshot(page, png) {
-  return page.evaluate(async base64 => {
+  return page.evaluate(async ({base64, spec}) => {
     const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
-    const {FilesetResolver, FaceLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
-    const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
-    const task = await FaceLandmarker.createFromOptions(files, {
-      baseOptions: {delegate: 'CPU', modelAssetPath: new URL('assets/assets/models/face_landmarker.task', document.baseURI).href},
-      runningMode: 'IMAGE', numFaces: 1,
+    const bundle = await import(new URL('vision_bundle.mjs', runtime));
+    const files = await bundle.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
+    const task = await bundle[spec.task].createFromOptions(files, {
+      baseOptions: {delegate: 'CPU', modelAssetPath: new URL('assets/assets/models/' + spec.model, document.baseURI).href},
+      runningMode: 'IMAGE', ...spec.options,
     });
     const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
     const bitmap = await createImageBitmap(new Blob([bytes], {type: 'image/png'}));
     try {
-      const result = task.detect(bitmap);
-      return {width: bitmap.width, height: bitmap.height, faces: result.faceLandmarks.length,
-        landmarks: result.faceLandmarks[0]?.map(p => [p.x, p.y]) ?? []};
+      const found = task.detect(bitmap)[spec.landmarks];
+      return {width: bitmap.width, height: bitmap.height, subjects: found.length,
+        landmarks: found[0]?.map(p => [p.x, p.y]) ?? []};
     } finally {bitmap.close(); task.close();}
-  }, png.toString('base64'));
+  }, {base64: png.toString('base64'), spec: {task: subject.task, model: subject.model,
+    landmarks: subject.landmarks, options: subject.options}});
 }
 
 // The Dart overlay-alignment oracle, in the browser. Screenshot the preview
 // with the overlay hidden, run the official IMAGE task over those pixels and
-// compare the face it finds with where the overlay draws the live result. The
+// compare the subject it finds with where the overlay draws the live result. The
 // web view publishes the probes from the painter's own transform, relative to
 // the overlay's box on the page; the screenshot is cropped to that box, so a
 // video that is not under its overlay fails too. The mirrored hypothesis
@@ -99,7 +116,7 @@ async function detectScreenshot(page, png) {
 // hypothesis reads the on-screen landmarks under the labels it implies.
 async function alignmentCheck(page) {
   const overlay = () => page.locator('video').evaluate(video => ({
-    faces: video.getAttribute('data-face-count'),
+    subjects: video.getAttribute('data-subjects'),
     box: JSON.parse(video.getAttribute('data-overlay-box')),
     frame: JSON.parse(video.getAttribute('data-frame-box')),
     probes: JSON.parse(video.getAttribute('data-probes')),
@@ -117,7 +134,7 @@ async function alignmentCheck(page) {
     for (let attempt = 1; ; attempt++) {
       await wait(page, () => {
         const video = document.querySelector('video');
-        return video?.getAttribute('data-face-count') === '1' && video.hasAttribute('data-probes');
+        return video?.getAttribute('data-subjects') === '1' && video.hasAttribute('data-probes');
       });
       // Two animation frames: Flutter has painted the hidden overlay.
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -128,11 +145,11 @@ async function alignmentCheck(page) {
       const png = await page.screenshot({clip});
       const after = await overlay();
       const observed = await detectScreenshot(page, png);
-      // The fixture alternates face and blank; retry a capture that met a blank.
-      if ((after.faces !== '1' || observed.faces !== 1) && attempt < 5) continue;
+      // The fixture alternates subject and blank; retry a capture that met a blank.
+      if ((after.subjects !== '1' || observed.subjects !== 1) && attempt < 5) continue;
       fs.writeFileSync(path.join(evidence, 'alignment-preview-without-overlay.png'), png);
       const measurement = {
-        observed_faces: observed.faces,
+        observed_subjects: observed.subjects,
         crop_size: [observed.width, observed.height],
         tolerance: alignmentTolerance,
         outlier_tolerance: alignmentOutlierTolerance,
@@ -145,19 +162,19 @@ async function alignmentCheck(page) {
         mirror: before.mirror,
         video_transform: before.videoTransform,
       };
-      if (observed.faces !== 1) return measurement;
+      if (observed.subjects !== 1) return measurement;
       const {dpr} = before;
       const diagonal = Math.hypot(before.box[2], before.box[3]) * dpr;
       const axis = before.frame[0] + before.frame[2] / 2;
       const distance = (index, mirror, probeX, probeY) => {
-        const [seenX, seenY] = observed.landmarks[mirror ? alignmentMirrorPartners[index] : index];
+        const [seenX, seenY] = observed.landmarks[mirror ? subject.partners[index] : index];
         return Math.hypot((before.box[0] - clip.x + probeX) * dpr - seenX * observed.width,
           (before.box[1] - clip.y + probeY) * dpr - seenY * observed.height) / diagonal;
       };
       const distances = {}, mirrored = {};
       let drift = 0;
       for (const [index, [probeX, probeY]] of Object.entries(before.probes)) {
-        assert.ok(index in alignmentMirrorPartners, 'no mirror partner for probe ' + index);
+        assert.ok(index in subject.partners, 'no mirror partner for probe ' + index);
         distances[index] = distance(index, before.mirror, probeX, probeY);
         mirrored[index] = distance(index, !before.mirror, 2 * axis - probeX, probeY);
         const [laterX, laterY] = after.probes?.[index] ?? [probeX, probeY];
@@ -220,9 +237,44 @@ async function apiChecks() {
     errors[group] = Math.max(...actual.map((value, i) => Math.abs(value - expected[i])));
     assert.ok(errors[group] < 1e-5, group + ' differs from official JavaScript: ' + errors[group]);
   }
+  // Hand Landmarker through the Dart API versus Google's JavaScript on the
+  // same image, runtime and delegate.
+  const hand = await page.evaluate(async delegate => {
+    const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
+    const {FilesetResolver, HandLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
+    const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
+    const task = await HandLandmarker.createFromOptions(files, {
+      baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/hand_landmarker.task', document.baseURI).href},
+      runningMode: 'IMAGE', numHands: 2,
+    });
+    const response = await fetch(new URL('assets/assets/samples/hands.jpg', document.baseURI));
+    const bitmap = await createImageBitmap(await response.blob());
+    try {
+      const result = task.detect(bitmap);
+      return {
+        width: bitmap.width, height: bitmap.height,
+        landmarks: result.landmarks.flatMap(points => points.map(p => [p.x, p.y, p.z])),
+        world: result.worldLandmarks.flatMap(points => points.map(p => [p.x, p.y, p.z])),
+        handedness: result.handedness.map(categories => categories[0].score),
+      };
+    } finally {bitmap.close(); task.close();}
+  }, delegate);
+  fs.writeFileSync(path.join(evidence, 'official-js-hand-reference.json'), JSON.stringify(hand, null, 2));
+  assert.equal(api.hand.width, hand.width);
+  assert.equal(api.hand.height, hand.height);
+  const handErrors = {};
+  for (const group of ['landmarks', 'world', 'handedness']) {
+    const actual = api.hand[group].flat();
+    const expected = hand[group].flat();
+    assert.ok(expected.length > 0, 'official JavaScript found no hand');
+    assert.equal(actual.length, expected.length, group + ' count differs from official JavaScript');
+    handErrors[group] = Math.max(...actual.map((value, i) => Math.abs(value - expected[i])));
+    assert.ok(handErrors[group] < 1e-5, 'hand ' + group + ' differs from official JavaScript: ' + handErrors[group]);
+  }
   assert.deepEqual(await page.evaluate(() => mediapipeVision.stats().activeWorkers), 0);
   report.official_js_maximum_absolute_error = errors;
-  report.checks.push(...api.checks, 'same-browser-official-js-reference');
+  report.official_js_hand_maximum_absolute_error = handErrors;
+  report.checks.push(...api.checks, 'same-browser-official-js-reference', 'same-browser-official-js-hand-reference');
   await page.screenshot({path: path.join(evidence, 'api.png')});
   await browser.close();
 }
@@ -350,12 +402,12 @@ async function cameraChecks() {
   observe(page);
   await installCaptureObservations(page);
   await page.goto(gallery);
-  await page.getByRole('group', {name: /Live Face Landmarker/}).click();
-  await wait(page, () => {
+  await page.getByRole('group', {name: subject.tile}).click();
+  await wait(page, points => {
     const video = document.querySelector('video');
     return Number(video?.getAttribute('data-processed-frames')) >= 12 &&
-      video?.getAttribute('data-landmarks') === '478';
-  });
+      video?.getAttribute('data-landmarks') === points;
+  }, subject.points);
   report.camera = await page.locator('video').evaluate(video => ({
     width: video.videoWidth, height: video.videoHeight,
     timestamp: Number(video.getAttribute('data-timestamp')),
@@ -365,18 +417,18 @@ async function cameraChecks() {
   assert.equal(report.camera.width, 640);
   assert.equal(report.camera.height, 480);
   assert.equal(report.camera.mirror, 'scaleX(-1)');
-  await page.screenshot({path: path.join(evidence, 'camera-face.png')});
+  await page.screenshot({path: path.join(evidence, 'camera-' + taskName + '.png')});
   const alignment = report.alignment = await alignmentCheck(page);
   const verdict = `median ${alignment.median?.toFixed(4)}, max ${alignment.maximum?.toFixed(4)}; ` +
     `the mirrored hypothesis scores ${alignment.median_if_mirrored?.toFixed(4)}`;
-  assert.equal(alignment.observed_faces, 1, 'the on-screen preview must show one face');
-  assert.ok(alignment.median <= alignmentTolerance, 'overlay is off the on-screen face: ' + verdict);
-  assert.ok(alignment.maximum <= alignmentOutlierTolerance, 'one probe is far off the on-screen face: ' + verdict);
+  assert.equal(alignment.observed_subjects, 1, 'the on-screen preview must show one ' + taskName);
+  assert.ok(alignment.median <= alignmentTolerance, 'overlay is off the on-screen ' + taskName + ': ' + verdict);
+  assert.ok(alignment.maximum <= alignmentOutlierTolerance, 'one probe is far off the on-screen ' + taskName + ': ' + verdict);
   report.checks.push('overlay-alignment-oracle-on-screen-pixels');
-  await wait(page, () => document.querySelector('video')?.getAttribute('data-face-count') === '0');
-  await wait(page, () => document.querySelector('video')?.getAttribute('data-landmarks') === '478');
+  await wait(page, () => document.querySelector('video')?.getAttribute('data-subjects') === '0');
+  await wait(page, points => document.querySelector('video')?.getAttribute('data-landmarks') === points, subject.points);
   assert.ok(await page.locator('video').evaluate(v => Number(v.getAttribute('data-timestamp'))) > report.camera.timestamp);
-  report.checks.push('real-getusermedia-y4m-face-blank-recovery-timestamps');
+  report.checks.push('real-getusermedia-y4m-' + taskName + '-blank-recovery-timestamps');
 
   for (const viewport of [{width: 390, height: 844}, {width: 1440, height: 900}]) {
     await page.setViewportSize(viewport);
@@ -390,20 +442,20 @@ async function cameraChecks() {
   // Switch the actual running gallery task, ensuring the requested delegate
   // completes inference and releases its worker before switching back.
   await page.getByRole('button', {name: 'GPU', exact: true}).click({timeout: 30000});
-  await wait(page, () => document.querySelector('video')?.getAttribute('data-delegate') === 'gpu' &&
-    document.querySelector('video')?.getAttribute('data-landmarks') === '478');
-  await page.screenshot({path: path.join(evidence, 'camera-gpu-face.png')});
+  await wait(page, points => document.querySelector('video')?.getAttribute('data-delegate') === 'gpu' &&
+    document.querySelector('video')?.getAttribute('data-landmarks') === points, subject.points);
+  await page.screenshot({path: path.join(evidence, 'camera-gpu-' + taskName + '.png')});
   await page.getByRole('button', {name: 'CPU', exact: true}).click({timeout: 30000});
-  await wait(page, () => document.querySelector('video')?.getAttribute('data-delegate') === 'cpu' &&
-    document.querySelector('video')?.getAttribute('data-landmarks') === '478');
+  await wait(page, points => document.querySelector('video')?.getAttribute('data-delegate') === 'cpu' &&
+    document.querySelector('video')?.getAttribute('data-landmarks') === points, subject.points);
   assert.equal(await page.evaluate(() => mediapipeVision.stats().activeWorkers), 1);
-  report.checks.push('live-cpu-gpu-cpu-switch-face-inference-worker-cleanup');
+  report.checks.push('live-cpu-gpu-cpu-switch-' + taskName + '-inference-worker-cleanup');
   await page.getByRole('button', {name: 'Back', exact: true}).click();
   await wait(page, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended') &&
     window.testFrameCallbacks.size === 0);
-  await page.getByRole('group', {name: /Live Face Landmarker/}).click();
-  await wait(page, () => document.querySelector('video')?.getAttribute('data-landmarks') === '478');
+  await page.getByRole('group', {name: subject.tile}).click();
+  await wait(page, points => document.querySelector('video')?.getAttribute('data-landmarks') === points, subject.points);
   await page.getByRole('button', {name: 'Back', exact: true}).click();
   await wait(page, () => mediapipeVision.stats().activeWorkers === 0 &&
     mediapipeVision.stats().pendingRequests === 0 &&
@@ -411,6 +463,13 @@ async function cameraChecks() {
     window.testFrameCallbacks.size === 0);
   report.checks.push('automatic-start-navigation-tracks-workers-callback-cleanup');
   await context.close();
+  // The checks below exercise the shared controller's lifecycle (permissions,
+  // device switching, worker failure), which does not depend on the task.
+  // They run once, with face.
+  if (taskName !== 'face') {
+    await browser.close();
+    return;
+  }
 
   const denied = await browser.newContext();
   await denied.grantPermissions([], {origin: new URL(base).origin});

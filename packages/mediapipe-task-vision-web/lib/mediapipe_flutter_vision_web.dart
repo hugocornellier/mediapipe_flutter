@@ -15,7 +15,7 @@ external JSPromise<JSNumber> _create(JSObject options);
 @JS('mediapipeVision.detect')
 external JSPromise<_Detection> _detect(JSNumber id, JSObject input);
 
-/// A worker result: JSON, plus the face landmarks packed when possible.
+/// A worker result: JSON, plus the image landmarks packed when possible.
 extension type _Detection(JSObject _) implements JSObject {
   external JSString get json;
   external JSFloat64Array? get landmarks;
@@ -23,25 +23,67 @@ extension type _Detection(JSObject _) implements JSObject {
 @JS('mediapipeVision.close')
 external JSPromise<JSAny?> _close(JSNumber id);
 
-/// Flutter registration and asynchronous adapter for Google's official runtime.
-final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
-  WebFaceLandmarker._(this._id);
+/// Flutter registration for Google's official browser runtime.
+abstract final class MediaPipeVisionWeb {
+  /// Installs the browser backends before the first public task is created.
+  static void registerWith(Registrar registrar) {
+    faceLandmarkerBackendFactory = (options) => WebVisionTask.create(
+      task: 'face_landmarker',
+      modelBytes: options.modelBytes,
+      modelPath: options.modelPath,
+      delegate: options.delegate,
+      runningMode: options.runningMode,
+      settings: {
+        'numFaces': options.numFaces,
+        'minFaceDetectionConfidence': options.minFaceDetectionConfidence,
+        'minFacePresenceConfidence': options.minFacePresenceConfidence,
+        'minTrackingConfidence': options.minTrackingConfidence,
+        'outputFaceBlendshapes': options.outputFaceBlendshapes,
+        'outputFacialTransformationMatrixes':
+            options.outputFacialTransformationMatrixes,
+      },
+      decode: (data, landmarks) =>
+          decodeWebFaceResult(data, landmarks: landmarks),
+      error: FaceLandmarkerException.new,
+    );
+    handLandmarkerBackendFactory = (options) => WebVisionTask.create(
+      task: 'hand_landmarker',
+      modelBytes: options.modelBytes,
+      modelPath: options.modelPath,
+      delegate: options.delegate,
+      runningMode: options.runningMode,
+      settings: {
+        'numHands': options.numHands,
+        'minHandDetectionConfidence': options.minHandDetectionConfidence,
+        'minHandPresenceConfidence': options.minHandPresenceConfidence,
+        'minTrackingConfidence': options.minTrackingConfidence,
+      },
+      decode: (data, landmarks) =>
+          decodeWebHandResult(data, landmarks: landmarks),
+      error: VisionTaskException.new,
+    );
+  }
+}
+
+/// One official browser task on its own worker, with requests serialized.
+final class WebVisionTask<R> implements VisionTaskFrameBackend<R> {
+  WebVisionTask._(this._id, this._decode, this._error);
   final JSNumber _id;
+  final R Function(Map<String, dynamic> data, Float64List? landmarks) _decode;
+  final Exception Function(String message) _error;
   Future<void> _tail = Future.value();
   Future<void>? _disposing;
   static Future<void>? _loaded;
 
-  static Future<T> _workerResult<T extends JSAny?>(JSPromise<T> promise) async {
+  static Future<T> _workerResult<T extends JSAny?>(
+    JSPromise<T> promise,
+    Exception Function(String message) error,
+  ) async {
     try {
       return await promise.toDart;
-    } catch (error) {
-      throw FaceLandmarkerException('$error');
+    } catch (cause) {
+      throw error('$cause');
     }
-  }
-
-  /// Installs the browser backend before the first public task is created.
-  static void registerWith(Registrar registrar) {
-    faceLandmarkerBackendFactory = create;
   }
 
   static Future<void> _load() => _loaded ??= () async {
@@ -67,47 +109,54 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
     }
   }();
 
-  /// Creates one official browser task with the requested CPU or GPU delegate.
-  static Future<FaceLandmarkerBackend> create(
-    FaceLandmarkerOptions options,
-  ) async {
+  /// Creates one official browser [task] with the requested CPU or GPU
+  /// delegate; [settings] are the task's own options, named as in Google's
+  /// JavaScript API.
+  static Future<WebVisionTask<R>> create<R>({
+    required String task,
+    required Uint8List? modelBytes,
+    required String? modelPath,
+    required VisionDelegate delegate,
+    required VisionRunningMode runningMode,
+    required Map<String, Object?> settings,
+    required R Function(Map<String, dynamic> data, Float64List? landmarks)
+    decode,
+    required Exception Function(String message) error,
+  }) async {
     await _load();
     final id = await _workerResult(
       _create(
         {
-              'delegate': options.delegate.name.toUpperCase(),
-              'modelBytes': options.modelBytes == null
+              'task': task,
+              'delegate': delegate.name.toUpperCase(),
+              'modelBytes': modelBytes == null
                   ? null
-                  : Uint8List.fromList(options.modelBytes!).toJS,
-              'modelPath': options.modelPath == null
+                  : Uint8List.fromList(modelBytes).toJS,
+              'modelPath': modelPath == null
                   ? null
-                  : Uri.base.resolve(options.modelPath!).toString(),
-              'runningMode': options.runningMode.name.toUpperCase(),
-              'numFaces': options.numFaces,
-              'minFaceDetectionConfidence': options.minFaceDetectionConfidence,
-              'minFacePresenceConfidence': options.minFacePresenceConfidence,
-              'minTrackingConfidence': options.minTrackingConfidence,
-              'outputFaceBlendshapes': options.outputFaceBlendshapes,
-              'outputFacialTransformationMatrixes':
-                  options.outputFacialTransformationMatrixes,
+                  : Uri.base.resolve(modelPath).toString(),
+              'runningMode': runningMode.name.toUpperCase(),
+              ...settings,
             }.jsify()!
             as JSObject,
       ),
+      error,
     );
-    return WebFaceLandmarker._(id);
+    return WebVisionTask._(id, decode, error);
   }
 
-  Future<FaceLandmarkerResult> _submit(Map<String, Object?> input) {
+  Future<R> _submit(Map<String, Object?> input) {
     if (_disposing != null) {
-      return Future.error(StateError('FaceLandmarker has been disposed.'));
+      return Future.error(StateError('MediaPipe task has been disposed.'));
     }
     final result = _tail.then((_) async {
       final detection = await _workerResult(
         _detect(_id, input.jsify()! as JSObject),
+        _error,
       );
-      return decodeWebFaceResult(
+      return _decode(
         jsonDecode(detection.json.toDart) as Map<String, dynamic>,
-        landmarks: detection.landmarks?.toDart,
+        detection.landmarks?.toDart,
       );
     });
     _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
@@ -115,7 +164,7 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
   }
 
   @override
-  Future<FaceLandmarkerResult> detect(
+  Future<R> detect(
     VisionImage image,
     int rotationDegrees,
     int? timestampMilliseconds,
@@ -135,7 +184,7 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
   });
 
   @override
-  Future<FaceLandmarkerResult> detectFrame(
+  Future<R> detectFrame(
     Object frame,
     int width,
     int height,
@@ -151,6 +200,6 @@ final class WebFaceLandmarker implements FaceLandmarkerFrameBackend {
 
   @override
   Future<void> dispose() => _disposing ??= _tail.then((_) async {
-    await _workerResult(_close(_id));
+    await _workerResult(_close(_id), _error);
   });
 }

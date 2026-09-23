@@ -22,7 +22,7 @@ void main() {
     () async {
       for (final (os, tasks) in [
         (OS.macOS, ['face_landmarker']),
-        (OS.iOS, ['hand_landmarker']),
+        (OS.iOS, ['pose_landmarker']),
         (OS.iOS, ['face_landmarker', 'interactive_segmenter']),
       ]) {
         await expectLater(
@@ -60,7 +60,7 @@ void main() {
     },
   );
 
-  test('both binding IDs load one physical iOS framework', () async {
+  test('every binding ID loads one physical iOS framework', () async {
     await testCodeBuildHook(
       mainMethod: (arguments) async {
         await build(arguments, (input, output) async {
@@ -72,7 +72,7 @@ void main() {
             input,
             output,
             library: library,
-            tasks: {'face_landmarker', 'face_detector'},
+            tasks: {'face_landmarker', 'face_detector', 'hand_landmarker'},
           );
         });
       },
@@ -80,22 +80,28 @@ void main() {
       targetArchitecture: Architecture.arm64,
       check: (_, output) {
         final assets = output.assets.code;
+        // The shared bindings and capability probes resolve vision.dylib.
         expect(assets.map((asset) => asset.id.split('/').last).toSet(), {
           'face_landmarker.dylib',
           'face_detector.dylib',
+          'hand_landmarker.dylib',
+          'vision.dylib',
         });
         expect(
           assets.where((asset) => asset.linkMode is DynamicLoadingBundled),
           hasLength(1),
         );
-        final alias = assets.singleWhere(
+        final aliases = assets.where(
           (asset) => asset.linkMode is DynamicLoadingSystem,
         );
-        expect(alias.file, isNull);
-        expect(
-          (alias.linkMode as DynamicLoadingSystem).uri.path,
-          '@rpath/mediapipe_ios.framework/mediapipe_ios',
-        );
+        expect(aliases, hasLength(3));
+        for (final alias in aliases) {
+          expect(alias.file, isNull);
+          expect(
+            (alias.linkMode as DynamicLoadingSystem).uri.path,
+            '@rpath/mediapipe_ios.framework/mediapipe_ios',
+          );
+        }
       },
     );
   });

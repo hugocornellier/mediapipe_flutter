@@ -24,6 +24,12 @@ The physical Pixel 7 / Android 13 Test Lab campaign validates both delegates,
 including front/back camera frames and delegate switching; see
 [the Test Lab guide](../../gallery/tool/ANDROID_FACE_TESTLAB.md).
 
+**Hand Landmarker** runs on every target through Google's official runtimes:
+the Linux and Windows wheels, the opt-in macOS runtime, the iOS SDK adapter,
+and the Android and web adapter packages. GPU is available everywhere except
+Windows. See [its status matrix](tool/HAND_LANDMARKER_STATUS.md) for what each
+platform's evidence covers.
+
 **MagicTouch Interactive Segmenter** is an optional macOS arm64 CPU task using
 Google's modern stateful 1.0.1 API and official int8 version-1 task bundle.
 It selects arbitrary objects from positive, negative and lasso strokes.

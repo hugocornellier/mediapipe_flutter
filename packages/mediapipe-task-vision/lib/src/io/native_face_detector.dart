@@ -88,13 +88,7 @@ final class NativeFaceDetector {
       } else if (_officialIos && input.format == VisionPixelFormat.bgra) {
         _checked(
           (error) => mp.MpStatus.fromValue(
-            createOfficialIosBgraImage(
-              input,
-              arena,
-              imageOut.cast(),
-              error,
-              detector: true,
-            ),
+            createOfficialIosBgraImage(input, arena, imageOut.cast(), error),
           ),
         );
       } else {

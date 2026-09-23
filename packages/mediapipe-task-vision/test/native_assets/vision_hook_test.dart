@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
 import 'package:test/test.dart';
@@ -181,6 +183,37 @@ void main() {
       failsWith<UnsupportedError>(contains('macos/arm64')),
     );
   });
+
+  test(
+    'official macOS runtime is bundled once when face shares it',
+    () async {
+      // Google's monolith shares its graph registry between loaded images, so
+      // a second copy for the face asset would abort on registration.
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.macOS,
+        targetArchitecture: Architecture.arm64,
+        userDefines: defines({
+          'tasks': ['face_landmarker', 'hand_landmarker'],
+          'official_macos_landmark_tasks': true,
+        }),
+        check: (_, output) {
+          final assets = output.assets.code.toList();
+          expect(assets.map((asset) => asset.id), [
+            'package:mediapipe_flutter_vision/vision.dylib',
+          ]);
+          expect(assets.single.linkMode, isA<DynamicLoadingBundled>());
+        },
+      );
+    },
+    skip:
+        File(
+          '${officialMacosLandmarkRuntime.localBuildDirectory}'
+          '${officialMacosLandmarkRuntime.libraryName}',
+        ).existsSync()
+        ? false
+        : 'Run tool/prepare_official_macos_landmark_runtime.py first.',
+  );
 
   test('simulator rejects tasks whose exports lack validated inference', () {
     expect(

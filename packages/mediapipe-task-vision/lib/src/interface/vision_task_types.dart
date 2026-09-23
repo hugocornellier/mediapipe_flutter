@@ -152,13 +152,22 @@ final class VisionEmbedding {
 /// Native or worker failure for a combined-runtime vision task.
 class VisionTaskException implements Exception {
   /// Preserve diagnostic text and an optional native status code.
-  const VisionTaskException(this.message, {this.statusCode});
+  const VisionTaskException(
+    this.message, {
+    this.statusCode,
+    this.gpuUnavailable = false,
+  });
 
   /// Native API or worker diagnostic.
   final String message;
 
   /// MediaPipe/Abseil status code, if this was a native error.
   final int? statusCode;
+
+  /// True when MediaPipe refused [VisionDelegate.gpu] on this machine, for
+  /// example on Linux without EGL or with only a software renderer such as
+  /// llvmpipe. The package never retries on CPU; create a CPU task instead.
+  final bool gpuUnavailable;
   @override
   String toString() => 'VisionTaskException($statusCode): $message';
 }

@@ -1,6 +1,14 @@
-import {FilesetResolver, FaceLandmarker} from './runtime/vision_bundle.mjs';
+import {FilesetResolver, FaceLandmarker, HandLandmarker} from './runtime/vision_bundle.mjs';
+
+// Each task: Google's class and the result field holding its image landmarks,
+// which travel packed; everything else in the result travels as JSON.
+const TASKS = {
+  face_landmarker: {name: 'FaceLandmarker', type: FaceLandmarker, landmarks: 'faceLandmarks'},
+  hand_landmarker: {name: 'HandLandmarker', type: HandLandmarker, landmarks: 'landmarks'},
+};
 
 let task;
+let spec = TASKS.face_landmarker;
 let operations = Promise.resolve();
 self.onmessage = ({data}) => {
   // Serialize initialization, frames and shutdown on the owning worker.
@@ -18,10 +26,12 @@ self.onmessage = ({data}) => {
 async function run(type, input, timing) {
   if (type === 'create') {
     const files = await FilesetResolver.forVisionTasks(new URL('./runtime/wasm', import.meta.url).href, true);
-    const {modelBytes, modelPath, delegate, ...settings} = input;
-    if (delegate !== 'CPU' && delegate !== 'GPU') throw new Error('Invalid FaceLandmarker delegate');
+    const {modelBytes, modelPath, delegate, task: name = 'face_landmarker', ...settings} = input;
+    spec = TASKS[name];
+    if (!spec) throw new Error('Unsupported MediaPipe task: ' + name);
+    if (delegate !== 'CPU' && delegate !== 'GPU') throw new Error('Invalid ' + spec.name + ' delegate');
     if (typeof OffscreenCanvas === 'undefined') {
-      throw new Error('FaceLandmarker requires OffscreenCanvas in a browser worker.');
+      throw new Error(spec.name + ' requires OffscreenCanvas in a browser worker.');
     }
     // The bundled runtime picks its own canvas by sniffing the user agent, and
     // reads every WebKit browser without a Version/NN token as Safari 16. Firefox
@@ -30,9 +40,9 @@ async function run(type, input, timing) {
     // branch unreachable.
     const canvas = new OffscreenCanvas(1, 1);
     if (delegate === 'GPU' && !canvas.getContext('webgl2')) {
-      throw new Error('GPU FaceLandmarker requires WebGL 2 in a browser worker. Select CPU or enable browser hardware acceleration.');
+      throw new Error('GPU ' + spec.name + ' requires WebGL 2 in a browser worker. Select CPU or enable browser hardware acceleration.');
     }
-    task = await FaceLandmarker.createFromOptions(files, {
+    task = await spec.type.createFromOptions(files, {
       ...settings,
       canvas,
       baseOptions: {
@@ -50,7 +60,7 @@ async function run(type, input, timing) {
   let source = input.bitmap;
   let owned = input.bitmap;
   try {
-    if (!task) throw new Error('FaceLandmarker is closed');
+    if (!task) throw new Error(spec.name + ' is closed');
     if (input.path) {
       const response = await fetch(input.path);
       if (!response.ok) throw new Error('Image load failed: ' + response.status);
@@ -77,10 +87,10 @@ async function run(type, input, timing) {
       ? task.detect(source, processing)
       : task.detectForVideo(source, input.timestamp, processing);
     const inferred = performance.now();
-    const packed = pack(result);
+    const packed = pack(result[spec.landmarks] ?? []);
     const json = JSON.stringify({width: source.width, height: source.height,
       timestamp: input.timestamp, counts: packed?.counts,
-      result: packed ? {...result, faceLandmarks: []} : result});
+      result: packed ? {...result, [spec.landmarks]: []} : result});
     timing.inference = inferred - started;
     timing.serialize = performance.now() - inferred;
     timing.timestamp = input.timestamp;
@@ -89,16 +99,15 @@ async function run(type, input, timing) {
     owned?.close();
   }
 }
-// Face landmarks as x, y, z, visibility, presence per point (NaN when absent),
+// Image landmarks as x, y, z, visibility, presence per point (NaN when absent),
 // transferred rather than serialized. Named landmarks stay in the JSON.
-function pack(result) {
-  const faces = result.faceLandmarks ?? [];
-  if (faces.some(face => face.some(point => point.name != null))) return null;
-  const counts = faces.map(face => face.length);
+function pack(subjects) {
+  if (subjects.some(points => points.some(point => point.name != null))) return null;
+  const counts = subjects.map(points => points.length);
   const values = new Float64Array(counts.reduce((a, b) => a + b, 0) * 5);
   let at = 0;
-  for (const face of faces) {
-    for (const point of face) {
+  for (const points of subjects) {
+    for (const point of points) {
       values[at++] = point.x;
       values[at++] = point.y;
       values[at++] = point.z;

@@ -43,6 +43,17 @@ def set_plist_key(path, key, value):
 # The hook hard-codes this set for Android; see hook/build.dart _bundleAndroid.
 ANDROID_TASKS = {'face_detector', 'face_landmarker'}
 
+# Tasks the mediapipe_flutter_vision_android plugin runs through Google's
+# official SDK; see hook/build.dart officialAndroidTasks.
+OFFICIAL_ANDROID_TASKS = {'face_landmarker', 'hand_landmarker'}
+
+# Tasks our adapter serves over Google's official iOS SDK; see
+# lib/src/native_assets/ios_sdk.dart officialIosTasks.
+OFFICIAL_IOS_TASKS = {'face_detector', 'face_landmarker', 'hand_landmarker'}
+
+# Tasks the browser adapter runs on Google's official web runtime.
+WEB_TASKS = {'face_landmarker', 'hand_landmarker'}
+
 # The stateful MagicTouch runtime lives in mediapipe-core's tasks runtime,
 # which is published for macOS arm64 only, and the hook wants it opted into
 # through a separate user define.
@@ -113,13 +124,13 @@ def _tasks_of(block):
 def available_tasks(target):
     """Tasks whose runtime this target can actually obtain."""
     if target == 'web':
-        return {'face_landmarker'}
+        return set(WEB_TASKS)
     source = (VISION / 'sdk_downloads.dart').read_text()
     if target in ('ios/arm64', 'ios-simulator/arm64'):
         # Google's public SDK supplies these tasks without a maintainer build.
-        return {'face_detector', 'face_landmarker'}
+        return set(OFFICIAL_IOS_TASKS)
     if target.startswith('android'):
-        return set(ANDROID_TASKS)
+        return ANDROID_TASKS | OFFICIAL_ANDROID_TASKS
     if target in ('linux/x64', 'windows/x64'):
         for block in _blocks(source, 'const visionWheelReleases'):
             if re.search(r"target: '" + re.escape(target) + r"'", block):
@@ -179,8 +190,8 @@ def prepare(target, selected):
     official_landmarks = (target == 'macos/arm64'
                           and {'face_landmarker', 'hand_landmarker',
                                'pose_landmarker'} & bundled.keys())
-    official_android = (target.startswith('android')
-                        and set(bundled) == {'face_landmarker'})
+    official_android = (target.startswith('android') and bundled
+                        and set(bundled) <= OFFICIAL_ANDROID_TASKS)
     if target == 'web':
         subprocess.run([sys.executable, '-B', str(REPO / 'packages/mediapipe-task-vision-web/tool/prepare_runtime.py')], check=True)
     manifest = {
@@ -322,12 +333,18 @@ def main():
     selected = available_tasks(target)
     if target.startswith('android') and not args.tasks:
         # The public SDK needs no maintainer C++ build and supplies CPU/GPU.
-        selected = {'face_landmarker'}
+        selected = set(OFFICIAL_ANDROID_TASKS)
     if args.tasks:
         requested = set(args.tasks.split(','))
         if not requested <= selected:
             raise SystemExit(f'Unavailable tasks for {target}: {requested - selected}')
         selected = requested
+    if (target.startswith('android') and selected - ANDROID_TASKS
+            and not selected <= OFFICIAL_ANDROID_TASKS):
+        # One app uses either the official plugin or the source-built runtime.
+        raise SystemExit('On Android, hand_landmarker runs only through the '
+                         'official SDK plugin, which serves '
+                         f'{sorted(OFFICIAL_ANDROID_TASKS)} only.')
     if not selected:
         raise SystemExit(f'No vision runtime is available for {target}.')
     manifest, missing = prepare(target, selected)

@@ -6,16 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
+import 'package:mediapipe_gallery/live/live_subjects.dart';
 import 'package:mediapipe_gallery/main.dart';
 
 import 'support/alignment_oracle.dart';
+import 'support/live_subject.dart';
 
-// A real camera must be in front of this test, showing a face. On hosted
-// Linux that is a v4l2loopback device fed by ffmpeg, on hosted Windows a Media
-// Foundation virtual camera (tool/windows/vcam); on a phone it is you.
+// A real camera must be in front of this test, showing one face, or one hand
+// with --dart-define=GALLERY_LIVE_TASK=hand. On hosted Linux that is a
+// v4l2loopback device fed by ffmpeg, on hosted Windows a Media Foundation
+// virtual camera (tool/windows/vcam); on a phone it is you.
 // Nothing is replaced: the platform camera plugin, the gallery, the
 // controller, the worker and Google's task all run as shipped.
 //
@@ -23,15 +25,18 @@ import 'support/alignment_oracle.dart';
 // preview texture. Android and iOS take one natively through integration_test;
 // Linux under Xvfb grabs the X root window and Windows copies the desktop,
 // both after calibrating where the Flutter view sits on the screen with a
-// solid-colour frame. macOS records capture and face counts and skips the
+// solid-colour frame. macOS records capture and subject counts and skips the
 // oracle.
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final subject = LiveSubject.selected;
 
   testWidgets(
-    'real camera: capture, face in view, overlay alignment, and restart',
+    'real camera: capture, ${subject.task} in view, overlay alignment, and '
+    'restart',
     (tester) async {
       final report = <String, Object?>{
+        'task': subject.task,
         'platform': Platform.operatingSystem,
         'started': DateTime.now().toUtc().toIso8601String(),
       };
@@ -78,7 +83,7 @@ void main() {
         await tester.pumpWidget(const GalleryApp());
         for (
           var i = 0;
-          i < 100 && find.text('Live Face Landmarker').evaluate().isEmpty;
+          i < 100 && find.text(subject.tile).evaluate().isEmpty;
           i++
         ) {
           await tester.runAsync(
@@ -86,8 +91,8 @@ void main() {
           );
           await tester.pump();
         }
-        expect(find.text('Live Face Landmarker'), findsOneWidget);
-        await tester.tap(find.text('Live Face Landmarker'));
+        expect(find.text(subject.tile), findsOneWidget);
+        await tester.tap(find.text(subject.tile));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         controller = tester
@@ -95,11 +100,11 @@ void main() {
             .controller;
         final live = controller;
 
-        // Phase 1: real capture with a face in view.
-        final first = await _faceFrames(tester, live);
+        // Phase 1: real capture with the subject in view.
+        final first = await _subjectFrames(tester, live);
         report['first_session'] = first;
         expect(live.error, isNull);
-        expect(first['face_frames'], greaterThanOrEqualTo(10));
+        expect(first['subject_frames'], greaterThanOrEqualTo(10));
 
         // Phase 2: overlay alignment against the on-screen preview.
         if (screenshots.available) {
@@ -109,8 +114,7 @@ void main() {
             () => Future<void>.delayed(const Duration(milliseconds: 400)),
           );
           await tester.pump();
-          final face =
-              (live.result! as FaceLandmarkerResult).faceLandmarks.single;
+          final seen = liveSubjects(live.result).single;
           final geometry = overlayGeometry(tester, live);
           final shot = await tester.runAsync(screenshots.take);
           final origin = viewOnScreen?.topLeft ?? Offset.zero;
@@ -121,14 +125,15 @@ void main() {
             geometry.box.height * pixelsPerLogical,
           );
           final model = await tester.runAsync(
-            () => rootBundle.load('assets/models/face_landmarker.task'),
+            () => rootBundle.load('assets/models/${subject.model}'),
           );
           final measurement = await tester.runAsync(
             () => measureAlignment(
+              subject: subject,
               screenshot: shot!,
               previewInScreenshot: previewOnScreen,
               pixelsPerLogical: pixelsPerLogical,
-              liveFace: face,
+              live: seen,
               transform: geometry.transform,
               modelBytes: model!.buffer.asUint8List(
                 model.offsetInBytes,
@@ -152,9 +157,9 @@ void main() {
           await tester.tap(find.byTooltip('Connections'));
           await tester.pump();
           expect(
-            measurement.observedFaces,
+            measurement.observedSubjects,
             1,
-            reason: 'the on-screen preview must show one face',
+            reason: 'the on-screen preview must show one ${subject.task}',
           );
           final verdict =
               'median ${measurement.median.toStringAsFixed(4)}, max '
@@ -163,12 +168,13 @@ void main() {
           expect(
             measurement.median,
             lessThanOrEqualTo(alignmentTolerance),
-            reason: 'overlay is off the on-screen face: $verdict',
+            reason: 'overlay is off the on-screen ${subject.task}: $verdict',
           );
           expect(
             measurement.maximum,
             lessThanOrEqualTo(alignmentOutlierTolerance),
-            reason: 'one probe is far off the on-screen face: $verdict',
+            reason:
+                'one probe is far off the on-screen ${subject.task}: $verdict',
           );
         } else {
           report['alignment'] = 'no screenshot transport on this platform';
@@ -185,10 +191,10 @@ void main() {
         await tester.pump();
         expect(live.running, isFalse);
         await tester.runAsync(live.start);
-        final second = await _faceFrames(tester, live);
+        final second = await _subjectFrames(tester, live);
         report['second_session'] = second;
         expect(live.running, isTrue);
-        expect(second['face_frames'], greaterThanOrEqualTo(10));
+        expect(second['subject_frames'], greaterThanOrEqualTo(10));
       } catch (error) {
         // The record says why it failed; the test still fails.
         report['error'] = '$error';
@@ -204,39 +210,34 @@ void main() {
   );
 }
 
-/// Pumps until the live controller has processed enough frames with a face.
-Future<Map<String, Object?>> _faceFrames(
+/// Pumps until the live controller has processed enough frames with a subject.
+Future<Map<String, Object?>> _subjectFrames(
   WidgetTester tester,
   LiveCameraController<Object?> controller,
 ) async {
   final deadline = DateTime.now().add(const Duration(seconds: 45));
-  var faceFrames = 0, lastCounted = 0;
-  while ((controller.changing || faceFrames < 12) &&
+  var subjectFrames = 0, lastCounted = 0;
+  while ((controller.changing || subjectFrames < 12) &&
       controller.error == null &&
       DateTime.now().isBefore(deadline)) {
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 50)),
     );
     await tester.pump(const Duration(milliseconds: 33));
-    final result = controller.result;
     if (controller.processedFrames != lastCounted &&
-        result is FaceLandmarkerResult &&
-        result.faceLandmarks.isNotEmpty) {
+        liveSubjectCount(controller.result).subjects > 0) {
       lastCounted = controller.processedFrames;
-      faceFrames++;
+      subjectFrames++;
     }
   }
-  final result = controller.result;
+  final count = liveSubjectCount(controller.result);
   return {
     'camera': controller.description?.name,
     'delegate': controller.delegate.name,
     'processed_frames': controller.processedFrames,
     'skipped_frames': controller.skippedFrames,
-    'face_frames': faceFrames,
-    'landmarks':
-        result is FaceLandmarkerResult && result.faceLandmarks.isNotEmpty
-        ? result.faceLandmarks.first.length
-        : 0,
+    'subject_frames': subjectFrames,
+    'landmarks': count.points,
     'frame_size': controller.frameSize == null
         ? null
         : [controller.frameSize!.width, controller.frameSize!.height],

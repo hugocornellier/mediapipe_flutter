@@ -86,3 +86,52 @@ jobs:
             build/codex-tmp/android-reference/*.log
             build/codex-tmp/android-reference/provenance.json
           if-no-files-found: warn
+
+  # Hand Landmarker runs through Google's Android SDK (tasks-vision 1.0.0) and
+  # mediapipe_flutter_vision_android, so this job needs no source build. The
+  # emulator runs it on the CPU only; see gallery/tool/test_android_hand.sh.
+  hand-sdk:
+    name: Hand Landmarker / official Android SDK on an x64 emulator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Download the hand model
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_landmark_tasks.dart
+      - name: Prepare the gallery with the hand task only
+        run: |
+          python3 -B gallery/tool/prepare.py --target android/x64 --tasks hand_landmarker
+          cd gallery && flutter pub get
+      - name: Enable Android emulator hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Official references, pixel formats, rotation, VIDEO and the gallery camera
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated
+          script: bash gallery/tool/test_android_hand.sh emulator-5554

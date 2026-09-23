@@ -28,7 +28,7 @@ final class GalleryTask {
     required this.capabilities,
     this.demo = GalleryDemo.none,
     this.experimentalReason,
-    this.officialMacosLandmarkTask = false,
+    this.officialMacosCapabilities,
     String? runtimeId,
   }) : runtimeId = runtimeId ?? id;
 
@@ -57,9 +57,10 @@ final class GalleryTask {
   /// ones and never counted among them.
   final String? experimentalReason;
 
-  /// Whether this entry has an earned capability claim when the build manifest
-  /// says the official macOS landmark runtime was selected for [runtimeId].
-  final bool officialMacosLandmarkTask;
+  /// The capability claim this entry earns when the build manifest says the
+  /// official macOS landmark runtime was selected for [runtimeId], if any.
+  final TaskCapabilities<VisionDelegate> Function(TaskPlatform)?
+  officialMacosCapabilities;
 
   bool get isExperimental => experimentalReason != null;
 
@@ -74,15 +75,28 @@ final class GalleryTask {
   TaskCapabilities<VisionDelegate> capabilitiesFor(
     TaskPlatform platform,
     Set<String> officialMacosLandmarkTasks,
-  ) =>
-      officialMacosLandmarkTask &&
-          officialMacosLandmarkTasks.contains(runtimeId)
-      ? landmarkTaskCapabilitiesForPlatform(
-          platform,
-          officialMacosRuntime: true,
-        )
-      : capabilities(platform);
+  ) => switch (officialMacosCapabilities) {
+    final official? when officialMacosLandmarkTasks.contains(runtimeId) =>
+      official(platform),
+    _ => capabilities(platform),
+  };
 }
+
+// tool/prepare.py builds every iOS target against Google's official SDK, so
+// Hand Landmarker always has the package's official iOS adapter there.
+TaskCapabilities<VisionDelegate> _hand(TaskPlatform platform) =>
+    handLandmarkerCapabilitiesForPlatform(platform, officialIosRuntime: true);
+
+TaskCapabilities<VisionDelegate> _officialMacosHand(TaskPlatform platform) =>
+    handLandmarkerCapabilitiesForPlatform(
+      platform,
+      officialMacosRuntime: true,
+      officialIosRuntime: true,
+    );
+
+TaskCapabilities<VisionDelegate> _officialMacosLandmarks(
+  TaskPlatform platform,
+) => landmarkTaskCapabilitiesForPlatform(platform, officialMacosRuntime: true);
 
 final _catalog = <GalleryTask>[
   GalleryTask(
@@ -103,8 +117,8 @@ final _catalog = <GalleryTask>[
     summary: 'Hand landmarks and handedness on the camera feed.',
     model: 'hand_landmarker.task',
     sample: 'hands.jpg',
-    capabilities: landmarkTaskCapabilitiesForPlatform,
-    officialMacosLandmarkTask: true,
+    capabilities: _hand,
+    officialMacosCapabilities: _officialMacosHand,
   ),
   GalleryTask(
     id: 'pose_landmarker_live',
@@ -115,7 +129,7 @@ final _catalog = <GalleryTask>[
     model: 'pose_landmarker_lite.task',
     sample: 'pose.jpg',
     capabilities: landmarkTaskCapabilitiesForPlatform,
-    officialMacosLandmarkTask: true,
+    officialMacosCapabilities: _officialMacosLandmarks,
   ),
   GalleryTask(
     id: 'object_detector',
@@ -147,8 +161,8 @@ final _catalog = <GalleryTask>[
     summary: '21 landmarks per hand, with handedness.',
     model: 'hand_landmarker.task',
     sample: 'hands.jpg',
-    capabilities: landmarkTaskCapabilitiesForPlatform,
-    officialMacosLandmarkTask: true,
+    capabilities: _hand,
+    officialMacosCapabilities: _officialMacosHand,
   ),
   GalleryTask(
     id: 'gesture_recognizer',
@@ -165,7 +179,7 @@ final _catalog = <GalleryTask>[
     model: 'pose_landmarker_lite.task',
     sample: 'pose.jpg',
     capabilities: landmarkTaskCapabilitiesForPlatform,
-    officialMacosLandmarkTask: true,
+    officialMacosCapabilities: _officialMacosLandmarks,
   ),
   GalleryTask(
     id: 'holistic_landmarker',

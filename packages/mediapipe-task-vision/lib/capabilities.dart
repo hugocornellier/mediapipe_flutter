@@ -4,7 +4,6 @@ library;
 import 'package:mediapipe_flutter_core/capabilities.dart';
 import 'src/capabilities/official_runtime_stub.dart'
     if (dart.library.io) 'src/capabilities/official_runtime_io.dart';
-import 'src/interface/vision_types.dart';
 import 'face_landmarker_backend.dart';
 
 export 'package:mediapipe_flutter_core/capabilities.dart'
@@ -55,6 +54,62 @@ TaskCapabilities<VisionDelegate> faceLandmarkerCapabilitiesForPlatform(
         'adapter with worker WebGL 2 support.',
   },
 );
+
+/// Query Hand Landmarker support on this process platform without a model.
+Future<TaskCapabilities<VisionDelegate>>
+queryHandLandmarkerCapabilities() async =>
+    handLandmarkerCapabilitiesForPlatform(
+      await currentTaskPlatform(),
+      officialMacosRuntime: hasOfficialMacosLandmarkRuntime(),
+      officialIosRuntime: hasOfficialIosVisionRuntime(),
+    );
+
+/// Hand Landmarker runs on Google's official runtime on every target: the
+/// Linux and Windows wheels, the opt-in macOS runtime, our adapter over the
+/// iOS SDK, and the registered Android and web SDK adapters.
+TaskCapabilities<VisionDelegate> handLandmarkerCapabilitiesForPlatform(
+  TaskPlatform platform, {
+  bool officialMacosRuntime = false,
+  bool officialIosRuntime = false,
+}) {
+  final sdkAdapter = handLandmarkerBackendFactory != null;
+  return TaskCapabilities.onTargets(
+    platform: platform,
+    delegates: {
+      VisionDelegate.cpu: {
+        'linux/x64': null,
+        'windows/x64': null,
+        if (officialMacosRuntime) 'macos/arm64': '14.0',
+        if (officialIosRuntime) 'ios/arm64': '15.0',
+        if (sdkAdapter) 'android/arm64': null,
+        // Google's SDK ships x86_64; the emulator CI job runs it on the CPU.
+        if (sdkAdapter) 'android/x64': null,
+        if (sdkAdapter) 'web/unknown': null,
+      },
+      VisionDelegate.gpu: {
+        // Needs EGL and a GPU driver; Google refuses software renderers.
+        'linux/x64': null,
+        if (officialMacosRuntime) 'macos/arm64': '14.0',
+        if (officialIosRuntime) 'ios/arm64': '15.0',
+        if (sdkAdapter) 'android/arm64': null,
+        if (sdkAdapter) 'web/unknown': null,
+      },
+    },
+    runtimeVersion: {'ios', 'web'}.contains(platform.operatingSystem)
+        ? '1.0.1'
+        : _desktopRuntimeVersion(platform),
+    unavailableReasons: const {
+      VisionDelegate.cpu:
+          'HandLandmarker requires Linux x64, Windows x64, the official macOS '
+          'runtime, the official iOS SDK adapter, or the Android or web '
+          'adapter package.',
+      VisionDelegate.gpu:
+          'HandLandmarker GPU requires Linux x64, the official macOS runtime, '
+          'the official iOS SDK adapter, or the Android or web adapter; '
+          'Windows has no GPU runtime.',
+    },
+  );
+}
 
 /// Query the validated Hand, Gesture, Pose and Holistic task runtimes.
 ///

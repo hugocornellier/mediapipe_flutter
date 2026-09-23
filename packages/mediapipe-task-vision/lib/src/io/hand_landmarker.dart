@@ -1,28 +1,51 @@
 import 'dart:ffi';
+import 'dart:io';
+
 import 'package:ffi/ffi.dart';
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../interface/landmark_task_types.dart';
+import '../../vision_task_backend.dart';
+import '../sdk_vision_task.dart';
+import '../capabilities/official_runtime_io.dart';
+import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 import 'vision_task_worker.dart';
 
 /// Official HandLandmarker, with owned results and serialized image/video inference.
+///
+/// On Android, a registered official SDK adapter
+/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// native runtime runs it on a worker isolate.
 final class HandLandmarker {
-  HandLandmarker._(this._worker, this.delegate);
-  final VisionTaskWorker<HandLandmarkerResult> _worker;
+  HandLandmarker._(this._worker, this._sdk, this.delegate);
+  final VisionTaskWorker<HandLandmarkerResult>? _worker;
+  final SdkVisionTask<HandLandmarkerResult>? _sdk;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  VisionRunningMode get runningMode => _worker.runningMode;
+  VisionRunningMode get runningMode =>
+      _sdk?.runningMode ?? _worker!.runningMode;
 
   /// Load a compatible task bundle on a worker isolate.
   static Future<HandLandmarker> create(HandLandmarkerOptions options) async {
-    final capabilities = await queryLandmarkTaskCapabilities(
-      useOfficialMacosRuntime: true,
-    );
+    if (Platform.isAndroid && handLandmarkerBackendFactory != null) {
+      return HandLandmarker._(
+        null,
+        SdkVisionTask(
+          await handLandmarkerBackendFactory!(options),
+          options.runningMode,
+          options.delegate,
+          name: 'HandLandmarker',
+          // MediaPipe converts milliseconds to signed 64-bit microseconds.
+          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
+        ),
+        options.delegate,
+      );
+    }
+    final capabilities = await queryHandLandmarkerCapabilities();
     if (!capabilities.supportedDelegates.contains(options.delegate)) {
       throw UnsupportedError(
         capabilities.unavailableReasons[options.delegate]!,
@@ -34,6 +57,7 @@ final class HandLandmarker {
         _createNative,
         'MediaPipe HandLandmarker',
       ),
+      null,
       options.delegate,
     );
   }
@@ -42,7 +66,9 @@ final class HandLandmarker {
   Future<HandLandmarkerResult> detectImage(
     VisionImage image, {
     int rotationDegrees = 0,
-  }) => _worker.processImage(image, rotationDegrees, null);
+  }) =>
+      _sdk?.detectImage(image, rotationDegrees: rotationDegrees) ??
+      _worker!.processImage(image, rotationDegrees, null);
 
   /// Process a video frame with a strictly increasing millisecond timestamp.
   Future<HandLandmarkerResult> detectForVideo(
@@ -50,10 +76,20 @@ final class HandLandmarker {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
   }) =>
-      _worker.processVideo(image, rotationDegrees, timestampMilliseconds, null);
+      _sdk?.detectForVideo(
+        image,
+        timestampMilliseconds: timestampMilliseconds,
+        rotationDegrees: rotationDegrees,
+      ) ??
+      _worker!.processVideo(
+        image,
+        rotationDegrees,
+        timestampMilliseconds,
+        null,
+      );
 
   /// Drain queued requests and release native resources exactly once.
-  Future<void> dispose() => _worker.dispose();
+  Future<void> dispose() => _sdk?.dispose() ?? _worker!.dispose();
 }
 
 NativeVisionTask<HandLandmarkerResult> _createNative(
@@ -66,7 +102,12 @@ final class _NativeHandLandmarker
     : _gpu = options.delegate == VisionDelegate.gpu {
     using((arena) {
       final native = arena<mp.MpHandLandmarkerOptions>();
-      setVisionBaseOptions(arena, native.ref.base_options, options);
+      setVisionBaseOptions(
+        arena,
+        native.ref.base_options,
+        options,
+        officialGpu: true,
+      );
       native.ref.running_mode = nativeVisionRunningMode(options.runningMode);
       native.ref
         ..num_hands = options.numHands
@@ -74,14 +115,19 @@ final class _NativeHandLandmarker
         ..min_hand_presence_confidence = options.minHandPresenceConfidence
         ..min_tracking_confidence = options.minTrackingConfidence;
       final output = arena<mp.MpHandLandmarkerPtr>();
-      checkVisionCall(
+      checkVisionCreate(
         (error) => mp.MpHandLandmarkerCreate(native, output, error),
+        gpu: _gpu,
       );
       _task = output.value;
     });
   }
   final bool _gpu;
   mp.MpHandLandmarkerPtr _task = nullptr;
+  late final IosBgraStorage? _iosBgra =
+      hasOfficialIosVisionRuntime() && iosImageStorageMode != 0
+      ? IosBgraStorage(iosImageStorageMode)
+      : null;
 
   @override
   HandLandmarkerResult process(VisionTaskInput input) => using((arena) {
@@ -91,6 +137,7 @@ final class _NativeHandLandmarker
       source,
       expandRgbForGpu: _gpu,
       checked: checkVisionCall,
+      iosBgra: _iosBgra,
     );
     try {
       final processing = visionProcessingOptions(arena, rotation, null);
@@ -148,6 +195,10 @@ final class _NativeHandLandmarker
     if (_task == nullptr) return;
     final task = _task;
     _task = nullptr;
-    checkVisionCall((error) => mp.MpHandLandmarkerClose(task, error));
+    try {
+      checkVisionCall((error) => mp.MpHandLandmarkerClose(task, error));
+    } finally {
+      _iosBgra?.close();
+    }
   }
 }

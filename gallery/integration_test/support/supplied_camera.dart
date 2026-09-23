@@ -7,9 +7,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
+import 'package:mediapipe_gallery/live/live_subjects.dart';
+
+import 'live_subject.dart';
 
 /// Pumps until [controller] has processed 12 frames of a fresh task, then
-/// checks the last result is one face with 478 finite landmarks.
+/// checks the last result is one [LiveSubject.selected] subject with its
+/// full set of finite landmarks.
 Future<void> waitForFrames(
   WidgetTester tester,
   LiveCameraController<Object?> controller, {
@@ -26,17 +30,28 @@ Future<void> waitForFrames(
   }
   expect(controller.error, isNull);
   expect(controller.processedFrames, greaterThanOrEqualTo(12));
-  final result = controller.result! as FaceLandmarkerResult;
-  expect(result.faceLandmarks.single, hasLength(478));
-  expect(result.timestampMilliseconds, greaterThan(0));
-  for (final point in result.faceLandmarks.single) {
-    expect(point.x.isFinite && point.y.isFinite && point.z.isFinite, isTrue);
+  final subject = LiveSubject.selected;
+  final landmarks = liveSubjects(controller.result);
+  expect(landmarks, hasLength(1), reason: 'one ${subject.task} in view');
+  expect(landmarks.single, hasLength(subject.points));
+  expect(timestampOf(controller.result), greaterThan(0));
+  for (final point in landmarks.single) {
+    expect(point.x.isFinite && point.y.isFinite, isTrue);
   }
 }
 
-/// The gallery portrait as padded RGBA and BGRA camera frames.
-Future<List<CameraImageData>> portraitFrames() async {
-  final bytes = await rootBundle.load('assets/samples/portrait.jpg');
+/// The input timestamp a live result reports.
+int? timestampOf(Object? result) => switch (result) {
+  FaceLandmarkerResult(:final timestampMilliseconds) => timestampMilliseconds,
+  HandLandmarkerResult(:final timestampMilliseconds) => timestampMilliseconds,
+  _ => null,
+};
+
+/// The selected subject's sample as padded RGBA and BGRA camera frames.
+Future<List<CameraImageData>> sampleFrames() async {
+  final bytes = await rootBundle.load(
+    'assets/samples/${LiveSubject.selected.sample}',
+  );
   final codec = await ui.instantiateImageCodec(
     bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
   );
