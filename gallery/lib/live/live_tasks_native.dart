@@ -4,18 +4,14 @@ import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 import 'embedding_similarity.dart';
 import 'live_camera_controller.dart';
-
-/// Subjects each live demo tracks. Ask for what the demo needs and no more:
-/// MediaPipe only skips its detector once tracking reaches the configured
-/// maximum, so an inflated count keeps detection running every frame for a
-/// scene that never reaches it. Hands counts hands, not people.
-const _faces = 1;
-const _hands = 2;
-const _poses = 1;
+import 'task_settings.dart';
 
 /// Each adapter is only the two things that differ between live demos: how the
 /// task is built, and how one frame runs through it.
 final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
+  @override
+  final settings = TaskSettingValues('face_landmarker');
+
   FaceLandmarker? _task;
 
   @override
@@ -28,7 +24,12 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
-        numFaces: _faces,
+        numFaces: settings.count('numFaces'),
+        minFaceDetectionConfidence: settings.share(
+          'minFaceDetectionConfidence',
+        ),
+        minFacePresenceConfidence: settings.share('minFacePresenceConfidence'),
+        minTrackingConfidence: settings.share('minTrackingConfidence'),
       ),
     );
   }
@@ -53,6 +54,9 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
 }
 
 final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
+  @override
+  final settings = TaskSettingValues('hand_landmarker');
+
   HandLandmarker? _task;
 
   @override
@@ -65,7 +69,12 @@ final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
-        numHands: _hands,
+        numHands: settings.count('numHands'),
+        minHandDetectionConfidence: settings.share(
+          'minHandDetectionConfidence',
+        ),
+        minHandPresenceConfidence: settings.share('minHandPresenceConfidence'),
+        minTrackingConfidence: settings.share('minTrackingConfidence'),
       ),
     );
   }
@@ -91,6 +100,9 @@ final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
 
 final class GestureRecognizerLiveTask
     implements LiveTask<GestureRecognizerResult> {
+  @override
+  final settings = TaskSettingValues('gesture_recognizer');
+
   GestureRecognizer? _task;
 
   @override
@@ -103,7 +115,16 @@ final class GestureRecognizerLiveTask
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
-        numHands: 2,
+        numHands: settings.count('numHands'),
+        minHandDetectionConfidence: settings.share(
+          'minHandDetectionConfidence',
+        ),
+        minHandPresenceConfidence: settings.share('minHandPresenceConfidence'),
+        minTrackingConfidence: settings.share('minTrackingConfidence'),
+        cannedGesturesClassifierOptions: GestureClassifierOptions(
+          maxResults: settings.count('maxResults'),
+          scoreThreshold: settings.share('scoreThreshold'),
+        ),
       ),
     );
   }
@@ -129,6 +150,9 @@ final class GestureRecognizerLiveTask
 
 final class HolisticLandmarkerLiveTask
     implements LiveTask<HolisticLandmarkerResult> {
+  @override
+  final settings = TaskSettingValues('holistic_landmarker');
+
   HolisticLandmarker? _task;
 
   @override
@@ -141,6 +165,24 @@ final class HolisticLandmarkerLiveTask
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
+        minFaceDetectionConfidence: settings.share(
+          'minFaceDetectionConfidence',
+        ),
+        minFaceSuppressionThreshold: settings.share(
+          'minFaceSuppressionThreshold',
+        ),
+        minFacePresenceConfidence: settings.share('minFacePresenceConfidence'),
+        minPoseDetectionConfidence: settings.share(
+          'minPoseDetectionConfidence',
+        ),
+        minPoseSuppressionThreshold: settings.share(
+          'minPoseSuppressionThreshold',
+        ),
+        minPosePresenceConfidence: settings.share('minPosePresenceConfidence'),
+        minHandLandmarksConfidence: settings.share(
+          'minHandLandmarksConfidence',
+        ),
+        outputPoseSegmentationMask: settings.on('outputPoseSegmentationMask'),
       ),
     );
   }
@@ -165,6 +207,9 @@ final class HolisticLandmarkerLiveTask
 }
 
 final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
+  @override
+  final settings = TaskSettingValues('pose_landmarker');
+
   PoseLandmarker? _task;
 
   @override
@@ -177,7 +222,13 @@ final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
-        numPoses: _poses,
+        numPoses: settings.count('numPoses'),
+        minPoseDetectionConfidence: settings.share(
+          'minPoseDetectionConfidence',
+        ),
+        minPosePresenceConfidence: settings.share('minPosePresenceConfidence'),
+        minTrackingConfidence: settings.share('minTrackingConfidence'),
+        outputSegmentationMasks: settings.on('outputSegmentationMasks'),
       ),
     );
   }
@@ -202,6 +253,9 @@ final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
 }
 
 final class FaceDetectorLiveTask implements LiveTask<FaceDetectorResult> {
+  @override
+  final settings = TaskSettingValues('face_detector');
+
   FaceDetector? _task;
 
   @override
@@ -214,6 +268,8 @@ final class FaceDetectorLiveTask implements LiveTask<FaceDetectorResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
+        minDetectionConfidence: settings.share('minDetectionConfidence'),
+        minSuppressionThreshold: settings.share('minSuppressionThreshold'),
       ),
     );
   }
@@ -238,6 +294,9 @@ final class FaceDetectorLiveTask implements LiveTask<FaceDetectorResult> {
 }
 
 final class ObjectDetectorLiveTask implements LiveTask<ObjectDetectorResult> {
+  @override
+  final settings = TaskSettingValues('object_detector');
+
   ObjectDetector? _task;
 
   @override
@@ -250,8 +309,8 @@ final class ObjectDetectorLiveTask implements LiveTask<ObjectDetectorResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
-        maxResults: 5,
-        scoreThreshold: 0.3,
+        maxResults: settings.count('maxResults'),
+        scoreThreshold: settings.share('scoreThreshold'),
       ),
     );
   }
@@ -276,6 +335,9 @@ final class ObjectDetectorLiveTask implements LiveTask<ObjectDetectorResult> {
 }
 
 final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
+  @override
+  final settings = TaskSettingValues('image_classifier');
+
   ImageClassifier? _task;
 
   @override
@@ -288,7 +350,8 @@ final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
-        maxResults: 3,
+        maxResults: settings.count('maxResults'),
+        scoreThreshold: settings.share('scoreThreshold'),
       ),
     );
   }
@@ -314,6 +377,9 @@ final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
 
 /// Image Embedder, reporting each frame's similarity to the first one.
 final class ImageEmbedderLiveTask implements LiveTask<EmbeddingSimilarity> {
+  @override
+  final settings = TaskSettingValues('image_embedder');
+
   ImageEmbedder? _task;
   VisionEmbedding? _first;
 
@@ -328,6 +394,8 @@ final class ImageEmbedderLiveTask implements LiveTask<EmbeddingSimilarity> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
+        l2Normalize: settings.on('l2Normalize'),
+        quantize: settings.on('quantize'),
       ),
     );
   }
@@ -361,6 +429,9 @@ final class ImageEmbedderLiveTask implements LiveTask<EmbeddingSimilarity> {
 
 /// Image Segmenter, returning only the category mask the overlay draws.
 final class ImageSegmenterLiveTask implements LiveTask<SegmentationResult> {
+  @override
+  final settings = TaskSettingValues('image_segmenter');
+
   ImageSegmenter? _task;
 
   @override

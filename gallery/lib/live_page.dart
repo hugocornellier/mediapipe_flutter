@@ -8,6 +8,8 @@ import 'catalog.dart';
 import 'live/live_camera_controller.dart';
 import 'live/live_camera_view.dart';
 import 'live/live_registry.dart';
+import 'live/task_settings.dart';
+import 'live/task_settings_panel.dart';
 
 /// One live camera demo, whichever task the tile names.
 ///
@@ -32,8 +34,11 @@ class LivePage extends StatefulWidget {
 
 class _LivePageState extends State<LivePage> {
   late final LiveDemo _demo = liveDemoFor(widget.task.id)!;
+  late final LiveTask<Object?> _task = _demo.task();
   late final LiveCameraController<Object?> _controller =
-      LiveCameraController<Object?>(_demo.task());
+      LiveCameraController<Object?>(_task);
+  late final List<TaskSetting> _settings =
+      taskSettings[widget.task.runtimeId] ?? const [];
   late final List<VisionDelegate> _delegates =
       widget.task
           .capabilitiesFor(widget.platform, widget.officialMacosLandmarkTasks)
@@ -102,6 +107,45 @@ class _LivePageState extends State<LivePage> {
     }
   }
 
+  /// Rebuilds a running task with the changed value, as a delegate change
+  /// does; a stopped one picks it up when it starts.
+  void _setSetting(String key, Object value) {
+    setState(() => _task.settings[key] = value);
+    if (_controller.running) unawaited(_start());
+  }
+
+  void _setDelegate(VisionDelegate delegate) {
+    _controller.delegate = delegate;
+    if (_controller.running) {
+      unawaited(_start());
+    } else {
+      setState(() {});
+    }
+  }
+
+  Widget _panel() => ListenableBuilder(
+    listenable: _controller,
+    builder: (context, _) => TaskSettingsPanel(
+      settings: _settings,
+      values: _task.settings,
+      delegates: _delegates,
+      delegate: _controller.delegate,
+      enabled: !_controller.changing,
+      onChanged: _setSetting,
+      onDelegate: _setDelegate,
+    ),
+  );
+
+  void _openSettings() => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (context) => SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.6,
+      child: _panel(),
+    ),
+  );
+
   Future<void> _flipCamera() async {
     try {
       await _controller.switchCamera();
@@ -115,6 +159,9 @@ class _LivePageState extends State<LivePage> {
     final theme = Theme.of(context);
     final controller = _controller;
     final busy = controller.changing;
+    // A side panel where there is room for it, as in MediaPipe Studio;
+    // otherwise a sheet behind a settings button.
+    final wide = MediaQuery.sizeOf(context).width >= 900;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.task.title),
@@ -142,98 +189,113 @@ class _LivePageState extends State<LivePage> {
             tooltip: 'Points',
             onPressed: () => setState(() => _showPoints = !_showPoints),
           ),
+          if (!wide)
+            IconButton(
+              icon: const Icon(Icons.tune),
+              tooltip: 'Settings',
+              onPressed: _openSettings,
+            ),
         ],
       ),
-      body: Column(
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Container(
-              color: Colors.black,
-              width: double.infinity,
-              child: LiveCameraView(
-                controller: controller,
-                painter: (transform) => _demo.overlay(
-                  controller.result,
-                  transform,
-                  _showConnections,
-                  _showPoints,
-                ),
-                placeholder: switch (_error ?? controller.error) {
-                  final String error => Text(
-                    error,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                  null => const CircularProgressIndicator(),
-                },
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                if (controller.notice case final notice?)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      notice,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                if (controller.running)
-                  Text(
-                    '${controller.framesPerSecond.toStringAsFixed(1)} fps  ·  '
-                    '${controller.averageFrameMilliseconds.toStringAsFixed(1)} ms '
-                    'per frame over ${controller.processedFrames} '
-                    '${controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'} '
-                    'frames\n'
-                    'inference ${controller.averageInferenceMilliseconds.toStringAsFixed(1)} ms  ·  '
-                    'convert ${controller.averageConversionMilliseconds.toStringAsFixed(2)} ms  ·  '
-                    '${controller.skippedFrames} skipped',
-                    style: theme.textTheme.bodySmall,
-                    textAlign: TextAlign.center,
-                  ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    if (_delegates.length > 1)
-                      SegmentedButton<VisionDelegate>(
-                        segments: [
-                          for (final delegate in _delegates)
-                            ButtonSegment(
-                              value: delegate,
-                              label: Text(
-                                delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
-                              ),
-                            ),
-                        ],
-                        selected: {controller.delegate},
-                        onSelectionChanged: busy
-                            ? null
-                            : (selection) {
-                                controller.delegate = selection.first;
-                                if (controller.running) {
-                                  _start();
-                                } else {
-                                  setState(() {});
-                                }
-                              },
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: _camera(theme, controller, busy, wide)),
+          if (wide) ...[
+            const VerticalDivider(width: 1),
+            SizedBox(width: 340, child: _panel()),
+          ],
         ],
       ),
     );
   }
+
+  Widget _camera(
+    ThemeData theme,
+    LiveCameraController<Object?> controller,
+    bool busy,
+    bool wide,
+  ) => Column(
+    children: [
+      Expanded(
+        child: Container(
+          color: Colors.black,
+          width: double.infinity,
+          child: LiveCameraView(
+            controller: controller,
+            painter: (transform) => _demo.overlay(
+              controller.result,
+              transform,
+              _showConnections,
+              _showPoints,
+            ),
+            placeholder: switch (_error ?? controller.error) {
+              final String error => Text(
+                error,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70),
+              ),
+              null => const CircularProgressIndicator(),
+            },
+          ),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            if (controller.notice case final notice?)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  notice,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            if (controller.running)
+              Text(
+                '${controller.framesPerSecond.toStringAsFixed(1)} fps  ·  '
+                '${controller.averageFrameMilliseconds.toStringAsFixed(1)} ms '
+                'per frame over ${controller.processedFrames} '
+                '${controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'} '
+                'frames\n'
+                'inference ${controller.averageInferenceMilliseconds.toStringAsFixed(1)} ms  ·  '
+                'convert ${controller.averageConversionMilliseconds.toStringAsFixed(2)} ms  ·  '
+                '${controller.skippedFrames} skipped',
+                style: theme.textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (!wide && _delegates.length > 1)
+                  SegmentedButton<VisionDelegate>(
+                    segments: [
+                      for (final delegate in _delegates)
+                        ButtonSegment(
+                          value: delegate,
+                          label: Text(
+                            delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+                          ),
+                        ),
+                    ],
+                    selected: {controller.delegate},
+                    onSelectionChanged: busy
+                        ? null
+                        : (selection) => _setDelegate(selection.first),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
 }
