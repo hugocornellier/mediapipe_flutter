@@ -104,6 +104,7 @@ void main() {
     // Android and web need their registered SDK adapters, absent here.
     for (final target in [
       platform('android', 'arm64'),
+      platform('android', 'x64'),
       platform('web', 'unknown'),
     ]) {
       final capabilities = handLandmarkerCapabilitiesForPlatform(target);

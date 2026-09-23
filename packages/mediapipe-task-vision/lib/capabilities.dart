@@ -82,6 +82,8 @@ TaskCapabilities<VisionDelegate> handLandmarkerCapabilitiesForPlatform(
         if (officialMacosRuntime) 'macos/arm64': '14.0',
         if (officialIosRuntime) 'ios/arm64': '15.0',
         if (sdkAdapter) 'android/arm64': null,
+        // Google's SDK ships x86_64; the emulator CI job runs it on the CPU.
+        if (sdkAdapter) 'android/x64': null,
         if (sdkAdapter) 'web/unknown': null,
       },
       VisionDelegate.gpu: {
