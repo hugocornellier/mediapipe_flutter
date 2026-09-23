@@ -1,0 +1,10 @@
+face_detector cpu: {"fully_accelerated": true, "first_ms": 3.49, "median_ms": 2.232}
+face_detector gpu: {"fully_accelerated": true, "first_ms": 56.44, "median_ms": 107.649, "vs_cpu": {"max_abs": {"regressors": 1.7430877685546875, "classificators": 2.8996963500976562}, "best_anchor_same": true, "best_score": [0.91662, 0.91745], "best_box_max_abs_input_px": 0.024130821228027344}}
+face_detector gpu_f32: {"fully_accelerated": true, "first_ms": 33.15, "median_ms": 27.085, "vs_cpu": {"max_abs": {"regressors": 0.0001220703125, "classificators": 0.00014495849609375}, "best_anchor_same": true, "best_score": [0.91662, 0.91662], "best_box_max_abs_input_px": 7.62939453125e-06}}
+face_landmarks_detector cpu: {"fully_accelerated": true, "first_ms": 8.37, "median_ms": 8.434}
+face_landmarks_detector gpu: {"fully_accelerated": true, "first_ms": 51.52, "median_ms": 401.743, "vs_cpu": {"max_abs": {"Identity": 1.259429931640625, "Identity_1": 0.031444549560546875, "Identity_2": 0.001590954139828682}, "landmark_xy_max_abs_normalized": 0.004458, "landmark_xy_mean_abs_normalized": 0.000674, "landmark_z_max_abs_crop_px": 0.253, "presence": [1.0, 1.0]}}
+face_landmarks_detector gpu_f32: {"fully_accelerated": true, "first_ms": 53.03, "median_ms": 74.907, "vs_cpu": {"max_abs": {"Identity": 9.1552734375e-05, "Identity_1": 3.814697265625e-06, "Identity_2": 1.5087425708770752e-07}, "landmark_xy_max_abs_normalized": 0.0, "landmark_xy_mean_abs_normalized": 0.0, "landmark_z_max_abs_crop_px": 0.0, "presence": [1.0, 1.0]}}
+face_blendshapes cpu: {"fully_accelerated": false, "first_ms": 2.11, "median_ms": 1.892}
+face_blendshapes gpu: {"error": "RuntimeError: ERROR: [unknown:0]"}
+face_blendshapes gpu_f32: {"error": "RuntimeError: ERROR: [unknown:0]"}
+VERDICT: CPU ran all models: True; GPU ran the detector and landmark models fully accelerated: True

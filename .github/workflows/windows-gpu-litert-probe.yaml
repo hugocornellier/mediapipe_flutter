@@ -1,0 +1,106 @@
+name: Windows GPU probe (LiteRT, Face Landmarker models)
+
+# Manual. Results: packages/mediapipe-task-vision/tool/validations/2026-09-23-desktop-gpu.
+# MediaPipe's Windows runtime has no GPU path, so this asks the next question:
+# can Google's LiteRT GPU accelerator (libLiteRtWebGpuAccelerator in the
+# ai-edge-litert wheel) run the models inside Face Landmarker's official bundle
+# on Windows, and do its outputs match LiteRT's CPU path? MediaPipe runs the
+# detector and landmark models on the GPU and keeps blendshapes on the CPU, so
+# only those two must pass. Hosted runners only have WARP, Direct3D 12's
+# software renderer: this checks support and numerics, not speed.
+#
+# Dawn, the accelerator's WebGPU engine, needs Microsoft's DirectX Shader
+# Compiler (dxcompiler.dll, dxil.dll), which Windows does not include. These
+# are the official release's DLLs that flutter_litert installs next to an app's
+# executable; here the executable is python.exe. 2.1.5 is the accelerator
+# flutter_litert ships, 2.2.0 the latest.
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+env:
+  MODEL_URL: https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+  MODEL_SHA256: 64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff
+  DXC_URL: https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.9.2602.24/dxc_2026_05_27.zip
+  DXC_SHA256: cf658aacf070d3045e31b8f1f8a696c2945f37c1095019481ef7c513368db3b4
+
+jobs:
+  probe:
+    name: Windows x64, WARP (Direct3D 12), LiteRT ${{ matrix.litert }}
+    runs-on: windows-2025
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        litert: ['2.1.5', '2.2.0']
+    env:
+      LITERT_VERSION: ${{ matrix.litert }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            packages/mediapipe-task-vision/test/fixtures/face_detection
+            packages/mediapipe-task-vision/tool
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: LiteRT, the model bundle and the display adapters
+        run: |
+          python -m pip install --quiet "ai-edge-litert==$LITERT_VERSION" numpy pillow
+          python -c "import ai_edge_litert, os; d = os.path.dirname(ai_edge_litert.__file__); print('ai-edge-litert', ai_edge_litert.__version__, sorted(f for f in os.listdir(d) if f.endswith('.dll')))"
+          mkdir -p probe && cd probe
+          curl -sSfL -o face_landmarker.task "$MODEL_URL"
+          python -c "import hashlib, sys; h = hashlib.sha256(open('face_landmarker.task', 'rb').read()).hexdigest(); print(h); sys.exit(h != '$MODEL_SHA256')"
+          curl -sSfL -o dxc.zip "$DXC_URL"
+          python -c "import hashlib, sys; h = hashlib.sha256(open('dxc.zip', 'rb').read()).hexdigest(); print('dxc', h); sys.exit(h != '$DXC_SHA256')"
+          python -c "import zipfile; z = zipfile.ZipFile('dxc.zip'); [z.extract(n, 'dxc') for n in ('bin/x64/dxcompiler.dll', 'bin/x64/dxil.dll')]"
+          cp dxc/bin/x64/dxcompiler.dll dxc/bin/x64/dxil.dll "$(dirname "$(which python)")/"
+          sha256sum "$(dirname "$(which python)")"/dx*.dll
+          # WARP appears as the Microsoft Basic Render Driver.
+          powershell -NoProfile -Command "Get-CimInstance Win32_VideoController | Format-List Name, DriverVersion, AdapterCompatibility" || true
+
+      - name: CPU and GPU compared
+        working-directory: probe
+        run: |
+          package=../packages/mediapipe-task-vision
+          set +e
+          python -B "$package/tool/litert_face_models_probe.py" --task face_landmarker.task \
+            --portrait "$package/test/fixtures/face_detection/landmark-ex1.jpg" \
+            --reference "$package/tool/validations/2026-09-23-desktop-gpu/source-build/cpu.json" \
+            --out report.json > probe.log 2> litert.log
+          status=$?
+          cat probe.log
+          echo "== LiteRT log (accelerators, adapters, errors)"
+          grep -iE "accelerator|adapter|webgpu|dawn|d3d|warp|vulkan|error|fail|not supported" litert.log | sort -u | head -40
+          exit $status
+
+      - name: Summarize
+        if: always()
+        working-directory: probe
+        run: |
+          {
+            echo "## Face Landmarker models on LiteRT $LITERT_VERSION, Windows WARP"
+            echo '```'
+            cat probe.log 2>/dev/null
+            echo '```'
+            echo '### LiteRT accelerators and errors'
+            echo '```'
+            grep -iE "accelerator|adapter|webgpu|dawn|d3d|warp|error|fail" litert.log 2>/dev/null | sort -u | head -30
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-gpu-litert-probe-${{ matrix.litert }}
+          path: |
+            probe/*.log
+            probe/report.json

@@ -7,8 +7,9 @@ name: Desktop GPU probe (official runtime, software GPUs)
 #
 # Results: packages/mediapipe-task-vision/tool/validations/2026-09-23-desktop-gpu.
 # 1.0.0 is built with GPU disabled on both systems. 1.0.1's Linux library links
-# EGL and OpenGL ES but refuses software renderers ("GPU emulation detected"),
-# so only a physical GPU can exercise it. The Windows library embeds no GPU
+# EGL and OpenGL ES but refuses software renderers by name ("GPU emulation
+# detected"); a Linux step renames Mesa's renderer so its unmodified GPU path
+# runs anyway. The Windows library embeds no GPU
 # backend but loads LiteRT accelerator plug-ins by name, so each job also tries
 # Google's WebGPU accelerator from the ai-edge-litert wheel, placed where it
 # can be found.
@@ -137,6 +138,22 @@ jobs:
           grep -iE "^OK|accelerator|webgpu|dawn|vulkan|d3d|adapter|gpu|error|Traceback" gpu.log | tail -25
           [ -f gpu.json ] && python compare.py cpu.json gpu.json | tee -a gpu.log || true
 
+      - name: GPU with Mesa's renderer renamed (Linux)
+        if: runner.os == 'Linux'
+        working-directory: probe
+        env:
+          # 1.0.1 refuses GL_RENDERER names containing llvmpipe or softpipe.
+          # Mesa's force_gl_renderer option renames the same software renderer
+          # so the unmodified GPU path runs; this tests its results, not
+          # Google's support for software GPUs.
+          force_gl_renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+        run: |
+          set +e
+          python -B probe.py gpu gpu-renamed.json > gpu-renamed.log 2>&1
+          echo "exit=$?" | tee gpu-renamed.exit
+          grep -iE "^OK|GL version|overridden|delegate|error|Traceback" gpu-renamed.log | tail -25
+          [ -f gpu-renamed.json ] && python compare.py cpu.json gpu-renamed.json | tee -a gpu-renamed.log || true
+
       - name: GPU with Google's WebGPU accelerator plug-in
         working-directory: probe
         run: |
@@ -167,7 +184,7 @@ jobs:
         run: |
           {
             echo "## ${{ matrix.name }}, mediapipe $MEDIAPIPE_VERSION"
-            for run in cpu gpu gpu-2.1.6 gpu-2.2.0; do
+            for run in cpu gpu gpu-renamed gpu-2.1.6 gpu-2.2.0; do
               [ -f "$run.log" ] || continue
               echo
               echo "### $run $(cat "$run.exit" 2>/dev/null)"
