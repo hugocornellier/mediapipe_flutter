@@ -96,7 +96,7 @@ can load its model and sample, and that the live demo's model resolves. Both
 derive their asset names from the catalog, so they cannot drift from what the
 screens ask for.
 
-The Desktop CPU tasks workflow also builds the actual Windows/Linux gallery,
+The Desktop tasks workflow also builds the actual Windows/Linux gallery,
 checks native camera plugin registration and enumeration, visits all live task
 runtimes in one process, and drives the Face Landmarks page with supplied portrait
 frames through Google's real CPU task. It checks padded RGBA/BGRA, 478-point

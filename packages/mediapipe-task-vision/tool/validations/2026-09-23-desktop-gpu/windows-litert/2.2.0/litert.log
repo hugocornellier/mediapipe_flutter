@@ -1,0 +1,276 @@
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C100CAB0, name=NpuAccelerator
+INFO: [litert/runtime/accelerators/npu_registry.cc:30] NPU accelerator registered.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C10C9230, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C10C9170, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+WARNING: [litert/runtime/accelerators/npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorInvalidArgument.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(l).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(l).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C10C93B0, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C10C8D50, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/compiler/plugin/compiler_plugin.cc:308] Attempting to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+INFO: [litert/compiler/plugin/compiler_plugin.cc:250] Loading plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+WARNING: [litert/compiler/plugin/compiler_plugin.cc:312] Failed to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll with error: ERROR: [unknown:0]
+└ Could not load shared library C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll: Failed to load library 'C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\ai_edge_litert\vendors\intel_openvino\compiler\LiteRtCompilerPlugin.dll': The specified module could not be found..
+INFO: [litert/runtime/compiled_model.cc:833] Flatbuffer model initialized directly from incoming litert model.
+INFO: [litert/runtime/dispatch/litert_dispatch.cc:159] Loading shared library: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/dispatch/LiteRtDispatch.dll
+ERROR: [litert/runtime/dispatch/dispatch_delegate.cc:116] Failed to initialize Dispatch API: ERROR: [unknown:0]
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+WARNING: [litert/runtime/accelerators/npu_registry.cc:34] NPU accelerator could not be loaded and registered: kLiteRtStatusErrorInvalidArgument.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(l).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(l).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C13B8DF0, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C13B8AF0, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C100CAB0, name=NpuAccelerator
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C10C9230, name=GPU WebGPU
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C10C9170, name=CpuAccelerator
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C13B8C70, name=NpuAccelerator
+INFO: [litert/runtime/accelerators/npu_registry.cc:30] NPU accelerator registered.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C13B9570, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C13B9390, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/compiler/plugin/compiler_plugin.cc:308] Attempting to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+INFO: [litert/compiler/plugin/compiler_plugin.cc:250] Loading plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+WARNING: [litert/compiler/plugin/compiler_plugin.cc:312] Failed to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll with error: ERROR: [unknown:0]
+└ Could not load shared library C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll: Failed to load library 'C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\ai_edge_litert\vendors\intel_openvino\compiler\LiteRtCompilerPlugin.dll': The specified module could not be found..
+INFO: [litert/runtime/compiled_model.cc:833] Flatbuffer model initialized directly from incoming litert model.
+INFO: [litert/runtime/dispatch/litert_dispatch.cc:159] Loading shared library: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/dispatch/LiteRtDispatch.dll
+ERROR: [litert/runtime/dispatch/dispatch_delegate.cc:116] Failed to initialize Dispatch API: ERROR: [unknown:0]
+WARNING: Logging before InitGoogle() is written to STDERR
+I0000 00:00:1790145051.302889    7904 delegate_webgpu.cc:262] Create WebGPU environment (use_low_power=false, enable_host_mapped_pointer=true)
+I0000 00:00:1790145051.420239    7904 environment.cc:525] Selected adapter: Microsoft Basic Render Driver, arch=warp, vendor=microsoft, backend=Direct3D 12, adapterType=Integrated GPU
+I0000 00:00:1790145051.439936    7904 delegate_webgpu.cc:290] Created a WebGPU environment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+INFO: [litert/runtime/gpu_environment.cc:367] Failed to create OpenCL context.
+INFO: [.\litert/runtime/gpu_environment.h:155] Created LiteRT GpuEnvironment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+I0000 00:00:1790145051.440023    7904 delegate_webgpu.cc:690] # of threads to upload weights = 0
+I0000 00:00:1790145051.440038    7904 delegate_webgpu.cc:698] # of threads to compile kernels = 0
+I0000 00:00:1790145051.441551    7904 delegate_kernel.cc:913] Initializing WebGPU-based API from graph.
+I0000 00:00:1790145054.947407    7904 delegate_webgpu.cc:320] Destroyed the WebGPU environment.
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C13B8C70, name=NpuAccelerator
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C13B9570, name=GPU WebGPU
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C13B9390, name=CpuAccelerator
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4235320, name=NpuAccelerator
+INFO: [litert/runtime/accelerators/npu_registry.cc:30] NPU accelerator registered.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C42362E0, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4236160, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/compiler/plugin/compiler_plugin.cc:308] Attempting to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+INFO: [litert/compiler/plugin/compiler_plugin.cc:250] Loading plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+WARNING: [litert/compiler/plugin/compiler_plugin.cc:312] Failed to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll with error: ERROR: [unknown:0]
+└ Could not load shared library C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll: Failed to load library 'C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\ai_edge_litert\vendors\intel_openvino\compiler\LiteRtCompilerPlugin.dll': The specified module could not be found..
+INFO: [litert/runtime/compiled_model.cc:833] Flatbuffer model initialized directly from incoming litert model.
+INFO: [litert/runtime/dispatch/litert_dispatch.cc:159] Loading shared library: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/dispatch/LiteRtDispatch.dll
+ERROR: [litert/runtime/dispatch/dispatch_delegate.cc:116] Failed to initialize Dispatch API: ERROR: [unknown:0]
+I0000 00:00:1790145054.952939    7904 delegate_webgpu.cc:262] Create WebGPU environment (use_low_power=false, enable_host_mapped_pointer=true)
+I0000 00:00:1790145054.953250    7904 environment.cc:525] Selected adapter: Microsoft Basic Render Driver, arch=warp, vendor=microsoft, backend=Direct3D 12, adapterType=Integrated GPU
+I0000 00:00:1790145054.954571    7904 delegate_webgpu.cc:290] Created a WebGPU environment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+INFO: [litert/runtime/gpu_environment.cc:367] Failed to create OpenCL context.
+INFO: [.\litert/runtime/gpu_environment.h:155] Created LiteRT GpuEnvironment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+I0000 00:00:1790145054.954627    7904 delegate_webgpu.cc:690] # of threads to upload weights = 0
+I0000 00:00:1790145054.954639    7904 delegate_webgpu.cc:698] # of threads to compile kernels = 0
+I0000 00:00:1790145054.955708    7904 delegate_kernel.cc:913] Initializing WebGPU-based API from graph.
+I0000 00:00:1790145056.218220    7904 delegate_webgpu.cc:320] Destroyed the WebGPU environment.
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4235320, name=NpuAccelerator
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C42362E0, name=GPU WebGPU
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4236160, name=CpuAccelerator
+D:\a\mediapipe_flutter\mediapipe_flutter\packages\mediapipe-task-vision\tool\litert_face_models_probe.py:107: RuntimeWarning: overflow encountered in exp
+  return 1 / (1 + np.exp(-v))
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C3F76E50, name=NpuAccelerator
+INFO: [litert/runtime/accelerators/npu_registry.cc:30] NPU accelerator registered.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C3F76DF0, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C14A9EF0, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/compiler/plugin/compiler_plugin.cc:308] Attempting to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+INFO: [litert/compiler/plugin/compiler_plugin.cc:250] Loading plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+WARNING: [litert/compiler/plugin/compiler_plugin.cc:312] Failed to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll with error: ERROR: [unknown:0]
+└ Could not load shared library C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll: Failed to load library 'C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\ai_edge_litert\vendors\intel_openvino\compiler\LiteRtCompilerPlugin.dll': The specified module could not be found..
+INFO: [litert/runtime/compiled_model.cc:833] Flatbuffer model initialized directly from incoming litert model.
+INFO: [litert/runtime/dispatch/litert_dispatch.cc:159] Loading shared library: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/dispatch/LiteRtDispatch.dll
+ERROR: [litert/runtime/dispatch/dispatch_delegate.cc:116] Failed to initialize Dispatch API: ERROR: [unknown:0]
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C3F76E50, name=NpuAccelerator
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C3F76DF0, name=GPU WebGPU
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C14A9EF0, name=CpuAccelerator
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C14AA1F0, name=NpuAccelerator
+INFO: [litert/runtime/accelerators/npu_registry.cc:30] NPU accelerator registered.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C14A9FB0, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C43181D0, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/compiler/plugin/compiler_plugin.cc:308] Attempting to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+INFO: [litert/compiler/plugin/compiler_plugin.cc:250] Loading plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+WARNING: [litert/compiler/plugin/compiler_plugin.cc:312] Failed to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll with error: ERROR: [unknown:0]
+└ Could not load shared library C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll: Failed to load library 'C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\ai_edge_litert\vendors\intel_openvino\compiler\LiteRtCompilerPlugin.dll': The specified module could not be found..
+INFO: [litert/runtime/compiled_model.cc:833] Flatbuffer model initialized directly from incoming litert model.
+INFO: [litert/runtime/dispatch/litert_dispatch.cc:159] Loading shared library: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/dispatch/LiteRtDispatch.dll
+ERROR: [litert/runtime/dispatch/dispatch_delegate.cc:116] Failed to initialize Dispatch API: ERROR: [unknown:0]
+I0000 00:00:1790145056.427100    7904 delegate_webgpu.cc:262] Create WebGPU environment (use_low_power=false, enable_host_mapped_pointer=true)
+I0000 00:00:1790145056.427415    7904 environment.cc:525] Selected adapter: Microsoft Basic Render Driver, arch=warp, vendor=microsoft, backend=Direct3D 12, adapterType=Integrated GPU
+I0000 00:00:1790145056.428789    7904 delegate_webgpu.cc:290] Created a WebGPU environment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+INFO: [litert/runtime/gpu_environment.cc:367] Failed to create OpenCL context.
+INFO: [.\litert/runtime/gpu_environment.h:155] Created LiteRT GpuEnvironment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+I0000 00:00:1790145056.428845    7904 delegate_webgpu.cc:690] # of threads to upload weights = 0
+I0000 00:00:1790145056.428856    7904 delegate_webgpu.cc:698] # of threads to compile kernels = 0
+I0000 00:00:1790145056.432910    7904 delegate_kernel.cc:913] Initializing WebGPU-based API from graph.
+I0000 00:00:1790145067.550102    7904 delegate_webgpu.cc:320] Destroyed the WebGPU environment.
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C14AA1F0, name=NpuAccelerator
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C14A9FB0, name=GPU WebGPU
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C43181D0, name=CpuAccelerator
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4236460, name=NpuAccelerator
+INFO: [litert/runtime/accelerators/npu_registry.cc:30] NPU accelerator registered.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4236880, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4236820, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/compiler/plugin/compiler_plugin.cc:308] Attempting to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+INFO: [litert/compiler/plugin/compiler_plugin.cc:250] Loading plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+WARNING: [litert/compiler/plugin/compiler_plugin.cc:312] Failed to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll with error: ERROR: [unknown:0]
+└ Could not load shared library C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll: Failed to load library 'C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\ai_edge_litert\vendors\intel_openvino\compiler\LiteRtCompilerPlugin.dll': The specified module could not be found..
+INFO: [litert/runtime/compiled_model.cc:833] Flatbuffer model initialized directly from incoming litert model.
+INFO: [litert/runtime/dispatch/litert_dispatch.cc:159] Loading shared library: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/dispatch/LiteRtDispatch.dll
+ERROR: [litert/runtime/dispatch/dispatch_delegate.cc:116] Failed to initialize Dispatch API: ERROR: [unknown:0]
+I0000 00:00:1790145067.557364    7904 delegate_webgpu.cc:262] Create WebGPU environment (use_low_power=false, enable_host_mapped_pointer=true)
+I0000 00:00:1790145067.557666    7904 environment.cc:525] Selected adapter: Microsoft Basic Render Driver, arch=warp, vendor=microsoft, backend=Direct3D 12, adapterType=Integrated GPU
+I0000 00:00:1790145067.559471    7904 delegate_webgpu.cc:290] Created a WebGPU environment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+INFO: [litert/runtime/gpu_environment.cc:367] Failed to create OpenCL context.
+INFO: [.\litert/runtime/gpu_environment.h:155] Created LiteRT GpuEnvironment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+I0000 00:00:1790145067.559529    7904 delegate_webgpu.cc:690] # of threads to upload weights = 0
+I0000 00:00:1790145067.559541    7904 delegate_webgpu.cc:698] # of threads to compile kernels = 0
+I0000 00:00:1790145067.563588    7904 delegate_kernel.cc:913] Initializing WebGPU-based API from graph.
+I0000 00:00:1790145070.547832    7904 delegate_webgpu.cc:320] Destroyed the WebGPU environment.
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4236460, name=NpuAccelerator
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4236880, name=GPU WebGPU
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4236820, name=CpuAccelerator
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4236520, name=NpuAccelerator
+INFO: [litert/runtime/accelerators/npu_registry.cc:30] NPU accelerator registered.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4235440, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4235920, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/compiler/plugin/compiler_plugin.cc:308] Attempting to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+INFO: [litert/compiler/plugin/compiler_plugin.cc:250] Loading plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+WARNING: [litert/compiler/plugin/compiler_plugin.cc:312] Failed to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll with error: ERROR: [unknown:0]
+└ Could not load shared library C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll: Failed to load library 'C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\ai_edge_litert\vendors\intel_openvino\compiler\LiteRtCompilerPlugin.dll': The specified module could not be found..
+INFO: [litert/runtime/compiled_model.cc:833] Flatbuffer model initialized directly from incoming litert model.
+INFO: [litert/runtime/dispatch/litert_dispatch.cc:159] Loading shared library: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/dispatch/LiteRtDispatch.dll
+ERROR: [litert/runtime/dispatch/dispatch_delegate.cc:116] Failed to initialize Dispatch API: ERROR: [unknown:0]
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4236520, name=NpuAccelerator
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4235440, name=GPU WebGPU
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4235920, name=CpuAccelerator
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4354460, name=NpuAccelerator
+INFO: [litert/runtime/accelerators/npu_registry.cc:30] NPU accelerator registered.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C43542E0, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C10DC3E0, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/compiler/plugin/compiler_plugin.cc:308] Attempting to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+INFO: [litert/compiler/plugin/compiler_plugin.cc:250] Loading plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+WARNING: [litert/compiler/plugin/compiler_plugin.cc:312] Failed to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll with error: ERROR: [unknown:0]
+└ Could not load shared library C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll: Failed to load library 'C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\ai_edge_litert\vendors\intel_openvino\compiler\LiteRtCompilerPlugin.dll': The specified module could not be found..
+INFO: [litert/runtime/compiled_model.cc:833] Flatbuffer model initialized directly from incoming litert model.
+INFO: [litert/runtime/dispatch/litert_dispatch.cc:159] Loading shared library: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/dispatch/LiteRtDispatch.dll
+ERROR: [litert/runtime/dispatch/dispatch_delegate.cc:116] Failed to initialize Dispatch API: ERROR: [unknown:0]
+I0000 00:00:1790145070.602922    7904 delegate_webgpu.cc:262] Create WebGPU environment (use_low_power=false, enable_host_mapped_pointer=true)
+I0000 00:00:1790145070.603233    7904 environment.cc:525] Selected adapter: Microsoft Basic Render Driver, arch=warp, vendor=microsoft, backend=Direct3D 12, adapterType=Integrated GPU
+I0000 00:00:1790145070.604416    7904 delegate_webgpu.cc:290] Created a WebGPU environment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+INFO: [litert/runtime/gpu_environment.cc:367] Failed to create OpenCL context.
+INFO: [.\litert/runtime/gpu_environment.h:155] Created LiteRT GpuEnvironment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+I0000 00:00:1790145070.604478    7904 delegate_webgpu.cc:690] # of threads to upload weights = 0
+I0000 00:00:1790145070.604490    7904 delegate_webgpu.cc:698] # of threads to compile kernels = 0
+ERROR: Following operations are not supported by GPU delegate:
+DEQUANTIZE: 
+STRIDED_SLICE: Slice does not support shrink_axis_mask parameter. 
+123 operations will run on the GPU, and the remaining 59 operations will run on the CPU.
+I0000 00:00:1790145070.606188    7904 delegate_kernel.cc:913] Initializing WebGPU-based API from graph.
+I0000 00:00:1790145070.945417    7904 delegate_webgpu.cc:320] Destroyed the WebGPU environment.
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4354460, name=NpuAccelerator
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C43542E0, name=GPU WebGPU
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C10DC3E0, name=CpuAccelerator
+INFO: [litert/core/environment.cc:36] Creating LiteRT environment with options
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4354580, name=NpuAccelerator
+INFO: [litert/runtime/accelerators/npu_registry.cc:30] NPU accelerator registered.
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerators/gpu_registry.cc:101] Attempting to load GPU accelerator(C).
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C4354280, name=GPU WebGPU
+INFO: [litert/runtime/accelerators/gpu_registry.cc:109] Dynamically loaded GPU accelerator(libLiteRtWebGpuAccelerator.dll) registered.
+INFO: [litert/runtime/accelerator_registry.cc:54] RegisterAccelerator: ptr=00000226C1478100, name=CpuAccelerator
+INFO: [litert/runtime/accelerators/cpu_registry.cc:75] XNNPACK CPU accelerator registered.
+INFO: [litert/compiler/plugin/compiler_plugin.cc:308] Attempting to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+INFO: [litert/compiler/plugin/compiler_plugin.cc:250] Loading plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll
+WARNING: [litert/compiler/plugin/compiler_plugin.cc:312] Failed to load plugin at: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll with error: ERROR: [unknown:0]
+└ Could not load shared library C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/compiler/LiteRtCompilerPlugin.dll: Failed to load library 'C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\ai_edge_litert\vendors\intel_openvino\compiler\LiteRtCompilerPlugin.dll': The specified module could not be found..
+INFO: [litert/runtime/compiled_model.cc:833] Flatbuffer model initialized directly from incoming litert model.
+INFO: [litert/runtime/dispatch/litert_dispatch.cc:159] Loading shared library: C:/hostedtoolcache/windows/Python/3.12.10/x64/Lib/site-packages/ai_edge_litert/vendors/intel_openvino/dispatch/LiteRtDispatch.dll
+ERROR: [litert/runtime/dispatch/dispatch_delegate.cc:116] Failed to initialize Dispatch API: ERROR: [unknown:0]
+I0000 00:00:1790145070.950677    7904 delegate_webgpu.cc:262] Create WebGPU environment (use_low_power=false, enable_host_mapped_pointer=true)
+I0000 00:00:1790145070.950967    7904 environment.cc:525] Selected adapter: Microsoft Basic Render Driver, arch=warp, vendor=microsoft, backend=Direct3D 12, adapterType=Integrated GPU
+I0000 00:00:1790145070.951944    7904 delegate_webgpu.cc:290] Created a WebGPU environment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+INFO: [litert/runtime/gpu_environment.cc:367] Failed to create OpenCL context.
+INFO: [.\litert/runtime/gpu_environment.h:155] Created LiteRT GpuEnvironment.
+INFO: [litert/core/environment.cc:47] Adding options to the existing LiteRT environment
+I0000 00:00:1790145070.952006    7904 delegate_webgpu.cc:690] # of threads to upload weights = 0
+I0000 00:00:1790145070.952018    7904 delegate_webgpu.cc:698] # of threads to compile kernels = 0
+ERROR: Following operations are not supported by GPU delegate:
+DEQUANTIZE: 
+STRIDED_SLICE: Slice does not support shrink_axis_mask parameter. 
+123 operations will run on the GPU, and the remaining 59 operations will run on the CPU.
+I0000 00:00:1790145070.954165    7904 delegate_kernel.cc:913] Initializing WebGPU-based API from graph.
+E0000 00:00:1790145071.051150    7904 environment.cc:104] Validation error: Error while parsing WGSL: :28:12 error: cannot assign 'vec4<f32>' to 'vec4<f16>'
+    result = textureLoad(src_tensor_1_image2d, vec2<i32>((coord), ((Y) * U.i1.y + (S))), 0);
+           ^
+
+
+ - While calling [Device].CreateShaderModule([ShaderModuleDescriptor]).
+E0000 00:00:1790145071.051226    7904 environment.cc:104] Validation error: [Invalid ShaderModule (unlabeled)] is invalid due to a previous error.
+ - While validating compute stage ([Invalid ShaderModule (unlabeled)], entryPoint: "main").
+ - While calling [Device].CreateComputePipeline([ComputePipelineDescriptor]).
+I0000 00:00:1790145071.268419    7904 delegate_webgpu.cc:320] Destroyed the WebGPU environment.
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4354580, name=NpuAccelerator
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C4354280, name=GPU WebGPU
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C1478100, name=CpuAccelerator
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C13B8DF0, name=GPU WebGPU
+INFO: [litert/runtime/accelerator_registry.cc:43] DestroyAccelerator: ptr=00000226C13B8AF0, name=CpuAccelerator

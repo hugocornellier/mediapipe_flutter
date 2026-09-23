@@ -65,6 +65,9 @@ class LiveCameraController<T> extends ChangeNotifier {
   bool running = false;
   bool changing = false;
   String? error;
+
+  /// Always null here: the web adapter reports GPU failures as [error].
+  String? notice;
   T? result;
   List<CameraDescription> cameras = const [];
   CameraDescription? description;

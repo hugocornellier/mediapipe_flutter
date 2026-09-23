@@ -1,0 +1,233 @@
+Resolving dependencies...
+Downloading packages...
++ _fe_analyzer_shared 108.0.0
++ analyzer 14.4.0
++ archive 4.3.0
++ args 2.7.0
++ async 2.13.1
++ boolean_selector 2.1.2
++ cli_config 0.2.0
++ code_assets 1.2.1 (2.1.0 available)
++ collection 1.19.1
++ convert 3.1.2
++ coverage 1.15.1
++ crypto 3.0.7
++ equatable 2.1.0 (3.0.0 available)
++ ffi 2.2.0
++ file 7.0.1
++ frontend_server_client 4.0.0
++ glob 2.2.0
++ hooks 2.0.2 (2.2.0 available)
++ http 1.6.0
++ http_multi_server 3.2.2
++ http_parser 4.1.2
++ io 1.1.0
++ logging 1.3.0
++ matcher 0.12.20
++ mediapipe_flutter_core 0.0.1+1 from path ../../packages/mediapipe-core
++ mediapipe_flutter_vision 0.0.1 from path /home/runner/work/mediapipe_flutter/mediapipe_flutter/packages/mediapipe-task-vision
++ meta 1.19.0
++ mime 2.1.0
++ node_preamble 2.0.2
++ package_config 3.0.0
++ path 1.9.1
++ pool 1.5.3
++ posix 6.5.2
++ pub_semver 2.2.1
++ record_use 0.6.0 (1.1.1 available)
++ shelf 1.4.2
++ shelf_packages_handler 3.0.2
++ shelf_static 1.1.3
++ shelf_web_socket 3.0.0
++ source_map_stack_trace 2.1.2
++ source_maps 0.10.14
++ source_span 1.10.2
++ stack_trace 1.12.2
++ stream_channel 2.1.4
++ string_scanner 1.4.1
++ term_glyph 1.2.2
++ test 1.32.0
++ test_api 0.7.14
++ test_core 0.6.20
++ typed_data 1.4.0
++ vm_service 15.3.0
++ watcher 1.2.1
++ web 1.1.1
++ web_socket 1.0.1
++ web_socket_channel 3.0.3
++ webkit_inspection_protocol 1.2.1
++ yaml 3.1.4
+Changed 57 dependencies!
+4 packages have newer versions incompatible with dependency constraints.
+Try `dart pub outdated` for more information.
+Running build hooks...File modified during build. Build must be rerun.
+Running build hooks...00:00 +0: loading test/face_detector_test.dart
+00:00 +0: test/face_detector_test.dart: cpu (setUpAll)
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: Logging before InitGoogle() is written to STDERR
+W0000 00:00:1790148348.206327    3343 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +0: test/face_landmarker_test.dart: cpu (setUpAll)
+00:00 +1: test/face_landmarker_test.dart: cpu (setUpAll)
+00:00 +2: test/face_landmarker_test.dart: cpu (setUpAll)
+00:00 +2: test/face_detector_test.dart: cpu official reference: face-landmarks-ex1.jpeg
+W0000 00:00:1790148348.298401    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1790148348.304560    3349 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1790148348.317655    3350 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +3: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +4: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +5: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +6: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +7: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +8: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +9: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +10: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+00:00 +11: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+W0000 00:00:1790148348.788521    3354 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +12: test/face_landmarker_test.dart: cpu official IMAGE reference with 2 faces
+W0000 00:00:1790148348.906832    3359 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +13: test/face_detector_test.dart: cpu queued requests complete before idempotent disposal
+W0000 00:00:1790148349.048144    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1790148349.052680    3363 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +14: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+W0000 00:00:1790148349.065323    3363 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:00 +15: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+ERROR: The model is not a valid Flatbuffer buffer
+W0000 00:00:1790148349.100066    3371 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +16: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+00:01 +17: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+00:01 +18: test/face_landmarker_test.dart: cpu official VIDEO reference with 1 faces
+W0000 00:00:1790148349.188129    3373 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +19: test/face_detector_test.dart: cpu video sequence matches the official VIDEO-mode reference
+W0000 00:00:1790148349.223971    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1790148349.230341    3378 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1790148349.240668    3377 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +20: test/face_landmarker_test.dart: cpu official VIDEO reference with 2 faces
+W0000 00:00:1790148349.354239    3383 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +21: test/face_detector_test.dart: cpu video timestamps and mode mismatches fail without poisoning the task
+W0000 00:00:1790148349.403047    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1790148349.406997    3386 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1790148349.419142    3387 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +22: test/face_landmarker_test.dart: cpu model bytes are owned and optional outputs default to empty
+00:01 +23: test/face_landmarker_test.dart: cpu model bytes are owned and optional outputs default to empty
+00:01 +24: test/face_landmarker_test.dart: cpu model bytes are owned and optional outputs default to empty
+00:01 +25: test/face_landmarker_test.dart: cpu model bytes are owned and optional outputs default to empty
+00:01 +26: test/face_detector_test.dart: cpu invalid camera strides fail before native allocation
+00:01 +27: test/face_landmarker_test.dart: cpu detector and landmarker coexist in one process with independent lifetimes
+W0000 00:00:1790148349.514218    3391 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1790148349.515975    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1790148349.520201    3396 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1790148349.528341    3395 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+ATTENTION: default value of option force_gl_renderer overridden by environment.
+I0000 00:00:1790148349.623804    3335 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148349.637114    3409 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:01 +28: test/face_detector_test.dart: gpu (setUpAll)
+W0000 00:00:1790148349.740921    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1790148349.745492    3413 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1790148349.753834    3415 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +28: test/face_landmarker_test.dart: cpu padded rgb camera frames preserve the landmark coordinates
+00:01 +29: test/face_landmarker_test.dart: cpu padded rgb camera frames preserve the landmark coordinates
+00:01 +30: test/face_detector_test.dart: gpu official reference: landmark-ex1.jpg
+W0000 00:00:1790148349.841958    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1790148349.847750    3419 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1790148349.855598    3420 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +31: test/face_detector_test.dart: gpu official reference: landmark-ex1.jpg
+00:01 +32: test/face_landmarker_test.dart: cpu padded bgra camera frames preserve the landmark coordinates
+W0000 00:00:1790148349.962856    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1790148349.967446    3425 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1790148349.983483    3426 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:01 +33: test/face_detector_test.dart: gpu official reference: face-landmarks-ex1.jpeg
+W0000 00:00:1790148350.079642    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1790148350.083540    3429 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1790148350.091248    3429 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+00:02 +34: test/face_detector_test.dart: gpu official reference: face-landmarks-ex1.jpeg
+W0000 00:00:1790148350.261515    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+W0000 00:00:1790148350.265203    3436 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1790148350.272998    3435 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+E0000 00:00:1790148350.375433    3409 tensor.cc:411] Tensors are designed for single writes. Multiple writes to a Tensor instance are not supported and may lead to undefined behavior due to lack of synchronization.
+00:02 +35: test/face_detector_test.dart: gpu official reference: face-landmarks-ex1.jpeg
+00:02 +36: test/face_landmarker_test.dart: cpu options reject malformed model sources, face counts and thresholds
+00:02 +37: test/face_detector_test.dart: gpu official reference: iris-detection-ex1.jpg
+W0000 00:00:1790148350.438277    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148350.440784    3346 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148350.446625    3441 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:02 +38: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:02 +39: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:02 +40: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:02 +41: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:02 +42: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:02 +43: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:02 +44: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:03 +45: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+I0000 00:00:1790148351.153712    3335 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148351.159433    3446 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:03 +46: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+I0000 00:00:1790148351.594477    3335 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148351.600125    3451 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:04 +47: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:04 +48: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+ERROR: The model is not a valid Flatbuffer buffer
+I0000 00:00:1790148352.862872    3338 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148352.869102    3458 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:04 +49: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:04 +50: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:05 +51: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+I0000 00:00:1790148353.172474    3338 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148353.178187    3464 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:06 +52: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+I0000 00:00:1790148354.143566    3335 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148354.152254    3470 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:06 +53: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:06 +54: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:06 +55: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:06 +56: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:06 +57: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:06 +58: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:06 +58: test/face_detector_test.dart: (tearDownAll)
+MEDIAPIPE_REFERENCE_DELTAS face_detector {"cpu":{"bounding_box":{"maximum_absolute_error":0.0,"values":144,"path":null,"official":null,"measured":null},"categories":{"maximum_absolute_error":1.1920928955078125e-7,"values":36,"path":"landmark-ex1.jpg.[0][0].score","official":0.7983752489089966,"measured":0.7983753681182861},"keypoints":{"maximum_absolute_error":1.1920928955078125e-7,"values":432,"path":"landmark-ex1.jpg.[0][0].y","official":0.4312652349472046,"measured":0.43126535415649414}},"gpu":{"bounding_box":{"maximum_absolute_error":0.0,"values":144,"path":null,"official":null,"measured":null},"categories":{"maximum_absolute_error":0.0,"values":36,"path":null,"official":null,"measured":null},"keypoints":{"maximum_absolute_error":0.0,"values":432,"path":null,"official":null,"measured":null}}}
+00:06 +58: test/face_landmarker_test.dart: gpu official IMAGE reference with 2 faces
+00:07 +59: test/face_landmarker_test.dart: gpu official VIDEO reference with 1 faces
+W0000 00:00:1790148355.871517    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148355.874176    3346 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148355.879936    3477 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:10 +60: test/face_landmarker_test.dart: gpu official VIDEO reference with 2 faces
+W0000 00:00:1790148358.320270    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148358.322738    3346 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148358.328367    3483 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:12 +61: test/face_landmarker_test.dart: gpu model bytes are owned and optional outputs default to empty
+W0000 00:00:1790148360.611539    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148360.614115    3346 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148360.619750    3490 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:14 +62: test/face_landmarker_test.dart: gpu detector and landmarker coexist in one process with independent lifetimes
+I0000 00:00:1790148362.135529    3346 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148362.141262    3497 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+W0000 00:00:1790148362.296514    3336 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148362.298697    3336 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148362.310559    3501 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:16 +63: test/face_landmarker_test.dart: gpu padded rgb camera frames preserve the landmark coordinates
+W0000 00:00:1790148364.143119    3495 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148364.145498    3495 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148364.151581    3508 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:16 +64: test/face_landmarker_test.dart: gpu padded rgba camera frames preserve the landmark coordinates
+W0000 00:00:1790148365.111169    3346 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148365.113507    3346 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148365.119205    3515 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:17 +65: test/face_landmarker_test.dart: gpu padded bgra camera frames preserve the landmark coordinates
+W0000 00:00:1790148366.024999    3495 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148366.027334    3495 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148366.033476    3522 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:18 +66: test/face_landmarker_test.dart: gpu mode, timestamps, rotation and native errors leave video task usable
+W0000 00:00:1790148366.942975    3495 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148366.945408    3495 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148366.951320    3528 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:19 +67: test/face_landmarker_test.dart: gpu invalid initialization fails promptly; later creation still succeeds
+W0000 00:00:1790148368.038460    3495 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148368.040642    3495 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148368.046524    3536 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+00:20 +68: test/face_landmarker_test.dart: gpu options reject malformed model sources, face counts and thresholds
+00:20 +69: test/face_landmarker_test.dart: gpu (tearDownAll)
+00:20 +69: test/face_landmarker_test.dart: CPU is the default delegate
+00:20 +70: test/face_landmarker_test.dart: a refused GPU is reported, never replaced by CPU
+  Skip: Set MEDIAPIPE_EXPECT_GPU_REFUSAL on a host that refuses the GPU.
+00:20 +70 ~1: test/face_landmarker_test.dart: (tearDownAll)
+MEDIAPIPE_REFERENCE_DELTAS face_landmarker {"cpu":{"face_blendshapes":{"maximum_absolute_error":0.0005524754524230957,"values":1144,"path":"pair.faces[0][5].score","official":0.22276653349399567,"measured":0.22331900894641876},"face_landmarks":{"maximum_absolute_error":0.000027954578399658203,"values":32982,"path":"landmark-ex1.jpg.faces[0][152].y","official":0.8130346536636353,"measured":0.8130626082420349},"facial_transformation_matrixes":{"maximum_absolute_error":0.002445220947265625,"values":352,"path":"pair.matrixes[0][2][3]","official":-36.2435188293457,"measured":-36.24596405029297}},"gpu":{"face_blendshapes":{"maximum_absolute_error":0.0,"values":1144,"path":null,"official":null,"measured":null},"face_landmarks":{"maximum_absolute_error":0.0,"values":32982,"path":null,"official":null,"measured":null},"facial_transformation_matrixes":{"maximum_absolute_error":0.0,"values":352,"path":null,"official":null,"measured":null}}}
+00:20 +70 ~1: All tests passed!

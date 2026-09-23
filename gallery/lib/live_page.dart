@@ -166,6 +166,17 @@ class _LivePageState extends State<LivePage> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                if (controller.notice case final notice?)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      notice,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 if (controller.running)
                   Text(
                     '${controller.framesPerSecond.toStringAsFixed(1)} fps  ·  '

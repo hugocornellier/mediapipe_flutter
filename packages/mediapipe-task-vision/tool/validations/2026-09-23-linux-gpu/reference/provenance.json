@@ -1,0 +1,119 @@
+{
+  "source": "official-python-api",
+  "runtime": "mediapipe==1.0.1",
+  "library_sha256": "b72e6d61a79d1080d29a96ba95e3cfa3e43f6c433c0acc3bc9b3eb7ac0ba103a",
+  "wheel_url": "https://files.pythonhosted.org/packages/2a/58/bdd5bada89d7a132375df05e962bf702c148b47043dca98d820d9395152b/mediapipe-1.0.1-py3-none-manylinux_2_28_x86_64.whl",
+  "wheel_sha256": "121522251afc3c135e4b7b0c341dd5e050ad1ec87631127484f3c389ae385044",
+  "delegate": "GPU",
+  "gl_confirmed": true,
+  "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "graphics": {
+    "face_detector": [
+      "GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test"
+    ],
+    "face_landmarker": [
+      "GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test"
+    ]
+  },
+  "files": {
+    "face_detection/official_gpu_reference.json": "6c47bac2ee3f986f3d67402f6a54216d6f6e709b1a58b082c7bf4c342d48ebcf",
+    "face_detection/official_gpu_video_reference.json": "bf44e3c98255b8e784bcb33f6e6c457c2e9086a99ab6f1d3acff4becd0de6ab3",
+    "face_landmarker/official_gpu_reference.json": "5ee698a26e4b101f1a81f41ea84ab724013afce103f80377a2aff9dafe775604"
+  },
+  "checked_in_reference_differences": {
+    "face_detection/official_gpu_reference.json": {
+      "numeric_groups": {
+        "keypoints": {
+          "maximum_absolute_error": 0.0003014802932739258,
+          "values": 162,
+          "path": "cases[3].detections[0].keypoints[5].x",
+          "checked_in": 0.6579437851905823,
+          "same_host": 0.6582452654838562
+        },
+        "bounding_box": {
+          "maximum_absolute_error": 1,
+          "values": 36,
+          "path": "cases[0].detections[0].bounding_box.height",
+          "checked_in": 456,
+          "same_host": 457
+        },
+        "categories": {
+          "maximum_absolute_error": 0.00041604042053222656,
+          "values": 18,
+          "path": "cases[7].detections[1].categories[0].score",
+          "checked_in": 0.9433475732803345,
+          "same_host": 0.9437636137008667
+        },
+        "other": {
+          "maximum_absolute_error": 0.0,
+          "values": 30,
+          "path": null
+        }
+      },
+      "structural_differences": []
+    },
+    "face_detection/official_gpu_video_reference.json": {
+      "numeric_groups": {
+        "keypoints": {
+          "maximum_absolute_error": 0.00013321638107299805,
+          "values": 126,
+          "path": "cases[5].detections[0].keypoints[5].x",
+          "checked_in": 0.3903999328613281,
+          "same_host": 0.3902667164802551
+        },
+        "bounding_box": {
+          "maximum_absolute_error": 0.0,
+          "values": 28,
+          "path": null
+        },
+        "categories": {
+          "maximum_absolute_error": 0.00041604042053222656,
+          "values": 14,
+          "path": "cases[3].detections[1].categories[0].score",
+          "checked_in": 0.9433475732803345,
+          "same_host": 0.9437636137008667
+        },
+        "other": {
+          "maximum_absolute_error": 0.0,
+          "values": 28,
+          "path": null
+        }
+      },
+      "structural_differences": []
+    },
+    "face_landmarker/official_gpu_reference.json": {
+      "numeric_groups": {
+        "other": {
+          "maximum_absolute_error": 0.0,
+          "values": 77,
+          "path": null
+        },
+        "face_landmarks": {
+          "maximum_absolute_error": 0.002252638339996338,
+          "values": 27246,
+          "path": "cases[0].frames[0].face_landmarks[0][377].y",
+          "checked_in": 0.7979643940925598,
+          "same_host": 0.7957117557525635
+        },
+        "face_blendshapes": {
+          "maximum_absolute_error": 0.04586160182952881,
+          "values": 1976,
+          "path": "cases[0].frames[0].face_blendshapes[0][19].score",
+          "checked_in": 0.5541894435882568,
+          "same_host": 0.508327841758728
+        },
+        "facial_transformation_matrixes": {
+          "maximum_absolute_error": 0.038333892822265625,
+          "values": 304,
+          "path": "cases[0].frames[8].facial_transformation_matrixes[0][2][3]",
+          "checked_in": -54.427589416503906,
+          "same_host": -54.38925552368164
+        }
+      },
+      "structural_differences": []
+    }
+  },
+  "scope": "Official wheel on this host versus checked-in physical-Mac GPU references. Dart tests separately compare the native task with these independently generated outputs.",
+  "renderer_override": "Mesa software rasterizer, renamed for a MediaPipe CI test"
+}

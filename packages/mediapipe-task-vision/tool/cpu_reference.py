@@ -30,6 +30,7 @@ MACOS_WHEEL = (
     'mediapipe-1.0.0-py3-none-macosx_11_0_arm64.whl',
     '7ee4783be41b2de345e1eb71e2f7e7c159a50ed5c283e60ccb8f5a6027c70a82',
     'aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f',
+    '1.0.0',
 )
 
 
@@ -45,7 +46,7 @@ def host_target():
 
 
 def wheel_pin(target):
-    """Returns the pinned wheel URL, wheel digest and native library digest."""
+    """Returns the pinned wheel URL, wheel and native library digests, and version."""
     if target == 'macos/arm64':
         return MACOS_WHEEL
     pins = (PACKAGE / 'sdk_downloads.dart').read_text()
@@ -53,12 +54,13 @@ def wheel_pin(target):
                     pins, re.S).group(1)
     return (dart_strings(re.search(r'url:(.*?),', row, re.S).group(1)),
             re.search(r"sha256:\s*'([a-f0-9]+)'", row).group(1),
-            re.search(r"librarySha256:\s*'([a-f0-9]+)'", row).group(1))
+            re.search(r"librarySha256:\s*'([a-f0-9]+)'", row).group(1),
+            re.search(r"version:\s*'([0-9.]+)'", row).group(1))
 
 
 def install(root, target):
     """Creates an isolated environment holding only the pinned official wheel."""
-    wheel_url, wheel_sha, _ = wheel_pin(target)
+    wheel_url, wheel_sha, _, _ = wheel_pin(target)
     environment = root / 'python'
     run([sys.executable, '-m', 'venv', environment], REPO, root / 'venv.log')
     python = environment / ('Scripts/python.exe' if platform.system() == 'Windows'
@@ -71,7 +73,7 @@ def install(root, target):
 def generate(root, output, target, tasks=FACE_TASKS, files=FACE_FILES,
              python=None, env=None):
     """Writes references and a provenance receipt for `target` into `output`."""
-    wheel_url, wheel_sha, library_sha = wheel_pin(target)
+    wheel_url, wheel_sha, library_sha, version = wheel_pin(target)
     root.mkdir(parents=True, exist_ok=True)
     output.mkdir(parents=True, exist_ok=True)
     if python is None:
@@ -89,7 +91,7 @@ def generate(root, output, target, tasks=FACE_TASKS, files=FACE_FILES,
         comparisons[name] = difference(
             json.loads((PACKAGE / 'test/fixtures' / name).read_text()), reference)
     provenance = {
-        'runtime': 'mediapipe==1.0.0', 'source': 'official-python-api',
+        'runtime': 'mediapipe==' + version, 'source': 'official-python-api',
         'delegate': 'CPU', 'target': target,
         'library_sha256': library_sha, 'wheel_sha256': wheel_sha,
         'files': {name: digest(output / name) for name in files},

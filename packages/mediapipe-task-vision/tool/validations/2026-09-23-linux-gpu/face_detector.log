@@ -1,0 +1,24 @@
+ATTENTION: default value of option force_gl_renderer overridden by environment.
+WARNING: Logging before InitGoogle() is written to STDERR
+I0000 00:00:1790148294.403779    3150 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148295.375169    3161 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+E0000 00:00:1790148310.948466    3161 tensor.cc:411] Tensors are designed for single writes. Multiple writes to a Tensor instance are not supported and may lead to undefined behavior due to lack of synchronization.
+I0000 00:00:1790148311.970310    3174 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148311.978719    3176 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+landmark-ex1.jpg 1 face(s)
+face-landmarks-ex1.jpeg 1 face(s)
+iris-detection-ex1.jpg 1 face(s)
+iris-detection-ex2.jpg 1 face(s)
+group-shot-bounding-box-ex1.jpeg 0 face(s)
+rgb 1 face(s)
+rgba 1 face(s)
+rgb-pair 2 face(s)
+rgb-rotated 1 face(s)
+blank 0 face(s)
+video 0 rgb 1 face(s)
+video 33 rgb 1 face(s)
+video 66 blank 0 face(s)
+video 99 rgb-pair 2 face(s)
+video 132 rgb 1 face(s)
+video 165 rgb-rotated 1 face(s)
+video 198 rgb 1 face(s)

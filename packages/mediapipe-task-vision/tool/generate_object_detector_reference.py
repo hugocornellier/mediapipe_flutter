@@ -1,9 +1,10 @@
 """Regenerate reviewed goldens with Google's official macOS arm64 Python API.
 
-Run from the package root in a Python 3.12 venv with mediapipe==1.0.0. That is
-the same revision our pinned source build uses, and it is deliberately not the
-1.0.1 wheel: every graph with a TensorsToDetectionsCalculator aborts on CPU
-there (upstream #6356), which includes this task.
+Run from the package root in a Python 3.12 venv with the host's pinned runtime
+from official_face_runtime.py. On macOS that is mediapipe==1.0.0, the revision
+our pinned source build uses, and deliberately not the 1.0.1 wheel: every graph
+with a TensorsToDetectionsCalculator aborts on macOS CPU there (upstream
+#6356), which includes this task. Linux uses 1.0.1, which has no such abort.
 
 The Dart tests consume the checked-in JSON; they do not need Python.
 """
@@ -13,7 +14,8 @@ import hashlib
 import json
 from pathlib import Path
 import platform
-from official_face_runtime import LIBRARY_NAME, LIBRARY_SHA256
+from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
+                                   SOURCE_REVISION, VERSION)
 
 import mediapipe as mp
 import numpy as np
@@ -53,7 +55,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     delegate = getattr(mp.tasks.BaseOptions.Delegate, args.delegate.upper())
     suffix = "_gpu" if args.delegate == "gpu" else ""
-    assert mp.__version__ == "1.0.0", mp.__version__
+    assert mp.__version__ == VERSION, mp.__version__
     assert digest(MODEL) == MODEL_SHA256
     library = Path(mp.__file__).parent / "tasks/c" / LIBRARY_NAME
     assert digest(library) == LIBRARY_SHA256
@@ -117,8 +119,8 @@ def main():
         ))
 
     reference = dict(
-        runtime="mediapipe==1.0.0",
-        source_revision="6d31f1ebc3284db74d211d62bdc4f0a0c29ea120",
+        runtime=RUNTIME,
+        source_revision=SOURCE_REVISION,
         library_sha256=LIBRARY_SHA256,
         model_sha256=MODEL_SHA256,
         platform=f"{platform.system()} {platform.machine()}", delegate=args.delegate.upper(), running_mode="IMAGE",

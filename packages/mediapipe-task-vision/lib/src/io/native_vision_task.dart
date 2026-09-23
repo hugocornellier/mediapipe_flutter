@@ -7,6 +7,7 @@ import 'package:ffi/ffi.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../interface/landmark_task_types.dart';
 import '../interface/segmenter_task_types.dart';
+import 'native_desktop_runtime.dart';
 import 'native_vision_image.dart';
 
 /// Initialize the shared base options with owned model bytes or a model path.
@@ -18,6 +19,7 @@ void setVisionBaseOptions(
   if (!Platform.isMacOS && options.delegate == VisionDelegate.gpu) {
     throw UnsupportedError('GPU vision inference is validated on macOS only.');
   }
+  loadOfficialDesktopRuntime();
   base.file_descriptor = -1;
   base.delegate = options.delegate == VisionDelegate.gpu
       ? mp.MpDelegate.MP_DELEGATE_GPU

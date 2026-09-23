@@ -1,0 +1,34 @@
+WARNING: Logging before InitGoogle() is written to STDERR
+W0000 00:00:1790148313.933733    3202 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+ATTENTION: default value of option force_gl_renderer overridden by environment.
+I0000 00:00:1790148313.966865    3202 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148313.981890    3213 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+IMAGE 2 landmark-ex1.jpg 1 face(s)
+E0000 00:00:1790148328.117778    3213 tensor.cc:411] Tensors are designed for single writes. Multiple writes to a Tensor instance are not supported and may lead to undefined behavior due to lack of synchronization.
+IMAGE 2 face-landmarks-ex1.jpeg 1 face(s)
+IMAGE 2 iris-detection-ex1.jpg 1 face(s)
+IMAGE 2 iris-detection-ex2.jpg 1 face(s)
+IMAGE 2 group-shot-bounding-box-ex1.jpeg 0 face(s)
+IMAGE 2 rgb 1 face(s)
+IMAGE 2 rgba 1 face(s)
+IMAGE 2 pair 2 face(s)
+IMAGE 2 rotated 1 face(s)
+IMAGE 2 blank 0 face(s)
+W0000 00:00:1790148330.165596    3224 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148330.168271    3224 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148330.176325    3226 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+VIDEO 1 rgb 1 face(s)
+VIDEO 1 rgb 1 face(s)
+VIDEO 1 blank 0 face(s)
+VIDEO 1 rgb 1 face(s)
+VIDEO 1 rotated 0 face(s)
+VIDEO 1 rgb 1 face(s)
+W0000 00:00:1790148331.988987    3231 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148331.991504    3231 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148331.999591    3233 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+VIDEO 2 pair 2 face(s)
+VIDEO 2 pair 2 face(s)
+VIDEO 2 blank 0 face(s)
+VIDEO 2 rgb 1 face(s)
+VIDEO 2 pair 1 face(s)

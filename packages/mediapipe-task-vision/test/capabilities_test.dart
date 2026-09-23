@@ -88,6 +88,34 @@ void main() {
     expect(result.runtimeVersion, '1.0.0');
   });
 
+  test('Face Landmarker offers GPU on Linux x64, not Windows', () {
+    TaskCapabilities<VisionDelegate> on(String os) =>
+        faceLandmarkerCapabilitiesForPlatform(
+          TaskPlatform(operatingSystem: os, architecture: 'x64'),
+        );
+    expect(on('linux').supportedDelegates, {
+      VisionDelegate.cpu,
+      VisionDelegate.gpu,
+    });
+    expect(on('windows').supportedDelegates, {VisionDelegate.cpu});
+    expect(on('windows').unavailableReasons[VisionDelegate.gpu], isNotNull);
+  });
+
+  test('Linux reports its official 1.0.1 runtime, Windows 1.0.0', () {
+    for (final (os, version) in [('linux', '1.0.1'), ('windows', '1.0.0')]) {
+      final platform = TaskPlatform(operatingSystem: os, architecture: 'x64');
+      for (final result in [
+        faceLandmarkerCapabilitiesForPlatform(platform),
+        landmarkTaskCapabilitiesForPlatform(platform),
+        segmenterTaskCapabilitiesForPlatform(platform),
+        imageTaskCapabilitiesForPlatform(platform),
+        objectDetectorCapabilitiesForPlatform(platform),
+      ]) {
+        expect(result.runtimeVersion, version);
+      }
+    }
+  });
+
   test('an unsupported platform fails closed for both delegates', () {
     final result = objectDetectorCapabilitiesForPlatform(
       const TaskPlatform(

@@ -55,6 +55,24 @@ The official-wheel reference generation and the native source smoke tests
 separately require `Created TensorFlow Lite delegate for Metal.` in their logs.
 There is no wrapper-level CPU retry on GPU initialization failure.
 
+## Linux
+
+On Linux x64 the same script installs Google's pinned `mediapipe==1.0.1` wheel,
+the runtime the package ships there. Linux has no checked-in GPU goldens, so its
+GPU suites run only when `MEDIAPIPE_GPU_REFERENCE_DIR` points at same-host
+references. The receipt must record `gl_confirmed`: every generator log must show
+an OpenGL ES context. The tasks set `use_advanced_gpu_api`, so TensorFlow Lite
+runs on OpenGL ES directly and logs no delegate line.
+
+Hosted runners only have Mesa's llvmpipe, which Google's runtime refuses by name
+(`GPU emulation detected`). The `linux-gpu` job in `.github/workflows/desktop.yaml`
+sets Mesa's `force_gl_renderer` to rename the same software renderer, plus
+`EGL_PLATFORM=surfaceless` because the runner has no display. The receipt
+records the override as `renderer_override`. The job then runs the face suite's
+refusal test without the rename, which must fail with `gpuUnavailable` and never
+fall back to CPU. For a physical GPU, run
+[`test_linux_gpu.sh`](test_linux_gpu.sh), which uses no override.
+
 This validates equivalence to the official task on the tested host. It is not a
 claim of bit-identical GPU output across hardware/drivers, universal model
 accuracy, or physical-Mac GPU performance on a hosted runner.

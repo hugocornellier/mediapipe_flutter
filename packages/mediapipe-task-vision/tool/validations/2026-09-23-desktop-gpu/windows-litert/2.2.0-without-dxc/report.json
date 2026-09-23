@@ -1,0 +1,46 @@
+{
+  "litert": "2.2.0",
+  "models": {
+    "face_detector": {
+      "cpu": {
+        "fully_accelerated": true,
+        "first_ms": 3.51,
+        "median_ms": 2.242
+      },
+      "gpu": {
+        "error": "RuntimeError: ERROR: [unknown:0]"
+      },
+      "gpu_f32": {
+        "error": "RuntimeError: ERROR: [unknown:0]"
+      }
+    },
+    "face_landmarks_detector": {
+      "cpu": {
+        "fully_accelerated": true,
+        "first_ms": 8.57,
+        "median_ms": 8.377
+      },
+      "gpu": {
+        "error": "RuntimeError: ERROR: [unknown:0]"
+      },
+      "gpu_f32": {
+        "error": "RuntimeError: ERROR: [unknown:0]"
+      }
+    },
+    "face_blendshapes": {
+      "cpu": {
+        "fully_accelerated": false,
+        "first_ms": 2.12,
+        "median_ms": 1.896
+      },
+      "gpu": {
+        "error": "RuntimeError: ERROR: [unknown:0]"
+      },
+      "gpu_f32": {
+        "error": "RuntimeError: ERROR: [unknown:0]"
+      }
+    }
+  },
+  "cpu_ran_all_models": true,
+  "gpu_ran_detector_and_landmarks_fully_accelerated": false
+}

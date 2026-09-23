@@ -1,0 +1,9 @@
+WARNING: Logging before InitGoogle() is written to STDERR
+W0000 00:00:1790146014.655667    2977 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+ATTENTION: default value of option force_gl_renderer overridden by environment.
+I0000 00:00:1790146014.682634    2977 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790146014.696205    2988 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+E0000 00:00:1790146031.349474    2988 tensor.cc:411] Tensors are designed for single writes. Multiple writes to a Tensor instance are not supported and may lead to undefined behavior due to lack of synchronization.
+OK gpu: 1 face(s), 478 landmarks, create 1604 ms, first 15074 ms, median 138.79 ms
+gpu-renamed.json vs cpu.json: max 0.01267, mean 0.00361 (normalized x,y over 478 landmarks)

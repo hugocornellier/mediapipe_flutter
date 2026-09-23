@@ -20,6 +20,7 @@ void main() {
           ? 'libmediapipe.so'
           : 'libmediapipe.dll';
       const notices = {'LICENSE': 'license', 'NOTICE': 'notice'};
+      final version = target.startsWith('linux') ? '1.0.1' : '1.0.0';
 
       List<int> bundle({bool missingNotice = false, List<int>? contents}) {
         final archive = Archive()
@@ -33,7 +34,7 @@ void main() {
           if (missingNotice && entry.key == 'NOTICE') continue;
           archive.add(
             ArchiveFile.string(
-              'mediapipe-1.0.0.dist-info/licenses/${entry.key}',
+              'mediapipe-$version.dist-info/licenses/${entry.key}',
               entry.value,
             ),
           );
@@ -44,6 +45,7 @@ void main() {
       void pin({String? wheelHash, String? libraryHash}) {
         release = VisionWheelRelease(
           target: target,
+          version: version,
           wheel: (
             url: 'http://127.0.0.1:${server.port}/runtime.whl',
             sha256: wheelHash ?? sha256.convert(response).toString(),

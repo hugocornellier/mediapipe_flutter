@@ -160,12 +160,21 @@ final class ScriptedTask implements LiveTask<int> {
   /// When set, every detect call throws this instead of waiting.
   Object? failure;
 
+  /// When set, opening with that delegate throws this error.
+  (VisionDelegate, Object)? openFailure;
+
   @override
   String get name => 'scripted';
 
   @override
   Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
     opened.add(delegate);
+    if (openFailure case (
+      final refused,
+      final error,
+    ) when refused == delegate) {
+      throw error;
+    }
   }
 
   @override

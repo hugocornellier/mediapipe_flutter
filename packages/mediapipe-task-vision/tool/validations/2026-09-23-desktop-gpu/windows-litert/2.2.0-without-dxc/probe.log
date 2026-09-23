@@ -1,0 +1,10 @@
+face_detector cpu: {"fully_accelerated": true, "first_ms": 3.51, "median_ms": 2.242}
+face_detector gpu: {"error": "RuntimeError: ERROR: [unknown:0]"}
+face_detector gpu_f32: {"error": "RuntimeError: ERROR: [unknown:0]"}
+face_landmarks_detector cpu: {"fully_accelerated": true, "first_ms": 8.57, "median_ms": 8.377}
+face_landmarks_detector gpu: {"error": "RuntimeError: ERROR: [unknown:0]"}
+face_landmarks_detector gpu_f32: {"error": "RuntimeError: ERROR: [unknown:0]"}
+face_blendshapes cpu: {"fully_accelerated": false, "first_ms": 2.12, "median_ms": 1.896}
+face_blendshapes gpu: {"error": "RuntimeError: ERROR: [unknown:0]"}
+face_blendshapes gpu_f32: {"error": "RuntimeError: ERROR: [unknown:0]"}
+VERDICT: CPU ran all models: True; GPU ran the detector and landmark models fully accelerated: False

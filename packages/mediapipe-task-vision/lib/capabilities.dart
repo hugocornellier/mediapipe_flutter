@@ -11,6 +11,11 @@ export 'package:mediapipe_flutter_core/capabilities.dart'
     show TaskCapabilities, TaskPlatform;
 export 'src/interface/vision_types.dart' show VisionDelegate;
 
+/// Google's official Linux runtime is 1.0.1, the first with GPU built in;
+/// the other desktop runtimes are 1.0.0.
+String _desktopRuntimeVersion(TaskPlatform platform) =>
+    platform.operatingSystem == 'linux' ? '1.0.1' : '1.0.0';
+
 /// Query official FaceLandmarker platform support without creating a task.
 Future<TaskCapabilities<VisionDelegate>>
 queryFaceLandmarkerCapabilities() async =>
@@ -32,6 +37,8 @@ TaskCapabilities<VisionDelegate> faceLandmarkerCapabilitiesForPlatform(
     },
     VisionDelegate.gpu: {
       'macos/arm64': '14.0',
+      // Needs EGL and a GPU driver; Google refuses software renderers.
+      'linux/x64': null,
       'ios/arm64': '15.0',
       if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
       if (faceLandmarkerBackendFactory != null) 'web/unknown': null,
@@ -39,12 +46,13 @@ TaskCapabilities<VisionDelegate> faceLandmarkerCapabilitiesForPlatform(
   },
   runtimeVersion: {'ios', 'web'}.contains(platform.operatingSystem)
       ? '1.0.1'
-      : '1.0.0',
+      : _desktopRuntimeVersion(platform),
   unavailableReasons: const {
     VisionDelegate.cpu:
         'FaceLandmarker requires a supported official runtime and its platform adapter.',
     VisionDelegate.gpu:
-        'GPU requires Apple or Android SDKs, or the web adapter with worker WebGL 2 support.',
+        'GPU requires macOS, Linux x64, Apple or Android SDKs, or the web '
+        'adapter with worker WebGL 2 support.',
   },
 );
 
@@ -75,7 +83,7 @@ TaskCapabilities<VisionDelegate> landmarkTaskCapabilitiesForPlatform(
     },
     VisionDelegate.gpu: const {},
   },
-  runtimeVersion: '1.0.0',
+  runtimeVersion: _desktopRuntimeVersion(platform),
   unavailableReasons: const {
     VisionDelegate.cpu:
         'Landmark task CPU inference requires Linux x64, Windows x64, or the '
@@ -103,7 +111,7 @@ TaskCapabilities<VisionDelegate> segmenterTaskCapabilitiesForPlatform(
     VisionDelegate.cpu: {'linux/x64': null, 'windows/x64': null},
     VisionDelegate.gpu: {},
   },
-  runtimeVersion: '1.0.0',
+  runtimeVersion: _desktopRuntimeVersion(platform),
   unavailableReasons: const {
     VisionDelegate.cpu:
         'Segmenter task CPU inference requires Linux x64 or Windows x64. '
@@ -126,7 +134,7 @@ TaskCapabilities<VisionDelegate> imageTaskCapabilitiesForPlatform(
     VisionDelegate.cpu: {'linux/x64': null, 'windows/x64': null},
     VisionDelegate.gpu: {},
   },
-  runtimeVersion: '1.0.0',
+  runtimeVersion: _desktopRuntimeVersion(platform),
   unavailableReasons: const {
     VisionDelegate.cpu:
         'Image task CPU inference currently requires Linux x64 or Windows x64. '
@@ -173,7 +181,7 @@ TaskCapabilities<VisionDelegate> objectDetectorCapabilitiesForPlatform(
     VisionDelegate.cpu: {'linux/x64': null, 'windows/x64': null},
     VisionDelegate.gpu: {'macos/arm64': '14.0'},
   },
-  runtimeVersion: '1.0.0',
+  runtimeVersion: _desktopRuntimeVersion(platform),
   unavailableReasons: {
     VisionDelegate.cpu: platform.operatingSystem == 'macos'
         ? 'The pinned macOS source build no longer aborts in XNNPACK\'s KleidiAI '

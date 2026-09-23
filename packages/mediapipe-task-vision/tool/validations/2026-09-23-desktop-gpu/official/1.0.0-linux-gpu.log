@@ -1,0 +1,28 @@
+WARNING: Logging before InitGoogle() is written to STDERR
+W0000 00:00:1790117609.016210    2896 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+Traceback (most recent call last):
+  File "/home/runner/work/mediapipe_flutter/mediapipe_flutter/probe/probe.py", line 14, in <module>
+    with vision.FaceLandmarker.create_from_options(options) as task:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/mediapipe/tasks/python/vision/face_landmarker.py", line 3182, in create_from_options
+    lib.MpFaceLandmarkerCreate(
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/mediapipe/tasks/python/core/serial_dispatcher.py", line 74, in shutdown_aware_handler
+    return handler(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/mediapipe/tasks/python/core/mediapipe_c_utils.py", line 142, in dispatcher_wrapper
+    executor.submit(dispatch_and_free).result()
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/mediapipe/tasks/python/core/mediapipe_c_utils.py", line 137, in dispatch_and_free
+    handle_status(status, error_msg)
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/mediapipe/tasks/python/core/mediapipe_c_utils.py", line 232, in handle_status
+    raise exception
+NotImplementedError: ValidatedGraphConfig Initialization failed.
+ImageCloneCalculator: GPU processing is disabled in build flags
+ImageCloneCalculator: GPU processing is disabled in build flags

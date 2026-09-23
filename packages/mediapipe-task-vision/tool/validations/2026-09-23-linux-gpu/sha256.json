@@ -1,0 +1,10 @@
+{
+  "dart-tests.log": "789a0f538bf252732f1d39f49c5f07bcddb9318764b087eb1e27f800f8ed5716",
+  "face_detector.log": "c5999c1986d5827b37b74f64f7a87aca688521de7010db28c122b35a5c47bf05",
+  "face_landmarker.log": "e8a3ae9a6d81b4b231c9fef09a4b8a5235634eddafbb9846a95db8b1a2aa0ace",
+  "reference/face_detection/official_gpu_reference.json": "6c47bac2ee3f986f3d67402f6a54216d6f6e709b1a58b082c7bf4c342d48ebcf",
+  "reference/face_detection/official_gpu_video_reference.json": "bf44e3c98255b8e784bcb33f6e6c457c2e9086a99ab6f1d3acff4becd0de6ab3",
+  "reference/face_landmarker/official_gpu_reference.json": "5ee698a26e4b101f1a81f41ea84ab724013afce103f80377a2aff9dafe775604",
+  "reference/provenance.json": "1e7435832c3ee0f8e24d8e746439cd127b2f990ba080943f5b853289805b72a5",
+  "refusal.log": "834e031c1d65c8c13d241a85e1e1551a18b1766ab5a87ba29c319153a28bc76e"
+}

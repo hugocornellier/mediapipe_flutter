@@ -1,0 +1,4 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1790124233.110815    3774 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+Service "kGpuService", required by node mediapipe_tasks_vision_face_landmarker_facelandmarkergraph__mediapipe_tasks_vision_face_detector_facedetectorgraph__mediapipe_tasks_core_inferencesubgraph__inferencecalculator__mediapipe_tasks_vision_face_landmarker_facelandmarkergraph__mediapipe_tasks_vision_face_detector_facedetectorgraph__mediapipe_tasks_core_inferencesubgraph__InferenceCalculator, was not provided and cannot be created: ; RET_CHECK failure (mediapipe/gpu/gl_context_egl.cc:84) egl_initializedUnable to initialize EGL
+smoke: ../packages/mediapipe-task-vision/tool/native_landmarker_smoke.cc:20: main(int, char**)::<lambda(MpStatus)>: Assertion `status == kMpOk' failed.

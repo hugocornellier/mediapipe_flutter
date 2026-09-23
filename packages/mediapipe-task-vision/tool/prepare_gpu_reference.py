@@ -1,7 +1,8 @@
 """Generate independent GPU references on the machine that runs the Dart tests.
 
 Does not change checked-in goldens, models, task code or test tolerances.
-The default creates an isolated Python environment from a checksum-pinned wheel.
+The default creates an isolated Python environment from the host's checksum-pinned
+wheel (macOS arm64: 1.0.0 on Metal; Linux x64: 1.0.1 on OpenGL ES).
 --python reuses an existing environment; the generators still verify its native
 library, runtime version, model digests and input fixture bytes.
 """
@@ -19,13 +20,6 @@ import sys
 
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
-LIBRARY_SHA256 = "aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f"
-WHEEL_URL = (
-    "https://files.pythonhosted.org/packages/42/d7/"
-    "3a5dfaa86128db110c62a4d0f0c948304817932c9dd3257313bbdf24f7d5/"
-    "mediapipe-1.0.0-py3-none-macosx_11_0_arm64.whl"
-)
-WHEEL_SHA256 = "7ee4783be41b2de345e1eb71e2f7e7c159a50ed5c283e60ccb8f5a6027c70a82"
 FACE_TASKS = (("face_detector", "face_detection"),
               ("face_landmarker", "face_landmarker"))
 FACE_FILES = (
@@ -124,7 +118,8 @@ hooks:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--python", type=Path, help="Existing MediaPipe 1.0.0 Python")
+    parser.add_argument("--python", type=Path,
+                        help="Existing Python with this host's pinned MediaPipe")
     parser.add_argument("--output-dir", type=Path, default=REPO / "build/gpu-reference")
     parser.add_argument("--test", action="store_true",
                         help="Also run both Dart face suites with these references")
@@ -135,8 +130,13 @@ def main():
     args = parser.parse_args()
     tasks = FACE_TASKS + (OBJECT_TASKS if args.object_detector else ())
     files = FACE_FILES + (OBJECT_FILES if args.object_detector else ())
-    if platform.system() != "Darwin" or platform.machine() != "arm64":
-        raise SystemExit("GPU references require macOS arm64.")
+    # Imported here: cpu_reference imports this module for difference().
+    from cpu_reference import host_target, wheel_pin
+    target = host_target()
+    if target not in ("macos/arm64", "linux/x64"):
+        raise SystemExit("GPU references require macOS arm64 or Linux x64.")
+    wheel_url, wheel_sha256, library_sha256, version = wheel_pin(target)
+    metal = target == "macos/arm64"
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
     # Do not leave a stale receipt if generation or model verification fails.
@@ -151,7 +151,7 @@ def main():
         python = environment / "bin/python"
         subprocess.run([
             str(python), "-m", "pip", "install", "--disable-pip-version-check",
-            WHEEL_URL + "#sha256=" + WHEEL_SHA256,
+            wheel_url + "#sha256=" + wheel_sha256,
         ], check=True)
     python = python.absolute()
     env = {**os.environ, "MPLCONFIGDIR": str(output / "matplotlib")}
@@ -168,24 +168,30 @@ def main():
         log = log_file.read_text()
         print("\n".join(log.splitlines()[-12:]), flush=True)
         result.check_returncode()
-        if "Created TensorFlow Lite delegate for Metal." not in log:
-            raise RuntimeError(f"Official {task} did not confirm Metal creation")
         graphics[task] = sorted(set(re.findall(r"GL version:.*", log)))
+        if metal and "Created TensorFlow Lite delegate for Metal." not in log:
+            raise RuntimeError(f"Official {task} did not confirm Metal creation")
+        # Linux tasks run inference through TensorFlow Lite's OpenGL ES backend
+        # directly (use_advanced_gpu_api), so no delegate line is logged; the
+        # created context is the confirmation.
+        if not metal and not any("OpenGL ES" in line for line in graphics[task]):
+            raise RuntimeError(f"Official {task} did not create an OpenGL ES context")
     for name in files:
         baseline = json.loads((PACKAGE / "test/fixtures" / name).read_text())
         reference = json.loads((output / name).read_text())
         summaries[name] = difference(baseline, reference)
     report = {
-        "source": "official-python-api", "runtime": "mediapipe==1.0.0",
-        "library_sha256": LIBRARY_SHA256,
-        "wheel_url": WHEEL_URL, "wheel_sha256": WHEEL_SHA256,
-        "delegate": "GPU", "metal_confirmed": True,
+        "source": "official-python-api", "runtime": "mediapipe==" + version,
+        "library_sha256": library_sha256,
+        "wheel_url": wheel_url, "wheel_sha256": wheel_sha256,
+        "delegate": "GPU", ("metal_confirmed" if metal else "gl_confirmed"): True,
         "os": platform.platform(), "machine": platform.machine(),
         "graphics": graphics, "files": {name: digest(output / name) for name in files},
         "checked_in_reference_differences": summaries,
         "scope": "Official wheel on this host versus checked-in physical-Mac "
                  "GPU references. Dart tests separately compare the native task "
                  "with these independently generated outputs.",
+        **({} if metal else {"renderer_override": os.environ.get("force_gl_renderer")}),
     }
     provenance.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(summaries, indent=2), flush=True)

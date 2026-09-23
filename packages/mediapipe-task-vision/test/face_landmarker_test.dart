@@ -22,8 +22,8 @@ void main() {
     group(
       delegate.name,
       () => _testDelegate(delegate),
-      skip: delegate == VisionDelegate.gpu && !Platform.isMacOS
-          ? 'GPU face inference is validated on macOS only.'
+      skip: delegate == VisionDelegate.gpu && !gpuFaceTestsEnabled
+          ? gpuFaceTestsSkipReason
           : false,
     );
   }
@@ -33,6 +33,33 @@ void main() {
       VisionDelegate.cpu,
     );
   });
+  test(
+    'a refused GPU is reported, never replaced by CPU',
+    () async {
+      // CI runs this on llvmpipe without the renamed renderer, which Google's
+      // Linux runtime refuses by name.
+      await expectLater(
+        FaceLandmarker.create(
+          FaceLandmarkerOptions(
+            modelPath: _model,
+            delegate: VisionDelegate.gpu,
+          ),
+        ),
+        throwsA(
+          isA<FaceLandmarkerException>()
+              .having((error) => error.gpuUnavailable, 'gpuUnavailable', true)
+              .having(
+                (error) => error.message,
+                'message',
+                contains('kGpuService'),
+              ),
+        ),
+      );
+    },
+    skip: Platform.environment['MEDIAPIPE_EXPECT_GPU_REFUSAL'] == null
+        ? 'Set MEDIAPIPE_EXPECT_GPU_REFUSAL on a host that refuses the GPU.'
+        : false,
+  );
   tearDownAll(() => reportReferenceDeltas('face_landmarker'));
 }
 

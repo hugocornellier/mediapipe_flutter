@@ -1,0 +1,352 @@
+{
+  "date": "2026-09-23",
+  "fixture": {
+    "path": "packages/mediapipe-task-vision/test/fixtures/face_detection/landmark-ex1.jpg",
+    "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec",
+    "pixels": [
+      1280,
+      853
+    ]
+  },
+  "model_sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+  "official_runtime": {
+    "workflow": ".github/workflows/desktop-gpu-probe.yaml",
+    "runs": {
+      "1.0.0": 35794681057,
+      "1.0.1 without Mesa EGL": 35794967149,
+      "1.0.1": 35796245827,
+      "1.0.1 renderer renamed": 35827886063
+    },
+    "runners": {
+      "linux": "ubuntu-24.04, Mesa llvmpipe",
+      "windows": "windows-2025, WARP"
+    },
+    "cpu_landmarks_sha256": {
+      "1.0.0-linux": "ed9e3b01825ab9a26e22756be9d8ea4e0f32b5e9d9a15c58cc7607a5d4d08e0c",
+      "1.0.0-windows": "ed9e3b01825ab9a26e22756be9d8ea4e0f32b5e9d9a15c58cc7607a5d4d08e0c",
+      "1.0.1-linux": "ed9e3b01825ab9a26e22756be9d8ea4e0f32b5e9d9a15c58cc7607a5d4d08e0c",
+      "1.0.1-windows": "ed9e3b01825ab9a26e22756be9d8ea4e0f32b5e9d9a15c58cc7607a5d4d08e0c"
+    },
+    "gpu": {
+      "1.0.0-linux": "ValidatedGraphConfig Initialization failed: ImageCloneCalculator: GPU processing is disabled in build flags",
+      "1.0.0-windows": "ValidatedGraphConfig Initialization failed: ImageCloneCalculator: GPU processing is disabled in build flags",
+      "1.0.1-linux": "EGL 1.5 and OpenGL ES 3.2 on llvmpipe initialized, then kGpuService: GPU emulation detected, but not supported. Please run in an environment that exposes a physical GPU.",
+      "1.0.1-windows": "ValidatedGraphConfig Initialization failed: ImageCloneCalculator: GPU processing is disabled in build flags",
+      "1.0.1-linux renderer renamed": "force_gl_renderer=\"Mesa software rasterizer, renamed for a MediaPipe CI test\": GPU ran; 1 face, 478 landmarks, create 1604 ms, first 15074 ms, median 138.79 ms"
+    },
+    "webgpu_accelerator_plugin": "ai-edge-litert 2.1.6 and 2.2.0: same failure on both systems",
+    "linux_1.0.1_without_libegl": "OSError: libEGL.so.1: cannot open shared object file (CPU included)",
+    "gpu_renamed_max_abs_coordinate_xyz": {
+      "vs_same_run_cpu": 0.012133,
+      "vs_source_build_gpu": 0.000213
+    }
+  },
+  "source_build": {
+    "workflow": ".github/workflows/linux-gpu-build.yaml",
+    "run": 35803134048,
+    "first_uncached_build_run": 35795326661,
+    "upstream_revision": "6d31f1ebc3284db74d211d62bdc4f0a0c29ea120",
+    "bazel": "7.4.1",
+    "runner": "ubuntu-24.04",
+    "gl": "GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: llvmpipe (LLVM 20.1.2, 256 bits)",
+    "c_smoke": {
+      "cpu": "passed",
+      "gpu EGL_PLATFORM=surfaceless": "passed",
+      "gpu default EGL platform": "failed: Unable to initialize EGL (runner has no display)"
+    },
+    "python": {
+      "cpu": {
+        "create_ms": 40.45,
+        "first_ms": 20.32,
+        "median_ms": 9.74
+      },
+      "gpu EGL_PLATFORM=surfaceless": {
+        "create_ms": 488.88,
+        "first_ms": 623.93,
+        "median_ms": 114.9
+      },
+      "faces": [
+        1,
+        1
+      ],
+      "landmarks": [
+        478,
+        478
+      ]
+    },
+    "gpu_vs_cpu": {
+      "max_abs_coordinate_xyz": 0.012352,
+      "max_xy_distance": 0.01289,
+      "p95_xy_distance": 0.00916,
+      "mean_xy_distance": 0.00362
+    },
+    "cpu_vs_official_1.0.0_cpu_max_xy_distance": 3e-05,
+    "runtime_files": {
+      "libmediapipe.so": {
+        "bytes": 23311896,
+        "sha256": "eada4e386604f5d8e2c72ed88b63647bd7232e1af72e52d6a3ddc22c1a2ef91e"
+      },
+      "libopencv_calib3d.so.3.4": {
+        "bytes": 1854464,
+        "sha256": "5284a436a549126a608c4a72c6a21554b2c579392547fa4ccd1eee7274b5123c"
+      },
+      "libopencv_core.so.3.4": {
+        "bytes": 17344928,
+        "sha256": "885d60a2f23e8c81143946653b21db5ce4a57bb7ecd15a78f3e4f921d07403fe"
+      },
+      "libopencv_features2d.so.3.4": {
+        "bytes": 970512,
+        "sha256": "3bf065380140104e11cf1b58227d0dc24932a0dc8f7f579df5f35f24522ff231"
+      },
+      "libopencv_highgui.so.3.4": {
+        "bytes": 62672,
+        "sha256": "20a06049a1d0461a7778a12da0eb2ea08f51b518422f882643f02cfb2c58c6e9"
+      },
+      "libopencv_imgcodecs.so.3.4": {
+        "bytes": 2807880,
+        "sha256": "96ef3533c398ac5425a07fd2578a89192c21a7871e3cf544758ed12d609ab520"
+      },
+      "libopencv_imgproc.so.3.4": {
+        "bytes": 29957320,
+        "sha256": "10aa7ebc9a885b2792111b3093121cbbb2c17e9fb00362e3d80214c4e9426c6f"
+      },
+      "libopencv_video.so.3.4": {
+        "bytes": 383544,
+        "sha256": "fb6113696b4a565a4432b3a1125cd1404267b139165fb3323d3e72e279c46a09"
+      },
+      "libopencv_videoio.so.3.4": {
+        "bytes": 365760,
+        "sha256": "b5a79de7519538a6457269d31712bc2e391c5c472e7cc8fccb6c0525c2b07619"
+      }
+    }
+  },
+  "official_gpu_vs_cpu_max_abs_coordinate_same_portrait": {
+    "ios_metal_2026-09-17": 0.013069093227386475,
+    "android_2026-09-18": 0.013228535652160645
+  },
+  "windows_litert": {
+    "workflow": ".github/workflows/windows-gpu-litert-probe.yaml",
+    "runner": "windows-2025, WARP (Microsoft Basic Render Driver, Direct3D 12)",
+    "runs": {
+      "2.2.0 without DXC": 35825917288,
+      "2.1.5 and 2.2.0 with DXC": 35826556894
+    },
+    "dxc": "DirectXShaderCompiler v1.9.2602.24 (dxc_2026_05_27.zip), dxcompiler.dll and dxil.dll next to python.exe",
+    "without_dxc": "GPU model creation fails: DynamicLib.Open: dxil.dll Windows Error: 87",
+    "blendshapes_gpu": "fails: 59 of 182 operations unsupported (DEQUANTIZE; STRIDED_SLICE with shrink_axis_mask), then RuntimeError",
+    "results": {
+      "2.1.5": {
+        "litert": "2.1.5",
+        "models": {
+          "face_detector": {
+            "cpu": {
+              "fully_accelerated": true,
+              "first_ms": 3.63,
+              "median_ms": 2.354
+            },
+            "gpu": {
+              "fully_accelerated": true,
+              "first_ms": 51.11,
+              "median_ms": 113.694,
+              "vs_cpu": {
+                "max_abs": {
+                  "regressors": 1.7430877685546875,
+                  "classificators": 2.8996963500976562
+                },
+                "best_anchor_same": true,
+                "best_score": [
+                  0.91662,
+                  0.91745
+                ],
+                "best_box_max_abs_input_px": 0.024130821228027344
+              }
+            },
+            "gpu_f32": {
+              "fully_accelerated": true,
+              "first_ms": 40.04,
+              "median_ms": 22.118,
+              "vs_cpu": {
+                "max_abs": {
+                  "regressors": 0.0001220703125,
+                  "classificators": 0.00014495849609375
+                },
+                "best_anchor_same": true,
+                "best_score": [
+                  0.91662,
+                  0.91662
+                ],
+                "best_box_max_abs_input_px": 7.62939453125e-06
+              }
+            }
+          },
+          "face_landmarks_detector": {
+            "cpu": {
+              "fully_accelerated": true,
+              "first_ms": 8.36,
+              "median_ms": 8.31
+            },
+            "gpu": {
+              "fully_accelerated": true,
+              "first_ms": 66.32,
+              "median_ms": 402.884,
+              "vs_cpu": {
+                "max_abs": {
+                  "Identity": 1.259429931640625,
+                  "Identity_1": 0.031444549560546875,
+                  "Identity_2": 0.001590954139828682
+                },
+                "landmark_xy_max_abs_normalized": 0.004458,
+                "landmark_xy_mean_abs_normalized": 0.000674,
+                "landmark_z_max_abs_crop_px": 0.253,
+                "presence": [
+                  1.0,
+                  1.0
+                ]
+              }
+            },
+            "gpu_f32": {
+              "fully_accelerated": true,
+              "first_ms": 44.44,
+              "median_ms": 82.111,
+              "vs_cpu": {
+                "max_abs": {
+                  "Identity": 9.1552734375e-05,
+                  "Identity_1": 3.814697265625e-06,
+                  "Identity_2": 1.5087425708770752e-07
+                },
+                "landmark_xy_max_abs_normalized": 0.0,
+                "landmark_xy_mean_abs_normalized": 0.0,
+                "landmark_z_max_abs_crop_px": 0.0,
+                "presence": [
+                  1.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "face_blendshapes": {
+            "cpu": {
+              "fully_accelerated": false,
+              "first_ms": 2.34,
+              "median_ms": 2.098
+            },
+            "gpu": {
+              "error": "RuntimeError: ERROR: [unknown:0]"
+            },
+            "gpu_f32": {
+              "error": "RuntimeError: ERROR: [unknown:0]"
+            }
+          }
+        },
+        "cpu_ran_all_models": true,
+        "gpu_ran_detector_and_landmarks_fully_accelerated": true
+      },
+      "2.2.0": {
+        "litert": "2.2.0",
+        "models": {
+          "face_detector": {
+            "cpu": {
+              "fully_accelerated": true,
+              "first_ms": 3.49,
+              "median_ms": 2.232
+            },
+            "gpu": {
+              "fully_accelerated": true,
+              "first_ms": 56.44,
+              "median_ms": 107.649,
+              "vs_cpu": {
+                "max_abs": {
+                  "regressors": 1.7430877685546875,
+                  "classificators": 2.8996963500976562
+                },
+                "best_anchor_same": true,
+                "best_score": [
+                  0.91662,
+                  0.91745
+                ],
+                "best_box_max_abs_input_px": 0.024130821228027344
+              }
+            },
+            "gpu_f32": {
+              "fully_accelerated": true,
+              "first_ms": 33.15,
+              "median_ms": 27.085,
+              "vs_cpu": {
+                "max_abs": {
+                  "regressors": 0.0001220703125,
+                  "classificators": 0.00014495849609375
+                },
+                "best_anchor_same": true,
+                "best_score": [
+                  0.91662,
+                  0.91662
+                ],
+                "best_box_max_abs_input_px": 7.62939453125e-06
+              }
+            }
+          },
+          "face_landmarks_detector": {
+            "cpu": {
+              "fully_accelerated": true,
+              "first_ms": 8.37,
+              "median_ms": 8.434
+            },
+            "gpu": {
+              "fully_accelerated": true,
+              "first_ms": 51.52,
+              "median_ms": 401.743,
+              "vs_cpu": {
+                "max_abs": {
+                  "Identity": 1.259429931640625,
+                  "Identity_1": 0.031444549560546875,
+                  "Identity_2": 0.001590954139828682
+                },
+                "landmark_xy_max_abs_normalized": 0.004458,
+                "landmark_xy_mean_abs_normalized": 0.000674,
+                "landmark_z_max_abs_crop_px": 0.253,
+                "presence": [
+                  1.0,
+                  1.0
+                ]
+              }
+            },
+            "gpu_f32": {
+              "fully_accelerated": true,
+              "first_ms": 53.03,
+              "median_ms": 74.907,
+              "vs_cpu": {
+                "max_abs": {
+                  "Identity": 9.1552734375e-05,
+                  "Identity_1": 3.814697265625e-06,
+                  "Identity_2": 1.5087425708770752e-07
+                },
+                "landmark_xy_max_abs_normalized": 0.0,
+                "landmark_xy_mean_abs_normalized": 0.0,
+                "landmark_z_max_abs_crop_px": 0.0,
+                "presence": [
+                  1.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "face_blendshapes": {
+            "cpu": {
+              "fully_accelerated": false,
+              "first_ms": 2.11,
+              "median_ms": 1.892
+            },
+            "gpu": {
+              "error": "RuntimeError: ERROR: [unknown:0]"
+            },
+            "gpu_f32": {
+              "error": "RuntimeError: ERROR: [unknown:0]"
+            }
+          }
+        },
+        "cpu_ran_all_models": true,
+        "gpu_ran_detector_and_landmarks_fully_accelerated": true
+      }
+    }
+  }
+}
