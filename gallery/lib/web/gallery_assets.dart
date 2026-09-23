@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 
 /// Browser assets are served directly rather than unpacked to filesystem paths.
@@ -17,6 +18,8 @@ final class GalleryAssets {
         : 'samples';
     return Uri.base.resolve('assets/assets/$group/$name').toString();
   }
+
+  ImageProvider imageProvider(String name) => NetworkImage(path(name));
 
   static Future<GalleryAssets> unpack() async => GalleryAssets(
     jsonDecode(await rootBundle.loadString('assets/manifest.json'))

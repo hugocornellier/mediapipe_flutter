@@ -46,9 +46,9 @@ Both tasks accept `delegate: VisionDelegate.cpu` (default) or `VisionDelegate.gp
 The camera demo exposes the same choice; each task download contains both backends.
 
 The optional **MagicTouch Interactive Segmenter** uses Google's official 1.0.1
-stateful image/stroke pipeline on macOS arm64, macOS 14+, CPU. A separate image
-editor supports positive, negative and lasso strokes, undo and mask overlays.
-Run `make example_segmenter`; see the
+stateful image/stroke pipeline on CPU: macOS arm64 (macOS 14+), Linux x64, iOS,
+Android and the web. A separate image editor supports positive, negative and
+lasso strokes, undo and mask overlays. Run `make example_segmenter`; see the
 [segmenter guide](packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md).
 
 This is a development baseline. GenAI inference and mobile platforms still need
@@ -90,8 +90,8 @@ results for these tasks are not validated; see `upstream-issues.md`.
 | `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
 | `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Six text tasks on one MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
-| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Eleven tasks on Linux/Windows x64 CPU; face tasks on macOS CPU/Metal and local iOS simulator CPU; Hand Landmarker on all six targets; optional macOS CPU MagicTouch editor |
-| `mediapipe_flutter_vision_web` | [mediapipe-task-vision-web](packages/mediapipe-task-vision-web/) | Official Face and Hand Landmarker CPU/WASM and GPU/WebGL 2 adapter; live browser camera gallery |
+| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | All twelve vision tasks on web, iOS, Android, macOS, Linux and Windows through Google's runtimes, with two upstream gaps; see the [status table](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md) |
+| `mediapipe_flutter_vision_web` | [mediapipe-task-vision-web](packages/mediapipe-task-vision-web/) | Every vision task on Google's official CPU/WASM and GPU/WebGL 2 runtime; live browser camera gallery |
 | Audio | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Placeholder, no Dart package |
 
 The migrated text package supports macOS arm64; its old Android, iOS and Intel

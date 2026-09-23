@@ -376,6 +376,148 @@ These probes check loading, ABI and result counts, not Flutter packaging,
 numerical reference parity or physical-device performance. Android package
 support remains undeclared. This issue has not been filed upstream.
 
+## UP-013 — Holistic IMAGE results depend on earlier IMAGE calls
+
+**Status:** reproduced September 23 in Google's official 1.0.0 macOS Python
+wheel and the iOS 1.0.1 SDK. Unresolved upstream; the tests work around it.
+
+One Holistic task given the same image four times in IMAGE mode returned
+landmarks 0.033 to 0.050 apart from its first result (Python wheel), and 0.0078
+apart on the iOS simulator. A fresh task's first call is exactly repeatable.
+IMAGE mode should not carry state between calls. `sdk_landmark_tasks_test.dart`
+and the web API probe compare only fresh tasks' first results for Holistic.
+
+## UP-014 — iOS Holistic rejects rotated images
+
+**Status:** observed September 23 with Google's 1.0.1 iOS XCFrameworks.
+Worked around in the iOS adapter.
+
+`MPPHolisticLandmarker` fails any image whose orientation is not
+`UIImageOrientationUp` ("Unsupported UIImageOrientation"), unlike the other iOS
+tasks and unlike Holistic on every other platform. The adapter
+(`native/ios/face_sdk_bridge.mm`) turns the pixels itself and maps the points
+back into the caller's frame. On an iPhone 15 Pro the result is 0.008 (CPU) and
+0.010 (Metal) from Google's rotated desktop reference.
+
+## UP-015 — Pose GPU treats rotated input differently from Pose CPU
+
+**Status:** reproduced September 23 in Google's official 1.0.0 macOS wheel and
+on an iPhone 15 Pro with the 1.0.1 iOS SDK. Unresolved upstream; recorded, not
+worked around.
+
+Upright, Pose CPU and GPU agree to 0.005 (wheel, Metal) and 0.014 (iPhone).
+Given the same image turned a quarter with `rotation_degrees = 90`, they differ
+by 0.16 (wheel) and 0.22 (iPhone, against the CPU reference). CPU output is also
+not a plain rotation of the upright result. Hand, Gesture and Holistic show
+neither effect. The SDK tests require the rotated reference on the CPU only for
+Pose and record the GPU value.
+
+## UP-016 — Android 1.0.0 declares protobuf-javalite but needs protobuf-java
+
+**Status:** reported upstream as
+[google-ai-edge/mediapipe#6348](https://github.com/google-ai-edge/mediapipe/issues/6348)
+and [#6364](https://github.com/google-ai-edge/mediapipe/issues/6364).
+Worked around in `mediapipe_flutter_vision_android`.
+
+`tasks-core` 1.0.0's POM declares `protobuf-javalite` 4.26.1, but
+`HolisticLandmarkerOptions` calls `Any$Builder.build()` with full protobuf-java's
+signature, so Holistic creation fails with `NoSuchMethodError`. No other task
+makes that call. The plugin excludes javalite and depends on `protobuf-java`
+4.26.1; Face, Hand, Pose, Gesture and Holistic all pass on the emulator with it.
+
+## UP-017 — Image Segmenter stretches the upright mask over a rotated input
+
+**Status:** reproduced September 23 in Google's official 1.0.0 macOS Python
+wheel and the iOS 1.0.1 SDK. Unresolved upstream; the package returns what
+Google's runtimes return.
+
+Given a rotated input and `rotation_degrees`, Image Segmenter segments the
+upright image, then resizes that upright mask to the input's width and height
+instead of turning it back. For `landmark-ex1.jpg` turned a quarter turn, the
+returned category mask agrees with the upright mask turned back on 37% of
+pixels, and with the upright mask resized to the input's shape on 99% (90°:
+0.990, 270°: 0.992, 180°: 0.987, which also comes back unflipped). Pose and
+Holistic masks do turn back correctly (mean difference 0.003 to 0.007), as
+do Interactive Segmenter Legacy's (97% of pixels at 90° and 270°).
+`sdk_segmenter_test.dart` checks rotated inputs against the resized upright
+mask, and the desktop fixture records the same bytes as Google's wheel.
+
+## UP-018 — Mobile SDKs mishandle padded rows in CPU pose masks
+
+**Status:** observed September 23 with Google's 1.0.1 iOS XCFrameworks on the
+simulator (CPU) and Android tasks-vision 1.0.0 on the emulator (CPU). Worked
+around in the iOS adapter; Android fails inside Google's code. Metal and the
+Android GPU are unverified.
+
+MediaPipe's CPU image frames pad each row to 16 bytes, so a float32 mask whose
+width is not a multiple of 4 has padded rows. `MPPPoseLandmarker` and
+`MPPHolisticLandmarker` copy a mask as its first width x height floats, so each
+row after the first starts further into the previous one. Pose's mask for
+`pose.jpg` turned a quarter turn (667 wide) was 0.103 from the upright mask
+turned back; read at the padded stride of 668, it is 0.0074, as in Google's
+Python wheel. The adapter lays CPU pose masks back out at the padded stride;
+the last few values, past the SDK's copy, repeat the row above.
+
+On Android, `PoseLandmarker.detect` itself throws while converting such a mask
+("ImageFrame must store data contiguously to be allocated as ByteBuffer"), so
+no mask reaches the plugin. `sdk_landmark_tasks_test.dart` expects that error
+for the 667-wide case. Holistic's masks take another path and are unaffected
+on Android. Camera frames are rarely affected on either platform, since their
+widths and heights are multiples of 4.
+
+## UP-019 — Android Image Segmenter reports no labels
+
+**Status:** observed September 23 with Android tasks-vision 1.0.0. Worked
+around in `mediapipe_flutter_vision_android`.
+
+`ImageSegmenter.getLabels()` returns an empty list for DeepLab-v3, whose
+metadata carries 21 labels (the C API and the iOS SDK report them). Google's
+`populateLabels` reads them from the segmentation calculator's options in the
+graph config, which `Graph.getCalculatorGraphConfig()` parses with
+`ProtoUtil.getExtensionRegistry()`, an empty registry, so the options extension
+holding the labels is never read. The plugin parses those options again with
+the extension registered and gets all 21 labels in mask order.
+
+## UP-020 — Android Interactive Segmenter Legacy ignores the region of interest
+
+**Status:** observed September 23 with Android tasks-vision 1.0.0 on the
+emulator (CPU). Unresolved upstream; the Android adapter does not serve the
+task.
+
+`InteractiveSegmenterLegacy.segment(image, roi, options)` returned the same
+mask for keypoints (0.5, 0.4), (0.05, 0.05), (0.95, 0.95) and (0.2, 0.8), and
+for a one-point scribble: 99.6% of the portrait sample selected, where
+Google's Python wheel, the iOS SDK and the browser select the subject (57%)
+under (0.5, 0.4). It is the same with Google's declared protobuf-javalite
+instead of this plugin's protobuf-java (UP-016). On Android,
+`InteractiveSegmenterLegacy.create` throws UnsupportedError rather than
+return wrong masks.
+
+## UP-021 — Browser Interactive Segmenter Legacy drops a model buffer
+
+**Status:** observed September 23 with Google's tasks-vision 1.0.1 web bundle in
+Chrome. Worked around in the browser worker.
+
+`InteractiveSegmenterLegacy.createFromOptions` with
+`baseOptions.modelAssetBuffer` fails in the graph ("ExternalFile must specify
+at least one of 'file_content', 'file_name', ..." from
+`image_segmenter_graph.cc`), while the same model as `modelAssetPath` loads.
+Every other task accepts a buffer. The worker hands this task its bytes as a
+temporary Blob URL.
+
+## UP-022: Android Interactive Segmenter drops a model buffer
+
+**Status:** observed September 23 with Google's tasks-vision 1.0.0 Android
+library on an x64 emulator. Worked around in the Android plugin.
+
+The stateful `InteractiveSegmenter.createFromOptions` with
+`BaseOptions.setModelAssetBuffer` fails with the same "ExternalFile must
+specify at least one of 'file_content', 'file_name', ..." error as UP-021,
+while the same model as an absolute `setModelAssetPath` loads and matches
+Google's reference. The plugin writes this task's bytes to a private file in
+the app's cache directory and deletes it when the task closes. Unlike UP-020,
+this task follows its strokes.
+
 ## Integration pitfalls resolved in this repo
 
 These are recorded for continuity, not classified as confirmed MediaPipe defects.

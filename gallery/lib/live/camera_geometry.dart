@@ -166,12 +166,15 @@ class PreviewTransform {
       3 => (y, 1 - x),
       _ => (x, y),
     };
-    final mirrored = mirror ? 1 - rotatedX : rotatedX;
-    return Offset(
-      mirrored * uprightSize.width * scale + offsetX,
-      rotatedY * uprightSize.height * scale + offsetY,
-    );
+    return mapUpright(rotatedX, rotatedY);
   }
+
+  /// Maps a normalized point in the upright frame to the preview box. Image
+  /// Segmenter masks come laid out upright (upstream-issues.md UP-017).
+  Offset mapUpright(double x, double y) => Offset(
+    (mirror ? 1 - x : x) * uprightSize.width * scale + offsetX,
+    y * uprightSize.height * scale + offsetY,
+  );
 
   /// Scales a length given in upright pixels, for radii and stroke widths.
   double scaleLength(double length) => length * scale;

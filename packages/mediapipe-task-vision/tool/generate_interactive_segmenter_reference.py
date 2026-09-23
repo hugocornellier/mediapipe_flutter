@@ -1,5 +1,8 @@
 """Generate masks and ABI facts through Google's unmodified Python 1.0.1 API.
 
+The checked-in fixtures come from the macOS arm64 wheel. The Linux x64 desktop
+job regenerates them in place with the pinned Linux wheel, whose library the
+package bundles there, because CPU results drift between hosts.
 Use a separate environment from the face-task reference environment (1.0.0).
 --python-package-root may point at an extracted, checksum-verified 1.0.1 wheel.
 Ordinary Dart tests need neither Python nor network access for their fixtures.
@@ -35,9 +38,16 @@ def main():
     from mediapipe.tasks.python.core.base_options_c import MpBaseOptionsC
 
     assert mp.__version__ == '1.0.1', mp.__version__
-    assert platform.system() == 'Darwin' and platform.machine() == 'arm64'
-    library = Path(mp.__file__).parent / 'tasks/c/libmediapipe.dylib'
-    assert digest(library.read_bytes()) == LIBRARY_SHA256
+    host = (platform.system(), platform.machine().lower())
+    if host == ('Darwin', 'arm64'):
+        library, library_sha256 = 'libmediapipe.dylib', LIBRARY_SHA256
+    elif host in (('Linux', 'x86_64'), ('Linux', 'amd64')):
+        from cpu_reference import wheel_pin
+        library, library_sha256 = 'libmediapipe.so', wheel_pin('linux/x64')[2]
+    else:
+        raise SystemExit('The stateful API is pinned for macOS arm64 and Linux x64.')
+    library = Path(mp.__file__).parent / 'tasks/c' / library
+    assert digest(library.read_bytes()) == library_sha256
     model = PACKAGE / 'models/interactive_segmentation.task'
     assert digest(model.read_bytes()) == MODEL_SHA256
     fixtures = PACKAGE / 'test/fixtures/interactive_segmentation'
@@ -73,7 +83,7 @@ def main():
     ]
     images = {'file': source, 'rgb': raw, 'rgba': rgba, 'blank': blank}
     report = {'runtime': 'mediapipe==1.0.1', 'delegate': 'CPU',
-              'library_sha256': LIBRARY_SHA256, 'model_sha256': MODEL_SHA256,
+              'library_sha256': library_sha256, 'model_sha256': MODEL_SHA256,
               'image': {'file': photo.name, 'sha256': digest(photo.read_bytes()),
                         'source': 'https://storage.googleapis.com/mediapipe-assets/cats_and_dogs.jpg'},
               'raw': {'file': 'animals-299x150.rgb', 'sha256': digest(pixels.tobytes()),

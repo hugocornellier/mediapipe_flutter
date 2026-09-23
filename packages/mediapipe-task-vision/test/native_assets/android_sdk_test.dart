@@ -50,7 +50,7 @@ void main() {
           OS.android,
           {
             'official_android_sdk': true,
-            'tasks': ['face_detector', 'face_landmarker'],
+            'tasks': ['interactive_segmenter_legacy', 'face_landmarker'],
           },
         ),
         (

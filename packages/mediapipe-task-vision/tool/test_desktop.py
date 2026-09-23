@@ -60,6 +60,8 @@ def main():
     parser.add_argument('--image-tasks', action='store_true')
     parser.add_argument('--landmark-tasks', action='store_true')
     parser.add_argument('--segmenter-tasks', action='store_true')
+    # Linux only: Google's Windows wheel does not export the stateful API.
+    parser.add_argument('--interactive-segmenter', action='store_true')
     args = parser.parse_args()
     system = platform.system()
     target = {'Linux': 'linux', 'Windows': 'windows'}.get(system)
@@ -108,6 +110,15 @@ def main():
         files.append('segmenter_tasks/official_reference.json')
     oracle = generate(root, references, target + '/x64', tasks, files)
     library_sha = oracle['library_sha256']
+    if args.interactive_segmenter:
+        if target != 'linux':
+            raise SystemExit('Google exports the stateful Interactive Segmenter on Linux only.')
+        from prepare_interactive_segmenter import MODEL_SHA256, MODEL_URL
+        download(MODEL_URL, MODEL_SHA256, PACKAGE / 'models/interactive_segmentation.task')
+        # Rewrites the checked-in fixtures with this host's wheel, as above.
+        run([oracle['python'], '-u', '-X', 'faulthandler', '-B',
+             PACKAGE / 'tool/generate_interactive_segmenter_reference.py'],
+            REPO, root / 'interactive_segmenter-reference.log')
     comparisons = oracle['comparisons']
 
     # Package copies exclude source builds, tools, caches and maintenance opt-ins.
@@ -145,6 +156,8 @@ def main():
                     (PACKAGE / 'models/holistic_landmarker.task', 'holistic_landmarker.task'),
                     (landmarks / 'thumb_up.rgb', 'thumb_up.rgb'),
                     (landmarks / 'pose.rgb', 'pose.rgb')]
+    if args.interactive_segmenter:
+        selected.append('interactive_segmenter')
     if args.segmenter_tasks:
         selected += ['image_segmenter', 'interactive_segmenter_legacy']
         bundled += [(PACKAGE / 'models/deeplab_v3.tflite', 'image_segmenter.tflite'),
@@ -195,6 +208,11 @@ flutter:
         # The generator rewrote the raw fixtures with this host's decoder.
         shutil.copytree(PACKAGE / 'test/fixtures/landmark_tasks', app / 'test/fixtures/landmark_tasks')
         shutil.copyfile(PACKAGE / 'test/landmark_tasks_test.dart', app / 'test/landmark_tasks_test.dart')
+    if args.interactive_segmenter:
+        shutil.copytree(PACKAGE / 'test/fixtures/interactive_segmentation',
+                        app / 'test/fixtures/interactive_segmentation')
+        shutil.copyfile(PACKAGE / 'test/interactive_segmenter_test.dart',
+                        app / 'test/interactive_segmenter_test.dart')
     if args.segmenter_tasks:
         # Both segmenter tasks reuse the checked-in face fixtures.
         shutil.copyfile(PACKAGE / 'test/segmenter_tasks_test.dart', app / 'test/segmenter_tasks_test.dart')

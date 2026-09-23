@@ -69,9 +69,10 @@ Three gates, in order:
 Anything bundled but not validated, and anything validated without a screen, is
 listed in the about sheet with the package's own reason rather than hidden.
 
-The visible live tiles depend on the target: Face, Hand and Pose Landmarks are
-available on desktop, and Face and Hand Landmarks on iOS, Android and web.
-macOS also has the MagicTouch image demo.
+The visible tiles depend on the target and follow the package's
+[status table](../packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md):
+each validated task with a screen appears, including the MagicTouch stroke
+editor wherever its runtime runs.
 
 ## Live camera
 
@@ -81,8 +82,7 @@ tasks. It handles desktop RGBA, Apple BGRA and Android YUV camera buffers.
 Windows exposes CPU only. Face and Hand Landmarker also expose GPU on Linux,
 Apple platforms, Android and web.
 Web uses browser-native capture and transferable bitmaps while sharing these
-controls and the same overlay painter. Web GPU requires worker WebGL 2 support;
-other web tasks are not enabled yet.
+controls and the same overlay painter. Web GPU requires worker WebGL 2 support.
 
 ## Tests
 

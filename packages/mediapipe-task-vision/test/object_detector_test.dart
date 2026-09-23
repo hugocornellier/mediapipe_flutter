@@ -22,7 +22,11 @@ void main() {
       // kernels, but its macOS CPU results still differ from Google's official
       // 1.0.0 outputs beyond tolerance, while Metal matches them exactly.
       // See upstream-issues.md UP-001/UP-004.
-      skip: delegate == VisionDelegate.cpu && Platform.isMacOS
+      skip:
+          delegate == VisionDelegate.cpu &&
+              Platform.isMacOS &&
+              Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
+                  '1'
           ? 'macOS source-build CPU output is unvalidated; see UP-004'
           : delegate == VisionDelegate.gpu && !Platform.isMacOS
           ? 'GPU object inference is validated on macOS only.'
@@ -37,7 +41,10 @@ void main() {
     );
   });
 
-  if (Platform.isMacOS) {
+  // Google's official macOS runtime serves CPU; the source runtime refuses it.
+  if (Platform.isMacOS &&
+      Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
+          '1') {
     test(
       'the unvalidated CPU path is rejected before native initialization',
       () async {

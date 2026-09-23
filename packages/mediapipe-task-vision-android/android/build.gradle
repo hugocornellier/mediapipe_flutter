@@ -18,6 +18,13 @@ android {
 }
 repositories { google(); mavenCentral() }
 dependencies {
-    implementation 'com.google.mediapipe:tasks-vision:1.0.0'
+    // Google's 1.0.0 POMs declare protobuf-javalite, but Holistic Landmarker's
+    // options were compiled against full protobuf-java and fail at runtime
+    // with NoSuchMethodError on Any$Builder.build(). Same version, full runtime:
+    // https://github.com/google-ai-edge/mediapipe/issues/6348
+    implementation('com.google.mediapipe:tasks-vision:1.0.0') {
+        exclude group: 'com.google.protobuf', module: 'protobuf-javalite'
+    }
+    implementation 'com.google.protobuf:protobuf-java:4.26.1'
     implementation 'androidx.exifinterface:exifinterface:1.3.7'
 }

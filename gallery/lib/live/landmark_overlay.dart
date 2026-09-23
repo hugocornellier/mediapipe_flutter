@@ -3,11 +3,13 @@ import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 import 'camera_geometry.dart';
 
-/// One set of landmarks and the official edges joining them.
+/// One set of landmarks and the official edges joining them, with an
+/// optional [label] drawn beside the first landmark.
 typedef LandmarkFigure = ({
   List<VisionLandmark> landmarks,
   List<(int, int)> edges,
   Color color,
+  String? label,
 });
 
 /// Paints any landmark task's output.
@@ -52,6 +54,22 @@ class LandmarkOverlay extends CustomPainter {
           canvas.drawCircle(at(i), 2.5, dot);
         }
       }
+      if (figure.label case final label?) {
+        final text = TextPainter(
+          text: TextSpan(
+            text: label,
+            style: TextStyle(
+              color: figure.color,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              shadows: const [Shadow(blurRadius: 3)],
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        text.paint(canvas, at(0) + const Offset(8, 8));
+        text.dispose();
+      }
     }
   }
 
@@ -67,19 +85,46 @@ class LandmarkOverlay extends CustomPainter {
 List<LandmarkFigure> figuresFor(Object? result) => switch (result) {
   final HandLandmarkerResult hands => [
     for (var i = 0; i < hands.handLandmarks.length; i++)
-      (
-        landmarks: hands.handLandmarks[i],
-        edges: HandLandmarkConnections.all,
-        color: i == 0 ? const Color(0xFF63E6BE) : const Color(0xFFFFD166),
+      _hand(hands.handLandmarks[i], i),
+  ],
+  // The top gesture is written at each hand's wrist.
+  final GestureRecognizerResult gestures => [
+    for (var i = 0; i < gestures.handLandmarks.length; i++)
+      _hand(
+        gestures.handLandmarks[i],
+        i,
+        label: gestures.gestures.elementAtOrNull(i)?.firstOrNull?.categoryName,
       ),
   ],
   final PoseLandmarkerResult poses => [
-    for (final landmarks in poses.poseLandmarks)
-      (
-        landmarks: landmarks,
-        edges: PoseLandmarkConnections.all,
-        color: const Color(0xFF8AB4FF),
-      ),
+    for (final landmarks in poses.poseLandmarks) _pose(landmarks),
+  ],
+  // One person: body, both hands, and the face mesh as points.
+  final HolisticLandmarkerResult person => [
+    _pose(person.poseLandmarks),
+    _hand(person.leftHandLandmarks, 0),
+    _hand(person.rightHandLandmarks, 1),
+    (
+      landmarks: person.faceLandmarks,
+      edges: FaceLandmarkConnections.contours,
+      color: const Color(0xFFF4A8FF),
+      label: null,
+    ),
   ],
   _ => const [],
 };
+
+LandmarkFigure _hand(List<VisionLandmark> landmarks, int i, {String? label}) =>
+    (
+      landmarks: landmarks,
+      edges: HandLandmarkConnections.all,
+      color: i == 0 ? const Color(0xFF63E6BE) : const Color(0xFFFFD166),
+      label: label,
+    );
+
+LandmarkFigure _pose(List<VisionLandmark> landmarks) => (
+  landmarks: landmarks,
+  edges: PoseLandmarkConnections.all,
+  color: const Color(0xFF8AB4FF),
+  label: null,
+);

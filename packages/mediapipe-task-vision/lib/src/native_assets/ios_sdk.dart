@@ -11,7 +11,16 @@ import 'package:mediapipe_flutter_core/native_assets.dart';
 const officialIosTasks = {
   'face_detector',
   'face_landmarker',
+  'gesture_recognizer',
   'hand_landmarker',
+  'holistic_landmarker',
+  'image_classifier',
+  'image_embedder',
+  'image_segmenter',
+  'interactive_segmenter',
+  'interactive_segmenter_legacy',
+  'object_detector',
+  'pose_landmarker',
 };
 
 /// Google 1.0.1 XCFrameworks, pinned from upstream's Package.swift.

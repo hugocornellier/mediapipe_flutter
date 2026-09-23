@@ -36,8 +36,13 @@ void main() {
     for (final tile in tiles) {
       final task = liveDemoFor(tile.id)!.task();
       final model = await rootBundle.load('assets/models/${tile.model}');
+      final delegates = tile
+          .capabilitiesFor(platform, assets.officialMacosLandmarkTasks)
+          .supportedDelegates;
       await task.open(
-        VisionDelegate.cpu,
+        delegates.contains(VisionDelegate.cpu)
+            ? VisionDelegate.cpu
+            : delegates.first,
         model.buffer.asUint8List(model.offsetInBytes, model.lengthInBytes),
       );
       final result = await task.detect(
@@ -50,5 +55,8 @@ void main() {
       visited.add(tile.id);
     }
     expect(visited, hasLength(tiles.length));
+    // The record of which tiles this platform opened.
+    // ignore: avoid_print
+    print('RUNTIME_TILES ${visited.join(',')}');
   });
 }

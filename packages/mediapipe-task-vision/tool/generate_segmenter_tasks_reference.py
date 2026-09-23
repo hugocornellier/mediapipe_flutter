@@ -23,21 +23,30 @@ MODELS = {
 }
 # A point on the subject of portrait-301x209, in normalized image coordinates.
 KEYPOINT = (0.5, 0.4)
+# Coarse views of each file-input mask, for runtimes whose bytes differ from
+# this wheel's: the mobile SDKs and the browser decode the JPEG themselves and
+# run other builds. (columns, rows) of cell means for confidence masks that
+# reach 0.5 somewhere, and of cell-centre classes for category masks.
+CONFIDENCE_GRID = (16, 12)
+CATEGORY_GRID = (32, 24)
 
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def mask_output(mask, float32):
+def mask_array(mask, float32):
     if float32:
         # In 1.0.0, float32's contiguous-copy path calls the uint8 ImageFrame
         # overload and aborts for padded rows. Scalar access is safe on both.
-        data = mask.numpy_view().copy() if mask.is_contiguous() else np.asarray(
+        return mask.numpy_view().copy() if mask.is_contiguous() else np.asarray(
             [[mask[y, x] for x in range(mask.width)] for y in range(mask.height)],
             dtype=np.float32)
-    else:
-        data = mask.numpy_view().copy()
+    return mask.numpy_view().copy()
+
+
+def mask_output(mask, float32):
+    data = mask_array(mask, float32)
     # The same native library fills both sides on this host, so the exact bytes
     # are comparable; the summary only makes a mismatch readable.
     return dict(width=mask.width, height=mask.height,
@@ -53,6 +62,36 @@ def result_output(result):
     return dict(
         confidence_masks=None if masks is None else [mask_output(v, True) for v in masks],
         category_mask=None if category is None else mask_output(category, False))
+
+
+def coarse_output(result):
+    output = {}
+    masks = getattr(result, 'confidence_masks', None)
+    if masks is not None:
+        columns, rows = CONFIDENCE_GRID
+        grids = {}
+        for index, mask in enumerate(masks):
+            data = mask_array(mask, True).reshape(mask.height, mask.width)
+            if data.max() < 0.5:
+                continue
+            grids[str(index)] = [
+                [round(float(data[r * mask.height // rows:(r + 1) * mask.height // rows,
+                                  c * mask.width // columns:(c + 1) * mask.width // columns]
+                             .mean(dtype=np.float64)), 4) for c in range(columns)]
+                for r in range(rows)]
+        output['confidence_grids'] = grids
+    category = getattr(result, 'category_mask', None)
+    if category is not None:
+        data = mask_array(category, False).reshape(category.height, category.width)
+        columns, rows = CATEGORY_GRID
+        output['category_grid'] = [
+            [int(data[(2 * r + 1) * category.height // (2 * rows),
+                      (2 * c + 1) * category.width // (2 * columns)]) for c in range(columns)]
+            for r in range(rows)]
+        values, counts = np.unique(data, return_counts=True)
+        output['category_shares'] = {str(int(v)): round(int(n) / data.size, 6)
+                                     for v, n in zip(values, counts)}
+    return output
 
 
 def main():
@@ -85,7 +124,8 @@ def main():
         case = dict(task=task_name, input=kind, width=image.width, height=image.height,
                     options=configuration, result=result_output(result), **extra)
         if kind == 'file':
-            case.update(file='landmark-ex1.jpg', sha256=digest(FIXTURES / 'landmark-ex1.jpg'))
+            case.update(file='landmark-ex1.jpg', sha256=digest(FIXTURES / 'landmark-ex1.jpg'),
+                        coarse=coarse_output(result))
         elif kind != 'blank':
             case.update(raw=raw.name, sha256=digest(raw))
         cases.append(case)

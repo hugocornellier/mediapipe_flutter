@@ -8,7 +8,17 @@ vision = Path(__file__).resolve().parents[2] / 'mediapipe-task-vision'
 source = (vision / 'lib/models.dart').read_text()
 # Dart constant prefix -> file name, for every task the browser adapter serves.
 MODELS = {'faceLandmarker': 'face_landmarker.task',
-          'handLandmarker': 'hand_landmarker.task'}
+          'handLandmarker': 'hand_landmarker.task',
+          'poseLandmarkerLite': 'pose_landmarker_lite.task',
+          'gestureRecognizer': 'gesture_recognizer.task',
+          'holisticLandmarker': 'holistic_landmarker.task',
+          'blazeFaceShortRange': 'blaze_face_short_range.tflite',
+          'efficientDetLite0': 'efficientdet_lite0.tflite',
+          'efficientNetLite0': 'efficientnet_lite0.tflite',
+          'mobileNetV3Small': 'mobilenet_v3_small.tflite',
+          'deepLabV3': 'deeplab_v3.tflite',
+          'magicTouch': 'magic_touch.tflite',
+          'interactiveSegmenterModel': 'interactive_segmentation.task'}
 for constant, name in MODELS.items():
     block = re.search(constant + r"Url\s*=\s*((?:'[^']*'\s*)+);", source).group(1)
     url = ''.join(re.findall(r"'([^']*)'", block))

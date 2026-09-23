@@ -24,20 +24,27 @@ The physical Pixel 7 / Android 13 Test Lab campaign validates both delegates,
 including front/back camera frames and delegate switching; see
 [the Test Lab guide](../../gallery/tool/ANDROID_FACE_TESTLAB.md).
 
+**All twelve vision tasks** run through Google's official runtimes on web, iOS,
+Android, macOS, Linux and Windows, with two exceptions caused by Google's
+runtimes. [The status table](tool/VISION_TASKS_STATUS.md) lists each task's
+targets and GPU paths, the evidence behind them, and those upstream limits.
+
 **Hand Landmarker** runs on every target through Google's official runtimes:
 the Linux and Windows wheels, the opt-in macOS runtime, the iOS SDK adapter,
 and the Android and web adapter packages. GPU is available everywhere except
 Windows. See [its status matrix](tool/HAND_LANDMARKER_STATUS.md) for what each
 platform's evidence covers.
 
-**MagicTouch Interactive Segmenter** is an optional macOS arm64 CPU task using
-Google's modern stateful 1.0.1 API and official int8 version-1 task bundle.
-It selects arbitrary objects from positive, negative and lasso strokes.
-It requires macOS 14 or newer. See [the segmenter guide](tool/INTERACTIVE_SEGMENTER.md)
-for the API, model, packaging and validation details. Run `make example_segmenter`
-from the repository root for the macOS image editor.
+**MagicTouch Interactive Segmenter** uses Google's modern stateful 1.0.1 API
+and official int8 version-1 task bundle. It selects arbitrary objects from
+positive, negative and lasso strokes, on CPU, on macOS arm64 (macOS 14 or
+newer), Linux x64, iOS, Android and the web. Google's Windows runtime does not
+include it. See [the segmenter guide](tool/INTERACTIVE_SEGMENTER.md) for the API,
+model, packaging and validation details. Run `make example_segmenter` from the
+repository root for the macOS image editor; the gallery has the same editor on
+every supported target.
 
-MagicTouch apps must also enable
+On macOS, MagicTouch apps must also enable
 `hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`. Core bundles the
 official 1.0.1 library once, shared with EmbeddingGemma when both tasks are used.
 Existing segmenter apps should add this setting and run `flutter clean` after
@@ -63,7 +70,8 @@ and [upstream issue #6356](https://github.com/google-ai-edge/mediapipe/issues/63
 On Linux x64 and Windows x64 the build hook downloads the native library from
 Google's official PyPI wheel, then extracts it and verifies it by digest:
 `mediapipe==1.0.1` on Linux (the first Linux wheel built with GPU) and
-`mediapipe==1.0.0` on Windows. Both run all eleven vision tasks on CPU.
+`mediapipe==1.0.0` on Windows. Both run every vision task on CPU, except the
+stateful Interactive Segmenter on Windows, whose wheel does not export it.
 
 The Linux runtime links the system EGL and OpenGL ES libraries, even for CPU
 inference. If they are missing (for example in a minimal container), creating a

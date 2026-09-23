@@ -87,11 +87,12 @@ jobs:
             build/codex-tmp/android-reference/provenance.json
           if-no-files-found: warn
 
-  # Hand Landmarker runs through Google's Android SDK (tasks-vision 1.0.0) and
-  # mediapipe_flutter_vision_android, so this job needs no source build. The
-  # emulator runs it on the CPU only; see gallery/tool/test_android_hand.sh.
-  hand-sdk:
-    name: Hand Landmarker / official Android SDK on an x64 emulator
+  # Hand, Pose, Gesture, Holistic, Face and Object Detector, Image Classifier
+  # and Image Embedder run through Google's Android SDK (tasks-vision 1.0.0) and
+  # mediapipe_flutter_vision_android, so this job needs no source build. The emulator runs them on the CPU only; see
+  # gallery/tool/test_android_sdk_tasks.sh.
+  sdk-tasks:
+    name: Landmark, detection and classification tasks / official Android SDK on an x64 emulator
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -112,21 +113,27 @@ jobs:
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
-      - name: Download the hand model
+      - name: Download the official SDK task models
         working-directory: packages/mediapipe-task-vision
         run: |
           dart pub get
           dart tool/download_landmark_tasks.dart
-      - name: Prepare the gallery with the hand task only
+          dart tool/download_model.dart
+          dart tool/download_image_tasks.dart
+          dart tool/download_object_detector.dart
+          dart tool/download_segmenter_tasks.dart
+          dart tool/download_interactive_segmenter.dart
+      - name: Prepare the gallery with the official SDK tasks
         run: |
-          python3 -B gallery/tool/prepare.py --target android/x64 --tasks hand_landmarker
+          python3 -B gallery/tool/prepare.py --target android/x64 \
+            --tasks hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter
           cd gallery && flutter pub get
       - name: Enable Android emulator hardware acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Official references, pixel formats, rotation, VIDEO and the gallery camera
+      - name: Official references, pixel formats, rotation, VIDEO, camera and every live tile
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -134,4 +141,4 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated
-          script: bash gallery/tool/test_android_hand.sh emulator-5554
+          script: bash gallery/tool/test_android_sdk_tasks.sh emulator-5554

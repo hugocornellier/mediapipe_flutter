@@ -1,11 +1,16 @@
-# MediaPipe browser Face and Hand Landmarker
+# MediaPipe browser vision tasks
 
 Flutter web adapter for Google's unmodified **@mediapipe/tasks-vision 1.0.1**
 JavaScript/WASM distribution. FaceLandmarker supports CPU and GPU IMAGE and VIDEO modes,
 478 landmarks, optional 52 blendshapes and column-major facial transforms.
 HandLandmarker supports the same modes and delegates, with 21 image and world
-landmarks and handedness per hand. Other tasks are not exposed by this adapter
-yet. Select GPU in the live gallery
+landmarks and handedness per hand. The adapter serves every other vision task
+too, through the same worker: Pose, Gesture and Holistic Landmarker, Face and
+Object Detector, Image Classifier and Embedder, Image Segmenter and both
+Interactive Segmenters (the stroke-based one on CPU only). Masks travel to Dart
+as transferred buffers. See
+[the status table](../mediapipe-task-vision/tool/VISION_TASKS_STATUS.md).
+Select GPU in the live gallery
 or use `delegate: VisionDelegate.gpu`. GPU uses the official WebGL 2 delegate
 on an `OffscreenCanvas` owned by the inference worker. A browser without worker
 WebGL 2 support reports an error; choose CPU to recover. GPU never silently

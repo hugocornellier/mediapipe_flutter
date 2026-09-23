@@ -81,13 +81,15 @@ jobs:
             build/codex-tmp/ios-consumer-*/report.json
           if-no-files-found: warn
 
-  # Hand Landmarker runs through Google's prebuilt 1.0.1 iOS SDK, so this job
-  # needs no source build. The simulator runs it on the CPU only: Google's SDK
-  # aborts in its Metal preprocessing there. Metal is a phone check.
-  hand-sdk:
-    name: Hand Landmarker / official iOS SDK on an arm64 simulator
+  # Hand, Pose, Gesture, Holistic, Face and Object Detector, Image Classifier
+  # and Image Embedder run through Google's prebuilt 1.0.1 iOS SDK, so this job needs
+  # no source build. The simulator runs them on the CPU
+  # only: Google's SDK aborts in its Metal preprocessing there. Metal is a
+  # phone check.
+  sdk-tasks:
+    name: Landmark, detection and classification tasks / official iOS SDK on an arm64 simulator
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
@@ -98,18 +100,24 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Download the hand model
+      - name: Download the official SDK task models
         working-directory: packages/mediapipe-task-vision
         run: |
           dart pub get
           dart tool/download_landmark_tasks.dart
+          dart tool/download_model.dart
+          dart tool/download_image_tasks.dart
+          dart tool/download_object_detector.dart
+          dart tool/download_segmenter_tasks.dart
+          dart tool/download_interactive_segmenter.dart
       - uses: actions/cache@v4
         with:
           path: gallery/.dart_tool/hooks_runner/shared/mediapipe_flutter_vision/build/official-ios-sdk/*/sdk.zip
           key: official-ios-sdk-${{ hashFiles('packages/mediapipe-task-vision/sdk_downloads.dart') }}
-      - name: Prepare the gallery with the hand task only
+      - name: Prepare the gallery with the official SDK tasks
         run: |
-          python3 -B gallery/tool/prepare.py --target ios-simulator/arm64 --tasks hand_landmarker
+          python3 -B gallery/tool/prepare.py --target ios-simulator/arm64 \
+            --tasks hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,interactive_segmenter_legacy
           cd gallery && flutter pub get
       - name: Boot an installed iPhone simulator
         id: simulator
@@ -128,15 +136,33 @@ jobs:
           xcrun simctl boot "$device"
           xcrun simctl bootstatus "$device" -b
           echo "device=$device" >> "$GITHUB_OUTPUT"
-      - name: Official references, pixel formats, rotation, VIDEO and the gallery
+      - name: Official references, pixel formats, rotation, VIDEO and every live tile
         working-directory: gallery
         run: |
-          flutter test -d ${{ steps.simulator.outputs.device }} \
-            integration_test/sdk_hand_landmarker_test.dart \
-            --dart-define=SDK_GPU=skip --reporter expanded 2>&1 | tee hand-ios-simulator.log
+          device=${{ steps.simulator.outputs.device }}
+          for test in sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test runtime_test; do
+            for attempt in 1 2; do
+              status=0
+              # A hosted simulator sometimes stalls while loading the app and
+              # never starts the tests. Each file finishes in minutes, so a
+              # file that takes 15 runs once more on a rebooted simulator.
+              perl -e 'alarm shift; exec @ARGV' 900 flutter test -d "$device" \
+                integration_test/$test.dart \
+                --dart-define=SDK_GPU=skip --reporter expanded 2>&1 | tee -a sdk-ios-simulator.log || status=$?
+              [ "$status" = 0 ] && break
+              if [ "$status" = 142 ] && [ "$attempt" = 1 ]; then
+                echo "$test stalled; rebooting the simulator and retrying"
+                xcrun simctl shutdown "$device" || true
+                xcrun simctl boot "$device"
+                xcrun simctl bootstatus "$device" -b
+                continue
+              fi
+              exit "$status"
+            done
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ios-simulator-hand-sdk
-          path: gallery/hand-ios-simulator.log
+          name: ios-simulator-sdk-tasks
+          path: gallery/sdk-ios-simulator.log
           if-no-files-found: warn

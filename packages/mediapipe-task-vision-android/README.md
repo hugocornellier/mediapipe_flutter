@@ -1,4 +1,4 @@
-Android Face Landmarker and Hand Landmarker adapter for `mediapipe_flutter_vision`. It uses Google's
+Android vision task adapter for `mediapipe_flutter_vision`. It uses Google's
 released `com.google.mediapipe:tasks-vision:1.0.0` Java/JNI SDK with its original
 task graph. Creation, IMAGE/VIDEO inference and disposal run on one executor
 thread, including GPU context ownership. GPU errors propagate without CPU fallback.
@@ -16,15 +16,20 @@ hooks:
   user_defines:
     mediapipe_flutter_vision:
       official_android_sdk: true
-      tasks: [face_landmarker, hand_landmarker]
+      tasks: [face_landmarker, hand_landmarker] # any of the served tasks
 ```
 
-Flutter registers the adapter automatically. The public `FaceLandmarker` and
-`HandLandmarker` `create`, `detectImage`, `detectForVideo` and `dispose` APIs
-stay the same. Android 24 or later is required. This SDK selection supports
-these two tasks only; it avoids loading the source-built MediaPipe runtime into
-the same process. Hand Landmarker has run on an emulator's CPU so far; see
-[its status](../mediapipe-task-vision/tool/HAND_LANDMARKER_STATUS.md).
+Flutter registers the adapter automatically, and the public task APIs stay the
+same. Android 24 or later is required. The SDK serves every vision task except
+the point-based Interactive Segmenter Legacy, which Google's 1.0.0 Android task
+cannot run correctly (it ignores the keypoint; upstream-issues.md UP-020). The
+selection avoids loading the source-built MediaPipe runtime into the same
+process. Face Landmarker has run on a physical Pixel 7; the other tasks have run
+on an emulator's CPU so far. See
+[the status table](../mediapipe-task-vision/tool/VISION_TASKS_STATUS.md).
+
+Segmentation masks travel from native memory over a separate binary channel,
+because one frame's DeepLab masks can outgrow the Java heap.
 
 File input applies EXIF orientation. Pixel input supports RGB, RGBA and BGRA
 with row padding. Alpha is ignored and input RGB values are preserved in an

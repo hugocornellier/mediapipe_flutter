@@ -47,7 +47,18 @@ jobs:
         run: |
           flutter pub get
           flutter analyze lib test
-          flutter test --platform chrome
+          # Chrome sometimes never connects to flutter test on a hosted runner,
+          # which then waits out the job's timeout; the suite takes seconds, so
+          # a five-minute hang is retried once.
+          for attempt in 1 2; do
+            status=0
+            timeout 300 flutter test --platform chrome || status=$?
+            if [ "$status" = 124 ] && [ "$attempt" = 1 ]; then
+              echo "flutter test --platform chrome hung; retrying"
+              continue
+            fi
+            exit "$status"
+          done
       - name: Analyze shared native and browser APIs
         working-directory: packages/mediapipe-task-vision
         run: flutter analyze lib

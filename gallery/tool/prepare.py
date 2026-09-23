@@ -45,14 +45,32 @@ ANDROID_TASKS = {'face_detector', 'face_landmarker'}
 
 # Tasks the mediapipe_flutter_vision_android plugin runs through Google's
 # official SDK; see hook/build.dart officialAndroidTasks.
-OFFICIAL_ANDROID_TASKS = {'face_landmarker', 'hand_landmarker'}
+OFFICIAL_ANDROID_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
+                          'hand_landmarker', 'holistic_landmarker', 'image_classifier',
+                          'image_embedder', 'image_segmenter', 'interactive_segmenter',
+                          'object_detector', 'pose_landmarker'}
+
+# Tasks validated on Google's official macOS runtime; see the vision package's
+# sdk_downloads.dart officialMacosLandmarkRuntime.
+OFFICIAL_MACOS_TASKS = {'face_landmarker', 'gesture_recognizer', 'hand_landmarker',
+                        'holistic_landmarker', 'image_classifier', 'image_embedder',
+                        'image_segmenter', 'interactive_segmenter_legacy',
+                        'object_detector', 'pose_landmarker'}
 
 # Tasks our adapter serves over Google's official iOS SDK; see
 # lib/src/native_assets/ios_sdk.dart officialIosTasks.
-OFFICIAL_IOS_TASKS = {'face_detector', 'face_landmarker', 'hand_landmarker'}
+OFFICIAL_IOS_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
+                      'hand_landmarker', 'holistic_landmarker', 'image_classifier',
+                      'image_embedder', 'image_segmenter', 'interactive_segmenter',
+                      'interactive_segmenter_legacy', 'object_detector',
+                      'pose_landmarker'}
 
 # Tasks the browser adapter runs on Google's official web runtime.
-WEB_TASKS = {'face_landmarker', 'hand_landmarker'}
+WEB_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
+             'hand_landmarker', 'holistic_landmarker', 'image_classifier',
+             'image_embedder', 'image_segmenter', 'interactive_segmenter',
+             'interactive_segmenter_legacy', 'object_detector',
+             'pose_landmarker'}
 
 # The stateful MagicTouch runtime lives in mediapipe-core's tasks runtime,
 # which is published for macOS arm64 only, and the hook wants it opted into
@@ -174,8 +192,7 @@ def prepare(target, selected):
         shutil.copyfile(source, assets / name)
         bundled[task] = name
     if (target == 'macos/arm64'
-            and {'face_landmarker', 'hand_landmarker',
-                 'pose_landmarker'} & bundled.keys()):
+            and OFFICIAL_MACOS_TASKS & bundled.keys()):
         subprocess.run([
             sys.executable, '-B',
             str(VISION / 'tool/prepare_official_macos_landmark_runtime.py'),
@@ -188,8 +205,7 @@ def prepare(target, selected):
         shutil.copyfile(VISION / 'test/fixtures' / source, samples / name)
 
     official_landmarks = (target == 'macos/arm64'
-                          and {'face_landmarker', 'hand_landmarker',
-                               'pose_landmarker'} & bundled.keys())
+                          and OFFICIAL_MACOS_TASKS & bundled.keys())
     official_android = (target.startswith('android') and bundled
                         and set(bundled) <= OFFICIAL_ANDROID_TASKS)
     if target == 'web':
@@ -200,8 +216,7 @@ def prepare(target, selected):
         'models': bundled,
         'samples': sorted(SAMPLES.values()),
         'official_macos_landmark_tasks': sorted(
-            {'face_landmarker', 'hand_landmarker', 'pose_landmarker'}
-            & bundled.keys()) if official_landmarks else [],
+            OFFICIAL_MACOS_TASKS & bundled.keys()) if official_landmarks else [],
         'official_ios_sdk': '1.0.1' if target.startswith('ios') else None,
         'official_android_sdk': '1.0.0' if official_android else None,
         'official_web_sdk': '1.0.1' if target == 'web' else None,
@@ -225,7 +240,12 @@ def prepare(target, selected):
     # The hook refuses the stateful MagicTouch task unless its shared runtime is
     # opted into explicitly, on the core package rather than the vision one.
     core = ('    mediapipe_flutter_core:\n      tasks_runtime: true\n'
-            if SHARED_RUNTIME_TASK in bundled else '')
+            if SHARED_RUNTIME_TASK in bundled and target in SHARED_RUNTIME_TARGETS
+            else '')
+    # On the web, Google's JavaScript runs the stateful task. Host-side builds
+    # such as `flutter test --platform chrome` still run the native hook, which
+    # must not be asked for a runtime this app never loads.
+    native_tasks = sorted(set(bundled) - ({SHARED_RUNTIME_TASK} if target == 'web' else set()))
     official_landmarks_define = (
         '      official_macos_landmark_tasks: true\n'
         if official_landmarks else '')
@@ -263,7 +283,7 @@ dev_dependencies:
 hooks:
   user_defines:
 {core}    mediapipe_flutter_vision:
-{official_landmarks_define}{official_ios_define}{official_android_define}      tasks: [{', '.join(sorted(bundled))}]
+{official_landmarks_define}{official_ios_define}{official_android_define}      tasks: [{', '.join(native_tasks)}]
 
 flutter:
   uses-material-design: true
@@ -342,8 +362,8 @@ def main():
     if (target.startswith('android') and selected - ANDROID_TASKS
             and not selected <= OFFICIAL_ANDROID_TASKS):
         # One app uses either the official plugin or the source-built runtime.
-        raise SystemExit('On Android, hand_landmarker runs only through the '
-                         'official SDK plugin, which serves '
+        raise SystemExit('On Android, tasks beyond the source-built face tasks '
+                         'run only through the official SDK plugin, which serves '
                          f'{sorted(OFFICIAL_ANDROID_TASKS)} only.')
     if not selected:
         raise SystemExit(f'No vision runtime is available for {target}.')

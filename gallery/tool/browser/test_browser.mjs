@@ -202,7 +202,9 @@ async function apiChecks() {
   const page = await browser.newPage();
   observe(page);
   await page.goto(apiBase + (delegate === 'GPU' ? '?delegate=gpu' : ''));
-  await wait(page, () => window.mediapipeApiTestReport);
+  // The probe runs every browser task. Hosted runners emulate WebGL in
+  // software, so the GPU pass can take minutes there.
+  await wait(page, () => window.mediapipeApiTestReport, null, 300000);
   const api = await page.evaluate(() => window.mediapipeApiTestReport);
   fs.writeFileSync(path.join(evidence, 'api-report.json'), JSON.stringify(api, null, 2));
   assert.equal(api.status, 'passed', JSON.stringify(api));
@@ -271,10 +273,202 @@ async function apiChecks() {
     handErrors[group] = Math.max(...actual.map((value, i) => Math.abs(value - expected[i])));
     assert.ok(handErrors[group] < 1e-5, 'hand ' + group + ' differs from official JavaScript: ' + handErrors[group]);
   }
+  // Pose, Gesture and Holistic the same way: a fresh official task, run once
+  // on the sample the Dart probe used. Holistic's IMAGE mode keeps state, so
+  // only first calls are comparable.
+  const landmarkTasks = await page.evaluate(async delegate => {
+    const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
+    const vision = await import(new URL('vision_bundle.mjs', runtime));
+    const files = await vision.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
+    const points = list => (list ?? []).map(p => [p.x, p.y, p.z]);
+    const run = async (type, model, sample, options, method, parts) => {
+      const task = await vision[type].createFromOptions(files, {
+        baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/' + model, document.baseURI).href},
+        runningMode: 'IMAGE', ...options,
+      });
+      const response = await fetch(new URL('assets/assets/samples/' + sample, document.baseURI));
+      const bitmap = await createImageBitmap(await response.blob());
+      try {
+        const result = task[method](bitmap);
+        return {width: bitmap.width, height: bitmap.height, parts: parts(result),
+          gesture: result.gestures?.[0]?.[0]?.categoryName};
+      } finally {bitmap.close(); task.close();}
+    };
+    return {
+      pose: await run('PoseLandmarker', 'pose_landmarker_lite.task', 'pose.jpg', {}, 'detect', r => ({
+        landmarks: points(r.landmarks[0]), world: points(r.worldLandmarks[0])})),
+      gesture: await run('GestureRecognizer', 'gesture_recognizer.task', 'thumb_up.jpg', {numHands: 2}, 'recognize', r => ({
+        landmarks: points(r.landmarks[0]), world: points(r.worldLandmarks[0]),
+        gesture_score: [[r.gestures[0][0].score]]})),
+      holistic: await run('HolisticLandmarker', 'holistic_landmarker.task', 'pose.jpg', {}, 'detect', r => ({
+        pose: points(r.poseLandmarks[0]), pose_world: points(r.poseWorldLandmarks[0]),
+        left_hand: points(r.leftHandLandmarks[0]), right_hand: points(r.rightHandLandmarks[0]),
+        face: points(r.faceLandmarks[0])})),
+    };
+  }, delegate);
+  fs.writeFileSync(path.join(evidence, 'official-js-landmark-tasks-reference.json'), JSON.stringify(landmarkTasks, null, 2));
+  const landmarkTaskErrors = {};
+  for (const [name, expected] of Object.entries(landmarkTasks)) {
+    const actual = api.landmark_tasks[name];
+    assert.equal(actual.width, expected.width, name);
+    assert.equal(actual.height, expected.height, name);
+    if (expected.gesture) assert.equal(actual.gesture, expected.gesture);
+    landmarkTaskErrors[name] = {};
+    for (const [part, values] of Object.entries(expected.parts)) {
+      const got = actual.parts[part].flat();
+      const want = values.flat();
+      assert.equal(got.length, want.length, name + ' ' + part);
+      const error = want.length ? Math.max(...got.map((value, i) => Math.abs(value - want[i]))) : 0;
+      landmarkTaskErrors[name][part] = error;
+      assert.ok(error < 1e-5, name + ' ' + part + ' differs from official JavaScript: ' + error);
+    }
+  }
+  // Face Detector, Object Detector and Image Classifier the same way. Google's
+  // boxes are float pixels; the Dart API truncates them, as its C API does.
+  const detectionTasks = await page.evaluate(async delegate => {
+    const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
+    const vision = await import(new URL('vision_bundle.mjs', runtime));
+    const files = await vision.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
+    const response = await fetch(new URL('assets/assets/samples/portrait.jpg', document.baseURI));
+    const bitmap = await createImageBitmap(await response.blob());
+    const open = (type, model, options) => vision[type].createFromOptions(files, {
+      baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/' + model, document.baseURI).href},
+      runningMode: 'IMAGE', ...options,
+    });
+    const boxes = detections => detections.map(d => {
+      const b = d.boundingBox;
+      return {box: [Math.trunc(b.originX), Math.trunc(b.originY), Math.trunc(b.originX + b.width),
+        Math.trunc(b.originY + b.height)], score: d.categories[0].score,
+        name: d.categories[0].categoryName || null, keypoints: d.keypoints.map(k => [k.x, k.y])};
+    });
+    const top = result => result.classifications[0].categories.map(c => ({score: c.score, name: c.categoryName}));
+    // The category and the person (15) confidence at the centres of a 16 x 12
+    // grid, as web_api_probe.dart samples them.
+    const segmentation = (result, index = 15) => {
+      const category = result.categoryMask;
+      const classes = category.getAsUint8Array();
+      const person = result.confidenceMasks[index].getAsFloat32Array();
+      const values = [];
+      for (let r = 0; r < 12; r++) {
+        for (let c = 0; c < 16; c++) {
+          const x = Math.floor((2 * c + 1) * category.width / 32);
+          const y = Math.floor((2 * r + 1) * category.height / 24);
+          values.push(classes[y * category.width + x], person[y * category.width + x]);
+        }
+      }
+      result.close();
+      return {values};
+    };
+    // A pose segmentation mask sampled on the same grid.
+    const poseMask = (result, field) => {
+      const mask = result[field][0];
+      const data = mask.getAsFloat32Array();
+      const values = [];
+      for (let r = 0; r < 12; r++) {
+        for (let c = 0; c < 16; c++) {
+          values.push(data[Math.floor((2 * r + 1) * mask.height / 24) * mask.width
+            + Math.floor((2 * c + 1) * mask.width / 32)]);
+        }
+      }
+      // Landmarker results have no close() in 1.0.1; their masks do.
+      result[field].forEach(m => m.close());
+      return {values};
+    };
+    const figure = await createImageBitmap(await (await fetch(
+      new URL('assets/assets/samples/pose.jpg', document.baseURI))).blob());
+    try {
+      const faces = await open('FaceDetector', 'blaze_face_short_range.tflite', {});
+      const objects = await open('ObjectDetector', 'efficientdet_lite0.tflite', {maxResults: 5, scoreThreshold: 0.3});
+      const classifier = await open('ImageClassifier', 'efficientnet_lite0.tflite', {maxResults: 3});
+      const embedder = await open('ImageEmbedder', 'mobilenet_v3_small.tflite', {});
+      const quantizer = await open('ImageEmbedder', 'mobilenet_v3_small.tflite',
+        {l2Normalize: true, quantize: true});
+      const segmenter = await open('ImageSegmenter', 'deeplab_v3.tflite',
+        {outputConfidenceMasks: true, outputCategoryMask: true});
+      const pose = await open('PoseLandmarker', 'pose_landmarker_lite.task',
+        {outputSegmentationMasks: true});
+      const legacy = await vision.InteractiveSegmenterLegacy.createFromOptions(files, {
+        baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/magic_touch.tflite', document.baseURI).href},
+        outputConfidenceMasks: true, outputCategoryMask: true,
+      });
+      // Stateful MagicTouch runs on CPU only, in both delegate passes.
+      const magic = await vision.InteractiveSegmenter.createFromOptions(files, {
+        baseOptions: {delegate: 'CPU', modelAssetPath: new URL('assets/assets/models/interactive_segmentation.task', document.baseURI).href},
+      });
+      // A stroke history's mask, sampled on the same 16 x 12 grid.
+      const strokes = history => {
+        const mask = magic.segment(history.map(([brushMode, x, y]) =>
+          ({brushMode, isCompleted: true, point: [{x, y}]})));
+        try {
+          const confidence = mask.getAsFloat32Array();
+          const values = [];
+          for (let r = 0; r < 12; r++) {
+            for (let c = 0; c < 16; c++) {
+              const x = Math.floor((2 * c + 1) * mask.width / 32);
+              const y = Math.floor((2 * r + 1) * mask.height / 24);
+              values.push(confidence[y * mask.width + x]);
+            }
+          }
+          return {values};
+        } finally {
+          mask.close();
+        }
+      };
+      const holistic = await open('HolisticLandmarker', 'holistic_landmarker.task',
+        {outputPoseSegmentationMasks: true});
+      try {
+        return {
+          face_detector: boxes(faces.detect(bitmap).detections),
+          object_detector: boxes(objects.detect(bitmap).detections).map(({keypoints, ...rest}) => rest),
+          image_classifier: top(classifier.classify(bitmap)),
+          image_classifier_region: top(classifier.classify(bitmap,
+            {regionOfInterest: {left: 0.25, top: 0.1, right: 0.75, bottom: 0.9}})),
+          image_embedder: [{values: Array.from(embedder.embed(bitmap).embeddings[0].floatEmbedding)}],
+          image_embedder_quantized: [{values: Array.from(quantizer.embed(bitmap).embeddings[0].quantizedEmbedding)}],
+          image_segmenter: [segmentation(segmenter.segment(bitmap))],
+          interactive_segmenter_legacy: [segmentation(legacy.segment(bitmap, {keypoint: {x: 0.5, y: 0.4}}), 0)],
+          interactive_segmenter: (magic.setImage(bitmap),
+            [strokes([[1, 0.5, 0.4]]), strokes([[1, 0.5, 0.4], [2, 0.5, 0.8]])]),
+          pose_mask: [poseMask(pose.detect(figure), 'segmentationMasks')],
+          holistic_mask: [poseMask(holistic.detect(figure), 'poseSegmentationMasks')],
+        };
+      } finally {
+        faces.close(); objects.close(); classifier.close(); embedder.close(); quantizer.close();
+        segmenter.close(); legacy.close(); magic.close(); pose.close(); holistic.close();
+      }
+    } finally {bitmap.close(); figure.close();}
+  }, delegate);
+  fs.writeFileSync(path.join(evidence, 'official-js-detection-tasks-reference.json'), JSON.stringify(detectionTasks, null, 2));
+  const detectionErrors = {};
+  for (const [name, expected] of Object.entries(detectionTasks)) {
+    const actual = api.detection_tasks[name];
+    assert.equal(actual.length, expected.length, name);
+    let error = 0;
+    expected.forEach((want, i) => {
+      const got = actual[i];
+      assert.equal(got.name, want.name, name);
+      if (want.box) assert.deepEqual(got.box, want.box, name);
+      if (want.values) {
+        assert.equal(got.values.length, want.values.length, name);
+        want.values.forEach((value, j) => { error = Math.max(error, Math.abs(got.values[j] - value)); });
+        return;
+      }
+      error = Math.max(error, Math.abs(got.score - want.score));
+      (want.keypoints ?? []).forEach((point, j) => point.forEach((value, k) => {
+        error = Math.max(error, Math.abs(got.keypoints[j][k] - value));
+      }));
+    });
+    detectionErrors[name] = error;
+    assert.ok(error < 1e-5, name + ' differs from official JavaScript: ' + error);
+  }
+  report.official_js_detection_tasks_maximum_absolute_error = detectionErrors;
   assert.deepEqual(await page.evaluate(() => mediapipeVision.stats().activeWorkers), 0);
   report.official_js_maximum_absolute_error = errors;
   report.official_js_hand_maximum_absolute_error = handErrors;
-  report.checks.push(...api.checks, 'same-browser-official-js-reference', 'same-browser-official-js-hand-reference');
+  report.official_js_landmark_tasks_maximum_absolute_error = landmarkTaskErrors;
+  report.checks.push(...api.checks, 'same-browser-official-js-reference', 'same-browser-official-js-hand-reference',
+    'same-browser-official-js-pose-gesture-holistic-reference',
+    'same-browser-official-js-detection-classification-reference');
   await page.screenshot({path: path.join(evidence, 'api.png')});
   await browser.close();
 }

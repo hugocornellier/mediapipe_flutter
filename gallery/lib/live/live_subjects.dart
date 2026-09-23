@@ -9,9 +9,18 @@ List<List<LivePoint>> liveSubjects(Object? result) => switch (result) {
   FaceLandmarkerResult(:final faceLandmarks) => [
     for (final face in faceLandmarks) [for (final p in face) (x: p.x, y: p.y)],
   ],
-  HandLandmarkerResult(:final handLandmarks) => [
+  HandLandmarkerResult(:final handLandmarks) ||
+  GestureRecognizerResult(:final handLandmarks) => [
     for (final hand in handLandmarks) [for (final p in hand) (x: p.x, y: p.y)],
   ],
+  PoseLandmarkerResult(:final poseLandmarks) => [
+    for (final pose in poseLandmarks) [for (final p in pose) (x: p.x, y: p.y)],
+  ],
+  HolisticLandmarkerResult(:final poseLandmarks)
+      when poseLandmarks.isNotEmpty =>
+    [
+      [for (final p in poseLandmarks) (x: p.x, y: p.y)],
+    ],
   _ => const [],
 };
 
@@ -22,9 +31,24 @@ List<List<LivePoint>> liveSubjects(Object? result) => switch (result) {
         subjects: faceLandmarks.length,
         points: faceLandmarks.firstOrNull?.length ?? 0,
       ),
-      HandLandmarkerResult(:final handLandmarks) => (
+      HandLandmarkerResult(:final handLandmarks) ||
+      GestureRecognizerResult(:final handLandmarks) => (
         subjects: handLandmarks.length,
         points: handLandmarks.firstOrNull?.length ?? 0,
+      ),
+      PoseLandmarkerResult(:final poseLandmarks) => (
+        subjects: poseLandmarks.length,
+        points: poseLandmarks.firstOrNull?.length ?? 0,
+      ),
+      HolisticLandmarkerResult(:final poseLandmarks) => (
+        subjects: poseLandmarks.isEmpty ? 0 : 1,
+        points: poseLandmarks.length,
+      ),
+      // A segmented frame counts as one subject when anything is not
+      // background.
+      SegmentationResult(:final categoryMask?) => (
+        subjects: categoryMask.categories.any((c) => c != 0) ? 1 : 0,
+        points: 0,
       ),
       _ => (subjects: 0, points: 0),
     };

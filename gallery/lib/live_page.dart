@@ -89,7 +89,14 @@ class _LivePageState extends State<LivePage> {
   Future<void> _start() async {
     if (_controller.description == null) return;
     try {
-      await _controller.start(modelAsset: 'assets/models/${widget.task.model}');
+      // Start on the current delegate where the task supports it, otherwise
+      // on the first it does (Object Detector is Metal-only on macOS).
+      await _controller.start(
+        delegate: _delegates.contains(_controller.delegate)
+            ? _controller.delegate
+            : _delegates.first,
+        modelAsset: 'assets/models/${widget.task.model}',
+      );
     } on Object catch (error) {
       if (mounted) setState(() => _error = '$error');
     }

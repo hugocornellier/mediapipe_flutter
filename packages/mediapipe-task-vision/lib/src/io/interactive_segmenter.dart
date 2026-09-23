@@ -1,22 +1,31 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 
 import '../../../capabilities.dart';
-import '../interface/interactive_segmenter_types.dart';
-import '../interface/vision_types.dart';
+import '../../vision_task_backend.dart';
 import 'native_interactive_segmenter.dart';
+import 'native_ios_interactive_segmenter.dart';
 
 /// Google's stateful MagicTouch pipeline on a persistent inference worker.
 ///
-/// Select the interactive_segmenter task in build-hook configuration. Currently
-/// supports CPU on macOS arm64, macOS 14+. Await [dispose] when finished.
+/// Select the interactive_segmenter task in build-hook configuration. Supports
+/// CPU on macOS arm64 (macOS 14+) and through Google's iOS and Android SDKs.
+/// Await [dispose] when finished.
 final class InteractiveSegmenter {
-  InteractiveSegmenter._(this.delegate) {
-    _events.listen(_receive);
+  InteractiveSegmenter._(this.delegate, [this._backend]) {
+    if (_backend == null) {
+      _events.listen(_receive);
+    } else {
+      _events.close();
+    }
   }
 
   /// Requested inference backend, fixed at creation.
   final VisionDelegate delegate;
+
+  /// Google's Android SDK, through `mediapipe_flutter_vision_android`.
+  final InteractiveSegmenterBackend? _backend;
   final _events = ReceivePort();
   final _ready = Completer<void>();
   final _exited = Completer<void>();
@@ -31,6 +40,17 @@ final class InteractiveSegmenter {
   static Future<InteractiveSegmenter> create(
     InteractiveSegmenterOptions options,
   ) async {
+    if (Platform.isAndroid && interactiveSegmenterBackendFactory != null) {
+      if (options.delegate != VisionDelegate.cpu) {
+        throw const InteractiveSegmenterException(
+          'Interactive Segmenter supports CPU only.',
+        );
+      }
+      return InteractiveSegmenter._(
+        options.delegate,
+        await interactiveSegmenterBackendFactory!(options),
+      );
+    }
     final support = await queryInteractiveSegmenterCapabilities();
     if (support.unavailableReasons[options.delegate] case final reason?) {
       throw InteractiveSegmenterException(reason);
@@ -58,6 +78,7 @@ final class InteractiveSegmenter {
   /// in submission order, including calls queued before this future completes.
   Future<void> setImage(VisionImage image) async {
     _checkOpen();
+    if (_backend case final backend?) return backend.setImage(image);
     await _request(image);
   }
 
@@ -72,7 +93,9 @@ final class InteractiveSegmenter {
     if (strokes.isEmpty || strokes.length > 0xffffffff) {
       throw ArgumentError('Supply at least one stroke.');
     }
-    return (await _request(List<SegmentationStroke>.unmodifiable(strokes)))!;
+    final history = List<SegmentationStroke>.unmodifiable(strokes);
+    if (_backend case final backend?) return backend.segment(history);
+    return (await _request(history))!;
   }
 
   void _checkOpen() {
@@ -91,7 +114,7 @@ final class InteractiveSegmenter {
   /// Drain pending image/stroke requests and close the task exactly once.
   Future<void> dispose() {
     _disposing = true;
-    return _disposeFuture ??= _close();
+    return _disposeFuture ??= _backend?.dispose() ?? _close();
   }
 
   Future<void> _close() async {
@@ -150,9 +173,11 @@ final class InteractiveSegmenter {
 Future<void> _runWorker((SendPort, InteractiveSegmenterOptions) initial) async {
   final (parent, options) = initial;
   final commands = ReceivePort();
-  NativeInteractiveSegmenter? native;
+  InteractiveSegmenterSession? native;
   try {
-    native = NativeInteractiveSegmenter(options);
+    native = Platform.isIOS
+        ? IosInteractiveSegmenter(options)
+        : NativeInteractiveSegmenter(options);
     parent.send(commands.sendPort);
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, Object?);

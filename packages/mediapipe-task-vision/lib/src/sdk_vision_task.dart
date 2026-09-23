@@ -61,9 +61,22 @@ class SdkVisionTask<R> {
   }
 
   /// Runs IMAGE inference with copied pixels or a browser-accessible URL.
-  Future<R> detectImage(VisionImage image, {int rotationDegrees = 0}) async {
+  /// [regionOfInterest] applies only to tasks that accept one, [keypoint] only
+  /// to Interactive Segmenter Legacy.
+  Future<R> detectImage(
+    VisionImage image, {
+    int rotationDegrees = 0,
+    VisionRegionOfInterest? regionOfInterest,
+    SegmentationPoint? keypoint,
+  }) async {
     _check(VisionRunningMode.image, rotationDegrees, null);
-    return _backend.detect(image, rotationDegrees, null);
+    return _backend.detect(
+      image,
+      rotationDegrees,
+      null,
+      regionOfInterest: regionOfInterest,
+      keypoint: keypoint,
+    );
   }
 
   /// Runs VIDEO inference with a strictly increasing timestamp.
@@ -71,9 +84,15 @@ class SdkVisionTask<R> {
     VisionImage image, {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
+    VisionRegionOfInterest? regionOfInterest,
   }) async {
     _check(VisionRunningMode.video, rotationDegrees, timestampMilliseconds);
-    return _backend.detect(image, rotationDegrees, timestampMilliseconds);
+    return _backend.detect(
+      image,
+      rotationDegrees,
+      timestampMilliseconds,
+      regionOfInterest: regionOfInterest,
+    );
   }
 
   /// Transfers ownership of a browser bitmap to the adapter for VIDEO inference.

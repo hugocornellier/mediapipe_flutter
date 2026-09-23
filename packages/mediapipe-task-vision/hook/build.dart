@@ -12,7 +12,19 @@ import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
 import '../sdk_downloads.dart';
 
 /// Tasks the Android Flutter plugin serves through Google's official SDK.
-const officialAndroidTasks = {'face_landmarker', 'hand_landmarker'};
+const officialAndroidTasks = {
+  'face_detector',
+  'face_landmarker',
+  'gesture_recognizer',
+  'hand_landmarker',
+  'holistic_landmarker',
+  'image_classifier',
+  'image_embedder',
+  'image_segmenter',
+  'interactive_segmenter',
+  'object_detector',
+  'pose_landmarker',
+};
 
 void main(List<String> arguments) async {
   await build(arguments, (input, output) async {
@@ -91,7 +103,11 @@ void main(List<String> arguments) async {
       await buildOfficialIosSdk(input, output, tasks: tasks);
       return;
     }
-    if (tasks.remove(sharedRuntimeTask)) {
+    // Linux's official wheel library exports the stateful API itself, so the
+    // task binds the vision asset there and needs no shared runtime.
+    final wheelServesSharedTask =
+        visionWheelReleases[target]?.tasks.contains(sharedRuntimeTask) ?? false;
+    if (!wheelServesSharedTask && tasks.remove(sharedRuntimeTask)) {
       if (input.metadata['mediapipe_flutter_core']['tasks_runtime'] != true) {
         throw StateError(
           'Interactive Segmenter requires hooks.user_defines.'

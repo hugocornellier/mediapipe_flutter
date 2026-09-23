@@ -225,11 +225,15 @@ Future<Map<String, Object?>> checkApi() async {
   );
   checks.add('invalid-model-explicit-error');
   final hand = await checkHandApi(delegate, checks);
+  final landmarkTasks = await checkLandmarkTasksApi(delegate, checks);
+  final detectionTasks = await checkDetectionTasksApi(delegate, checks);
   return {
     'status': 'passed',
     'checks': checks,
     'image': copied(original),
     'hand': hand,
+    'landmark_tasks': landmarkTasks,
+    'detection_tasks': detectionTasks,
   };
 }
 
@@ -329,6 +333,439 @@ Future<Map<String, Object?>> checkHandApi(
     ],
     'handedness': [for (final hand in result.handedness) hand.first.score],
   };
+}
+
+/// Pose, Gesture and Holistic through the public API on the official web
+/// runtime. Each runs a fresh task once on its sample, as the browser suite
+/// does with Google's JavaScript: Holistic's IMAGE mode keeps state between
+/// calls, so only a first call is comparable.
+Future<Map<String, Object?>> checkLandmarkTasksApi(
+  VisionDelegate delegate,
+  List<String> checks,
+) async {
+  Future<Uint8List> model(String name) async {
+    final data = await rootBundle.load('assets/models/$name');
+    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+  }
+
+  VisionImage sample(String name) => VisionImage.fromFile(
+    Uri.base.resolve('assets/assets/samples/$name').toString(),
+  );
+  List<List<double>> points(List<VisionLandmark> landmarks) => [
+    for (final p in landmarks) [p.x, p.y, p.z],
+  ];
+  final report = <String, Object?>{};
+
+  final pose = await PoseLandmarker.create(
+    PoseLandmarkerOptions(
+      delegate: delegate,
+      modelBytes: await model('pose_landmarker_lite.task'),
+    ),
+  );
+  try {
+    final result = await pose.detectImage(sample('pose.jpg'));
+    require(
+      result.poseLandmarks.length == 1 &&
+          result.poseLandmarks.single.length == 33 &&
+          result.poseWorldLandmarks.single.length == 33,
+      'Expected one pose with 33 image and world landmarks',
+    );
+    report['pose'] = {
+      'width': result.imageWidth,
+      'height': result.imageHeight,
+      'parts': {
+        'landmarks': points(result.poseLandmarks.single),
+        'world': points(result.poseWorldLandmarks.single),
+      },
+    };
+  } finally {
+    await pose.dispose();
+  }
+
+  final gesture = await GestureRecognizer.create(
+    GestureRecognizerOptions(
+      delegate: delegate,
+      modelBytes: await model('gesture_recognizer.task'),
+      numHands: 2,
+    ),
+  );
+  try {
+    final result = await gesture.recognizeImage(sample('thumb_up.jpg'));
+    require(
+      result.gestures.length == 1 &&
+          result.gestures.single.first.categoryName == 'Thumb_Up' &&
+          result.gestures.single.every((g) => g.index == -1),
+      'Expected one Thumb_Up gesture with index -1',
+    );
+    report['gesture'] = {
+      'width': result.imageWidth,
+      'height': result.imageHeight,
+      'gesture': result.gestures.single.first.categoryName,
+      'parts': {
+        'landmarks': points(result.handLandmarks.single),
+        'world': points(result.handWorldLandmarks.single),
+        'gesture_score': [
+          [result.gestures.single.first.score],
+        ],
+      },
+    };
+  } finally {
+    await gesture.dispose();
+  }
+
+  final holistic = await HolisticLandmarker.create(
+    HolisticLandmarkerOptions(
+      delegate: delegate,
+      modelBytes: await model('holistic_landmarker.task'),
+    ),
+  );
+  try {
+    final result = await holistic.detectImage(sample('pose.jpg'));
+    require(
+      result.poseLandmarks.length == 33 &&
+          result.leftHandLandmarks.length == 21 &&
+          result.rightHandLandmarks.length == 21,
+      'Expected a holistic pose and both hands',
+    );
+    report['holistic'] = {
+      'width': result.imageWidth,
+      'height': result.imageHeight,
+      'parts': {
+        'pose': points(result.poseLandmarks),
+        'pose_world': points(result.poseWorldLandmarks),
+        'left_hand': points(result.leftHandLandmarks),
+        'right_hand': points(result.rightHandLandmarks),
+        'face': points(result.faceLandmarks),
+      },
+    };
+  } finally {
+    await holistic.dispose();
+  }
+
+  // VIDEO ordering through the shared adapter.
+  final video = await PoseLandmarker.create(
+    PoseLandmarkerOptions(
+      delegate: delegate,
+      modelBytes: await model('pose_landmarker_lite.task'),
+      runningMode: VisionRunningMode.video,
+    ),
+  );
+  try {
+    final frames = await Future.wait([
+      for (var i = 0; i < 3; i++)
+        video.detectForVideo(sample('pose.jpg'), timestampMilliseconds: i),
+    ]);
+    require(
+      frames.map((r) => r.timestampMilliseconds).join(',') == '0,1,2' &&
+          frames.every((r) => r.poseLandmarks.isNotEmpty),
+      'Queued pose VIDEO failed',
+    );
+  } finally {
+    await video.dispose();
+  }
+  await rejects(
+    () => PoseLandmarker.create(
+      PoseLandmarkerOptions(
+        modelBytes: Uint8List.fromList([1]),
+        delegate: delegate,
+      ),
+    ),
+    VisionTaskException,
+  );
+  checks.add('pose-gesture-holistic-image-video-invalid-model');
+  return report;
+}
+
+/// Face Detector, Object Detector and Image Classifier through the public API
+/// on the official web runtime, each on the portrait sample as the browser
+/// suite runs Google's JavaScript. Boxes are reported as the Dart API holds
+/// them: whole pixels.
+Future<Map<String, Object?>> checkDetectionTasksApi(
+  VisionDelegate delegate,
+  List<String> checks,
+) async {
+  Future<Uint8List> model(String name) async {
+    final data = await rootBundle.load('assets/models/$name');
+    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+  }
+
+  final portrait = VisionImage.fromFile(
+    Uri.base.resolve('assets/assets/samples/portrait.jpg').toString(),
+  );
+  final report = <String, Object?>{};
+
+  final faces = await FaceDetector.create(
+    FaceDetectorOptions(
+      delegate: delegate,
+      modelBytes: await model('blaze_face_short_range.tflite'),
+    ),
+  );
+  try {
+    final result = await faces.detectImage(portrait);
+    require(
+      result.detections.length == 1 &&
+          result.detections.single.keypoints.length == 6,
+      'Expected one face with six keypoints',
+    );
+    report['face_detector'] = [
+      for (final d in result.detections)
+        {
+          'box': [
+            d.boundingBox.left,
+            d.boundingBox.top,
+            d.boundingBox.right,
+            d.boundingBox.bottom,
+          ],
+          'score': d.categories.first.score,
+          'name': d.categories.first.categoryName,
+          'keypoints': [
+            for (final k in d.keypoints) [k.x, k.y],
+          ],
+        },
+    ];
+  } finally {
+    await faces.dispose();
+  }
+
+  final objects = await ObjectDetector.create(
+    ObjectDetectorOptions(
+      delegate: delegate,
+      modelBytes: await model('efficientdet_lite0.tflite'),
+      maxResults: 5,
+      scoreThreshold: 0.3,
+    ),
+  );
+  try {
+    final result = await objects.detectImage(portrait);
+    require(
+      result.detections.isNotEmpty &&
+          result.detections.first.categories.first.categoryName == 'person',
+      'Expected a person first',
+    );
+    report['object_detector'] = [
+      for (final d in result.detections)
+        {
+          'box': [
+            d.boundingBox.left,
+            d.boundingBox.top,
+            d.boundingBox.right,
+            d.boundingBox.bottom,
+          ],
+          'score': d.categories.first.score,
+          'name': d.categories.first.categoryName,
+        },
+    ];
+  } finally {
+    await objects.dispose();
+  }
+
+  final classifier = await ImageClassifier.create(
+    ImageClassifierOptions(
+      delegate: delegate,
+      modelBytes: await model('efficientnet_lite0.tflite'),
+      maxResults: 3,
+    ),
+  );
+  try {
+    final result = await classifier.classifyImage(portrait);
+    final region = await classifier.classifyImage(
+      portrait,
+      regionOfInterest: VisionRegionOfInterest(
+        left: 0.25,
+        top: 0.1,
+        right: 0.75,
+        bottom: 0.9,
+      ),
+    );
+    require(
+      result.classifications.single.categories.length == 3,
+      'Expected the top three classes',
+    );
+    List<Map<String, Object?>> top(ImageClassifierResult r) => [
+      for (final c in r.classifications.single.categories)
+        {'score': c.score, 'name': c.categoryName},
+    ];
+    report['image_classifier'] = top(result);
+    report['image_classifier_region'] = top(region);
+  } finally {
+    await classifier.dispose();
+  }
+  for (final quantize in [false, true]) {
+    final embedder = await ImageEmbedder.create(
+      ImageEmbedderOptions(
+        delegate: delegate,
+        modelBytes: await model('mobilenet_v3_small.tflite'),
+        l2Normalize: quantize,
+        quantize: quantize,
+      ),
+    );
+    try {
+      final embedding = (await embedder.embedImage(portrait)).embeddings.single;
+      require(
+        (embedding.floatEmbedding?.length ??
+                embedding.quantizedEmbedding!.length) ==
+            1024,
+        'Expected a 1024-value embedding',
+      );
+      report[quantize ? 'image_embedder_quantized' : 'image_embedder'] = [
+        {
+          'values':
+              embedding.floatEmbedding ??
+              embedding.quantizedEmbedding!.toList(),
+        },
+      ];
+    } finally {
+      await embedder.dispose();
+    }
+  }
+  final segmenter = await ImageSegmenter.create(
+    ImageSegmenterOptions(
+      delegate: delegate,
+      modelBytes: await model('deeplab_v3.tflite'),
+      outputCategoryMask: true,
+    ),
+  );
+  try {
+    final result = await segmenter.segmentImage(portrait);
+    require(
+      result.labels.length == 21 &&
+          result.labels.first == 'background' &&
+          result.labels[15] == 'person',
+      'Expected the DeepLab-v3 labels',
+    );
+    // The category and the person confidence at the centres of a 16 x 12
+    // grid, as the official JavaScript side samples them.
+    final category = result.categoryMask!;
+    final person = result.confidenceMasks![15];
+    final values = <num>[];
+    for (var r = 0; r < 12; r++) {
+      for (var c = 0; c < 16; c++) {
+        final x = (2 * c + 1) * category.width ~/ 32;
+        final y = (2 * r + 1) * category.height ~/ 24;
+        values
+          ..add(category.categories[y * category.width + x])
+          ..add(person.confidence[y * category.width + x]);
+      }
+    }
+    report['image_segmenter'] = [
+      {'values': values},
+    ];
+  } finally {
+    await segmenter.dispose();
+  }
+  final legacy = await InteractiveSegmenterLegacy.create(
+    InteractiveSegmenterLegacyOptions(
+      delegate: delegate,
+      modelBytes: await model('magic_touch.tflite'),
+      outputCategoryMask: true,
+    ),
+  );
+  try {
+    final result = await legacy.segmentImage(
+      portrait,
+      keypoint: SegmentationPoint(x: 0.5, y: 0.4),
+    );
+    final category = result.categoryMask!;
+    final subject = result.confidenceMasks!.single;
+    final values = <num>[];
+    for (var r = 0; r < 12; r++) {
+      for (var c = 0; c < 16; c++) {
+        final x = (2 * c + 1) * category.width ~/ 32;
+        final y = (2 * r + 1) * category.height ~/ 24;
+        values
+          ..add(category.categories[y * category.width + x])
+          ..add(subject.confidence[y * category.width + x]);
+      }
+    }
+    report['interactive_segmenter_legacy'] = [
+      {'values': values},
+    ];
+  } finally {
+    await legacy.dispose();
+  }
+  // Stateful MagicTouch, CPU only: a point, then the point and a negative one.
+  final magic = await InteractiveSegmenter.create(
+    InteractiveSegmenterOptions(
+      modelBytes: await model('interactive_segmentation.task'),
+    ),
+  );
+  try {
+    SegmentationStroke point(SegmentationBrushMode mode, double x, double y) =>
+        SegmentationStroke(
+          brushMode: mode,
+          points: [SegmentationPoint(x: x, y: y)],
+        );
+    Future<Map<String, Object?>> sampled(
+      List<SegmentationStroke> history,
+    ) async {
+      final mask = await magic.segment(history);
+      return {
+        'values': [
+          for (var r = 0; r < 12; r++)
+            for (var c = 0; c < 16; c++)
+              mask.confidence[(2 * r + 1) * mask.height ~/ 24 * mask.width +
+                  (2 * c + 1) * mask.width ~/ 32],
+        ],
+      };
+    }
+
+    await magic.setImage(portrait);
+    final positive = point(SegmentationBrushMode.positive, 0.5, 0.4);
+    report['interactive_segmenter'] = [
+      await sampled([positive]),
+      await sampled([
+        positive,
+        point(SegmentationBrushMode.negative, 0.5, 0.8),
+      ]),
+    ];
+  } finally {
+    await magic.dispose();
+  }
+  // Pose segmentation masks from pose.jpg, sampled on the same grid.
+  List<double> sampled(SegmentationMask mask) => [
+    for (var r = 0; r < 12; r++)
+      for (var c = 0; c < 16; c++)
+        mask.confidence[(2 * r + 1) * mask.height ~/ 24 * mask.width +
+            (2 * c + 1) * mask.width ~/ 32],
+  ];
+  final figure = VisionImage.fromFile(
+    Uri.base.resolve('assets/assets/samples/pose.jpg').toString(),
+  );
+  final pose = await PoseLandmarker.create(
+    PoseLandmarkerOptions(
+      delegate: delegate,
+      modelBytes: await model('pose_landmarker_lite.task'),
+      outputSegmentationMasks: true,
+    ),
+  );
+  try {
+    final masks = (await pose.detectImage(figure)).segmentationMasks!;
+    report['pose_mask'] = [
+      {'values': sampled(masks.single)},
+    ];
+  } finally {
+    await pose.dispose();
+  }
+  // A fresh task: Holistic's IMAGE results depend on earlier calls (UP-013).
+  final holistic = await HolisticLandmarker.create(
+    HolisticLandmarkerOptions(
+      delegate: delegate,
+      modelBytes: await model('holistic_landmarker.task'),
+      outputPoseSegmentationMask: true,
+    ),
+  );
+  try {
+    final mask = (await holistic.detectImage(figure)).poseSegmentationMask!;
+    report['holistic_mask'] = [
+      {'values': sampled(mask)},
+    ];
+  } finally {
+    await holistic.dispose();
+  }
+  checks.add(
+    'face-object-detector-image-classifier-region-embedder-segmenter-pose-masks',
+  );
+  return report;
 }
 
 Future<void> main() async {

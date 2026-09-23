@@ -94,9 +94,105 @@ TaskCapabilities<VisionDelegate> _officialMacosHand(TaskPlatform platform) =>
       officialIosRuntime: true,
     );
 
-TaskCapabilities<VisionDelegate> _officialMacosLandmarks(
+TaskCapabilities<VisionDelegate> _pose(TaskPlatform platform) =>
+    poseLandmarkerCapabilitiesForPlatform(platform, officialIosRuntime: true);
+
+TaskCapabilities<VisionDelegate> _officialMacosPose(TaskPlatform platform) =>
+    poseLandmarkerCapabilitiesForPlatform(
+      platform,
+      officialMacosRuntime: true,
+      officialIosRuntime: true,
+    );
+
+TaskCapabilities<VisionDelegate> _objects(TaskPlatform platform) =>
+    objectDetectorCapabilitiesForPlatform(platform, officialIosRuntime: true);
+
+TaskCapabilities<VisionDelegate> _classifier(TaskPlatform platform) =>
+    imageClassifierCapabilitiesForPlatform(platform, officialIosRuntime: true);
+
+TaskCapabilities<VisionDelegate> _officialMacosObjects(TaskPlatform platform) =>
+    objectDetectorCapabilitiesForPlatform(
+      platform,
+      officialMacosRuntime: true,
+      officialIosRuntime: true,
+    );
+
+TaskCapabilities<VisionDelegate> _officialMacosClassifier(
   TaskPlatform platform,
-) => landmarkTaskCapabilitiesForPlatform(platform, officialMacosRuntime: true);
+) => imageClassifierCapabilitiesForPlatform(
+  platform,
+  officialMacosRuntime: true,
+  officialIosRuntime: true,
+);
+
+TaskCapabilities<VisionDelegate> _embedder(TaskPlatform platform) =>
+    imageEmbedderCapabilitiesForPlatform(platform, officialIosRuntime: true);
+
+TaskCapabilities<VisionDelegate> _officialMacosEmbedder(
+  TaskPlatform platform,
+) => imageEmbedderCapabilitiesForPlatform(
+  platform,
+  officialMacosRuntime: true,
+  officialIosRuntime: true,
+);
+
+TaskCapabilities<VisionDelegate> _segmenter(TaskPlatform platform) =>
+    imageSegmenterCapabilitiesForPlatform(platform, officialIosRuntime: true);
+
+TaskCapabilities<VisionDelegate> _officialMacosSegmenter(
+  TaskPlatform platform,
+) => imageSegmenterCapabilitiesForPlatform(
+  platform,
+  officialMacosRuntime: true,
+  officialIosRuntime: true,
+);
+
+TaskCapabilities<VisionDelegate> _officialMacosLegacySegmenter(
+  TaskPlatform platform,
+) => interactiveSegmenterLegacyCapabilitiesForPlatform(
+  platform,
+  officialMacosRuntime: true,
+  officialIosRuntime: true,
+);
+
+TaskCapabilities<VisionDelegate> _magicTouch(TaskPlatform platform) =>
+    interactiveSegmenterCapabilitiesForPlatform(
+      platform,
+      officialIosRuntime: true,
+    );
+
+TaskCapabilities<VisionDelegate> _legacySegmenter(TaskPlatform platform) =>
+    interactiveSegmenterLegacyCapabilitiesForPlatform(
+      platform,
+      officialIosRuntime: true,
+    );
+
+TaskCapabilities<VisionDelegate> _gesture(TaskPlatform platform) =>
+    gestureRecognizerCapabilitiesForPlatform(
+      platform,
+      officialIosRuntime: true,
+    );
+
+TaskCapabilities<VisionDelegate> _holistic(TaskPlatform platform) =>
+    holisticLandmarkerCapabilitiesForPlatform(
+      platform,
+      officialIosRuntime: true,
+    );
+
+TaskCapabilities<VisionDelegate> _officialMacosGesture(TaskPlatform platform) =>
+    gestureRecognizerCapabilitiesForPlatform(
+      platform,
+      officialMacosRuntime: true,
+      officialIosRuntime: true,
+    );
+
+TaskCapabilities<VisionDelegate> _officialMacosHolistic(
+  TaskPlatform platform,
+) => holisticLandmarkerCapabilitiesForPlatform(
+  platform,
+  officialMacosRuntime: true,
+  officialIosRuntime: true,
+);
 
 final _catalog = <GalleryTask>[
   GalleryTask(
@@ -128,8 +224,73 @@ final _catalog = <GalleryTask>[
     summary: 'Pose landmarks and skeleton on the camera feed.',
     model: 'pose_landmarker_lite.task',
     sample: 'pose.jpg',
-    capabilities: landmarkTaskCapabilitiesForPlatform,
-    officialMacosCapabilities: _officialMacosLandmarks,
+    capabilities: _pose,
+    officialMacosCapabilities: _officialMacosPose,
+  ),
+  GalleryTask(
+    id: 'gesture_recognizer_live',
+    runtimeId: 'gesture_recognizer',
+    demo: GalleryDemo.live,
+    title: 'Live Gesture Recognizer',
+    summary: 'Hand landmarks and the recognised gesture on the camera feed.',
+    model: 'gesture_recognizer.task',
+    sample: 'thumb_up.jpg',
+    capabilities: _gesture,
+    officialMacosCapabilities: _officialMacosGesture,
+  ),
+  GalleryTask(
+    id: 'holistic_landmarker_live',
+    runtimeId: 'holistic_landmarker',
+    demo: GalleryDemo.live,
+    title: 'Live Holistic Landmarker',
+    summary: 'Body, hands and face together on the camera feed.',
+    model: 'holistic_landmarker.task',
+    sample: 'pose.jpg',
+    capabilities: _holistic,
+    officialMacosCapabilities: _officialMacosHolistic,
+  ),
+  GalleryTask(
+    id: 'face_detector_live',
+    runtimeId: 'face_detector',
+    demo: GalleryDemo.live,
+    title: 'Live Face Detector',
+    summary: 'Face boxes and six keypoints on the camera feed.',
+    model: 'blaze_face_short_range.tflite',
+    sample: 'portrait.jpg',
+    capabilities: faceDetectorCapabilitiesForPlatform,
+  ),
+  GalleryTask(
+    id: 'object_detector_live',
+    runtimeId: 'object_detector',
+    demo: GalleryDemo.live,
+    title: 'Live Object Detector',
+    summary: 'Labelled boxes over everyday objects on the camera feed.',
+    model: 'efficientdet_lite0.tflite',
+    sample: 'group.jpeg',
+    capabilities: _objects,
+    officialMacosCapabilities: _officialMacosObjects,
+  ),
+  GalleryTask(
+    id: 'image_classifier_live',
+    runtimeId: 'image_classifier',
+    demo: GalleryDemo.live,
+    title: 'Live Image Classifier',
+    summary: 'The top three classes for the camera feed.',
+    model: 'efficientnet_lite0.tflite',
+    sample: 'portrait.jpg',
+    capabilities: _classifier,
+    officialMacosCapabilities: _officialMacosClassifier,
+  ),
+  GalleryTask(
+    id: 'image_embedder_live',
+    runtimeId: 'image_embedder',
+    demo: GalleryDemo.live,
+    title: 'Live Image Embedder',
+    summary: 'How similar each frame is to the first, from feature vectors.',
+    model: 'mobilenet_v3_small.tflite',
+    sample: 'portrait.jpg',
+    capabilities: _embedder,
+    officialMacosCapabilities: _officialMacosEmbedder,
   ),
   GalleryTask(
     id: 'object_detector',
@@ -137,7 +298,8 @@ final _catalog = <GalleryTask>[
     summary: 'Labelled boxes over everyday objects.',
     model: 'efficientdet_lite0.tflite',
     sample: 'group.jpeg',
-    capabilities: objectDetectorCapabilitiesForPlatform,
+    capabilities: _objects,
+    officialMacosCapabilities: _officialMacosObjects,
   ),
   GalleryTask(
     id: 'image_classifier',
@@ -145,7 +307,8 @@ final _catalog = <GalleryTask>[
     summary: 'Top-k labels with scores.',
     model: 'efficientnet_lite0.tflite',
     sample: 'portrait.jpg',
-    capabilities: imageTaskCapabilitiesForPlatform,
+    capabilities: _classifier,
+    officialMacosCapabilities: _officialMacosClassifier,
   ),
   GalleryTask(
     id: 'image_embedder',
@@ -153,7 +316,8 @@ final _catalog = <GalleryTask>[
     summary: 'Feature vectors and cosine similarity.',
     model: 'mobilenet_v3_small.tflite',
     sample: 'portrait.jpg',
-    capabilities: imageTaskCapabilitiesForPlatform,
+    capabilities: _embedder,
+    officialMacosCapabilities: _officialMacosEmbedder,
   ),
   GalleryTask(
     id: 'hand_landmarker',
@@ -170,7 +334,8 @@ final _catalog = <GalleryTask>[
     summary: 'Hand landmarks plus a recognised gesture.',
     model: 'gesture_recognizer.task',
     sample: 'thumb_up.jpg',
-    capabilities: landmarkTaskCapabilitiesForPlatform,
+    capabilities: _gesture,
+    officialMacosCapabilities: _officialMacosGesture,
   ),
   GalleryTask(
     id: 'pose_landmarker',
@@ -178,8 +343,8 @@ final _catalog = <GalleryTask>[
     summary: '33 body landmarks with visibility.',
     model: 'pose_landmarker_lite.task',
     sample: 'pose.jpg',
-    capabilities: landmarkTaskCapabilitiesForPlatform,
-    officialMacosCapabilities: _officialMacosLandmarks,
+    capabilities: _pose,
+    officialMacosCapabilities: _officialMacosPose,
   ),
   GalleryTask(
     id: 'holistic_landmarker',
@@ -187,7 +352,8 @@ final _catalog = <GalleryTask>[
     summary: 'Face, hands and pose in one graph.',
     model: 'holistic_landmarker.task',
     sample: 'pose.jpg',
-    capabilities: landmarkTaskCapabilitiesForPlatform,
+    capabilities: _holistic,
+    officialMacosCapabilities: _officialMacosHolistic,
   ),
   GalleryTask(
     id: 'image_segmenter',
@@ -195,7 +361,19 @@ final _catalog = <GalleryTask>[
     summary: 'Category and confidence masks.',
     model: 'deeplab_v3.tflite',
     sample: 'portrait.jpg',
-    capabilities: segmenterTaskCapabilitiesForPlatform,
+    capabilities: _segmenter,
+    officialMacosCapabilities: _officialMacosSegmenter,
+  ),
+  GalleryTask(
+    id: 'image_segmenter_live',
+    runtimeId: 'image_segmenter',
+    demo: GalleryDemo.live,
+    title: 'Live Image Segmenter',
+    summary: 'People and objects masked in each camera frame.',
+    model: 'deeplab_v3.tflite',
+    sample: 'portrait.jpg',
+    capabilities: _segmenter,
+    officialMacosCapabilities: _officialMacosSegmenter,
   ),
   // Two different implementations share the MagicTouch name. This is the
   // stateless legacy API inside the combined vision runtime; the stateful
@@ -207,7 +385,8 @@ final _catalog = <GalleryTask>[
     summary: 'Stateless MagicTouch segmentation from a point or box.',
     model: 'magic_touch.tflite',
     sample: 'portrait.jpg',
-    capabilities: segmenterTaskCapabilitiesForPlatform,
+    capabilities: _legacySegmenter,
+    officialMacosCapabilities: _officialMacosLegacySegmenter,
   ),
   GalleryTask(
     id: 'interactive_segmenter',
@@ -216,7 +395,7 @@ final _catalog = <GalleryTask>[
     summary: 'Tap a subject to segment it, stroke by stroke.',
     model: 'interactive_segmentation.task',
     sample: 'animals.jpg',
-    capabilities: interactiveSegmenterCapabilitiesForPlatform,
+    capabilities: _magicTouch,
   ),
 ];
 

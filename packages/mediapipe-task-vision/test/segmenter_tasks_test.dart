@@ -19,9 +19,12 @@ typedef _Task = (
 );
 
 // Both tasks are validated against the official wheel that ships the same
-// native library on Linux and Windows. macOS loads our source build, whose CPU
+// native library on Linux and Windows, and on Google's official macOS runtime
+// (tool/test_official_macos_landmark_runtime.py). The macOS source build's CPU
 // results are not validated; see upstream-issues.md UP-004.
-final _unvalidatedHost = Platform.isMacOS
+final _unvalidatedHost =
+    Platform.isMacOS &&
+        Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] != '1'
     ? 'macOS source-build CPU output is unvalidated; see UP-004'
     : null;
 

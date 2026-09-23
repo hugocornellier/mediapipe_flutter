@@ -1,0 +1,11 @@
+00:00 +0: loading /Users/hugocornellier/IdeaProjects/mediapipe_flutter/gallery/integration_test/sdk_hand_landmarker_test.dart
+00:00 +0: official SDK Hand Landmarker: reference, pixels, rotation, CPU and GPU
+SDK_HAND_LANDMARKER {"event":"image","delegate":"cpu","official_max_delta":0.004452202743530309,"handedness":0.9821435213088989}
+SDK_HAND_LANDMARKER {"event":"image","delegate":"gpu","official_max_delta":0.006192566177368186,"handedness":0.986328125}
+SDK_HAND_LANDMARKER {"event":"cpu_gpu","max_landmark_delta":0.013962745666503906}
+00:05 +1: official SDK Hand Landmarker VIDEO: tracking, blank, queued frames
+SDK_HAND_LANDMARKER {"event":"video","hand_frames":13,"blank_frames":1}
+00:06 +2: gallery opens Live Hand Landmarker and runs frames
+SDK_HAND_LANDMARKER {"event":"gallery","processed_frames":12,"error":null,"cameras":4}
+00:31 +3: (tearDownAll)
+00:32 +3: All tests passed!

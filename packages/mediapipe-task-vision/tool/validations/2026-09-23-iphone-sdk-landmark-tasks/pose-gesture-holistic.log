@@ -1,0 +1,21 @@
+00:00 +0: loading /Users/hugocornellier/IdeaProjects/mediapipe_flutter-vision-tasks/gallery/integration_test/sdk_landmark_tasks_test.dart
+00:00 +0: official SDK pose: reference, pixels, rotation, CPU and GPU
+SDK_LANDMARK_TASK {"task":"pose","event":"image","delegate":"cpu","official_max_delta":0.0015114126663208216,"official_rotated_max_delta":0.012222386306762645}
+SDK_LANDMARK_TASK {"task":"pose","event":"image","delegate":"gpu","official_max_delta":0.01098514843368531,"official_rotated_max_delta":0.2236524749031067}
+SDK_LANDMARK_TASK {"task":"pose","event":"cpu_gpu","max_landmark_delta":0.013906493782997131}
+00:06 +1: official SDK pose VIDEO: tracking, blank, queued frames
+SDK_LANDMARK_TASK {"task":"pose","event":"video","frames":13,"blank_frames":1}
+00:06 +2: official SDK gesture: reference, pixels, rotation, CPU and GPU
+SDK_LANDMARK_TASK {"task":"gesture","event":"image","delegate":"cpu","official_max_delta":0.004452202743530309,"official_rotated_max_delta":0.004773268470764203,"gesture":"Thumb_Up"}
+SDK_LANDMARK_TASK {"task":"gesture","event":"image","delegate":"gpu","official_max_delta":0.006192566177368186,"official_rotated_max_delta":0.008917413116455108,"gesture":"Thumb_Up"}
+SDK_LANDMARK_TASK {"task":"gesture","event":"cpu_gpu","max_landmark_delta":0.013962745666503906}
+00:07 +3: official SDK gesture VIDEO: tracking, blank, queued frames
+SDK_LANDMARK_TASK {"task":"gesture","event":"video","frames":13,"blank_frames":1}
+00:07 +4: official SDK holistic: reference, pixels, rotation, CPU and GPU
+SDK_LANDMARK_TASK {"task":"holistic","event":"image","delegate":"cpu","official_max_delta":0.0015114126663208216,"official_rotated_max_delta":0.007954825916290265,"face_points":0}
+SDK_LANDMARK_TASK {"task":"holistic","event":"image","delegate":"gpu","official_max_delta":0.01098514843368531,"official_rotated_max_delta":0.00985695596313474,"face_points":0}
+SDK_LANDMARK_TASK {"task":"holistic","event":"cpu_gpu","max_landmark_delta":0.013906493782997131}
+00:10 +5: official SDK holistic VIDEO: tracking, blank, queued frames
+SDK_LANDMARK_TASK {"task":"holistic","event":"video","frames":13,"blank_frames":1}
+00:11 +6: (tearDownAll)
+00:11 +6: All tests passed!

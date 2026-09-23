@@ -5,6 +5,7 @@ import 'package:ffi/ffi.dart';
 
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../interface/object_detector_types.dart';
+import '../capabilities/official_runtime_io.dart';
 import 'native_desktop_runtime.dart';
 import 'native_vision_image.dart';
 
@@ -13,9 +14,9 @@ final class NativeObjectDetector {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeObjectDetector(ObjectDetectorOptions options)
     : _gpu = options.delegate == VisionDelegate.gpu {
-    if (!Platform.isMacOS && _gpu) {
+    if (!Platform.isMacOS && !hasOfficialIosVisionRuntime() && _gpu) {
       throw UnsupportedError(
-        'GPU object inference is validated on macOS only.',
+        'GPU object inference requires macOS or the official iOS SDK adapter.',
       );
     }
     loadOfficialDesktopRuntime();

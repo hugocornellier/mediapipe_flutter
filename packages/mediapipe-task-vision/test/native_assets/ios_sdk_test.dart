@@ -17,27 +17,25 @@ void main() {
     ),
   );
 
-  test(
-    'official SDK rejects unsupported tasks and targets before downloading',
-    () async {
-      for (final (os, tasks) in [
-        (OS.macOS, ['face_landmarker']),
-        (OS.iOS, ['pose_landmarker']),
-        (OS.iOS, ['face_landmarker', 'interactive_segmenter']),
-      ]) {
-        await expectLater(
-          testCodeBuildHook(
-            mainMethod: hook.main,
-            targetOS: os,
-            targetArchitecture: Architecture.arm64,
-            userDefines: defines({'official_ios_sdk': true, 'tasks': tasks}),
-            check: (_, _) => fail('Unsupported SDK request succeeded'),
-          ),
-          throwsA(isA<UnsupportedError>()),
-        );
-      }
-    },
-  );
+  test('official SDK rejects unsupported targets before downloading', () async {
+    // Google's iOS SDK serves every vision task, so only targets are refused.
+    for (final (os, architecture, tasks) in [
+      (OS.macOS, Architecture.arm64, ['face_landmarker']),
+      (OS.iOS, Architecture.x64, ['face_landmarker']),
+      (OS.iOS, Architecture.x64, ['face_landmarker', 'interactive_segmenter']),
+    ]) {
+      await expectLater(
+        testCodeBuildHook(
+          mainMethod: hook.main,
+          targetOS: os,
+          targetArchitecture: architecture,
+          userDefines: defines({'official_ios_sdk': true, 'tasks': tasks}),
+          check: (_, _) => fail('Unsupported SDK request succeeded'),
+        ),
+        throwsA(isA<UnsupportedError>()),
+      );
+    }
+  });
 
   test(
     'official SDK option is typed and cannot select two platform runtimes',
