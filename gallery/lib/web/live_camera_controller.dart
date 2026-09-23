@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:web/web.dart' as web;
 import '../live/camera_selection.dart';
+import '../live/live_subjects.dart';
 import '../live/live_task.dart';
 import 'pipeline_trace.dart';
 import 'test_hooks.dart';
@@ -377,18 +378,9 @@ class LiveCameraController<T> extends ChangeNotifier {
           );
           video.setAttribute('data-delegate', delegate.name);
           video.setAttribute('data-timestamp', timestamp.toString());
-          if (detected is FaceLandmarkerResult) {
-            video.setAttribute(
-              'data-face-count',
-              detected.faceLandmarks.length.toString(),
-            );
-            video.setAttribute(
-              'data-landmarks',
-              detected.faceLandmarks.isEmpty
-                  ? '0'
-                  : detected.faceLandmarks.first.length.toString(),
-            );
-          }
+          final count = liveSubjectCount(detected);
+          video.setAttribute('data-subjects', count.subjects.toString());
+          video.setAttribute('data-landmarks', count.points.toString());
         }
         conversionMilliseconds = conversion.elapsedMicroseconds / 1000;
         inferenceMilliseconds = inference.elapsedMicroseconds / 1000;

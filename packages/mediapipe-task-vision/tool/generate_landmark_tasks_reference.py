@@ -59,10 +59,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--delegate', choices=['cpu', 'gpu'], default='cpu')
     parser.add_argument('--output-dir', type=Path, default=FIXTURES)
+    # GPU references cover the tasks whose GPU path the package offers.
+    parser.add_argument('--tasks', default=','.join(MODELS),
+                        help='Comma-separated subset of ' + ', '.join(MODELS))
     args = parser.parse_args()
+    selected = args.tasks.split(',')
+    if not selected or not set(selected) <= MODELS.keys():
+        raise SystemExit('Unknown landmark task in --tasks: ' + args.tasks)
     assert mp.__version__ == VERSION
     assert digest(Path(mp.__file__).parent / 'tasks/c' / LIBRARY_NAME) == LIBRARY_SHA256
-    for name, sha in MODELS.values():
+    for task_name in selected:
+        name, sha = MODELS[task_name]
         assert digest(ROOT / 'models' / name) == sha
     for name, sha in FILES.items():
         assert digest(FIXTURES / name) == sha
@@ -75,6 +82,8 @@ def main():
     cases = []
     delegate = getattr(mp.tasks.BaseOptions.Delegate, args.delegate.upper())
     for task_name, (model_name, model_sha) in MODELS.items():
+        if task_name not in selected:
+            continue
         task_type = {'hand': vision.HandLandmarker, 'gesture': vision.GestureRecognizer,
                      'pose': vision.PoseLandmarker, 'holistic': vision.HolisticLandmarker}[task_name]
         option_type = getattr(vision, task_type.__name__ + 'Options')
@@ -135,9 +144,13 @@ def main():
                     tracked.close()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     output = dict(runtime=RUNTIME, delegate=args.delegate.upper(),
-        source_revision=SOURCE_REVISION,
-        library_sha256=LIBRARY_SHA256, models={name: sha for name, (_, sha) in MODELS.items()}, cases=cases)
-    (args.output_dir / 'official_reference.json').write_text(json.dumps(output, indent=2) + '\n')
+        source_revision=SOURCE_REVISION, library_sha256=LIBRARY_SHA256,
+        models={name: sha for name, (_, sha) in MODELS.items() if name in selected},
+        cases=cases)
+    # Same names as the face suites: the Dart loader reads GPU references
+    # from MEDIAPIPE_GPU_REFERENCE_DIR by the `_gpu_` in the file name.
+    name = 'official_gpu_reference.json' if args.delegate == 'gpu' else 'official_reference.json'
+    (args.output_dir / name).write_text(json.dumps(output, indent=2) + '\n')
 
 
 if __name__ == '__main__':

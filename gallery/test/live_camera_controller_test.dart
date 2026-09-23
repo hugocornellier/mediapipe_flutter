@@ -181,6 +181,30 @@ void main() {
     expect(controller.notice, contains('GPU emulation detected'));
   });
 
+  test(
+    'a refused GPU on a generic task, such as hand, also falls back',
+    () async {
+      task.openFailure = (
+        VisionDelegate.gpu,
+        const VisionTaskException(
+          'Service "kGpuService" ... Unable to initialize EGL',
+          gpuUnavailable: true,
+        ),
+      );
+      await controller.findCameras();
+      await controller.start(
+        delegate: VisionDelegate.gpu,
+        modelAsset: 'model.task',
+      );
+      for (var i = 0; i < 20 && !controller.running; i++) {
+        await settle();
+      }
+      expect(task.opened, [VisionDelegate.gpu, VisionDelegate.cpu]);
+      expect(controller.running, isTrue);
+      expect(controller.notice, contains('Unable to initialize EGL'));
+    },
+  );
+
   test('other GPU failures are errors, never a silent fallback', () async {
     task.openFailure = (
       VisionDelegate.gpu,

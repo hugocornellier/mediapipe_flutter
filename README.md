@@ -65,6 +65,14 @@ face was in view of the physical camera. The per-platform live-camera status
 is tracked in the vision package's
 [Face Landmarker status matrix](packages/mediapipe-task-vision/tool/FACE_LANDMARKER_STATUS.md).
 
+**Hand Landmarker runs on all six targets** through Google's official runtimes:
+web (CPU and WebGL 2), macOS arm64 (CPU and Metal), iOS and Android (Google's
+mobile SDKs), Linux x64 (CPU and GPU) and Windows x64 (CPU). The gallery has a
+Live Hand Landmarker tile on each. CI checks it against Google's reference
+output on every platform: the iOS simulator and Android emulator run on the CPU
+only, and no physical phone has run it yet. See the
+[Hand Landmarker status matrix](packages/mediapipe-task-vision/tool/HAND_LANDMARKER_STATUS.md).
+
 **Linux x64 and Windows x64 run eleven vision tasks on CPU**, served by pinned
 official MediaPipe 1.0.0 wheels: Face Detector, Face Landmarker, Object Detector,
 Image Classifier, Image Embedder, Hand Landmarker, Gesture Recognizer, Pose
@@ -82,8 +90,8 @@ results for these tasks are not validated; see `upstream-issues.md`.
 | `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
 | `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Six text tasks on one MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
-| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Eleven tasks on Linux/Windows x64 CPU; face tasks on macOS CPU/Metal and local iOS simulator CPU; optional macOS CPU MagicTouch editor |
-| `mediapipe_flutter_vision_web` | [mediapipe-task-vision-web](packages/mediapipe-task-vision-web/) | Official FaceLandmarker CPU/WASM and GPU/WebGL 2 adapter; live browser camera gallery |
+| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | Eleven tasks on Linux/Windows x64 CPU; face tasks on macOS CPU/Metal and local iOS simulator CPU; Hand Landmarker on all six targets; optional macOS CPU MagicTouch editor |
+| `mediapipe_flutter_vision_web` | [mediapipe-task-vision-web](packages/mediapipe-task-vision-web/) | Official Face and Hand Landmarker CPU/WASM and GPU/WebGL 2 adapter; live browser camera gallery |
 | Audio | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Placeholder, no Dart package |
 
 The migrated text package supports macOS arm64; its old Android, iOS and Intel

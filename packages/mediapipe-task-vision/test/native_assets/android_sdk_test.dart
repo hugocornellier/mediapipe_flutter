@@ -12,24 +12,28 @@ PackageUserDefines _defines(Map<String, Object?> values) => PackageUserDefines(
 
 void main() {
   test('Android SDK leaves JNI ownership with the Flutter plugin', () async {
-    await testCodeBuildHook(
-      mainMethod: hook.main,
-      targetOS: OS.android,
-      targetArchitecture: Architecture.arm64,
-      userDefines: _defines({
-        'official_android_sdk': true,
-        'tasks': ['face_landmarker'],
-      }),
-      check: (_, output) {
-        final asset = output.assets.code.single;
-        expect(
-          asset.id,
-          'package:mediapipe_flutter_vision/face_landmarker.dylib',
-        );
-        expect(asset.file, isNull);
-        expect(asset.linkMode, isA<LookupInProcess>());
-      },
-    );
+    for (final tasks in [
+      ['face_landmarker'],
+      ['hand_landmarker'],
+      ['face_landmarker', 'hand_landmarker'],
+    ]) {
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.android,
+        targetArchitecture: Architecture.arm64,
+        userDefines: _defines({'official_android_sdk': true, 'tasks': tasks}),
+        check: (_, output) {
+          expect(output.assets.code.map((asset) => asset.id).toSet(), {
+            for (final task in [...tasks, 'vision'])
+              'package:mediapipe_flutter_vision/$task.dylib',
+          });
+          for (final asset in output.assets.code) {
+            expect(asset.file, isNull);
+            expect(asset.linkMode, isA<LookupInProcess>());
+          }
+        },
+      );
+    }
   });
   test(
     'Android SDK refuses wrong targets, mixed tasks and mixed SDKs',

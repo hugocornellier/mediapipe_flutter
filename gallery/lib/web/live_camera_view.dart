@@ -1,10 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:web/web.dart' as web;
 import '../live/camera_geometry.dart';
-import '../live/face_overlay.dart';
+import '../live/live_subjects.dart';
 import 'live_camera_controller.dart';
 import 'test_hooks.dart';
 
@@ -65,8 +64,8 @@ class LiveCameraView extends StatelessWidget {
     );
   }
 
-  /// Records on the video element where the overlay draws
-  /// [faceAlignmentProbes], for the browser suite's alignment oracle
+  /// Records on the video element where the overlay draws the first
+  /// subject's [AlignmentProbes], for the browser suite's alignment oracle
   /// (`tool/browser/test_browser.mjs`).
   ///
   /// Uses the painter's own [transform] and reads the overlay's place on the
@@ -75,19 +74,21 @@ class LiveCameraView extends StatelessWidget {
   void _publishProbes(BuildContext context, PreviewTransform transform) {
     final video = controller.video;
     final result = controller.result;
-    if (result is! FaceLandmarkerResult || result.faceLandmarks.isEmpty) {
+    final probed = AlignmentProbes.of(result);
+    final subjects = liveSubjects(result);
+    if (probed == null || subjects.isEmpty) {
       video.removeAttribute('data-probes');
       return;
     }
-    final face = result.faceLandmarks.first;
+    final subject = subjects.first;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final box = context.mounted ? context.findRenderObject() : null;
       if (box is! RenderBox || !box.hasSize) return;
       final origin = box.localToGlobal(Offset.zero);
       final fitted = transform.uprightSize * transform.scale;
       final probes = <String, List<double>>{};
-      for (final index in faceAlignmentProbes) {
-        final point = transform.map(face[index].x, face[index].y);
+      for (final index in probed.indices) {
+        final point = transform.map(subject[index].x, subject[index].y);
         probes['$index'] = [point.dx, point.dy];
       }
       video

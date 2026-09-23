@@ -11,13 +11,23 @@ import 'native_desktop_runtime.dart';
 import 'native_vision_image.dart';
 
 /// Initialize the shared base options with owned model bytes or a model path.
+///
+/// [officialGpu] marks a task whose GPU path is validated on Google's official
+/// Linux runtime and iOS SDK too; other tasks allow GPU on macOS only.
 void setVisionBaseOptions(
   Arena arena,
   mp.MpBaseOptions base,
-  VisionModelOptions options,
-) {
-  if (!Platform.isMacOS && options.delegate == VisionDelegate.gpu) {
-    throw UnsupportedError('GPU vision inference is validated on macOS only.');
+  VisionModelOptions options, {
+  bool officialGpu = false,
+}) {
+  if (options.delegate == VisionDelegate.gpu &&
+      !Platform.isMacOS &&
+      !(officialGpu && (Platform.isLinux || Platform.isIOS))) {
+    throw UnsupportedError(
+      officialGpu
+          ? 'GPU vision inference requires macOS, Linux or iOS.'
+          : 'GPU vision inference is validated on macOS only.',
+    );
   }
   loadOfficialDesktopRuntime();
   base.file_descriptor = -1;
@@ -109,6 +119,25 @@ void checkVisionCall(mp.MpStatus Function(Pointer<Pointer<Char>>) call) =>
       onError: (message, status) =>
           VisionTaskException(message, statusCode: status),
     );
+
+/// Create a task, marking Google's GPU refusals (no EGL display, a software
+/// renderer) so callers can choose CPU. The package never retries itself.
+void checkVisionCreate(
+  mp.MpStatus Function(Pointer<Pointer<Char>>) call, {
+  required bool gpu,
+}) {
+  try {
+    checkVisionCall(call);
+  } on VisionTaskException catch (error) {
+    // Google's runtime reports every GPU refusal as its missing GPU service.
+    if (!gpu || !error.message.contains('kGpuService')) rethrow;
+    throw VisionTaskException(
+      error.message,
+      statusCode: error.statusCode,
+      gpuUnavailable: true,
+    );
+  }
+}
 
 /// Copy metadata option strings into the task creation arena.
 Pointer<Pointer<Char>> visionOptionStrings(Arena arena, List<String> values) {

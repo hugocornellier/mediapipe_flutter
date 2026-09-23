@@ -8,7 +8,11 @@ import 'package:hooks/hooks.dart';
 import 'package:mediapipe_flutter_core/native_assets.dart';
 
 /// Tasks implemented by the adapter to Google's prebuilt iOS SDK.
-const officialIosFaceTasks = {'face_detector', 'face_landmarker'};
+const officialIosTasks = {
+  'face_detector',
+  'face_landmarker',
+  'hand_landmarker',
+};
 
 /// Google 1.0.1 XCFrameworks, pinned from upstream's Package.swift.
 /// Inference code is linked from these binaries, never compiled from source.
@@ -41,7 +45,10 @@ void addOfficialIosSdkAssets(
   required File library,
   required Set<String> tasks,
 }) {
-  final names = tasks.map((task) => '$task.dylib').toList()..sort();
+  // `vision.dylib` is the asset the shared bindings and capability probes use;
+  // every name resolves to the one adapter image.
+  final names = {...tasks.map((task) => '$task.dylib'), 'vision.dylib'}.toList()
+    ..sort();
   for (final name in names) {
     output.assets.code.add(
       CodeAsset(
@@ -70,10 +77,10 @@ Future<void> buildOfficialIosSdk(
       code.targetArchitecture != Architecture.arm64) {
     throw UnsupportedError('official_ios_sdk supports arm64 iOS targets only.');
   }
-  final missing = tasks.difference(officialIosFaceTasks);
+  final missing = tasks.difference(officialIosTasks);
   if (tasks.isEmpty || missing.isNotEmpty) {
     throw UnsupportedError(
-      'official_ios_sdk supports Face Detector and Face Landmarker only; '
+      'official_ios_sdk supports ${officialIosTasks.join(', ')}; '
       'requested ${tasks.join(', ')}.',
     );
   }

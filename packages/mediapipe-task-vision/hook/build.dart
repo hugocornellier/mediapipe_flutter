@@ -11,6 +11,9 @@ import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
 
 import '../sdk_downloads.dart';
 
+/// Tasks the Android Flutter plugin serves through Google's official SDK.
+const officialAndroidTasks = {'face_landmarker', 'hand_landmarker'};
+
 void main(List<String> arguments) async {
   await build(arguments, (input, output) async {
     if (!input.config.buildCodeAssets) return;
@@ -57,24 +60,27 @@ void main(List<String> arguments) async {
     }
     if (officialAndroidSdk == true) {
       if (!target.startsWith('android/') ||
-          tasks.length != 1 ||
-          !tasks.contains('face_landmarker') ||
+          tasks.isEmpty ||
+          !officialAndroidTasks.containsAll(tasks) ||
           officialIosSdk == true ||
           useOfficialMacosLandmarks == true) {
         throw UnsupportedError(
-          'official_android_sdk requires Android, face_landmarker only, and '
-          'the mediapipe_flutter_vision_android Flutter plugin.',
+          'official_android_sdk requires Android, only '
+          '${officialAndroidTasks.join(' and ')}, and the '
+          'mediapipe_flutter_vision_android Flutter plugin.',
         );
       }
       // The Flutter plugin owns Google's Java/JNI SDK. These unused C bindings
       // remain lazy process lookups rather than bundling a second graph registry.
-      output.assets.code.add(
-        CodeAsset(
-          package: input.packageName,
-          name: 'face_landmarker.dylib',
-          linkMode: LookupInProcess(),
-        ),
-      );
+      for (final name in {...tasks.map((t) => '$t.dylib'), 'vision.dylib'}) {
+        output.assets.code.add(
+          CodeAsset(
+            package: input.packageName,
+            name: name,
+            linkMode: LookupInProcess(),
+          ),
+        );
+      }
       output.metadata['official_android_sdk'] = '1.0.0';
       return;
     }
@@ -127,6 +133,7 @@ void main(List<String> arguments) async {
         release: officialMacosLandmarkRuntime,
         target: target,
         tasks: {...validated, ...sharingSelectedAlias},
+        oneImage: true,
       );
       output.metadata['official_macos_landmark_tasks'] = validated.toList()
         ..sort();
@@ -205,6 +212,7 @@ Future<void> _bundleRelease(
   required VisionRuntimeRelease release,
   required String target,
   required Set<String> tasks,
+  bool oneImage = false,
 }) async {
   final local = Directory.fromUri(
     input.packageRoot.resolve(release.localBuildDirectory),
@@ -251,7 +259,13 @@ Future<void> _bundleRelease(
       officialWheel: release.officialWheel,
     );
   }
-  await _bundleAliases(input, output, library: library, tasks: tasks);
+  await _bundleAliases(
+    input,
+    output,
+    library: library,
+    tasks: tasks,
+    oneImage: oneImage,
+  );
 }
 
 /// Asset IDs are compile-time constants in the generated bindings: each face
@@ -312,15 +326,24 @@ Future<void> _bundleAndroid(
   }
 }
 
+/// With [oneImage], a runtime that serves the shared vision asset is bundled
+/// once, as that asset only. Google's macOS monolith registers its graphs in a
+/// registry that dyld shares between loaded images, so a second copy for the
+/// face asset aborts on its first duplicate registration; Face Landmarker then
+/// calls the same functions through the shared asset
+/// (lib/src/io/face_landmarker_api.dart).
 Future<void> _bundleAliases(
   BuildInput input,
   BuildOutputBuilder output, {
   required File library,
   required Set<String> tasks,
   String suffix = 'dylib',
+  bool oneImage = false,
 }) async {
   final digest = (await sha256.bind(library.openRead()).first).toString();
-  for (final assetName in _assetNames(tasks)) {
+  var names = _assetNames(tasks);
+  if (oneImage && names.contains('vision.dylib')) names = {'vision.dylib'};
+  for (final assetName in names) {
     final stem = assetName.substring(0, assetName.length - '.dylib'.length);
     final bundled = File.fromUri(
       library.parent.uri.resolve('lib$stem.$suffix'),

@@ -1,6 +1,7 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache-2.0.
-// Adapt the existing Dart C ABI to Google's prebuilt Objective-C Tasks SDK.
-// This file contains no inference, tracking, or model postprocessing code.
+// Adapt the existing Dart C ABI to Google's prebuilt Objective-C Tasks SDK for
+// Face Detector, Face Landmarker and Hand Landmarker. This file contains no
+// inference, tracking, or model postprocessing code.
 #import <MediaPipeTasksVision/MediaPipeTasksVision.h>
 #import <UIKit/UIKit.h>
 
@@ -9,6 +10,7 @@
 
 #include "mediapipe/tasks/c/vision/face_detector/face_detector.h"
 #include "mediapipe/tasks/c/vision/face_landmarker/face_landmarker.h"
+#include "mediapipe/tasks/c/vision/hand_landmarker/hand_landmarker.h"
 #include "mediapipe/tasks/c/vision/core/image_processing_options.h"
 #include "mediapipe/tasks/c/components/containers/category.h"
 #include "mediapipe/tasks/c/components/containers/keypoint.h"
@@ -31,6 +33,11 @@ struct MpFaceLandmarkerInternal {
 
 struct MpFaceDetectorInternal {
   __strong MPPFaceDetector *task;
+  __strong NSString *temporaryModel;
+};
+
+struct MpHandLandmarkerInternal {
+  __strong MPPHandLandmarker *task;
   __strong NSString *temporaryModel;
 };
 
@@ -99,7 +106,7 @@ MPPImage *SdkImage(MpImagePtr image, const MpImageProcessingOptions *options,
     return nil;
   }
   if (options && options->has_region_of_interest) {
-    Fail(message, @"Face tasks do not support a region of interest");
+    Fail(message, @"These tasks do not support a region of interest");
     return nil;
   }
   int rotation = options ? options->rotation_degrees : 0;
@@ -216,16 +223,19 @@ void FreeCategories(MpCategories &value) {
   free(value.categories);
 }
 
-void CopyLandmarker(MPPFaceLandmarkerResult *source, MpFaceLandmarkerResult *out) {
-  out->face_landmarks = Allocate<MpNormalizedLandmarks>(source.faceLandmarks.count);
-  out->face_landmarks_count = static_cast<uint32_t>(source.faceLandmarks.count);
-  for (NSUInteger i = 0; i < source.faceLandmarks.count; ++i) {
-    NSArray<MPPNormalizedLandmark *> *face = source.faceLandmarks[i];
-    auto &target = out->face_landmarks[i];
-    target.landmarks = Allocate<MpNormalizedLandmark>(face.count);
-    target.landmarks_count = static_cast<uint32_t>(face.count);
-    for (NSUInteger j = 0; j < face.count; ++j) {
-      MPPNormalizedLandmark *landmark = face[j];
+// Copies one landmark list per subject, normalized or world, into C storage.
+template <typename SdkPoint, typename Point, typename List>
+void CopyLandmarkLists(NSArray<NSArray<SdkPoint *> *> *source, List **out,
+                       uint32_t *count) {
+  *out = Allocate<List>(source.count);
+  *count = static_cast<uint32_t>(source.count);
+  for (NSUInteger i = 0; i < source.count; ++i) {
+    NSArray<SdkPoint *> *points = source[i];
+    auto &target = (*out)[i];
+    target.landmarks = Allocate<Point>(points.count);
+    target.landmarks_count = static_cast<uint32_t>(points.count);
+    for (NSUInteger j = 0; j < points.count; ++j) {
+      SdkPoint *landmark = points[j];
       target.landmarks[j].x = landmark.x;
       target.landmarks[j].y = landmark.y;
       target.landmarks[j].z = landmark.z;
@@ -235,6 +245,19 @@ void CopyLandmarker(MPPFaceLandmarkerResult *source, MpFaceLandmarkerResult *out
       target.landmarks[j].presence = landmark.presence.floatValue;
     }
   }
+}
+
+template <typename List> void FreeLandmarkLists(List *lists, uint32_t count) {
+  for (uint32_t i = 0; i < count; ++i) {
+    for (uint32_t j = 0; j < lists[i].landmarks_count; ++j) free(lists[i].landmarks[j].name);
+    free(lists[i].landmarks);
+  }
+  free(lists);
+}
+
+void CopyLandmarker(MPPFaceLandmarkerResult *source, MpFaceLandmarkerResult *out) {
+  CopyLandmarkLists<MPPNormalizedLandmark, MpNormalizedLandmark>(
+      source.faceLandmarks, &out->face_landmarks, &out->face_landmarks_count);
   out->face_blendshapes = Allocate<MpCategories>(source.faceBlendshapes.count);
   out->face_blendshapes_count = static_cast<uint32_t>(source.faceBlendshapes.count);
   for (NSUInteger i = 0; i < source.faceBlendshapes.count; ++i) {
@@ -254,6 +277,18 @@ void CopyLandmarker(MPPFaceLandmarkerResult *source, MpFaceLandmarkerResult *out
       }
     }
   }
+}
+
+void CopyHandLandmarker(MPPHandLandmarkerResult *source, MpHandLandmarkerResult *out) {
+  out->handedness = Allocate<MpCategories>(source.handedness.count);
+  out->handedness_count = static_cast<uint32_t>(source.handedness.count);
+  for (NSUInteger i = 0; i < source.handedness.count; ++i) {
+    CopyCategories(source.handedness[i], &out->handedness[i]);
+  }
+  CopyLandmarkLists<MPPNormalizedLandmark, MpNormalizedLandmark>(
+      source.landmarks, &out->hand_landmarks, &out->hand_landmarks_count);
+  CopyLandmarkLists<MPPLandmark, MpLandmark>(
+      source.worldLandmarks, &out->hand_world_landmarks, &out->hand_world_landmarks_count);
 }
 
 void CopyDetector(MPPFaceDetectorResult *source, MpFaceDetectorResult *out) {
@@ -291,6 +326,66 @@ void CopyDetector(MPPFaceDetectorResult *source, MpFaceDetectorResult *out) {
       target.keypoints[j].has_score = keypoint.score != 0;
       target.keypoints[j].score = keypoint.score;
     }
+  }
+}
+// Applies the model, delegate and running mode every task shares.
+template <typename SdkOptions>
+MpStatus Configure(SdkOptions *sdk, const MpBaseOptions &base, MpRunningMode mode,
+                   NSString **temporary, char **message) {
+  if (mode != MP_RUNNING_MODE_IMAGE && mode != MP_RUNNING_MODE_VIDEO) {
+    return Fail(message, @"The Dart adapter supports IMAGE and VIDEO only", kMpUnimplemented);
+  }
+  NSString *path = ModelPath(base, temporary, message);
+  if (!path) return kMpInvalidArgument;
+  sdk.baseOptions.modelAssetPath = path;
+  sdk.baseOptions.delegate = base.delegate == MP_DELEGATE_GPU ? MPPDelegateGPU : MPPDelegateCPU;
+  sdk.runningMode = mode == MP_RUNNING_MODE_VIDEO ? MPPRunningModeVideo : MPPRunningModeImage;
+  return kMpOk;
+}
+
+// Creates the SDK task and hands ownership of it and its model copy to C.
+template <typename Handle, typename Task, typename SdkOptions>
+MpStatus Own(SdkOptions *sdk, NSString *temporary, Handle **out, char **message) {
+  NSError *error = nil;
+  Task *task = [[Task alloc] initWithOptions:sdk error:&error];
+  if (!task) { RemoveModel(temporary); return SdkError(message, error); }
+  auto *handle = new (std::nothrow) Handle{task, temporary};
+  if (!handle) { RemoveModel(temporary); return Fail(message, @"Cannot allocate task", kMpResourceExhausted); }
+  *out = handle;
+  return kMpOk;
+}
+
+// Runs one IMAGE or VIDEO request and copies the SDK result into C storage.
+template <typename SdkResult, typename Handle, typename Result>
+MpStatus Detect(Handle *task, MpImagePtr image, const MpImageProcessingOptions *options,
+                bool video, int64_t timestamp, Result *out, char **message,
+                void (*copy)(SdkResult *, Result *), void (*close)(Result *)) {
+  @autoreleasepool {
+    if (!task || !out) return Fail(message, @"Supply a task and result");
+    *out = {};
+    MPPImage *input = SdkImage(image, options, message);
+    if (!input) return kMpInvalidArgument;
+    NSError *error = nil;
+    SdkResult *result = video
+        ? [task->task detectVideoFrame:input timestampInMilliseconds:timestamp error:&error]
+        : [task->task detectImage:input error:&error];
+    if (!result) return SdkError(message, error);
+    try { copy(result, out); }
+    catch (const std::bad_alloc &) {
+      close(out);
+      return Fail(message, @"Cannot copy task result", kMpResourceExhausted);
+    }
+    return kMpOk;
+  }
+}
+
+template <typename Handle> MpStatus CloseTask(Handle *task) {
+  @autoreleasepool {
+    if (!task) return kMpOk;
+    task->task = nil;
+    RemoveModel(task->temporaryModel);
+    delete task;
+    return kMpOk;
   }
 }
 }  // namespace
@@ -393,109 +488,55 @@ MpStatus MpFaceLandmarkerCreate(MpFaceLandmarkerOptions *options,
   @autoreleasepool {
     if (!options || !out) return Fail(message, @"Supply options and output");
     *out = nullptr;
-    if (options->running_mode != MP_RUNNING_MODE_IMAGE && options->running_mode != MP_RUNNING_MODE_VIDEO) {
-      return Fail(message, @"The Dart adapter supports IMAGE and VIDEO only", kMpUnimplemented);
-    }
     NSString *temporary = nil;
-    NSString *path = ModelPath(options->base_options, &temporary, message);
-    if (!path) return kMpInvalidArgument;
     MPPFaceLandmarkerOptions *sdk = [MPPFaceLandmarkerOptions new];
-    sdk.baseOptions.modelAssetPath = path;
-    sdk.baseOptions.delegate = options->base_options.delegate == MP_DELEGATE_GPU ? MPPDelegateGPU : MPPDelegateCPU;
-    sdk.runningMode = options->running_mode == MP_RUNNING_MODE_VIDEO ? MPPRunningModeVideo : MPPRunningModeImage;
+    MpStatus status = Configure(sdk, options->base_options, options->running_mode, &temporary, message);
+    if (status != kMpOk) return status;
     sdk.numFaces = options->num_faces;
     sdk.minFaceDetectionConfidence = options->min_face_detection_confidence;
     sdk.minFacePresenceConfidence = options->min_face_presence_confidence;
     sdk.minTrackingConfidence = options->min_tracking_confidence;
     sdk.outputFaceBlendshapes = options->output_face_blendshapes;
     sdk.outputFacialTransformationMatrixes = options->output_facial_transformation_matrixes;
-    NSError *error = nil;
-    MPPFaceLandmarker *task = [[MPPFaceLandmarker alloc] initWithOptions:sdk error:&error];
-    if (!task) { RemoveModel(temporary); return SdkError(message, error); }
-    auto *handle = new (std::nothrow) MpFaceLandmarkerInternal{task, temporary};
-    if (!handle) { RemoveModel(temporary); return Fail(message, @"Cannot allocate task", kMpResourceExhausted); }
-    *out = handle;
-    return kMpOk;
+    return Own<MpFaceLandmarkerInternal, MPPFaceLandmarker>(sdk, temporary, out, message);
   }
 }
 
 void MpFaceLandmarkerCloseResult(MpFaceLandmarkerResult *result) {
   if (!result) return;
-  for (uint32_t i = 0; i < result->face_landmarks_count; ++i) {
-    for (uint32_t j = 0; j < result->face_landmarks[i].landmarks_count; ++j) free(result->face_landmarks[i].landmarks[j].name);
-    free(result->face_landmarks[i].landmarks);
-  }
+  FreeLandmarkLists(result->face_landmarks, result->face_landmarks_count);
   for (uint32_t i = 0; i < result->face_blendshapes_count; ++i) FreeCategories(result->face_blendshapes[i]);
   for (uint32_t i = 0; i < result->facial_transformation_matrixes_count; ++i) free(result->facial_transformation_matrixes[i].data);
-  free(result->face_landmarks);
   free(result->face_blendshapes);
   free(result->facial_transformation_matrixes);
   *result = {};
 }
 
-static MpStatus DetectLandmarker(MpFaceLandmarkerPtr task, MpImagePtr image,
-    const MpImageProcessingOptions *options, bool video, int64_t timestamp,
-    MpFaceLandmarkerResult *out, char **message) {
-  @autoreleasepool {
-    if (!task || !out) return Fail(message, @"Supply a task and result");
-    *out = {};
-    MPPImage *input = SdkImage(image, options, message);
-    if (!input) return kMpInvalidArgument;
-    NSError *error = nil;
-    MPPFaceLandmarkerResult *result = video
-        ? [task->task detectVideoFrame:input timestampInMilliseconds:timestamp error:&error]
-        : [task->task detectImage:input error:&error];
-    if (!result) return SdkError(message, error);
-    try { CopyLandmarker(result, out); }
-    catch (const std::bad_alloc &) {
-      MpFaceLandmarkerCloseResult(out);
-      return Fail(message, @"Cannot copy task result", kMpResourceExhausted);
-    }
-    return kMpOk;
-  }
-}
-
 MpStatus MpFaceLandmarkerDetectImage(MpFaceLandmarkerPtr task, MpImagePtr image,
     const MpImageProcessingOptions *options, MpFaceLandmarkerResult *out, char **message) {
-  return DetectLandmarker(task, image, options, false, 0, out, message);
+  return Detect<MPPFaceLandmarkerResult>(task, image, options, false, 0, out, message,
+                                         CopyLandmarker, MpFaceLandmarkerCloseResult);
 }
 MpStatus MpFaceLandmarkerDetectForVideo(MpFaceLandmarkerPtr task, MpImagePtr image,
     const MpImageProcessingOptions *options, int64_t timestamp, MpFaceLandmarkerResult *out, char **message) {
-  return DetectLandmarker(task, image, options, true, timestamp, out, message);
+  return Detect<MPPFaceLandmarkerResult>(task, image, options, true, timestamp, out, message,
+                                         CopyLandmarker, MpFaceLandmarkerCloseResult);
 }
 MpStatus MpFaceLandmarkerClose(MpFaceLandmarkerPtr task, char **message) {
-  @autoreleasepool {
-    if (!task) return kMpOk;
-    task->task = nil;
-    RemoveModel(task->temporaryModel);
-    delete task;
-    return kMpOk;
-  }
+  return CloseTask(task);
 }
 
 MpStatus MpFaceDetectorCreate(MpFaceDetectorOptions *options, MpFaceDetectorPtr *out, char **message) {
   @autoreleasepool {
     if (!options || !out) return Fail(message, @"Supply options and output");
     *out = nullptr;
-    if (options->running_mode != MP_RUNNING_MODE_IMAGE && options->running_mode != MP_RUNNING_MODE_VIDEO) {
-      return Fail(message, @"The Dart adapter supports IMAGE and VIDEO only", kMpUnimplemented);
-    }
     NSString *temporary = nil;
-    NSString *path = ModelPath(options->base_options, &temporary, message);
-    if (!path) return kMpInvalidArgument;
     MPPFaceDetectorOptions *sdk = [MPPFaceDetectorOptions new];
-    sdk.baseOptions.modelAssetPath = path;
-    sdk.baseOptions.delegate = options->base_options.delegate == MP_DELEGATE_GPU ? MPPDelegateGPU : MPPDelegateCPU;
-    sdk.runningMode = options->running_mode == MP_RUNNING_MODE_VIDEO ? MPPRunningModeVideo : MPPRunningModeImage;
+    MpStatus status = Configure(sdk, options->base_options, options->running_mode, &temporary, message);
+    if (status != kMpOk) return status;
     sdk.minDetectionConfidence = options->min_detection_confidence;
     sdk.minSuppressionThreshold = options->min_suppression_threshold;
-    NSError *error = nil;
-    MPPFaceDetector *task = [[MPPFaceDetector alloc] initWithOptions:sdk error:&error];
-    if (!task) { RemoveModel(temporary); return SdkError(message, error); }
-    auto *handle = new (std::nothrow) MpFaceDetectorInternal{task, temporary};
-    if (!handle) { RemoveModel(temporary); return Fail(message, @"Cannot allocate task", kMpResourceExhausted); }
-    *out = handle;
-    return kMpOk;
+    return Own<MpFaceDetectorInternal, MPPFaceDetector>(sdk, temporary, out, message);
   }
 }
 
@@ -512,42 +553,57 @@ void MpFaceDetectorCloseResult(MpFaceDetectorResult *result) {
   *result = {};
 }
 
-static MpStatus DetectDetector(MpFaceDetectorPtr task, MpImagePtr image,
-    const MpImageProcessingOptions *options, bool video, int64_t timestamp,
-    MpFaceDetectorResult *out, char **message) {
-  @autoreleasepool {
-    if (!task || !out) return Fail(message, @"Supply a task and result");
-    *out = {};
-    MPPImage *input = SdkImage(image, options, message);
-    if (!input) return kMpInvalidArgument;
-    NSError *error = nil;
-    MPPFaceDetectorResult *result = video
-        ? [task->task detectVideoFrame:input timestampInMilliseconds:timestamp error:&error]
-        : [task->task detectImage:input error:&error];
-    if (!result) return SdkError(message, error);
-    try { CopyDetector(result, out); }
-    catch (const std::bad_alloc &) {
-      MpFaceDetectorCloseResult(out);
-      return Fail(message, @"Cannot copy task result", kMpResourceExhausted);
-    }
-    return kMpOk;
-  }
-}
 MpStatus MpFaceDetectorDetectImage(MpFaceDetectorPtr task, MpImagePtr image,
     const MpImageProcessingOptions *options, MpFaceDetectorResult *out, char **message) {
-  return DetectDetector(task, image, options, false, 0, out, message);
+  return Detect<MPPFaceDetectorResult>(task, image, options, false, 0, out, message,
+                                       CopyDetector, MpFaceDetectorCloseResult);
 }
 MpStatus MpFaceDetectorDetectForVideo(MpFaceDetectorPtr task, MpImagePtr image,
     const MpImageProcessingOptions *options, int64_t timestamp, MpFaceDetectorResult *out, char **message) {
-  return DetectDetector(task, image, options, true, timestamp, out, message);
+  return Detect<MPPFaceDetectorResult>(task, image, options, true, timestamp, out, message,
+                                       CopyDetector, MpFaceDetectorCloseResult);
 }
 MpStatus MpFaceDetectorClose(MpFaceDetectorPtr task, char **message) {
+  return CloseTask(task);
+}
+
+MpStatus MpHandLandmarkerCreate(MpHandLandmarkerOptions *options,
+    MpHandLandmarkerPtr *out, char **message) {
   @autoreleasepool {
-    if (!task) return kMpOk;
-    task->task = nil;
-    RemoveModel(task->temporaryModel);
-    delete task;
-    return kMpOk;
+    if (!options || !out) return Fail(message, @"Supply options and output");
+    *out = nullptr;
+    NSString *temporary = nil;
+    MPPHandLandmarkerOptions *sdk = [MPPHandLandmarkerOptions new];
+    MpStatus status = Configure(sdk, options->base_options, options->running_mode, &temporary, message);
+    if (status != kMpOk) return status;
+    sdk.numHands = options->num_hands;
+    sdk.minHandDetectionConfidence = options->min_hand_detection_confidence;
+    sdk.minHandPresenceConfidence = options->min_hand_presence_confidence;
+    sdk.minTrackingConfidence = options->min_tracking_confidence;
+    return Own<MpHandLandmarkerInternal, MPPHandLandmarker>(sdk, temporary, out, message);
   }
+}
+
+void MpHandLandmarkerCloseResult(MpHandLandmarkerResult *result) {
+  if (!result) return;
+  for (uint32_t i = 0; i < result->handedness_count; ++i) FreeCategories(result->handedness[i]);
+  free(result->handedness);
+  FreeLandmarkLists(result->hand_landmarks, result->hand_landmarks_count);
+  FreeLandmarkLists(result->hand_world_landmarks, result->hand_world_landmarks_count);
+  *result = {};
+}
+
+MpStatus MpHandLandmarkerDetectImage(MpHandLandmarkerPtr task, MpImagePtr image,
+    const MpImageProcessingOptions *options, MpHandLandmarkerResult *out, char **message) {
+  return Detect<MPPHandLandmarkerResult>(task, image, options, false, 0, out, message,
+                                         CopyHandLandmarker, MpHandLandmarkerCloseResult);
+}
+MpStatus MpHandLandmarkerDetectForVideo(MpHandLandmarkerPtr task, MpImagePtr image,
+    const MpImageProcessingOptions *options, int64_t timestamp, MpHandLandmarkerResult *out, char **message) {
+  return Detect<MPPHandLandmarkerResult>(task, image, options, true, timestamp, out, message,
+                                         CopyHandLandmarker, MpHandLandmarkerCloseResult);
+}
+MpStatus MpHandLandmarkerClose(MpHandLandmarkerPtr task, char **message) {
+  return CloseTask(task);
 }
 }  // extern C

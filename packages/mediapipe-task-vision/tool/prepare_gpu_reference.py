@@ -34,6 +34,10 @@ OBJECT_FILES = (
     "object_detection/official_gpu_reference.json",
     "object_detection/official_gpu_video_reference.json",
 )
+# Hand Landmarker, from the shared landmark generator restricted to hand.
+HAND_TASKS = (("landmark_tasks", "landmark_tasks"),)
+HAND_FILES = ("landmark_tasks/official_gpu_reference.json",)
+GENERATOR_ARGUMENTS = {"landmark_tasks": ["--tasks", "hand"]}
 
 
 def digest(path):
@@ -63,7 +67,8 @@ def difference(reference, current):
             group = next((name for name in (
                 "face_landmarks", "face_blendshapes",
                 "facial_transformation_matrixes", "bounding_box",
-                "keypoints", "categories",
+                "keypoints", "categories", "hand_world_landmarks",
+                "hand_landmarks", "handedness",
             ) if "." + name in path), "other")
             error = abs(old - new)
             item = groups.setdefault(group, {"maximum_absolute_error": 0.0,
@@ -79,25 +84,36 @@ def difference(reference, current):
     return {"numeric_groups": groups, "structural_differences": structural}
 
 
-def face_test_root(destination):
-    """Builds a face-only root package for the Dart suites.
+def face_test_root(destination, hand=False):
+    """Builds a face-only root package for the Dart suites, plus Hand
+    Landmarker's with [hand].
 
     This package's own pubspec selects tasks whose macOS runtime exists only in
     a maintainer source build, so `dart test` run here cannot resolve its assets
     on a machine without one. Only the root package's user_defines reach a build
     hook, so an isolated root scoped to the two published face runtimes keeps
-    this job on the public download path it exists to check.
+    this job on the public download path it exists to check. Linux's wheel
+    carries hand too; macOS runs hand through
+    test_official_macos_landmark_runtime.py instead.
     """
     if destination.exists():
         shutil.rmtree(destination)
     (destination / "test").mkdir(parents=True)
-    for folder in ("support", "fixtures/face_detection", "fixtures/face_landmarker"):
+    folders = ["support", "fixtures/face_detection", "fixtures/face_landmarker"]
+    tests = ["face_detector_test.dart", "face_landmarker_test.dart"]
+    models = ["blaze_face_short_range.tflite", "face_landmarker.task"]
+    if hand:
+        folders.append("fixtures/landmark_tasks")
+        tests.append("landmark_tasks_test.dart")
+        models.append("hand_landmarker.task")
+    for folder in folders:
         shutil.copytree(PACKAGE / "test" / folder, destination / "test" / folder)
-    for name in ("face_detector_test.dart", "face_landmarker_test.dart"):
+    for name in tests:
         shutil.copyfile(PACKAGE / "test" / name, destination / "test" / name)
     (destination / "models").mkdir()
-    for name in ("blaze_face_short_range.tflite", "face_landmarker.task"):
+    for name in models:
         shutil.copyfile(PACKAGE / "models" / name, destination / "models" / name)
+    tasks = "face_detector, face_landmarker" + (", hand_landmarker" if hand else "")
     (destination / "pubspec.yaml").write_text(f"""name: mediapipe_gpu_face_tests
 publish_to: none
 environment:
@@ -111,7 +127,7 @@ dev_dependencies:
 hooks:
   user_defines:
     mediapipe_flutter_vision:
-      tasks: [face_detector, face_landmarker]
+      tasks: [{tasks}]
 """)
     return destination
 
@@ -127,14 +143,22 @@ def main():
     parser.add_argument("--object-detector", action="store_true",
                         help="Also generate Object Detector references, for a "
                              "checkout whose object detection model is present")
+    parser.add_argument("--hand", action="store_true",
+                        help="Also generate Hand Landmarker references, for a "
+                             "checkout whose hand model is present")
     args = parser.parse_args()
-    tasks = FACE_TASKS + (OBJECT_TASKS if args.object_detector else ())
-    files = FACE_FILES + (OBJECT_FILES if args.object_detector else ())
+    tasks = (FACE_TASKS + (OBJECT_TASKS if args.object_detector else ())
+             + (HAND_TASKS if args.hand else ()))
+    files = (FACE_FILES + (OBJECT_FILES if args.object_detector else ())
+             + (HAND_FILES if args.hand else ()))
     # Imported here: cpu_reference imports this module for difference().
     from cpu_reference import host_target, wheel_pin
     target = host_target()
     if target not in ("macos/arm64", "linux/x64"):
         raise SystemExit("GPU references require macOS arm64 or Linux x64.")
+    if args.test and args.hand and target != "linux/x64":
+        raise SystemExit("On macOS, hand runs on the official landmark runtime: "
+                         "use tool/test_official_macos_landmark_runtime.py.")
     wheel_url, wheel_sha256, library_sha256, version = wheel_pin(target)
     metal = target == "macos/arm64"
     output = args.output_dir.resolve()
@@ -161,7 +185,8 @@ def main():
         log_file = output / (task + ".log")
         command = [str(python), "-B", str(PACKAGE / "tool" /
                    f"generate_{task}_reference.py"), "--delegate", "gpu",
-                   "--output-dir", str(output / folder)]
+                   "--output-dir", str(output / folder),
+                   *GENERATOR_ARGUMENTS.get(task, [])]
         with log_file.open("w") as log:
             result = subprocess.run(command, env=env, stdout=log,
                                     stderr=subprocess.STDOUT)
@@ -198,14 +223,17 @@ def main():
     print(f"Verified official GPU references: {output}", flush=True)
     if args.test:
         env["MEDIAPIPE_GPU_REFERENCE_DIR"] = str(output)
-        root = face_test_root(REPO / "build/gpu-face-tests")
+        root = face_test_root(REPO / "build/gpu-face-tests", hand=args.hand)
+        suites = ["test/face_detector_test.dart", "test/face_landmarker_test.dart"]
+        if args.hand:
+            suites.append("test/landmark_tasks_test.dart")
+            env["MEDIAPIPE_LANDMARK_TASKS"] = "hand"
         with (output / "dart-tests.log").open("w") as log:
             result = subprocess.run(["dart", "pub", "get"], cwd=root, env=env,
                                     stdout=log, stderr=subprocess.STDOUT)
             if result.returncode == 0:
                 result = subprocess.run([
-                    "dart", "test", "test/face_detector_test.dart",
-                    "test/face_landmarker_test.dart", "--reporter", "expanded",
+                    "dart", "test", *suites, "--reporter", "expanded",
                 ], cwd=root, env=env, stdout=log, stderr=subprocess.STDOUT)
         print("\n".join((output / "dart-tests.log").read_text().splitlines()[-30:]),
               flush=True)

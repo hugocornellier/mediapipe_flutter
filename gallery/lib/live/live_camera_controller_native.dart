@@ -387,6 +387,7 @@ class LiveCameraController<T> extends ChangeNotifier {
 bool _refusedGpu(Object error) => switch (error) {
   FaceLandmarkerException(:final gpuUnavailable) => gpuUnavailable,
   FaceDetectorException(:final gpuUnavailable) => gpuUnavailable,
+  VisionTaskException(:final gpuUnavailable) => gpuUnavailable,
   _ => false,
 };
 

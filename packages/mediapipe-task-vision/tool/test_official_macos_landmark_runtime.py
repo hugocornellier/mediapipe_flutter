@@ -1,4 +1,9 @@
-"""Compare the official macOS landmark runtime with pinned references."""
+"""Compare the official macOS landmark runtime with pinned references.
+
+Face Landmarker runs on CPU and Metal, Hand Landmarker on CPU and Metal, and
+Pose Landmarker on CPU, each against the official wheel's output: checked-in
+CPU goldens, and GPU references generated on this machine.
+"""
 import argparse
 import os
 from pathlib import Path
@@ -73,7 +78,7 @@ def main():
 
     gpu = output / 'gpu'
     run([str(python), '-B', str(PACKAGE / 'tool/prepare_gpu_reference.py'),
-         '--python', str(python), '--output-dir', str(gpu)],
+         '--python', str(python), '--output-dir', str(gpu), '--hand'],
         REPO, env, output / 'gpu-reference.log')
 
     root = test_root(output / 'consumer')
@@ -84,7 +89,8 @@ def main():
     run(['dart', 'test', 'test/face_landmarker_test.dart',
          'test/landmark_tasks_test.dart',
          '--reporter', 'expanded'], root, env, output / 'dart-tests.log')
-    print('Official macOS Face, Hand and Pose runtime comparisons passed.', flush=True)
+    print('Official macOS Face, Hand and Pose runtime comparisons passed, '
+          'with Face and Hand on Metal.', flush=True)
 
 
 if __name__ == '__main__':

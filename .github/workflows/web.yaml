@@ -1,4 +1,4 @@
-name: Web FaceLandmarker
+name: Web vision tasks
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: gallery/tool/browser/package-lock.json
-      - name: Prepare official web runtime and model
+      - name: Prepare official web runtime and models
         run: |
           python3 -B gallery/tool/prepare.py --target web
           sudo apt-get update && sudo apt-get install -y ffmpeg xvfb libgl1-mesa-dri
@@ -69,6 +69,7 @@ jobs:
         run: |
           python3 -B gallery/tool/web_server.py &
           node gallery/tool/browser/test_browser.mjs
+          node gallery/tool/browser/test_browser.mjs --suite=camera --task=hand
           node gallery/tool/browser/test_browser.mjs --suite=api --delegate=gpu
           xvfb-run -a node gallery/tool/browser/test_browser.mjs --browser=firefox --suite=api --headed=true
       - uses: actions/upload-artifact@v4
@@ -138,7 +139,9 @@ jobs:
       - name: Verify public live camera gallery
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
-        run: node gallery/tool/browser/test_browser.mjs --suite=camera --base-url="$PAGE_URL"
+        run: |
+          node gallery/tool/browser/test_browser.mjs --suite=camera --base-url="$PAGE_URL"
+          node gallery/tool/browser/test_browser.mjs --suite=camera --task=hand --base-url="$PAGE_URL"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

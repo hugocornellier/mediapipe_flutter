@@ -80,3 +80,63 @@ jobs:
             build/codex-tmp/ios-consumer-*/*.log
             build/codex-tmp/ios-consumer-*/report.json
           if-no-files-found: warn
+
+  # Hand Landmarker runs through Google's prebuilt 1.0.1 iOS SDK, so this job
+  # needs no source build. The simulator runs it on the CPU only: Google's SDK
+  # aborts in its Metal preprocessing there. Metal is a phone check.
+  hand-sdk:
+    name: Hand Landmarker / official iOS SDK on an arm64 simulator
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download the hand model
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_landmark_tasks.dart
+      - uses: actions/cache@v4
+        with:
+          path: gallery/.dart_tool/hooks_runner/shared/mediapipe_flutter_vision/build/official-ios-sdk/*/sdk.zip
+          key: official-ios-sdk-${{ hashFiles('packages/mediapipe-task-vision/sdk_downloads.dart') }}
+      - name: Prepare the gallery with the hand task only
+        run: |
+          python3 -B gallery/tool/prepare.py --target ios-simulator/arm64 --tasks hand_landmarker
+          cd gallery && flutter pub get
+      - name: Boot an installed iPhone simulator
+        id: simulator
+        run: |
+          device=$(python3 - <<'PY'
+          import json, subprocess
+          devices = json.loads(subprocess.check_output(
+              ['xcrun', 'simctl', 'list', 'devices', 'available', '--json'], text=True))['devices']
+          candidates = [d for runtime, entries in devices.items() if '.iOS-' in runtime
+                        for d in entries if d['name'].startswith('iPhone')]
+          if not candidates:
+              raise SystemExit('No installed iPhone simulator runtime')
+          print(candidates[0]['udid'])
+          PY
+          )
+          xcrun simctl boot "$device"
+          xcrun simctl bootstatus "$device" -b
+          echo "device=$device" >> "$GITHUB_OUTPUT"
+      - name: Official references, pixel formats, rotation, VIDEO and the gallery
+        working-directory: gallery
+        run: |
+          flutter test -d ${{ steps.simulator.outputs.device }} \
+            integration_test/sdk_hand_landmarker_test.dart \
+            --dart-define=SDK_GPU=skip --reporter expanded 2>&1 | tee hand-ios-simulator.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-simulator-hand-sdk
+          path: gallery/hand-ios-simulator.log
+          if-no-files-found: warn

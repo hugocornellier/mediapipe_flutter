@@ -35,15 +35,18 @@ Live Face Landmarker, Live Hand Landmarker and Live Pose Landmarker into it. The
 rows remain unchanged.
 
 For Android, `python3 gallery/tool/prepare.py --target android/arm64` selects
-Google's released Face Landmarker SDK and its Flutter plugin. Live Face Landmarker
-supports CPU and GPU, with Android YUV camera conversion. A physical Pixel 7
+Google's released vision SDK and its Flutter plugin. Live Face Landmarker and
+Live Hand Landmarker support CPU and GPU, with Android YUV camera conversion.
+Hand has run on an emulator's CPU only so far; see
+[its status](../packages/mediapipe-task-vision/tool/HAND_LANDMARKER_STATUS.md). A physical Pixel 7
 Test Lab run validates both delegates and front/back camera capture; see
 [the Android Test Lab guide](tool/ANDROID_FACE_TESTLAB.md) to reproduce it
 without owning an Android device.
 
 For Windows x64 and Linux x64, prepare with `--target windows/x64` or
 `--target linux/x64`, then run `flutter run -d windows --release` or
-`flutter run -d linux --release`. The live Face, Hand and Pose Landmarker demos use CPU only.
+`flutter run -d linux --release`. Linux offers GPU for the live Face and Hand
+Landmarker demos; Windows and the Pose demo use CPU only.
 The hook extracts Google's checksum-pinned native library from its official
 wheel; the installed app does not need Python. `camera_desktop` provides native
 Media Foundation capture on Windows and GStreamer/V4L2 capture on Linux.
@@ -67,7 +70,7 @@ Anything bundled but not validated, and anything validated without a screen, is
 listed in the about sheet with the package's own reason rather than hidden.
 
 The visible live tiles depend on the target: Face, Hand and Pose Landmarks are
-available on desktop, while mobile SDK builds currently demonstrate Face Landmarks.
+available on desktop, and Face and Hand Landmarks on iOS, Android and web.
 macOS also has the MagicTouch image demo.
 
 ## Live camera
@@ -75,7 +78,8 @@ macOS also has the MagicTouch image demo.
 `lib/live/` shares camera capture, serial VIDEO-mode inference, frame skipping,
 timings, camera switching, stop/start, cleanup and overlay geometry across live
 tasks. It handles desktop RGBA, Apple BGRA and Android YUV camera buffers.
-Windows and Linux expose CPU only; Apple and Android Face Landmarker also exposes GPU.
+Windows exposes CPU only. Face and Hand Landmarker also expose GPU on Linux,
+Apple platforms, Android and web.
 Web uses browser-native capture and transferable bitmaps while sharing these
 controls and the same overlay painter. Web GPU requires worker WebGL 2 support;
 other web tasks are not enabled yet.

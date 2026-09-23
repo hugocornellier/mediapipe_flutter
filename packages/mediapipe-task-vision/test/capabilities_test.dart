@@ -62,6 +62,59 @@ void main() {
       {VisionDelegate.cpu},
     );
   });
+  test('Hand Landmarker follows each official runtime and adapter', () {
+    TaskPlatform platform(String os, String architecture, [String? version]) =>
+        TaskPlatform(
+          operatingSystem: os,
+          architecture: architecture,
+          version: version,
+        );
+    const both = {VisionDelegate.cpu, VisionDelegate.gpu};
+    // Linux's 1.0.1 wheel has GPU built in; Windows' has it compiled out.
+    expect(
+      handLandmarkerCapabilitiesForPlatform(
+        platform('linux', 'x64'),
+      ).supportedDelegates,
+      both,
+    );
+    expect(
+      handLandmarkerCapabilitiesForPlatform(
+        platform('windows', 'x64'),
+      ).supportedDelegates,
+      {VisionDelegate.cpu},
+    );
+    // macOS and iOS only with the official runtime or SDK adapter.
+    final mac = platform('macos', 'arm64', '14.0');
+    expect(handLandmarkerCapabilitiesForPlatform(mac).isSupported, isFalse);
+    expect(
+      handLandmarkerCapabilitiesForPlatform(
+        mac,
+        officialMacosRuntime: true,
+      ).supportedDelegates,
+      both,
+    );
+    final ios = platform('ios', 'arm64', '15.0');
+    expect(handLandmarkerCapabilitiesForPlatform(ios).isSupported, isFalse);
+    final official = handLandmarkerCapabilitiesForPlatform(
+      ios,
+      officialIosRuntime: true,
+    );
+    expect(official.supportedDelegates, both);
+    expect(official.runtimeVersion, '1.0.1');
+    // Android and web need their registered SDK adapters, absent here.
+    for (final target in [
+      platform('android', 'arm64'),
+      platform('web', 'unknown'),
+    ]) {
+      final capabilities = handLandmarkerCapabilitiesForPlatform(target);
+      expect(capabilities.isSupported, isFalse);
+      expect(
+        capabilities.unavailableReasons[VisionDelegate.cpu],
+        contains('adapter'),
+      );
+    }
+  });
+
   test('MagicTouch reports its own GPU shader blocker', () {
     final result = interactiveSegmenterCapabilitiesForPlatform(
       const TaskPlatform(
