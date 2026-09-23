@@ -1,0 +1,6 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1790124233.492387    3796 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790124233.512788    3796 gl_context_egl.cc:85] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790124233.523473    3810 gl_context.cc:385] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: llvmpipe (LLVM 20.1.2, 256 bits)
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+Official Face Landmarker ABI: 478 landmarks, 52 blendshapes, 4x4 matrix (gpu).

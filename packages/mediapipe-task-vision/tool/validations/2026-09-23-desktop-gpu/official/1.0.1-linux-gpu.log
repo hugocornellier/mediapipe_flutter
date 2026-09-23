@@ -1,0 +1,32 @@
+WARNING: Logging before InitGoogle() is written to STDERR
+W0000 00:00:1790119689.892614    2715 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790119689.925243    2715 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790119689.937560    2726 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: llvmpipe (LLVM 20.1.2, 256 bits)
+I0000 00:00:1790119689.938477    2715 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790119689.945624    2727 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: llvmpipe (LLVM 20.1.2, 256 bits)
+I0000 00:00:1790119689.946372    2715 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790119689.952110    2728 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: llvmpipe (LLVM 20.1.2, 256 bits)
+Traceback (most recent call last):
+  File "/home/runner/work/mediapipe_flutter/mediapipe_flutter/probe/probe.py", line 14, in <module>
+    with vision.FaceLandmarker.create_from_options(options) as task:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/mediapipe/tasks/python/vision/face_landmarker.py", line 3182, in create_from_options
+    lib.MpFaceLandmarkerCreate(
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/mediapipe/tasks/python/core/serial_dispatcher.py", line 74, in shutdown_aware_handler
+    return handler(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/mediapipe/tasks/python/core/mediapipe_c_utils.py", line 142, in dispatcher_wrapper
+    executor.submit(dispatch_and_free).result()
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/mediapipe/tasks/python/core/mediapipe_c_utils.py", line 137, in dispatch_and_free
+    handle_status(status, error_msg)
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/mediapipe/tasks/python/core/mediapipe_c_utils.py", line 232, in handle_status
+    raise exception
+RuntimeError: Service "kGpuService", required by node mediapipe_tasks_vision_face_landmarker_facelandmarkergraph__mediapipe_tasks_vision_face_detector_facedetectorgraph__mediapipe_tasks_core_inferencesubgraph__inferencecalculator__mediapipe_tasks_vision_face_landmarker_facelandmarkergraph__mediapipe_tasks_vision_face_detector_facedetectorgraph__mediapipe_tasks_core_inferencesubgraph__InferenceCalculator, was not provided and cannot be created: GPU emulation detected, but not supported. Please run in an environment that exposes a physical GPU.

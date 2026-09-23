@@ -1,0 +1,8 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1790124262.708979    3954 face_landmarker_graph.cc:174] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790124262.726352    3954 gl_context_egl.cc:85] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790124262.738688    3968 gl_context.cc:385] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: llvmpipe (LLVM 20.1.2, 256 bits)
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+E0000 00:00:1790124263.842094    3968 tensor.cc:410] Tensors are designed for single writes. Multiple writes to a Tensor instance are not supported and may lead to undefined behavior due to lack of synchronization.
+OK gpu: 1 face(s), 478 landmarks, create 489 ms, first 624 ms, median 114.90 ms
+gpu.json vs cpu.json: max 0.01289, mean 0.00362 (normalized x,y over 478 landmarks)
