@@ -41,11 +41,8 @@ final class InteractiveSegmenter {
     InteractiveSegmenterOptions options,
   ) async {
     if (Platform.isAndroid && interactiveSegmenterBackendFactory != null) {
-      if (options.delegate != VisionDelegate.cpu) {
-        throw const InteractiveSegmenterException(
-          'Interactive Segmenter supports CPU only.',
-        );
-      }
+      // Google's Java task takes either delegate; GPU is not yet declared
+      // supported (see the capability query) until physical devices pass.
       return InteractiveSegmenter._(
         options.delegate,
         await interactiveSegmenterBackendFactory!(options),

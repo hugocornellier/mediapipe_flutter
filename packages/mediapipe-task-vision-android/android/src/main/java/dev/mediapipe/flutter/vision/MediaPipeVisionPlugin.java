@@ -7,6 +7,7 @@ import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import androidx.exifinterface.media.ExifInterface;
 import com.google.mediapipe.framework.image.BitmapImageBuilder;
 import com.google.mediapipe.framework.image.ByteBufferExtractor;
@@ -99,6 +100,7 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
 
   // Masks travel on their own binary channel: a frame's confidence masks can
   // outgrow the Java heap that the method codec copies its reply onto.
+  private static final String TAG = "MediaPipeVision";
   private static final String MASKS = "mediapipe_flutter_vision/android/masks";
 
   private MethodChannel channel;
@@ -114,6 +116,7 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
   // that names it. The worker adds them; the platform thread takes them.
   private final Map<Integer, ByteBuffer> maskData = new ConcurrentHashMap<>();
   private final AtomicInteger nextMask = new AtomicInteger();
+  private final java.util.Set<String> maskLayouts = ConcurrentHashMap.newKeySet();
 
   @Override public void onAttachedToEngine(FlutterPluginBinding binding) {
     context = binding.getApplicationContext();
@@ -514,7 +517,8 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
         Map<String, Object> copied = new HashMap<>();
         copied.put("confidenceMasks",
             result.confidenceMasks().map(MediaPipeVisionPlugin.this::masks).orElse(null));
-        copied.put("categoryMask", result.categoryMask().map(MediaPipeVisionPlugin.this::mask).orElse(null));
+        copied.put("categoryMask",
+            result.categoryMask().map(m -> mask(m, false, true)).orElse(null));
         List<Float> scores = result.qualityScores();
         float[] quality = new float[scores.size()];
         for (int i = 0; i < quality.length; i++) quality[i] = scores.get(i);
@@ -620,7 +624,8 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
               .build());
         }
         MPImage mask = task.segment(history);
-        try { return mask(mask); } finally { mask.close(); }
+        // The mask is closed right away, so its values are copied first.
+        try { return mask(mask, true); } finally { mask.close(); }
       }
 
       private void release() {
@@ -647,27 +652,63 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
     return copied;
   }
 
+  private List<Object> mask(MPImage image) {
+    return mask(image, false, false);
+  }
+
+  private List<Object> mask(MPImage image, boolean copy) {
+    return mask(image, copy, false);
+  }
+
   /**
    * Copies a mask into native memory and names it as [width, height, bytes
    * per value, id] for the Dart side to fetch on MASKS: 4 for float32
    * confidences, 1 for uint8 categories, both in native byte order.
+   *
+   * Google's Java tasks already copy each mask into a direct buffer of their
+   * own, and on Android direct buffers live on the Java heap. A second copy
+   * doubled Image Segmenter's peak: 21 DeepLab confidence masks for a 1280x853
+   * photo are 92 MB each way, which overflowed a 192 MB heap. Unless [copy] is
+   * set because the caller closes the image right away, the Dart side receives
+   * a view of Google's buffer, which stays valid while it is referenced.
    */
-  private List<Object> mask(MPImage image) {
+  private List<Object> mask(MPImage image, boolean copy, boolean category) {
     int width = image.getWidth();
     int height = image.getHeight();
     int count = Math.multiplyExact(width, height);
     ByteBuffer source = ByteBufferExtractor.extract(image).duplicate();
     source.rewind();
+    int format = image.getContainedImageProperties().isEmpty() ? MPImage.IMAGE_FORMAT_UNKNOWN
+        : image.getContainedImageProperties().get(0).getImageFormat();
+    // Recorded once per layout: GPU drivers do not all hand masks back alike.
+    String layout = (category ? "category" : "confidence") + " format=" + format
+        + " bytes/pixel=" + source.remaining() / Math.max(count, 1);
+    if (maskLayouts.add(layout)) Log.i(TAG, "mask " + layout);
+    if (category && format == MPImage.IMAGE_FORMAT_RGBA && source.remaining() == (long) count * 4) {
+      // A category mask read back from a four-channel texture: the class is
+      // in the first channel of each pixel.
+      ByteBuffer classes = ByteBuffer.allocateDirect(count);
+      for (int i = 0; i < count; i++) classes.put(source.get(i * 4));
+      int id = nextMask.incrementAndGet();
+      maskData.put(id, classes);
+      return Arrays.asList(width, height, 1, id);
+    }
     int depth = source.remaining() == (long) count * 4 ? 4 : source.remaining() == count ? 1 : 0;
     if (depth == 0) {
       throw new IllegalStateException("Unexpected mask layout: " + source.remaining()
-          + " bytes for " + width + "x" + height);
+          + " bytes for " + width + "x" + height + ", format " + format);
     }
     // A binary reply sends its buffer up to the position, so it stays at the end.
-    ByteBuffer copy = ByteBuffer.allocateDirect(source.remaining());
-    copy.put(source);
+    ByteBuffer data;
+    if (copy || !source.isDirect()) {
+      data = ByteBuffer.allocateDirect(source.remaining());
+      data.put(source);
+    } else {
+      data = source.slice();
+      data.position(data.limit());
+    }
     int id = nextMask.incrementAndGet();
-    maskData.put(id, copy);
+    maskData.put(id, data);
     return Arrays.asList(width, height, depth, id);
   }
 

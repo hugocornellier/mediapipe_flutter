@@ -1,7 +1,24 @@
-name: Android FaceLandmarker (Firebase Test Lab)
+name: Android vision tasks (Firebase Test Lab)
 
+# Every official SDK suite (gallery/integration_test/sdk_all_test.dart), Face
+# Landmarker's camera checks included, on one physical device, CPU and GPU. Manual only: each run is one execution from
+# the project's small daily quota, so the device is chosen per run.
 on:
   workflow_dispatch:
+    inputs:
+      model:
+        description: Test Lab model ID (gcloud firebase test android models list)
+        required: true
+        default: panther
+      version:
+        description: Android API level the model supports
+        required: true
+        default: '33'
+      gpu:
+        description: required fails a GPU refusal; optional records it
+        type: choice
+        options: [required, optional]
+        default: required
 
 permissions:
   contents: read
@@ -11,13 +28,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  face-sdk:
+  sdk-tasks:
+    name: Official SDK tasks / ${{ inputs.model }} API ${{ inputs.version }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       FIREBASE_PROJECT_ID: flutter-litert
       RESULTS_BUCKET: test-lab-7yqvc8ruj90y2-k9u7wfunxj2sa
-      RESULTS_DIR: mediapipe-face-${{ github.run_id }}-${{ github.run_attempt }}
+      RESULTS_DIR: mediapipe-sdk-${{ github.run_id }}-${{ github.run_attempt }}
+      DEVICE: ${{ inputs.model }}-${{ inputs.version }}-en-portrait
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -26,64 +45,94 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.44.8'
           channel: stable
           cache: true
-      - name: Prepare FaceLandmarker gallery
-        run: python3 gallery/tool/prepare.py --target android/arm64 --tasks face_landmarker
-      - name: Resolve dependencies
-        working-directory: gallery
-        run: flutter pub get
-      - name: Configure Android build
-        working-directory: gallery
-        run: flutter build apk --config-only --debug --target integration_test/android_face_landmarker_test.dart --target-platform android-arm64
-      - name: Build instrumentation APK
-        working-directory: gallery/android
-        run: ./gradlew app:assembleAndroidTest -Pmediapipe.testLabAbi=arm64-v8a
-      - name: Build face SDK test APK
-        working-directory: gallery/android
-        run: ./gradlew app:assembleDebug -Ptarget=${{ github.workspace }}/gallery/integration_test/android_face_landmarker_test.dart -Ptarget-platform=android-arm64 -Pmediapipe.testLabAbi=arm64-v8a
-      - name: Verify packaged native runtime and model
-        run: |
-          python3 - <<'PY'
-          import zipfile
-          with zipfile.ZipFile('gallery/build/app/outputs/apk/debug/app-debug.apk') as apk:
-              names = set(apk.namelist())
-              required = {'lib/arm64-v8a/libflutter.so',
-                          'lib/arm64-v8a/libmediapipe_tasks_jni.so',
-                          'assets/flutter_assets/assets/models/face_landmarker.task'}
-              assert required <= names, required - names
-              assert not any('libmediapipe.so' in name for name in names), 'Duplicate source runtime'
-          PY
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.FIREBASE_TEST_LAB_CREDENTIALS }}
       - uses: google-github-actions/setup-gcloud@v3
         with:
           project_id: ${{ env.FIREBASE_PROJECT_ID }}
+      # Checked before building, so a typo costs minutes rather than a run.
       - name: Verify physical device
+        env:
+          MODEL: ${{ inputs.model }}
+          VERSION: ${{ inputs.version }}
         run: |
-          gcloud firebase test android models describe panther --project "$FIREBASE_PROJECT_ID" --format=json > device.json
-          python3 -c 'import json; d=json.load(open("device.json")); assert d["form"] == "PHYSICAL" and "33" in d["supportedVersionIds"]'
+          gcloud firebase test android models describe "$MODEL" --project "$FIREBASE_PROJECT_ID" --format=json > device.json
+          python3 -c 'import json, os; d = json.load(open("device.json")); assert d["form"] == "PHYSICAL", d["form"]; assert os.environ["VERSION"] in d["supportedVersionIds"], d["supportedVersionIds"]'
+      - name: Download the official SDK task models
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_landmark_tasks.dart
+          dart tool/download_model.dart
+          dart tool/download_image_tasks.dart
+          dart tool/download_object_detector.dart
+          dart tool/download_segmenter_tasks.dart
+          dart tool/download_interactive_segmenter.dart
+      - name: Prepare the gallery with the official SDK tasks
+        run: |
+          python3 -B gallery/tool/prepare.py --target android/arm64 \
+            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter
+          cd gallery && flutter pub get
+      - name: Build the app and instrumentation APKs
+        working-directory: gallery
+        env:
+          GPU: ${{ inputs.gpu }}
+        run: |
+          target="$PWD/integration_test/sdk_all_test.dart"
+          defines=$(printf 'SDK_GPU=%s' "$GPU" | base64)
+          flutter build apk --config-only --debug --target "$target" --target-platform android-arm64
+          cd android
+          ./gradlew app:assembleAndroidTest -Pmediapipe.testLabAbi=arm64-v8a
+          ./gradlew app:assembleDebug -Ptarget="$target" -Ptarget-platform=android-arm64 \
+            -Pdart-defines="$defines" -Pmediapipe.testLabAbi=arm64-v8a
+      - name: Verify packaged runtime and models
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          with zipfile.ZipFile('gallery/build/app/outputs/apk/debug/app-debug.apk') as apk:
+              names = set(apk.namelist())
+          models = ['face_landmarker.task', 'hand_landmarker.task', 'pose_landmarker_lite.task', 'gesture_recognizer.task',
+                    'holistic_landmarker.task', 'blaze_face_short_range.tflite',
+                    'efficientdet_lite0.tflite', 'efficientnet_lite0.tflite',
+                    'mobilenet_v3_small.tflite', 'deeplab_v3.tflite',
+                    'interactive_segmentation.task']
+          required = {'lib/arm64-v8a/libflutter.so', 'lib/arm64-v8a/libmediapipe_tasks_jni.so',
+                      *[f'assets/flutter_assets/assets/models/{m}' for m in models]}
+          assert required <= names, sorted(required - names)
+          assert not any('libmediapipe.so' in name for name in names), 'Duplicate source runtime'
+          PY
       # One device, no shards or flaky retries: one execution from the daily budget.
-      - name: Run CPU and GPU face and camera tests
+      - name: Run every SDK suite on CPU and GPU
+        env:
+          MODEL: ${{ inputs.model }}
+          VERSION: ${{ inputs.version }}
         run: >-
           gcloud firebase test android run
           --project "$FIREBASE_PROJECT_ID" --type instrumentation
           --app gallery/build/app/outputs/apk/debug/app-debug.apk
           --test gallery/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-          --device model=panther,version=33,locale=en,orientation=portrait
-          --timeout 8m --results-history-name mediapipe-face-landmarker-android
+          --device "model=$MODEL,version=$VERSION,locale=en,orientation=portrait"
+          --timeout 30m --results-history-name mediapipe-vision-sdk-android
           --results-bucket "$RESULTS_BUCKET" --results-dir "$RESULTS_DIR"
       - name: Download test artifacts
         if: always()
         run: |
           mkdir -p testlab-results
-          gcloud storage cp "gs://$RESULTS_BUCKET/$RESULTS_DIR/panther-33-en-portrait/logcat" testlab-results/ || true
-          gcloud storage cp "gs://$RESULTS_BUCKET/$RESULTS_DIR/panther-33-en-portrait/instrumentation.results" testlab-results/ || true
-          gcloud storage cp "gs://$RESULTS_BUCKET/$RESULTS_DIR/panther-33-en-portrait/test_result_1.xml" testlab-results/ || true
+          for name in logcat instrumentation.results test_result_1.xml; do
+            gcloud storage cp "gs://$RESULTS_BUCKET/$RESULTS_DIR/$DEVICE/$name" testlab-results/ || true
+          done
+          # Each suite reports its measurements as one tagged JSON line.
+          grep -hE '(SDK_[A-Z_]+|ANDROID_FACE_SDK) \{' testlab-results/logcat > testlab-results/measurements.log || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: android-face-testlab-results
+          name: android-sdk-testlab-${{ inputs.model }}-${{ inputs.version }}
           path: testlab-results/
           if-no-files-found: ignore

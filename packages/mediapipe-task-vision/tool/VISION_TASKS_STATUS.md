@@ -54,9 +54,16 @@ emulator's software GL cannot run it.
   Hand, Pose, Gesture and Holistic Landmarker ran on CPU and Metal, within 0.014
   of each other; the other tasks' Metal paths have not run on a device yet.
 - **Android:** every served task matches Google's references on the x86_64
-  emulator (CPU) in CI, from the same integration tests. Face Landmarker ran on
-  a physical Pixel 7 on CPU and GPU (Test Lab). No physical device has run the
-  other tasks yet.
+  emulator (CPU) in CI, from the same integration tests. In Firebase Test Lab
+  (`integration_test/sdk_all_test.dart`, 27 tests, CPU then GPU), every task
+  matched Google's CPU references on a Pixel 8a (Mali), a Galaxy S24 (Adreno)
+  and a Galaxy A12 (PowerVR). On GPU, every task matched Google's GPU references
+  on the Pixel 8a and the S24, except two Image Segmenter defects in Google's
+  GPU path: category values one class low on the S24 (UP-024) and an abort on
+  the A12 (UP-023).
+  Google's GPU inference differs from its CPU inference for the image-model
+  tasks (portrait.jpg's top class scores 0.80 on GPU, 0.31 on CPU, on every GPU
+  tried), so GPU results are compared with the wheel's GPU output.
 - **macOS:** `tool/test_official_macos_landmark_runtime.py` compares every task
   served by the official runtime with references Google's wheel generates on
   the same Mac, including Metal for Face, Hand and Object Detector. The
@@ -79,6 +86,12 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
   whose width is not a multiple of 4 (for example a rotated 667-pixel image).
   Camera frames are not affected. iOS has the same defect; the adapter repairs
   it.
+- UP-023: Google's Android Image Segmenter aborts the app on GPU on a PowerVR
+  GPU (Galaxy A12), inside Google's result conversion. CPU works there, and GPU
+  matches Google's GPU reference on Mali (Pixel 8a).
+- UP-024: Google's Android Image Segmenter category mask is one class low on
+  GPU on an Adreno GPU (Galaxy S24): person reads 14, not 15. Confidence masks
+  are right, so the most confident class recovers it.
 - UP-022: Google's Android stateful Interactive Segmenter drops a model given
   as bytes; the plugin passes it a private file instead. UP-021 is the web
   equivalent for the point-based task.

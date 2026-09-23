@@ -13,7 +13,11 @@ import 'support/sdk_frames.dart';
 
 // Google's stateful MagicTouch Interactive Segmenter through the official
 // mobile SDKs: iOS through the package's Objective-C adapter, Android through
-// mediapipe_flutter_vision_android. CPU only, as on every runtime.
+// mediapipe_flutter_vision_android. The reference is CPU. On Android, SDK_GPU
+// also tries Google's GPU delegate, which is not declared supported yet:
+// `required` fails a refusal, `optional` records it, `skip` runs CPU only.
+const _gpu = String.fromEnvironment('SDK_GPU', defaultValue: 'optional');
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -118,6 +122,64 @@ void main() {
         await expectLater(() => task.setImage(blankImage()), throwsStateError);
       });
     },
+    timeout: const Timeout(Duration(minutes: 4)),
+  );
+
+  testWidgets(
+    'official SDK interactive_segmenter GPU: same selection as CPU',
+    (tester) async {
+      await tester.runAsync(() async {
+        final assets = await GalleryAssets.unpack();
+        final bytes = await rootBundle.load(
+          'assets/models/interactive_segmentation.task',
+        );
+        final model = bytes.buffer.asUint8List(
+          bytes.offsetInBytes,
+          bytes.lengthInBytes,
+        );
+        final (x, y) = officialInteractiveReference.point;
+        final history = [
+          SegmentationStroke(
+            brushMode: SegmentationBrushMode.positive,
+            points: [SegmentationPoint(x: x, y: y)],
+          ),
+        ];
+        final masks = <VisionDelegate, SegmentationMask>{};
+        for (final delegate in VisionDelegate.values) {
+          final InteractiveSegmenter task;
+          try {
+            task = await InteractiveSegmenter.create(
+              InteractiveSegmenterOptions(
+                modelBytes: model,
+                delegate: delegate,
+              ),
+            );
+          } on InteractiveSegmenterException catch (error) {
+            if (delegate == VisionDelegate.cpu || _gpu == 'required') rethrow;
+            _report('gpu_unavailable', {'error': error.message});
+            return;
+          }
+          try {
+            await task.setImage(
+              VisionImage.fromFile(assets.path('animals.jpg')),
+            );
+            masks[delegate] = await task.segment(history);
+          } finally {
+            await task.dispose();
+          }
+        }
+        final cpu = masks[VisionDelegate.cpu]!,
+            gpu = masks[VisionDelegate.gpu]!;
+        final agreement = _agreement(cpu, gpu);
+        final gridError = _gridError(gpu, officialInteractiveReference.grid);
+        _report('cpu_gpu', {
+          'agreement': agreement,
+          'gpu_grid_error': gridError,
+        });
+        expect(agreement, greaterThan(0.97));
+      });
+    },
+    skip: !Platform.isAndroid || _gpu == 'skip',
     timeout: const Timeout(Duration(minutes: 4)),
   );
 }

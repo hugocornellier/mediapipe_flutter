@@ -40,7 +40,13 @@ Use the results bucket URL from gcloud to download `logcat`,
 `instrumentation.results` and `test_result_1.xml`. Structured diagnostic lines
 start with `ANDROID_FACE_SDK`.
 
-The manual `android-face-testlab.yml` workflow uses the same
+The manual `android-face-testlab.yml` workflow runs a larger bundle,
+`integration_test/sdk_all_test.dart`: these face checks plus every other
+official SDK suite (hand, Pose, Gesture, Holistic, detection, classification,
+embedding, both segmenters), on CPU and GPU, then the live tiles. Choose the
+physical device and API level when dispatching; `gpu: required` fails a GPU
+refusal instead of recording it. The job saves the tagged measurement lines
+from logcat as `measurements.log`. It uses the same
 `FIREBASE_TEST_LAB_CREDENTIALS` secret name as `flutter_litert`. GitHub secrets
 are scoped to a repository: the credential must already be available in this
 repository before dispatching that workflow. Local gcloud runs use the existing

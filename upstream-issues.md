@@ -518,6 +518,36 @@ Google's reference. The plugin writes this task's bytes to a private file in
 the app's cache directory and deletes it when the task closes. Unlike UP-020,
 this task follows its strokes.
 
+## UP-023: Android Image Segmenter GPU aborts on a PowerVR GPU
+
+**Status:** observed September 23 on a physical Galaxy A12 (PowerVR Rogue
+GE8320, Android 12) in Firebase Test Lab, with Google's tasks-vision 1.0.0.
+Not worked around: the abort happens inside Google's native code, which the
+plugin cannot catch.
+
+Image Segmenter on the GPU delegate terminates the app while Google's Java
+task converts the result: `PacketGetter` aborts with `image_frame.cc:298]
+Invalid format: UNKNOWN`. The same test passed on CPU on that phone (every
+category cell agreed with Google's reference), and on GPU on a Pixel 8a (Mali)
+and a Galaxy S24 (Adreno) the task ran. Apps that offer Image Segmenter on GPU
+should expect this on PowerVR devices and prefer CPU there.
+
+## UP-024: Android Image Segmenter GPU category mask is one class low on Adreno
+
+**Status:** observed September 23 on a physical Galaxy S24 (Adreno 750,
+Android 16) in Firebase Test Lab, with Google's tasks-vision 1.0.0. Not worked
+around; the SDK test recognises it.
+
+On the GPU delegate, DeepLab-v3's category mask labels the person in
+portrait.jpg as class 14 instead of 15. The class shares are otherwise right
+(0.499 background, 0.501 "14" against Google's GPU reference 0.498 and 0.502
+for 15), and the confidence masks match that reference within 0.0015 on
+average, so only the category values are off by one. Google's wheel on a Mac's
+Metal GPU and its Android SDK on a Pixel 8a's Mali GPU report 15. The byte
+already arrives as 14 from Google's Java task. The shape suggests a normalized
+class value truncated when the GPU result is read back. Apps that need exact
+classes on GPU can take the most confident class from the confidence masks.
+
 ## Integration pitfalls resolved in this repo
 
 These are recorded for continuity, not classified as confirmed MediaPipe defects.

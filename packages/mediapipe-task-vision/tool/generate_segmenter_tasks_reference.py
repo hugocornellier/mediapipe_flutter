@@ -148,6 +148,13 @@ def main():
                 processing = ImageProcessingOptions(rotation_degrees=rotation)
                 record('image', kind, image, configuration, task.segment(image, processing),
                        rotation_degrees=rotation, timestamp_ms=None)
+        if args.delegate == 'gpu':
+            # Google's 1.0.0 macOS Metal path aborts in VIDEO mode on the
+            # third frame with both mask kinds ("unsupported ImageFrame
+            # format: 1" in gpu_buffer_storage_cv_pixel_buffer.cc), and in the
+            # legacy Interactive Segmenter below. GPU references cover Image
+            # Segmenter's IMAGE mode only.
+            continue
         options.running_mode = vision.RunningMode.VIDEO
         with vision.ImageSegmenter.create_from_options(options) as task:
             for index, kind in enumerate(['rgb', 'blank', 'rgb']):
@@ -161,7 +168,7 @@ def main():
     region_type = vision.InteractiveSegmenterLegacyRegionOfInterest
     roi = region_type(format=region_type.Format.KEYPOINT,
                       keypoint=keypoint_module.NormalizedKeypoint(*KEYPOINT))
-    for configuration in [masks_only, category_only]:
+    for configuration in [] if args.delegate == 'gpu' else [masks_only, category_only]:
         options = vision.InteractiveSegmenterLegacyOptions(base_options=base, **configuration)
         with vision.InteractiveSegmenterLegacy.create_from_options(options) as task:
             for kind in ['rgb', 'rgba', 'file', 'blank', 'rotated']:

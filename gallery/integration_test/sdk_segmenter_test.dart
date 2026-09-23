@@ -43,6 +43,7 @@ void main() {
         final model = await _model();
         final frame = await loadSample('portrait.jpg');
         final references = <VisionDelegate, SegmentationResult>{};
+        var shiftedClasses = false;
         for (final delegate in [
           VisionDelegate.cpu,
           if (_gpu != 'skip') VisionDelegate.gpu,
@@ -70,8 +71,35 @@ void main() {
               officialSegmenterReference.width,
               officialSegmenterReference.height,
             );
-            final match = compareMasks(file, officialSegmenterReference);
-            _expectMatch(match);
+            // Google's GPU inference scores DeepLab's classes differently from
+            // its CPU inference, so each delegate is held to the wheel's output
+            // from the same delegate.
+            final expected = delegate == VisionDelegate.gpu
+                ? officialGpuSegmenterReference
+                : officialSegmenterReference;
+            final match = compareMasks(file, expected);
+            // Logged before the checks so a mismatch on a device still shows
+            // what the mask held: the class shares and each class's cells.
+            _report('file_match', {
+              'delegate': delegate.name,
+              ..._summary(match),
+              'shares': {
+                for (final MapEntry(:key, :value) in categoryShares(
+                  file.categoryMask!,
+                ).entries)
+                  '$key': value,
+              },
+            });
+            if (delegate == VisionDelegate.gpu &&
+                match.categoryAgreement <= _categoryAgreement &&
+                _matchesShiftedUp(file, expected, match)) {
+              // UP-024: the category mask is Google's, one class low; the
+              // shifted mask and the confidence masks match its reference.
+              shiftedClasses = true;
+              _report('upstream', {'issue': 'UP-024'});
+            } else {
+              _expectMatch(match);
+            }
 
             final reference = await task.segmentImage(frame.image);
             references[delegate] = reference;
@@ -130,9 +158,10 @@ void main() {
           await expectLater(task.segmentImage(frame.image), throwsStateError);
         }
         if (references.length == 2) {
+          final gpuClasses = references[VisionDelegate.gpu]!.categoryMask!;
           final agreement = turnedCategoryAgreement(
             references[VisionDelegate.cpu]!.categoryMask!,
-            references[VisionDelegate.gpu]!.categoryMask!,
+            shiftedClasses ? _shiftedUp(gpuClasses) : gpuClasses,
             0,
           );
           expect(agreement, greaterThan(_turnedAgreement));
@@ -330,6 +359,34 @@ void _expectShape(SegmentationResult result, int width, int height) {
   if (result.categoryMask case final mask?) {
     expect((mask.width, mask.height), (width, height));
   }
+}
+
+/// Each non-background class moved up one index.
+CategoryMask _shiftedUp(CategoryMask mask) => CategoryMask(
+  width: mask.width,
+  height: mask.height,
+  categories: Uint8List.fromList([
+    for (final value in mask.categories) value == 0 ? 0 : value + 1,
+  ]),
+);
+
+/// UP-024: on a Galaxy S24's Adreno GPU, Google's category mask reports each
+/// non-background class one index low (person as 14, not 15) while its
+/// confidence masks are right. Recognised only when shifting the classes back
+/// makes the category grid and class shares match and the confidence masks
+/// already match; any other mismatch still fails.
+bool _matchesShiftedUp(
+  SegmentationResult result,
+  OfficialMasks reference,
+  MaskMatch match,
+) {
+  final mask = result.categoryMask;
+  if (mask == null || match.confidence.isEmpty) return false;
+  final shifted = _shiftedUp(mask);
+  return categoryGridAgreement(shifted, reference.category) >
+          _categoryAgreement &&
+      shareError(categoryShares(shifted), reference.shares) < _shareError &&
+      match.confidence.values.every((e) => e.mean < _confidenceMean);
 }
 
 void _expectMatch(MaskMatch match) {

@@ -83,7 +83,7 @@ void main() {
                       '${item.name} ${item.score.toStringAsFixed(3)}',
                   ],
                 });
-                official[sample] = subject.compare(sample, result);
+                official[sample] = subject.compare(sample, result, delegate);
               }
               final reference = await task.image(frame.image);
               references[delegate] = reference.items;
@@ -137,25 +137,16 @@ void main() {
             await expectLater(task.image(frame.image), throwsStateError);
           }
           if (references.length == 2) {
-            final cpu = references[VisionDelegate.cpu]!;
-            final gpu = references[VisionDelegate.gpu]!;
-            expect(gpu, hasLength(cpu.length));
-            final delta = _itemDelta(
-              (
-                items: cpu,
-                width: frame.width,
-                height: frame.height,
-                timestamp: null,
-              ),
-              (
-                items: gpu,
-                width: frame.width,
-                height: frame.height,
-                timestamp: null,
-              ),
-            );
-            expect(delta, lessThan(_scoreDelta));
-            _report(subject, 'cpu_gpu', {'max_delta': delta});
+            // Recorded, not asserted: each delegate already matched Google's
+            // own output for it, and those two legitimately differ.
+            String top(List<_Item> items) => [
+              for (final item in items.take(3))
+                '${item.name} ${item.score.toStringAsFixed(3)}',
+            ].join(', ');
+            _report(subject, 'cpu_gpu', {
+              'cpu': top(references[VisionDelegate.cpu]!),
+              'gpu': top(references[VisionDelegate.gpu]!),
+            });
           }
           await expectLater(
             subject.open(
@@ -261,11 +252,18 @@ final class _Subject {
   )
   open;
 
-  /// Checks [result] against Google's reference for [sample]; returns the
-  /// largest box difference as a share of the image's longer side.
-  double compare(String sample, _Result result) {
+  /// Checks [result] against Google's reference for [sample] from the same
+  /// [delegate]; returns the largest box difference as a share of the image's
+  /// longer side. Google's GPU inference scores these models differently from
+  /// its CPU inference (portrait.jpg's top class: 0.31 on CPU, 0.80 on GPU, in
+  /// its wheel, its browser runtime and its Android SDK alike), so GPU results
+  /// are held to the wheel's GPU output, never to the CPU one.
+  double compare(String sample, _Result result, VisionDelegate delegate) {
+    final gpu = delegate == VisionDelegate.gpu;
     if (name == 'image_classifier') {
-      final expected = officialClassifierReference;
+      final expected = gpu
+          ? officialGpuClassifierReference
+          : officialClassifierReference;
       expect(
         result.items.take(expected.length).map((c) => c.name),
         expected.map((c) => c.$1),
@@ -282,7 +280,9 @@ final class _Subject {
     // side of it in another runtime build (a 0.301 bottle on iOS, absent in
     // Google's 1.0.0 wheel; a 0.536 potted plant against a 0.535 person for
     // the fifth place). Only clear detections must match.
-    final reference = officialDetectionReferences[name]![sample]!;
+    final reference = (gpu
+        ? officialGpuDetectionReferences
+        : officialDetectionReferences)[name]![sample]!;
     final floor = maxResults != null && reference.length >= maxResults!
         ? reference.map((box) => box.score).reduce(math.min)
         : cutoff;
