@@ -156,6 +156,47 @@ void main() {
     expect(camera.activeStreams, 0);
   });
 
+  test('a refused GPU falls back to CPU with a visible notice', () async {
+    task.openFailure = (
+      VisionDelegate.gpu,
+      const FaceLandmarkerException(
+        'Service "kGpuService" ... GPU emulation detected',
+        gpuUnavailable: true,
+      ),
+    );
+    await controller.findCameras();
+    await controller.start(
+      delegate: VisionDelegate.gpu,
+      modelAsset: 'model.task',
+    );
+    // The CPU restart is queued behind the refused start; let it run.
+    for (var i = 0; i < 20 && !controller.running; i++) {
+      await settle();
+    }
+    expect(task.opened, [VisionDelegate.gpu, VisionDelegate.cpu]);
+    expect(controller.delegate, VisionDelegate.cpu);
+    expect(controller.running, isTrue);
+    expect(controller.error, isNull);
+    expect(controller.notice, contains('GPU unavailable, using CPU'));
+    expect(controller.notice, contains('GPU emulation detected'));
+  });
+
+  test('other GPU failures are errors, never a silent fallback', () async {
+    task.openFailure = (
+      VisionDelegate.gpu,
+      const FaceLandmarkerException('model is corrupt'),
+    );
+    await controller.findCameras();
+    await controller.start(
+      delegate: VisionDelegate.gpu,
+      modelAsset: 'model.task',
+    );
+    expect(task.opened, [VisionDelegate.gpu]);
+    expect(controller.running, isFalse);
+    expect(controller.error, contains('model is corrupt'));
+    expect(controller.notice, isNull);
+  });
+
   test('a camera error while running stops capture', () async {
     await started();
     camera.fail('Camera disconnected');

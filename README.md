@@ -91,8 +91,10 @@ macOS artifacts have been retired. GenAI artifacts exist for macOS arm64, Androi
 devices. Artifact availability does not establish tested platform support.
 Linux and Windows x64 vision runtimes come from Google's published wheels, whose
 libraries and notices the build hook extracts and verifies by digest. There are no
-published iOS simulator or arm64 desktop task runtimes in this baseline, and
-no desktop GPU support. Unsupported native targets fail with an explicit build error.
+published iOS simulator or arm64 desktop task runtimes in this baseline. On Linux
+x64, Face Detector and Face Landmarker can also use the GPU through Google's 1.0.1
+runtime, which needs the system EGL and OpenGL ES libraries; Windows is CPU-only.
+Unsupported native targets fail with an explicit build error.
 Web FaceLandmarker bundles the pinned official NPM runtime through its separate
 Flutter web adapter.
 

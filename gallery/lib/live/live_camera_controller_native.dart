@@ -37,6 +37,9 @@ class LiveCameraController<T> extends ChangeNotifier {
   bool running = false;
   bool changing = false;
   String? error;
+
+  /// Set when MediaPipe refused the GPU and capture fell back to CPU.
+  String? notice;
   T? result;
 
   /// Cameras this device offers, in the order the platform reports them.
@@ -162,11 +165,13 @@ class LiveCameraController<T> extends ChangeNotifier {
     running = false;
     changing = true;
     error = null;
+    if (chosen == VisionDelegate.gpu) notice = null;
     result = null;
     _changed();
     return _enqueue(() async {
       await _release();
       if (_closed || generation != _generation) return;
+      var fallBack = false;
       try {
         this.delegate = chosen;
         final data = await rootBundle.load(asset);
@@ -215,13 +220,24 @@ class LiveCameraController<T> extends ChangeNotifier {
         }
         running = true;
       } catch (failure) {
-        if (generation == _generation) error = _message(failure);
+        if (generation == _generation) {
+          // The package never swaps delegates itself; the demo does, visibly.
+          if (chosen == VisionDelegate.gpu && _refusedGpu(failure)) {
+            notice = 'GPU unavailable, using CPU. ${_message(failure)}';
+            fallBack = true;
+          } else {
+            error = _message(failure);
+          }
+        }
         await _release();
       } finally {
         if (generation == _generation) {
           changing = false;
           _changed();
         }
+      }
+      if (fallBack && !_closed && generation == _generation) {
+        unawaited(start(delegate: VisionDelegate.cpu));
       }
     });
   }
@@ -367,6 +383,12 @@ class LiveCameraController<T> extends ChangeNotifier {
     super.dispose();
   }
 }
+
+bool _refusedGpu(Object error) => switch (error) {
+  FaceLandmarkerException(:final gpuUnavailable) => gpuUnavailable,
+  FaceDetectorException(:final gpuUnavailable) => gpuUnavailable,
+  _ => false,
+};
 
 String _message(Object error) {
   if (error is CameraException) {

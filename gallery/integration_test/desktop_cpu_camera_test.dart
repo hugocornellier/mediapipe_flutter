@@ -54,7 +54,10 @@ void main() {
           await tester.pump();
         }
         expect(find.text('Live Face Landmarker'), findsOneWidget);
-        expect(find.text('GPU'), findsNothing);
+        // Linux offers Face Landmarker's GPU; this test stays on the CPU
+        // default. Windows has no GPU path.
+        final gpuOffered = Platform.isLinux ? findsOneWidget : findsNothing;
+        expect(find.text('GPU'), gpuOffered);
         await tester.tap(find.text('Live Face Landmarker'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
@@ -72,8 +75,8 @@ void main() {
         camera.deliverFrames = true;
         await _frames(tester, live);
         await tester.pump();
-        expect(find.text('GPU'), findsNothing);
-        expect(find.byType(SegmentedButton<VisionDelegate>), findsNothing);
+        expect(find.text('GPU'), gpuOffered);
+        expect(find.byType(SegmentedButton<VisionDelegate>), gpuOffered);
         expect(live.delegate, VisionDelegate.cpu);
         expect(live.frameRotationDegrees, 0);
 

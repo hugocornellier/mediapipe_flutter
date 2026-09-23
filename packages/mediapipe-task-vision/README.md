@@ -45,12 +45,53 @@ including its own detector, landmark model, and expression model.
 It does not require a separate Dart Face Detector call. The Dart wrapper copies
 results and owns native resource cleanup.
 
-Face Landmarker remains on the **1.0.0 runtime**. Runtime and model versions are
+On macOS, Face Landmarker remains on the **1.0.0 runtime**. Runtime and model versions are
 independent: Google's latest Face Landmarker model bundle was verified identical
 to our pinned version-1 bundle on September 14, 2026. The official 1.0.1 macOS
 runtime aborts during CPU task creation, so it cannot replace the working runtime
 yet. See [the compatibility check](tool/validations/2026-09-14-face-landmarker-1.0.1/README.md)
 and [upstream issue #6356](https://github.com/google-ai-edge/mediapipe/issues/6356).
+
+## Linux and Windows
+
+On Linux x64 and Windows x64 the build hook downloads the native library from
+Google's official PyPI wheel, then extracts it and verifies it by digest:
+`mediapipe==1.0.1` on Linux (the first Linux wheel built with GPU) and
+`mediapipe==1.0.0` on Windows. Both run all eleven vision tasks on CPU.
+
+The Linux runtime links the system EGL and OpenGL ES libraries, even for CPU
+inference. If they are missing (for example in a minimal container), creating a
+task fails with an error naming them; on Debian or Ubuntu install them with
+`sudo apt-get install libegl1 libgles2`.
+
+On Linux, Face Detector and Face Landmarker also accept `VisionDelegate.gpu`,
+which runs Google's OpenGL ES inference and needs a GPU driver with EGL. Google's
+runtime refuses software renderers such as Mesa's llvmpipe (common in virtual
+machines) and machines where EGL cannot start. Creation then fails with a
+`FaceDetectorException` or `FaceLandmarkerException` whose `gpuUnavailable` is
+true and whose message is Google's. The package never retries on CPU. To fall
+back, create a CPU task yourself:
+
+```dart
+FaceLandmarker landmarker;
+try {
+  landmarker = await FaceLandmarker.create(
+    FaceLandmarkerOptions(modelPath: model, delegate: VisionDelegate.gpu),
+  );
+} on FaceLandmarkerException catch (error) {
+  if (!error.gpuUnavailable) rethrow;
+  landmarker = await FaceLandmarker.create(
+    FaceLandmarkerOptions(modelPath: model),
+  );
+}
+```
+
+CI checks Linux GPU results on every change. On a hosted runner's Mesa
+renderer, renamed past Google's check, both tasks match Google's own 1.0.1 GPU
+output on the same runner with unchanged tolerances. That verifies results, not
+speed; validation on a physical GPU is pending
+([`tool/test_linux_gpu.sh`](tool/test_linux_gpu.sh)). Windows has no GPU
+path, because Google's Windows runtime is built with GPU disabled.
 
 ## Run locally
 
@@ -132,7 +173,8 @@ try {
 
 Both face task options accept `delegate: VisionDelegate.cpu` or `VisionDelegate.gpu`.
 Each task's `delegate` is fixed at creation; await disposal and create a new task
-to change it. GPU selects Google's Metal inference on macOS. Initialization
+to change it. GPU selects Google's Metal inference on macOS and OpenGL ES on
+Linux x64 ([Linux and Windows](#linux-and-windows)). Initialization
 errors are returned to the caller without retrying on CPU. The official graph
 still runs some work on CPU, including Face Landmarker's blendshape stage.
 CPU and GPU are included in the same download for each task; no extra backend
@@ -235,8 +277,9 @@ are recorded in [the Face Landmarker reference notes](test/fixtures/face_landmar
 
 Hosted CI generates GPU reference outputs with the pinned official Python wheel
 on the same runner, then runs the Dart suites against those outputs with the
-existing tolerances. CPU references remain checked in. Missing reference files
-or unverified runtime/Metal provenance fail validation. See
+existing tolerances, on macOS (Metal) and on Linux (Mesa, renamed past Google's
+software-renderer check). CPU references remain checked in. Missing reference
+files or unverified runtime or GPU provenance fail validation. See
 [the GPU comparison guide](tool/GPU_VALIDATION.md).
 
 [Benchmark instructions and measurements](tool/BENCHMARKING.md) compare CPU and
@@ -319,7 +362,7 @@ are rejected by the build hook; rebuild them or set `prebuilt: true`.
 
 See [third_party/README.md](third_party/README.md) for exact native pins and build
 details. Native LIVE_STREAM callbacks, Intel macOS,
-mobile devices, Linux, Windows, and web are outside this initial implementation.
+mobile devices, and web are outside this initial implementation.
 A camera plugin is not required for still-image inference.
 
 ## Live camera example
