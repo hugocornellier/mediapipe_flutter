@@ -46,9 +46,14 @@ def main():
          'integration_test/desktop_cpu_camera_test.dart',
          'integration_test/runtime_test.dart'], 'analyze')
     run(['flutter', 'test', 'test'], 'unit')
-    for name in ['assets_test', 'runtime_test', 'desktop_cpu_camera_test']:
+    for name in ['assets_test', 'runtime_test']:
         run(['flutter', 'test', '-d', target,
              f'integration_test/{name}.dart', '--reporter', 'expanded'], name)
+    for task in ['face', 'hand']:
+        run(['flutter', 'test', '-d', target,
+             'integration_test/desktop_cpu_camera_test.dart',
+             f'--dart-define=GALLERY_LIVE_TASK={task}',
+             '--reporter', 'expanded'], f'desktop_cpu_camera_test-{task}')
     run(['flutter', 'build', target, '--release'], 'release')
     bundle = GALLERY / ('build/linux/x64/release/bundle' if target == 'linux'
                          else 'build/windows/x64/runner/Release')
@@ -64,6 +69,7 @@ def main():
         'checks': ['native-camera-registration-and-enumeration',
                    'assets', 'cross-task-runtime-coexistence',
                    'gallery-supplied-camera-rgba-bgra-switch-restart-cleanup',
+                   'live-tasks-face-hand',
                    'release-build'],
         'physical_webcam_tested': False,
     }, indent=2) + '\n')

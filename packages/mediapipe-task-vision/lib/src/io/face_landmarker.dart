@@ -3,7 +3,6 @@ import 'dart:isolate';
 import 'dart:io';
 
 import '../../face_landmarker_backend.dart';
-import '../interface/face_detector_types.dart';
 import '../interface/face_landmarker_types.dart';
 import 'native_face_landmarker.dart';
 

@@ -1,5 +1,5 @@
 name: mediapipe_flutter_vision_web
-description: Official MediaPipe browser FaceLandmarker adapter.
+description: Official MediaPipe browser Face Landmarker and Hand Landmarker adapter.
 version: 0.0.1
 publish_to: none
 environment:
@@ -21,7 +21,7 @@ flutter:
   plugin:
     platforms:
       web:
-        pluginClass: WebFaceLandmarker
+        pluginClass: MediaPipeVisionWeb
         fileName: mediapipe_flutter_vision_web.dart
   assets:
     - assets/bridge.js

@@ -212,8 +212,10 @@ class _SegmentPageState extends State<SegmentPage> {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              Image.file(
-                                widget.assets.file(widget.task.sample),
+                              Image(
+                                image: widget.assets.imageProvider(
+                                  widget.task.sample,
+                                ),
                                 fit: BoxFit.contain,
                               ),
                               if (_maskImage case final image?)

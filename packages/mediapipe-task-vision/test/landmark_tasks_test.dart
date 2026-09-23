@@ -32,6 +32,20 @@ final _selectedTasks =
       null => _models.keys.toSet(),
     };
 
+// Hand Landmarker is the landmark task with a GPU path. Its GPU output is
+// compared with the official wheel's GPU output: on macOS (official runtime)
+// the checked-in physical-Mac references or same-host ones, on Linux only
+// same-host ones (MEDIAPIPE_GPU_REFERENCE_DIR).
+final _handGpuSkip = !_selectedTasks.contains('hand')
+    ? 'hand is not selected'
+    : Platform.isMacOS && _unvalidatedHost == null
+    ? null
+    : Platform.isLinux &&
+          Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] != null
+    ? null
+    : 'Hand GPU is validated on the official macOS runtime, and on Linux '
+          'against same-host references (MEDIAPIPE_GPU_REFERENCE_DIR).';
+
 void main() {
   final reference = loadFaceReference(
     'landmark_tasks',
@@ -141,6 +155,58 @@ void main() {
       skip: _unvalidatedHost,
     );
   }
+  group('gpu', () {
+    final reference = _handGpuSkip == null
+        ? loadFaceReference('landmark_tasks', 'official_gpu_reference.json')
+        : null;
+    final cases = [
+      ...?(reference?['cases'] as List?)?.cast<Map<String, dynamic>>(),
+    ];
+    for (final expected in cases.where((c) => c['timestamp_ms'] == null)) {
+      test(
+        'official hand / ${expected['input']} / ${expected['file']}',
+        () async {
+          final (process, close) = await _create(
+            expected,
+            delegate: VisionDelegate.gpu,
+          );
+          try {
+            _compare(
+              await process(
+                _image(expected),
+                expected['rotation_degrees'] as int,
+                null,
+              ),
+              expected['result'],
+              'hand',
+              gpu: true,
+            );
+          } finally {
+            await close();
+          }
+        },
+      );
+    }
+    test('hand video matches tracked and empty frames', () async {
+      final frames = cases.where((c) => c['timestamp_ms'] != null).toList();
+      final (process, close) = await _create(
+        frames.first,
+        delegate: VisionDelegate.gpu,
+      );
+      try {
+        for (final frame in frames) {
+          _compare(
+            await process(_image(frame), 0, frame['timestamp_ms'] as int),
+            frame['result'],
+            'hand',
+            gpu: true,
+          );
+        }
+      } finally {
+        await close();
+      }
+    }, skip: _handGpuSkip);
+  });
   test(
     'invalid model tracking and classification options fail before native calls',
     () {
@@ -228,6 +294,7 @@ VisionImage _image(Map<String, dynamic> expected) {
 Future<_Task> _create(
   Map<String, dynamic> expected, {
   Uint8List? modelBytes,
+  VisionDelegate delegate = VisionDelegate.cpu,
 }) async {
   final options = expected['options'] as Map<String, dynamic>;
   final name = expected['task'] as String;
@@ -242,6 +309,7 @@ Future<_Task> _create(
           modelPath: modelPath,
           modelBytes: modelBytes,
           runningMode: mode,
+          delegate: delegate,
           numHands: options['num_hands'] as int,
         ),
       );
@@ -483,32 +551,50 @@ Map<String, dynamic> _mask(SegmentationMask mask) {
 void _compare(
   dynamic actual,
   dynamic expected,
-  String task, [
+  String task, {
   String path = 'result',
-]) {
+  bool gpu = false,
+}) {
   if (expected is Map) {
     expect(actual, isA<Map>(), reason: path);
     expect((actual as Map).keys, unorderedEquals(expected.keys), reason: path);
     for (final key in expected.keys) {
-      _compare(actual[key], expected[key], task, '$path.$key');
+      _compare(actual[key], expected[key], task, path: '$path.$key', gpu: gpu);
     }
   } else if (expected is List) {
     expect(actual, isA<List>(), reason: path);
     expect(actual, hasLength(expected.length), reason: path);
     for (var i = 0; i < expected.length; i++) {
-      _compare(actual[i], expected[i], task, '$path[$i]');
+      _compare(actual[i], expected[i], task, path: '$path[$i]', gpu: gpu);
     }
   } else if (expected is double) {
+    final group = path.contains('world_landmarks')
+        ? 'world_landmarks'
+        : path.contains('landmark')
+        ? 'landmarks'
+        : 'other';
     recordReferenceDelta(
       task,
-      'cpu',
-      path.contains('landmark') ? 'landmarks' : 'other',
+      gpu ? 'gpu' : 'cpu',
+      group,
       path,
       actual as num,
       expected,
     );
-    expect(actual, closeTo(expected, 0.00001), reason: path);
+    expect(
+      actual,
+      closeTo(expected, gpu ? _gpuTolerances[group]! : 0.00001),
+      reason: path,
+    );
   } else {
     expect(actual, expected, reason: path);
   }
 }
+
+// Hand GPU against the official wheel's GPU output on the same host. See
+// fixtures/landmark_tasks/README.md for the measured maxima behind these.
+const _gpuTolerances = {
+  'landmarks': 0.002,
+  'world_landmarks': 0.002,
+  'other': 0.04,
+};

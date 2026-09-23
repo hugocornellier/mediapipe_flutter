@@ -1,30 +1,53 @@
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:ffi/ffi.dart';
 
 import '../../capabilities.dart';
-
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../interface/image_embedder_types.dart';
+import '../../vision_task_backend.dart';
+import '../sdk_vision_task.dart';
+import '../capabilities/official_runtime_io.dart';
+import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 import 'vision_task_worker.dart';
 
 /// Official Image Embedder with owned vectors and serialized native inference.
+///
+/// On Android, a registered official SDK adapter
+/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// native runtime runs it on a worker isolate.
 final class ImageEmbedder {
-  ImageEmbedder._(this._worker, this.delegate);
-  final VisionTaskWorker<ImageEmbedderResult> _worker;
+  ImageEmbedder._(this._worker, this._sdk, this.delegate);
+  final VisionTaskWorker<ImageEmbedderResult>? _worker;
+  final SdkVisionTask<ImageEmbedderResult>? _sdk;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  VisionRunningMode get runningMode => _worker.runningMode;
+  VisionRunningMode get runningMode =>
+      _sdk?.runningMode ?? _worker!.runningMode;
 
   /// Load a model and initialize the official graph off the calling isolate.
   static Future<ImageEmbedder> create(ImageEmbedderOptions options) async {
-    final capabilities = await queryImageTaskCapabilities();
+    if (Platform.isAndroid && imageEmbedderBackendFactory != null) {
+      return ImageEmbedder._(
+        null,
+        SdkVisionTask(
+          await imageEmbedderBackendFactory!(options),
+          options.runningMode,
+          options.delegate,
+          name: 'ImageEmbedder',
+          // MediaPipe converts milliseconds to signed 64-bit microseconds.
+          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
+        ),
+        options.delegate,
+      );
+    }
+    final capabilities = await queryImageEmbedderCapabilities();
     if (!capabilities.supportedDelegates.contains(options.delegate)) {
       throw UnsupportedError(
         capabilities.unavailableReasons[options.delegate]!,
@@ -36,6 +59,7 @@ final class ImageEmbedder {
         _createNative,
         'MediaPipe Image Embedder',
       ),
+      null,
       options.delegate,
     );
   }
@@ -45,7 +69,13 @@ final class ImageEmbedder {
     VisionImage image, {
     int rotationDegrees = 0,
     VisionRegionOfInterest? regionOfInterest,
-  }) => _worker.processImage(image, rotationDegrees, regionOfInterest);
+  }) =>
+      _sdk?.detectImage(
+        image,
+        rotationDegrees: rotationDegrees,
+        regionOfInterest: regionOfInterest,
+      ) ??
+      _worker!.processImage(image, rotationDegrees, regionOfInterest);
 
   /// Embed a video frame with a strictly increasing millisecond timestamp.
   Future<ImageEmbedderResult> embedForVideo(
@@ -53,12 +83,19 @@ final class ImageEmbedder {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
     VisionRegionOfInterest? regionOfInterest,
-  }) => _worker.processVideo(
-    image,
-    rotationDegrees,
-    timestampMilliseconds,
-    regionOfInterest,
-  );
+  }) =>
+      _sdk?.detectForVideo(
+        image,
+        timestampMilliseconds: timestampMilliseconds,
+        rotationDegrees: rotationDegrees,
+        regionOfInterest: regionOfInterest,
+      ) ??
+      _worker!.processVideo(
+        image,
+        rotationDegrees,
+        timestampMilliseconds,
+        regionOfInterest,
+      );
 
   /// Compare equally sized float vectors or equally sized quantized vectors.
   ///
@@ -107,7 +144,7 @@ final class ImageEmbedder {
   }
 
   /// Drain queued requests and release native resources exactly once.
-  Future<void> dispose() => _worker.dispose();
+  Future<void> dispose() => _sdk?.dispose() ?? _worker!.dispose();
 }
 
 NativeVisionTask<ImageEmbedderResult> _createNative(
@@ -120,20 +157,30 @@ final class _NativeImageEmbedder
     : _gpu = options.delegate == VisionDelegate.gpu {
     using((arena) {
       final native = arena<mp.ImageEmbedderOptions>();
-      setVisionBaseOptions(arena, native.ref.base_options, options);
+      setVisionBaseOptions(
+        arena,
+        native.ref.base_options,
+        options,
+        officialGpu: true,
+      );
       native.ref.running_mode = nativeVisionRunningMode(options.runningMode);
       native.ref.embedder_options
         ..l2_normalize = options.l2Normalize
         ..quantize = options.quantize;
       final output = arena<mp.MpImageEmbedderPtr>();
-      checkVisionCall(
+      checkVisionCreate(
         (error) => mp.MpImageEmbedderCreate(native, output, error),
+        gpu: _gpu,
       );
       _task = output.value;
     });
   }
   final bool _gpu;
   mp.MpImageEmbedderPtr _task = nullptr;
+  late final IosBgraStorage? _iosBgra =
+      hasOfficialIosVisionRuntime() && iosImageStorageMode != 0
+      ? IosBgraStorage(iosImageStorageMode)
+      : null;
 
   @override
   ImageEmbedderResult process(VisionTaskInput input) => using((arena) {
@@ -143,6 +190,7 @@ final class _NativeImageEmbedder
       source,
       expandRgbForGpu: _gpu,
       checked: checkVisionCall,
+      iosBgra: _iosBgra,
     );
     try {
       final processing = visionProcessingOptions(arena, rotation, region);
@@ -192,6 +240,10 @@ final class _NativeImageEmbedder
     if (_task == nullptr) return;
     final task = _task;
     _task = nullptr;
-    checkVisionCall((error) => mp.MpImageEmbedderClose(task, error));
+    try {
+      checkVisionCall((error) => mp.MpImageEmbedderClose(task, error));
+    } finally {
+      _iosBgra?.close();
+    }
   }
 }

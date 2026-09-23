@@ -1,7 +1,7 @@
 # Google's prebuilt iOS face SDK
 
 The gallery uses Google's MediaPipe Tasks **1.0.1** XCFrameworks for Face
-Detector and Face Landmarker on arm64 iOS. Both `VisionDelegate.cpu` and
+Detector, Face Landmarker and Hand Landmarker on arm64 iOS. Both `VisionDelegate.cpu` and
 `VisionDelegate.gpu` work; the latter selects the SDK's Metal delegate. iOS 15
 or newer is required. Face blendshapes still use XNNPACK, as configured by
 Google's face graph, even when landmark inference uses Metal.
@@ -23,7 +23,7 @@ hooks:
   user_defines:
     mediapipe_flutter_vision:
       official_ios_sdk: true
-      tasks: [face_detector, face_landmarker]
+      tasks: [face_detector, face_landmarker, hand_landmarker]
 ```
 
 Select this flag only when preparing an iOS build. It rejects other platforms,

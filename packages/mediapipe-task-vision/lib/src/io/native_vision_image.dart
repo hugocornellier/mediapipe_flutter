@@ -12,6 +12,7 @@ import 'package:ffi/ffi.dart';
 
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../interface/vision_types.dart';
+import 'native_ios_sdk.dart';
 import 'pixel_conversion.dart';
 
 /// Builds a native image from [input], copying pixels into [arena].
@@ -19,16 +20,28 @@ import 'pixel_conversion.dart';
 /// Set [expandRgbForGpu] when the task runs on Metal: Apple's GPU image upload
 /// cannot accept three-channel ImageFrames, so opaque alpha is added before
 /// entering the official graph.
+///
+/// On the official iOS SDK adapter, pass the task's [iosBgra] storage: BGRA
+/// camera frames then go straight into pooled pixel buffers without a swizzle.
 mp.MpImagePtr createVisionImage(
   Arena arena,
   VisionImage input, {
   required bool expandRgbForGpu,
   required void Function(mp.MpStatus Function(Pointer<Pointer<Char>>)) checked,
+  IosBgraStorage? iosBgra,
 }) {
   final imageOut = arena<mp.MpImagePtr>();
   if (input.path case final path?) {
     final name = path.toNativeUtf8(allocator: arena).cast<Char>();
     checked((error) => mp.MpImageCreateFromFile(name, imageOut, error));
+    return imageOut.value;
+  }
+  if (iosBgra != null && input.format == VisionPixelFormat.bgra) {
+    checked(
+      (error) => mp.MpStatus.fromValue(
+        iosBgra.create(input, arena, imageOut.cast(), error),
+      ),
+    );
     return imageOut.value;
   }
   final bytes = input.pixels!;

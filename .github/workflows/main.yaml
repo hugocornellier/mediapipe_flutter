@@ -186,6 +186,46 @@ jobs:
           python3 -B packages/mediapipe-task-vision/tool/prepare_official_macos_landmark_runtime.py \
             | python3 -c "import json,sys; t=sys.stdin.read(); m=json.loads(t[t.index('{'):])['manifest']; print('signed', m['sha256'][:16], 'unsigned', m['unsigned_sha256'][:16], m['signing_toolchain'])"
 
+  official-landmark-validation:
+    # Every task the opt-in official macOS runtime serves, against Google's
+    # 1.0.0 wheel on this runner: CPU goldens, and Metal references generated
+    # here for Face, Hand and Object Detector.
+    name: Official macOS runtime / every served task against Google's wheel
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download the pinned models
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_model.dart
+          dart tool/download_face_landmarker.dart
+          dart tool/download_landmark_tasks.dart
+          dart tool/download_image_tasks.dart
+          dart tool/download_object_detector.dart
+          dart tool/download_segmenter_tasks.dart
+      - name: Prepare the official runtime
+        run: python3 -B packages/mediapipe-task-vision/tool/prepare_official_macos_landmark_runtime.py
+      - name: Compare every served task with Google's wheel
+        run: python3 -B packages/mediapipe-task-vision/tool/test_official_macos_landmark_runtime.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-macos-runtime-validation
+          path: |
+            packages/mediapipe-task-vision/build/official-landmark-validation/*.log
+            packages/mediapipe-task-vision/build/official-landmark-validation/gpu/**/*.json
+          if-no-files-found: warn
+
   prebuilt-consumer:
     name: Fresh Flutter consumer / public runtime download
     runs-on: macos-15

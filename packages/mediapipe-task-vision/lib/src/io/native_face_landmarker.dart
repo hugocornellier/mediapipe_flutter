@@ -6,10 +6,13 @@ import 'package:ffi/ffi.dart';
 import '../../third_party/mediapipe/face_landmarker_bindings.dart' as mp;
 import '../interface/face_detector_types.dart';
 import '../interface/face_landmarker_types.dart';
+import 'face_landmarker_api.dart';
 import 'native_frame_timings.dart';
 import 'native_desktop_runtime.dart';
 import 'native_ios_sdk.dart';
 import 'pixel_conversion.dart';
+
+FaceLandmarkerApi get _api => FaceLandmarkerApi.current;
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceLandmarker {
@@ -65,7 +68,7 @@ final class NativeFaceLandmarker {
             options.outputFacialTransformationMatrixes;
       final output = arena<mp.MpFaceLandmarkerPtr>();
       try {
-        _checked((error) => mp.MpFaceLandmarkerCreate(native, output, error));
+        _checked((error) => _api.create(native, output, error));
       } on FaceLandmarkerException catch (error) {
         // Google's runtime reports every GPU refusal (no EGL display, a
         // software renderer) as its missing GPU service.
@@ -100,7 +103,7 @@ final class NativeFaceLandmarker {
       final imageOut = arena<mp.MpImagePtr>();
       if (input.path case final path?) {
         final name = path.toNativeUtf8(allocator: arena).cast<Char>();
-        _checked((error) => mp.MpImageCreateFromFile(name, imageOut, error));
+        _checked((error) => _api.imageFromFile(name, imageOut, error));
         timings?.mark('image_create');
       } else if (_officialIos && input.format == VisionPixelFormat.bgra) {
         _checked(
@@ -156,7 +159,7 @@ final class NativeFaceLandmarker {
         }
         timings?.mark('pixel_pack');
         _checked(
-          (error) => mp.MpImageCreateFromUint8Data(
+          (error) => _api.imageFromData(
             input.format == VisionPixelFormat.rgb && !expandRgb
                 ? mp.MpImageFormat.kMpImageFormatSrgb
                 : mp.MpImageFormat.kMpImageFormatSrgba,
@@ -178,17 +181,12 @@ final class NativeFaceLandmarker {
         timings?.mark('native_setup');
         if (timestamp == null) {
           _checked(
-            (error) => mp.MpFaceLandmarkerDetectImage(
-              _detector,
-              image,
-              options,
-              result,
-              error,
-            ),
+            (error) =>
+                _api.detectImage(_detector, image, options, result, error),
           );
         } else {
           _checked(
-            (error) => mp.MpFaceLandmarkerDetectForVideo(
+            (error) => _api.detectForVideo(
               _detector,
               image,
               options,
@@ -201,8 +199,8 @@ final class NativeFaceLandmarker {
         timings?.mark('task');
         try {
           final copied = FaceLandmarkerResult(
-            imageWidth: mp.MpImageGetWidth(image),
-            imageHeight: mp.MpImageGetHeight(image),
+            imageWidth: _api.imageWidth(image),
+            imageHeight: _api.imageHeight(image),
             timestampMilliseconds: timestamp,
             faceLandmarks: [
               for (var i = 0; i < result.ref.face_landmarks_count; i++)
@@ -225,10 +223,10 @@ final class NativeFaceLandmarker {
           return copied;
         } finally {
           // This releases the contents, while Arena owns the outer struct.
-          mp.MpFaceLandmarkerCloseResult(result);
+          _api.closeResult(result);
         }
       } finally {
-        mp.MpImageFree(image);
+        _api.imageFree(image);
       }
     });
     timings?.mark('cleanup');
@@ -241,7 +239,7 @@ final class NativeFaceLandmarker {
     final pointer = _detector;
     _detector = nullptr;
     try {
-      _checked((error) => mp.MpFaceLandmarkerClose(pointer, error));
+      _checked((error) => _api.close(pointer, error));
     } finally {
       _iosBgraStorage?.close();
     }
@@ -259,7 +257,7 @@ void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
       );
     }
   } finally {
-    if (error.value != nullptr) mp.MpErrorFree(error.value);
+    if (error.value != nullptr) _api.errorFree(error.value);
     calloc.free(error);
   }
 }

@@ -240,7 +240,12 @@ void main() {
         },
       );
     },
-    skip: Platform.isMacOS
+    // Google's official macOS runtime (tool/test_official_macos_landmark_runtime.py)
+    // is validated; the macOS source runtime is not.
+    skip:
+        Platform.isMacOS &&
+            Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
+                '1'
         ? 'The macOS source runtime is not validated against the official '
               'outputs; see upstream-issues.md UP-004.'
         : false,

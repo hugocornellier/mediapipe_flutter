@@ -4,13 +4,17 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:mediapipe_gallery/live/camera_geometry.dart';
 import 'package:mediapipe_gallery/live/face_overlay.dart';
+import 'package:mediapipe_gallery/live/landmark_overlay.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
+import 'package:mediapipe_gallery/live/live_subjects.dart';
 
-/// Checks that the overlay lands on the face the viewer can actually see.
+import 'live_subject.dart';
+
+/// Checks that the overlay lands on the subject (a face, a hand) the viewer
+/// can actually see.
 ///
 /// The geometry unit tests prove [PreviewTransform] is consistent with the
 /// rules in `camera_geometry.dart`. They cannot prove those rules match what a
@@ -25,31 +29,9 @@ import 'package:mediapipe_gallery/live/live_camera_view.dart';
 /// twice the face's distance from that line (roughly 5% of the diagonal for
 /// the fixture, whose face sits near the middle).
 ///
-/// Across a mirror the IMAGE task does not keep the subject's left and right:
-/// it labels landmarks by the side of the picture they appear on, so on a
-/// preview that mirrors the analysed frame it reports the live landmark's
-/// partner ([alignmentMirrorPartners]). Each hypothesis is compared under the
-/// labels it implies.
-
-/// Nose tip, chin, forehead, iris centres, mouth corners, outer eye corners.
-/// Shared with the web view, which publishes them for the browser oracle.
-const alignmentProbes = faceAlignmentProbes;
-
-/// Each probe's left/right partner in the face mesh; midline probes are their
-/// own. Run on the fixture and on its horizontal flip, the official IMAGE task
-/// puts landmark 33 of the flip where the reflection of the original's 263 is
-/// (0.3% of the diagonal), not the original's 33 (17.6%).
-const alignmentMirrorPartners = <int, int>{
-  1: 1,
-  152: 152,
-  10: 10,
-  468: 473,
-  473: 468,
-  61: 291,
-  291: 61,
-  33: 263,
-  263: 33,
-};
+/// Across a mirror the IMAGE task may relabel landmarks: see
+/// [AlignmentProbes.partners]. Each hypothesis is compared under the labels it
+/// implies.
 
 /// Accept this much median disagreement, as a fraction of the preview
 /// diagonal, and [alignmentOutlierTolerance] for any single probe.
@@ -69,37 +51,39 @@ typedef RgbaImage = ({Uint8List rgba, int width, int height});
 /// recomputed, so the test measures the real painter's geometry.
 typedef OverlayGeometry = ({Rect box, PreviewTransform transform});
 
-/// The face overlay's box and transform as currently laid out.
+/// The live overlay's box and transform as currently laid out.
 OverlayGeometry overlayGeometry(
   WidgetTester tester,
   LiveCameraController<Object?> controller,
 ) {
+  PreviewTransform? transformOf(Widget widget) => switch (widget) {
+    CustomPaint(painter: final FaceOverlay overlay) => overlay.transform,
+    CustomPaint(painter: final LandmarkOverlay overlay) => overlay.transform,
+    _ => null,
+  };
   final paint = find.descendant(
     of: find.byType(LiveCameraView),
-    matching: find.byWidgetPredicate(
-      (widget) => widget is CustomPaint && widget.painter is FaceOverlay,
-    ),
+    matching: find.byWidgetPredicate((widget) => transformOf(widget) != null),
   );
-  expect(paint, findsOneWidget, reason: 'the face overlay must be painting');
+  expect(paint, findsOneWidget, reason: 'the overlay must be painting');
   final box = tester.renderObject<RenderBox>(paint);
-  final overlay = tester.widget<CustomPaint>(paint).painter! as FaceOverlay;
   return (
     box: box.localToGlobal(Offset.zero) & box.size,
-    transform: overlay.transform,
+    transform: transformOf(tester.widget(paint))!,
   );
 }
 
-/// One comparison between the live overlay and the on-screen face.
+/// One comparison between the live overlay and the on-screen subject.
 final class AlignmentMeasurement {
   const AlignmentMeasurement({
-    required this.observedFaces,
+    required this.observedSubjects,
     required this.distances,
     required this.distancesIfMirrored,
     required this.cropSize,
   });
 
-  /// Faces the IMAGE task found in the preview crop; the oracle needs one.
-  final int observedFaces;
+  /// Subjects the IMAGE task found in the preview crop; the oracle needs one.
+  final int observedSubjects;
 
   /// Probe index to distance between overlay and on-screen landmark, as a
   /// fraction of the crop diagonal.
@@ -117,12 +101,12 @@ final class AlignmentMeasurement {
   double get medianIfMirrored => _median(distancesIfMirrored.values);
 
   bool get aligned =>
-      observedFaces == 1 &&
+      observedSubjects == 1 &&
       median <= alignmentTolerance &&
       maximum <= alignmentOutlierTolerance;
 
   Map<String, Object?> toJson() => {
-    'observed_faces': observedFaces,
+    'observed_subjects': observedSubjects,
     'crop_size': [cropSize.width, cropSize.height],
     'tolerance': alignmentTolerance,
     'outlier_tolerance': alignmentOutlierTolerance,
@@ -205,46 +189,38 @@ Rect? boundsOfColor(RgbaImage image, Color color, {int slack = 8}) {
   );
 }
 
-/// Runs the official IMAGE task over the preview's screen pixels and compares
-/// the face it finds with where the overlay draws [liveFace].
+/// Runs [subject]'s official IMAGE task over the preview's screen pixels and
+/// compares what it finds with where the overlay draws [live].
 ///
 /// [previewInScreenshot] is the overlay box in screenshot pixels and
 /// [pixelsPerLogical] converts the overlay's logical coordinates to it.
 Future<AlignmentMeasurement> measureAlignment({
+  required LiveSubject subject,
   required RgbaImage screenshot,
   required Rect previewInScreenshot,
   required double pixelsPerLogical,
-  required List<FaceLandmark> liveFace,
+  required List<LivePoint> live,
   required PreviewTransform transform,
   required Uint8List modelBytes,
 }) async {
   final crop = cropImage(screenshot, previewInScreenshot);
-  final task = await FaceLandmarker.create(
-    FaceLandmarkerOptions(modelBytes: modelBytes, numFaces: 1),
+  final found = await subject.detectImage(
+    modelBytes,
+    crop.rgba,
+    crop.width,
+    crop.height,
   );
-  final FaceLandmarkerResult found;
-  try {
-    found = await task.detectImage(
-      VisionImage.fromPixels(
-        pixels: crop.rgba,
-        width: crop.width,
-        height: crop.height,
-        format: VisionPixelFormat.rgba,
-      ),
-    );
-  } finally {
-    await task.dispose();
-  }
   final size = Size(crop.width.toDouble(), crop.height.toDouble());
-  if (found.faceLandmarks.isEmpty) {
+  if (found.isEmpty) {
     return AlignmentMeasurement(
-      observedFaces: 0,
+      observedSubjects: 0,
       distances: const {},
       distancesIfMirrored: const {},
       cropSize: size,
     );
   }
-  final observed = found.faceLandmarks.first;
+  final observed = found.first;
+  final probes = subject.probes;
   final diagonal = math.sqrt(
     size.width * size.width + size.height * size.height,
   );
@@ -258,9 +234,9 @@ Future<AlignmentMeasurement> measureAlignment({
   );
   double distance(PreviewTransform hypothesis, int index) {
     final expected =
-        hypothesis.map(liveFace[index].x, liveFace[index].y) * pixelsPerLogical;
+        hypothesis.map(live[index].x, live[index].y) * pixelsPerLogical;
     // A hypothesis that mirrors the preview also implies mirrored labels.
-    final label = hypothesis.mirror ? alignmentMirrorPartners[index]! : index;
+    final label = hypothesis.mirror ? probes.partners[index]! : index;
     final seen = Offset(
       observed[label].x * size.width,
       observed[label].y * size.height,
@@ -269,10 +245,10 @@ Future<AlignmentMeasurement> measureAlignment({
   }
 
   return AlignmentMeasurement(
-    observedFaces: found.faceLandmarks.length,
-    distances: {for (final i in alignmentProbes) i: distance(transform, i)},
+    observedSubjects: found.length,
+    distances: {for (final i in probes.indices) i: distance(transform, i)},
     distancesIfMirrored: {
-      for (final i in alignmentProbes) i: distance(mirrored, i),
+      for (final i in probes.indices) i: distance(mirrored, i),
     },
     cropSize: size,
   );

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
 import 'package:test/test.dart';
@@ -62,8 +64,9 @@ void main() {
   test('desktop rows cover exactly what the desktop jobs validate', () {
     // The hook refuses any task missing from these rows, so widening them
     // without adding the task to tool/test_desktop.py would claim coverage
-    // nothing proves. The stateful Interactive Segmenter is deliberately
-    // absent: core's shared 1.0.1 runtime serves it instead of a wheel.
+    // nothing proves. Linux's 1.0.1 wheel also serves the stateful Interactive
+    // Segmenter (test_desktop.py --interactive-segmenter); Windows' does not
+    // export it, and core's shared runtime serves it on macOS.
     const validated = {
       'face_detector',
       'face_landmarker',
@@ -77,9 +80,11 @@ void main() {
       'image_segmenter',
       'interactive_segmenter_legacy',
     };
-    for (final release in visionWheelReleases.values) {
-      expect(release.tasks, validated);
-    }
+    expect(visionWheelReleases['linux/x64']!.tasks, {
+      ...validated,
+      sharedRuntimeTask,
+    });
+    expect(visionWheelReleases['windows/x64']!.tasks, validated);
     expect(visionTasks.difference(validated), {sharedRuntimeTask});
   });
 
@@ -135,7 +140,14 @@ void main() {
     expect(release.target, 'macos/arm64');
     expect(release.tasks, {
       'face_landmarker',
+      'gesture_recognizer',
       'hand_landmarker',
+      'holistic_landmarker',
+      'image_classifier',
+      'image_embedder',
+      'image_segmenter',
+      'interactive_segmenter_legacy',
+      'object_detector',
       'pose_landmarker',
     });
     expect(release.archive, isNull);
@@ -181,6 +193,37 @@ void main() {
       failsWith<UnsupportedError>(contains('macos/arm64')),
     );
   });
+
+  test(
+    'official macOS runtime is bundled once when face shares it',
+    () async {
+      // Google's monolith shares its graph registry between loaded images, so
+      // a second copy for the face asset would abort on registration.
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.macOS,
+        targetArchitecture: Architecture.arm64,
+        userDefines: defines({
+          'tasks': ['face_landmarker', 'hand_landmarker'],
+          'official_macos_landmark_tasks': true,
+        }),
+        check: (_, output) {
+          final assets = output.assets.code.toList();
+          expect(assets.map((asset) => asset.id), [
+            'package:mediapipe_flutter_vision/vision.dylib',
+          ]);
+          expect(assets.single.linkMode, isA<DynamicLoadingBundled>());
+        },
+      );
+    },
+    skip:
+        File(
+          '${officialMacosLandmarkRuntime.localBuildDirectory}'
+          '${officialMacosLandmarkRuntime.libraryName}',
+        ).existsSync()
+        ? false
+        : 'Run tool/prepare_official_macos_landmark_runtime.py first.',
+  );
 
   test('simulator rejects tasks whose exports lack validated inference', () {
     expect(

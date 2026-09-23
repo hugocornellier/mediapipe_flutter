@@ -1,10 +1,14 @@
 import 'dart:ffi';
+import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../interface/segmenter_task_types.dart';
+import '../../vision_task_backend.dart';
+import '../sdk_vision_task.dart';
+import '../capabilities/official_runtime_io.dart';
+import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 import 'vision_task_worker.dart';
@@ -13,9 +17,14 @@ import 'vision_task_worker.dart';
 ///
 /// This is not the stateful `InteractiveSegmenter`: that task keeps stroke
 /// history on Google's 1.0.1 runtime and has its own API and blockers.
+///
+/// On Android, a registered official SDK adapter
+/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// native runtime runs it on a worker isolate.
 final class InteractiveSegmenterLegacy {
-  InteractiveSegmenterLegacy._(this._worker, this.delegate);
-  final VisionTaskWorker<SegmentationResult> _worker;
+  InteractiveSegmenterLegacy._(this._worker, this._sdk, this.delegate);
+  final VisionTaskWorker<SegmentationResult>? _worker;
+  final SdkVisionTask<SegmentationResult>? _sdk;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
@@ -24,7 +33,20 @@ final class InteractiveSegmenterLegacy {
   static Future<InteractiveSegmenterLegacy> create(
     InteractiveSegmenterLegacyOptions options,
   ) async {
-    final capabilities = await querySegmenterTaskCapabilities();
+    if (Platform.isAndroid &&
+        interactiveSegmenterLegacyBackendFactory != null) {
+      return InteractiveSegmenterLegacy._(
+        null,
+        SdkVisionTask(
+          await interactiveSegmenterLegacyBackendFactory!(options),
+          VisionRunningMode.image,
+          options.delegate,
+          name: 'InteractiveSegmenterLegacy',
+        ),
+        options.delegate,
+      );
+    }
+    final capabilities = await queryInteractiveSegmenterLegacyCapabilities();
     if (!capabilities.supportedDelegates.contains(options.delegate)) {
       throw UnsupportedError(
         capabilities.unavailableReasons[options.delegate]!,
@@ -36,6 +58,7 @@ final class InteractiveSegmenterLegacy {
         _createNative,
         'MediaPipe Interactive Segmenter Legacy',
       ),
+      null,
       options.delegate,
     );
   }
@@ -52,10 +75,16 @@ final class InteractiveSegmenterLegacy {
     VisionImage image, {
     required SegmentationPoint keypoint,
     int rotationDegrees = 0,
-  }) => _worker.processImage(image, rotationDegrees, null, keypoint: keypoint);
+  }) =>
+      _sdk?.detectImage(
+        image,
+        rotationDegrees: rotationDegrees,
+        keypoint: keypoint,
+      ) ??
+      _worker!.processImage(image, rotationDegrees, null, keypoint: keypoint);
 
   /// Drain queued requests and release native resources exactly once.
-  Future<void> dispose() => _worker.dispose();
+  Future<void> dispose() => _sdk?.dispose() ?? _worker!.dispose();
 }
 
 NativeVisionTask<SegmentationResult> _createNative(
@@ -68,19 +97,29 @@ final class _NativeInteractiveSegmenterLegacy
     : _gpu = options.delegate == VisionDelegate.gpu {
     using((arena) {
       final native = arena<mp.MpInteractiveSegmenterLegacyOptions>();
-      setVisionBaseOptions(arena, native.ref.base_options, options);
+      setVisionBaseOptions(
+        arena,
+        native.ref.base_options,
+        options,
+        officialGpu: true,
+      );
       native.ref
         ..output_confidence_masks = options.outputConfidenceMasks
         ..output_category_mask = options.outputCategoryMask;
       final output = arena<mp.MpInteractiveSegmenterLegacyPtr>();
-      checkVisionCall(
+      checkVisionCreate(
         (error) => mp.MpInteractiveSegmenterLegacyCreate(native, output, error),
+        gpu: _gpu,
       );
       _task = output.value;
     });
   }
   final bool _gpu;
   mp.MpInteractiveSegmenterLegacyPtr _task = nullptr;
+  late final IosBgraStorage? _iosBgra =
+      hasOfficialIosVisionRuntime() && iosImageStorageMode != 0
+      ? IosBgraStorage(iosImageStorageMode)
+      : null;
 
   @override
   SegmentationResult process(VisionTaskInput input) => using((arena) {
@@ -95,6 +134,7 @@ final class _NativeInteractiveSegmenterLegacy
       source,
       expandRgbForGpu: _gpu,
       checked: checkVisionCall,
+      iosBgra: _iosBgra,
     );
     try {
       final point = arena<mp.MpNormalizedKeypoint>();
@@ -133,8 +173,12 @@ final class _NativeInteractiveSegmenterLegacy
     if (_task == nullptr) return;
     final task = _task;
     _task = nullptr;
-    checkVisionCall(
-      (error) => mp.MpInteractiveSegmenterLegacyClose(task, error),
-    );
+    try {
+      checkVisionCall(
+        (error) => mp.MpInteractiveSegmenterLegacyClose(task, error),
+      );
+    } finally {
+      _iosBgra?.close();
+    }
   }
 }

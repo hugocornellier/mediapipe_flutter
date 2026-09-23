@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 
 /// Assets unpacked to real files, because the native tasks read paths.
@@ -20,6 +21,8 @@ final class GalleryAssets {
   String path(String name) => '${directory.path}/$name';
 
   File file(String name) => File(path(name));
+
+  ImageProvider imageProvider(String name) => FileImage(file(name));
 
   static Future<GalleryAssets> unpack() async {
     final directory = await Directory.systemTemp.createTemp(

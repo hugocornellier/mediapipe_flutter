@@ -94,7 +94,18 @@ final class VisionRuntimeRelease {
 const officialMacosLandmarkRuntime = VisionRuntimeRelease(
   target: 'macos/arm64',
   release: 'official-landmarks-v1.0.0',
-  tasks: {'face_landmarker', 'hand_landmarker', 'pose_landmarker'},
+  tasks: {
+    'face_landmarker',
+    'gesture_recognizer',
+    'hand_landmarker',
+    'holistic_landmarker',
+    'image_classifier',
+    'image_embedder',
+    'image_segmenter',
+    'interactive_segmenter_legacy',
+    'object_detector',
+    'pose_landmarker',
+  },
   archive: null,
   libraryName: 'libmediapipe.dylib',
   // Unsigned-image digest; tool/prepare_official_macos_landmark_runtime.py
@@ -244,6 +255,7 @@ const visionWheelReleases = <String, VisionWheelRelease>{
       'pose_landmarker',
       'holistic_landmarker',
       'image_segmenter',
+      'interactive_segmenter',
       'interactive_segmenter_legacy',
     },
   ),

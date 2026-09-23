@@ -61,6 +61,7 @@ def wheel_pin(target):
 def install(root, target):
     """Creates an isolated environment holding only the pinned official wheel."""
     wheel_url, wheel_sha, _, _ = wheel_pin(target)
+    root.mkdir(parents=True, exist_ok=True)
     environment = root / 'python'
     run([sys.executable, '-m', 'venv', environment], REPO, root / 'venv.log')
     python = environment / ('Scripts/python.exe' if platform.system() == 'Windows'

@@ -1,28 +1,53 @@
 import 'dart:ffi';
+import 'dart:io';
+
 import 'package:ffi/ffi.dart';
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../interface/landmark_task_types.dart';
+import '../../vision_task_backend.dart';
+import '../sdk_vision_task.dart';
+import '../capabilities/official_runtime_io.dart';
+import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 import 'vision_task_worker.dart';
 
 /// Official GestureRecognizer, with owned results and serialized image/video inference.
+///
+/// On Android, a registered official SDK adapter
+/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// native runtime runs it on a worker isolate.
 final class GestureRecognizer {
-  GestureRecognizer._(this._worker, this.delegate);
-  final VisionTaskWorker<GestureRecognizerResult> _worker;
+  GestureRecognizer._(this._worker, this._sdk, this.delegate);
+  final VisionTaskWorker<GestureRecognizerResult>? _worker;
+  final SdkVisionTask<GestureRecognizerResult>? _sdk;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  VisionRunningMode get runningMode => _worker.runningMode;
+  VisionRunningMode get runningMode =>
+      _sdk?.runningMode ?? _worker!.runningMode;
 
   /// Load a compatible task bundle on a worker isolate.
   static Future<GestureRecognizer> create(
     GestureRecognizerOptions options,
   ) async {
-    final capabilities = await queryLandmarkTaskCapabilities();
+    if (Platform.isAndroid && gestureRecognizerBackendFactory != null) {
+      return GestureRecognizer._(
+        null,
+        SdkVisionTask(
+          await gestureRecognizerBackendFactory!(options),
+          options.runningMode,
+          options.delegate,
+          name: 'GestureRecognizer',
+          // MediaPipe converts milliseconds to signed 64-bit microseconds.
+          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
+        ),
+        options.delegate,
+      );
+    }
+    final capabilities = await queryGestureRecognizerCapabilities();
     if (!capabilities.supportedDelegates.contains(options.delegate)) {
       throw UnsupportedError(
         capabilities.unavailableReasons[options.delegate]!,
@@ -34,6 +59,7 @@ final class GestureRecognizer {
         _createNative,
         'MediaPipe GestureRecognizer',
       ),
+      null,
       options.delegate,
     );
   }
@@ -42,7 +68,9 @@ final class GestureRecognizer {
   Future<GestureRecognizerResult> recognizeImage(
     VisionImage image, {
     int rotationDegrees = 0,
-  }) => _worker.processImage(image, rotationDegrees, null);
+  }) =>
+      _sdk?.detectImage(image, rotationDegrees: rotationDegrees) ??
+      _worker!.processImage(image, rotationDegrees, null);
 
   /// Process a video frame with a strictly increasing millisecond timestamp.
   Future<GestureRecognizerResult> recognizeForVideo(
@@ -50,10 +78,20 @@ final class GestureRecognizer {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
   }) =>
-      _worker.processVideo(image, rotationDegrees, timestampMilliseconds, null);
+      _sdk?.detectForVideo(
+        image,
+        timestampMilliseconds: timestampMilliseconds,
+        rotationDegrees: rotationDegrees,
+      ) ??
+      _worker!.processVideo(
+        image,
+        rotationDegrees,
+        timestampMilliseconds,
+        null,
+      );
 
   /// Drain queued requests and release native resources exactly once.
-  Future<void> dispose() => _worker.dispose();
+  Future<void> dispose() => _sdk?.dispose() ?? _worker!.dispose();
 }
 
 NativeVisionTask<GestureRecognizerResult> _createNative(
@@ -66,7 +104,12 @@ final class _NativeGestureRecognizer
     : _gpu = options.delegate == VisionDelegate.gpu {
     using((arena) {
       final native = arena<mp.MpGestureRecognizerOptions>();
-      setVisionBaseOptions(arena, native.ref.base_options, options);
+      setVisionBaseOptions(
+        arena,
+        native.ref.base_options,
+        options,
+        officialGpu: true,
+      );
       native.ref.running_mode = nativeVisionRunningMode(options.runningMode);
       native.ref
         ..num_hands = options.numHands
@@ -84,14 +127,19 @@ final class _NativeGestureRecognizer
         options.customGesturesClassifierOptions,
       );
       final output = arena<mp.MpGestureRecognizerPtr>();
-      checkVisionCall(
+      checkVisionCreate(
         (error) => mp.MpGestureRecognizerCreate(native, output, error),
+        gpu: _gpu,
       );
       _task = output.value;
     });
   }
   final bool _gpu;
   mp.MpGestureRecognizerPtr _task = nullptr;
+  late final IosBgraStorage? _iosBgra =
+      hasOfficialIosVisionRuntime() && iosImageStorageMode != 0
+      ? IosBgraStorage(iosImageStorageMode)
+      : null;
 
   @override
   GestureRecognizerResult process(VisionTaskInput input) => using((arena) {
@@ -101,6 +149,7 @@ final class _NativeGestureRecognizer
       source,
       expandRgbForGpu: _gpu,
       checked: checkVisionCall,
+      iosBgra: _iosBgra,
     );
     try {
       final processing = visionProcessingOptions(arena, rotation, null);
@@ -165,6 +214,10 @@ final class _NativeGestureRecognizer
     if (_task == nullptr) return;
     final task = _task;
     _task = nullptr;
-    checkVisionCall((error) => mp.MpGestureRecognizerClose(task, error));
+    try {
+      checkVisionCall((error) => mp.MpGestureRecognizerClose(task, error));
+    } finally {
+      _iosBgra?.close();
+    }
   }
 }

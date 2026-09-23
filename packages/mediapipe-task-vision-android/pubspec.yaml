@@ -1,5 +1,5 @@
 name: mediapipe_flutter_vision_android
-description: Official Android FaceLandmarker SDK adapter for mediapipe_flutter_vision.
+description: Official Android Face Landmarker and Hand Landmarker SDK adapter for mediapipe_flutter_vision.
 version: 0.0.1
 publish_to: none
 environment:
@@ -20,4 +20,4 @@ flutter:
       android:
         package: dev.mediapipe.flutter.vision
         pluginClass: MediaPipeVisionPlugin
-        dartPluginClass: AndroidFaceLandmarker
+        dartPluginClass: MediaPipeVisionAndroid

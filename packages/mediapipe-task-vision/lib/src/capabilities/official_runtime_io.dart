@@ -21,3 +21,17 @@ bool hasOfficialMacosLandmarkRuntime() {
     return false;
   }
 }
+
+@Native<Int Function()>(symbol: 'MpIosSdkVersion', assetId: _visionAsset)
+external int _iosSdkVersion();
+
+/// Whether the build hook mapped the shared vision asset to our adapter over
+/// Google's official iOS SDK (`official_ios_sdk: true`).
+bool hasOfficialIosVisionRuntime() {
+  if (!Platform.isIOS) return false;
+  try {
+    return _iosSdkVersion() == 10001;
+  } on ArgumentError {
+    return false;
+  }
+}

@@ -12,6 +12,8 @@ import 'package:mediapipe_flutter_vision/third_party/mediapipe/interactive_segme
     as abi;
 import 'package:test/test.dart';
 
+import 'support/face_reference.dart' show gpuFaceTestsEnabled;
+
 const fixtures = 'test/fixtures/interactive_segmentation';
 const model = 'models/interactive_segmentation.task';
 late Map<String, dynamic> reference;
@@ -133,6 +135,9 @@ void main() {
       compare(retained!, retainedCase!);
       expect(() => retained!.confidence[0] = 0, throwsUnsupportedError);
     },
+    // Loads a 30 MB model and runs eleven segmentations; slow hosted runners
+    // have taken over the default 30 seconds.
+    timeout: const Timeout(Duration(minutes: 2)),
   );
 
   test(
@@ -202,14 +207,19 @@ void main() {
   );
 
   test(
-    'face CPU and Metal runtimes coexist with the official segmenter',
+    'face CPU and GPU runtimes coexist with the official segmenter',
     () async {
       final task = await InteractiveSegmenter.create(
         InteractiveSegmenterOptions(modelPath: model),
       );
       addTearDown(task.dispose);
       final entry = (reference['cases'] as List)[1] as Map<String, dynamic>;
-      for (final delegate in VisionDelegate.values) {
+      // GPU only where the face GPU suites run: Linux needs a renderer
+      // Google accepts, which a plain hosted runner lacks.
+      for (final delegate in [
+        VisionDelegate.cpu,
+        if (gpuFaceTestsEnabled) VisionDelegate.gpu,
+      ]) {
         final detector = await FaceDetector.create(
           FaceDetectorOptions(
             modelPath: 'models/blaze_face_short_range.tflite',

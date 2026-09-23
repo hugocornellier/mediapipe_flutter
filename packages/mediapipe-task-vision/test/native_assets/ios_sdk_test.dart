@@ -17,27 +17,25 @@ void main() {
     ),
   );
 
-  test(
-    'official SDK rejects unsupported tasks and targets before downloading',
-    () async {
-      for (final (os, tasks) in [
-        (OS.macOS, ['face_landmarker']),
-        (OS.iOS, ['hand_landmarker']),
-        (OS.iOS, ['face_landmarker', 'interactive_segmenter']),
-      ]) {
-        await expectLater(
-          testCodeBuildHook(
-            mainMethod: hook.main,
-            targetOS: os,
-            targetArchitecture: Architecture.arm64,
-            userDefines: defines({'official_ios_sdk': true, 'tasks': tasks}),
-            check: (_, _) => fail('Unsupported SDK request succeeded'),
-          ),
-          throwsA(isA<UnsupportedError>()),
-        );
-      }
-    },
-  );
+  test('official SDK rejects unsupported targets before downloading', () async {
+    // Google's iOS SDK serves every vision task, so only targets are refused.
+    for (final (os, architecture, tasks) in [
+      (OS.macOS, Architecture.arm64, ['face_landmarker']),
+      (OS.iOS, Architecture.x64, ['face_landmarker']),
+      (OS.iOS, Architecture.x64, ['face_landmarker', 'interactive_segmenter']),
+    ]) {
+      await expectLater(
+        testCodeBuildHook(
+          mainMethod: hook.main,
+          targetOS: os,
+          targetArchitecture: architecture,
+          userDefines: defines({'official_ios_sdk': true, 'tasks': tasks}),
+          check: (_, _) => fail('Unsupported SDK request succeeded'),
+        ),
+        throwsA(isA<UnsupportedError>()),
+      );
+    }
+  });
 
   test(
     'official SDK option is typed and cannot select two platform runtimes',
@@ -60,7 +58,7 @@ void main() {
     },
   );
 
-  test('both binding IDs load one physical iOS framework', () async {
+  test('every binding ID loads one physical iOS framework', () async {
     await testCodeBuildHook(
       mainMethod: (arguments) async {
         await build(arguments, (input, output) async {
@@ -72,7 +70,7 @@ void main() {
             input,
             output,
             library: library,
-            tasks: {'face_landmarker', 'face_detector'},
+            tasks: {'face_landmarker', 'face_detector', 'hand_landmarker'},
           );
         });
       },
@@ -80,22 +78,28 @@ void main() {
       targetArchitecture: Architecture.arm64,
       check: (_, output) {
         final assets = output.assets.code;
+        // The shared bindings and capability probes resolve vision.dylib.
         expect(assets.map((asset) => asset.id.split('/').last).toSet(), {
           'face_landmarker.dylib',
           'face_detector.dylib',
+          'hand_landmarker.dylib',
+          'vision.dylib',
         });
         expect(
           assets.where((asset) => asset.linkMode is DynamicLoadingBundled),
           hasLength(1),
         );
-        final alias = assets.singleWhere(
+        final aliases = assets.where(
           (asset) => asset.linkMode is DynamicLoadingSystem,
         );
-        expect(alias.file, isNull);
-        expect(
-          (alias.linkMode as DynamicLoadingSystem).uri.path,
-          '@rpath/mediapipe_ios.framework/mediapipe_ios',
-        );
+        expect(aliases, hasLength(3));
+        for (final alias in aliases) {
+          expect(alias.file, isNull);
+          expect(
+            (alias.linkMode as DynamicLoadingSystem).uri.path,
+            '@rpath/mediapipe_ios.framework/mediapipe_ios',
+          );
+        }
       },
     );
   });

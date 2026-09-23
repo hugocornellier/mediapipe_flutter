@@ -7,8 +7,10 @@ import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
+import 'package:mediapipe_gallery/live/live_subjects.dart';
 import 'package:mediapipe_gallery/main.dart';
 
+import 'support/live_subject.dart';
 import 'support/supplied_camera.dart';
 
 /// `works` where MediaPipe accepts this machine's GPU, `refused` where it
@@ -21,11 +23,12 @@ const _expectation = String.fromEnvironment('GALLERY_GPU_EXPECT');
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  final subject = LiveSubject.selected;
   testWidgets(
-    'gallery GPU camera on Linux: GPU $_expectation',
+    'gallery ${subject.task} GPU camera on Linux: GPU $_expectation',
     (tester) async {
       final original = CameraPlatform.instance;
-      final frames = await tester.runAsync(portraitFrames);
+      final frames = await tester.runAsync(sampleFrames);
       final camera = SuppliedCamera(frames!);
       CameraPlatform.instance = camera;
       LiveCameraController<Object?>? controller;
@@ -33,7 +36,7 @@ void main() {
         await tester.pumpWidget(const GalleryApp());
         for (
           var i = 0;
-          i < 100 && find.text('Live Face Landmarker').evaluate().isEmpty;
+          i < 100 && find.text(subject.tile).evaluate().isEmpty;
           i++
         ) {
           await tester.runAsync(
@@ -41,18 +44,18 @@ void main() {
           );
           await tester.pump();
         }
-        await tester.tap(find.text('Live Face Landmarker'));
+        await tester.tap(find.text(subject.tile));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         controller = tester
             .widget<LiveCameraView>(find.byType(LiveCameraView))
             .controller;
         final live = controller;
-        final firstFrames = <VisionDelegate, FaceLandmarkerResult>{};
+        final firstFrames = <VisionDelegate, List<LivePoint>>{};
         live.addListener(() {
-          final result = live.result;
-          if (live.processedFrames == 1 && result is FaceLandmarkerResult) {
-            firstFrames.putIfAbsent(live.delegate, () => result);
+          final subjects = liveSubjects(live.result);
+          if (live.processedFrames == 1 && subjects.isNotEmpty) {
+            firstFrames.putIfAbsent(live.delegate, () => subjects.first);
           }
         });
         camera.deliverFrames = true;
@@ -68,10 +71,11 @@ void main() {
         if (_expectation == 'works') {
           expect(live.delegate, VisionDelegate.gpu);
           expect(live.notice, isNull);
-          // Same portrait, first frame of each fresh task. GPU and CPU differ
-          // by about 0.013 on Google's own paths; Android's test allows 0.03.
-          final cpu = firstFrames[VisionDelegate.cpu]!.faceLandmarks.single;
-          final gpu = firstFrames[VisionDelegate.gpu]!.faceLandmarks.single;
+          // Same sample, first frame of each fresh task. Face GPU and CPU
+          // differ by about 0.013 on Google's own paths; Android's test
+          // allows 0.03.
+          final cpu = firstFrames[VisionDelegate.cpu]!;
+          final gpu = firstFrames[VisionDelegate.gpu]!;
           for (var i = 0; i < cpu.length; i++) {
             expect(gpu[i].x, closeTo(cpu[i].x, 0.03));
             expect(gpu[i].y, closeTo(cpu[i].y, 0.03));

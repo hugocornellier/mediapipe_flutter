@@ -9,6 +9,9 @@ const _landmarkerAsset =
     'package:mediapipe_flutter_vision/face_landmarker.dylib';
 const _detectorAsset = 'package:mediapipe_flutter_vision/face_detector.dylib';
 
+// Present for every task the adapter serves; the pool is task-independent.
+const _visionAsset = 'package:mediapipe_flutter_vision/vision.dylib';
+
 /// Benchmark overrides: 0 baseline, 1 reusable staging, 2 pool, 3 both.
 /// Pixel pooling improved image creation and 1080p throughput in device A/B runs.
 /// Staging reuse remains an explicit experimental override.
@@ -47,23 +50,9 @@ typedef _CreateBgraNative =
 
 @Native<_CreateBgraNative>(
   symbol: 'MpIosImageCreateFromBgraData',
-  assetId: _landmarkerAsset,
+  assetId: _visionAsset,
 )
-external int _landmarkerBgra(
-  int width,
-  int height,
-  int stride,
-  Pointer<Uint8> pixels,
-  int length,
-  Pointer<Pointer<Void>> image,
-  Pointer<Pointer<Char>> error,
-);
-
-@Native<_CreateBgraNative>(
-  symbol: 'MpIosImageCreateFromBgraData',
-  assetId: _detectorAsset,
-)
-external int _detectorBgra(
+external int _bgra(
   int width,
   int height,
   int stride,
@@ -75,13 +64,13 @@ external int _detectorBgra(
 
 @Native<Pointer<Void> Function()>(
   symbol: 'MpIosPixelBufferPoolCreate',
-  assetId: _landmarkerAsset,
+  assetId: _visionAsset,
 )
 external Pointer<Void> _poolCreate();
 
 @Native<Void Function(Pointer<Void>)>(
   symbol: 'MpIosPixelBufferPoolFree',
-  assetId: _landmarkerAsset,
+  assetId: _visionAsset,
 )
 external void _poolFree(Pointer<Void> pool);
 
@@ -96,7 +85,7 @@ external void _poolFree(Pointer<Void> pool);
     Pointer<Pointer<Void>>,
     Pointer<Pointer<Char>>,
   )
->(symbol: 'MpIosImageCreateFromBgraDataWithPool', assetId: _landmarkerAsset)
+>(symbol: 'MpIosImageCreateFromBgraDataWithPool', assetId: _visionAsset)
 external int _pooledBgra(
   Pointer<Void> pool,
   int width,
@@ -124,9 +113,8 @@ final class IosBgraStorage {
     VisionImage input,
     Arena arena,
     Pointer<Pointer<Void>> image,
-    Pointer<Pointer<Char>> error, {
-    bool detector = false,
-  }) {
+    Pointer<Pointer<Char>> error,
+  ) {
     final bytes = input.pixels!;
     Pointer<Uint8> pixels;
     if (mode & 1 != 0) {
@@ -157,7 +145,7 @@ final class IosBgraStorage {
         error,
       );
     }
-    return (detector ? _detectorBgra : _landmarkerBgra)(
+    return _bgra(
       input.width!,
       input.height!,
       input.bytesPerRow!,
@@ -184,16 +172,13 @@ int createOfficialIosBgraImage(
   Arena arena,
   Pointer<Pointer<Void>> image,
   Pointer<Pointer<Char>> error, {
-  bool detector = false,
   IosBgraStorage? storage,
 }) {
-  if (storage != null) {
-    return storage.create(input, arena, image, error, detector: detector);
-  }
+  if (storage != null) return storage.create(input, arena, image, error);
   final bytes = input.pixels!;
   final pixels = arena<Uint8>(bytes.length);
   pixels.asTypedList(bytes.length).setAll(0, bytes);
-  return (detector ? _detectorBgra : _landmarkerBgra)(
+  return _bgra(
     input.width!,
     input.height!,
     input.bytesPerRow!,

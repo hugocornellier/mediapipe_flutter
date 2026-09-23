@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 import '../../capabilities.dart';
 
 import '../interface/object_detector_types.dart';
+import '../../vision_task_backend.dart' show objectDetectorBackendFactory;
+import '../sdk_vision_task.dart';
 import 'native_object_detector.dart';
 
 /// Official MediaPipe Object Detector, with inference serialized on a worker isolate.
@@ -11,9 +14,14 @@ import 'native_object_detector.dart';
 /// Metal requires a float model; the pinned EfficientDet-Lite0 float32 model in
 /// `models.dart` is one. Await [dispose].
 final class ObjectDetector {
-  ObjectDetector._(this.runningMode, this.delegate) {
+  ObjectDetector._(this.runningMode, this.delegate, [this._sdk]) {
     _events.listen(_receive);
+    // An SDK adapter runs the task; no worker isolate reports here.
+    if (_sdk != null) _events.close();
   }
+
+  /// The registered Android SDK adapter's task, when one runs this detector.
+  final SdkVisionTask<ObjectDetectorResult>? _sdk;
 
   final _events = ReceivePort();
   final _ready = Completer<void>();
@@ -34,6 +42,20 @@ final class ObjectDetector {
 
   /// Load an official model and initialize MediaPipe off the calling isolate.
   static Future<ObjectDetector> create(ObjectDetectorOptions options) async {
+    if (Platform.isAndroid && objectDetectorBackendFactory != null) {
+      return ObjectDetector._(
+        options.runningMode,
+        options.delegate,
+        SdkVisionTask(
+          await objectDetectorBackendFactory!(options),
+          options.runningMode,
+          options.delegate,
+          name: 'ObjectDetector',
+          // MediaPipe converts milliseconds to signed 64-bit microseconds.
+          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
+        ),
+      );
+    }
     final capabilities = await queryObjectDetectorCapabilities();
     if (!capabilities.supportedDelegates.contains(options.delegate)) {
       throw UnsupportedError(
@@ -66,6 +88,9 @@ final class ObjectDetector {
     VisionImage image, {
     int rotationDegrees = 0,
   }) async {
+    if (_sdk case final sdk?) {
+      return sdk.detectImage(image, rotationDegrees: rotationDegrees);
+    }
     _checkMode(VisionRunningMode.image);
     _checkRotation(rotationDegrees);
     return (await _request((image, rotationDegrees, null)))!;
@@ -82,6 +107,13 @@ final class ObjectDetector {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
   }) async {
+    if (_sdk case final sdk?) {
+      return sdk.detectForVideo(
+        image,
+        timestampMilliseconds: timestampMilliseconds,
+        rotationDegrees: rotationDegrees,
+      );
+    }
     _checkMode(VisionRunningMode.video);
     _checkRotation(rotationDegrees);
     // MediaPipe converts milliseconds to signed 64-bit microseconds internally.
@@ -134,6 +166,7 @@ final class ObjectDetector {
   /// Repeated calls return the same completion. New detections are rejected as
   /// soon as disposal starts.
   Future<void> dispose() {
+    if (_sdk case final sdk?) return sdk.dispose();
     _disposing = true;
     return _disposeFuture ??= _close();
   }

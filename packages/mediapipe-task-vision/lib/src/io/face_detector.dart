@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 
 import '../interface/face_detector_types.dart';
+import '../../vision_task_backend.dart' show faceDetectorBackendFactory;
+import '../sdk_vision_task.dart';
 import 'native_face_detector.dart';
 
 /// Official MediaPipe Face Detector, with inference serialized on a worker isolate.
@@ -10,9 +13,14 @@ import 'native_face_detector.dart';
 /// Source-built iOS runtimes support CPU only.
 /// Both targets support IMAGE/VIDEO modes. Await [dispose].
 final class FaceDetector {
-  FaceDetector._(this.runningMode, this.delegate) {
+  FaceDetector._(this.runningMode, this.delegate, [this._sdk]) {
     _events.listen(_receive);
+    // An SDK adapter runs the task; no worker isolate reports here.
+    if (_sdk != null) _events.close();
   }
+
+  /// The registered Android SDK adapter's task, when one runs this detector.
+  final SdkVisionTask<FaceDetectorResult>? _sdk;
 
   final _events = ReceivePort();
   final _ready = Completer<void>();
@@ -33,6 +41,20 @@ final class FaceDetector {
 
   /// Load an official model and initialize MediaPipe off the calling isolate.
   static Future<FaceDetector> create(FaceDetectorOptions options) async {
+    if (Platform.isAndroid && faceDetectorBackendFactory != null) {
+      return FaceDetector._(
+        options.runningMode,
+        options.delegate,
+        SdkVisionTask(
+          await faceDetectorBackendFactory!(options),
+          options.runningMode,
+          options.delegate,
+          name: 'FaceDetector',
+          // MediaPipe converts milliseconds to signed 64-bit microseconds.
+          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
+        ),
+      );
+    }
     final detector = FaceDetector._(options.runningMode, options.delegate);
     try {
       await Isolate.spawn(
@@ -59,6 +81,9 @@ final class FaceDetector {
     VisionImage image, {
     int rotationDegrees = 0,
   }) async {
+    if (_sdk case final sdk?) {
+      return sdk.detectImage(image, rotationDegrees: rotationDegrees);
+    }
     _checkMode(VisionRunningMode.image);
     _checkRotation(rotationDegrees);
     return (await _request((image, rotationDegrees, null)))!;
@@ -75,6 +100,13 @@ final class FaceDetector {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
   }) async {
+    if (_sdk case final sdk?) {
+      return sdk.detectForVideo(
+        image,
+        timestampMilliseconds: timestampMilliseconds,
+        rotationDegrees: rotationDegrees,
+      );
+    }
     _checkMode(VisionRunningMode.video);
     _checkRotation(rotationDegrees);
     // MediaPipe converts milliseconds to signed 64-bit microseconds internally.
@@ -127,6 +159,7 @@ final class FaceDetector {
   /// Repeated calls return the same completion. New detections are rejected as
   /// soon as disposal starts.
   Future<void> dispose() {
+    if (_sdk case final sdk?) return sdk.dispose();
     _disposing = true;
     return _disposeFuture ??= _close();
   }
