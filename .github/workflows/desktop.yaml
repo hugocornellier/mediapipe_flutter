@@ -1,4 +1,4 @@
-name: Desktop CPU tasks
+name: Desktop tasks
 
 permissions:
   contents: read
@@ -36,7 +36,7 @@ jobs:
           python-version: '3.12'
       - name: Install Linux Flutter host dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev xvfb libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev xvfb libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good libegl1 libgles2
       - name: Validate Linux CPU references and debug/release consumers
         if: runner.os == 'Linux'
         run: xvfb-run -a python3 -B packages/mediapipe-task-vision/tool/test_desktop.py --object-detector --image-tasks --landmark-tasks --segmenter-tasks
@@ -59,4 +59,54 @@ jobs:
             build/codex-tmp/desktop-*/reference/**/*.json
             build/codex-tmp/gallery-desktop-*/*.log
             build/codex-tmp/gallery-desktop-*/report.json
+          if-no-files-found: error
+
+  linux-gpu:
+    name: Vision face tasks / ubuntu-24.04 x64 GPU (Mesa, renamed renderer)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      MEDIAPIPE_GPU_REFERENCE_DIR: ${{ github.workspace }}/build/gpu-reference
+      # Hosted runners have no display, and the default EGL platform fails.
+      EGL_PLATFORM: surfaceless
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Mesa's EGL and OpenGL ES
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libegl1 libgles2 libegl-mesa0 libgl1-mesa-dri
+      - name: Download the face models
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_model.dart
+          dart tool/download_face_landmarker.dart
+      - name: Official 1.0.1 GPU references and Dart GPU suites on llvmpipe
+        env:
+          # Google's runtime refuses renderers named llvmpipe or softpipe.
+          # Mesa's force_gl_renderer renames the same software renderer, so
+          # the unmodified GPU path runs. This checks results against Google's
+          # own GPU output on this runner, not support for software GPUs.
+          force_gl_renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+        run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --test
+      - name: Without the rename, the refused GPU is reported and not replaced
+        working-directory: build/gpu-face-tests
+        env:
+          MEDIAPIPE_EXPECT_GPU_REFUSAL: '1'
+        run: dart test test/face_landmarker_test.dart --name 'a refused GPU is reported' --reporter expanded
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-gpu-reference
+          path: |
+            build/gpu-reference/**/*.json
+            build/gpu-reference/*.log
           if-no-files-found: error

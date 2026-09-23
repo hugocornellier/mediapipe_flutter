@@ -5,6 +5,7 @@ import 'package:ffi/ffi.dart';
 
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../interface/object_detector_types.dart';
+import 'native_desktop_runtime.dart';
 import 'native_vision_image.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
@@ -17,6 +18,7 @@ final class NativeObjectDetector {
         'GPU object inference is validated on macOS only.',
       );
     }
+    loadOfficialDesktopRuntime();
     using((arena) {
       final native = arena<mp.MpObjectDetectorOptions>();
       final base = native.ref.base_options;

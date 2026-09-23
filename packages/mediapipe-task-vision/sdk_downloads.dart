@@ -215,22 +215,24 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
   ),
 ];
 
-/// Official desktop CPU runtimes. Coverage grows only after inference tests pass.
+/// Official desktop runtimes. Coverage grows only after inference tests pass.
 const visionWheelReleases = <String, VisionWheelRelease>{
   'linux/x64': VisionWheelRelease(
     target: 'linux/x64',
+    // 1.0.1 is the first Linux wheel built with GPU. Its C API matches 1.0.0.
+    version: '1.0.1',
     wheel: (
       url:
-          'https://files.pythonhosted.org/packages/d3/1d/'
-          'bc666b2edee87cc06421b040df0282607339091954ab9d4906a65a45be10/'
-          'mediapipe-1.0.0-py3-none-manylinux_2_28_x86_64.whl',
+          'https://files.pythonhosted.org/packages/2a/58/'
+          'bdd5bada89d7a132375df05e962bf702c148b47043dca98d820d9395152b/'
+          'mediapipe-1.0.1-py3-none-manylinux_2_28_x86_64.whl',
       sha256:
-          '07a449446bf888a8a2787dbf6fc1a33da4c47977313deec64d13c35bff41f6d2',
+          '121522251afc3c135e4b7b0c341dd5e050ad1ec87631127484f3c389ae385044',
     ),
     libraryName: 'libmediapipe.so',
     librarySha256:
-        '35ef4187d381addb1309f0f9dedd32613127fa98d1ad1f5ddeea57595cdbcaf0',
-    notices: _wheelNotices,
+        'b72e6d61a79d1080d29a96ba95e3cfa3e43f6c433c0acc3bc9b3eb7ac0ba103a',
+    notices: _linuxWheelNotices,
     tasks: {
       'face_detector',
       'face_landmarker',
@@ -247,6 +249,7 @@ const visionWheelReleases = <String, VisionWheelRelease>{
   ),
   'windows/x64': VisionWheelRelease(
     target: 'windows/x64',
+    version: '1.0.0',
     wheel: (
       url:
           'https://files.pythonhosted.org/packages/68/53/'
@@ -278,6 +281,11 @@ const visionWheelReleases = <String, VisionWheelRelease>{
 const _wheelNotices = {
   'LICENSE': '8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8',
   'NOTICE': 'd3b4a80a24a01fd445d4b70a610fd836ec3547c3a62eb835a1041956c38d9f56',
+};
+
+const _linuxWheelNotices = {
+  'LICENSE': '8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8',
+  'NOTICE': 'e8e3eddc5c36d7413635455933650d7423b937185180e393f9a006bee60162e7',
 };
 
 /// Kept for callers that pin the face detector archive directly.

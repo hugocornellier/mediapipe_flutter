@@ -25,7 +25,7 @@ from macho_metadata import rewrite_install_name, unsigned_sha256
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
 VERSION = '1.0.0'
-WHEEL_URL, WHEEL_SHA256, UPSTREAM_LIBRARY_SHA256 = MACOS_WHEEL
+WHEEL_URL, WHEEL_SHA256, UPSTREAM_LIBRARY_SHA256, _ = MACOS_WHEEL
 UPSTREAM_LIBRARY = 'mediapipe/tasks/c/libmediapipe.dylib'
 LIBRARY_NAME = 'libmediapipe.dylib'
 INSTALL_NAME = '@rpath/libmediapipe.dylib'

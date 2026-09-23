@@ -17,10 +17,10 @@ final class NativeFaceLandmarker {
   NativeFaceLandmarker(FaceLandmarkerOptions options)
     : _gpu = options.delegate == VisionDelegate.gpu,
       _officialIos = hasOfficialIosFaceRuntime() {
-    if (!Platform.isMacOS && !_officialIos && _gpu) {
+    if (!Platform.isMacOS && !Platform.isLinux && !_officialIos && _gpu) {
       throw UnsupportedError(
-        'GPU face inference requires macOS or the official iOS SDK adapter; '
-        'this runtime supports CPU only.',
+        'GPU face inference requires macOS, Linux or the official iOS SDK '
+        'adapter; this runtime supports CPU only.',
       );
     }
     loadOfficialDesktopRuntime();
@@ -64,7 +64,18 @@ final class NativeFaceLandmarker {
         ..output_facial_transformation_matrixes =
             options.outputFacialTransformationMatrixes;
       final output = arena<mp.MpFaceLandmarkerPtr>();
-      _checked((error) => mp.MpFaceLandmarkerCreate(native, output, error));
+      try {
+        _checked((error) => mp.MpFaceLandmarkerCreate(native, output, error));
+      } on FaceLandmarkerException catch (error) {
+        // Google's runtime reports every GPU refusal (no EGL display, a
+        // software renderer) as its missing GPU service.
+        if (!_gpu || !error.message.contains('kGpuService')) rethrow;
+        throw FaceLandmarkerException(
+          error.message,
+          statusCode: error.statusCode,
+          gpuUnavailable: true,
+        );
+      }
       _detector = output.value;
     });
   }
@@ -106,8 +117,8 @@ final class NativeFaceLandmarker {
         timings?.mark('image_create');
       } else {
         final bytes = input.pixels!;
-        // Apple's GPU image upload cannot accept three-channel ImageFrames.
-        // Add opaque alpha before entering the official graph.
+        // Apple's GPU image upload cannot accept three-channel ImageFrames, so
+        // GPU input gets opaque alpha on every host, as in the GPU references.
         final expandRgb =
             _gpu && !_officialIos && input.format == VisionPixelFormat.rgb;
         final rowSize = input.width! * (expandRgb ? 4 : input.format!.channels);

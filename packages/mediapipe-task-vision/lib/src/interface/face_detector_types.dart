@@ -176,13 +176,22 @@ final class FaceDetectorResult {
 /// Failure reported by MediaPipe or its worker isolate.
 final class FaceDetectorException implements Exception {
   /// Creates an error with an optional MediaPipe/Abseil status code.
-  const FaceDetectorException(this.message, {this.statusCode});
+  const FaceDetectorException(
+    this.message, {
+    this.statusCode,
+    this.gpuUnavailable = false,
+  });
 
   /// Diagnostic text from the native API or worker.
   final String message;
 
   /// Native status code, or null for an isolate/runtime failure.
   final int? statusCode;
+
+  /// True when MediaPipe refused [VisionDelegate.gpu] on this machine, for
+  /// example on Linux without EGL or with only a software renderer such as
+  /// llvmpipe. The package never retries on CPU; create a CPU task instead.
+  final bool gpuUnavailable;
 
   @override
   String toString() => 'FaceDetectorException($statusCode): $message';

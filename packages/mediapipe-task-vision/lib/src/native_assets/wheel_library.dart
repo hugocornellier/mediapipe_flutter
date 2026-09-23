@@ -11,6 +11,7 @@ final class VisionWheelRelease {
   /// Pins a target, wheel, native member and attribution files.
   const VisionWheelRelease({
     required this.target,
+    required this.version,
     required this.wheel,
     required this.libraryName,
     required this.librarySha256,
@@ -20,6 +21,9 @@ final class VisionWheelRelease {
 
   /// Exact build target supported by the binary.
   final String target;
+
+  /// Official `mediapipe` release the wheel belongs to, such as `1.0.1`.
+  final String version;
 
   /// Immutable official wheel URL and checksum.
   final DownloadAsset wheel;
@@ -40,7 +44,8 @@ final class VisionWheelRelease {
   String get libraryPath => 'mediapipe/tasks/c/$libraryName';
 
   /// Attribution member in the wheel.
-  String noticePath(String name) => 'mediapipe-1.0.0.dist-info/licenses/$name';
+  String noticePath(String name) =>
+      'mediapipe-$version.dist-info/licenses/$name';
 }
 
 /// Extracts only the native library and pinned notices; Python is not required.
@@ -57,7 +62,7 @@ Future<File> downloadVisionWheel(
     ...release.notices,
   };
   final receipt = jsonEncode({
-    'runtime': 'mediapipe==1.0.0',
+    'runtime': 'mediapipe==${release.version}',
     'source': 'official-wheel',
     'target': release.target,
     'wheel_sha256': release.wheel.sha256,

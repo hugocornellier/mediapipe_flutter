@@ -9,7 +9,8 @@ import mediapipe as mp
 import numpy as np
 from mediapipe.tasks.python import vision
 from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
-from official_face_runtime import LIBRARY_NAME, LIBRARY_SHA256
+from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
+                                   SOURCE_REVISION, VERSION)
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'test/fixtures/landmark_tasks'
@@ -59,7 +60,7 @@ def main():
     parser.add_argument('--delegate', choices=['cpu', 'gpu'], default='cpu')
     parser.add_argument('--output-dir', type=Path, default=FIXTURES)
     args = parser.parse_args()
-    assert mp.__version__ == '1.0.0'
+    assert mp.__version__ == VERSION
     assert digest(Path(mp.__file__).parent / 'tasks/c' / LIBRARY_NAME) == LIBRARY_SHA256
     for name, sha in MODELS.values():
         assert digest(ROOT / 'models' / name) == sha
@@ -133,8 +134,8 @@ def main():
                 if tracked is not None:
                     tracked.close()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    output = dict(runtime='mediapipe==1.0.0', delegate=args.delegate.upper(),
-        source_revision='6d31f1ebc3284db74d211d62bdc4f0a0c29ea120',
+    output = dict(runtime=RUNTIME, delegate=args.delegate.upper(),
+        source_revision=SOURCE_REVISION,
         library_sha256=LIBRARY_SHA256, models={name: sha for name, (_, sha) in MODELS.items()}, cases=cases)
     (args.output_dir / 'official_reference.json').write_text(json.dumps(output, indent=2) + '\n')
 

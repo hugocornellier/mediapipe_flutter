@@ -16,7 +16,7 @@ from mediapipe.tasks.python.vision.face_landmarker import FaceLandmarksConnectio
 from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
 
 from generate_face_detector_reference import ROOT, FIXTURES, LIBRARY_SHA256, digest, gpu_image
-from official_face_runtime import LIBRARY_NAME
+from official_face_runtime import LIBRARY_NAME, RUNTIME, SOURCE_REVISION, VERSION
 
 MODEL = ROOT / "models/face_landmarker.task"
 MODEL_SHA256 = "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff"
@@ -30,7 +30,7 @@ def main():
     args = parser.parse_args()
     delegate = getattr(mp.tasks.BaseOptions.Delegate, args.delegate.upper())
     suffix = "_gpu" if args.delegate == "gpu" else ""
-    assert mp.__version__ == "1.0.0"
+    assert mp.__version__ == VERSION
     assert digest(MODEL) == MODEL_SHA256
     assert digest(__import__('pathlib').Path(mp.__file__).parent /
                   "tasks/c" / LIBRARY_NAME) == LIBRARY_SHA256
@@ -81,8 +81,8 @@ def main():
     output = args.output_dir.resolve() if args.output_dir else FIXTURES.parent / 'face_landmarker'
     output.mkdir(parents=True, exist_ok=True)
     (output / f'official{suffix}_reference.json').write_text(json.dumps(dict(
-        runtime='mediapipe==1.0.0', delegate=args.delegate.upper(),
-        source_revision='6d31f1ebc3284db74d211d62bdc4f0a0c29ea120',
+        runtime=RUNTIME, delegate=args.delegate.upper(),
+        source_revision=SOURCE_REVISION,
         library_sha256=LIBRARY_SHA256, model_sha256=MODEL_SHA256,
         **({'input_conversion': 'RGB to RGBA with opaque alpha for Metal'}
            if args.delegate == 'gpu' else {}),

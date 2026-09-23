@@ -17,8 +17,8 @@ void main() {
     group(
       delegate.name,
       () => _testDelegate(delegate),
-      skip: delegate == VisionDelegate.gpu && !Platform.isMacOS
-          ? 'GPU face inference is validated on macOS only.'
+      skip: delegate == VisionDelegate.gpu && !gpuFaceTestsEnabled
+          ? gpuFaceTestsSkipReason
           : false,
     );
   }
