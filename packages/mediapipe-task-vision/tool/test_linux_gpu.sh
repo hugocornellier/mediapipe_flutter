@@ -7,10 +7,11 @@
 #
 #   bash packages/mediapipe-task-vision/tool/test_linux_gpu.sh
 #
-# Needs: dart (Flutter 3.44.8 or Dart 3.12), python3 with venv, and the
-# system EGL and OpenGL ES libraries (Debian/Ubuntu: libegl1 libgles2) with
-# your GPU vendor's driver. Writes build/linux-gpu-check/; send that folder
-# back.
+# Needs: Flutter 3.44.8 with its Linux desktop dependencies (clang, cmake,
+# ninja-build, pkg-config, libgtk-3-dev), python3 with venv, and the system EGL
+# and OpenGL ES libraries (Debian/Ubuntu: libegl1 libgles2) with your GPU
+# vendor's driver. Run it in a desktop session so the gallery can open a
+# window. Writes build/linux-gpu-check/; send that folder back.
 set -euo pipefail
 
 REPO=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
@@ -78,6 +79,12 @@ for name in ("CPU", "GPU"):
 print(json.dumps(results, indent=2))
 EOF
 
+echo "== Gallery: GPU inference inside the running Flutter app"
+python3 -B "$REPO/gallery/tool/prepare.py" --target linux/x64 --tasks face_landmarker
+(cd "$REPO/gallery" && flutter pub get > /dev/null &&
+  flutter test -d linux integration_test/desktop_gpu_camera_test.dart \
+    --dart-define=GALLERY_GPU_EXPECT=works --reporter expanded) | tee "$OUT/gallery-gpu.log"
+
 grep -h "GL version:" "$REFERENCES"/*.log | sort -u | tee "$OUT/renderer.txt"
 cp "$REFERENCES/provenance.json" "$OUT/"
-echo "PASSED. Send back $OUT (run.log, machine.txt, renderer.txt, timing.json, provenance.json)."
+echo "PASSED. Send back $OUT (run.log, machine.txt, renderer.txt, timing.json, gallery-gpu.log, provenance.json)."

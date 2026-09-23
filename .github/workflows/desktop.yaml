@@ -64,11 +64,9 @@ jobs:
   linux-gpu:
     name: Vision face tasks / ubuntu-24.04 x64 GPU (Mesa, renamed renderer)
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       MEDIAPIPE_GPU_REFERENCE_DIR: ${{ github.workspace }}/build/gpu-reference
-      # Hosted runners have no display, and the default EGL platform fails.
-      EGL_PLATFORM: surfaceless
     steps:
       - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
@@ -79,10 +77,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install Mesa's EGL and OpenGL ES
+      - name: Install Mesa's EGL and OpenGL ES, and the Flutter Linux host
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq libegl1 libgles2 libegl-mesa0 libgl1-mesa-dri
+          sudo apt-get install -y -qq libegl1 libgles2 libegl-mesa0 libgl1-mesa-dri \
+            clang cmake ninja-build pkg-config libgtk-3-dev xvfb \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good
       - name: Download the face models
         working-directory: packages/mediapipe-task-vision
         run: |
@@ -96,12 +96,36 @@ jobs:
           # the unmodified GPU path runs. This checks results against Google's
           # own GPU output on this runner, not support for software GPUs.
           force_gl_renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+          # Without a display the default EGL platform fails.
+          EGL_PLATFORM: surfaceless
         run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --test
       - name: Without the rename, the refused GPU is reported and not replaced
         working-directory: build/gpu-face-tests
         env:
           MEDIAPIPE_EXPECT_GPU_REFUSAL: '1'
+          EGL_PLATFORM: surfaceless
         run: dart test test/face_landmarker_test.dart --name 'a refused GPU is reported' --reporter expanded
+      - name: Prepare the Linux gallery with the face task only
+        run: |
+          python3 -B gallery/tool/prepare.py --target linux/x64 --tasks face_landmarker
+          cd gallery && flutter pub get
+      # The gallery runs under Xvfb with EGL's default platform, as on a
+      # desktop: Flutter renders with OpenGL while MediaPipe's GPU task runs
+      # in the same process.
+      - name: Gallery GPU inside the running Flutter app (renamed renderer)
+        working-directory: gallery
+        env:
+          force_gl_renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+        run: |
+          xvfb-run -a -s "-screen 0 1600x1000x24" flutter test -d linux \
+            integration_test/desktop_gpu_camera_test.dart \
+            --dart-define=GALLERY_GPU_EXPECT=works --reporter expanded
+      - name: Gallery falls back to CPU visibly when the GPU is refused
+        working-directory: gallery
+        run: |
+          xvfb-run -a -s "-screen 0 1600x1000x24" flutter test -d linux \
+            integration_test/desktop_gpu_camera_test.dart \
+            --dart-define=GALLERY_GPU_EXPECT=refused --reporter expanded
       - uses: actions/upload-artifact@v4
         if: always()
         with:
