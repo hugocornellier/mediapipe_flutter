@@ -1,0 +1,28 @@
+##[group]Run dart test test/face_landmarker_test.dart --name 'a refused GPU is reported' --reporter expanded
+dart test test/face_landmarker_test.dart --name 'a refused GPU is reported' --reporter expanded
+shell: /usr/bin/bash -e {0}
+env:
+  MEDIAPIPE_GPU_REFERENCE_DIR: /home/runner/work/mediapipe_flutter/mediapipe_flutter/build/gpu-reference
+  EGL_PLATFORM: surfaceless
+  FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.44.8-x64/flutter
+  PUB_CACHE: /home/runner/.pub-cache
+  pythonLocation: /opt/hostedtoolcache/Python/3.12.14/x64
+  PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib/pkgconfig
+  Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+  Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+  Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+  LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib
+  MEDIAPIPE_EXPECT_GPU_REFUSAL: 1
+##[endgroup]
+Running build hooks...Running build hooks...00:00 +0: loading test/face_landmarker_test.dart
+00:00 +0: a refused GPU is reported, never replaced by CPU
+WARNING: Logging before InitGoogle() is written to STDERR
+W0000 00:00:1790148372.804595    3580 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+I0000 00:00:1790148372.835631    3580 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148372.850475    3592 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: llvmpipe (LLVM 20.1.2, 256 bits)
+I0000 00:00:1790148372.851855    3580 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148372.860336    3593 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: llvmpipe (LLVM 20.1.2, 256 bits)
+I0000 00:00:1790148372.861481    3580 gl_context_egl.cc:86] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1790148372.868913    3594 gl_context.cc:408] GL version: 3.2 (OpenGL ES 3.2 Mesa 25.2.8-0ubuntu0.24.04.2), renderer: llvmpipe (LLVM 20.1.2, 256 bits)
+00:00 +1: (tearDownAll)
+00:00 +1: All tests passed!

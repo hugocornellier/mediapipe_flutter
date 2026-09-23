@@ -1,0 +1,467 @@
+{
+  "runtime": "mediapipe==1.0.1",
+  "source_revision": null,
+  "library_sha256": "b72e6d61a79d1080d29a96ba95e3cfa3e43f6c433c0acc3bc9b3eb7ac0ba103a",
+  "model_sha256": "b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f",
+  "platform": "Linux x86_64",
+  "delegate": "GPU",
+  "running_mode": "VIDEO",
+  "min_detection_confidence": 0.5,
+  "min_suppression_threshold": 0.3,
+  "raw_derivation": "face-landmarks-ex1.jpeg official RGB decoder, [::20, ::20, :3]",
+  "input_conversion": "RGB to RGBA with opaque alpha for Metal",
+  "cases": [
+    {
+      "name": "rgb",
+      "width": 301,
+      "height": 209,
+      "timestamp_ms": 0,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 108,
+            "origin_y": 50,
+            "width": 85,
+            "height": 85
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9655764698982239,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.4513058364391327,
+              "y": 0.36424392461776733,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5642240047454834,
+              "y": 0.3631964325904846,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5101977586746216,
+              "y": 0.4699752926826477,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5086508393287659,
+              "y": 0.5420630574226379,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3844794034957886,
+              "y": 0.3885071873664856,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6244598031044006,
+              "y": 0.39033031463623047,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgb",
+      "width": 301,
+      "height": 209,
+      "timestamp_ms": 33,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 108,
+            "origin_y": 50,
+            "width": 85,
+            "height": 85
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9655764698982239,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.4513058364391327,
+              "y": 0.36424392461776733,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5642240047454834,
+              "y": 0.3631964325904846,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5101977586746216,
+              "y": 0.4699752926826477,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5086508393287659,
+              "y": 0.5420630574226379,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3844794034957886,
+              "y": 0.3885071873664856,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6244598031044006,
+              "y": 0.39033031463623047,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "blank",
+      "width": 301,
+      "height": 209,
+      "timestamp_ms": 66,
+      "rotation_degrees": 0,
+      "detections": []
+    },
+    {
+      "name": "rgb-pair",
+      "width": 360,
+      "height": 209,
+      "timestamp_ms": 99,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 231,
+            "origin_y": 53,
+            "width": 79,
+            "height": 79
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9457011222839355,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.7099311351776123,
+              "y": 0.3652607500553131,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.802398681640625,
+              "y": 0.3700798451900482,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.7560224533081055,
+              "y": 0.4609411656856537,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.7551848888397217,
+              "y": 0.5319461822509766,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6559374928474426,
+              "y": 0.3869568407535553,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.853869616985321,
+              "y": 0.39488646388053894,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "bounding_box": {
+            "origin_x": 51,
+            "origin_y": 53,
+            "width": 79,
+            "height": 79
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9437636137008667,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.20928266644477844,
+              "y": 0.3653564155101776,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3014973998069763,
+              "y": 0.3677244484424591,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.25534841418266296,
+              "y": 0.45973679423332214,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.2551690638065338,
+              "y": 0.5310287475585938,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.15641096234321594,
+              "y": 0.388681024312973,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3536485433578491,
+              "y": 0.3922734558582306,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgb",
+      "width": 301,
+      "height": 209,
+      "timestamp_ms": 132,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 108,
+            "origin_y": 50,
+            "width": 85,
+            "height": 85
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9655764698982239,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.4513058364391327,
+              "y": 0.36424392461776733,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5642240047454834,
+              "y": 0.3631964325904846,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5101977586746216,
+              "y": 0.4699752926826477,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5086508393287659,
+              "y": 0.5420630574226379,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3844794034957886,
+              "y": 0.3885071873664856,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6244598031044006,
+              "y": 0.39033031463623047,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgb-rotated",
+      "width": 209,
+      "height": 301,
+      "timestamp_ms": 165,
+      "rotation_degrees": 90,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 50,
+            "origin_y": 106,
+            "width": 85,
+            "height": 85
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9655764698982239,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.3642919063568115,
+              "y": 0.5486617088317871,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.36318856477737427,
+              "y": 0.435772180557251,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.4700201749801636,
+              "y": 0.48978304862976074,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5421240329742432,
+              "y": 0.4913119673728943,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3884921669960022,
+              "y": 0.6154710650444031,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3902667164802551,
+              "y": 0.37553292512893677,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    },
+    {
+      "name": "rgb",
+      "width": 301,
+      "height": 209,
+      "timestamp_ms": 198,
+      "rotation_degrees": 0,
+      "detections": [
+        {
+          "bounding_box": {
+            "origin_x": 108,
+            "origin_y": 50,
+            "width": 85,
+            "height": 85
+          },
+          "categories": [
+            {
+              "index": 0,
+              "score": 0.9655764698982239,
+              "display_name": null,
+              "category_name": null
+            }
+          ],
+          "keypoints": [
+            {
+              "x": 0.4513058364391327,
+              "y": 0.36424392461776733,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5642240047454834,
+              "y": 0.3631964325904846,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5101977586746216,
+              "y": 0.4699752926826477,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.5086508393287659,
+              "y": 0.5420630574226379,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.3844794034957886,
+              "y": 0.3885071873664856,
+              "label": null,
+              "score": 0.0
+            },
+            {
+              "x": 0.6244598031044006,
+              "y": 0.39033031463623047,
+              "label": null,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "raw": "portrait-301x209.rgb",
+      "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
+    }
+  ]
+}

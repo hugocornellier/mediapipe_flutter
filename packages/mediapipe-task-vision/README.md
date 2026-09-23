@@ -88,7 +88,8 @@ try {
 
 CI checks Linux GPU results on every change. On a hosted runner's Mesa
 renderer, renamed past Google's check, both tasks match Google's own 1.0.1 GPU
-output on the same runner with unchanged tolerances. That verifies results, not
+output on the same runner with unchanged tolerances
+([validation note](tool/validations/2026-09-23-linux-gpu/)). That verifies results, not
 speed; validation on a physical GPU is pending
 ([`tool/test_linux_gpu.sh`](tool/test_linux_gpu.sh)). Windows has no GPU
 path, because Google's Windows runtime is built with GPU disabled.
