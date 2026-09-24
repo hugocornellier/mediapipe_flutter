@@ -17,7 +17,7 @@ as native platforms. Model, runtime, worker and CanvasKit assets are self-hosted
 
 ## Local release verification
 
-Requirements: Flutter 3.44.8, Python 3.12, Node 22 and ffmpeg. From the root:
+Requirements: Flutter 3.47.5, Python 3.12, Node 22 and ffmpeg. From the root:
 
 ```sh
 python3.12 -B gallery/tool/prepare.py --target web

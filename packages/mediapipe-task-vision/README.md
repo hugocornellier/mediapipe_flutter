@@ -110,7 +110,7 @@ path, because Google's Windows runtime is built with GPU disabled.
 
 ## Run locally
 
-Use Flutter 3.44.8 / Dart 3.12.2 and Xcode. From this directory:
+Use Flutter 3.47.5 / Dart 3.13.4 and Xcode. From this directory:
 
 ```sh
 dart pub get

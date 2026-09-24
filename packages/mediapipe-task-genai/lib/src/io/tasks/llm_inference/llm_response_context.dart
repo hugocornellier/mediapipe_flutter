@@ -3,9 +3,11 @@
 // found in the LICENSE file.
 
 import 'dart:ffi';
+
 import 'package:logging/logging.dart';
 import 'package:mediapipe_flutter_core/io.dart';
 import 'package:mediapipe_flutter_genai/interface.dart';
+
 import '../../third_party/mediapipe/generated/mediapipe_flutter_genai_bindings.dart'
     as bindings;
 

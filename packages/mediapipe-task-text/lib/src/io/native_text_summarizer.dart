@@ -2,6 +2,7 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
+
 import '../interface/text_summarizer_types.dart';
 import 'native_text_stream.dart';
 import 'text_task_worker.dart';

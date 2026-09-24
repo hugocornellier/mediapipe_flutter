@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:math';
+
 import 'package:example/model_location_provider.dart';
 import 'package:example/models/models.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

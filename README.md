@@ -13,9 +13,10 @@ camera lifecycle tests run in GitHub CI. See the
 
 ## Development baseline
 
-Use **Flutter 3.44.8 stable / Dart 3.12.2**. Package SDK constraints start at
-Dart 3.12. Build hooks use the supported `hooks` and `code_assets` APIs; no
-experimental flags or global Flutter configuration changes are needed.
+Use **Flutter 3.47.5 stable / Dart 3.13.4**, with Xcode 27 for Apple targets.
+Package SDK constraints start at Dart 3.12. Build hooks use the supported
+`hooks` and `code_assets` APIs; no experimental flags or global Flutter
+configuration changes are needed.
 
 Text classification (BERT), text embedding (Universal Sentence Encoder), and
 language detection use the shared MediaPipe 1.0.1 runtime on macOS arm64 CPU,
@@ -196,8 +197,9 @@ Dependencies between packages and examples use local paths. The examples'
 model assets and build outputs are ignored by Git. CI runs on pull requests and
 pushes to this fork's `main`, using the same pinned stable SDK.
 
-The `hooks` dependency is capped below 2.1 because newer releases require
-`meta` newer than Flutter 3.44's SDK pin. GenAI's Freezed/Bloc major migrations
+The `hooks` dependency stays below 2.1, the range validated here. Newer
+releases need `meta` 1.18, which Flutter 3.47 provides, so moving up is a
+separate, tested upgrade. GenAI's Freezed/Bloc major migrations
 are deferred with its runtime recovery.
 
 ## Remaining work

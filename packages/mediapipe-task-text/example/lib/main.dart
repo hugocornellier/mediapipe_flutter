@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'language_detection_demo.dart';
 import 'logging.dart';
 import 'text_classification_demo.dart';

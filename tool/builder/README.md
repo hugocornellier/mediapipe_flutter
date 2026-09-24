@@ -1,6 +1,6 @@
 # MediaPipe maintainer tools
 
-Use the repository baseline: Flutter 3.44.8 / Dart 3.12.2.
+Use the repository baseline: Flutter 3.47.5 / Dart 3.13.4.
 Run `dart pub get` in this directory before using the tool.
 
 ## Test models

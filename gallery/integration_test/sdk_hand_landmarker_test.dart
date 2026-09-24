@@ -207,56 +207,54 @@ void main() {
     timeout: const Timeout(Duration(minutes: 3)),
   );
 
-  testWidgets(
-    'gallery opens Live Hand Landmarker and runs frames',
-    (tester) async {
-      await tester.pumpWidget(const GalleryApp());
-      for (
-        var i = 0;
-        i < 100 && find.text('Live Hand Landmarker').evaluate().isEmpty;
-        i++
-      ) {
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 100)),
-        );
-        await tester.pump();
-      }
-      expect(find.text('Live Hand Landmarker'), findsOneWidget);
-      await tester.tap(find.text('Live Hand Landmarker'));
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byType(LiveCameraView), findsOneWidget);
-      final controller = tester
-          .widget<LiveCameraView>(find.byType(LiveCameraView))
-          .controller;
-      // A simulator or emulator may have no camera; the demo must then report
-      // that rather than fail. Where one exists, frames must flow.
-      final deadline = DateTime.now().add(const Duration(seconds: 35));
-      while (controller.processedFrames < 10 &&
-          controller.error == null &&
-          DateTime.now().isBefore(deadline)) {
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 100)),
-        );
-        await tester.pump();
-      }
-      _report('gallery', {
-        'processed_frames': controller.processedFrames,
-        'error': controller.error,
-        'cameras': controller.cameras.length,
-      });
+  testWidgets('gallery opens Live Hand Landmarker and runs frames', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const GalleryApp());
+    for (
+      var i = 0;
+      i < 100 && find.text('Live Hand Landmarker').evaluate().isEmpty;
+      i++
+    ) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
       await tester.pump();
-      if (controller.cameras.isEmpty) {
-        expect(find.textContaining('No camera found'), findsOneWidget);
-      } else {
-        expect(controller.error, isNull);
-        expect(controller.processedFrames, greaterThanOrEqualTo(10));
-        expect(controller.result, isA<HandLandmarkerResult>());
-      }
-      await tester.runAsync(controller.close);
-      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
-    },
-    timeout: const Timeout(Duration(minutes: 2)),
-  );
+    }
+    expect(find.text('Live Hand Landmarker'), findsOneWidget);
+    await tester.tap(find.text('Live Hand Landmarker'));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(LiveCameraView), findsOneWidget);
+    final controller = tester
+        .widget<LiveCameraView>(find.byType(LiveCameraView))
+        .controller;
+    // A simulator or emulator may have no camera; the demo must then report
+    // that rather than fail. Where one exists, frames must flow.
+    final deadline = DateTime.now().add(const Duration(seconds: 35));
+    while (controller.processedFrames < 10 &&
+        controller.error == null &&
+        DateTime.now().isBefore(deadline)) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
+    }
+    _report('gallery', {
+      'processed_frames': controller.processedFrames,
+      'error': controller.error,
+      'cameras': controller.cameras.length,
+    });
+    await tester.pump();
+    if (controller.cameras.isEmpty) {
+      expect(find.textContaining('No camera found'), findsOneWidget);
+    } else {
+      expect(controller.error, isNull);
+      expect(controller.processedFrames, greaterThanOrEqualTo(10));
+      expect(controller.result, isA<HandLandmarkerResult>());
+    }
+    await tester.runAsync(controller.close);
+    await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+  }, timeout: const Timeout(Duration(minutes: 2)));
 }
 
 Future<Uint8List> _model() async {

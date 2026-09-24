@@ -3,6 +3,7 @@
 // The local bridge only owns callback copies; inference uses Google's exports.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
+
 import 'embedding_gemma_bindings.dart' show MpBaseOptions;
 import 'text_stream_bindings.dart';
 export 'text_stream_bindings.dart';

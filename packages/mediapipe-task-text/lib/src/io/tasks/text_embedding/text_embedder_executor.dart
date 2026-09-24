@@ -1,6 +1,8 @@
 import 'dart:ffi';
+
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_flutter_core/interface.dart';
+
 import '../../classic_text_runtime.dart';
 import '../../third_party/mediapipe/embedding_gemma_bindings.dart' as mp;
 import 'text_embedder_options.dart';

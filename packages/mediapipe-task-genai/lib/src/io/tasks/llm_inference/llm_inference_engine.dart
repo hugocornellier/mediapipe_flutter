@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io' as io;
 import 'dart:isolate';
+
 import 'package:async/async.dart';
 import 'package:logging/logging.dart';
 import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';

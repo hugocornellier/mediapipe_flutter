@@ -2,6 +2,7 @@
 // Adapted from mediapipe==1.0.1 text/text_summarizer.py ctypes definitions.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
+
 import 'embedding_gemma_bindings.dart' show MpBaseOptions;
 
 const _runtime = 'package:mediapipe_flutter_core/tasks_1_0_1.dylib';

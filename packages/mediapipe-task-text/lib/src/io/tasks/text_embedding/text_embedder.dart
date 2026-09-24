@@ -1,5 +1,6 @@
 import 'package:mediapipe_flutter_core/interface.dart';
 import 'package:mediapipe_flutter_text/interface.dart';
+
 import '../../pending_text_task.dart';
 import 'text_embedder_options.dart';
 import 'text_embedder_executor.dart';

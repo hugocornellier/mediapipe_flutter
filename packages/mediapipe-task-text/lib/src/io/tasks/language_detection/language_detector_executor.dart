@@ -1,5 +1,7 @@
 import 'dart:ffi';
+
 import 'package:ffi/ffi.dart';
+
 import '../../classic_text_runtime.dart';
 import '../../third_party/mediapipe/classic_text_bindings.dart' as mp;
 import 'language_detector_options.dart';

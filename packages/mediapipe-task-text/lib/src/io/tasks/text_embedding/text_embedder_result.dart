@@ -1,7 +1,9 @@
 import 'dart:ffi';
 import 'dart:typed_data';
+
 import 'package:mediapipe_flutter_core/io.dart';
 import 'package:mediapipe_flutter_core/interface.dart';
+
 import '../../../interface/embedding_gemma_types.dart';
 import '../../classic_text_runtime.dart';
 import '../../third_party/mediapipe/embedding_gemma_bindings.dart' as mp;
