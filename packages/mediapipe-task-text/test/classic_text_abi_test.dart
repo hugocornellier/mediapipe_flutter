@@ -85,18 +85,21 @@ void main() {
     },
   );
 
-  // Google's Python ctypes declare this struct as 24 bytes with the flag
-  // first; the library writes the header's 32-byte layout
-  // (tasks/c/components/containers/embedding_result.h), which glibc's
-  // malloc leaves no slack for.
+  // The generator reads embedding results with the C header's layout
+  // (tasks/c/components/containers/embedding_result.h); Google's Python
+  // ctypes declare 24 bytes, which the library overruns.
   test('embedding result uses the C header layout', () {
-    expect(sizeOf<embedding.MpEmbeddingResult>(), 32);
+    final layout = abi['MpEmbeddingResultC'] as Map;
+    final offsets = layout['offsets'] as Map;
+    expect(sizeOf<embedding.MpEmbeddingResult>(), layout['size']);
     using((arena) {
       final result = arena<embedding.MpEmbeddingResult>();
-      final data = ByteData.sublistView(result.cast<Uint8>().asTypedList(32));
-      data.setUint32(8, 7, Endian.host);
-      data.setInt64(16, 123456789, Endian.host);
-      data.setUint8(24, 1);
+      final data = ByteData.sublistView(
+        result.cast<Uint8>().asTypedList(layout['size'] as int),
+      );
+      data.setUint32(offsets['embeddings_count'], 7, Endian.host);
+      data.setInt64(offsets['timestamp_ms'], 123456789, Endian.host);
+      data.setUint8(offsets['has_timestamp_ms'], 1);
       expect(result.ref.embeddingsCount, 7);
       expect(result.ref.timestampMs, 123456789);
       expect(result.ref.hasTimestampMs, isTrue);
