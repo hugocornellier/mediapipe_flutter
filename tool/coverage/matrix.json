@@ -312,11 +312,11 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "linux": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "windows": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       }
     },
@@ -338,11 +338,11 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "linux": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "windows": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       }
     },
@@ -364,11 +364,11 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "linux": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "windows": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       }
     },
@@ -390,11 +390,11 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "linux": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "windows": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       }
     }

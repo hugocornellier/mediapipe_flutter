@@ -17,6 +17,34 @@ Future<void> main(List<String> arguments) =>
       if (!enabled || !input.config.buildCodeAssets) return;
       final code = input.config.code;
       final target = buildTarget(code);
+      final wheelRuntime = tasksWheelRuntimes[target];
+      if (wheelRuntime != null) {
+        requireDynamicLinking(code);
+        final library = await downloadOfficialWheelLibrary(
+          wheelRuntime,
+          Directory.fromUri(
+            input.outputDirectoryShared.resolve(
+              '$target/wheel-${wheelRuntime.version}/',
+            ),
+          ),
+        );
+        output.dependencies.add(library.uri);
+        output.dependencies.add(library.parent.uri.resolve('manifest.json'));
+        output.assets.code.add(
+          CodeAsset(
+            package: input.packageName,
+            name: tasksRuntimeAssetName,
+            linkMode: DynamicLoadingBundled(),
+            file: library.uri,
+          ),
+        );
+        // The vision hook maps its assets onto this copy when it sees it.
+        output.metadata['tasks_runtime_library'] = {
+          'name': wheelRuntime.libraryName,
+          'sha256': wheelRuntime.librarySha256,
+        };
+        return;
+      }
       final release = requireTasksRuntimeRelease(target);
       requireDynamicLinking(code);
       final library = await downloadTasksRuntime(

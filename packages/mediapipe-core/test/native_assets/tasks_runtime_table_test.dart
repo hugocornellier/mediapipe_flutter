@@ -1,5 +1,6 @@
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
+import 'package:mediapipe_flutter_core/capabilities.dart';
 import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
 import 'package:test/test.dart';
@@ -62,6 +63,44 @@ void main() {
     );
   });
 
+  test('desktop rows take one unmodified library from an official wheel', () {
+    for (final MapEntry(key: target, value: runtime)
+        in tasksWheelRuntimes.entries) {
+      expect(runtime.target, target);
+      expect(tasksRuntimeReleases, isNot(contains(target)));
+      expect(runtime.wheel.url, startsWith('https://files.pythonhosted.org/'));
+      expect(
+        runtime.wheel.url,
+        endsWith(
+          target == 'linux/x64'
+              ? 'mediapipe-${runtime.version}-py3-none-manylinux_2_28_x86_64.whl'
+              : 'mediapipe-${runtime.version}-py3-none-win_amd64.whl',
+        ),
+      );
+      for (final digest in [
+        runtime.wheel.sha256,
+        runtime.librarySha256,
+        ...runtime.notices.values,
+      ]) {
+        expect(RegExp(r'^[a-f0-9]{64}$').hasMatch(digest), isTrue);
+      }
+      expect(runtime.notices.keys, unorderedEquals(['LICENSE', 'NOTICE']));
+    }
+    expect(
+      tasksWheelRuntimes.keys,
+      unorderedEquals(['linux/x64', 'windows/x64']),
+    );
+    // The capability table claims exactly the targets the hook can bundle.
+    expect(
+      tasksRuntimeTargets.keys,
+      unorderedEquals([
+        ...tasksRuntimeReleases.keys,
+        ...tasksWheelRuntimes.keys,
+      ]),
+    );
+    expect(macosTasksRuntimeTargets.keys, tasksRuntimeReleases.keys);
+  });
+
   test('the hook rejects targets without a release before downloading', () {
     final defines = PackageUserDefines(
       workspacePubspec: PackageUserDefinesSource(
@@ -70,8 +109,8 @@ void main() {
       ),
     );
     for (final (os, architecture) in [
-      (OS.linux, Architecture.x64),
-      (OS.windows, Architecture.x64),
+      (OS.linux, Architecture.arm64),
+      (OS.windows, Architecture.arm64),
       (OS.macOS, Architecture.x64),
       (OS.android, Architecture.arm64),
     ]) {

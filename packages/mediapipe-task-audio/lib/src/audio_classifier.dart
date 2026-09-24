@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_flutter_core/io.dart' show mpHostSystem;
 
 import '../audio_task_backend.dart';
 import 'audio_classifier_backend.dart';
@@ -54,7 +55,7 @@ final class AudioClassifier {
         native.ref.baseOptions
           ..fileDescriptor = -1
           ..delegate = 0
-          ..hostSystem = 2;
+          ..hostSystem = mpHostSystem;
         if (options.modelPath case final path?) {
           native.ref.baseOptions.modelAssetPath = path
               .toNativeUtf8(allocator: arena)

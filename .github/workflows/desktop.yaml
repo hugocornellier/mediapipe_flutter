@@ -44,6 +44,15 @@ jobs:
       - name: Record linux CPU task coverage (linux-cpu)
         if: always() && runner.os == 'Linux'
         run: python3 -B tool/coverage/record.py --suite linux-cpu --platform linux --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.linux_cpu.outcome }}
+      # Core's shared runtime here is the vision package's wheel library; the
+      # suites compare with Google's Python on this runner.
+      - name: Text and audio against Google's Linux wheel
+        id: linux_text_audio
+        if: ${{ !cancelled() && runner.os == 'Linux' }}
+        run: python3 -B tool/test_text_audio.py
+      - name: Record linux CPU text and audio coverage (linux-text-audio)
+        if: always() && runner.os == 'Linux'
+        run: python3 -B tool/coverage/record.py --suite linux-text-audio --platform linux --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.linux_text_audio.outcome }}
       - uses: actions/upload-artifact@v4
         if: always() && runner.os == 'Linux'
         with:
@@ -68,6 +77,13 @@ jobs:
       - name: Record windows CPU task coverage (windows-cpu)
         if: always() && runner.os == 'Windows'
         run: python -B tool/coverage/record.py --suite windows-cpu --platform windows --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.windows_cpu.outcome }}
+      - name: Text and audio against Google's Windows wheel
+        id: windows_text_audio
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
+        run: python -B tool/test_text_audio.py
+      - name: Record windows CPU text and audio coverage (windows-text-audio)
+        if: always() && runner.os == 'Windows'
+        run: python -B tool/coverage/record.py --suite windows-text-audio --platform windows --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.windows_text_audio.outcome }}
       - uses: actions/upload-artifact@v4
         if: always() && runner.os == 'Windows'
         with:
@@ -90,6 +106,12 @@ jobs:
             build/codex-tmp/desktop-*/reference/**/*.json
             build/codex-tmp/gallery-desktop-*/*.log
             build/codex-tmp/gallery-desktop-*/report.json
+            build/codex-tmp/text-audio/*.log
+            build/codex-tmp/text-audio/report.json
+            build/classic-text-reference/*.json
+            build/classic-text-reference/*.log
+            build/audio-reference/*.json
+            build/audio-reference/*.log
           if-no-files-found: error
 
   linux-gpu:

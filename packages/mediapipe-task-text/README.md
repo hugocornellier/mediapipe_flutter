@@ -13,9 +13,16 @@ needed.
 All six text tasks use the same official **MediaPipe 1.0.1** runtime on
 **macOS arm64 CPU, macOS 14+**: TextClassifier (BERT), TextEmbedder (Universal
 Sentence Encoder), LanguageDetector, EmbeddingGemma, Proofreader and Summarizer.
-They can run together with MagicTouch and both face tasks. The 2024 text runtime
-has been retired; its unvalidated Android, iOS and Intel macOS artifacts are no
-longer selected. Those platforms need a separate 1.0.1 integration.
+They can run together with MagicTouch and both face tasks. TextClassifier,
+TextEmbedder and LanguageDetector also run on **Linux x64 CPU** (Google's 1.0.1
+wheel library) and **Windows x64 CPU** (its 1.0.0 wheel library): the same
+library the vision package bundles there, loaded once for both packages. Linux
+needs the system EGL and OpenGL ES libraries (`libegl1 libgles2` on Debian or
+Ubuntu) even for CPU. Browsers and Android run those three through
+[mediapipe_flutter_text_web](../mediapipe-task-text-web/README.md) and
+[mediapipe_flutter_text_android](../mediapipe-task-text-android/README.md). The
+2024 text runtime has been retired; its unvalidated Android, iOS and Intel macOS
+artifacts are no longer selected.
 
 Every text consumer must enable `hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`
 in its app pubspec, as shown below. Models remain separate optional downloads.

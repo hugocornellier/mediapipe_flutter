@@ -1,6 +1,6 @@
 import 'package:mediapipe_flutter_audio/audio_task_backend.dart';
 import 'package:mediapipe_flutter_core/capabilities.dart'
-    show tasksRuntimeTargets;
+    show tasksRuntimeTargets, tasksRuntimeVersionOn;
 import 'package:mediapipe_flutter_text/text_task_backend.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
 
@@ -277,8 +277,8 @@ TaskCapabilities<VisionDelegate> _cpuTask(
   platform: platform,
   cpu: VisionDelegate.cpu,
   gpu: VisionDelegate.gpu,
-  gpuUnavailableReason:
-      'The official 1.0.1 audio and text tasks run on CPU here.',
+  gpuUnavailableReason: 'The official audio and text tasks run on CPU here.',
+  runtimeVersion: tasksRuntimeVersionOn(platform),
   // A registered backend is Google's SDK or browser runtime for this very
   // platform: mediapipe_flutter_text/audio's web, Android or iOS plugin.
   targets: {

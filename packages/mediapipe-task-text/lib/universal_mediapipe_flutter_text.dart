@@ -14,7 +14,7 @@ class TextClassifier extends BaseTextClassifier {
   /// {@macro TextClassifier}
   TextClassifier(TextClassifierOptions options) {
     throw UnsupportedError(
-      'MediaPipe 1.0.1 text tasks require macOS arm64 or a browser.',
+      'MediaPipe text tasks require dart:ffi or a browser.',
     );
   }
 
@@ -86,7 +86,7 @@ class TextEmbedder extends BaseTextEmbedder {
   /// {@macro TextEmbedder}
   TextEmbedder(TextEmbedderOptions options) {
     throw UnsupportedError(
-      'MediaPipe 1.0.1 text tasks require macOS arm64 or a browser.',
+      'MediaPipe text tasks require dart:ffi or a browser.',
     );
   }
 
@@ -160,7 +160,7 @@ class LanguageDetector extends BaseLanguageDetector {
   /// {@macro LanguageDetector}
   LanguageDetector(LanguageDetectorOptions options) {
     throw UnsupportedError(
-      'MediaPipe 1.0.1 text tasks require macOS arm64 or a browser.',
+      'MediaPipe text tasks require dart:ffi or a browser.',
     );
   }
 

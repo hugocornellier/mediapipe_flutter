@@ -473,7 +473,7 @@ TaskCapabilities<VisionDelegate> interactiveSegmenterCapabilitiesForPlatform(
     platform: platform,
     delegates: {
       VisionDelegate.cpu: {
-        ...tasksRuntimeTargets,
+        ...macosTasksRuntimeTargets,
         // The vision package's own 1.0.1 wheel library exports the stateful API.
         'linux/x64': null,
         if (officialIosRuntime) 'ios/arm64': '15.0',

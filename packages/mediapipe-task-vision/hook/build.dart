@@ -179,6 +179,35 @@ void main(List<String> arguments) async {
           'Available tasks: ${wheelRelease.tasks.join(', ')}.',
         );
       }
+      // With the text or audio tasks enabled, core bundles this same library
+      // for them. A second copy would register every graph twice and abort,
+      // so the vision assets then resolve to core's copy by its file name;
+      // loadOfficialDesktopRuntime() loads that copy first.
+      final shared =
+          input.metadata['mediapipe_flutter_core']['tasks_runtime_library'];
+      if (shared != null) {
+        if (shared is! Map ||
+            shared['name'] != wheelRelease.libraryName ||
+            shared['sha256'] != wheelRelease.librarySha256) {
+          throw StateError(
+            'mediapipe_flutter_core bundles $shared for text and audio, not '
+            'the ${wheelRelease.libraryName} ${wheelRelease.librarySha256} '
+            'that mediapipe_flutter_vision pins for $target.',
+          );
+        }
+        for (final assetName in {'vision.dylib', ..._assetNames(tasks)}) {
+          output.assets.code.add(
+            CodeAsset(
+              package: input.packageName,
+              name: assetName,
+              linkMode: DynamicLoadingSystem(
+                Uri.file(wheelRelease.libraryName),
+              ),
+            ),
+          );
+        }
+        return;
+      }
       final library = await downloadVisionWheel(
         wheelRelease,
         Directory.fromUri(input.outputDirectoryShared.resolve('$target/')),

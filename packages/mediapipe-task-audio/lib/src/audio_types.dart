@@ -25,8 +25,8 @@ enum AudioDelegate {
   gpu,
 }
 
-/// Where Audio Classifier runs: CPU on the shared official 1.0.1 runtime,
-/// which core provides for macOS arm64 (macOS 14+), and through Google's
+/// Where Audio Classifier runs: CPU on core's shared runtime, Google's library
+/// for macOS arm64 (macOS 14+), Linux x64 and Windows x64, and through Google's
 /// browser runtime or mobile SDK where a platform plugin installs it.
 Future<TaskCapabilities<AudioDelegate>>
 queryAudioClassifierCapabilities() async =>
@@ -40,6 +40,7 @@ TaskCapabilities<AudioDelegate> audioClassifierCapabilitiesForPlatform(
   cpu: AudioDelegate.cpu,
   gpu: AudioDelegate.gpu,
   gpuUnavailableReason: "Google's official audio task runs on CPU only.",
+  runtimeVersion: tasksRuntimeVersionOn(platform),
   targets: {
     ...tasksRuntimeTargets,
     // A registered backend is Google's browser runtime or mobile SDK for

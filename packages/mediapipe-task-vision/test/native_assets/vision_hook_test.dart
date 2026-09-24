@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
+import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
 import 'package:test/test.dart';
 
 import '../../hook/build.dart' as hook;
@@ -86,6 +87,82 @@ void main() {
     });
     expect(visionWheelReleases['windows/x64']!.tasks, validated);
     expect(visionTasks.difference(validated), {sharedRuntimeTask});
+  });
+
+  test('desktop rows pin the library core bundles for text and audio', () {
+    // An app with vision and text or audio loads one copy: core bundles it
+    // and the vision hook maps its assets onto it, which needs the same file.
+    expect(visionWheelReleases.keys, unorderedEquals(tasksWheelRuntimes.keys));
+    for (final MapEntry(key: target, value: vision)
+        in visionWheelReleases.entries) {
+      final core = tasksWheelRuntimes[target]!;
+      expect(vision.target, core.target);
+      expect(vision.version, core.version);
+      expect(vision.wheel, core.wheel);
+      expect(vision.libraryName, core.libraryName);
+      expect(vision.librarySha256, core.librarySha256);
+      expect(vision.notices, core.notices);
+    }
+  });
+
+  test('desktop tasks resolve to the copy core bundles', () async {
+    // What core's hook publishes when tasks_runtime bundles a desktop wheel.
+    Map<String, List<EncodedAsset>> core(Object value) => {
+      'mediapipe_flutter_core': [
+        EncodedAsset('hooks/metadata', {
+          'key': 'tasks_runtime_library',
+          'value': value,
+        }),
+      ],
+    };
+    for (final (os, target) in [
+      (OS.linux, 'linux/x64'),
+      (OS.windows, 'windows/x64'),
+    ]) {
+      final release = visionWheelReleases[target]!;
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: os,
+        targetArchitecture: Architecture.x64,
+        userDefines: defines({
+          'tasks': ['face_landmarker', 'pose_landmarker'],
+        }),
+        assets: core({
+          'name': release.libraryName,
+          'sha256': release.librarySha256,
+        }),
+        check: (_, output) {
+          expect(output.assets.code.map((asset) => asset.id).toSet(), {
+            'package:mediapipe_flutter_vision/vision.dylib',
+            'package:mediapipe_flutter_vision/face_landmarker.dylib',
+          });
+          for (final asset in output.assets.code) {
+            expect(asset.file, isNull);
+            expect(
+              asset.linkMode,
+              isA<DynamicLoadingSystem>().having(
+                (mode) => mode.uri,
+                'uri',
+                Uri.file(release.libraryName),
+              ),
+            );
+          }
+        },
+      );
+      await expectLater(
+        testCodeBuildHook(
+          mainMethod: hook.main,
+          targetOS: os,
+          targetArchitecture: Architecture.x64,
+          userDefines: defines({
+            'tasks': ['face_landmarker'],
+          }),
+          assets: core({'name': release.libraryName, 'sha256': '0' * 64}),
+          check: (_, _) => fail('A second, different library was accepted'),
+        ),
+        failsWith<StateError>(contains(release.librarySha256)),
+      );
+    }
   });
 
   test('an unpublished release is served only from a local build', () {

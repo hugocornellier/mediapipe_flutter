@@ -77,11 +77,15 @@ WEB_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
              'pose_landmarker', 'audio_classifier', 'language_detector',
              'text_classifier', 'text_embedder'}
 
-# The stateful MagicTouch runtime lives in mediapipe-core's tasks runtime,
-# which is published for macOS arm64 only, and the hook wants it opted into
-# through a separate user define.
+# The stateful MagicTouch runtime lives in mediapipe-core's tasks runtime on
+# macOS arm64 (Linux's vision wheel exports it itself), and the hook wants it
+# opted into through a separate user define.
 SHARED_RUNTIME_TASK = 'interactive_segmenter'
 SHARED_RUNTIME_TARGETS = {'macos/arm64'}
+# Core's tasks runtime serves the text and audio tasks on these targets. On
+# Linux and Windows it is Google's wheel library, which the vision tasks then
+# share instead of bundling a second copy.
+TEXT_AUDIO_TARGETS = {'macos/arm64', 'linux/x64', 'windows/x64'}
 
 # The text package's three classic tasks, on the same shared runtime, with the
 # models its example downloads and verifies (make models_text). They are not
@@ -204,7 +208,7 @@ def available_tasks(target):
     if target in ('linux/x64', 'windows/x64'):
         for block in _blocks(source, 'const visionWheelReleases'):
             if re.search(r"target: '" + re.escape(target) + r"'", block):
-                return _tasks_of(block)
+                return _tasks_of(block) | NON_VISION_TASKS
         return set()
     tasks = set()
     if target in SHARED_RUNTIME_TARGETS:
@@ -317,11 +321,14 @@ def prepare(target, selected):
   mediapipe_flutter_audio_web:
     path: ../packages/mediapipe-task-audio-web
 ''' if target == 'web' else '')
-    # The hook refuses the stateful MagicTouch task unless its shared runtime is
-    # opted into explicitly, on the core package rather than the vision one.
+    # Core's shared runtime is opted into explicitly, on the core package: the
+    # vision hook refuses the stateful MagicTouch task on macOS without it, and
+    # the text and audio tasks need it wherever they run natively.
     core = ('    mediapipe_flutter_core:\n      tasks_runtime: true\n'
-            if ({SHARED_RUNTIME_TASK, *NON_VISION_TASKS} & bundled.keys()
-                and target in SHARED_RUNTIME_TARGETS)
+            if (({SHARED_RUNTIME_TASK} & bundled.keys()
+                 and target in SHARED_RUNTIME_TARGETS)
+                or (NON_VISION_TASKS & bundled.keys()
+                    and target in TEXT_AUDIO_TARGETS))
             else '')
     # On the web, Google's JavaScript runs the stateful task. Host-side builds
     # such as `flutter test --platform chrome` still run the native hook, which

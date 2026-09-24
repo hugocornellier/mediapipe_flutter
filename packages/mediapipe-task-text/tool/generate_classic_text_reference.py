@@ -11,8 +11,12 @@ import sys
 
 from official_embedding_layout import use_header_embedding_layout
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'mediapipe-core/tool'))
+from official_wheels import MACOS, host_runtime  # noqa: E402
+
 PACKAGE = Path(__file__).resolve().parents[1]
-LIBRARY_SHA256 = '9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a'
+# The checked-in baseline's library: Google's macOS arm64 1.0.1 build.
+LIBRARY_SHA256 = MACOS['library_sha256']
 MODELS = {
     'classifier': ('bert_classifier.tflite', '9b45012ab143d88d61e10ea501d6c8763f7202b86fa987711519d89bfa2a88b1'),
     'embedder': ('universal_sentence_encoder.tflite', '89ad3c74175dd8caa398cc22b657296d94302d20c525c12b58b29420f7249749'),
@@ -38,12 +42,14 @@ def main():
     from mediapipe.tasks.python.components.containers.classification_result_c import MpClassificationResultC, MpClassificationsC
     from mediapipe.tasks.python.components.containers.category_c import MpCategoryC
     from mediapipe.tasks.python.components.containers.embedding_result_c import MpEmbeddingResultC, MpEmbeddingC
-    assert platform.system() == 'Darwin' and platform.machine() == 'arm64'
-    assert mp.__version__ == '1.0.1'
-    library = Path(mp.__file__).parent / 'tasks/c/libmediapipe.dylib'
-    assert hashlib.sha256(library.read_bytes()).hexdigest() == LIBRARY_SHA256
-    report = {'runtime': 'mediapipe==1.0.1', 'delegate': 'CPU',
-              'library_sha256': LIBRARY_SHA256, 'macos': platform.mac_ver()[0],
+    runtime = host_runtime()
+    assert mp.__version__ == runtime['version']
+    library = Path(mp.__file__).parent / 'tasks/c' / runtime['library']
+    assert hashlib.sha256(library.read_bytes()).hexdigest() == runtime['library_sha256']
+    host = ({'macos': platform.mac_ver()[0]} if platform.system() == 'Darwin'
+            else {'os': platform.platform()})
+    report = {'runtime': 'mediapipe==' + runtime['version'], 'delegate': 'CPU',
+              'library_sha256': runtime['library_sha256'], **host,
               'models': {}, 'cases': [], 'creation_errors': [], 'lifecycle_sequences': {}}
     for name, (file, sha) in MODELS.items():
         model = PACKAGE / 'example/assets' / file
@@ -128,7 +134,7 @@ def main():
                     language.MpLanguageDetectorResultC)}
     target = args.output.resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n')
+    target.write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
 
 
 if __name__ == '__main__':

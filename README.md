@@ -89,18 +89,19 @@ results for these tasks are not validated; see `upstream-issues.md`.
 | Package | Directory | Status |
 | --- | --- | --- |
 | `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
-| `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Six text tasks on one MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU. Text Classifier, Text Embedder and Language Detector also run in browsers and on Android |
+| `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Six text tasks on one MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU. Text Classifier, Text Embedder and Language Detector also run on Linux and Windows x64 CPU, in browsers and on Android |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
 | `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | All twelve vision tasks on web, iOS, Android, macOS, Linux and Windows through Google's runtimes, with two upstream gaps; see the [status table](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md) |
 | `mediapipe_flutter_vision_web` | [mediapipe-task-vision-web](packages/mediapipe-task-vision-web/) | Every vision task on Google's official CPU/WASM and GPU/WebGL 2 runtime; live browser camera gallery |
-| `mediapipe_flutter_audio` | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Audio Classifier on the shared MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU, and in browsers and on Android |
+| `mediapipe_flutter_audio` | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Audio Classifier on core's shared runtime; macOS 14+ arm64, Linux x64 and Windows x64 CPU, and in browsers and on Android |
 | `mediapipe_flutter_text_web` | [mediapipe-task-text-web](packages/mediapipe-task-text-web/) | Text Classifier, Text Embedder and Language Detector on Google's official @mediapipe/tasks-text 1.0.1, CPU |
 | `mediapipe_flutter_text_android` | [mediapipe-task-text-android](packages/mediapipe-task-text-android/) | Text Classifier, Text Embedder and Language Detector on Google's Android SDK (tasks-text 1.0.0), CPU |
 | `mediapipe_flutter_audio_android` | [mediapipe-task-audio-android](packages/mediapipe-task-audio-android/) | Audio Classifier on Google's Android SDK (tasks-audio 1.0.0), CPU |
 | `mediapipe_flutter_audio_web` | [mediapipe-task-audio-web](packages/mediapipe-task-audio-web/) | Audio Classifier on Google's official @mediapipe/tasks-audio 1.0.1, CPU, for clips and the microphone |
 
-The migrated text package supports macOS arm64; its old Android, iOS and Intel
-macOS artifacts have been retired. GenAI artifacts exist for macOS arm64, Android arm64, and iOS arm64
+The migrated text package supports macOS arm64, and its three classic tasks also
+Linux and Windows x64; its old Android, iOS and Intel macOS artifacts have been
+retired. GenAI artifacts exist for macOS arm64, Android arm64, and iOS arm64
 devices. Artifact availability does not establish tested platform support.
 Linux and Windows x64 vision runtimes come from Google's published wheels, whose
 libraries and notices the build hook extracts and verifies by digest. There are no
@@ -140,9 +141,13 @@ requires no Bazel, CMake, Ninja, or GitHub credentials. The Dart/Flutter source
 repository is public; no packages from this fork are published to pub.dev yet.
 
 Interactive Segmenter is **opt-in** with `tasks: [interactive_segmenter]`.
-It and all six text tasks require the app setting
-`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`. Core owns one
-shared native asset: a 32.6 MB download / 100.9 MB library. Its existing immutable
+On macOS it, all six text tasks and the Audio Classifier require the app setting
+`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`; on Linux and
+Windows the text and audio tasks do. Core owns one shared native asset. On
+Linux and Windows it is the same Google wheel library the vision package pins,
+so an app using vision too bundles and loads one copy: the vision hook maps its
+tasks onto core's (two copies would register Google's graphs twice and abort).
+On macOS it is a 32.6 MB download / 100.9 MB library. Its existing immutable
 release retains the `interactive-segmenter-v1.0.1-1` name. Separate models are
 30.5 MB for MagicTouch, 183.8 MB for EmbeddingGemma, and 117.6 MB each for
 Proofreader and Summarizer. Only download the models your app uses.

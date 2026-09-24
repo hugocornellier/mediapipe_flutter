@@ -38,15 +38,19 @@ def main():
     run([sys.executable, '-B', GALLERY / 'tool/prepare.py',
          '--target', f'{target}/x64'], 'prepare')
     manifest = json.loads((GALLERY / 'assets/manifest.json').read_text())
-    required = {'face_landmarker', 'hand_landmarker', 'pose_landmarker'}
+    required = {'face_landmarker', 'hand_landmarker', 'pose_landmarker',
+                'audio_classifier', 'language_detector', 'text_classifier',
+                'text_embedder'}
     if not required <= set(manifest['tasks']):
-        raise RuntimeError('Download the face, hand and pose models first.')
+        raise RuntimeError(f'Missing gallery tasks: {sorted(required - set(manifest["tasks"]))}')
     run(['flutter', 'pub', 'get'], 'pub')
     run(['flutter', 'analyze', 'lib', 'test',
          'integration_test/desktop_cpu_camera_test.dart',
-         'integration_test/runtime_test.dart'], 'analyze')
+         'integration_test/runtime_test.dart',
+         'integration_test/text_tasks_test.dart',
+         'integration_test/audio_task_test.dart'], 'analyze')
     run(['flutter', 'test', 'test'], 'unit')
-    for name in ['assets_test', 'runtime_test']:
+    for name in ['assets_test', 'runtime_test', 'text_tasks_test', 'audio_task_test']:
         run(['flutter', 'test', '-d', target,
              f'integration_test/{name}.dart', '--reporter', 'expanded'], name)
     for task in ['face', 'hand']:
@@ -68,6 +72,7 @@ def main():
         'runtime': str(library.relative_to(bundle)), 'runtime_sha256': sha,
         'checks': ['native-camera-registration-and-enumeration',
                    'assets', 'cross-task-runtime-coexistence',
+                   'text-and-audio-share-the-vision-runtime',
                    'gallery-supplied-camera-rgba-bgra-switch-restart-cleanup',
                    'live-tasks-face-hand',
                    'release-build'],
