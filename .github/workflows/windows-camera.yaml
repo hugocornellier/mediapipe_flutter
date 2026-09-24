@@ -139,6 +139,13 @@ jobs:
         run: |
           flutter pub get
           flutter analyze integration_test/real_camera_test.dart integration_test/support
+      # Task closes wait for Google's usage-logging upload, which sometimes
+      # takes 20 to 34 s here (upstream-issues.md UP-025); keep the test off
+      # Google's logging service.
+      - name: Keep Google's usage logging off the network
+        run: |
+          Add-Content "$env:SystemRoot\System32\drivers\etc\hosts" "`n0.0.0.0 play.googleapis.com`n:: play.googleapis.com"
+          ipconfig /flushdns | Out-Null
       - name: Start the fixture camera and run the gallery against it
         working-directory: gallery
         env:

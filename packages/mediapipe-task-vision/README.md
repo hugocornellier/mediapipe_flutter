@@ -73,6 +73,15 @@ Google's official PyPI wheel, then extracts it and verifies it by digest:
 `mediapipe==1.0.0` on Windows. Both run every vision task on CPU, except the
 stateful Interactive Segmenter on Windows, whose wheel does not export it.
 
+Google's Windows runtime sends usage logs to Google
+(`https://play.googleapis.com/log`) from inside the native library, and
+closing a task waits for that upload. `dispose()` therefore usually takes one
+network round trip, but on a slow or unreliable connection to that host it can
+take 20 to 35 seconds. The library has no setting that turns the logging off;
+blocking `play.googleapis.com` (a hosts-file entry or a firewall rule) stops
+both the upload and the wait
+([UP-025](https://github.com/hugocornellier/mediapipe_flutter/blob/main/upstream-issues.md#up-025-windows-task-closes-wait-for-googles-usage-logging-upload)).
+
 The Linux runtime links the system EGL and OpenGL ES libraries, even for CPU
 inference. If they are missing (for example in a minimal container), creating a
 task fails with an error naming them; on Debian or Ubuntu install them with

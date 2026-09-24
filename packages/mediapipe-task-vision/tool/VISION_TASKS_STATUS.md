@@ -95,3 +95,7 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
 - UP-022: Google's Android stateful Interactive Segmenter drops a model given
   as bytes; the plugin passes it a private file instead. UP-021 is the web
   equivalent for the point-based task.
+- UP-025: Google's Windows runtime uploads usage logs to
+  `play.googleapis.com`, and closing a task waits for the upload: usually one
+  round trip, sometimes 20 to 34 s. CI blocks the host so tests do not depend
+  on it.
