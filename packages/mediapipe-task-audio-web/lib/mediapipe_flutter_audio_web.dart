@@ -36,9 +36,12 @@ final class _WorkerAudioTask implements AudioTaskBackend {
       () => _loaded = null,
     ));
     final bytes = options['modelBytes'] as Uint8List?;
+    final path = options['modelPath'] as String?;
     final input = {
       ...options,
       'modelBytes': bytes == null ? null : Uint8List.fromList(bytes).toJS,
+      // A model path is a URL here, resolved against the page.
+      'modelPath': path == null ? null : Uri.base.resolve(path).toString(),
     }.jsify()!;
     return _WorkerAudioTask._(await _create(input as JSObject).toDart);
   }

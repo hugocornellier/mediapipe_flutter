@@ -38,10 +38,13 @@ final class _WorkerTextTask implements TextTaskBackend {
       () => _loaded = null,
     ));
     final bytes = options['modelBytes'] as Uint8List?;
+    final path = options['modelPath'] as String?;
     final input = {
       ...options,
       'task': task,
       'modelBytes': bytes == null ? null : Uint8List.fromList(bytes).toJS,
+      // A model path is a URL here, resolved against the page.
+      'modelPath': path == null ? null : Uri.base.resolve(path).toString(),
     }.jsify()!;
     return _WorkerTextTask._(await _create(input as JSObject).toDart);
   }

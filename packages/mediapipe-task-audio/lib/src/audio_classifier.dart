@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
+import '../audio_task_backend.dart';
+import 'audio_classifier_backend.dart';
 import 'audio_types.dart';
 
 import 'third_party/mediapipe/audio_classifier_bindings.dart' as mp;
@@ -11,9 +13,17 @@ import 'third_party/mediapipe/audio_classifier_bindings.dart' as mp;
 /// Google's official Audio Classifier (for example YAMNet) on audio clips.
 ///
 /// The native task is created once; each [classify] runs on a background
-/// isolate. Await [dispose] when finished.
+/// isolate. Where a platform plugin installs Google's mobile SDK
+/// (audio_task_backend.dart), the task runs there instead. Await [dispose]
+/// when finished.
 final class AudioClassifier {
-  AudioClassifier._(this._task, this._model);
+  AudioClassifier._(this._task, this._model) : _backend = null;
+
+  AudioClassifier._onBackend(BackendAudioClassifier this._backend)
+    : _task = 0,
+      _model = null;
+
+  final BackendAudioClassifier? _backend;
 
   final int _task;
 
@@ -24,6 +34,11 @@ final class AudioClassifier {
 
   /// Creates the task on the calling isolate.
   static Future<AudioClassifier> create(AudioClassifierOptions options) async {
+    if (audioTaskBackendFactory != null) {
+      return AudioClassifier._onBackend(
+        await BackendAudioClassifier.create(options),
+      );
+    }
     final support = await queryAudioClassifierCapabilities();
     if (support.unavailableReasons[AudioDelegate.cpu] case final reason?) {
       throw AudioClassifierException(reason);
@@ -68,6 +83,7 @@ final class AudioClassifier {
   /// Classifies [audio], one result per chunk the model reads (0.975 s for
   /// YAMNet), in order.
   Future<List<AudioClassification>> classify(AudioData audio) {
+    if (_backend case final backend?) return backend.classify(audio);
     if (_disposing != null) {
       return Future.error(StateError('AudioClassifier has been disposed.'));
     }
@@ -83,10 +99,12 @@ final class AudioClassifier {
   }
 
   /// Waits for queued classifications, then closes the native task.
-  Future<void> dispose() => _disposing ??= _tail.then((_) {
-    _checked((error) => mp.close(Pointer.fromAddress(_task), error));
-    if (_model case final model?) malloc.free(model);
-  });
+  Future<void> dispose() =>
+      _backend?.dispose() ??
+      (_disposing ??= _tail.then((_) {
+        _checked((error) => mp.close(Pointer.fromAddress(_task), error));
+        if (_model case final model?) malloc.free(model);
+      }));
 }
 
 List<AudioClassification> _classify(

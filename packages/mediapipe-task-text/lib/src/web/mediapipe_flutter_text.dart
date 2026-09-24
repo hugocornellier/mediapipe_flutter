@@ -12,27 +12,33 @@ import 'package:mediapipe_flutter_core/interface.dart';
 import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
 import 'package:mediapipe_flutter_text/interface.dart';
 
-import '../../text_task_backend.dart';
+import '../backend_text_task.dart';
 import '../interface/embedding_gemma_types.dart' show TextEmbedding;
 
 /// {@macro TextClassifier}
 class TextClassifier extends BaseTextClassifier {
-  TextClassifier._(this._task);
-
-  final _WebTextTask _task;
-
-  /// Starts Google's browser Text Classifier.
-  static Future<TextClassifier> create(TextClassifierOptions options) async =>
-      TextClassifier._(
-        await _WebTextTask.create('text_classifier', {
-          ..._baseOptions(options.baseOptions),
-          ..._classifierOptions(options.classifierOptions),
-        }),
+  /// Starts loading at once; initialization failures reach [classify].
+  TextClassifier(TextClassifierOptions options)
+    : _task = BackendTextTask.start(
+        task: 'text_classifier',
+        options: {
+          ...backendModel(options.baseOptions),
+          ...backendClassifierOptions(options.classifierOptions),
+        },
+        decode: TextClassifierResult._fromJs,
       );
 
+  final BackendTextTask<TextClassifierResult> _task;
+
+  /// Starts Google's browser Text Classifier.
+  static Future<TextClassifier> create(TextClassifierOptions options) async {
+    final task = TextClassifier(options);
+    await task._task.ready;
+    return task;
+  }
+
   @override
-  Future<TextClassifierResult> classify(String text) async =>
-      TextClassifierResult._fromJs(await _task.run(text));
+  Future<TextClassifierResult> classify(String text) => _task.run(text);
 
   @override
   Future<void> dispose() => _task.dispose();
@@ -84,11 +90,8 @@ class TextClassifierResult extends BaseTextClassifierResult {
 
   factory TextClassifierResult._fromJs(Map<String, dynamic> json) =>
       TextClassifierResult(
-        classifications: [
-          for (final head in json['classifications'] as List)
-            _classifications(head as Map<String, dynamic>),
-        ],
-        timestampMs: (json['timestampMs'] as num?)?.toInt(),
+        classifications: _heads(backendClassifications(json)),
+        timestampMs: backendTimestamp(json),
       );
 
   @override
@@ -100,23 +103,28 @@ class TextClassifierResult extends BaseTextClassifierResult {
 
 /// {@macro TextEmbedder}
 class TextEmbedder extends BaseTextEmbedder {
-  TextEmbedder._(this._task);
-
-  final _WebTextTask _task;
-
-  /// Starts Google's browser Text Embedder.
-  static Future<TextEmbedder> create(TextEmbedderOptions options) async =>
-      TextEmbedder._(
-        await _WebTextTask.create('text_embedder', {
-          ..._baseOptions(options.baseOptions),
-          'l2Normalize': options.embedderOptions.l2Normalize,
-          'quantize': options.embedderOptions.quantize,
-        }),
+  /// Starts loading at once; initialization failures reach [embed].
+  TextEmbedder(TextEmbedderOptions options)
+    : _task = BackendTextTask.start(
+        task: 'text_embedder',
+        options: {
+          ...backendModel(options.baseOptions),
+          ...backendEmbedderOptions(options.embedderOptions),
+        },
+        decode: TextEmbedderResult._fromJs,
       );
 
+  final BackendTextTask<TextEmbedderResult> _task;
+
+  /// Starts Google's browser Text Embedder.
+  static Future<TextEmbedder> create(TextEmbedderOptions options) async {
+    final task = TextEmbedder(options);
+    await task._task.ready;
+    return task;
+  }
+
   @override
-  Future<TextEmbedderResult> embed(String text) async =>
-      TextEmbedderResult._fromJs(await _task.run(text));
+  Future<TextEmbedderResult> embed(String text) => _task.run(text);
 
   @override
   Future<double> cosineSimilarity(BaseEmbedding a, BaseEmbedding b) async {
@@ -180,11 +188,8 @@ class TextEmbedderResult extends BaseEmbedderResult {
 
   factory TextEmbedderResult._fromJs(Map<String, dynamic> json) =>
       TextEmbedderResult(
-        embeddings: [
-          for (final value in json['embeddings'] as List)
-            _embedding(value as Map<String, dynamic>),
-        ],
-        timestampMs: (json['timestampMs'] as num?)?.toInt(),
+        embeddings: _embeddings(backendEmbeddings(json)),
+        timestampMs: backendTimestamp(json),
       );
 
   @override
@@ -196,23 +201,30 @@ class TextEmbedderResult extends BaseEmbedderResult {
 
 /// {@macro LanguageDetector}
 class LanguageDetector extends BaseLanguageDetector {
-  LanguageDetector._(this._task);
+  /// Starts loading at once; initialization failures reach [detect].
+  LanguageDetector(LanguageDetectorOptions options)
+    : _task = BackendTextTask.start(
+        task: 'language_detector',
+        options: {
+          ...backendModel(options.baseOptions),
+          ...backendClassifierOptions(options.classifierOptions),
+        },
+        decode: LanguageDetectorResult._fromJs,
+      );
 
-  final _WebTextTask _task;
+  final BackendTextTask<LanguageDetectorResult> _task;
 
   /// Starts Google's browser Language Detector.
   static Future<LanguageDetector> create(
     LanguageDetectorOptions options,
-  ) async => LanguageDetector._(
-    await _WebTextTask.create('language_detector', {
-      ..._baseOptions(options.baseOptions),
-      ..._classifierOptions(options.classifierOptions),
-    }),
-  );
+  ) async {
+    final task = LanguageDetector(options);
+    await task._task.ready;
+    return task;
+  }
 
   @override
-  Future<LanguageDetectorResult> detect(String text) async =>
-      LanguageDetectorResult._fromJs(await _task.run(text));
+  Future<LanguageDetectorResult> detect(String text) => _task.run(text);
 
   @override
   Future<void> dispose() => _task.dispose();
@@ -262,11 +274,8 @@ class LanguageDetectorResult extends BaseLanguageDetectorResult {
   factory LanguageDetectorResult._fromJs(Map<String, dynamic> json) =>
       LanguageDetectorResult(
         predictions: [
-          for (final value in json['languages'] as List)
-            LanguagePrediction(
-              languageCode: (value as Map)['languageCode'] as String,
-              probability: (value['probability'] as num).toDouble(),
-            ),
+          for (final (code, probability) in backendLanguages(json))
+            LanguagePrediction(languageCode: code, probability: probability),
         ],
       );
 
@@ -286,55 +295,6 @@ class LanguagePrediction extends BaseLanguagePrediction {
   final double probability;
 }
 
-/// Lifecycle shared by the three tasks, matching the native library: requests
-/// run in order, and none is accepted once disposal begins.
-final class _WebTextTask {
-  _WebTextTask._(this._task);
-
-  final TextTaskBackend _task;
-  Future<void>? _disposing;
-
-  static Future<_WebTextTask> create(
-    String task,
-    Map<String, Object?> options,
-  ) async {
-    final factory = textTaskBackendFactory;
-    if (factory == null) {
-      throw UnsupportedError(
-        'Text tasks in a browser need the mediapipe_flutter_text_web '
-        'package; add it to the app.',
-      );
-    }
-    try {
-      return _WebTextTask._(await factory(task, options));
-    } on TextTaskException {
-      rethrow;
-    } catch (error) {
-      throw TextTaskException('$error');
-    }
-  }
-
-  void checkActive() {
-    if (_disposing != null) throw StateError('Text task has been disposed.');
-  }
-
-  Future<Map<String, dynamic>> run(String text) async {
-    checkActive();
-    if (text.contains('\u0000')) {
-      throw ArgumentError('Text must not contain NUL.');
-    }
-    try {
-      return await _task.run(text);
-    } on TextTaskException {
-      rethrow;
-    } catch (error) {
-      throw TextTaskException('$error');
-    }
-  }
-
-  Future<void> dispose() => _disposing ??= _task.dispose();
-}
-
 BaseOptions _checkedBaseOptions(BaseOptions value) {
   if (value.modelAssetPath case final path?) {
     if (path.isEmpty) {
@@ -349,55 +309,31 @@ BaseOptions _checkedBaseOptions(BaseOptions value) {
   return BaseOptions.memory(Uint8List.fromList(bytes).asUnmodifiableView());
 }
 
-Map<String, Object?> _baseOptions(BaseOptions value) => {
-  'modelBytes': value.modelAssetBuffer,
-  'modelPath': value.modelAssetPath == null
-      ? null
-      : Uri.base.resolve(value.modelAssetPath!).toString(),
-};
+List<Classifications> _heads(List<BackendHead> heads) => [
+  for (final head in heads)
+    Classifications(
+      categories: [
+        for (final c in head.categories)
+          Category(
+            index: c.index,
+            score: c.score,
+            categoryName: c.categoryName,
+            displayName: c.displayName,
+          ),
+      ],
+      headIndex: head.headIndex,
+      headName: head.headName,
+    ),
+];
 
-Map<String, Object?> _classifierOptions(ClassifierOptions value) => {
-  'displayNamesLocale': ?value.displayNamesLocale,
-  'maxResults': ?value.maxResults,
-  'scoreThreshold': ?value.scoreThreshold,
-  'categoryAllowlist': ?value.categoryAllowlist,
-  'categoryDenylist': ?value.categoryDenylist,
-};
-
-Classifications _classifications(Map<String, dynamic> head) => Classifications(
-  categories: [
-    for (final value in head['categories'] as List)
-      Category(
-        index: ((value as Map)['index'] as num).toInt(),
-        score: (value['score'] as num).toDouble(),
-        categoryName: _name(value['categoryName']),
-        displayName: _name(value['displayName']),
+List<Embedding> _embeddings(List<BackendEmbedding> values) => [
+  for (final e in values)
+    if (e.floats case final floats?)
+      Embedding.float(floats, headIndex: e.headIndex, headName: e.headName)
+    else
+      Embedding.quantized(
+        e.quantized!,
+        headIndex: e.headIndex,
+        headName: e.headName,
       ),
-  ],
-  headIndex: (head['headIndex'] as num).toInt(),
-  headName: _name(head['headName']),
-);
-
-Embedding _embedding(Map<String, dynamic> value) {
-  final headIndex = (value['headIndex'] as num).toInt();
-  final headName = _name(value['headName']);
-  if (value['floatEmbedding'] case final List floats?) {
-    return Embedding.float(
-      Float32List.fromList([for (final v in floats) (v as num).toDouble()]),
-      headIndex: headIndex,
-      headName: headName,
-    );
-  }
-  return Embedding.quantized(
-    Uint8List.fromList([
-      for (final v in value['quantizedEmbedding'] as List) (v as num).toInt(),
-    ]),
-    headIndex: headIndex,
-    headName: headName,
-  );
-}
-
-// Google's JavaScript results use empty strings where the native API has
-// no value.
-String? _name(Object? value) =>
-    value is String && value.isNotEmpty ? value : null;
+];
