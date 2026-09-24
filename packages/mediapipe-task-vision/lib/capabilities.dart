@@ -469,28 +469,36 @@ TaskCapabilities<VisionDelegate> interactiveSegmenterCapabilitiesForPlatform(
   bool officialIosRuntime = false,
 }) {
   final adapter = interactiveSegmenterBackendFactory != null;
-  return TaskCapabilities.cpuOnTargets(
+  return TaskCapabilities.onTargets(
     platform: platform,
-    cpu: VisionDelegate.cpu,
-    gpu: VisionDelegate.gpu,
-    targets: {
-      ...tasksRuntimeTargets,
-      // The vision package's own 1.0.1 wheel library exports the stateful API.
-      'linux/x64': null,
-      if (officialIosRuntime) 'ios/arm64': '15.0',
-      if (adapter) 'android/arm64': null,
-      if (adapter) 'android/x64': null,
-      if (adapter) 'web/unknown': null,
+    delegates: {
+      VisionDelegate.cpu: {
+        ...tasksRuntimeTargets,
+        // The vision package's own 1.0.1 wheel library exports the stateful API.
+        'linux/x64': null,
+        if (officialIosRuntime) 'ios/arm64': '15.0',
+        if (adapter) 'android/arm64': null,
+        if (adapter) 'android/x64': null,
+        if (adapter) 'web/unknown': null,
+      },
+      // Google's browser task runs MagicTouch on WebGL 2, as its sample does
+      // by default. Its mobile SDKs run it on CPU.
+      VisionDelegate.gpu: {if (adapter) 'web/unknown': null},
     },
     runtimeVersion: platform.operatingSystem == 'android' ? '1.0.0' : '1.0.1',
-    gpuUnavailableReason: platform.operatingSystem == 'macos'
-        ? 'The official MediaPipe macOS GPU stroke shader requests GLSL 330 in '
-              'an OpenGL 2.1 context and fails to compile. Confirmed on both the '
-              '1.0.0 and 1.0.1 official runtimes, so it is not fixed by changing '
-              'version. Metal itself is fine; only GL-shader calculators are '
-              'affected. This task supports CPU only.'
-        : 'Interactive Segmenter GPU is not validated on this platform; it '
-              'supports CPU only.',
+    unavailableReasons: {
+      VisionDelegate.cpu:
+          'InteractiveSegmenter requires macOS arm64, Linux x64, the official '
+          'iOS SDK adapter, or the Android or web adapter package.',
+      VisionDelegate.gpu: platform.operatingSystem == 'macos'
+          ? 'The official MediaPipe macOS GPU stroke shader requests GLSL 330 in '
+                'an OpenGL 2.1 context and fails to compile. Confirmed on both '
+                'the 1.0.0 and 1.0.1 official runtimes, so it is not fixed by '
+                'changing version. Metal itself is fine; only GL-shader '
+                'calculators are affected. This task supports CPU only.'
+          : 'Interactive Segmenter GPU runs in browsers only; elsewhere it '
+                'supports CPU only.',
+    },
   );
 }
 

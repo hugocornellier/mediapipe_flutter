@@ -89,11 +89,13 @@ results for these tasks are not validated; see `upstream-issues.md`.
 | Package | Directory | Status |
 | --- | --- | --- |
 | `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
-| `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Six text tasks on one MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU |
+| `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Six text tasks on one MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU. Text Classifier, Text Embedder and Language Detector also run in browsers |
 | `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
 | `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | All twelve vision tasks on web, iOS, Android, macOS, Linux and Windows through Google's runtimes, with two upstream gaps; see the [status table](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md) |
 | `mediapipe_flutter_vision_web` | [mediapipe-task-vision-web](packages/mediapipe-task-vision-web/) | Every vision task on Google's official CPU/WASM and GPU/WebGL 2 runtime; live browser camera gallery |
-| `mediapipe_flutter_audio` | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Audio Classifier on the shared MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU |
+| `mediapipe_flutter_audio` | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Audio Classifier on the shared MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU, and in browsers |
+| `mediapipe_flutter_text_web` | [mediapipe-task-text-web](packages/mediapipe-task-text-web/) | Text Classifier, Text Embedder and Language Detector on Google's official @mediapipe/tasks-text 1.0.1, CPU |
+| `mediapipe_flutter_audio_web` | [mediapipe-task-audio-web](packages/mediapipe-task-audio-web/) | Audio Classifier on Google's official @mediapipe/tasks-audio 1.0.1, CPU, for clips and the microphone |
 
 The migrated text package supports macOS arm64; its old Android, iOS and Intel
 macOS artifacts have been retired. GenAI artifacts exist for macOS arm64, Android arm64, and iOS arm64

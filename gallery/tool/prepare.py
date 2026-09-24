@@ -7,6 +7,7 @@ depends on whether a maintainer source build is present. Deriving it here from
 grid honest, because the app only ships tasks whose runtime really exists.
 """
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import platform
@@ -15,6 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
+import urllib.request
 
 GALLERY = Path(__file__).resolve().parents[1]
 REPO = GALLERY.parent
@@ -72,7 +74,8 @@ WEB_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
              'hand_landmarker', 'holistic_landmarker', 'image_classifier',
              'image_embedder', 'image_segmenter', 'interactive_segmenter',
              'interactive_segmenter_legacy', 'object_detector',
-             'pose_landmarker'}
+             'pose_landmarker', 'audio_classifier', 'language_detector',
+             'text_classifier', 'text_embedder'}
 
 # The stateful MagicTouch runtime lives in mediapipe-core's tasks runtime,
 # which is published for macOS arm64 only, and the hook wants it opted into
@@ -156,6 +159,37 @@ def _tasks_of(block):
     return {t.strip().strip("'") for t in match.group(1).split(',') if t.strip()}
 
 
+def _pinned_model(task):
+    """The URL and SHA-256 the text or audio package pins for [task]'s model."""
+    if task in AUDIO_TASKS:
+        source = (AUDIO / 'lib/models.dart').read_text()
+        url = re.search(r"const yamnetUrl =(.*?);", source, re.S).group(1)
+        sha = re.search(r"const yamnetSha256 =\s*'([0-9a-f]{64})'", source).group(1)
+    else:
+        constant = {'language_detector': 'languageDetectorModel',
+                    'text_classifier': 'bertClassifierModel',
+                    'text_embedder': 'universalSentenceEncoderModel'}[task]
+        source = (TEXT / 'lib/models.dart').read_text()
+        row = re.search(r'const DownloadAsset ' + constant + r' = \((.*?)\);', source, re.S).group(1)
+        url = re.search(r'url:(.*?),\s*sha256', row, re.S).group(1)
+        sha = re.search(r"sha256:\s*'([0-9a-f]{64})'", row).group(1)
+    return ''.join(re.findall(r"'([^']*)'", url)), sha
+
+
+def _download_model(task, destination):
+    """Fetches a missing text or audio model from its pinned URL.
+
+    The packages' own download tools run their build hooks, which refuse the
+    shared runtime on hosts without one, such as the Linux web runner.
+    """
+    url, sha = _pinned_model(task)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    data = urllib.request.urlopen(url, timeout=120).read()
+    if hashlib.sha256(data).hexdigest() != sha:
+        raise RuntimeError(f'{url} does not match its pinned SHA-256')
+    destination.write_bytes(data)
+
+
 def available_tasks(target):
     """Tasks whose runtime this target can actually obtain."""
     if target == 'web':
@@ -211,6 +245,8 @@ def prepare(target, selected):
             source = VISION / 'models' / name
         else:
             continue
+        if not source.exists() and task in NON_VISION_TASKS:
+            _download_model(task, source)
         if not source.exists():
             missing.append(f'{task} -> {name}')
             continue
@@ -237,7 +273,8 @@ def prepare(target, selected):
     official_android = (target.startswith('android') and bundled
                         and set(bundled) <= OFFICIAL_ANDROID_TASKS)
     if target == 'web':
-        subprocess.run([sys.executable, '-B', str(REPO / 'packages/mediapipe-task-vision-web/tool/prepare_runtime.py')], check=True)
+        for runtime in ('vision', 'text', 'audio'):
+            subprocess.run([sys.executable, '-B', str(REPO / f'packages/mediapipe-task-{runtime}-web/tool/prepare_runtime.py')], check=True)
     manifest = {
         'target': target,
         'tasks': sorted(bundled),
@@ -265,6 +302,10 @@ def prepare(target, selected):
 ''' if official_android else '')
     web_plugin = ('''  mediapipe_flutter_vision_web:
     path: ../packages/mediapipe-task-vision-web
+  mediapipe_flutter_text_web:
+    path: ../packages/mediapipe-task-text-web
+  mediapipe_flutter_audio_web:
+    path: ../packages/mediapipe-task-audio-web
 ''' if target == 'web' else '')
     # The hook refuses the stateful MagicTouch task unless its shared runtime is
     # opted into explicitly, on the core package rather than the vision one.

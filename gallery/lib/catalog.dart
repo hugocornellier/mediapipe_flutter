@@ -1,3 +1,7 @@
+import 'package:mediapipe_flutter_audio/audio_web_backend.dart';
+import 'package:mediapipe_flutter_core/capabilities.dart'
+    show tasksRuntimeTargets;
+import 'package:mediapipe_flutter_text/text_web_backend.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 /// How a tile demonstrates its task.
@@ -39,31 +43,32 @@ typedef PlannedTask = ({
 });
 
 /// Audio and text tasks, listed as MediaPipe Studio lists them. Their
-/// packages run them on macOS arm64; elsewhere their cards say so.
+/// packages run them on macOS arm64 and in browsers; elsewhere their cards
+/// say so.
 const plannedTasks = <PlannedTask>[
   (
     category: GalleryCategory.audio,
     title: 'Audio Classifier',
     summary: 'Sound categories in a clip or the microphone.',
-    reason: 'The audio package runs this on macOS arm64 only.',
+    reason: 'The audio package runs this on macOS arm64 and in browsers.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Language Detector',
     summary: 'The language of a piece of text.',
-    reason: 'The text package runs this on macOS arm64 only.',
+    reason: 'The text package runs this on macOS arm64 and in browsers.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Text Classifier',
     summary: 'Sentiment and categories of a piece of text.',
-    reason: 'The text package runs this on macOS arm64 only.',
+    reason: 'The text package runs this on macOS arm64 and in browsers.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Text Embedder',
     summary: 'Text as a vector, compared by similarity.',
-    reason: 'The text package runs this on macOS arm64 only.',
+    reason: 'The text package runs this on macOS arm64 and in browsers.',
   ),
 ];
 
@@ -252,15 +257,26 @@ TaskCapabilities<VisionDelegate> _officialMacosHolistic(
   officialIosRuntime: true,
 );
 
-/// The audio and text tasks' support: CPU on core's shared 1.0.1 runtime.
+/// The text tasks' support: CPU on core's shared 1.0.1 runtime, and in
+/// browsers once mediapipe_flutter_text_web has installed its backend.
 TaskCapabilities<VisionDelegate> _text(TaskPlatform platform) =>
-    TaskCapabilities.cpuOnTargets(
-      platform: platform,
-      cpu: VisionDelegate.cpu,
-      gpu: VisionDelegate.gpu,
-      gpuUnavailableReason:
-          'The official 1.0.1 audio and text tasks run on CPU here.',
-    );
+    _cpuTask(platform, web: textWebTaskFactory != null);
+
+/// Audio Classifier's support, as for the text tasks.
+TaskCapabilities<VisionDelegate> _audio(TaskPlatform platform) =>
+    _cpuTask(platform, web: audioWebTaskFactory != null);
+
+TaskCapabilities<VisionDelegate> _cpuTask(
+  TaskPlatform platform, {
+  required bool web,
+}) => TaskCapabilities.cpuOnTargets(
+  platform: platform,
+  cpu: VisionDelegate.cpu,
+  gpu: VisionDelegate.gpu,
+  gpuUnavailableReason:
+      'The official 1.0.1 audio and text tasks run on CPU here.',
+  targets: {...tasksRuntimeTargets, if (web) 'web/unknown': null},
+);
 
 final _catalog = <GalleryTask>[
   GalleryTask(
@@ -474,7 +490,7 @@ final _catalog = <GalleryTask>[
     summary: 'Sound categories in a clip, second by second.',
     model: 'yamnet.tflite',
     sample: 'speech_16000_hz_mono.wav',
-    capabilities: _text,
+    capabilities: _audio,
   ),
   // The text package's classic tasks, on the shared 1.0.1 runtime: macOS
   // arm64 CPU, where prepare.py bundles their models.

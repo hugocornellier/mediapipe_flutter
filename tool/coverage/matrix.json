@@ -217,7 +217,7 @@
     "interactive_segmenter": {
       "web": {
         "cpu": "required",
-        "gpu": "pending: step 2"
+        "gpu": "required"
       },
       "android": {
         "cpu": "required",
@@ -294,8 +294,8 @@
     },
     "audio_classifier": {
       "web": {
-        "cpu": "pending: step 2",
-        "gpu": "pending: step 2"
+        "cpu": "required",
+        "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
         "cpu": "pending: step 3",
@@ -320,8 +320,8 @@
     },
     "language_detector": {
       "web": {
-        "cpu": "pending: step 2",
-        "gpu": "pending: step 2"
+        "cpu": "required",
+        "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
         "cpu": "pending: step 3",
@@ -346,8 +346,8 @@
     },
     "text_classifier": {
       "web": {
-        "cpu": "pending: step 2",
-        "gpu": "pending: step 2"
+        "cpu": "required",
+        "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
         "cpu": "pending: step 3",
@@ -372,8 +372,8 @@
     },
     "text_embedder": {
       "web": {
-        "cpu": "pending: step 2",
-        "gpu": "pending: step 2"
+        "cpu": "required",
+        "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
         "cpu": "pending: step 3",

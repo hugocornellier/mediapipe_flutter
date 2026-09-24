@@ -37,7 +37,7 @@ one. ✗ means the package refuses the task on that target.
 | Image Embedder | WebGL | Metal | GPU | CPU | CPU | CPU |
 | Image Segmenter | WebGL | Metal | GPU | CPU | CPU | CPU |
 | Interactive Segmenter Legacy (point) | WebGL | Metal | ✗ [a] | CPU | CPU | CPU |
-| Interactive Segmenter (strokes) | CPU | CPU | CPU | CPU | CPU | ✗ [b] |
+| Interactive Segmenter (strokes) | WebGL | CPU | CPU | CPU | CPU | ✗ [b] |
 
 Pose and Holistic segmentation masks are returned on every target, with one
 Android gap [c]. Android GPU is declared for arm64 devices only: the x86_64

@@ -13,7 +13,7 @@ import 'package:mediapipe_flutter_text/interface.dart';
 class TextClassifier extends BaseTextClassifier {
   /// {@macro TextClassifier}
   TextClassifier(TextClassifierOptions options) {
-    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64.');
+    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64 or a browser.');
   }
 
   /// Initialize the official task on a supported platform.
@@ -83,7 +83,7 @@ class TextClassifierResult extends BaseTextClassifierResult {
 class TextEmbedder extends BaseTextEmbedder {
   /// {@macro TextEmbedder}
   TextEmbedder(TextEmbedderOptions options) {
-    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64.');
+    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64 or a browser.');
   }
 
   /// Initialize the official task on a supported platform.
@@ -155,7 +155,7 @@ class TextEmbedderResult extends BaseEmbedderResult {
 class LanguageDetector extends BaseLanguageDetector {
   /// {@macro LanguageDetector}
   LanguageDetector(LanguageDetectorOptions options) {
-    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64.');
+    throw UnsupportedError('MediaPipe 1.0.1 text tasks require macOS arm64 or a browser.');
   }
 
   /// Initialize the official task on a supported platform.

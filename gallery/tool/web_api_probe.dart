@@ -683,9 +683,10 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
   } finally {
     await legacy.dispose();
   }
-  // Stateful MagicTouch, CPU only: a point, then the point and a negative one.
+  // Stateful MagicTouch: a point, then the point and a negative one.
   final magic = await InteractiveSegmenter.create(
     InteractiveSegmenterOptions(
+      delegate: delegate,
       modelBytes: await model('interactive_segmentation.task'),
     ),
   );
