@@ -26,19 +26,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The phones covering Mali, Adreno and PowerVR; a dispatch may pick some.
+  devices:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.pick.outputs.matrix }}
+    steps:
+      - id: pick
+        env:
+          WANTED: ${{ inputs.devices || 'all' }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          devices = [
+              {'model': 'akita', 'version': '35', 'name': 'Pixel 8a Mali', 'gpu_skip': ''},
+              {'model': 'e1q', 'version': '34', 'name': 'Galaxy S24 Adreno', 'gpu_skip': ''},
+              # UP-023: Google's Image Segmenter aborts the app on GPU on PowerVR.
+              {'model': 'a12', 'version': '31', 'name': 'Galaxy A12 PowerVR', 'gpu_skip': 'image_segmenter'},
+          ]
+          wanted = os.environ['WANTED'].replace(' ', '').split(',')
+          chosen = [d for d in devices if 'all' in wanted or d['model'] in wanted]
+          assert chosen, f'No known device in {wanted}'
+          print('matrix=' + json.dumps({'include': chosen}))
+          PY
+
   sdk-tasks:
     name: Official SDK tasks / ${{ matrix.name }} (${{ matrix.model }} API ${{ matrix.version }})
-    if: >-
-      github.event_name == 'schedule' || inputs.devices == 'all' ||
-      contains(format(',{0},', inputs.devices), format(',{0},', matrix.model))
+    needs: devices
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - {model: akita, version: '35', name: Pixel 8a Mali, gpu_skip: ''}
-          - {model: e1q, version: '34', name: Galaxy S24 Adreno, gpu_skip: ''}
-          # UP-023: Google's Image Segmenter aborts the app on GPU on PowerVR.
-          - {model: a12, version: '31', name: Galaxy A12 PowerVR, gpu_skip: image_segmenter}
+      matrix: ${{ fromJSON(needs.devices.outputs.matrix) }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
