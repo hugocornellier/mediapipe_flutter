@@ -1,0 +1,54 @@
+# Scratch probe: the 1.1.0 nightly Windows DLL contains Dawn with a D3D12
+# backend, which 1.0.0 lacks, while MediaPipe's own GPU path still reports that
+# GPU processing is disabled. This checks whether Delegate.GPU runs on the
+# runner's WARP adapter, first without and then with Microsoft's DirectX
+# Shader Compiler DLLs (pinned as in windows-gpu-litert-probe.yaml).
+# Manual only.
+name: Windows nightly GPU probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NIGHTLY: mediapipe-nightly==1.1.0rc20260924
+  DXC_URL: https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.9.2602.24/dxc_2026_05_27.zip
+  DXC_SHA256: cf658aacf070d3045e31b8f1f8a696c2945f37c1095019481ef7c513368db3b4
+
+jobs:
+  probe:
+    name: Windows nightly GPU / windows-2025
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the nightly
+        run: python -m pip install --quiet --disable-pip-version-check "$NIGHTLY"
+      - name: GPU without the DirectX Shader Compiler
+        run: |
+          python -B packages/mediapipe-task-vision/tool/windows_nightly_gpu_probe.py out/without-dxc
+          cat out/without-dxc/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: GPU with the DirectX Shader Compiler next to python.exe
+        run: |
+          curl -sSfL -o dxc.zip "$DXC_URL"
+          python -c "import hashlib, sys; h = hashlib.sha256(open('dxc.zip', 'rb').read()).hexdigest(); print('dxc', h); sys.exit(h != '$DXC_SHA256')"
+          python -c "import zipfile; z = zipfile.ZipFile('dxc.zip'); [z.extract(n, 'dxc') for n in ('bin/x64/dxcompiler.dll', 'bin/x64/dxil.dll')]"
+          cp dxc/bin/x64/dxcompiler.dll dxc/bin/x64/dxil.dll "$(dirname "$(which python)")/"
+          python -B packages/mediapipe-task-vision/tool/windows_nightly_gpu_probe.py out/with-dxc
+          { echo; cat out/with-dxc/summary.md; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-nightly-gpu
+          path: |
+            out/*/report.json
+            out/*/summary.md
+            out/*/*.log
