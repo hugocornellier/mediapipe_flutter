@@ -4,7 +4,7 @@ import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-import 'package:mediapipe_flutter_text/text_web_backend.dart';
+import 'package:mediapipe_flutter_text/text_task_backend.dart';
 import 'package:web/web.dart' as web;
 
 @JS('mediapipeText.create')
@@ -18,18 +18,18 @@ external JSPromise<JSAny?> _close(JSNumber id);
 abstract final class MediaPipeTextWeb {
   /// Installs the browser backend before the first text task is created.
   static void registerWith(Registrar registrar) {
-    textWebTaskFactory = _WorkerTextTask.create;
+    textTaskBackendFactory = _WorkerTextTask.create;
   }
 }
 
 /// One of Google's text tasks on its own worker (assets/worker.js).
-final class _WorkerTextTask implements TextWebTask {
+final class _WorkerTextTask implements TextTaskBackend {
   _WorkerTextTask._(this._id);
 
   final JSNumber _id;
   static Future<void>? _loaded;
 
-  static Future<TextWebTask> create(
+  static Future<TextTaskBackend> create(
     String task,
     Map<String, Object?> options,
   ) async {

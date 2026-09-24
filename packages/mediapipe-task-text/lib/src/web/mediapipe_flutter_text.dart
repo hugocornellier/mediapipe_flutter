@@ -4,7 +4,7 @@
 
 // The classic text tasks in a browser: the same public API as the native
 // library, run by Google's official @mediapipe/tasks-text on a worker that
-// mediapipe_flutter_text_web installs (text_web_backend.dart).
+// mediapipe_flutter_text_web installs (text_task_backend.dart).
 
 import 'dart:typed_data';
 
@@ -12,7 +12,7 @@ import 'package:mediapipe_flutter_core/interface.dart';
 import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
 import 'package:mediapipe_flutter_text/interface.dart';
 
-import '../../text_web_backend.dart';
+import '../../text_task_backend.dart';
 import '../interface/embedding_gemma_types.dart' show TextEmbedding;
 
 /// {@macro TextClassifier}
@@ -291,14 +291,14 @@ class LanguagePrediction extends BaseLanguagePrediction {
 final class _WebTextTask {
   _WebTextTask._(this._task);
 
-  final TextWebTask _task;
+  final TextTaskBackend _task;
   Future<void>? _disposing;
 
   static Future<_WebTextTask> create(
     String task,
     Map<String, Object?> options,
   ) async {
-    final factory = textWebTaskFactory;
+    final factory = textTaskBackendFactory;
     if (factory == null) {
       throw UnsupportedError(
         'Text tasks in a browser need the mediapipe_flutter_text_web '

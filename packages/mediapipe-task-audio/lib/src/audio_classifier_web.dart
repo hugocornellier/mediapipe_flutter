@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import '../audio_web_backend.dart';
+import '../audio_task_backend.dart';
 import 'audio_types.dart';
 
 /// Google's official Audio Classifier (for example YAMNet) on audio clips,
@@ -10,13 +10,13 @@ import 'audio_types.dart';
 final class AudioClassifier {
   AudioClassifier._(this._task);
 
-  final AudioWebTask _task;
+  final AudioTaskBackend _task;
   Future<void>? _disposing;
   Future<void> _tail = Future.value();
 
   /// Starts Google's browser task; needs mediapipe_flutter_audio_web.
   static Future<AudioClassifier> create(AudioClassifierOptions options) async {
-    final factory = audioWebTaskFactory;
+    final factory = audioTaskBackendFactory;
     if (factory == null) {
       throw UnsupportedError(
         'Audio Classifier in a browser needs the mediapipe_flutter_audio_web '

@@ -1,7 +1,7 @@
-import 'package:mediapipe_flutter_audio/audio_web_backend.dart';
+import 'package:mediapipe_flutter_audio/audio_task_backend.dart';
 import 'package:mediapipe_flutter_core/capabilities.dart'
     show tasksRuntimeTargets;
-import 'package:mediapipe_flutter_text/text_web_backend.dart';
+import 'package:mediapipe_flutter_text/text_task_backend.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 /// How a tile demonstrates its task.
@@ -260,11 +260,11 @@ TaskCapabilities<VisionDelegate> _officialMacosHolistic(
 /// The text tasks' support: CPU on core's shared 1.0.1 runtime, and in
 /// browsers once mediapipe_flutter_text_web has installed its backend.
 TaskCapabilities<VisionDelegate> _text(TaskPlatform platform) =>
-    _cpuTask(platform, web: textWebTaskFactory != null);
+    _cpuTask(platform, web: textTaskBackendFactory != null);
 
 /// Audio Classifier's support, as for the text tasks.
 TaskCapabilities<VisionDelegate> _audio(TaskPlatform platform) =>
-    _cpuTask(platform, web: audioWebTaskFactory != null);
+    _cpuTask(platform, web: audioTaskBackendFactory != null);
 
 TaskCapabilities<VisionDelegate> _cpuTask(
   TaskPlatform platform, {

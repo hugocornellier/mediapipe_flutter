@@ -5,7 +5,7 @@ import 'dart:js_interop_unsafe';
 import 'dart:typed_data';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-import 'package:mediapipe_flutter_audio/audio_web_backend.dart';
+import 'package:mediapipe_flutter_audio/audio_task_backend.dart';
 import 'package:web/web.dart' as web;
 
 @JS('mediapipeAudio.create')
@@ -19,18 +19,18 @@ external JSPromise<JSAny?> _close(JSNumber id);
 abstract final class MediaPipeAudioWeb {
   /// Installs the browser backend before the first Audio Classifier.
   static void registerWith(Registrar registrar) {
-    audioWebTaskFactory = _WorkerAudioTask.create;
+    audioTaskBackendFactory = _WorkerAudioTask.create;
   }
 }
 
 /// Google's Audio Classifier on its own worker (assets/worker.js).
-final class _WorkerAudioTask implements AudioWebTask {
+final class _WorkerAudioTask implements AudioTaskBackend {
   _WorkerAudioTask._(this._id);
 
   final JSNumber _id;
   static Future<void>? _loaded;
 
-  static Future<AudioWebTask> create(Map<String, Object?> options) async {
+  static Future<AudioTaskBackend> create(Map<String, Object?> options) async {
     await (_loaded ??= _loadBridge(
       'assets/packages/mediapipe_flutter_audio_web/assets/bridge.js',
       () => _loaded = null,

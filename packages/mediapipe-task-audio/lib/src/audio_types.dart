@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:mediapipe_flutter_core/capabilities.dart';
 
-import '../audio_web_backend.dart';
+import '../audio_task_backend.dart';
 
 /// Why an Audio Classifier could not be created or run: Google's message.
 final class AudioClassifierException implements Exception {
@@ -42,7 +42,7 @@ TaskCapabilities<AudioDelegate> audioClassifierCapabilitiesForPlatform(
   gpuUnavailableReason: "Google's official audio task runs on CPU only.",
   targets: {
     ...tasksRuntimeTargets,
-    if (audioWebTaskFactory != null) 'web/unknown': null,
+    if (audioTaskBackendFactory != null) 'web/unknown': null,
   },
 );
 
