@@ -116,27 +116,15 @@ final class _NativeHolisticLandmarker
         ..min_face_suppression_threshold = options.minFaceSuppressionThreshold
         ..min_face_presence_confidence = options.minFacePresenceConfidence
         ..output_face_blendshapes = options.outputFaceBlendshapes
-        ..output_pose_segmentation_masks = options.outputPoseSegmentationMask;
-      // Google's 1.0.0 wheel places the hand threshold AFTER all pose fields;
-      // the same-version open-source header places it BEFORE them. Both have
-      // identical size, so adapt the four float slots for the pinned wheels,
-      // including the official macOS runtime extracted from the same wheel.
-      // The iOS adapter reads the header's order.
-      if (Platform.isLinux ||
-          Platform.isWindows ||
-          hasOfficialMacosLandmarkRuntime()) {
-        native.ref
-          ..min_hand_landmarks_confidence = options.minPoseDetectionConfidence
-          ..min_pose_detection_confidence = options.minPoseSuppressionThreshold
-          ..min_pose_suppression_threshold = options.minPosePresenceConfidence
-          ..min_pose_presence_confidence = options.minHandLandmarksConfidence;
-      } else {
-        native.ref
-          ..min_hand_landmarks_confidence = options.minHandLandmarksConfidence
-          ..min_pose_detection_confidence = options.minPoseDetectionConfidence
-          ..min_pose_suppression_threshold = options.minPoseSuppressionThreshold
-          ..min_pose_presence_confidence = options.minPosePresenceConfidence;
-      }
+        ..output_pose_segmentation_masks = options.outputPoseSegmentationMask
+        // Every official library, including the wheels' (Linux, Windows and
+        // the official macOS runtime), reads the header's order. Google's
+        // Python ctypes do not, so its references are generated with the
+        // header's order too (UP-005, tool/holistic_threshold_order_probe.py).
+        ..min_hand_landmarks_confidence = options.minHandLandmarksConfidence
+        ..min_pose_detection_confidence = options.minPoseDetectionConfidence
+        ..min_pose_suppression_threshold = options.minPoseSuppressionThreshold
+        ..min_pose_presence_confidence = options.minPosePresenceConfidence;
       final output = arena<mp.MpHolisticLandmarkerPtr>();
       checkVisionCreate(
         (error) => mp.MpHolisticLandmarkerCreate(native, output, error),

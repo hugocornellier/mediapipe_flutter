@@ -182,29 +182,30 @@ Preprocessing, compiler behavior, and OpenCV build differences remain candidates
 to investigate; none has been established as the cause. These observations do
 not affect the passing Linux/Windows official-wheel CI baseline.
 
-## UP-005 — Same-version wheel and source Holistic options have different ABI order
+## UP-005: Google's Python writes Holistic thresholds in the wrong order
 
-**Status:** confirmed by comparing pinned headers with the official 1.0.0 wheel's
-ctypes declarations. Adapter implemented; inference validation pending.
+**Status:** confirmed 2026-09-24 on the macOS 1.0.0 wheel and 1.1.0rc20260924
+nightly, and on the pinned Linux 1.0.1 and Windows 1.0.0 wheels (CI run
+36009377156). Fixed in this repository; not reported upstream.
 
-After the three face thresholds, the source `MpHolisticLandmarkerOptions` places
-`min_hand_landmarks_confidence` before the three pose thresholds. The wheel places
-it after them. Struct sizes match, so using source bindings unchanged can silently
-apply the wrong thresholds. Defaults are all `0.5` and conceal the mismatch.
+After the three face thresholds, the public header's `MpHolisticLandmarkerOptions`
+places `min_hand_landmarks_confidence` before the three pose thresholds. The
+wheels' Python ctypes place it after them. The compiled library, including the
+wheels' own copy, reads the header's order, so Google's Python applies every
+non-default threshold to the wrong field: pose detection lands on the hand
+threshold, suppression on pose detection, pose landmarks on suppression, and hand
+on pose presence. The defaults are all `0.5` in both APIs, which hides it.
 
-`lib/src/io/holistic_landmarker.dart` adapts the four float slots for Linux and
-Windows wheels and retains source order for the Mac source runtime. The reference
-generator includes distinct nondefault hand/pose thresholds to exercise this.
-Do not modify the generated source struct to wheel order globally.
-
-Wheel declaration:
-`build/codex-tmp/mediapipe-reference/lib/python3.12/site-packages/mediapipe/tasks/python/vision/holistic_landmarker.py`.
-Source declaration:
-`packages/mediapipe-task-vision/third_party/mediapipe/tasks/c/vision/holistic_landmarker/holistic_landmarker.h`.
-
-Other observed wheel/header differences include bool versus int for the ROI
-presence flag and an extra source keypoint presence byte in padding. Existing
-desktop Face/Object inference tests pass; continue reviewing ABI per new task.
+`tool/holistic_threshold_order_probe.py` shows this by setting one threshold at a
+time to an extreme value on `pose.jpg`: only the header's arrangement makes each
+option act on its own field. The Dart wrapper
+(`lib/src/io/holistic_landmarker.dart`) now writes the header's order on every
+platform. It previously copied the Python order on Linux, Windows and the official
+macOS runtime, and CI could not see it because the references came from the same
+Python. `tool/generate_landmark_tasks_reference.py` now rearranges Python's slots
+into the header's order before creating tasks, and asserts the ctypes still use
+the old order so a fixed wheel fails loudly. Its non-default case (hand 0.99)
+now drops both hands, as the option promises.
 
 ## UP-006 — Holistic mask smoothing retains dimensions across IMAGE requests
 
@@ -547,6 +548,43 @@ Metal GPU and its Android SDK on a Pixel 8a's Mali GPU report 15. The byte
 already arrives as 14 from Google's Java task. The shape suggests a normalized
 class value truncated when the GPU result is read back. Apps that need exact
 classes on GPU can take the most confident class from the confidence masks.
+
+## UP-025: Windows task closes wait for Google's usage-logging upload
+
+**Status:** observed September 24 with Google's official 1.0.0 Windows wheel
+on GitHub's windows-2025 runners, first as two 30 s test timeouts in a
+[desktop run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/36004929701).
+Worked around in CI by blocking the endpoint. The package cannot turn the
+logging off.
+
+Google's native library carries a Clearcut usage-logging client: its embedded
+source paths include
+`mediapipe/tasks/cc/core/logging/google_internal/clearcut_logging_client.cc`,
+and the C header describes `MpBaseOptions.ca_bundle_path` as the "CA bundle to
+use for usage logging". It posts to `https://play.googleapis.com/log` through
+WinINet, and a task's close waits for the upload.
+
+With the endpoint reachable, the median close took 62 ms in
+[one probe run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/36019400724)
+and 125 ms in
+[another](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/36022472695),
+where `curl` to the same endpoint took 0.12 to 0.14 s. Some closes waited 20
+to 34 s: 13 of 648 in the first run, and 1 of 485 in the second, where one
+more had not returned when its test run ended. Stack dumps taken 5 and 15 s
+into those waits show the closing thread blocked in `WaitForSingleObjectEx`
+under `MpHandLandmarkerClose` (or the task's own close), a library thread
+blocked in `WININET!HttpSendRequestA`, and almost no CPU use: under 0.1 s per
+thread between the two dumps. The endpoint also answered some uploads with
+HTTP 503. With `play.googleapis.com` resolved to an unroutable address
+([run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/36023936830)),
+486 closes took a median of 9 ms and at most 34 ms, and no test timed out.
+
+The factory that creates the client has no switch; it falls back to a no-op
+client only when its log store cannot be created. Google's Python wrapper
+fills the same logging fields and offers no opt-out. On Windows, `dispose()`
+lasts as long as the upload; blocking the host removes both the upload and
+the wait. The Linux 1.0.1 library contains the same uploader (over libcurl,
+with `ca_bundle_path` as its CA file); no slow close has been seen on Linux.
 
 ## Integration pitfalls resolved in this repo
 

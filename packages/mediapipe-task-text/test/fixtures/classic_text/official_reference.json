@@ -2,7 +2,7 @@
   "runtime": "mediapipe==1.0.1",
   "delegate": "CPU",
   "library_sha256": "9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a",
-  "macos": "26.4",
+  "macos": "27.0",
   "models": {
     "classifier": {
       "file": "bert_classifier.tflite",
@@ -270,7 +270,7 @@
       "input": "Hello, world!",
       "options": {},
       "result": {
-        "timestamp_ms": null,
+        "timestamp_ms": 0,
         "embeddings": [
           {
             "values": [
@@ -388,7 +388,7 @@
       "input": "Hello there!",
       "options": {},
       "result": {
-        "timestamp_ms": null,
+        "timestamp_ms": 0,
         "embeddings": [
           {
             "values": [
@@ -506,7 +506,7 @@
       "input": "The spacecraft landed on Mars.",
       "options": {},
       "result": {
-        "timestamp_ms": null,
+        "timestamp_ms": 0,
         "embeddings": [
           {
             "values": [
@@ -624,7 +624,7 @@
       "input": "Le café est délicieux. こんにちは",
       "options": {},
       "result": {
-        "timestamp_ms": null,
+        "timestamp_ms": 0,
         "embeddings": [
           {
             "values": [
@@ -742,7 +742,7 @@
       "input": "",
       "options": {},
       "result": {
-        "timestamp_ms": null,
+        "timestamp_ms": 0,
         "embeddings": [
           {
             "values": [
@@ -862,7 +862,7 @@
         "l2_normalize": true
       },
       "result": {
-        "timestamp_ms": null,
+        "timestamp_ms": 0,
         "embeddings": [
           {
             "values": [
@@ -983,7 +983,7 @@
         "quantize": true
       },
       "result": {
-        "timestamp_ms": null,
+        "timestamp_ms": 0,
         "embeddings": [
           {
             "values": [
@@ -1104,7 +1104,7 @@
         "quantize": true
       },
       "result": {
-        "timestamp_ms": null,
+        "timestamp_ms": 0,
         "embeddings": [
           {
             "values": [
@@ -3715,7 +3715,7 @@
       {
         "input": "Hello, world!",
         "result": {
-          "timestamp_ms": null,
+          "timestamp_ms": 0,
           "embeddings": [
             {
               "values": [
@@ -3830,7 +3830,7 @@
       {
         "input": "Quiero agua, por favor.",
         "result": {
-          "timestamp_ms": null,
+          "timestamp_ms": 1000,
           "embeddings": [
             {
               "values": [
@@ -3945,7 +3945,7 @@
       {
         "input": "Hello, world!",
         "result": {
-          "timestamp_ms": null,
+          "timestamp_ms": 2000,
           "embeddings": [
             {
               "values": [
@@ -4060,7 +4060,7 @@
       {
         "input": "Quiero agua, por favor.",
         "result": {
-          "timestamp_ms": null,
+          "timestamp_ms": 3000,
           "embeddings": [
             {
               "values": [
@@ -6055,13 +6055,13 @@
       }
     },
     "MpEmbeddingResultC": {
-      "size": 24,
+      "size": 32,
       "alignment": 8,
       "offsets": {
         "embeddings": 0,
         "embeddings_count": 8,
-        "has_timestamp_ms": 12,
-        "timestamp_ms": 16
+        "timestamp_ms": 16,
+        "has_timestamp_ms": 24
       }
     },
     "MpEmbeddingC": {

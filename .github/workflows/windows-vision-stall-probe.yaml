@@ -1,0 +1,56 @@
+name: Windows vision stall probe
+
+# Diagnosis for stalls in the Windows vision tests (upstream-issues.md UP-025).
+# Reruns the landmark and segmenter tests with MEDIAPIPE_VISION_TRACE=1 and, when
+# a worker phase stays open, dumps every thread's stack and CPU time with cdb
+# (tool/windows_stall_probe.py). By default Google's usage-logging endpoint is
+# reachable, which reproduces UP-025; block_usage_logging repeats the runs with
+# it blocked, as the Windows CI jobs do. Manual only.
+on:
+  workflow_dispatch:
+    inputs:
+      block_usage_logging:
+        description: Resolve play.googleapis.com to an unroutable address first
+        type: boolean
+        default: false
+      runs:
+        description: Reruns per mode (one file at a time, then both at once)
+        default: '4'
+
+jobs:
+  probe:
+    runs-on: windows-2025
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare the Windows consumer (the desktop job's own run)
+        continue-on-error: true
+        env:
+          MEDIAPIPE_VISION_TRACE: '1'
+        run: python -B packages/mediapipe-task-vision/tool/test_desktop.py --object-detector --image-tasks --landmark-tasks --segmenter-tasks
+      - name: Block Google's usage-logging endpoint
+        if: inputs.block_usage_logging
+        shell: pwsh
+        run: |
+          Add-Content "$env:SystemRoot\System32\drivers\etc\hosts" "`n0.0.0.0 play.googleapis.com`n:: play.googleapis.com"
+          ipconfig /flushdns | Out-Null
+      - name: Rerun with tracing and stack dumps on stalls
+        env:
+          PROBE_RUNS: ${{ inputs.runs }}
+          PROBE_MODES: 'serial,concurrent'
+        run: python -B packages/mediapipe-task-vision/tool/windows_stall_probe.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-vision-stall-probe
+          path: |
+            build/windows-stall-probe/**
+            build/codex-tmp/desktop-*/*.log

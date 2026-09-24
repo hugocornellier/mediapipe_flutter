@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
+import 'dart:math' show Random;
 
 import '../interface/segmenter_task_types.dart' show SegmentationPoint;
 import '../interface/vision_task_types.dart';
@@ -27,9 +29,11 @@ abstract interface class NativeVisionTask<R> {
 
 /// Shared request ordering, timestamp validation and native task ownership.
 final class VisionTaskWorker<R> {
-  VisionTaskWorker._(this.runningMode) {
+  VisionTaskWorker._(this.runningMode, this._name) {
     _events.listen(_receive);
   }
+  final String _name;
+  final int _tag = Random().nextInt(1 << 32);
   final _events = ReceivePort();
   final _ready = Completer<void>();
   final _exited = Completer<void>();
@@ -50,11 +54,12 @@ final class VisionTaskWorker<R> {
     NativeVisionTask<R> Function(O) factory,
     String name,
   ) async {
-    final worker = VisionTaskWorker<R>._(options.runningMode);
+    final worker = VisionTaskWorker<R>._(options.runningMode, name);
+    _trace(worker._tag, name, 'spawn', 'start');
     try {
       await Isolate.spawn(
         _runWorker<R, O>,
-        (worker._events.sendPort, options, factory),
+        (worker._events.sendPort, options, factory, worker._tag),
         onError: worker._events.sendPort,
         onExit: worker._events.sendPort,
         debugName: name,
@@ -139,9 +144,11 @@ final class VisionTaskWorker<R> {
   void _receive(dynamic event) {
     switch (event) {
       case SendPort port:
+        _trace(_tag, _name, 'spawn', 'end');
         _commands = port;
         _ready.complete();
       case (int id, Object? result, VisionTaskException? error):
+        _trace(_tag, _name, id, 'received');
         final completion = _pending.remove(id);
         if (error != null) {
           completion?.completeError(error);
@@ -153,6 +160,7 @@ final class VisionTaskWorker<R> {
       case List<dynamic> error:
         _fail(VisionTaskException('Worker failed: ${error.join('\n')}'));
       case null:
+        _trace(_tag, _name, 'exit', 'exited');
         if (!_ready.isCompleted || _pending.isNotEmpty || !_disposing) {
           _fail(
             const VisionTaskException(
@@ -176,18 +184,22 @@ final class VisionTaskWorker<R> {
 }
 
 Future<void> _runWorker<R, O extends VisionModelOptions>(
-  (SendPort, O, NativeVisionTask<R> Function(O)) initial,
+  (SendPort, O, NativeVisionTask<R> Function(O), int) initial,
 ) async {
-  final (parent, options, factory) = initial;
+  final (parent, options, factory, tag) = initial;
+  final name = Isolate.current.debugName ?? 'worker';
   final commands = ReceivePort();
   NativeVisionTask<R>? native;
   try {
+    _trace(tag, name, 'create', 'start');
     native = factory(options);
+    _trace(tag, name, 'create', 'end');
     parent.send(commands.sendPort);
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, VisionTaskInput?);
       R? result;
       VisionTaskException? failure;
+      _trace(tag, name, id, 'start');
       try {
         if (input == null) {
           native.close();
@@ -199,10 +211,12 @@ Future<void> _runWorker<R, O extends VisionModelOptions>(
             ? error
             : VisionTaskException(error.toString());
       }
+      _trace(tag, name, id, failure == null ? 'end' : 'error');
       parent.send((id, result, failure));
       if (input == null) break;
     }
   } catch (error) {
+    _trace(tag, name, 'create', 'error');
     parent.send(
       error is VisionTaskException
           ? error
@@ -213,6 +227,21 @@ Future<void> _runWorker<R, O extends VisionModelOptions>(
       native?.close();
     } finally {
       commands.close();
+      _trace(tag, name, 'exit', 'return');
     }
   }
+}
+
+/// With MEDIAPIPE_VISION_TRACE=1, each worker's spawn, native creation,
+/// native calls, result delivery and exit, tagged per worker, with a
+/// millisecond clock, so a stall shows as a phase that never completes.
+/// For diagnosing hangs; off by default.
+final bool _tracing = Platform.environment['MEDIAPIPE_VISION_TRACE'] == '1';
+
+void _trace(int tag, String name, Object id, String phase) {
+  if (!_tracing) return;
+  stderr.writeln(
+    'MPTRACE ${DateTime.now().millisecondsSinceEpoch} pid=$pid tag=$tag '
+    '$name #$id $phase',
+  );
 }

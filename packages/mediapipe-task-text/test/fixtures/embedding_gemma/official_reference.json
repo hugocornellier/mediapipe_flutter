@@ -13447,13 +13447,13 @@
       }
     },
     "MpEmbeddingResultC": {
-      "size": 24,
+      "size": 32,
       "alignment": 8,
       "offsets": {
         "embeddings": 0,
         "embeddings_count": 8,
-        "has_timestamp_ms": 12,
-        "timestamp_ms": 16
+        "timestamp_ms": 16,
+        "has_timestamp_ms": 24
       }
     }
   }

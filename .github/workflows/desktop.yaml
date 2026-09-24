@@ -40,6 +40,17 @@ jobs:
       - name: Validate Linux CPU references and debug/release consumers
         if: runner.os == 'Linux'
         run: xvfb-run -a python3 -B packages/mediapipe-task-vision/tool/test_desktop.py --object-detector --image-tasks --landmark-tasks --segmenter-tasks --interactive-segmenter
+      # Google's Windows runtime uploads usage logs to play.googleapis.com and
+      # a task's close waits for that upload, which on hosted runners
+      # sometimes takes 20 to 34 s, past the tests' 30 s timeouts
+      # (upstream-issues.md UP-025). The tests must not depend on Google's
+      # logging service, so its name resolves to an unroutable address here.
+      - name: Keep Google's usage logging off the network
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Add-Content "$env:SystemRoot\System32\drivers\etc\hosts" "`n0.0.0.0 play.googleapis.com`n:: play.googleapis.com"
+          ipconfig /flushdns | Out-Null
       - name: Validate Windows CPU references and debug/release consumers
         if: runner.os == 'Windows'
         run: python -B packages/mediapipe-task-vision/tool/test_desktop.py --object-detector --image-tasks --landmark-tasks --segmenter-tasks

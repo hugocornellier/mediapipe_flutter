@@ -27,6 +27,32 @@ FILES = {
 }
 
 
+def use_header_holistic_order():
+    """Makes Google's Python write Holistic's thresholds where the library reads them.
+
+    The wheels' ctypes declare the three pose thresholds before the hand
+    threshold, but the compiled library reads the public header's order (hand
+    first), so every non-default threshold lands on the wrong field (UP-005,
+    tool/holistic_threshold_order_probe.py). Slot i receives the header's i-th
+    threshold, which is what the Dart wrapper writes on every platform.
+    """
+    from mediapipe.tasks.python.vision import holistic_landmarker as holistic
+    wheel = ('min_pose_detection_confidence', 'min_pose_suppression_threshold',
+             'min_pose_landmarks_confidence', 'min_hand_landmarks_confidence')
+    header = ('min_hand_landmarks_confidence', 'min_pose_detection_confidence',
+              'min_pose_suppression_threshold', 'min_pose_landmarks_confidence')
+    fields = [name for name, *_ in holistic.MpHolisticLandmarkerOptionsC._fields_]
+    # A future wheel that fixes its ctypes would make this rearrangement wrong.
+    assert tuple(name for name in fields if name in wheel) == wheel, fields
+    original = holistic.MpHolisticLandmarkerOptionsC.from_c_options
+
+    def header_order(*positional, **options):
+        values = [options[name] for name in header]
+        options.update(zip(wheel, values))
+        return original(*positional, **options)
+    holistic.MpHolisticLandmarkerOptionsC.from_c_options = header_order
+
+
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -67,6 +93,7 @@ def main():
     if not selected or not set(selected) <= MODELS.keys():
         raise SystemExit('Unknown landmark task in --tasks: ' + args.tasks)
     assert mp.__version__ == VERSION
+    use_header_holistic_order()
     assert digest(Path(mp.__file__).parent / 'tasks/c' / LIBRARY_NAME) == LIBRARY_SHA256
     for task_name in selected:
         name, sha = MODELS[task_name]

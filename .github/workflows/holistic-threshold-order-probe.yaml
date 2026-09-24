@@ -1,0 +1,46 @@
+# Scratch probe for UP-005: which Holistic options field order the pinned Linux
+# and Windows wheels' libraries read. Google's Python ctypes put the hand
+# threshold after the pose thresholds; the public C header puts it first.
+# `tool/holistic_threshold_order_probe.py` sets one threshold at a time to an
+# extreme value in both arrangements and reports which one makes every option
+# act on its own field. Manual only.
+name: Holistic threshold order probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Holistic threshold order / ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install EGL and GLES (the 1.0.1 Linux wheel links them even for CPU)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgles2
+      - name: Probe the pinned official wheel
+        run: |
+          python -B packages/mediapipe-task-vision/tool/holistic_threshold_order_probe.py --output holistic-threshold-order
+          cat holistic-threshold-order/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: holistic-threshold-order-${{ runner.os }}
+          path: |
+            holistic-threshold-order/report.json
+            holistic-threshold-order/summary.md
+            holistic-threshold-order/*.log
