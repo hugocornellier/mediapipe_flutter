@@ -182,29 +182,30 @@ Preprocessing, compiler behavior, and OpenCV build differences remain candidates
 to investigate; none has been established as the cause. These observations do
 not affect the passing Linux/Windows official-wheel CI baseline.
 
-## UP-005 — Same-version wheel and source Holistic options have different ABI order
+## UP-005: Google's Python writes Holistic thresholds in the wrong order
 
-**Status:** confirmed by comparing pinned headers with the official 1.0.0 wheel's
-ctypes declarations. Adapter implemented; inference validation pending.
+**Status:** confirmed 2026-09-24 on the macOS 1.0.0 wheel and 1.1.0rc20260924
+nightly, and on the pinned Linux 1.0.1 and Windows 1.0.0 wheels (CI run
+36009377156). Fixed in this repository; not reported upstream.
 
-After the three face thresholds, the source `MpHolisticLandmarkerOptions` places
-`min_hand_landmarks_confidence` before the three pose thresholds. The wheel places
-it after them. Struct sizes match, so using source bindings unchanged can silently
-apply the wrong thresholds. Defaults are all `0.5` and conceal the mismatch.
+After the three face thresholds, the public header's `MpHolisticLandmarkerOptions`
+places `min_hand_landmarks_confidence` before the three pose thresholds. The
+wheels' Python ctypes place it after them. The compiled library, including the
+wheels' own copy, reads the header's order, so Google's Python applies every
+non-default threshold to the wrong field: pose detection lands on the hand
+threshold, suppression on pose detection, pose landmarks on suppression, and hand
+on pose presence. The defaults are all `0.5` in both APIs, which hides it.
 
-`lib/src/io/holistic_landmarker.dart` adapts the four float slots for Linux and
-Windows wheels and retains source order for the Mac source runtime. The reference
-generator includes distinct nondefault hand/pose thresholds to exercise this.
-Do not modify the generated source struct to wheel order globally.
-
-Wheel declaration:
-`build/codex-tmp/mediapipe-reference/lib/python3.12/site-packages/mediapipe/tasks/python/vision/holistic_landmarker.py`.
-Source declaration:
-`packages/mediapipe-task-vision/third_party/mediapipe/tasks/c/vision/holistic_landmarker/holistic_landmarker.h`.
-
-Other observed wheel/header differences include bool versus int for the ROI
-presence flag and an extra source keypoint presence byte in padding. Existing
-desktop Face/Object inference tests pass; continue reviewing ABI per new task.
+`tool/holistic_threshold_order_probe.py` shows this by setting one threshold at a
+time to an extreme value on `pose.jpg`: only the header's arrangement makes each
+option act on its own field. The Dart wrapper
+(`lib/src/io/holistic_landmarker.dart`) now writes the header's order on every
+platform. It previously copied the Python order on Linux, Windows and the official
+macOS runtime, and CI could not see it because the references came from the same
+Python. `tool/generate_landmark_tasks_reference.py` now rearranges Python's slots
+into the header's order before creating tasks, and asserts the ctypes still use
+the old order so a fixed wheel fails loudly. Its non-default case (hand 0.99)
+now drops both hands, as the option promises.
 
 ## UP-006 — Holistic mask smoothing retains dimensions across IMAGE requests
 
