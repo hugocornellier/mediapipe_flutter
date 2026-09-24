@@ -9,6 +9,8 @@ from pathlib import Path
 import platform
 import sys
 
+from official_embedding_layout import use_header_embedding_layout
+
 PACKAGE = Path(__file__).resolve().parents[1]
 LIBRARY_SHA256 = '9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a'
 MODELS = {
@@ -16,33 +18,6 @@ MODELS = {
     'embedder': ('universal_sentence_encoder.tflite', '89ad3c74175dd8caa398cc22b657296d94302d20c525c12b58b29420f7249749'),
     'language': ('language_detector.tflite', '7db4f23dfe1ad8966b050b419a865da451143fd43eb6b606a256aadeeb1e5417'),
 }
-
-
-def use_header_embedding_layout():
-    """Makes Google's Python read embedding results with the C header's layout.
-
-    The wheel's ctypes declare MpEmbeddingResult as 24 bytes with the timestamp
-    flag first. The library writes the header's 32 bytes (timestamp, then the
-    flag), so Python overruns its allocation and reads the flag from padding,
-    reporting no timestamp.
-    """
-    from mediapipe.tasks.python.components.containers import embedding_result_c as module
-    old = module.MpEmbeddingResultC
-    # A future wheel that fixes its ctypes makes this unnecessary; fail loudly.
-    assert [name for name, _ in old._fields_] == [
-        'embeddings', 'embeddings_count', 'has_timestamp_ms', 'timestamp_ms'], old._fields_
-
-    class MpEmbeddingResultC(ctypes.Structure):
-        _fields_ = [('embeddings', ctypes.POINTER(module.MpEmbeddingC)),
-                    ('embeddings_count', ctypes.c_uint32),
-                    ('timestamp_ms', ctypes.c_int64),
-                    ('has_timestamp_ms', ctypes.c_bool)]
-    module.MpEmbeddingResultC = MpEmbeddingResultC
-    # `import mediapipe` already bound the old struct into the embedder's C
-    # signatures; rebuild them.
-    import importlib
-    from mediapipe.tasks.python.text import text_embedder
-    importlib.reload(text_embedder)
 
 
 def main():

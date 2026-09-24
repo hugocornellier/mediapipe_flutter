@@ -45,7 +45,9 @@ TextFormatContext? contextFor(Map<String, dynamic> entry) {
 void compare(TextEmbeddingResult result, Map<String, dynamic> entry) {
   final expected = entry['embeddings'] as List;
   expect(result.embeddings, hasLength(expected.length));
-  expect(result.timestampMs, isNull);
+  // The library stamps each request; Google's Python ctypes misread it as
+  // absent (see tool/official_embedding_layout.py).
+  expect(result.timestampMs, isNotNull);
   for (var i = 0; i < expected.length; i++) {
     final embedding = result.embeddings[i];
     expect(embedding.headIndex, expected[i]['head_index']);
