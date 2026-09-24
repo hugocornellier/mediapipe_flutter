@@ -6,6 +6,8 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/classic_text_bindings.dart'
     as mp;
+import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/embedding_gemma_bindings.dart'
+    as embedding;
 import 'package:test/test.dart';
 
 void main() {
@@ -82,4 +84,22 @@ void main() {
       });
     },
   );
+
+  // Google's Python ctypes declare this struct as 24 bytes with the flag
+  // first; the library writes the header's 32-byte layout
+  // (tasks/c/components/containers/embedding_result.h), which glibc's
+  // malloc leaves no slack for.
+  test('embedding result uses the C header layout', () {
+    expect(sizeOf<embedding.MpEmbeddingResult>(), 32);
+    using((arena) {
+      final result = arena<embedding.MpEmbeddingResult>();
+      final data = ByteData.sublistView(result.cast<Uint8>().asTypedList(32));
+      data.setUint32(8, 7, Endian.host);
+      data.setInt64(16, 123456789, Endian.host);
+      data.setUint8(24, 1);
+      expect(result.ref.embeddingsCount, 7);
+      expect(result.ref.timestampMs, 123456789);
+      expect(result.ref.hasTimestampMs, isTrue);
+    });
+  });
 }

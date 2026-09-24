@@ -60,10 +60,12 @@ final class MpEmbeddingResult extends Struct {
   external Pointer<MpEmbedding> embeddings;
   @Uint32()
   external int embeddingsCount;
-  @Bool()
-  external bool hasTimestampMs;
+  // The C header's order and size (32 bytes). Google's Python ctypes put the
+  // flag first and declare 24 bytes, which the library overruns.
   @Int64()
   external int timestampMs;
+  @Bool()
+  external bool hasTimestampMs;
 }
 
 @Native<
