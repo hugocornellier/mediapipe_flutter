@@ -57,6 +57,10 @@ Future<Map<String, Object>> validateEmbedding() async {
       final task = await EmbeddingGemma.create(EmbeddingGemmaOptions(
         modelPath: model, quantize: quantize, l2Normalize: quantize));
       try {
+        // The library stamps each request on a task, as for the classic
+        // embedder (0, 1000, 2000, ...). Google's Python ctypes misread it as
+        // absent; see the text package's classic_text_abi_test.dart.
+        var lastTimestamp = -1;
         for (final dynamic raw in reference['cases'] as List) {
           final entry = raw as Map<String, dynamic>;
           if (entry['quantize'] != quantize) continue;
@@ -65,7 +69,9 @@ Future<Map<String, Object>> validateEmbedding() async {
           timings.add(watch.elapsedMicroseconds / 1000);
           final embedding = result.embeddings.single;
           final expected = entry['embeddings'][0] as Map<String, dynamic>;
-          _check(embedding.dimensions == 768 && result.timestampMs == null, 'Wrong output dimensions/timestamp');
+          final timestamp = result.timestampMs;
+          _check(embedding.dimensions == 768 && timestamp != null && timestamp > lastTimestamp, 'Wrong output dimensions/timestamp: $timestamp');
+          lastTimestamp = timestamp!;
           _check(embedding.headIndex == expected['head_index'] && embedding.headName == expected['head_name'], 'Wrong head metadata');
           final values = expected['values'] as List;
           for (var i = 0; i < values.length; i++) {

@@ -9,6 +9,8 @@ from pathlib import Path
 import platform
 import sys
 
+from official_embedding_layout import use_header_embedding_layout
+
 PACKAGE = Path(__file__).resolve().parents[1]
 LIBRARY_SHA256 = '9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a'
 MODELS = {
@@ -28,6 +30,7 @@ def main():
         sys.path.insert(0, str(args.python_package_root.resolve()))
     os.environ.setdefault('MPLCONFIGDIR', str(PACKAGE / 'build/matplotlib'))
     import mediapipe as mp
+    use_header_embedding_layout()
     from mediapipe.tasks.python.text import text_classifier as classifier
     from mediapipe.tasks.python.text import text_embedder as embedder
     from mediapipe.tasks.python.text import language_detector as language

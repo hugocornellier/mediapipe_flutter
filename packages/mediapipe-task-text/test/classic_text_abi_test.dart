@@ -6,6 +6,8 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/classic_text_bindings.dart'
     as mp;
+import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/embedding_gemma_bindings.dart'
+    as embedding;
 import 'package:test/test.dart';
 
 void main() {
@@ -82,4 +84,25 @@ void main() {
       });
     },
   );
+
+  // The generator reads embedding results with the C header's layout
+  // (tasks/c/components/containers/embedding_result.h); Google's Python
+  // ctypes declare 24 bytes, which the library overruns.
+  test('embedding result uses the C header layout', () {
+    final layout = abi['MpEmbeddingResultC'] as Map;
+    final offsets = layout['offsets'] as Map;
+    expect(sizeOf<embedding.MpEmbeddingResult>(), layout['size']);
+    using((arena) {
+      final result = arena<embedding.MpEmbeddingResult>();
+      final data = ByteData.sublistView(
+        result.cast<Uint8>().asTypedList(layout['size'] as int),
+      );
+      data.setUint32(offsets['embeddings_count'], 7, Endian.host);
+      data.setInt64(offsets['timestamp_ms'], 123456789, Endian.host);
+      data.setUint8(offsets['has_timestamp_ms'], 1);
+      expect(result.ref.embeddingsCount, 7);
+      expect(result.ref.timestampMs, 123456789);
+      expect(result.ref.hasTimestampMs, isTrue);
+    });
+  });
 }
