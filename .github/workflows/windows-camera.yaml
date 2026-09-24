@@ -121,7 +121,7 @@ jobs:
           if ($register.ExitCode) { exit 1 }
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.8'
+          flutter-version: '3.47.5'
           channel: stable
           cache: true
       - uses: actions/setup-python@v5

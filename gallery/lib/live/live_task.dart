@@ -1,12 +1,17 @@
 import 'dart:typed_data';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
+import 'task_settings.dart';
+
 /// The task-specific half of a live demo: how to build it, and how to run one
 /// frame through it. Everything else about live capture is identical between
 /// tasks and lives in [LiveCameraController].
 abstract interface class LiveTask<T> {
   /// Human-readable name, used in errors.
   String get name;
+
+  /// The values [open] builds the task with; the page edits them and reopens.
+  TaskSettingValues get settings;
 
   /// Creates the underlying VIDEO-mode task.
   Future<void> open(VisionDelegate delegate, Uint8List modelBytes);

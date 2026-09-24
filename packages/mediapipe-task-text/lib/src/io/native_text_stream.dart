@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
+
 import 'third_party/mediapipe/text_stream_bindings.dart' as mp;
 
 /// Decode a nullable native UTF-8 string before its allocation is released.

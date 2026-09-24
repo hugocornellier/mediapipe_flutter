@@ -3,11 +3,13 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:example/keyboard_hider.dart';
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
 import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
+
 import 'enumerate.dart';
 
 class TextClassificationDemo extends StatefulWidget {

@@ -11,8 +11,8 @@ all eight integration tests with the existing official CPU reference tolerances.
 
 ## Build and run
 
-Use an Apple Silicon Mac, Xcode with an installed iOS simulator, Flutter 3.44.8 /
-Dart 3.12.2, Python 3, Bazelisk, CMake and Ninja. From the vision package root:
+Use an Apple Silicon Mac, Xcode with an installed iOS simulator, Flutter 3.47.5 /
+Dart 3.13.4, Python 3, Bazelisk, CMake and Ninja. From the vision package root:
 
 ```sh
 dart pub get
@@ -86,9 +86,10 @@ cannot substitute for a simulator dylib.
 The built ARM64 simulator libraries require **iOS 14.0 or newer**. Set the app's
 deployment target accordingly; the example already does. Apple clang floors the
 requested iOS 13 build target to 14 for ARM64 simulator linking. Each manifest
-records both the requested target and the actual Mach-O minimum. Flutter 3.44
-passes a fixed version 13 to native-asset hooks regardless of Runner's deployment
-target, so the hook cannot use that value to check the app's minimum OS. Validation
+records both the requested target and the actual Mach-O minimum. Flutter passes
+a fixed version to native-asset hooks (13 in 3.44, 15 in 3.47) regardless of
+Runner's deployment target, so the hook cannot use that value to check the app's
+minimum OS. Validation
 here used iOS 26.4; older runtimes have not been tested. No Apple development team
 or provisioning profile is needed for the simulator. Device builds and Intel
 simulators are rejected explicitly.

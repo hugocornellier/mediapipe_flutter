@@ -119,31 +119,27 @@ void main() {
   });
 
   for (final quantize in [false, true]) {
-    test(
-      'official CPU reference embeddings, quantize=$quantize',
-      () async {
-        final task = await EmbeddingGemma.create(
-          EmbeddingGemmaOptions(
-            modelPath: model,
-            quantize: quantize,
-            l2Normalize: quantize,
-          ),
-        );
-        try {
-          for (final entry in cases.where(
-            (entry) => entry['quantize'] == quantize,
-          )) {
-            compare(
-              await task.embed(entry['text'], context: contextFor(entry)),
-              entry,
-            );
-          }
-        } finally {
-          await task.dispose();
+    test('official CPU reference embeddings, quantize=$quantize', () async {
+      final task = await EmbeddingGemma.create(
+        EmbeddingGemmaOptions(
+          modelPath: model,
+          quantize: quantize,
+          l2Normalize: quantize,
+        ),
+      );
+      try {
+        for (final entry in cases.where(
+          (entry) => entry['quantize'] == quantize,
+        )) {
+          compare(
+            await task.embed(entry['text'], context: contextFor(entry)),
+            entry,
+          );
         }
-      },
-      timeout: const Timeout(Duration(minutes: 2)),
-    );
+      } finally {
+        await task.dispose();
+      }
+    }, timeout: const Timeout(Duration(minutes: 2)));
   }
 
   test(
@@ -191,36 +187,30 @@ void main() {
     }
   });
 
-  test(
-    'creation errors propagate instead of hanging the worker',
-    () async {
-      await expectLater(
-        EmbeddingGemma.create(
-          EmbeddingGemmaOptions(modelPath: '$model.missing'),
+  test('creation errors propagate instead of hanging the worker', () async {
+    await expectLater(
+      EmbeddingGemma.create(EmbeddingGemmaOptions(modelPath: '$model.missing')),
+      throwsA(isA<EmbeddingGemmaException>()),
+    );
+    await expectLater(
+      EmbeddingGemma.create(
+        EmbeddingGemmaOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
+      ),
+      throwsA(isA<EmbeddingGemmaException>()),
+    );
+    await expectLater(
+      EmbeddingGemma.create(
+        EmbeddingGemmaOptions(modelPath: model, delegate: TextDelegate.gpu),
+      ),
+      throwsA(
+        isA<EmbeddingGemmaException>().having(
+          (e) => e.message,
+          'message',
+          contains('CPU'),
         ),
-        throwsA(isA<EmbeddingGemmaException>()),
-      );
-      await expectLater(
-        EmbeddingGemma.create(
-          EmbeddingGemmaOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
-        ),
-        throwsA(isA<EmbeddingGemmaException>()),
-      );
-      await expectLater(
-        EmbeddingGemma.create(
-          EmbeddingGemmaOptions(modelPath: model, delegate: TextDelegate.gpu),
-        ),
-        throwsA(
-          isA<EmbeddingGemmaException>().having(
-            (e) => e.message,
-            'message',
-            contains('CPU'),
-          ),
-        ),
-      );
-    },
-    timeout: const Timeout(Duration(seconds: 20)),
-  );
+      ),
+    );
+  }, timeout: const Timeout(Duration(seconds: 20)));
 
   test('invalid Dart inputs are rejected without poisoning the task', () async {
     expect(() => EmbeddingGemmaOptions(), throwsArgumentError);

@@ -26,7 +26,8 @@ dependencies:
   mediapipe_flutter_core:
     path: ../mediapipe-core
   code_assets: ^1.2.1
-  # hooks 2.1+ requires meta newer than Flutter 3.44's SDK pin.
+  # Validated range. hooks 2.1+ needs meta 1.18, which Flutter 3.47 provides;
+  # moving up is a separate, tested upgrade.
   hooks: '>=2.0.2 <2.1.0'
   path: ^1.8.3
 

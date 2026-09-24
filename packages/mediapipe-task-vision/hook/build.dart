@@ -32,8 +32,9 @@ void main(List<String> arguments) async {
     final code = input.config.code;
     final target = buildTarget(code);
     requireDynamicLinking(code);
-    // Flutter 3.44 reports a fixed iOS targetVersion of 13 here, independently
-    // of Runner's deployment target. It cannot validate the app's minimum OS.
+    // Flutter reports a fixed iOS targetVersion here (13 in 3.44, 15 in 3.47),
+    // independently of Runner's deployment target, so it cannot validate the
+    // app's minimum OS.
     // Our arm64 simulator binaries require iOS 14; see tool/IOS_SIMULATOR.md.
     final usePrebuilt = input.userDefines['prebuilt'];
     if (usePrebuilt != null && usePrebuilt is! bool) {

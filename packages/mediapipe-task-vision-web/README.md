@@ -24,7 +24,7 @@ mobile browsers have not been validated in this implementation.
 
 ## Prepare and run the gallery
 
-From the repository root, with Flutter 3.44.8 and Python 3.12:
+From the repository root, with Flutter 3.47.5 and Python 3.12:
 
 ```sh
 python3.12 -B gallery/tool/prepare.py --target web

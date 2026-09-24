@@ -1,4 +1,5 @@
 import 'package:mediapipe_flutter_text/interface.dart';
+
 import '../../pending_text_task.dart';
 import 'text_classifier_options.dart';
 import 'text_classifier_executor.dart';

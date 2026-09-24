@@ -1,11 +1,14 @@
 SHELL := /bin/bash
-DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-text packages/mediapipe-task-genai packages/mediapipe-task-vision tool/builder tool/task_benchmarks
+DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-genai packages/mediapipe-task-vision tool/builder tool/task_benchmarks
 FLUTTER_PACKAGES := packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter packages/mediapipe-task-vision-android packages/mediapipe-task-vision-web
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 # The gallery's pubspec is generated per target by gallery/tool/prepare.py, so
 # it is format-checked without package resolution and analyzed by the
 # platform workflows after preparation.
 GALLERY_SOURCES := lib test integration_test tool
+# The generated pubspec (sdk ^3.12.0) may be absent when formatting, and
+# unresolved files default to the newest language version, whose style differs.
+GALLERY_FORMAT := dart format --language-version=3.12
 # The web adapter's pubspec lists its generated runtime asset directories, so
 # it is likewise analyzed by the web workflow after prepare_runtime.py.
 ANALYZE_PACKAGES := $(filter-out packages/mediapipe-task-vision-web,$(ALL_PACKAGES))
@@ -20,6 +23,7 @@ get:
 # Download versioned test/example models; no model is embedded in a package.
 models:
 	$(MAKE) models_text
+	$(MAKE) models_audio
 	cd packages/mediapipe-task-vision && dart tool/download_model.dart
 	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
 	cd packages/mediapipe-task-vision && dart tool/download_object_detector.dart
@@ -46,11 +50,11 @@ analyze:
 
 format:
 	@for package in $(ALL_PACKAGES); do (cd "$$package" && dart format .) || exit $$?; done
-	@cd gallery && dart format $(GALLERY_SOURCES)
+	@cd gallery && $(GALLERY_FORMAT) $(GALLERY_SOURCES)
 
 check_format:
 	@for package in $(ALL_PACKAGES); do (cd "$$package" && dart format --output=none --set-exit-if-changed .) || exit $$?; done
-	@cd gallery && dart format --output=none --set-exit-if-changed $(GALLERY_SOURCES)
+	@cd gallery && $(GALLERY_FORMAT) --output=none --set-exit-if-changed $(GALLERY_SOURCES)
 
 # Regenerate against the checked-in headers, never a floating upstream checkout.
 generate:
@@ -82,6 +86,7 @@ test:
 test_only:
 	$(MAKE) test_core
 	$(MAKE) test_text
+	$(MAKE) test_audio
 	$(MAKE) test_vision
 	$(MAKE) test_examples
 
@@ -90,6 +95,13 @@ test_core:
 
 test_text:
 	cd packages/mediapipe-task-text && dart test --reporter expanded
+
+.PHONY: test_audio models_audio
+models_audio:
+	cd packages/mediapipe-task-audio && dart run tool/download_model.dart
+
+test_audio:
+	cd packages/mediapipe-task-audio && dart test --reporter expanded
 
 test_vision:
 	cd packages/mediapipe-task-vision && dart test --reporter expanded

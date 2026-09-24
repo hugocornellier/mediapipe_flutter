@@ -121,33 +121,29 @@ void main() {
       );
     }
 
-    test(
-      'native empty-input errors preserve the task: ${mode.name}',
-      () async {
-        final task = await create(mode);
-        try {
-          final entry = (reference['errors'] as List).singleWhere(
-            (e) => e['mode'] == mode.name.toUpperCase(),
-          );
-          final error = isA<TextSummarizerException>().having(
-            (e) => e.message,
-            'message',
-            entry['message'],
-          );
-          await expectLater(task.summarize(''), throwsA(error));
-          await expectLater(task.summarizeStream('').toList(), throwsA(error));
-          final valid = cases.firstWhere((e) => modeFor(e) == mode);
-          compare(await task.summarize(valid['input']), valid);
-          compareStream(
-            await task.summarizeStream(valid['input']).toList(),
-            valid,
-          );
-        } finally {
-          await task.dispose();
-        }
-      },
-      timeout: const Timeout(Duration(seconds: 20)),
-    );
+    test('native empty-input errors preserve the task: ${mode.name}', () async {
+      final task = await create(mode);
+      try {
+        final entry = (reference['errors'] as List).singleWhere(
+          (e) => e['mode'] == mode.name.toUpperCase(),
+        );
+        final error = isA<TextSummarizerException>().having(
+          (e) => e.message,
+          'message',
+          entry['message'],
+        );
+        await expectLater(task.summarize(''), throwsA(error));
+        await expectLater(task.summarizeStream('').toList(), throwsA(error));
+        final valid = cases.firstWhere((e) => modeFor(e) == mode);
+        compare(await task.summarize(valid['input']), valid);
+        compareStream(
+          await task.summarizeStream(valid['input']).toList(),
+          valid,
+        );
+      } finally {
+        await task.dispose();
+      }
+    }, timeout: const Timeout(Duration(seconds: 20)));
   }
 
   test(
@@ -244,30 +240,24 @@ void main() {
     }
   });
 
-  test(
-    'creation errors propagate without hanging',
-    () async {
-      await expectLater(
-        TextSummarizer.create(
-          TextSummarizerOptions(modelPath: '$model.missing'),
+  test('creation errors propagate without hanging', () async {
+    await expectLater(
+      TextSummarizer.create(TextSummarizerOptions(modelPath: '$model.missing')),
+      throwsA(isA<TextSummarizerException>()),
+    );
+    await expectLater(
+      TextSummarizer.create(
+        TextSummarizerOptions(modelPath: model, delegate: TextDelegate.gpu),
+      ),
+      throwsA(
+        isA<TextSummarizerException>().having(
+          (e) => e.message,
+          'message',
+          contains('CPU'),
         ),
-        throwsA(isA<TextSummarizerException>()),
-      );
-      await expectLater(
-        TextSummarizer.create(
-          TextSummarizerOptions(modelPath: model, delegate: TextDelegate.gpu),
-        ),
-        throwsA(
-          isA<TextSummarizerException>().having(
-            (e) => e.message,
-            'message',
-            contains('CPU'),
-          ),
-        ),
-      );
-    },
-    timeout: const Timeout(Duration(seconds: 20)),
-  );
+      ),
+    );
+  }, timeout: const Timeout(Duration(seconds: 20)));
 
   test('invalid Dart inputs leave the task usable', () async {
     expect(() => TextSummarizerOptions(modelPath: ''), throwsArgumentError);

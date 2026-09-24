@@ -57,7 +57,7 @@ rename. Their implementation and runtime modernization remain separate work.
 
 ## Stable SDK recovery
 
-The subsequent cleanup targets Flutter 3.44.8 stable / Dart 3.12.2. It migrates
+The subsequent cleanup targets Flutter 3.47.5 stable / Dart 3.13.4. It migrates
 the text and GenAI hooks to `hooks` / `code_assets`, pins native downloads with
 SHA-256, and regenerates FFI bindings with ffigen 21 from the existing headers.
 At that stage the native runtime remained the April/May 2024 upstream builds. Header filters

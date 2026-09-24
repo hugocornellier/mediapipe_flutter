@@ -6,7 +6,9 @@ import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'camera_geometry.dart';
 
 /// Paints an Image Segmenter category mask as tinted cells over every block of
-/// pixels that is not background (class 0), and lists the classes it covers.
+/// pixels that is not background, and lists the classes it covers. Background
+/// is class 0, except in a single-class model such as the selfie segmenter,
+/// whose one class is 0 and whose background is 255.
 ///
 /// Google's segmenter answers a rotated frame with the upright mask resized to
 /// the frame's dimensions (upstream-issues.md UP-017), so cells are placed in
@@ -26,19 +28,22 @@ class MaskOverlay extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final step = math.max(1, math.max(mask.width, mask.height) ~/ _cells);
     final fill = Paint()..color = _color.withValues(alpha: 0.45);
+    final background = labels.length == 1 ? 255 : 0;
     final cells = <int, int>{};
     var total = 0;
     for (var y = 0; y < mask.height; y += step) {
       final bottom = math.min(y + step, mask.height) / mask.height;
       int? start;
       for (var x = 0; x <= mask.width; x += step) {
-        final value = x < mask.width ? mask.categories[y * mask.width + x] : 0;
+        final value = x < mask.width
+            ? mask.categories[y * mask.width + x]
+            : background;
         if (x < mask.width) {
           total++;
-          if (value != 0) cells[value] = (cells[value] ?? 0) + 1;
+          if (value != background) cells[value] = (cells[value] ?? 0) + 1;
         }
         // One rectangle per run of covered cells in this row.
-        if (value != 0) {
+        if (value != background) {
           start ??= x;
         } else if (start != null) {
           canvas.drawRect(

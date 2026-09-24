@@ -1,4 +1,5 @@
 import 'dart:ffi';
+
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_flutter_text/io.dart';
 import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/classic_text_bindings.dart'

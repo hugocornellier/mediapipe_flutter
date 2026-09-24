@@ -6,7 +6,7 @@ From the repository root:
 make example_segmenter
 ```
 
-Requires Apple Silicon, macOS 14+, Flutter 3.44.8 / Dart 3.12.2 and Xcode.
+Requires Apple Silicon, macOS 14+, Flutter 3.47.5 / Dart 3.13.4 and Xcode.
 The first build downloads the optional pinned native runtime. The make target
 prepares the unchanged official MagicTouch model and attributed sample images.
 

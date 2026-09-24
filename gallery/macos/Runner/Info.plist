@@ -22,6 +22,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>The Audio Classifier demo listens to the microphone to classify sounds.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Show live face, hand and pose landmarks from your camera.</string>
 	<key>NSHumanReadableCopyright</key>

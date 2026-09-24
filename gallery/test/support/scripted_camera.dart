@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:mediapipe_gallery/live/live_task.dart';
+import 'package:mediapipe_gallery/live/task_settings.dart';
 
 /// A camera platform the test drives by hand: frames arrive when the test
 /// says, initialization can be held open, and every lifecycle call is counted.
@@ -148,6 +149,9 @@ final class ScriptedCamera extends CameraPlatform {
 
 /// A task whose inference the test completes by hand.
 final class ScriptedTask implements LiveTask<int> {
+  @override
+  final settings = TaskSettingValues('scripted');
+
   final opened = <VisionDelegate>[];
   final timestamps = <int>[];
   final rotations = <int>[];

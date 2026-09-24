@@ -3,6 +3,7 @@
 // language_detector.py and components/containers/classification_result_c.py.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
+
 import 'embedding_gemma_bindings.dart' show MpBaseOptions;
 export 'embedding_gemma_bindings.dart' show MpBaseOptions, errorFree;
 

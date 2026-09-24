@@ -1,7 +1,7 @@
 # MediaPipe Face Camera
 
 Live camera facial landmarks on macOS Apple Silicon using `camera_desktop` and the
-official MediaPipe v1.0.0 Face Landmarker. Requires Flutter 3.44.8 / Dart 3.12.2 and
+official MediaPipe v1.0.0 Face Landmarker. Requires Flutter 3.47.5 / Dart 3.13.4 and
 Xcode. macOS native runtimes download automatically when local builds are absent.
 The same example opens a CPU image demo on arm64 iOS simulators; follow the
 [simulator guide](../tool/IOS_SIMULATOR.md) to build its local native libraries.

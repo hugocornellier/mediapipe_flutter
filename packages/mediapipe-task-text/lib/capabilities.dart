@@ -2,10 +2,12 @@
 library;
 
 import 'package:mediapipe_flutter_core/capabilities.dart';
+
 import 'src/interface/embedding_gemma_types.dart';
 
 export 'package:mediapipe_flutter_core/capabilities.dart'
     show TaskCapabilities, TaskPlatform;
+
 export 'src/interface/embedding_gemma_types.dart' show TextDelegate;
 
 /// Modern text tasks supplied by the official MediaPipe 1.0.1 runtime.

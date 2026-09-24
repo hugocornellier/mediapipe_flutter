@@ -23,7 +23,8 @@ dependencies:
   crypto: ^3.0.6
   equatable: ^2.0.5
   ffi: ^2.1.4
-  # hooks 2.1+ requires meta newer than Flutter 3.44's SDK pin.
+  # Validated range. hooks 2.1+ needs meta 1.18, which Flutter 3.47 provides;
+  # moving up is a separate, tested upgrade.
   hooks: '>=2.0.2 <2.1.0'
   http: ^1.6.0
   logging: ^1.3.0

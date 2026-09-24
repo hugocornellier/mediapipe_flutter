@@ -1,6 +1,8 @@
 import 'dart:typed_data';
+
 import 'package:mediapipe_flutter_core/io.dart';
 import 'package:mediapipe_flutter_text/interface.dart';
+
 import '../../classic_text_runtime.dart';
 
 /// Owned options for the official MediaPipe 1.0.1 TextClassifier.

@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:ffi';
+
 import 'package:ffi/ffi.dart';
 import 'package:logging/logging.dart';
 import 'package:mediapipe_flutter_core/io.dart';

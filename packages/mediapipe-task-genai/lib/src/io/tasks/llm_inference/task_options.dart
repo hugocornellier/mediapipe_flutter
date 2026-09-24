@@ -4,6 +4,7 @@
 
 import 'dart:ffi';
 import 'dart:math';
+
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_flutter_core/io.dart';
 import 'package:mediapipe_flutter_genai/interface.dart';

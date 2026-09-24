@@ -7,7 +7,7 @@
 #
 #   bash packages/mediapipe-task-vision/tool/test_linux_gpu.sh
 #
-# Needs: Flutter 3.44.8 with its Linux desktop dependencies (clang, cmake,
+# Needs: Flutter 3.47.5 with its Linux desktop dependencies (clang, cmake,
 # ninja-build, pkg-config, libgtk-3-dev), python3 with venv, and the system EGL
 # and OpenGL ES libraries (Debian/Ubuntu: libegl1 libgles2) with your GPU
 # vendor's driver. Run it in a desktop session so the gallery can open a

@@ -222,30 +222,26 @@ void main() {
     },
   );
 
-  test(
-    'creation failures return errors instead of hanging',
-    () async {
-      await expectLater(
-        TextProofreader.create(
-          TextProofreaderOptions(modelPath: '$model.missing'),
+  test('creation failures return errors instead of hanging', () async {
+    await expectLater(
+      TextProofreader.create(
+        TextProofreaderOptions(modelPath: '$model.missing'),
+      ),
+      throwsA(isA<TextProofreaderException>()),
+    );
+    await expectLater(
+      TextProofreader.create(
+        TextProofreaderOptions(modelPath: model, delegate: TextDelegate.gpu),
+      ),
+      throwsA(
+        isA<TextProofreaderException>().having(
+          (e) => e.message,
+          'message',
+          contains('CPU'),
         ),
-        throwsA(isA<TextProofreaderException>()),
-      );
-      await expectLater(
-        TextProofreader.create(
-          TextProofreaderOptions(modelPath: model, delegate: TextDelegate.gpu),
-        ),
-        throwsA(
-          isA<TextProofreaderException>().having(
-            (e) => e.message,
-            'message',
-            contains('CPU'),
-          ),
-        ),
-      );
-    },
-    timeout: const Timeout(Duration(seconds: 20)),
-  );
+      ),
+    );
+  }, timeout: const Timeout(Duration(seconds: 20)));
 
   test(
     'invalid inputs fail before native inference and leave task usable',

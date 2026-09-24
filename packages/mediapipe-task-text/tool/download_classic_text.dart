@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:mediapipe_flutter_text/models.dart';
 

@@ -1,4 +1,5 @@
 import 'package:mediapipe_flutter_text/interface.dart';
+
 import '../../pending_text_task.dart';
 import 'language_detector_options.dart';
 import 'language_detector_executor.dart';

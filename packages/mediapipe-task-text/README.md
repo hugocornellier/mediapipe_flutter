@@ -6,7 +6,7 @@ detection through MediaPipe's native task pipelines. It is part of the public
 
 ## Baseline and platforms
 
-Use Flutter 3.44.8 stable / Dart 3.12.2. Native libraries download automatically
+Use Flutter 3.47.5 stable / Dart 3.13.4. Native libraries download automatically
 during builds, with caching and SHA-256 verification. No experimental flags are
 needed.
 

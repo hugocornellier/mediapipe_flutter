@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:mediapipe_flutter_vision/web.dart';
 import '../live/embedding_similarity.dart';
 import '../live/live_task.dart';
+import '../live/task_settings.dart';
 
 /// Browser transport shared by every public task on the official web adapter:
 /// each demo supplies only its name and how its task is built.
@@ -51,91 +52,149 @@ abstract base class _WebLiveTask<R> implements BrowserLiveTask<R> {
 /// Browser transport for the same public FaceLandmarker task.
 final class FaceLandmarkerLiveTask extends _WebLiveTask<FaceLandmarkerResult> {
   @override
+  final settings = TaskSettingValues('face_landmarker');
+
+  @override
   String get name => 'Face Landmarker';
 
   @override
-  Future<FaceLandmarker> create(VisionDelegate delegate, Uint8List model) =>
-      FaceLandmarker.create(
-        FaceLandmarkerOptions(
-          modelBytes: model,
-          runningMode: VisionRunningMode.video,
-          delegate: delegate,
-          numFaces: 1,
-        ),
-      );
+  Future<FaceLandmarker> create(
+    VisionDelegate delegate,
+    Uint8List model,
+  ) => FaceLandmarker.create(
+    FaceLandmarkerOptions(
+      modelBytes: model,
+      runningMode: VisionRunningMode.video,
+      delegate: delegate,
+      numFaces: settings.count('numFaces'),
+      minFaceDetectionConfidence: settings.share('minFaceDetectionConfidence'),
+      minFacePresenceConfidence: settings.share('minFacePresenceConfidence'),
+      minTrackingConfidence: settings.share('minTrackingConfidence'),
+    ),
+  );
 }
 
 /// Browser transport for the same public HandLandmarker task. Hands counts
 /// hands, not people, as in the native demo.
 final class HandLandmarkerLiveTask extends _WebLiveTask<HandLandmarkerResult> {
   @override
+  final settings = TaskSettingValues('hand_landmarker');
+
+  @override
   String get name => 'Hand Landmarker';
 
   @override
-  Future<HandLandmarker> create(VisionDelegate delegate, Uint8List model) =>
-      HandLandmarker.create(
-        HandLandmarkerOptions(
-          modelBytes: model,
-          runningMode: VisionRunningMode.video,
-          delegate: delegate,
-          numHands: 2,
-        ),
-      );
+  Future<HandLandmarker> create(
+    VisionDelegate delegate,
+    Uint8List model,
+  ) => HandLandmarker.create(
+    HandLandmarkerOptions(
+      modelBytes: model,
+      runningMode: VisionRunningMode.video,
+      delegate: delegate,
+      numHands: settings.count('numHands'),
+      minHandDetectionConfidence: settings.share('minHandDetectionConfidence'),
+      minHandPresenceConfidence: settings.share('minHandPresenceConfidence'),
+      minTrackingConfidence: settings.share('minTrackingConfidence'),
+    ),
+  );
 }
 
 /// Browser transport for the same public PoseLandmarker task.
 final class PoseLandmarkerLiveTask extends _WebLiveTask<PoseLandmarkerResult> {
   @override
+  final settings = TaskSettingValues('pose_landmarker');
+
+  @override
   String get name => 'Pose Landmarker';
 
   @override
-  Future<PoseLandmarker> create(VisionDelegate delegate, Uint8List model) =>
-      PoseLandmarker.create(
-        PoseLandmarkerOptions(
-          modelBytes: model,
-          runningMode: VisionRunningMode.video,
-          delegate: delegate,
-        ),
-      );
+  Future<PoseLandmarker> create(
+    VisionDelegate delegate,
+    Uint8List model,
+  ) => PoseLandmarker.create(
+    PoseLandmarkerOptions(
+      modelBytes: model,
+      runningMode: VisionRunningMode.video,
+      delegate: delegate,
+      numPoses: settings.count('numPoses'),
+      minPoseDetectionConfidence: settings.share('minPoseDetectionConfidence'),
+      minPosePresenceConfidence: settings.share('minPosePresenceConfidence'),
+      minTrackingConfidence: settings.share('minTrackingConfidence'),
+      outputSegmentationMasks: settings.on('outputSegmentationMasks'),
+    ),
+  );
 }
 
 /// Browser transport for the same public GestureRecognizer task.
 final class GestureRecognizerLiveTask
     extends _WebLiveTask<GestureRecognizerResult> {
   @override
+  final settings = TaskSettingValues('gesture_recognizer');
+
+  @override
   String get name => 'Gesture Recognizer';
 
   @override
-  Future<GestureRecognizer> create(VisionDelegate delegate, Uint8List model) =>
-      GestureRecognizer.create(
-        GestureRecognizerOptions(
-          modelBytes: model,
-          runningMode: VisionRunningMode.video,
-          delegate: delegate,
-          numHands: 2,
-        ),
-      );
+  Future<GestureRecognizer> create(
+    VisionDelegate delegate,
+    Uint8List model,
+  ) => GestureRecognizer.create(
+    GestureRecognizerOptions(
+      modelBytes: model,
+      runningMode: VisionRunningMode.video,
+      delegate: delegate,
+      numHands: settings.count('numHands'),
+      minHandDetectionConfidence: settings.share('minHandDetectionConfidence'),
+      minHandPresenceConfidence: settings.share('minHandPresenceConfidence'),
+      minTrackingConfidence: settings.share('minTrackingConfidence'),
+      cannedGesturesClassifierOptions: GestureClassifierOptions(
+        maxResults: settings.count('maxResults'),
+        scoreThreshold: settings.share('scoreThreshold'),
+      ),
+    ),
+  );
 }
 
 /// Browser transport for the same public HolisticLandmarker task.
 final class HolisticLandmarkerLiveTask
     extends _WebLiveTask<HolisticLandmarkerResult> {
   @override
+  final settings = TaskSettingValues('holistic_landmarker');
+
+  @override
   String get name => 'Holistic Landmarker';
 
   @override
-  Future<HolisticLandmarker> create(VisionDelegate delegate, Uint8List model) =>
-      HolisticLandmarker.create(
-        HolisticLandmarkerOptions(
-          modelBytes: model,
-          runningMode: VisionRunningMode.video,
-          delegate: delegate,
-        ),
-      );
+  Future<HolisticLandmarker> create(
+    VisionDelegate delegate,
+    Uint8List model,
+  ) => HolisticLandmarker.create(
+    HolisticLandmarkerOptions(
+      modelBytes: model,
+      runningMode: VisionRunningMode.video,
+      delegate: delegate,
+      minFaceDetectionConfidence: settings.share('minFaceDetectionConfidence'),
+      minFaceSuppressionThreshold: settings.share(
+        'minFaceSuppressionThreshold',
+      ),
+      minFacePresenceConfidence: settings.share('minFacePresenceConfidence'),
+      minPoseDetectionConfidence: settings.share('minPoseDetectionConfidence'),
+      minPoseSuppressionThreshold: settings.share(
+        'minPoseSuppressionThreshold',
+      ),
+      minPosePresenceConfidence: settings.share('minPosePresenceConfidence'),
+      minHandLandmarksConfidence: settings.share('minHandLandmarksConfidence'),
+      outputPoseSegmentationMask: settings.on('outputPoseSegmentationMask'),
+    ),
+  );
 }
 
 /// Browser transport for the same public FaceDetector task.
 final class FaceDetectorLiveTask extends _WebLiveTask<FaceDetectorResult> {
+  @override
+  final settings = TaskSettingValues('face_detector');
+
   @override
   String get name => 'Face Detector';
 
@@ -146,12 +205,17 @@ final class FaceDetectorLiveTask extends _WebLiveTask<FaceDetectorResult> {
           modelBytes: model,
           runningMode: VisionRunningMode.video,
           delegate: delegate,
+          minDetectionConfidence: settings.share('minDetectionConfidence'),
+          minSuppressionThreshold: settings.share('minSuppressionThreshold'),
         ),
       );
 }
 
 /// Browser transport for the same public ObjectDetector task.
 final class ObjectDetectorLiveTask extends _WebLiveTask<ObjectDetectorResult> {
+  @override
+  final settings = TaskSettingValues('object_detector');
+
   @override
   String get name => 'Object Detector';
 
@@ -162,8 +226,8 @@ final class ObjectDetectorLiveTask extends _WebLiveTask<ObjectDetectorResult> {
           modelBytes: model,
           runningMode: VisionRunningMode.video,
           delegate: delegate,
-          maxResults: 5,
-          scoreThreshold: 0.3,
+          maxResults: settings.count('maxResults'),
+          scoreThreshold: settings.share('scoreThreshold'),
         ),
       );
 }
@@ -171,6 +235,9 @@ final class ObjectDetectorLiveTask extends _WebLiveTask<ObjectDetectorResult> {
 /// Browser transport for the same public ImageClassifier task.
 final class ImageClassifierLiveTask
     extends _WebLiveTask<ImageClassifierResult> {
+  @override
+  final settings = TaskSettingValues('image_classifier');
+
   @override
   String get name => 'Image Classifier';
 
@@ -181,7 +248,8 @@ final class ImageClassifierLiveTask
           modelBytes: model,
           runningMode: VisionRunningMode.video,
           delegate: delegate,
-          maxResults: 3,
+          maxResults: settings.count('maxResults'),
+          scoreThreshold: settings.share('scoreThreshold'),
         ),
       );
 }
@@ -189,6 +257,9 @@ final class ImageClassifierLiveTask
 /// Browser Image Embedder, reporting each frame's similarity to the first.
 final class ImageEmbedderLiveTask
     implements BrowserLiveTask<EmbeddingSimilarity> {
+  @override
+  final settings = TaskSettingValues('image_embedder');
+
   ImageEmbedder? _task;
   VisionEmbedding? _first;
 
@@ -203,6 +274,8 @@ final class ImageEmbedderLiveTask
         modelBytes: modelBytes,
         runningMode: VisionRunningMode.video,
         delegate: delegate,
+        l2Normalize: settings.on('l2Normalize'),
+        quantize: settings.on('quantize'),
       ),
     );
   }
@@ -256,6 +329,9 @@ final class ImageEmbedderLiveTask
 /// draws.
 final class ImageSegmenterLiveTask
     implements BrowserLiveTask<SegmentationResult> {
+  @override
+  final settings = TaskSettingValues('image_segmenter');
+
   ImageSegmenter? _task;
 
   @override

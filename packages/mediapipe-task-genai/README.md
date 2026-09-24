@@ -3,8 +3,8 @@
 `mediapipe_flutter_genai` is the legacy LLM wrapper in the private
 [mediapipe_flutter](../../README.md) fork. It is not published to pub.dev.
 
-Build tooling and dependencies have been updated for Flutter 3.44.8 stable /
-Dart 3.12.2. The native hook downloads pinned, checksum-verified 2024 binaries.
+Build tooling and dependencies have been updated for Flutter 3.47.5 stable /
+Dart 3.13.4. The native hook downloads pinned, checksum-verified 2024 binaries.
 No experimental flags are required.
 
 **LLM inference remains unvalidated.** The example's tests cover Dart state only.
