@@ -117,6 +117,18 @@ Not measured here: Firefox and Safari. A manual check in both found them
 working, with GPU inference readings that vary more than Chrome's, as all
 browsers' GPU delegates do between runs.
 
+## Worker-drawn overlay (experiment, 2026-09-24)
+
+`results/worker-draw-experiment.patch` (against `4557b4f`) hands the page's
+overlay canvas to the worker, which draws the face mesh with Google's
+`DrawingUtils` right after each detection instead of Flutter painting it on the
+main thread. It draws faces only, so other tasks would lose their overlay, and
+it is not part of the gallery. In one isolated Chrome run
+(`results/worker-draw-*.json`, CPU, Apple M4 Max), the worker's overlay reached
+its next frame 15.9 ms (median) after the camera frame arrived, against an
+`e2e` of 33.7 ms for Flutter's overlay; drawing took 0.34 ms. Both variants'
+screenshots are beside the results.
+
 ## Running it
 
 From a checkout, with Google Chrome, ffmpeg, `npm ci` done in

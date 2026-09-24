@@ -1,0 +1,164 @@
+From cc7959334f2662e845e03f42bcd26a98ad12d32c Mon Sep 17 00:00:00 2001
+From: hugocornellier <hugo.cornellier@gmail.com>
+Date: Thu, 24 Sep 2026 13:19:03 -0300
+Subject: [PATCH] perf(web): draw the live face overlay in the worker
+ (experiment)
+
+---
+ gallery/lib/web/live_camera_view.dart         | 21 ++++++++++++---
+ .../assets/bridge.js                          |  4 +++
+ .../assets/worker.js                          | 27 ++++++++++++++++++-
+ .../2026-09-22-web-live-pipeline/run.mjs      | 12 ++++++---
+ 4 files changed, 55 insertions(+), 9 deletions(-)
+
+diff --git a/gallery/lib/web/live_camera_view.dart b/gallery/lib/web/live_camera_view.dart
+index 09e5e93..4544828 100644
+--- a/gallery/lib/web/live_camera_view.dart
++++ b/gallery/lib/web/live_camera_view.dart
+@@ -1,4 +1,6 @@
+ import 'dart:convert';
++import 'dart:js_interop';
++import 'dart:js_interop_unsafe';
+ 
+ import 'package:flutter/material.dart';
+ import 'package:web/web.dart' as web;
+@@ -52,10 +54,21 @@ class LiveCameraView extends StatelessWidget {
+                   mirror: controller.isFrontCamera,
+                 );
+                 if (testHooks) _publishProbes(context, transform);
+-                final overlay = painter(transform);
+-                return overlay == null
+-                    ? const SizedBox.shrink()
+-                    : CustomPaint(painter: overlay);
++                // EXPERIMENT: the worker draws the overlay on this canvas.
++                return HtmlElementView.fromTagName(
++                  tagName: 'canvas',
++                  onElementCreated: (element) {
++                    final canvas = element as web.HTMLCanvasElement;
++                    canvas.style
++                      ..width = '100%'
++                      ..height = '100%'
++                      ..objectFit = 'contain'
++                      ..transform = controller.video.style.transform
++                      ..pointerEvents = 'none';
++                    (globalContext['mediapipeVision']! as JSObject)['pendingOverlay'] =
++                        canvas.transferControlToOffscreen();
++                  },
++                );
+               },
+             ),
+           ],
+diff --git a/packages/mediapipe-task-vision-web/assets/bridge.js b/packages/mediapipe-task-vision-web/assets/bridge.js
+index 14ab2f0..eaf4870 100644
+--- a/packages/mediapipe-task-vision-web/assets/bridge.js
++++ b/packages/mediapipe-task-vision-web/assets/bridge.js
+@@ -30,6 +30,7 @@
+       if (input?.bitmap) transfers.push(input.bitmap);
+       if (input?.pixels) transfers.push(input.pixels.buffer);
+       if (input?.modelBytes) transfers.push(input.modelBytes.buffer);
++      if (input?.overlay) transfers.push(input.overlay);
+       try {
+         state.worker.postMessage({id, type, input}, transfers);
+       } catch (error) {
+@@ -78,6 +79,9 @@
+         input.bitmap?.close();
+         return Promise.reject(new Error('MediaPipe task is closed'));
+       }
++      // EXPERIMENT: hand the page's overlay canvas to the worker with the next frame.
++      const overlay = globalThis.mediapipeVision.pendingOverlay;
++      if (overlay) { input.overlay = overlay; globalThis.mediapipeVision.pendingOverlay = null; }
+       return request(state, 'detect', input);
+     },
+     async close(id) {
+diff --git a/packages/mediapipe-task-vision-web/assets/worker.js b/packages/mediapipe-task-vision-web/assets/worker.js
+index 2b4c164..5715ffb 100644
+--- a/packages/mediapipe-task-vision-web/assets/worker.js
++++ b/packages/mediapipe-task-vision-web/assets/worker.js
+@@ -1,4 +1,23 @@
+-import {FilesetResolver, FaceLandmarker, HandLandmarker} from './runtime/vision_bundle.mjs';
++import {FilesetResolver, FaceLandmarker, HandLandmarker, DrawingUtils} from './runtime/vision_bundle.mjs';
++
++// EXPERIMENT: draw the face mesh here, on a canvas the page transferred, with
++// Google's DrawingUtils, instead of in Flutter on the main thread.
++let overlay = null, drawing = null, pendingDraw = null;
++const drawn = [];
++function drawFace({faces, width, height, timestamp}) {
++  const started = performance.now();
++  if (overlay.width !== width || overlay.height !== height) { overlay.width = width; overlay.height = height; }
++  overlay.getContext('2d').clearRect(0, 0, width, height);
++  for (const face of faces) {
++    drawing.drawConnectors(face, FaceLandmarker.FACE_LANDMARKS_TESSELATION, {color: '#63e6be70', lineWidth: 0.7});
++    drawing.drawConnectors(face, FaceLandmarker.FACE_LANDMARKS_CONTOURS, {color: '#63e6be', lineWidth: 1.5});
++    drawing.drawConnectors(face, FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS, {color: '#ffce73', lineWidth: 1.8});
++    drawing.drawConnectors(face, FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS, {color: '#ffce73', lineWidth: 1.8});
++  }
++  const entry = {timestamp, draw: performance.now() - started};
++  // The worker's next animation frame: its drawing has gone to the compositor.
++  requestAnimationFrame(() => { entry.frame = performance.timeOrigin + performance.now(); drawn.push(entry); });
++}
+ 
+ // Each task: Google's class and the result field holding its image landmarks,
+ // which travel packed; everything else in the result travels as JSON.
+@@ -18,6 +37,7 @@ self.onmessage = ({data}) => {
+       const result = await run(data.type, data.input, timing);
+       timing.sent = performance.timeOrigin + performance.now();
+       self.postMessage({id: data.id, result, timing}, result?.landmarks ? [result.landmarks.buffer] : []);
++      if (pendingDraw) { const next = pendingDraw; pendingDraw = null; drawFace(next); }
+     } catch (error) {
+       self.postMessage({id: data.id, error: error?.message || String(error)});
+     }
+@@ -94,6 +114,11 @@ async function run(type, input, timing) {
+     timing.inference = inferred - started;
+     timing.serialize = performance.now() - inferred;
+     timing.timestamp = input.timestamp;
++    if (input.overlay) { overlay = input.overlay; drawing = new DrawingUtils(overlay.getContext('2d')); }
++    if (drawing && spec === TASKS.face_landmarker) {
++      pendingDraw = {faces: result.faceLandmarks, width: source.width, height: source.height, timestamp: input.timestamp};
++    }
++    timing.overlays = drawn.splice(0);
+     return {json, landmarks: packed?.values};
+   } finally {
+     owned?.close();
+diff --git a/packages/mediapipe-task-vision/tool/benchmarks/2026-09-22-web-live-pipeline/run.mjs b/packages/mediapipe-task-vision/tool/benchmarks/2026-09-22-web-live-pipeline/run.mjs
+index 5a66a5b..d458d08 100644
+--- a/packages/mediapipe-task-vision/tool/benchmarks/2026-09-22-web-live-pipeline/run.mjs
++++ b/packages/mediapipe-task-vision/tool/benchmarks/2026-09-22-web-live-pipeline/run.mjs
+@@ -98,7 +98,7 @@ const mean = values => values.reduce((a, b) => a + b, 0) / values.length;
+ // Page and worker clocks disagree by up to about 0.5 ms, so toWorker and
+ // fromWorker are indicative; transport (round trip less the worker's own
+ // work) does not depend on them.
+-function stages(frame, worker, origin) {
++function stages(frame, worker, origin, overlay) {
+   const toMain = absolute => absolute - origin;
+   return {
+     e2e: frame.painted - frame.arrived,
+@@ -119,11 +119,14 @@ function stages(frame, worker, origin) {
+     // One display refresh: from the painting frame's vsync to the next.
+     refresh: frame.painted - frame.frame,
+     ...(frame.captured == null ? {} : {sinceCapture: frame.painted - frame.captured}),
++    // EXPERIMENT: overlay drawn in the worker; its next worker frame.
++    ...(overlay?.frame == null ? {} : {overlayE2e: toMain(overlay.frame) - frame.arrived, overlayDraw: overlay.draw}),
+   };
+ }
+ const keys = ['e2e', 'queue', 'capture', 'roundTrip', 'detectDone', 'inference', 'serialize', 'transport',
+-  'toWorker', 'fromWorker', 'handle', 'waitFrame', 'render', 'present', 'refresh', 'sinceCapture'];
+-const shown = ['e2e', 'detectDone', 'capture', 'inference', 'transport', 'handle', 'render'];
++  'toWorker', 'fromWorker', 'handle', 'waitFrame', 'render', 'present', 'refresh', 'sinceCapture',
++  'overlayE2e', 'overlayDraw'];
++const shown = ['e2e', 'overlayE2e', 'overlayDraw', 'detectDone', 'inference', 'transport', 'handle', 'render'];
+ function summarize(rows) {
+   const summary = {};
+   for (const key of keys) {
+@@ -197,7 +200,8 @@ try {
+       await collect(warmup);
+       const {frames, workers, seconds} = await collect(timedFrames);
+       const byTimestamp = new Map(workers.map(worker => [worker.timestamp, worker]));
+-      const rows = frames.map(frame => stages(frame, byTimestamp.get(frame.timestamp), origin));
++      const overlays = new Map(workers.flatMap(worker => worker.overlays ?? []).map(entry => [entry.timestamp, entry]));
++      const rows = frames.map(frame => stages(frame, byTimestamp.get(frame.timestamp), origin, overlays.get(frame.timestamp)));
+       if (options.screenshot && last) {
+         await page.locator('video').screenshot({path: path.join(here, 'results', `${options.label}-${variant.name}-${stamp}.png`)});
+       }
+-- 
+2.54.0 (Apple Git-157)
+

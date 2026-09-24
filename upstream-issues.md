@@ -548,6 +548,43 @@ already arrives as 14 from Google's Java task. The shape suggests a normalized
 class value truncated when the GPU result is read back. Apps that need exact
 classes on GPU can take the most confident class from the confidence masks.
 
+## UP-025: Windows task closes wait for Google's usage-logging upload
+
+**Status:** observed September 24 with Google's official 1.0.0 Windows wheel
+on GitHub's windows-2025 runners, first as two 30 s test timeouts in a
+[desktop run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/36004929701).
+Worked around in CI by blocking the endpoint. The package cannot turn the
+logging off.
+
+Google's native library carries a Clearcut usage-logging client: its embedded
+source paths include
+`mediapipe/tasks/cc/core/logging/google_internal/clearcut_logging_client.cc`,
+and the C header describes `MpBaseOptions.ca_bundle_path` as the "CA bundle to
+use for usage logging". It posts to `https://play.googleapis.com/log` through
+WinINet, and a task's close waits for the upload.
+
+With the endpoint reachable, the median close took 62 ms in
+[one probe run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/36019400724)
+and 125 ms in
+[another](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/36022472695),
+where `curl` to the same endpoint took 0.12 to 0.14 s. Some closes waited 20
+to 34 s: 13 of 648 in the first run, and 1 of 485 in the second, where one
+more had not returned when its test run ended. Stack dumps taken 5 and 15 s
+into those waits show the closing thread blocked in `WaitForSingleObjectEx`
+under `MpHandLandmarkerClose` (or the task's own close), a library thread
+blocked in `WININET!HttpSendRequestA`, and almost no CPU use: under 0.1 s per
+thread between the two dumps. The endpoint also answered some uploads with
+HTTP 503. With `play.googleapis.com` resolved to an unroutable address
+([run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/36023936830)),
+486 closes took a median of 9 ms and at most 34 ms, and no test timed out.
+
+The factory that creates the client has no switch; it falls back to a no-op
+client only when its log store cannot be created. Google's Python wrapper
+fills the same logging fields and offers no opt-out. On Windows, `dispose()`
+lasts as long as the upload; blocking the host removes both the upload and
+the wait. The Linux 1.0.1 library contains the same uploader (over libcurl,
+with `ca_bundle_path` as its CA file); no slow close has been seen on Linux.
+
 ## Integration pitfalls resolved in this repo
 
 These are recorded for continuity, not classified as confirmed MediaPipe defects.
