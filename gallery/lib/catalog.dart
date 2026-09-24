@@ -11,7 +11,61 @@ enum GalleryDemo {
 
   /// Interactive segmentation on a bundled image.
   segment,
+
+  /// A text task on typed input.
+  text,
+
+  /// An audio task on a clip.
+  audio,
 }
+
+/// The home page's sections, in MediaPipe Studio's order.
+enum GalleryCategory {
+  vision('Vision'),
+  audio('Audio'),
+  text('Text');
+
+  const GalleryCategory(this.title);
+  final String title;
+}
+
+/// A MediaPipe task the home page lists in its section on every platform
+/// even though the gallery cannot run it yet, with the reason it cannot.
+typedef PlannedTask = ({
+  GalleryCategory category,
+  String title,
+  String summary,
+  String reason,
+});
+
+/// Audio and text tasks, listed as MediaPipe Studio lists them. Their
+/// packages run them on macOS arm64; elsewhere their cards say so.
+const plannedTasks = <PlannedTask>[
+  (
+    category: GalleryCategory.audio,
+    title: 'Audio Classifier',
+    summary: 'Sound categories in a clip or the microphone.',
+    reason: 'The audio package runs this on macOS arm64 only.',
+  ),
+  (
+    category: GalleryCategory.text,
+    title: 'Language Detector',
+    summary: 'The language of a piece of text.',
+    reason: 'The text package runs this on macOS arm64 only.',
+  ),
+  (
+    category: GalleryCategory.text,
+    title: 'Text Classifier',
+    summary: 'Sentiment and categories of a piece of text.',
+    reason: 'The text package runs this on macOS arm64 only.',
+  ),
+  (
+    category: GalleryCategory.text,
+    title: 'Text Embedder',
+    summary: 'Text as a vector, compared by similarity.',
+    reason: 'The text package runs this on macOS arm64 only.',
+  ),
+];
 
 /// One entry in the gallery.
 ///
@@ -29,8 +83,12 @@ final class GalleryTask {
     this.demo = GalleryDemo.none,
     this.experimentalReason,
     this.officialMacosCapabilities,
+    this.category = GalleryCategory.vision,
     String? runtimeId,
   }) : runtimeId = runtimeId ?? id;
+
+  /// The home page section the tile belongs to.
+  final GalleryCategory category;
 
   /// Tile id, unique within the catalog.
   final String id;
@@ -193,6 +251,16 @@ TaskCapabilities<VisionDelegate> _officialMacosHolistic(
   officialMacosRuntime: true,
   officialIosRuntime: true,
 );
+
+/// The audio and text tasks' support: CPU on core's shared 1.0.1 runtime.
+TaskCapabilities<VisionDelegate> _text(TaskPlatform platform) =>
+    TaskCapabilities.cpuOnTargets(
+      platform: platform,
+      cpu: VisionDelegate.cpu,
+      gpu: VisionDelegate.gpu,
+      gpuUnavailableReason:
+          'The official 1.0.1 audio and text tasks run on CPU here.',
+    );
 
 final _catalog = <GalleryTask>[
   GalleryTask(
@@ -396,6 +464,49 @@ final _catalog = <GalleryTask>[
     model: 'interactive_segmentation.task',
     sample: 'animals.jpg',
     capabilities: _magicTouch,
+  ),
+  // The audio package's Audio Classifier, on the same shared runtime.
+  GalleryTask(
+    id: 'audio_classifier',
+    category: GalleryCategory.audio,
+    demo: GalleryDemo.audio,
+    title: 'Audio Classifier',
+    summary: 'Sound categories in a clip, second by second.',
+    model: 'yamnet.tflite',
+    sample: 'speech_16000_hz_mono.wav',
+    capabilities: _text,
+  ),
+  // The text package's classic tasks, on the shared 1.0.1 runtime: macOS
+  // arm64 CPU, where prepare.py bundles their models.
+  GalleryTask(
+    id: 'language_detector',
+    category: GalleryCategory.text,
+    demo: GalleryDemo.text,
+    title: 'Language Detector',
+    summary: 'The language of a piece of text.',
+    model: 'language_detector.tflite',
+    sample: '',
+    capabilities: _text,
+  ),
+  GalleryTask(
+    id: 'text_classifier',
+    category: GalleryCategory.text,
+    demo: GalleryDemo.text,
+    title: 'Text Classifier',
+    summary: 'Sentiment of a piece of text.',
+    model: 'bert_classifier.tflite',
+    sample: '',
+    capabilities: _text,
+  ),
+  GalleryTask(
+    id: 'text_embedder',
+    category: GalleryCategory.text,
+    demo: GalleryDemo.text,
+    title: 'Text Embedder',
+    summary: 'Two texts as vectors, compared by similarity.',
+    model: 'universal_sentence_encoder.tflite',
+    sample: '',
+    capabilities: _text,
   ),
 ];
 

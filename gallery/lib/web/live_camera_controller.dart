@@ -63,6 +63,10 @@ class LiveCameraController<T> extends ChangeNotifier {
   double _lastVideoTime = -1;
   int _lastTimestamp = -1;
   String? _modelAsset;
+
+  /// Supplies the model instead of the bundled asset: one of Google's other
+  /// official models, or a file the user uploaded. Null uses the asset.
+  Future<Uint8List> Function()? modelLoader;
   bool running = false;
   bool changing = false;
   String? error;
@@ -201,11 +205,18 @@ class LiveCameraController<T> extends ChangeNotifier {
           throw StateError('Camera access requires HTTPS or localhost.');
         }
         this.delegate = chosen;
-        final model = await rootBundle.load(asset);
-        await task.open(
-          chosen,
-          model.buffer.asUint8List(model.offsetInBytes, model.lengthInBytes),
-        );
+        final loader = modelLoader;
+        final Uint8List bytes;
+        if (loader != null) {
+          bytes = await loader();
+        } else {
+          final model = await rootBundle.load(asset);
+          bytes = model.buffer.asUint8List(
+            model.offsetInBytes,
+            model.lengthInBytes,
+          );
+        }
+        await task.open(chosen, bytes);
         _opened = true;
         if (_closed || generation != _generation) {
           await _release();

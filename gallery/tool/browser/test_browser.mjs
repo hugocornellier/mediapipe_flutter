@@ -126,7 +126,10 @@ async function alignmentCheck(page) {
     videoTransform: video.style.transform,
     dpr: window.devicePixelRatio,
   }));
-  const connections = page.getByRole('button', {name: 'Connections'});
+  // The settings panel's Connections switch; Flutter's web semantics may
+  // expose a switch as either role.
+  const connections = page.getByRole('switch', {name: 'Connections'})
+    .or(page.getByRole('checkbox', {name: 'Connections'}));
   await connections.click();
   // Keep the pointer, and any tooltip it raises, away from the preview.
   await page.mouse.move(1, page.viewportSize().height - 1);

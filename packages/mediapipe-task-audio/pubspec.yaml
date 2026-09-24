@@ -1,0 +1,30 @@
+name: mediapipe_flutter_audio
+publish_to: none
+description: MediaPipe's official Audio Classifier for Dart and Flutter.
+version: 0.0.1
+
+repository: https://github.com/hugocornellier/mediapipe_flutter/tree/main/packages/mediapipe-task-audio
+issue_tracker: https://github.com/hugocornellier/mediapipe_flutter/issues/
+
+platforms:
+  macos:
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  ffi: ^2.1.4
+  mediapipe_flutter_core:
+    path: ../mediapipe-core
+
+dev_dependencies:
+  crypto: ^3.0.6
+  lints: ^6.1.0
+  test: ^1.31.0
+
+# Used when this package is the root (Dart tests/tools). Consumers opt in in
+# their own pubspec, as for the text package.
+hooks:
+  user_defines:
+    mediapipe_flutter_core:
+      tasks_runtime: true

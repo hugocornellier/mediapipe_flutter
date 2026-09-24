@@ -108,8 +108,7 @@ void main() {
 
         // Phase 2: overlay alignment against the on-screen preview.
         if (screenshots.available) {
-          await tester.tap(find.byTooltip('Connections'));
-          await tester.pump();
+          await _toggleConnections(tester);
           await tester.runAsync(
             () => Future<void>.delayed(const Duration(milliseconds: 400)),
           );
@@ -154,8 +153,7 @@ void main() {
             'mirror': geometry.transform.mirror,
           };
           await screenshots.keep(shot!, 'preview-without-overlay');
-          await tester.tap(find.byTooltip('Connections'));
-          await tester.pump();
+          await _toggleConnections(tester);
           expect(
             measurement.observedSubjects,
             1,
@@ -351,3 +349,30 @@ String _windowsScreenshot(String path) => [
   "\$bitmap.Save('${path.replaceAll("'", "''")}', "
       '[System.Drawing.Imaging.ImageFormat]::Png)',
 ].join('\n');
+
+/// Flips the settings panel's Connections switch: in the side panel on wide
+/// screens, or through the Settings sheet on phones, which is closed again so
+/// the preview is uncovered.
+Future<void> _toggleConnections(WidgetTester tester) async {
+  final sheet = find.byTooltip('Settings');
+  final opened = sheet.evaluate().isNotEmpty;
+  if (opened) {
+    await tester.tap(sheet);
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+  }
+  final toggle = find.widgetWithText(SwitchListTile, 'Connections');
+  await tester.tap(toggle);
+  await tester.pump();
+  if (opened) {
+    Navigator.of(tester.element(toggle)).pop();
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+  }
+}

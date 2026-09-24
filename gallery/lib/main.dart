@@ -5,6 +5,8 @@ import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 import 'catalog.dart';
 import 'segment_page.dart';
+import 'text_page.dart' if (dart.library.js_interop) 'web/text_page.dart';
+import 'audio_page.dart' if (dart.library.js_interop) 'web/audio_page.dart';
 import 'live_page.dart';
 import 'gallery_assets_io.dart'
     if (dart.library.js_interop) 'web/gallery_assets.dart';
@@ -102,13 +104,20 @@ class _Gallery extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Tasks this build can run, by section and name; a planned card stands
+    // in for each Studio task it cannot.
+    final sorted = [...tasks]..sort((a, b) => a.title.compareTo(b.title));
     final validated = [
-      for (final task in tasks)
+      for (final task in sorted)
         if (!task.isExperimental) task,
     ];
     final experimental = [
-      for (final task in tasks)
+      for (final task in sorted)
         if (task.isExperimental) task,
+    ];
+    List<GalleryTask> within(List<GalleryTask> list, GalleryCategory c) => [
+      for (final task in list)
+        if (task.category == c) task,
     ];
     return CustomScrollView(
       slivers: [
@@ -124,7 +133,7 @@ class _Gallery extends StatelessWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
             child: Text(
               '${validated.length} task${validated.length == 1 ? '' : 's'} '
               'validated on ${platform.operatingSystem} '
@@ -135,40 +144,66 @@ class _Gallery extends StatelessWidget {
             ),
           ),
         ),
-        if (tasks.isEmpty)
-          const SliverFillRemaining(
-            hasScrollBody: false,
-            child: _Message(
-              icon: Icons.inbox_outlined,
-              text: 'No task has a validated runtime on this platform yet.',
-            ),
-          )
-        else
-          _grid(validated, platform),
-        if (experimental.isNotEmpty) ...[
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Experimental', style: theme.textTheme.titleMedium),
-                  Text(
-                    'These run real inference but are not validated against '
-                    "Google's outputs on this platform.",
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+        for (final category in GalleryCategory.values) ...[
+          _header(theme, category.title),
+          if (within(validated, category).isNotEmpty)
+            _grid(within(validated, category), platform),
+          if (within(experimental, category).isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                child: Text(
+                  'Experimental: these run real inference but are not '
+                  "validated against Google's outputs on this platform.",
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-          _grid(experimental, platform),
+            _grid(within(experimental, category), platform),
+          ],
+          if ([
+                for (final task in plannedTasks)
+                  if (task.category == category &&
+                      !sorted.any((t) => t.title == task.title))
+                    task,
+              ]
+              case final planned when planned.isNotEmpty)
+            _plannedGrid(planned),
+          if (category == GalleryCategory.vision &&
+              within(sorted, category).isEmpty)
+            const SliverToBoxAdapter(
+              child: _Message(
+                icon: Icons.inbox_outlined,
+                text: 'No task has a validated runtime on this platform yet.',
+              ),
+            ),
         ],
       ],
     );
   }
+
+  Widget _header(ThemeData theme, String title) => SliverToBoxAdapter(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      child: Text(title, style: theme.textTheme.titleLarge),
+    ),
+  );
+
+  Widget _plannedGrid(List<PlannedTask> entries) => SliverPadding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    sliver: SliverGrid.builder(
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 320,
+        mainAxisExtent: 160,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: entries.length,
+      itemBuilder: (context, index) => _PlannedCard(task: entries[index]),
+    ),
+  );
 
   Widget _grid(List<GalleryTask> entries, TaskPlatform platform) =>
       SliverPadding(
@@ -299,6 +334,8 @@ class _TaskCard extends StatelessWidget {
                 officialMacosLandmarkTasks: assets.officialMacosLandmarkTasks,
               ),
               GalleryDemo.segment => SegmentPage(task: task, assets: assets),
+              GalleryDemo.text => TextPage(task: task),
+              GalleryDemo.audio => AudioPage(task: task),
               // Entries without a screen never reach a tile.
               GalleryDemo.none => throw StateError('${task.id} has no demo'),
             },
@@ -345,6 +382,52 @@ class _TaskCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A task the gallery lists but cannot run yet, with the reason why.
+class _PlannedCard extends StatelessWidget {
+  const _PlannedCard({required this.task});
+
+  final PlannedTask task;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Card.outlined(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              task.title,
+              style: theme.textTheme.titleMedium?.copyWith(color: muted),
+            ),
+            const SizedBox(height: 6),
+            Expanded(
+              child: Text(
+                task.summary,
+                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              ),
+            ),
+            Row(
+              children: [
+                Icon(Icons.schedule, size: 16, color: muted),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    task.reason,
+                    style: theme.textTheme.labelSmall?.copyWith(color: muted),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

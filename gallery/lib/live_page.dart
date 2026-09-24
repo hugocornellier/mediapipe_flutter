@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
@@ -8,6 +9,7 @@ import 'catalog.dart';
 import 'live/live_camera_controller.dart';
 import 'live/live_camera_view.dart';
 import 'live/live_registry.dart';
+import 'live/task_models.dart';
 import 'live/task_settings.dart';
 import 'live/task_settings_panel.dart';
 
@@ -39,6 +41,22 @@ class _LivePageState extends State<LivePage> {
       LiveCameraController<Object?>(_task);
   late final List<TaskSetting> _settings =
       taskSettings[widget.task.runtimeId] ?? const [];
+  late final List<TaskModel> _models =
+      taskModels[widget.task.runtimeId] ?? const [];
+  TaskModel? _model;
+  String? _uploaded;
+  String? _modelStatus;
+
+  /// Bumped on every page rebuild, so the settings sheet, which lives on its
+  /// own route, redraws when a setting, the model or a display toggle changes.
+  final _revision = ValueNotifier<int>(0);
+
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    _revision.value++;
+  }
+
   late final List<VisionDelegate> _delegates =
       widget.task
           .capabilitiesFor(widget.platform, widget.officialMacosLandmarkTasks)
@@ -88,6 +106,7 @@ class _LivePageState extends State<LivePage> {
     _controller.removeListener(_onControllerChanged);
     _controller.close();
     _controller.dispose();
+    _revision.dispose();
     super.dispose();
   }
 
@@ -123,8 +142,60 @@ class _LivePageState extends State<LivePage> {
     }
   }
 
+  /// Downloads and verifies an official model before the task is rebuilt
+  /// with it, so a failed download leaves the running model in place.
+  Future<void> _chooseModel(TaskModel? model) async {
+    if (model == null) {
+      setState(() {
+        _model = null;
+        _uploaded = null;
+        _modelStatus = null;
+      });
+      _controller.modelLoader = null;
+      unawaited(_start());
+      return;
+    }
+    setState(() => _modelStatus = 'Downloading ${model.name}…');
+    try {
+      final bytes = await downloadModel(model);
+      if (!mounted) return;
+      setState(() {
+        _model = model;
+        _uploaded = null;
+        _modelStatus = null;
+      });
+      _controller.modelLoader = () async => bytes;
+      unawaited(_start());
+    } on Object catch (error) {
+      if (mounted) setState(() => _modelStatus = '$error');
+    }
+  }
+
+  /// A model file of the user's own, as MediaPipe Studio's Upload.
+  Future<void> _upload() async {
+    try {
+      final file = await openFile(
+        acceptedTypeGroups: const [
+          XTypeGroup(label: 'MediaPipe models', extensions: ['tflite', 'task']),
+        ],
+      );
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _model = null;
+        _uploaded = file.name;
+        _modelStatus = null;
+      });
+      _controller.modelLoader = () async => bytes;
+      unawaited(_start());
+    } on Object catch (error) {
+      if (mounted) setState(() => _modelStatus = '$error');
+    }
+  }
+
   Widget _panel() => ListenableBuilder(
-    listenable: _controller,
+    listenable: Listenable.merge([_controller, _revision]),
     builder: (context, _) => TaskSettingsPanel(
       settings: _settings,
       values: _task.settings,
@@ -133,6 +204,16 @@ class _LivePageState extends State<LivePage> {
       enabled: !_controller.changing,
       onChanged: _setSetting,
       onDelegate: _setDelegate,
+      models: _models,
+      model: _model,
+      uploaded: _uploaded,
+      modelStatus: _modelStatus,
+      onModel: _chooseModel,
+      onUpload: _upload,
+      connections: _showConnections,
+      points: _showPoints,
+      onConnections: (value) => setState(() => _showConnections = value),
+      onPoints: (value) => setState(() => _showPoints = value),
     ),
   );
 
@@ -178,17 +259,6 @@ class _LivePageState extends State<LivePage> {
                   : 'Switch to front camera',
               onPressed: busy ? null : _flipCamera,
             ),
-          IconButton(
-            icon: Icon(_showConnections ? Icons.grid_on : Icons.grid_off),
-            tooltip: 'Connections',
-            onPressed: () =>
-                setState(() => _showConnections = !_showConnections),
-          ),
-          IconButton(
-            icon: Icon(_showPoints ? Icons.blur_on : Icons.blur_off),
-            tooltip: 'Points',
-            onPressed: () => setState(() => _showPoints = !_showPoints),
-          ),
           if (!wide)
             IconButton(
               icon: const Icon(Icons.tune),

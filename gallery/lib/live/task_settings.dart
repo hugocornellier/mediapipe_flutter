@@ -109,6 +109,22 @@ const taskSettings = <String, List<TaskSetting>>{
     SwitchSetting('l2Normalize', 'L2 Normalize'),
     SwitchSetting('quantize', 'Quantize'),
   ],
+  'audio_classifier': [
+    CountSetting('maxResults', 'Max Results', initial: 3),
+    ShareSetting('scoreThreshold', 'Score Threshold', initial: 0),
+  ],
+  'text_classifier': [
+    CountSetting('maxResults', 'Max Results', initial: 3),
+    ShareSetting('scoreThreshold', 'Score Threshold', initial: 0),
+  ],
+  'language_detector': [
+    CountSetting('maxResults', 'Max Results', initial: 3),
+    ShareSetting('scoreThreshold', 'Score Threshold', initial: 0),
+  ],
+  'text_embedder': [
+    SwitchSetting('l2Normalize', 'L2 Normalize'),
+    SwitchSetting('quantize', 'Quantize'),
+  ],
 };
 
 /// The current value of every setting of one task.

@@ -58,6 +58,10 @@ class LiveCameraController<T> extends ChangeNotifier {
   DeviceOrientation deviceOrientation = DeviceOrientation.portraitUp;
   String? _modelAsset;
 
+  /// Supplies the model instead of the bundled asset: one of Google's other
+  /// official models, or a file the user uploaded. Null uses the asset.
+  Future<Uint8List> Function()? modelLoader;
+
   /// Whether the demo is looking at the person holding the device.
   bool get isFrontCamera =>
       description?.lensDirection == CameraLensDirection.front;
@@ -174,11 +178,18 @@ class LiveCameraController<T> extends ChangeNotifier {
       var fallBack = false;
       try {
         this.delegate = chosen;
-        final data = await rootBundle.load(asset);
-        await task.open(
-          chosen,
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-        );
+        final loader = modelLoader;
+        final Uint8List bytes;
+        if (loader != null) {
+          bytes = await loader();
+        } else {
+          final data = await rootBundle.load(asset);
+          bytes = data.buffer.asUint8List(
+            data.offsetInBytes,
+            data.lengthInBytes,
+          );
+        }
+        await task.open(chosen, bytes);
         _opened = true;
         if (_closed || generation != _generation) {
           await _release();

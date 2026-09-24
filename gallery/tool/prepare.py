@@ -19,6 +19,8 @@ import sys
 GALLERY = Path(__file__).resolve().parents[1]
 REPO = GALLERY.parent
 VISION = REPO / 'packages/mediapipe-task-vision'
+TEXT = REPO / 'packages/mediapipe-task-text'
+AUDIO = REPO / 'packages/mediapipe-task-audio'
 
 CAMERA_REASON = 'Show live face, hand and pose landmarks from your camera.'
 
@@ -77,6 +79,21 @@ WEB_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
 # through a separate user define.
 SHARED_RUNTIME_TASK = 'interactive_segmenter'
 SHARED_RUNTIME_TARGETS = {'macos/arm64'}
+
+# The text package's three classic tasks, on the same shared runtime, with the
+# models its example downloads and verifies (make models_text). They are not
+# vision tasks, so they stay out of the vision hook's task list.
+TEXT_TASKS = {'language_detector': 'language_detector.tflite',
+              'text_classifier': 'bert_classifier.tflite',
+              'text_embedder': 'universal_sentence_encoder.tflite'}
+
+# The audio package's Audio Classifier, on the same shared runtime, with the
+# model its tool downloads (make models_audio) and Google's sample clips.
+AUDIO_TASKS = {'audio_classifier': 'yamnet.tflite'}
+AUDIO_SAMPLES = ['speech_16000_hz_mono.wav', 'speech_48000_hz_mono.wav',
+                 'two_heads_16000_hz_mono.wav']
+# Tasks outside the vision package, which its hook must not be asked for.
+NON_VISION_TASKS = {*TEXT_TASKS, *AUDIO_TASKS}
 
 # Sample inputs, reused from the test fixtures so the gallery ships nothing new
 # and inherits their recorded provenance and licence.
@@ -157,6 +174,7 @@ def available_tasks(target):
     tasks = set()
     if target in SHARED_RUNTIME_TARGETS:
         tasks.add(SHARED_RUNTIME_TASK)
+        tasks |= set(TEXT_TASKS) | set(AUDIO_TASKS)
     for block in _blocks(source, 'const visionRuntimeReleases'):
         if not re.search(r"target: '" + re.escape(target) + r"'", block):
             continue
@@ -182,10 +200,17 @@ def prepare(target, selected):
     bundled = {}
     missing = []
     for task in sorted(selected):
-        if task not in MODELS:
+        if task in TEXT_TASKS:
+            name = TEXT_TASKS[task]
+            source = TEXT / 'example/assets' / name
+        elif task in AUDIO_TASKS:
+            name = AUDIO_TASKS[task]
+            source = AUDIO / 'models' / name
+        elif task in MODELS:
+            _, name = MODELS[task]
+            source = VISION / 'models' / name
+        else:
             continue
-        _, name = MODELS[task]
-        source = VISION / 'models' / name
         if not source.exists():
             missing.append(f'{task} -> {name}')
             continue
@@ -203,6 +228,9 @@ def prepare(target, selected):
     samples.mkdir(parents=True)
     for source, name in SAMPLES.items():
         shutil.copyfile(VISION / 'test/fixtures' / source, samples / name)
+    audio_samples = AUDIO_SAMPLES if 'audio_classifier' in bundled else []
+    for name in audio_samples:
+        shutil.copyfile(AUDIO / 'test/fixtures' / name, samples / name)
 
     official_landmarks = (target == 'macos/arm64'
                           and OFFICIAL_MACOS_TASKS & bundled.keys())
@@ -214,7 +242,7 @@ def prepare(target, selected):
         'target': target,
         'tasks': sorted(bundled),
         'models': bundled,
-        'samples': sorted(SAMPLES.values()),
+        'samples': sorted([*SAMPLES.values(), *audio_samples]),
         'official_macos_landmark_tasks': sorted(
             OFFICIAL_MACOS_TASKS & bundled.keys()) if official_landmarks else [],
         'official_ios_sdk': '1.0.1' if target.startswith('ios') else None,
@@ -225,7 +253,8 @@ def prepare(target, selected):
 
     entries = '\n'.join(
         [f'    - assets/models/{name}' for name in sorted(bundled.values())]
-        + [f'    - assets/samples/{name}' for name in sorted(SAMPLES.values())])
+        + [f'    - assets/samples/{name}'
+           for name in sorted([*SAMPLES.values(), *audio_samples])])
     # camera_desktop supplies native desktop preview and raw image streaming;
     # camera itself supplies the mobile implementations.
     camera = ('  camera: ^0.12.1\n  camera_desktop: ^1.2.2'
@@ -240,12 +269,14 @@ def prepare(target, selected):
     # The hook refuses the stateful MagicTouch task unless its shared runtime is
     # opted into explicitly, on the core package rather than the vision one.
     core = ('    mediapipe_flutter_core:\n      tasks_runtime: true\n'
-            if SHARED_RUNTIME_TASK in bundled and target in SHARED_RUNTIME_TARGETS
+            if ({SHARED_RUNTIME_TASK, *NON_VISION_TASKS} & bundled.keys()
+                and target in SHARED_RUNTIME_TARGETS)
             else '')
     # On the web, Google's JavaScript runs the stateful task. Host-side builds
     # such as `flutter test --platform chrome` still run the native hook, which
     # must not be asked for a runtime this app never loads.
-    native_tasks = sorted(set(bundled) - ({SHARED_RUNTIME_TASK} if target == 'web' else set()))
+    native_tasks = sorted(set(bundled) - NON_VISION_TASKS
+                          - ({SHARED_RUNTIME_TASK} if target == 'web' else set()))
     official_landmarks_define = (
         '      official_macos_landmark_tasks: true\n'
         if official_landmarks else '')
@@ -268,12 +299,22 @@ dependencies:
     sdk: flutter
   mediapipe_flutter_vision:
     path: ../packages/mediapipe-task-vision
+  mediapipe_flutter_core:
+    path: ../packages/mediapipe-core
+  mediapipe_flutter_text:
+    path: ../packages/mediapipe-task-text
+  mediapipe_flutter_audio:
+    path: ../packages/mediapipe-task-audio
   web: ^1.1.1
+  # Verifies downloaded models; picks a model file to upload; records the
+  # Audio Classifier demo's microphone.
+  crypto: ^3.0.6
+  file_selector: ^1.0.3
+  record: ^7.1.1
 {android_plugin}{web_plugin}{camera}
 
 dev_dependencies:
   camera_platform_interface: ^2.13.1
-  crypto: ^3.0.6
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
