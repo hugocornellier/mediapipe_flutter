@@ -87,7 +87,7 @@ jobs:
             build/codex-tmp/android-reference/provenance.json
           if-no-files-found: warn
 
-  # Hand, Pose, Gesture, Holistic, Face and Object Detector, Image Classifier
+  # Face and Hand Landmarker, Pose, Gesture, Holistic, Face and Object Detector, Image Classifier
   # and Image Embedder run through Google's Android SDK (tasks-vision 1.0.0) and
   # mediapipe_flutter_vision_android, so this job needs no source build. The emulator runs them on the CPU only; see
   # gallery/tool/test_android_sdk_tasks.sh.
@@ -117,6 +117,7 @@ jobs:
         working-directory: packages/mediapipe-task-vision
         run: |
           dart pub get
+          dart tool/download_face_landmarker.dart
           dart tool/download_landmark_tasks.dart
           dart tool/download_model.dart
           dart tool/download_image_tasks.dart
@@ -126,7 +127,7 @@ jobs:
       - name: Prepare the gallery with the official SDK tasks
         run: |
           python3 -B gallery/tool/prepare.py --target android/x64 \
-            --tasks hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter
+            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter
           cd gallery && flutter pub get
       - name: Enable Android emulator hardware acceleration
         run: |

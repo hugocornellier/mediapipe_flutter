@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import 'android_face_landmarker_test.dart' as face;
+import 'sdk_face_landmarker_test.dart' as face;
 import 'runtime_test.dart' as runtime;
 import 'sdk_detection_tasks_test.dart' as detection;
 import 'sdk_embedder_test.dart' as embedder;

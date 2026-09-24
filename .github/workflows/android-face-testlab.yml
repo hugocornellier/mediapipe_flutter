@@ -129,7 +129,7 @@ jobs:
             gcloud storage cp "gs://$RESULTS_BUCKET/$RESULTS_DIR/$DEVICE/$name" testlab-results/ || true
           done
           # Each suite reports its measurements as one tagged JSON line.
-          grep -hE '(SDK_[A-Z_]+|ANDROID_FACE_SDK) \{' testlab-results/logcat > testlab-results/measurements.log || true
+          grep -hE 'SDK_[A-Z_]+ \{' testlab-results/logcat > testlab-results/measurements.log || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:

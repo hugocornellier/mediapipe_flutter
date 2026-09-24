@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the official Android SDK task tests on an emulator, CPU only: Hand
+# Runs the official Android SDK task tests on an emulator, CPU only: Face and Hand
 # Landmarker; Pose, Gesture and Holistic; Face and Object Detector and Image
 # Classifier; Image Embedder; Image Segmenter; then every live tile in one
 # process.
