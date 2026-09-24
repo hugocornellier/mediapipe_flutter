@@ -141,10 +141,20 @@ jobs:
       - name: Build official native face tasks from source
         run: make native_vision
       - name: Analyze, format-check and test all packages
+        id: packages
         run: |
           make analyze
           make check_format
           make test_only
+      - name: Record macos CPU task coverage (macos-packages)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite macos-packages --platform macos --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.packages.outcome }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-macos-packages
+          path: build/coverage/
+          if-no-files-found: error
       - name: Build the text, camera and segmenter apps
         run: |
           make build_text
@@ -216,7 +226,20 @@ jobs:
       - name: Prepare the official runtime
         run: python3 -B packages/mediapipe-task-vision/tool/prepare_official_macos_landmark_runtime.py
       - name: Compare every served task with Google's wheel
+        id: official
         run: python3 -B packages/mediapipe-task-vision/tool/test_official_macos_landmark_runtime.py
+      - name: Record macos CPU task coverage (macos-official-cpu)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite macos-official-cpu --platform macos --delegate cpu --tasks face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.official.outcome }}
+      - name: Record macos GPU task coverage (macos-official-metal)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite macos-official-metal --platform macos --delegate gpu --tasks face_landmarker,hand_landmarker,object_detector --outcome ${{ steps.official.outcome }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-macos-official
+          path: build/coverage/
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -268,7 +291,20 @@ jobs:
           dart tool/download_model.dart
           dart tool/download_face_landmarker.dart
       - name: Compare public native tasks with the official wheel on this runner
+        id: gpu_reference
         run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --test
+      - name: Record macos CPU task coverage (macos-face-cpu)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite macos-face-cpu --platform macos --delegate cpu --tasks face_detector,face_landmarker --outcome ${{ steps.gpu_reference.outcome }}
+      - name: Record macos GPU task coverage (macos-face-metal)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite macos-face-metal --platform macos --delegate gpu --tasks face_detector,face_landmarker --outcome ${{ steps.gpu_reference.outcome }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-macos-face
+          path: build/coverage/
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -301,11 +337,21 @@ jobs:
         working-directory: packages/mediapipe-task-vision
         run: python3 -B tool/prepare_segmenter_example.py
       - name: Test the real macOS editor
+        id: editor
         working-directory: packages/mediapipe-task-vision/example_segmenter
         run: |
           flutter pub get
           flutter test --reporter expanded
           flutter test -d macos integration_test/editor_test.dart --reporter expanded
+      - name: Record macos CPU task coverage (macos-interactive-segmenter)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite macos-interactive-segmenter --platform macos --delegate cpu --tasks interactive_segmenter --outcome ${{ steps.editor.outcome }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-macos-interactive-segmenter
+          path: build/coverage/
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: interactive-segmenter-validation
