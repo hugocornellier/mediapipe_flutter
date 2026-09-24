@@ -50,25 +50,29 @@ const plannedTasks = <PlannedTask>[
     category: GalleryCategory.audio,
     title: 'Audio Classifier',
     summary: 'Sound categories in a clip or the microphone.',
-    reason: 'The audio package runs this on macOS arm64 and in browsers.',
+    reason:
+        'The audio package runs this on macOS arm64, Android and in browsers.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Language Detector',
     summary: 'The language of a piece of text.',
-    reason: 'The text package runs this on macOS arm64 and in browsers.',
+    reason:
+        'The text package runs this on macOS arm64, Android and in browsers.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Text Classifier',
     summary: 'Sentiment and categories of a piece of text.',
-    reason: 'The text package runs this on macOS arm64 and in browsers.',
+    reason:
+        'The text package runs this on macOS arm64, Android and in browsers.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Text Embedder',
     summary: 'Text as a vector, compared by similarity.',
-    reason: 'The text package runs this on macOS arm64 and in browsers.',
+    reason:
+        'The text package runs this on macOS arm64, Android and in browsers.',
   ),
 ];
 
@@ -258,24 +262,34 @@ TaskCapabilities<VisionDelegate> _officialMacosHolistic(
 );
 
 /// The text tasks' support: CPU on core's shared 1.0.1 runtime, and in
-/// browsers once mediapipe_flutter_text_web has installed its backend.
+/// browsers and on mobile once a platform plugin has installed its backend.
 TaskCapabilities<VisionDelegate> _text(TaskPlatform platform) =>
-    _cpuTask(platform, web: textTaskBackendFactory != null);
+    _cpuTask(platform, backend: textTaskBackendFactory != null);
 
 /// Audio Classifier's support, as for the text tasks.
 TaskCapabilities<VisionDelegate> _audio(TaskPlatform platform) =>
-    _cpuTask(platform, web: audioTaskBackendFactory != null);
+    _cpuTask(platform, backend: audioTaskBackendFactory != null);
 
 TaskCapabilities<VisionDelegate> _cpuTask(
   TaskPlatform platform, {
-  required bool web,
+  required bool backend,
 }) => TaskCapabilities.cpuOnTargets(
   platform: platform,
   cpu: VisionDelegate.cpu,
   gpu: VisionDelegate.gpu,
   gpuUnavailableReason:
       'The official 1.0.1 audio and text tasks run on CPU here.',
-  targets: {...tasksRuntimeTargets, if (web) 'web/unknown': null},
+  // A registered backend is Google's SDK or browser runtime for this very
+  // platform: mediapipe_flutter_text/audio's web, Android or iOS plugin.
+  targets: {
+    ...tasksRuntimeTargets,
+    if (backend) ...{
+      'web/unknown': null,
+      'android/arm64': null,
+      'android/x64': null,
+      'ios/arm64': '15.0',
+    },
+  },
 );
 
 final _catalog = <GalleryTask>[

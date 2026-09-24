@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Runs the official Android SDK task tests on an emulator, CPU only: Face and Hand
-# Landmarker; Pose, Gesture and Holistic; Face and Object Detector and Image
-# Classifier; Image Embedder; Image Segmenter; then every live tile in one
-# process.
+# Runs the official Android SDK task tests on an emulator, CPU only: Face and
+# Hand Landmarker; Pose, Gesture and Holistic; Face and Object Detector and
+# Image Classifier; Image Embedder; Image Segmenter; the text and audio tasks;
+# then every live tile in one process.
 #
 # The emulator's SwiftShader GL accepts a GPU task, then TFLite's GL delegate
 # fails on the first frame, so GPU stays a phone check. `flutter test`
@@ -23,7 +23,7 @@ granter=$!
 trap 'kill $granter 2>/dev/null || true' EXIT
 log=$(mktemp)
 for test in sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test \
-    sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test runtime_test; do
+    sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test sdk_text_audio_test runtime_test; do
   for attempt in 1 2; do
     # A file takes under 6 minutes with the first Gradle build. On hosted
     # emulators flutter test sometimes installs the app and then hears

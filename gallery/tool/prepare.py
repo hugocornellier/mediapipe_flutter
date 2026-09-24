@@ -199,7 +199,8 @@ def available_tasks(target):
         # Google's public SDK supplies these tasks without a maintainer build.
         return set(OFFICIAL_IOS_TASKS)
     if target.startswith('android'):
-        return ANDROID_TASKS | OFFICIAL_ANDROID_TASKS
+        # Text and audio run through their packages' Android SDK plugins.
+        return ANDROID_TASKS | OFFICIAL_ANDROID_TASKS | NON_VISION_TASKS
     if target in ('linux/x64', 'windows/x64'):
         for block in _blocks(source, 'const visionWheelReleases'):
             if re.search(r"target: '" + re.escape(target) + r"'", block):
@@ -271,7 +272,7 @@ def prepare(target, selected):
     official_landmarks = (target == 'macos/arm64'
                           and OFFICIAL_MACOS_TASKS & bundled.keys())
     official_android = (target.startswith('android') and bundled
-                        and set(bundled) <= OFFICIAL_ANDROID_TASKS)
+                        and set(bundled) - NON_VISION_TASKS <= OFFICIAL_ANDROID_TASKS)
     if target == 'web':
         for runtime in ('vision', 'text', 'audio'):
             subprocess.run([sys.executable, '-B', str(REPO / f'packages/mediapipe-task-{runtime}-web/tool/prepare_runtime.py')], check=True)
@@ -300,6 +301,15 @@ def prepare(target, selected):
     android_plugin = ('''  mediapipe_flutter_vision_android:
     path: ../packages/mediapipe-task-vision-android
 ''' if official_android else '')
+    if target.startswith('android'):
+        if set(TEXT_TASKS) & bundled.keys():
+            android_plugin += '''  mediapipe_flutter_text_android:
+    path: ../packages/mediapipe-task-text-android
+'''
+        if set(AUDIO_TASKS) & bundled.keys():
+            android_plugin += '''  mediapipe_flutter_audio_android:
+    path: ../packages/mediapipe-task-audio-android
+'''
     web_plugin = ('''  mediapipe_flutter_vision_web:
     path: ../packages/mediapipe-task-vision-web
   mediapipe_flutter_text_web:
@@ -434,15 +444,15 @@ def main():
         raise SystemExit('No MediaPipe runtime target matches this host.')
     selected = available_tasks(target)
     if target.startswith('android') and not args.tasks:
-        # The public SDK needs no maintainer C++ build and supplies CPU/GPU.
-        selected = set(OFFICIAL_ANDROID_TASKS)
+        # The public SDKs need no maintainer C++ build; vision supplies CPU/GPU.
+        selected = set(OFFICIAL_ANDROID_TASKS) | NON_VISION_TASKS
     if args.tasks:
         requested = set(args.tasks.split(','))
         if not requested <= selected:
             raise SystemExit(f'Unavailable tasks for {target}: {requested - selected}')
         selected = requested
-    if (target.startswith('android') and selected - ANDROID_TASKS
-            and not selected <= OFFICIAL_ANDROID_TASKS):
+    if (target.startswith('android') and selected - ANDROID_TASKS - NON_VISION_TASKS
+            and not selected - NON_VISION_TASKS <= OFFICIAL_ANDROID_TASKS):
         # One app uses either the official plugin or the source-built runtime.
         raise SystemExit('On Android, tasks beyond the source-built face tasks '
                          'run only through the official SDK plugin, which serves '

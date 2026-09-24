@@ -298,7 +298,7 @@
         "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
-        "cpu": "pending: step 3",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
@@ -324,7 +324,7 @@
         "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
-        "cpu": "pending: step 3",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
@@ -350,7 +350,7 @@
         "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
-        "cpu": "pending: step 3",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
@@ -376,7 +376,7 @@
         "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
-        "cpu": "pending: step 3",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {

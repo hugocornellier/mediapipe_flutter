@@ -26,8 +26,8 @@ enum AudioDelegate {
 }
 
 /// Where Audio Classifier runs: CPU on the shared official 1.0.1 runtime,
-/// which core provides for macOS arm64 (macOS 14+), and in browsers through
-/// mediapipe_flutter_audio_web.
+/// which core provides for macOS arm64 (macOS 14+), and through Google's
+/// browser runtime or mobile SDK where a platform plugin installs it.
 Future<TaskCapabilities<AudioDelegate>>
 queryAudioClassifierCapabilities() async =>
     audioClassifierCapabilitiesForPlatform(await currentTaskPlatform());
@@ -42,7 +42,14 @@ TaskCapabilities<AudioDelegate> audioClassifierCapabilitiesForPlatform(
   gpuUnavailableReason: "Google's official audio task runs on CPU only.",
   targets: {
     ...tasksRuntimeTargets,
-    if (audioTaskBackendFactory != null) 'web/unknown': null,
+    // A registered backend is Google's browser runtime or mobile SDK for
+    // this very platform (mediapipe_flutter_audio_web, _android or _ios).
+    if (audioTaskBackendFactory != null) ...{
+      'web/unknown': null,
+      'android/arm64': null,
+      'android/x64': null,
+      'ios/arm64': '15.0',
+    },
   },
 );
 
