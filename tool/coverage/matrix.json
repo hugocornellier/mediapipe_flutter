@@ -1,7 +1,8 @@
 {
   "_comment": [
-    "Every samples-web task on every platform and delegate. 'required' cells must have a passing",
-    "row from this commit's CI (tier 'pr') or, once tier 'device' exists, from the nightly device run.",
+    "Every samples-web task on every platform and delegate. 'required' cells need a passing",
+    "row from this commit's pull-request CI; 'device' cells need one from physical hardware (the",
+    "nightly device workflows, run for this commit or on main within 48 hours).",
     "'pending: <step>' cells are planned; 'unsupported: <reason>' cells are Google's limits.",
     "tool/coverage/gate.py enforces it; the vision package's capabilities test keeps it honest."
   ],
@@ -13,7 +14,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -39,7 +40,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -65,7 +66,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -91,7 +92,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -117,7 +118,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -143,7 +144,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -169,7 +170,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -195,7 +196,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -247,7 +248,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -273,7 +274,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",

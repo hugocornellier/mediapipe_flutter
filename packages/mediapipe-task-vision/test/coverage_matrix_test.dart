@@ -6,7 +6,7 @@ import 'package:mediapipe_flutter_vision/face_landmarker_backend.dart';
 import 'package:test/test.dart';
 
 // The CI coverage gate (tool/coverage/gate.py) requires a passing row for
-// every 'required' cell of tool/coverage/matrix.json. This keeps that matrix
+// every 'required' and 'device' cell of tool/coverage/matrix.json. This keeps that matrix
 // and the package's capability claims from drifting: a required cell must be
 // a claimed capability, and an 'unsupported' cell must not be. Claims are
 // read with every platform adapter registered and the official macOS and iOS
@@ -111,8 +111,9 @@ void main() {
         for (final delegate in VisionDelegate.values) {
           final status = cells[delegate.name]! as String;
           final cell = '$task / $name / ${delegate.name}';
-          if (status == 'required' && !claimed.contains(delegate)) {
-            problems.add('$cell is required but not claimed');
+          if ((status == 'required' || status == 'device') &&
+              !claimed.contains(delegate)) {
+            problems.add('$cell is $status but not claimed');
           }
           if (status.startsWith('unsupported') && claimed.contains(delegate)) {
             problems.add('$cell is claimed but marked "$status"');

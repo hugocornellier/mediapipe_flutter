@@ -1,42 +1,51 @@
-name: Android vision tasks (Firebase Test Lab)
+name: Android devices (Firebase Test Lab)
 
-# Every official SDK suite (gallery/integration_test/sdk_all_test.dart), Face
-# Landmarker's camera checks included, on one physical device, CPU and GPU. Manual only: each run is one execution from
-# the project's small daily quota, so the device is chosen per run.
+# Every official SDK suite (gallery/integration_test/sdk_all_test.dart): the
+# vision tasks on CPU and GPU, Face Landmarker's camera checks, and the text
+# and audio tasks, on physical phones covering the three Android GPU families:
+# Mali (Pixel 8a), Adreno (Galaxy S24) and PowerVR (Galaxy A12). Nightly, and
+# on demand for a branch, whose own copy of this file then runs. Its coverage
+# rows are the device tier that tool/coverage/gate.py accepts for GPU cells.
+# Keeps this file name: GitHub lists a dispatchable workflow only when the
+# default branch holds a file of that name.
 on:
+  schedule:
+    - cron: '0 7 * * *'
   workflow_dispatch:
     inputs:
-      model:
-        description: Test Lab model ID (gcloud firebase test android models list)
-        required: true
-        default: panther
-      version:
-        description: Android API level the model supports
-        required: true
-        default: '33'
-      gpu:
-        description: required fails a GPU refusal; optional records it
-        type: choice
-        options: [required, optional]
-        default: required
+      devices:
+        description: Comma-separated Test Lab model IDs to run, or all
+        required: false
+        default: all
 
 permissions:
   contents: read
 
 concurrency:
-  group: android-face-testlab
+  group: android-devices-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   sdk-tasks:
-    name: Official SDK tasks / ${{ inputs.model }} API ${{ inputs.version }}
+    name: Official SDK tasks / ${{ matrix.name }} (${{ matrix.model }} API ${{ matrix.version }})
+    if: >-
+      github.event_name == 'schedule' || inputs.devices == 'all' ||
+      contains(format(',{0},', inputs.devices), format(',{0},', matrix.model))
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {model: akita, version: '35', name: Pixel 8a Mali, gpu_skip: ''}
+          - {model: e1q, version: '34', name: Galaxy S24 Adreno, gpu_skip: ''}
+          # UP-023: Google's Image Segmenter aborts the app on GPU on PowerVR.
+          - {model: a12, version: '31', name: Galaxy A12 PowerVR, gpu_skip: image_segmenter}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
       FIREBASE_PROJECT_ID: flutter-litert
       RESULTS_BUCKET: test-lab-7yqvc8ruj90y2-k9u7wfunxj2sa
-      RESULTS_DIR: mediapipe-sdk-${{ github.run_id }}-${{ github.run_attempt }}
-      DEVICE: ${{ inputs.model }}-${{ inputs.version }}-en-portrait
+      RESULTS_DIR: mediapipe-sdk-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.model }}
+      DEVICE: ${{ matrix.model }}-${{ matrix.version }}-en-portrait
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -60,8 +69,8 @@ jobs:
       # Checked before building, so a typo costs minutes rather than a run.
       - name: Verify physical device
         env:
-          MODEL: ${{ inputs.model }}
-          VERSION: ${{ inputs.version }}
+          MODEL: ${{ matrix.model }}
+          VERSION: ${{ matrix.version }}
         run: |
           gcloud firebase test android models describe "$MODEL" --project "$FIREBASE_PROJECT_ID" --format=json > device.json
           python3 -c 'import json, os; d = json.load(open("device.json")); assert d["form"] == "PHYSICAL", d["form"]; assert os.environ["VERSION"] in d["supportedVersionIds"], d["supportedVersionIds"]'
@@ -78,15 +87,16 @@ jobs:
       - name: Prepare the gallery with the official SDK tasks
         run: |
           python3 -B gallery/tool/prepare.py --target android/arm64 \
-            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter
+            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,text_classifier,text_embedder,audio_classifier
           cd gallery && flutter pub get
       - name: Build the app and instrumentation APKs
         working-directory: gallery
         env:
-          GPU: ${{ inputs.gpu }}
+          GPU_SKIP: ${{ matrix.gpu_skip }}
         run: |
           target="$PWD/integration_test/sdk_all_test.dart"
-          defines=$(printf 'SDK_GPU=%s' "$GPU" | base64)
+          # A physical GPU must work: a refusal fails its test.
+          defines="$(printf 'SDK_GPU=required' | base64),$(printf 'SDK_GPU_SKIP_TASKS=%s' "$GPU_SKIP" | base64)"
           flutter build apk --config-only --debug --target "$target" --target-platform android-arm64
           cd android
           ./gradlew app:assembleAndroidTest -Pmediapipe.testLabAbi=arm64-v8a
@@ -102,7 +112,8 @@ jobs:
                     'holistic_landmarker.task', 'blaze_face_short_range.tflite',
                     'efficientdet_lite0.tflite', 'efficientnet_lite0.tflite',
                     'mobilenet_v3_small.tflite', 'deeplab_v3.tflite',
-                    'interactive_segmentation.task']
+                    'interactive_segmentation.task', 'bert_classifier.tflite',
+                    'universal_sentence_encoder.tflite', 'language_detector.tflite', 'yamnet.tflite']
           required = {'lib/arm64-v8a/libflutter.so', 'lib/arm64-v8a/libmediapipe_tasks_jni.so',
                       *[f'assets/flutter_assets/assets/models/{m}' for m in models]}
           assert required <= names, sorted(required - names)
@@ -110,9 +121,10 @@ jobs:
           PY
       # One device, no shards or flaky retries: one execution from the daily budget.
       - name: Run every SDK suite on CPU and GPU
+        id: testlab
         env:
-          MODEL: ${{ inputs.model }}
-          VERSION: ${{ inputs.version }}
+          MODEL: ${{ matrix.model }}
+          VERSION: ${{ matrix.version }}
         run: >-
           gcloud firebase test android run
           --project "$FIREBASE_PROJECT_ID" --type instrumentation
@@ -130,9 +142,26 @@ jobs:
           done
           # Each suite reports its measurements as one tagged JSON line.
           grep -hE 'SDK_[A-Z_]+ \{' testlab-results/logcat > testlab-results/measurements.log || true
+      - name: Record device task coverage
+        if: always()
+        env:
+          GPU_SKIP: ${{ matrix.gpu_skip }}
+          OUTCOME: ${{ steps.testlab.outcome }}
+          MODEL: ${{ matrix.model }}
+        run: |
+          python3 -B tool/coverage/record.py --tier device --suite "android-$MODEL-cpu" --platform android --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker,audio_classifier,language_detector,text_classifier,text_embedder --outcome "$OUTCOME"
+          # Interactive Segmenter has no GPU path in Google's Android SDK.
+          gpu=$(python3 -c "import os; skip = set(os.environ['GPU_SKIP'].split(',')); print(','.join(t for t in 'face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker'.split(',') if t not in skip | {'interactive_segmenter'}))")
+          python3 -B tool/coverage/record.py --tier device --suite "android-$MODEL-gpu" --platform android --delegate gpu --tasks "$gpu" --outcome "$OUTCOME"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: android-sdk-testlab-${{ inputs.model }}-${{ inputs.version }}
+          name: coverage-device-android-${{ matrix.model }}
+          path: build/coverage/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-sdk-testlab-${{ matrix.model }}-${{ matrix.version }}
           path: testlab-results/
           if-no-files-found: ignore

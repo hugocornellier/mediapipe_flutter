@@ -249,7 +249,10 @@ void main() {
           mainMethod: hook.main,
           targetOS: OS.android,
           targetArchitecture: architecture,
-          userDefines: defines({'prebuilt': true}),
+          userDefines: defines({
+            'official_android_sdk': false,
+            'prebuilt': true,
+          }),
           check: (_, _) => fail('Android unexpectedly downloaded a runtime'),
         ),
         failsWith<StateError>(contains('No Android public archive is pinned')),
@@ -264,6 +267,7 @@ void main() {
         targetOS: OS.android,
         targetArchitecture: Architecture.x64,
         userDefines: defines({
+          'official_android_sdk': false,
           'tasks': ['object_detector'],
         }),
         check: (_, _) => fail('Unvalidated Android task unexpectedly accepted'),

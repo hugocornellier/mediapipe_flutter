@@ -71,7 +71,16 @@ void main(List<String> arguments) async {
     if (officialAndroidSdk != null && officialAndroidSdk is! bool) {
       throw const FormatException('official_android_sdk must be a boolean.');
     }
-    if (officialAndroidSdk == true) {
+    // Google's SDK is the default on the Android targets it is validated on
+    // (arm64 phones, the x86_64 emulator): the mediapipe_flutter_vision_android
+    // plugin serves every task there. `official_android_sdk: false` selects
+    // the source-built face runtime instead.
+    final useAndroidSdk =
+        officialAndroidSdk as bool? ??
+        ((target == 'android/arm64' || target == 'android/x64') &&
+            officialIosSdk != true &&
+            useOfficialMacosLandmarks != true);
+    if (useAndroidSdk) {
       if (!target.startsWith('android/') ||
           tasks.isEmpty ||
           !officialAndroidTasks.containsAll(tasks) ||
