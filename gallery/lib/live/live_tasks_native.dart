@@ -376,12 +376,16 @@ final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
 }
 
 /// Image Embedder, reporting each frame's similarity to the first one.
-final class ImageEmbedderLiveTask implements LiveTask<EmbeddingSimilarity> {
+final class ImageEmbedderLiveTask
+    implements LiveTask<EmbeddingSimilarity>, StatefulLiveTask {
   @override
   final settings = TaskSettingValues('image_embedder');
 
   ImageEmbedder? _task;
   VisionEmbedding? _first;
+
+  @override
+  void forgetFrames() => _first = null;
 
   @override
   String get name => 'Image Embedder';

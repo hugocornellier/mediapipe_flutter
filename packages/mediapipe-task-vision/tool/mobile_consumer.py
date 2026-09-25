@@ -81,6 +81,9 @@ dev_dependencies:
 hooks:
   user_defines:
     mediapipe_flutter_vision:
+      # The source-built face runtime, not Google's mobile SDKs (the default).
+      official_android_sdk: false
+      official_ios_sdk: false
       prebuilt: ''' + str(prebuilt).lower() + '''
       tasks: [''' + ', '.join(selected) + ''']
 flutter:

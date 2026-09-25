@@ -450,12 +450,11 @@ void CopyLandmarker(MPPFaceLandmarkerResult *source, MpFaceLandmarkerResult *out
     auto &target = out->facial_transformation_matrixes[i];
     target.rows = static_cast<uint32_t>(matrix.rows);
     target.cols = static_cast<uint32_t>(matrix.columns);
+    // `data` holds the graph's column-major MatrixData as-is, which is the C
+    // layout. Google's valueAtRow:column: indexes that buffer as row-major
+    // and so returns the transpose; read the buffer directly instead.
     target.data = Allocate<float>(matrix.rows * matrix.columns);
-    for (NSUInteger row = 0; row < matrix.rows; ++row) {
-      for (NSUInteger column = 0; column < matrix.columns; ++column) {
-        target.data[column * matrix.rows + row] = [matrix valueAtRow:row column:column];
-      }
-    }
+    memcpy(target.data, matrix.data, matrix.rows * matrix.columns * sizeof(float));
   }
 }
 

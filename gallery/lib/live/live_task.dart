@@ -31,6 +31,14 @@ abstract interface class LiveTask<T> {
   Future<void> close();
 }
 
+/// A task that learns from the frames it sees, such as a reference that later
+/// frames are compared with. The controller warms each task up on a sample
+/// before the camera starts, then calls [forgetFrames] so the camera's first
+/// frame finds the task as freshly opened.
+abstract interface class StatefulLiveTask {
+  void forgetFrames();
+}
+
 /// Optional transport for decoded browser frames.
 abstract interface class BrowserLiveTask<T> implements LiveTask<T> {
   Future<T> detectBrowserFrame(

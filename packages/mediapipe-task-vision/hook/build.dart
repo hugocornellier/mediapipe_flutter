@@ -71,7 +71,16 @@ void main(List<String> arguments) async {
     if (officialAndroidSdk != null && officialAndroidSdk is! bool) {
       throw const FormatException('official_android_sdk must be a boolean.');
     }
-    if (officialAndroidSdk == true) {
+    // Google's SDK is the default on the Android targets it is validated on
+    // (arm64 phones, the x86_64 emulator): the mediapipe_flutter_vision_android
+    // plugin serves every task there. `official_android_sdk: false` selects
+    // the source-built face runtime instead.
+    final useAndroidSdk =
+        officialAndroidSdk as bool? ??
+        ((target == 'android/arm64' || target == 'android/x64') &&
+            officialIosSdk != true &&
+            useOfficialMacosLandmarks != true);
+    if (useAndroidSdk) {
       if (!target.startsWith('android/') ||
           tasks.isEmpty ||
           !officialAndroidTasks.containsAll(tasks) ||
@@ -97,12 +106,27 @@ void main(List<String> arguments) async {
       output.metadata['official_android_sdk'] = '1.0.0';
       return;
     }
-    if (officialIosSdk == true) {
+    // Google's SDK is also the default on iOS devices and the arm64 simulator:
+    // its adapter serves every vision task there, and the text and audio
+    // tasks core's tasks_runtime asks for. `official_ios_sdk: false` selects
+    // the source-built face runtime instead.
+    final isIos = target == 'ios/arm64' || target == 'ios-simulator/arm64';
+    final useIosSdk =
+        officialIosSdk as bool? ?? (isIos && useOfficialMacosLandmarks != true);
+    if (useIosSdk) {
       if (useOfficialMacosLandmarks == true) {
         throw StateError('Select only one official platform SDK.');
       }
       await buildOfficialIosSdk(input, output, tasks: tasks);
       return;
+    }
+    if (isIos &&
+        input.metadata['mediapipe_flutter_core']['tasks_runtime'] == true) {
+      throw StateError(
+        'On iOS, the text and audio tasks of mediapipe_flutter_core.tasks_runtime '
+        'run in the official iOS SDK adapter, which official_ios_sdk: false '
+        'turns off.',
+      );
     }
     // Linux's official wheel library exports the stateful API itself, so the
     // task binds the vision asset there and needs no shared runtime.
@@ -169,6 +193,35 @@ void main(List<String> arguments) async {
           'No validated $target runtime covers ${missing.join(', ')}. '
           'Available tasks: ${wheelRelease.tasks.join(', ')}.',
         );
+      }
+      // With the text or audio tasks enabled, core bundles this same library
+      // for them. A second copy would register every graph twice and abort,
+      // so the vision assets then resolve to core's copy by its file name;
+      // loadOfficialDesktopRuntime() loads that copy first.
+      final shared =
+          input.metadata['mediapipe_flutter_core']['tasks_runtime_library'];
+      if (shared != null) {
+        if (shared is! Map ||
+            shared['name'] != wheelRelease.libraryName ||
+            shared['sha256'] != wheelRelease.librarySha256) {
+          throw StateError(
+            'mediapipe_flutter_core bundles $shared for text and audio, not '
+            'the ${wheelRelease.libraryName} ${wheelRelease.librarySha256} '
+            'that mediapipe_flutter_vision pins for $target.',
+          );
+        }
+        for (final assetName in {'vision.dylib', ..._assetNames(tasks)}) {
+          output.assets.code.add(
+            CodeAsset(
+              package: input.packageName,
+              name: assetName,
+              linkMode: DynamicLoadingSystem(
+                Uri.file(wheelRelease.libraryName),
+              ),
+            ),
+          );
+        }
+        return;
       }
       final library = await downloadVisionWheel(
         wheelRelease,

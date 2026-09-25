@@ -11,5 +11,5 @@ export 'text_proofreader.dart';
 export 'text_summarizer.dart';
 
 export 'universal_mediapipe_flutter_text.dart'
-    if (dart.library.html) 'src/web/mediapipe_flutter_text.dart'
+    if (dart.library.js_interop) 'src/web/mediapipe_flutter_text.dart'
     if (dart.library.io) 'src/io/mediapipe_flutter_text.dart';

@@ -9,7 +9,9 @@
 - Models: official BlazeFace short-range and Face Landmarker float16 version 1; URLs and digests are in
   `lib/models.dart`.
 
-The fourteen headers under `mediapipe/` are unchanged copies from that commit.
+The headers under `mediapipe/` are unchanged copies from that commit: the
+vision tasks' and, for the iOS adapter's text and audio bridge, the Text
+Classifier, Text Embedder, Language Detector and Audio Classifier ones.
 They define the modern C ABI separately from the legacy 2024 core/text/GenAI
 bindings. Do not substitute those packages' base options or image structs.
 

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {chromium, firefox} from 'playwright';
+import {chromium, firefox, webkit} from 'playwright';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const argumentsMap = Object.fromEntries(process.argv.slice(2).map(arg => arg.replace(/^--/, '').split('=')));
@@ -31,6 +31,7 @@ const base = argumentsMap['base-url'] || 'http://localhost:8866/mediapipe_flutte
 // The gallery publishes its per-frame state for these checks only on request.
 const gallery = base + (base.includes('?') ? '&' : '?') + 'test-hooks';
 const apiBase = argumentsMap['api-url'] || 'http://localhost:8866/api-probe/';
+const textAudioBase = argumentsMap['text-audio-url'] || 'http://localhost:8866/text-audio-probe/';
 const evidence = path.join(repo, 'build/codex-tmp/web-browser-' + browserName +
   (delegate === 'GPU' ? '-gpu' : '') + (taskName === 'face' ? '' : '-' + taskName));
 fs.mkdirSync(evidence, {recursive: true});
@@ -53,7 +54,7 @@ async function launch(deviceCount = 2, useFile = true) {
     firefoxUserPrefs: process.platform === 'linux' ? {'webgl.force-enabled': true} : {},
   };
   options.headless = argumentsMap.headed !== 'true';
-  const browser = await (browserName === 'firefox' ? firefox : chromium).launch(options);
+  const browser = await ({chromium, firefox, webkit}[browserName]).launch(options);
   browsers.push(browser);
   report.browser_version = browser.version();
   return browser;
@@ -396,7 +397,7 @@ async function apiChecks() {
       });
       // Stateful MagicTouch runs on CPU only, in both delegate passes.
       const magic = await vision.InteractiveSegmenter.createFromOptions(files, {
-        baseOptions: {delegate: 'CPU', modelAssetPath: new URL('assets/assets/models/interactive_segmentation.task', document.baseURI).href},
+        baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/interactive_segmentation.task', document.baseURI).href},
       });
       // A stroke history's mask, sampled on the same 16 x 12 grid.
       const strokes = history => {
@@ -747,7 +748,117 @@ async function cameraChecks() {
   await missing.close();
 }
 
+// Text Classifier, Text Embedder, Language Detector and Audio Classifier
+// through the Dart API, against Google's JavaScript on the same page, runtime
+// and inputs; in Chromium also two seconds of microphone input fed from a
+// speech clip by Chrome's fake capture.
+async function textAudioChecks() {
+  const microphone = browserName === 'chromium';
+  const browser = await ({chromium, firefox, webkit}[browserName]).launch({
+    headless: argumentsMap.headed !== 'true',
+    ...(microphone ? {channel: 'chromium', args: ['--use-fake-device-for-media-stream',
+      '--use-file-for-fake-audio-capture=' + path.join(repo, 'gallery/assets/samples/speech_16000_hz_mono.wav')]} : {}),
+  });
+  browsers.push(browser);
+  report.browser_version = browser.version();
+  const context = await browser.newContext(microphone ? {permissions: ['microphone']} : {});
+  const page = await context.newPage();
+  observe(page);
+  await page.goto(textAudioBase + (microphone ? '?mic=1' : ''));
+  await wait(page, () => window.mediapipeTextAudioReport, null, 300000);
+  const api = await page.evaluate(() => window.mediapipeTextAudioReport);
+  fs.writeFileSync(path.join(evidence, 'text-audio-report.json'), JSON.stringify(api, null, 2));
+  assert.equal(api.status, 'passed', JSON.stringify(api));
+  const official = await page.evaluate(async () => {
+    const asset = name => new URL('assets/' + name, document.baseURI).href;
+    const bytes = async name => new Uint8Array(await (await fetch(asset(name))).arrayBuffer());
+    const text = await import(asset('packages/mediapipe_flutter_text_web/assets/runtime/text_bundle.mjs'));
+    const textFiles = await text.FilesetResolver.forTextTasks(asset('packages/mediapipe_flutter_text_web/assets/runtime/wasm'));
+    const heads = result => result.classifications.map(h => h.categories.map(c =>
+      [c.index, c.score, c.categoryName || null, c.displayName || null]));
+    // The package sends an unset score threshold as 0, as Google's Python and
+    // C APIs do (backend_text_task.dart), so the reference passes it too.
+    const classifier = [];
+    for (const [input, options] of [['Hello, world!', {}],
+        ['This was a terrible movie. I hated every minute.', {}],
+        ['Hello, world!', {maxResults: 1}], ['Hello, world!', {categoryDenylist: ['positive']}]]) {
+      const task = await text.TextClassifier.createFromOptions(textFiles,
+        {scoreThreshold: 0, ...options, baseOptions: {modelAssetBuffer: await bytes('assets/models/bert_classifier.tflite')}});
+      classifier.push(heads(task.classify(input)));
+      task.close();
+    }
+    const embedder = {};
+    for (const quantize of [false, true]) {
+      const task = await text.TextEmbedder.createFromOptions(textFiles, {l2Normalize: quantize, quantize,
+        baseOptions: {modelAssetBuffer: await bytes('assets/models/universal_sentence_encoder.tflite')}});
+      const e = ['Hello, world!', 'Hello there!', 'The spacecraft landed on Mars.'].map(t => task.embed(t).embeddings[0]);
+      embedder[quantize ? 'quantized' : 'float'] = {
+        values: e.map(v => Array.from(quantize ? v.quantizedEmbedding : v.floatEmbedding)),
+        head: [e[0].headIndex, e[0].headName || null],
+        similarity: [text.TextEmbedder.cosineSimilarity(e[0], e[1]), text.TextEmbedder.cosineSimilarity(e[0], e[2])],
+      };
+      task.close();
+    }
+    const detector = await text.LanguageDetector.createFromOptions(textFiles,
+      {maxResults: 3, scoreThreshold: 0, baseOptions: {modelAssetBuffer: await bytes('assets/models/language_detector.tflite')}});
+    const language = ['Hello, world!', 'Quiero agua, por favor.', 'こんにちは、元気ですか？'].map(t =>
+      detector.detect(t).languages.map(l => [l.languageCode, l.probability]));
+    detector.close();
+    const audio = await import(asset('packages/mediapipe_flutter_audio_web/assets/runtime/audio_bundle.mjs'));
+    const audioFiles = await audio.FilesetResolver.forAudioTasks(asset('packages/mediapipe_flutter_audio_web/assets/runtime/wasm'));
+    const yamnet = await audio.AudioClassifier.createFromOptions(audioFiles,
+      {baseOptions: {modelAssetBuffer: await bytes('assets/models/yamnet.tflite')}});
+    const clips = {};
+    for (const clip of ['speech_16000_hz_mono.wav', 'speech_48000_hz_mono.wav']) {
+      // Google's sample clips are 16-bit PCM mono.
+      const wav = new DataView((await bytes('assets/samples/' + clip)).buffer);
+      let at = 12, rate = 0, samples;
+      while (at + 8 <= wav.byteLength) {
+        const tag = String.fromCharCode(...[0, 1, 2, 3].map(i => wav.getUint8(at + i)));
+        const size = wav.getUint32(at + 4, true);
+        if (tag === 'fmt ') rate = wav.getUint32(at + 12, true);
+        if (tag === 'data') samples = Float32Array.from({length: size >> 1}, (_, i) => wav.getInt16(at + 8 + 2 * i, true) / 32768);
+        at += 8 + size + (size & 1);
+      }
+      clips[clip] = yamnet.classify(samples, rate).map(chunk => [chunk.timestampMs ?? 0,
+        chunk.classifications[0].categories.slice(0, 5).map(c => [c.index, c.score, c.categoryName || null])]);
+    }
+    yamnet.close();
+    return {classifier, embedder, language, audio: clips};
+  });
+  fs.writeFileSync(path.join(evidence, 'text-audio-official.json'), JSON.stringify(official, null, 2));
+  // Same runtime and inputs: every number must match, strings exactly.
+  const errors = {};
+  const compare = (group, actual, expected, where = group) => {
+    if (typeof expected === 'number') {
+      assert.equal(typeof actual, 'number', where);
+      errors[group] = Math.max(errors[group] ?? 0, Math.abs(actual - expected));
+      assert.ok(Math.abs(actual - expected) < 1e-5, where + ': ' + actual + ' vs ' + expected);
+    } else if (Array.isArray(expected)) {
+      assert.equal(actual.length, expected.length, where + ' length');
+      expected.forEach((value, i) => compare(group, actual[i], value, where + '[' + i + ']'));
+    } else if (expected && typeof expected === 'object') {
+      for (const key of Object.keys(expected)) compare(group, actual[key], expected[key], where + '.' + key);
+    } else {
+      assert.equal(actual, expected, where);
+    }
+  };
+  for (const group of ['classifier', 'embedder', 'language', 'audio']) compare(group, api[group], official[group]);
+  report.text_audio_max_error = errors;
+  report.checks.push('text-audio-match-official-javascript');
+  if (microphone) {
+    const heard = api.microphone.chunks.flatMap(([, categories]) => categories.map(c => c[2]));
+    fs.writeFileSync(path.join(evidence, 'microphone.json'), JSON.stringify(api.microphone, null, 2));
+    assert.ok(api.microphone.samples >= 32000, 'too little microphone audio');
+    assert.ok(heard.includes('Speech'), 'the fake microphone plays speech; heard ' + heard);
+    report.checks.push('microphone-speech-classified');
+  }
+  await wait(page, () => mediapipeText.stats().activeWorkers === 0 && mediapipeAudio.stats().activeWorkers === 0);
+  report.checks.push('text-audio-worker-cleanup');
+}
+
 try {
+  if (suite === 'text-audio') await textAudioChecks();
   if (suite === 'all' || suite === 'api') await apiChecks();
   if ((suite === 'all' || suite === 'api') && browserName === 'chromium' && delegate === 'CPU') {
     await iosUserAgentCpuCheck();

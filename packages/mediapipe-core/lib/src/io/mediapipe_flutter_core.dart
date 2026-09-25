@@ -4,6 +4,8 @@
 
 export 'containers.dart';
 export 'ffi_utils.dart';
+export 'host_system.dart';
+export 'runtime_diagnostics.dart';
 export 'task_options.dart';
 export 'task_executor.dart';
 export 'task_result.dart';

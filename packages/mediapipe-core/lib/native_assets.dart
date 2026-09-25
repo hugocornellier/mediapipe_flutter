@@ -3,3 +3,4 @@
 library;
 
 export 'src/native_assets/native_library.dart';
+export 'src/native_assets/wheel_library.dart';

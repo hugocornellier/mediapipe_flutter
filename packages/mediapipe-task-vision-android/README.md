@@ -3,8 +3,8 @@ released `com.google.mediapipe:tasks-vision:1.0.0` Java/JNI SDK with its origina
 task graph. Creation, IMAGE/VIDEO inference and disposal run on one executor
 thread, including GPU context ownership. GPU errors propagate without CPU fallback.
 
-Add this Flutter plugin alongside `mediapipe_flutter_vision`, then select the SDK
-in the application's pubspec:
+Add this Flutter plugin alongside `mediapipe_flutter_vision`. The SDK is the
+default on Android arm64 and x86_64, so the app only lists its tasks:
 
 ```yaml
 dependencies:
@@ -15,17 +15,20 @@ dependencies:
 hooks:
   user_defines:
     mediapipe_flutter_vision:
-      official_android_sdk: true
       tasks: [face_landmarker, hand_landmarker] # any of the served tasks
 ```
+
+`official_android_sdk: false` selects the source-built Face Detector and Face
+Landmarker runtime instead (tool/build_android.py).
 
 Flutter registers the adapter automatically, and the public task APIs stay the
 same. Android 24 or later is required. The SDK serves every vision task except
 the point-based Interactive Segmenter Legacy, which Google's 1.0.0 Android task
 cannot run correctly (it ignores the keypoint; upstream-issues.md UP-020). The
 selection avoids loading the source-built MediaPipe runtime into the same
-process. Face Landmarker has run on a physical Pixel 7; the other tasks have run
-on an emulator's CPU so far. See
+process. Every task runs on the x86_64 emulator's CPU in CI, and on demand on CPU
+and GPU on a Pixel 8a (Mali), a Galaxy S24 (Adreno) and a Galaxy A12 (PowerVR)
+in Firebase Test Lab (.github/workflows/android-face-testlab.yml, manual). See
 [the status table](../mediapipe-task-vision/tool/VISION_TASKS_STATUS.md).
 
 Segmentation masks travel from native memory over a separate binary channel,

@@ -83,6 +83,44 @@ void main() {
       }
     },
   );
+  test('Android uses the SDK unless the source runtime is chosen', () async {
+    await testCodeBuildHook(
+      mainMethod: hook.main,
+      targetOS: OS.android,
+      targetArchitecture: Architecture.x64,
+      userDefines: _defines({
+        'tasks': ['pose_landmarker', 'face_landmarker'],
+      }),
+      check: (_, output) {
+        expect(output.assets.code, isNotEmpty);
+        for (final asset in output.assets.code) {
+          expect(asset.file, isNull);
+          expect(asset.linkMode, isA<LookupInProcess>());
+        }
+      },
+    );
+    // Opting out takes the source-built face runtime: bundled files when a
+    // maintainer build exists here, otherwise a message on how to build it.
+    try {
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.android,
+        targetArchitecture: Architecture.x64,
+        userDefines: _defines({
+          'official_android_sdk': false,
+          'tasks': ['face_landmarker'],
+        }),
+        check: (_, output) {
+          expect(
+            output.assets.code.every((asset) => asset.file != null),
+            isTrue,
+          );
+        },
+      );
+    } on StateError catch (error) {
+      expect('$error', contains('local source build'));
+    }
+  });
   test('Android SDK option must be boolean', () async {
     await expectLater(
       testCodeBuildHook(

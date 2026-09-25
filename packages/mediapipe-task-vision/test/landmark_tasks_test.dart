@@ -32,18 +32,17 @@ final _selectedTasks =
       null => _models.keys.toSet(),
     };
 
-// Hand Landmarker is the landmark task with a GPU path. Its GPU output is
-// compared with the official wheel's GPU output: on macOS (official runtime)
-// the checked-in physical-Mac references or same-host ones, on Linux only
-// same-host ones (MEDIAPIPE_GPU_REFERENCE_DIR).
-final _handGpuSkip = !_selectedTasks.contains('hand')
-    ? 'hand is not selected'
-    : Platform.isMacOS && _unvalidatedHost == null
+// Each selected task's GPU output is compared with the official wheel's GPU
+// output for the cases that reference holds: on macOS (official runtime) the
+// checked-in physical-Mac references (hand) or same-host ones, on Linux only
+// same-host ones (MEDIAPIPE_GPU_REFERENCE_DIR, from
+// tool/prepare_gpu_reference.py --landmark-tasks or --hand).
+final _gpuSkip = Platform.isMacOS && _unvalidatedHost == null
     ? null
     : Platform.isLinux &&
           Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] != null
     ? null
-    : 'Hand GPU is validated on the official macOS runtime, and on Linux '
+    : 'Landmark GPU is validated on the official macOS runtime, and on Linux '
           'against same-host references (MEDIAPIPE_GPU_REFERENCE_DIR).';
 
 void main() {
@@ -156,15 +155,15 @@ void main() {
     );
   }
   group('gpu', () {
-    final reference = _handGpuSkip == null
+    final reference = _gpuSkip == null
         ? loadFaceReference('landmark_tasks', 'official_gpu_reference.json')
         : null;
     final cases = [
       ...?(reference?['cases'] as List?)?.cast<Map<String, dynamic>>(),
-    ];
+    ].where((c) => _selectedTasks.contains(c['task'])).toList();
     for (final expected in cases.where((c) => c['timestamp_ms'] == null)) {
       test(
-        'official hand / ${expected['input']} / ${expected['file']}',
+        'official ${expected['task']} / ${expected['input']} / ${expected['file']} / ${expected['options']}',
         () async {
           final (process, close) = await _create(
             expected,
@@ -178,7 +177,7 @@ void main() {
                 null,
               ),
               expected['result'],
-              'hand',
+              expected['task'] as String,
               gpu: true,
             );
           } finally {
@@ -187,26 +186,39 @@ void main() {
         },
       );
     }
-    test('hand video matches tracked and empty frames', () async {
-      final frames = cases.where((c) => c['timestamp_ms'] != null).toList();
-      final (process, close) = await _create(
-        frames.first,
-        delegate: VisionDelegate.gpu,
-      );
-      try {
-        for (final frame in frames) {
-          _compare(
-            await process(_image(frame), 0, frame['timestamp_ms'] as int),
-            frame['result'],
-            'hand',
-            gpu: true,
-          );
+    for (final name in {
+      for (final c in cases)
+        if (c['timestamp_ms'] != null) c['task'] as String,
+    }) {
+      test('$name video matches tracked and empty frames', () async {
+        final frames = cases
+            .where(
+              (c) =>
+                  c['task'] == name &&
+                  c['timestamp_ms'] != null &&
+                  (c['options'] as Map)['min_hand_landmarks_confidence'] ==
+                      null,
+            )
+            .toList();
+        final (process, close) = await _create(
+          frames.first,
+          delegate: VisionDelegate.gpu,
+        );
+        try {
+          for (final frame in frames) {
+            _compare(
+              await process(_image(frame), 0, frame['timestamp_ms'] as int),
+              frame['result'],
+              name,
+              gpu: true,
+            );
+          }
+        } finally {
+          await close();
         }
-      } finally {
-        await close();
-      }
-    }, skip: _handGpuSkip);
-  });
+      });
+    }
+  }, skip: _gpuSkip);
   test(
     'invalid model tracking and classification options fail before native calls',
     () {
@@ -343,6 +355,7 @@ Future<_Task> _create(
           modelPath: modelPath,
           modelBytes: modelBytes,
           runningMode: mode,
+          delegate: delegate,
           numHands: options['num_hands'] as int,
         ),
       );
@@ -377,6 +390,7 @@ Future<_Task> _create(
           modelPath: modelPath,
           modelBytes: modelBytes,
           runningMode: mode,
+          delegate: delegate,
           outputSegmentationMasks: options['output_segmentation_masks'] as bool,
         ),
       );
@@ -413,6 +427,7 @@ Future<_Task> _create(
           modelPath: modelPath,
           modelBytes: modelBytes,
           runningMode: mode,
+          delegate: delegate,
           outputFaceBlendshapes: options['output_face_blendshapes'] as bool,
           outputPoseSegmentationMask:
               options['output_segmentation_mask'] as bool,
@@ -591,8 +606,9 @@ void _compare(
   }
 }
 
-// Hand GPU against the official wheel's GPU output on the same host. See
-// fixtures/landmark_tasks/README.md for the measured maxima behind these.
+// GPU against the official wheel's GPU output on the same host. See
+// fixtures/landmark_tasks/README.md for the measured maxima behind these
+// (Hand; the other tasks' deltas are reported by reportReferenceDeltas).
 const _gpuTolerances = {
   'landmarks': 0.002,
   'world_landmarks': 0.002,

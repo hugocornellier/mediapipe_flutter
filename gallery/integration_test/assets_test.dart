@@ -29,11 +29,14 @@ void main() {
         completes,
         reason: '${task.id} model',
       );
-      await expectLater(
-        rootBundle.load('assets/samples/${task.sample}'),
-        completes,
-        reason: '${task.id} sample',
-      );
+      // Text tiles take typed input and bundle no sample.
+      if (task.sample.isNotEmpty) {
+        await expectLater(
+          rootBundle.load('assets/samples/${task.sample}'),
+          completes,
+          reason: '${task.id} sample',
+        );
+      }
     }
   });
 

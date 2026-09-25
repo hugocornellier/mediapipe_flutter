@@ -248,6 +248,69 @@ void main() {
     expect(result.poseSegmentationMask, isNull);
   });
 
+  test('reads packed holistic parts as the JSON ones', () {
+    // The worker's packParts: every part in one buffer, in `parts` order.
+    List<double> point(double x) => [x, x, 0, double.nan, 0.5];
+    final result = decodeWebHolisticResult(
+      {
+        'width': 8,
+        'height': 6,
+        'timestamp': 12,
+        'parts': [
+          ['faceLandmarks', <Object?>[]],
+          [
+            'poseLandmarks',
+            [2],
+          ],
+          [
+            'poseWorldLandmarks',
+            [1],
+          ],
+          [
+            'leftHandLandmarks',
+            [1],
+          ],
+          [
+            'leftHandWorldLandmarks',
+            [1],
+          ],
+          ['rightHandLandmarks', <Object?>[]],
+          ['rightHandWorldLandmarks', <Object?>[]],
+        ],
+        'result': {
+          for (final part in [
+            'faceLandmarks',
+            'poseLandmarks',
+            'poseWorldLandmarks',
+            'leftHandLandmarks',
+            'leftHandWorldLandmarks',
+            'rightHandLandmarks',
+            'rightHandWorldLandmarks',
+          ])
+            part: <Object?>[],
+          'faceBlendshapes': <Object?>[],
+        },
+      },
+      landmarks: Float64List.fromList([
+        ...point(0.1),
+        ...point(0.2),
+        ...point(1),
+        ...point(0.3),
+        ...point(2),
+      ]),
+    );
+    expect(result.faceLandmarks, isEmpty);
+    expect(result.poseLandmarks.map((p) => p.x), [0.1, 0.2]);
+    expect(result.poseLandmarks.first.visibility, isNull);
+    expect(result.poseLandmarks.first.presence, 0.5);
+    expect(result.poseWorldLandmarks.single.x, 1);
+    expect(result.leftHandLandmarks.single.x, 0.3);
+    expect(result.leftHandWorldLandmarks.single.x, 2);
+    expect(result.rightHandLandmarks, isEmpty);
+    expect(result.rightHandWorldLandmarks, isEmpty);
+    expect(result.faceBlendshapes, isNull);
+  });
+
   test('reads face detections: truncated boxes, keypoints, absent labels', () {
     final result = decodeWebFaceDetectorResult({
       'width': 100,

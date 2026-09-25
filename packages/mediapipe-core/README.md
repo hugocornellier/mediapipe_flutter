@@ -2,8 +2,12 @@
 
 `mediapipe_flutter_core` is part of the public
 [mediapipe_flutter](../../README.md) development fork. It owns the optional,
-verified MediaPipe 1.0.1 runtime shared by all six text tasks and MagicTouch on
-macOS 14+ arm64. Apps enable it with
+verified MediaPipe runtime shared by the text and audio tasks: Google's 1.0.1
+library on macOS 14+ arm64 (also serving MagicTouch and the newer text tasks),
+on Linux x64 (1.0.1) and Windows x64 (1.0.0) the official wheel library the
+vision package pins, which the vision hook then shares instead of bundling a
+second copy, and on iOS the vision package's adapter over Google's 1.0.1 iOS
+SDK, which implements every task in one framework. Apps enable it with
 `hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`.
 Its inherited container types also remain available for compatibility.
 

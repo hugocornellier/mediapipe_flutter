@@ -27,11 +27,13 @@ def main():
     parser.add_argument('--port', type=int, default=8866)
     parser.add_argument('--bundle', type=Path, default=Path('gallery/build/web'))
     parser.add_argument('--api-bundle', type=Path, default=Path('gallery/build/web-api'))
+    parser.add_argument('--text-audio-bundle', type=Path, default=Path('gallery/build/web-text-audio'))
     args = parser.parse_args()
     empty = Path('build/codex-tmp/web-server-empty')
     empty.mkdir(parents=True, exist_ok=True)
     server = ThreadingHTTPServer(('127.0.0.1', args.port), partial(Handler, directory=str(empty.resolve())))
-    server.mounts = {'/mediapipe_flutter/': args.bundle.resolve(), '/api-probe/': args.api_bundle.resolve()}
+    server.mounts = {'/mediapipe_flutter/': args.bundle.resolve(), '/api-probe/': args.api_bundle.resolve(),
+                     '/text-audio-probe/': args.text_audio_bundle.resolve()}
     server.serve_forever()
 
 

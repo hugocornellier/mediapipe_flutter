@@ -12,10 +12,10 @@ Prepare and build from the repository root:
 python3 gallery/tool/prepare.py --target android/arm64 --tasks face_landmarker
 cd gallery
 flutter pub get
-flutter build apk --config-only --debug --target integration_test/android_face_landmarker_test.dart --target-platform android-arm64
+flutter build apk --config-only --debug --target integration_test/sdk_face_landmarker_test.dart --target-platform android-arm64
 cd android
 ./gradlew app:assembleAndroidTest -Pmediapipe.testLabAbi=arm64-v8a
-./gradlew app:assembleDebug -Ptarget="$(pwd)/../integration_test/android_face_landmarker_test.dart" -Ptarget-platform=android-arm64 -Pmediapipe.testLabAbi=arm64-v8a
+./gradlew app:assembleDebug -Ptarget="$(pwd)/../integration_test/sdk_face_landmarker_test.dart" -Ptarget-platform=android-arm64 -Pmediapipe.testLabAbi=arm64-v8a
 ```
 
 Run Gradle commands sequentially. Before uploading, inspect the APK ZIP and
@@ -38,7 +38,7 @@ Keep cloud submission manual and use one device without sharding or automatic
 retries: all CPU/GPU checks share that execution, conserving the five daily runs.
 Use the results bucket URL from gcloud to download `logcat`,
 `instrumentation.results` and `test_result_1.xml`. Structured diagnostic lines
-start with `ANDROID_FACE_SDK`.
+start with `SDK_FACE_LANDMARKER`.
 
 The manual `android-face-testlab.yml` workflow runs a larger bundle,
 `integration_test/sdk_all_test.dart`: these face checks plus every other

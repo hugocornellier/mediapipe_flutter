@@ -13,14 +13,11 @@ import platform
 import subprocess
 import sys
 
-from generate_classic_text_reference import LIBRARY_SHA256, PACKAGE
+from generate_classic_text_reference import PACKAGE
+from official_wheels import host_runtime, venv_python
 
 REPO = PACKAGE.parents[1]
 BASELINE = PACKAGE / 'test/fixtures/classic_text/official_reference.json'
-WHEEL_URL = ('https://files.pythonhosted.org/packages/18/56/'
-             '911762884caba685dc8156d0136c58196a228c2b447023cfa0cfdb32f6c5/'
-             'mediapipe-1.0.1-py3-none-macosx_11_0_arm64.whl')
-WHEEL_SHA256 = '0a9fb67957f7d28e84f485e9c6716a43367b3f6f07170f31c3f72cac1addd031'
 
 
 def digest(path):
@@ -34,18 +31,21 @@ def reference_file():
         return BASELINE
     root = Path(directory)
     reference = root / 'official_reference.json'
-    receipt = json.loads((root / 'provenance.json').read_text())
-    current = json.loads(reference.read_text())
-    baseline = json.loads(BASELINE.read_text())
+    receipt = json.loads((root / 'provenance.json').read_text(encoding='utf-8'))
+    current = json.loads(reference.read_text(encoding='utf-8'))
+    baseline = json.loads(BASELINE.read_text(encoding='utf-8'))
+    runtime = host_runtime()
     if (receipt.get('source') != 'official-python-api'
-            or receipt.get('runtime') != 'mediapipe==1.0.1'
+            or receipt.get('runtime') != 'mediapipe==' + runtime['version']
             or receipt.get('delegate') != 'CPU'
-            or receipt.get('library_sha256') != LIBRARY_SHA256
-            or receipt.get('wheel_sha256') != WHEEL_SHA256
+            or receipt.get('library_sha256') != runtime['library_sha256']
+            or receipt.get('wheel_sha256') != runtime['wheel_sha256']
             or receipt.get('reference_sha256') != digest(reference)
             or receipt.get('baseline_sha256') != digest(BASELINE)
+            or current.get('runtime') != receipt['runtime']
+            or current.get('library_sha256') != receipt['library_sha256']
             or any(current.get(key) != baseline[key]
-                   for key in ('runtime', 'delegate', 'library_sha256', 'models', 'abi'))):
+                   for key in ('delegate', 'models', 'abi'))):
         raise RuntimeError('Invalid same-host official classic text reference')
     return reference
 
@@ -87,40 +87,39 @@ def main():
     parser.add_argument('--python-package-root', type=Path, help='Extracted official wheel')
     parser.add_argument('--output-dir', type=Path, default=REPO / 'build/classic-text-reference')
     args = parser.parse_args()
-    if platform.system() != 'Darwin' or platform.machine() != 'arm64':
-        raise SystemExit('Classic text references require macOS arm64.')
+    runtime = host_runtime()
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
     receipt = output / 'provenance.json'
     receipt.unlink(missing_ok=True)
     python = args.python
     if python is None:
-        environment = REPO / 'build/codex-tmp/classic-text-reference-env'
-        if not (environment / 'bin/python').exists():
+        environment = REPO / f'build/codex-tmp/classic-text-reference-env-{runtime["version"]}'
+        python = venv_python(environment)
+        if not python.exists():
             subprocess.run([sys.executable, '-m', 'venv', str(environment)], check=True)
-        python = environment / 'bin/python'
         subprocess.run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check',
-                        WHEEL_URL + '#sha256=' + WHEEL_SHA256], check=True)
+                        runtime['wheel_url'] + '#sha256=' + runtime['wheel_sha256']], check=True)
     reference = output / 'official_reference.json'
     command = [str(python.absolute()), '-B', str(PACKAGE / 'tool/generate_classic_text_reference.py'),
                '--output', str(reference)]
     if args.python_package_root:
         command.extend(['--python-package-root', str(args.python_package_root.resolve())])
     log_file = output / 'official-python.log'
-    with log_file.open('w') as log:
+    with log_file.open('w', encoding='utf-8') as log:
         result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
-    print('\n'.join(log_file.read_text().splitlines()[-15:]), flush=True)
+    print('\n'.join(log_file.read_text(encoding='utf-8', errors='replace').splitlines()[-15:]), flush=True)
     result.check_returncode()
-    summary = differences(json.loads(BASELINE.read_text()), json.loads(reference.read_text()))
+    summary = differences(json.loads(BASELINE.read_text(encoding='utf-8')), json.loads(reference.read_text(encoding='utf-8')))
     if summary['structural_differences']:
         raise RuntimeError(f'Official reference structure changed: {summary}')
-    report = {'source': 'official-python-api', 'runtime': 'mediapipe==1.0.1',
-              'delegate': 'CPU', 'library_sha256': LIBRARY_SHA256,
-              'wheel_url': WHEEL_URL, 'wheel_sha256': WHEEL_SHA256,
+    report = {'source': 'official-python-api', 'runtime': 'mediapipe==' + runtime['version'],
+              'delegate': 'CPU', 'library_sha256': runtime['library_sha256'],
+              'wheel_url': runtime['wheel_url'], 'wheel_sha256': runtime['wheel_sha256'],
               'os': platform.platform(), 'machine': platform.machine(),
               'reference_sha256': digest(reference), 'baseline_sha256': digest(BASELINE),
               'checked_in_reference_differences': summary}
-    receipt.write_text(json.dumps(report, indent=2) + '\n')
+    receipt.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(report, indent=2), flush=True)
 
 

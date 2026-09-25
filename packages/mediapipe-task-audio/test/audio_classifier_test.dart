@@ -4,6 +4,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart'
+    show tasksRuntimeWheel;
 import 'package:mediapipe_flutter_audio/mediapipe_flutter_audio.dart';
 import 'package:mediapipe_flutter_audio/models.dart';
 import 'package:mediapipe_flutter_audio/src/third_party/mediapipe/audio_classifier_bindings.dart'
@@ -17,10 +19,49 @@ const _model = 'models/yamnet.tflite';
 /// to rounding (the reference rounds to six places).
 const _scoreDelta = 1e-5;
 
-void main() {
-  final reference =
-      jsonDecode(File('$_fixtures/official_reference.json').readAsStringSync())
+/// Google's result on this host when CI prepared one with
+/// tool/prepare_audio_reference.py; otherwise the checked-in macOS reference.
+/// A missing or modified same-host reference fails instead of falling back.
+Map<String, dynamic> _loadReference() {
+  final baselineBytes = File(
+    '$_fixtures/official_reference.json',
+  ).readAsBytesSync();
+  final baseline =
+      jsonDecode(utf8.decode(baselineBytes)) as Map<String, dynamic>;
+  final directory = Platform.environment['MEDIAPIPE_AUDIO_REFERENCE_DIR'];
+  if (directory == null) return baseline;
+  final root = Directory(directory).absolute.uri;
+  final bytes = File.fromUri(
+    root.resolve('official_reference.json'),
+  ).readAsBytesSync();
+  final reference = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+  final receipt =
+      jsonDecode(
+            File.fromUri(root.resolve('provenance.json')).readAsStringSync(),
+          )
           as Map<String, dynamic>;
+  final wheel = tasksRuntimeWheel(
+    Abi.current().toString().replaceFirst('_', '/'),
+  );
+  final runtime = 'mediapipe==${wheel?.version}';
+  if (wheel == null ||
+      receipt['source'] != 'official-python-api' ||
+      receipt['runtime'] != runtime ||
+      receipt['library_sha256'] != wheel.librarySha256 ||
+      receipt['wheel_sha256'] != wheel.wheelSha256 ||
+      receipt['reference_sha256'] != sha256.convert(bytes).toString() ||
+      receipt['baseline_sha256'] != sha256.convert(baselineBytes).toString() ||
+      reference['runtime'] != runtime ||
+      reference['model_sha256'] != baseline['model_sha256'] ||
+      jsonEncode((reference['clips'] as Map).keys.toList()) !=
+          jsonEncode((baseline['clips'] as Map).keys.toList())) {
+    throw StateError('Invalid same-host official audio reference');
+  }
+  return reference;
+}
+
+void main() {
+  final reference = _loadReference();
   final clips = reference['clips'] as Map<String, dynamic>;
 
   setUpAll(() {
@@ -32,7 +73,7 @@ void main() {
   });
 
   for (final MapEntry(key: clip, value: expected) in clips.entries) {
-    test('$clip matches the official 1.0.1 result, chunk by chunk', () async {
+    test('$clip matches the official result, chunk by chunk', () async {
       final task = await AudioClassifier.create(
         AudioClassifierOptions(modelPath: _model, maxResults: 3),
       );

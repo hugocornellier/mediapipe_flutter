@@ -13,6 +13,8 @@ import 'package:mediapipe_flutter_vision/vision_task_backend.dart'
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/main.dart';
 
+import 'support/gallery_tiles.dart';
+
 /// `required` fails when the SDK refuses the GPU, as on a phone; `optional`
 /// records a refusal at creation; `skip` runs CPU only.
 /// The iOS simulator needs `skip`: Google's iOS SDK aborts in its Metal
@@ -211,18 +213,9 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(const GalleryApp());
-    for (
-      var i = 0;
-      i < 100 && find.text('Live Hand Landmarker').evaluate().isEmpty;
-      i++
-    ) {
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 100)),
-      );
-      await tester.pump();
-    }
-    expect(find.text('Live Hand Landmarker'), findsOneWidget);
-    await tester.tap(find.text('Live Hand Landmarker'));
+    final tile = await scrollToGalleryTile(tester, 'Live Hand Landmarker');
+    expect(tile, findsOneWidget);
+    await tester.tap(tile);
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(LiveCameraView), findsOneWidget);
     final controller = tester

@@ -34,10 +34,27 @@ OBJECT_FILES = (
     "object_detection/official_gpu_reference.json",
     "object_detection/official_gpu_video_reference.json",
 )
-# Hand Landmarker, from the shared landmark generator restricted to hand.
+# Hand Landmarker alone (--hand), or with Gesture, Pose and Holistic
+# (--landmark-tasks), from the shared landmark generator.
 HAND_TASKS = (("landmark_tasks", "landmark_tasks"),)
 HAND_FILES = ("landmark_tasks/official_gpu_reference.json",)
-GENERATOR_ARGUMENTS = {"landmark_tasks": ["--tasks", "hand"]}
+# Image Classifier and Image Embedder; Image Segmenter (IMAGE mode on GPU).
+IMAGE_TASKS = (("image_tasks", "image_tasks"),)
+IMAGE_FILES = ("image_tasks/official_gpu_reference.json",)
+SEGMENTER_TASKS = (("segmenter_tasks", "segmenter_tasks"),)
+SEGMENTER_FILES = ("segmenter_tasks/official_gpu_reference.json",)
+# The same tasks' CPU references, for a --test root whose suites also run
+# their CPU cases: the wheel's CPU output drifts between hosts.
+CPU_REFERENCES = {
+    "object": ([("object_detector", "object_detection")],
+               ["object_detection/official_reference.json",
+                "object_detection/official_video_reference.json"]),
+    "landmark": ([("landmark_tasks", "landmark_tasks")],
+                 ["landmark_tasks/official_reference.json"]),
+    "image": ([("image_tasks", "image_tasks")], ["image_tasks/official_reference.json"]),
+    "segmenter": ([("segmenter_tasks", "segmenter_tasks")],
+                  ["segmenter_tasks/official_reference.json"]),
+}
 
 
 def digest(path):
@@ -84,17 +101,16 @@ def difference(reference, current):
     return {"numeric_groups": groups, "structural_differences": structural}
 
 
-def face_test_root(destination, hand=False):
-    """Builds a face-only root package for the Dart suites, plus Hand
-    Landmarker's with [hand].
+def test_root(destination, groups):
+    """Builds a root package for the Dart suites of the face tasks and [groups]
+    (object, hand, landmark, image, segmenter).
 
     This package's own pubspec selects tasks whose macOS runtime exists only in
     a maintainer source build, so `dart test` run here cannot resolve its assets
     on a machine without one. Only the root package's user_defines reach a build
-    hook, so an isolated root scoped to the two published face runtimes keeps
-    this job on the public download path it exists to check. Linux's wheel
-    carries hand too; macOS runs hand through
-    test_official_macos_landmark_runtime.py instead.
+    hook, so an isolated root scoped to the published runtimes keeps this job on
+    the public download path it exists to check. On macOS, the non-face tasks
+    run through test_official_macos_landmark_runtime.py instead.
     """
     if destination.exists():
         shutil.rmtree(destination)
@@ -102,10 +118,31 @@ def face_test_root(destination, hand=False):
     folders = ["support", "fixtures/face_detection", "fixtures/face_landmarker"]
     tests = ["face_detector_test.dart", "face_landmarker_test.dart"]
     models = ["blaze_face_short_range.tflite", "face_landmarker.task"]
-    if hand:
+    tasks = ["face_detector", "face_landmarker"]
+    if "object" in groups:
+        folders.append("fixtures/object_detection")
+        tests.append("object_detector_test.dart")
+        models.append("efficientdet_lite0.tflite")
+        tasks.append("object_detector")
+    if "hand" in groups or "landmark" in groups:
         folders.append("fixtures/landmark_tasks")
         tests.append("landmark_tasks_test.dart")
         models.append("hand_landmarker.task")
+        tasks.append("hand_landmarker")
+    if "landmark" in groups:
+        models += ["gesture_recognizer.task", "pose_landmarker_lite.task",
+                   "holistic_landmarker.task"]
+        tasks += ["gesture_recognizer", "pose_landmarker", "holistic_landmarker"]
+    if "image" in groups:
+        folders.append("fixtures/image_tasks")
+        tests.append("image_tasks_test.dart")
+        models += ["efficientnet_lite0.tflite", "mobilenet_v3_small.tflite"]
+        tasks += ["image_classifier", "image_embedder"]
+    if "segmenter" in groups:
+        folders.append("fixtures/segmenter_tasks")
+        tests.append("segmenter_tasks_test.dart")
+        models += ["deeplab_v3.tflite", "magic_touch.tflite"]
+        tasks += ["image_segmenter", "interactive_segmenter_legacy"]
     for folder in folders:
         shutil.copytree(PACKAGE / "test" / folder, destination / "test" / folder)
     for name in tests:
@@ -113,7 +150,6 @@ def face_test_root(destination, hand=False):
     (destination / "models").mkdir()
     for name in models:
         shutil.copyfile(PACKAGE / "models" / name, destination / "models" / name)
-    tasks = "face_detector, face_landmarker" + (", hand_landmarker" if hand else "")
     (destination / "pubspec.yaml").write_text(f"""name: mediapipe_gpu_face_tests
 publish_to: none
 environment:
@@ -127,9 +163,9 @@ dev_dependencies:
 hooks:
   user_defines:
     mediapipe_flutter_vision:
-      tasks: [{tasks}]
+      tasks: [{", ".join(tasks)}]
 """)
-    return destination
+    return destination, ["test/" + name for name in tests]
 
 
 def main():
@@ -146,19 +182,46 @@ def main():
     parser.add_argument("--hand", action="store_true",
                         help="Also generate Hand Landmarker references, for a "
                              "checkout whose hand model is present")
+    parser.add_argument("--landmark-tasks", action="store_true",
+                        help="Also generate Hand, Gesture and Pose Landmarker "
+                             "references (Holistic has no GPU path, UP-026)")
+    parser.add_argument("--image-tasks", action="store_true",
+                        help="Also generate Image Classifier and Embedder references")
+    parser.add_argument("--segmenter-tasks", action="store_true",
+                        help="Also generate Image Segmenter references (IMAGE mode)")
     args = parser.parse_args()
-    tasks = (FACE_TASKS + (OBJECT_TASKS if args.object_detector else ())
-             + (HAND_TASKS if args.hand else ()))
-    files = (FACE_FILES + (OBJECT_FILES if args.object_detector else ())
-             + (HAND_FILES if args.hand else ()))
+    groups = {name for name, selected in [
+        ("object", args.object_detector), ("hand", args.hand),
+        ("landmark", args.landmark_tasks), ("image", args.image_tasks),
+        ("segmenter", args.segmenter_tasks)] if selected}
+    landmarks = bool(groups & {"hand", "landmark"})
+    tasks = (FACE_TASKS + (OBJECT_TASKS if "object" in groups else ())
+             + (HAND_TASKS if landmarks else ())
+             + (IMAGE_TASKS if "image" in groups else ())
+             + (SEGMENTER_TASKS if "segmenter" in groups else ()))
+    files = (FACE_FILES + (OBJECT_FILES if "object" in groups else ())
+             + (HAND_FILES if landmarks else ())
+             + (IMAGE_FILES if "image" in groups else ())
+             + (SEGMENTER_FILES if "segmenter" in groups else ()))
+    # The tasks the package offers on this GPU: no Holistic on either (its
+    # blendshapes model does not open on GPU, UP-026), no embedder on Linux
+    # (aborts, UP-027), and Pose without masks (Metal fails, UP-028; OpenGL
+    # ES returns 8-bit RGBA masks, UP-030).
+    from cpu_reference import host_target as _host
+    on_metal = _host() == "macos/arm64"
+    generator_arguments = {
+        "landmark_tasks": ["--tasks", "hand,gesture,pose" if "landmark" in groups else "hand",
+                           "--no-pose-masks"],
+        "image_tasks": ["--tasks", "classifier,embedder" if on_metal else "classifier"],
+    }
     # Imported here: cpu_reference imports this module for difference().
     from cpu_reference import host_target, wheel_pin
     target = host_target()
     if target not in ("macos/arm64", "linux/x64"):
         raise SystemExit("GPU references require macOS arm64 or Linux x64.")
-    if args.test and args.hand and target != "linux/x64":
-        raise SystemExit("On macOS, hand runs on the official landmark runtime: "
-                         "use tool/test_official_macos_landmark_runtime.py.")
+    if args.test and groups - {"object"} and target != "linux/x64":
+        raise SystemExit("On macOS, these tasks run on the official landmark "
+                         "runtime: use tool/test_official_macos_landmark_runtime.py.")
     wheel_url, wheel_sha256, library_sha256, version = wheel_pin(target)
     metal = target == "macos/arm64"
     output = args.output_dir.resolve()
@@ -186,7 +249,7 @@ def main():
         command = [str(python), "-B", str(PACKAGE / "tool" /
                    f"generate_{task}_reference.py"), "--delegate", "gpu",
                    "--output-dir", str(output / folder),
-                   *GENERATOR_ARGUMENTS.get(task, [])]
+                   *generator_arguments.get(task, [])]
         with log_file.open("w") as log:
             result = subprocess.run(command, env=env, stdout=log,
                                     stderr=subprocess.STDOUT)
@@ -202,9 +265,11 @@ def main():
         if not metal and not any("OpenGL ES" in line for line in graphics[task]):
             raise RuntimeError(f"Official {task} did not create an OpenGL ES context")
     for name in files:
-        baseline = json.loads((PACKAGE / "test/fixtures" / name).read_text())
+        baseline = PACKAGE / "test/fixtures" / name
         reference = json.loads((output / name).read_text())
-        summaries[name] = difference(baseline, reference)
+        # Only the Mac face, hand and object GPU references are checked in.
+        summaries[name] = (difference(json.loads(baseline.read_text()), reference)
+                           if baseline.exists() else "no checked-in GPU reference")
     report = {
         "source": "official-python-api", "runtime": "mediapipe==" + version,
         "library_sha256": library_sha256,
@@ -223,11 +288,25 @@ def main():
     print(f"Verified official GPU references: {output}", flush=True)
     if args.test:
         env["MEDIAPIPE_GPU_REFERENCE_DIR"] = str(output)
-        root = face_test_root(REPO / "build/gpu-face-tests", hand=args.hand)
-        suites = ["test/face_detector_test.dart", "test/face_landmarker_test.dart"]
-        if args.hand:
-            suites.append("test/landmark_tasks_test.dart")
+        root, suites = test_root(REPO / "build/gpu-face-tests", groups)
+        if "hand" in groups and "landmark" not in groups:
             env["MEDIAPIPE_LANDMARK_TASKS"] = "hand"
+        if groups - {"hand"}:
+            # These suites run their CPU cases too; compare those, and the
+            # face suites' (which then read this directory), with the wheel
+            # on this host as well.
+            from cpu_reference import FACE_FILES as CPU_FACE_FILES
+            from cpu_reference import FACE_TASKS as CPU_FACE_TASKS
+            from cpu_reference import generate
+            cpu_tasks = list(CPU_FACE_TASKS) + [
+                task for group in sorted(groups & CPU_REFERENCES.keys())
+                for task in CPU_REFERENCES[group][0]]
+            cpu_files = list(CPU_FACE_FILES) + [
+                name for group in sorted(groups & CPU_REFERENCES.keys())
+                for name in CPU_REFERENCES[group][1]]
+            cpu = REPO / "build/gpu-job-cpu-reference"
+            generate(cpu, cpu, target, cpu_tasks, cpu_files, python=python)
+            env["MEDIAPIPE_CPU_REFERENCE_DIR"] = str(cpu)
         with (output / "dart-tests.log").open("w") as log:
             result = subprocess.run(["dart", "pub", "get"], cwd=root, env=env,
                                     stdout=log, stderr=subprocess.STDOUT)

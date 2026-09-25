@@ -148,11 +148,14 @@ final class ScriptedCamera extends CameraPlatform {
 }
 
 /// A task whose inference the test completes by hand.
-final class ScriptedTask implements LiveTask<int> {
+final class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
   @override
   final settings = TaskSettingValues('scripted');
 
   final opened = <VisionDelegate>[];
+
+  /// Times the controller asked the task to forget the frames it has seen.
+  int forgot = 0;
   final timestamps = <int>[];
   final rotations = <int>[];
   int closed = 0;
@@ -198,6 +201,9 @@ final class ScriptedTask implements LiveTask<int> {
 
   /// Completes the oldest in-flight inference.
   void finish([int value = 1]) => pending.removeAt(0).complete(value);
+
+  @override
+  void forgetFrames() => forgot++;
 
   @override
   Future<void> close() async {

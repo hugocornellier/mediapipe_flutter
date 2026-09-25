@@ -13,7 +13,7 @@ except the macOS face tasks' default archives:
 | Target | Runtime |
 | --- | --- |
 | Web | `@mediapipe/tasks-vision` 1.0.1 JavaScript/WASM through `mediapipe_flutter_vision_web` |
-| iOS arm64 and simulator | Google's 1.0.1 XCFrameworks through the official iOS SDK adapter (`official_ios_sdk: true`) |
+| iOS arm64 and simulator | Google's 1.0.1 XCFrameworks through the official iOS SDK adapter (the default) |
 | Android | `com.google.mediapipe:tasks-vision:1.0.0` through `mediapipe_flutter_vision_android` |
 | macOS arm64 | the official 1.0.0 wheel's library (`official_macos_landmark_tasks: true`); the stateful Interactive Segmenter uses core's shared 1.0.1 runtime |
 | Linux x64 | the official 1.0.1 wheel's library |
@@ -29,15 +29,15 @@ one. ✗ means the package refuses the task on that target.
 | Face Detector | WebGL | Metal | GPU | Metal | GL ES | CPU |
 | Face Landmarker | WebGL | Metal | GPU | Metal | GL ES | CPU |
 | Hand Landmarker | WebGL | Metal | GPU | Metal | GL ES | CPU |
-| Pose Landmarker | WebGL | Metal | GPU | CPU | CPU | CPU |
-| Gesture Recognizer | WebGL | Metal | GPU | CPU | CPU | CPU |
-| Holistic Landmarker | WebGL | Metal | GPU | CPU | CPU | CPU |
-| Object Detector | WebGL | Metal | GPU | Metal | CPU | CPU |
-| Image Classifier | WebGL | Metal | GPU | CPU | CPU | CPU |
-| Image Embedder | WebGL | Metal | GPU | CPU | CPU | CPU |
-| Image Segmenter | WebGL | Metal | GPU | CPU | CPU | CPU |
+| Pose Landmarker | WebGL | Metal | GPU | Metal [d] | GL ES [d] | CPU |
+| Gesture Recognizer | WebGL | Metal | GPU | Metal | GL ES | CPU |
+| Holistic Landmarker | WebGL | Metal | GPU | CPU [e] | CPU [e] | CPU |
+| Object Detector | WebGL | Metal | GPU | Metal | GL ES | CPU |
+| Image Classifier | WebGL | Metal | GPU | Metal | GL ES | CPU |
+| Image Embedder | WebGL | Metal | GPU | Metal | CPU [f] | CPU |
+| Image Segmenter | WebGL | Metal | GPU | Metal | GL ES | CPU |
 | Interactive Segmenter Legacy (point) | WebGL | Metal | ✗ [a] | CPU | CPU | CPU |
-| Interactive Segmenter (strokes) | CPU | CPU | CPU | CPU | CPU | ✗ [b] |
+| Interactive Segmenter (strokes) | WebGL | CPU | CPU | CPU [g] | CPU [g] | ✗ [b] |
 
 Pose and Holistic segmentation masks are returned on every target, with one
 Android gap [c]. Android GPU is declared for arm64 devices only: the x86_64
@@ -48,7 +48,9 @@ emulator's software GL cannot run it.
 - **Web:** in Chrome, every task's output through the Dart adapter is identical
   to Google's JavaScript on the same image, on CPU and WebGL
   (`gallery/tool/browser/test_browser.mjs --suite=api`, both delegates, in CI).
-  Firefox runs the CPU suite.
+  Firefox and WebKit run the CPU suite, WebKit on macOS: Linux WebKit builds
+  give a worker's OffscreenCanvas no WebGL context, which Google's vision tasks
+  need even on CPU.
 - **iOS:** every task matches Google's references on the arm64 simulator (CPU)
   in CI (`gallery/integration_test/sdk_*_test.dart`). On an iPhone 15 Pro, Face,
   Hand, Pose, Gesture and Holistic Landmarker ran on CPU and Metal, within 0.014
@@ -66,13 +68,16 @@ emulator's software GL cannot run it.
   tried), so GPU results are compared with the wheel's GPU output.
 - **macOS:** `tool/test_official_macos_landmark_runtime.py` compares every task
   served by the official runtime with references Google's wheel generates on
-  the same Mac, including Metal for Face, Hand and Object Detector. The
-  stateful Interactive Segmenter has its own fresh-consumer job.
+  the same Mac, including Metal for Face, Hand, Pose (landmarks), Gesture,
+  Object Detector, Image Classifier, Image Embedder and Image Segmenter (IMAGE
+  mode). The stateful Interactive Segmenter has its own fresh-consumer job.
 - **Linux and Windows:** `tool/test_desktop.py` compares every task with
   references the pinned wheel generates on the same runner, then builds and
-  runs a Flutter app. Linux GPU matches Google's own GPU output on a CI runner
-  whose Mesa renderer is renamed past Google's software-GPU check; a physical
-  GPU run is pending ([`test_linux_gpu.sh`](test_linux_gpu.sh)).
+  runs a Flutter app. Linux GPU (Face, Hand, Pose, Gesture, Object Detector,
+  Image Classifier and Image Segmenter) matches Google's own GPU output on a CI
+  runner whose Mesa renderer is renamed past Google's software-GPU check
+  (`tool/prepare_gpu_reference.py --test`); a physical GPU run is pending
+  ([`test_linux_gpu.sh`](test_linux_gpu.sh)).
 
 ## Upstream limits
 
@@ -82,6 +87,14 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
   returns the same mask for every point, so the plugin does not serve it.
 - [b] Google's Windows wheels do not export the stateful Interactive Segmenter
   API. The Linux wheel does, and the package binds it there.
+- [d] UP-028 and UP-030: Google's desktop GPU paths give no float Pose masks
+  (Metal fails; OpenGL ES returns 8-bit RGBA images), so the package refuses
+  masks on those GPUs with the reason; landmarks run, and masks run on CPU.
+- [e] UP-026: neither desktop runtime opens Holistic's face blendshapes model
+  on the GPU delegate.
+- [f] UP-027: Google's Linux runtime aborts the Image Embedder on OpenGL ES.
+- [g] UP-008 and UP-029: the stroke segmenter's GPU path fails on macOS and
+  aborts on Linux.
 - [c] UP-018: Google's Android Pose Landmarker throws while converting a mask
   whose width is not a multiple of 4 (for example a rotated 667-pixel image).
   Camera frames are not affected. iOS has the same defect; the adapter repairs

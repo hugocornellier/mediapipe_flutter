@@ -15,6 +15,10 @@
 // block in a freshly loaded page.
 //
 // Options: --label=NAME (required), --delegates=CPU,GPU, --rounds=2,
+// --tile=NAME (default Live Face Landmarker), --image=PATH (the camera clip's
+// subject, relative to the repository; default the test portrait),
+// --headless (Playwright's Chromium on the Metal GPU, no window: stages tied
+// to the display, such as e2e and refresh, then follow no real screen),
 // --frames=1000 (timed per block), --warmup=1000 (frames discarded first, so
 // clocks and the runtime settle), --isolated (serve cross-origin isolated, so
 // performance.now() resolves to about 5 us instead of 100 us; compare only runs
@@ -51,10 +55,13 @@ const variants = (options.variants ?? 'current=gallery/build/web').split(',').ma
 });
 
 // 30 fps camera: the portrait drifting on a slow ellipse, 90 frames, looped.
-const camera = path.join(repo, 'build/bench/web-camera-30fps.y4m');
+const tile = options.tile ?? 'Live Face Landmarker';
+const subject = path.join(repo, options.image ?? 'packages/mediapipe-task-vision/test/fixtures/face_detection/landmark-ex1.jpg');
+const camera = path.join(repo, options.image
+  ? `build/bench/web-camera-30fps-${path.parse(subject).name}.y4m` : 'build/bench/web-camera-30fps.y4m');
 if (!fs.existsSync(camera)) {
   fs.mkdirSync(path.dirname(camera), {recursive: true});
-  const portrait = path.join(repo, 'packages/mediapipe-task-vision/test/fixtures/face_detection/landmark-ex1.jpg');
+  const portrait = subject;
   execFileSync('ffmpeg', ['-n', '-hide_banner', '-loglevel', 'error',
     '-loop', '1', '-framerate', '30', '-t', '3', '-i', portrait,
     '-vf', 'scale=704:528:force_original_aspect_ratio=decrease,pad=704:528:(ow-iw)/2:(oh-ih)/2,' +
@@ -145,7 +152,9 @@ for (let round = 0; round < rounds; round++) {
   }
 }
 
-const browser = await chromium.launch({channel: 'chrome', headless: false, args: [
+const headless = Boolean(options.headless);
+const browser = await chromium.launch({...(headless ? {headless: true} : {channel: 'chrome', headless: false}), args: [
+  ...(headless ? ['--use-angle=metal', '--ignore-gpu-blocklist'] : []),
   '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream',
   `--use-file-for-fake-video-capture=${camera}`,
   // Keep timers and rendering at full rate if the window is covered.
@@ -165,7 +174,10 @@ try {
     try {
       await page.goto(`${variant.base}?pipeline-trace`);
       await page.bringToFront();
-      await page.getByRole('group', {name: /Live Face Landmarker/}).click();
+      // Startup is timed from opening the tile (CPU, the default delegate) or
+      // from choosing another delegate, which restarts the task.
+      const openedAt = await page.evaluate(() => performance.now());
+      await page.getByRole('group', {name: new RegExp(tile)}).click();
       await page.waitForFunction(() => globalThis.mediapipeVision && typeof __pipelineTrace === 'function',
         null, {timeout: 60000});
       await page.evaluate(() => {
@@ -181,6 +193,7 @@ try {
         window.__workerTimings = [];
         return {frames: JSON.parse(__pipelineTrace()), workers};
       });
+      const switchedAt = await page.evaluate(() => performance.now());
       await page.getByRole('button', {name: delegate, exact: true}).click({timeout: 30000});
       const wanted = delegate.toLowerCase();
       const collect = async count => {
@@ -194,14 +207,23 @@ try {
         }
         return {frames: frames.slice(0, count), workers, seconds: (Date.now() - started) / 1000};
       };
-      await collect(warmup);
+      const warm = await collect(warmup);
+      const since = delegate === 'CPU' ? openedAt : switchedAt;
+      const firstWorkers = new Map(warm.workers.map(worker => [worker.timestamp, worker]));
+      const firstInference = warm.frames.slice(0, 5)
+        .map(frame => firstWorkers.get(frame.timestamp)?.inference).filter(value => value != null);
+      const startup = {firstResult: warm.frames[0].detected - since,
+        firstInference, firstInferenceMean: firstInference.length ? mean(firstInference) : null};
       const {frames, workers, seconds} = await collect(timedFrames);
       const byTimestamp = new Map(workers.map(worker => [worker.timestamp, worker]));
       const rows = frames.map(frame => stages(frame, byTimestamp.get(frame.timestamp), origin));
       if (options.screenshot && last) {
         await page.locator('video').screenshot({path: path.join(here, 'results', `${options.label}-${variant.name}-${stamp}.png`)});
       }
-      return {round, delegate, variant: variant.name, frames: frames.length, seconds,
+      // Processed frames per second, from the camera frames that were handled.
+      const span = frames.at(-1).arrived - frames[0].arrived;
+      const fps = span > 0 ? (frames.length - 1) * 1000 / span : null;
+      return {round, delegate, variant: variant.name, frames: frames.length, seconds, fps, startup,
         faceFrames: frames.filter(frame => frame.faces > 0).length, summary: summarize(rows), rows};
     } finally {
       await page.close();
@@ -215,13 +237,15 @@ try {
     blocks.push(block);
     console.log(`${String(index + 1).padStart(2)}/${schedule.length} ${block.variant} ${block.delegate}: ` +
       shown.map(key => `${key} ${block.summary[key]?.mean.toFixed(3)}`).join(', ') +
-      `, faces ${block.faceFrames}/${block.frames}`);
+      `, fps ${block.fps?.toFixed(1)}, first result ${block.startup.firstResult.toFixed(0)} ms, ` +
+      `first inferences [${block.startup.firstInference.map(value => value.toFixed(0)).join(' ')}]`);
   }
 
   const git = (...args) => execFileSync('git', args, {cwd: repo}).toString().trim();
   const result = {
     label: options.label,
-    settings: {delegates, rounds, timedFrames, warmup, isolated,
+    settings: {delegates, rounds, timedFrames, warmup, isolated, tile, headless,
+      image: path.relative(repo, subject),
       variants: variants.map(({name, root}) => ({name, bundle: path.relative(repo, root)})),
       camera: '640x480 at 30 fps (Chrome fake device, Y4M)'},
     environment: {
@@ -252,7 +276,7 @@ try {
       const summary = result.pooled[`${variant.name} ${delegate}`];
       console.log(`  ${delegate} ${variant.name.padEnd(12)} ` + shown.map(key =>
         `${key} ${summary[key]?.mean.toFixed(3)} [${own.map(block => block.summary[key]?.mean.toFixed(3)).join(' ')}]`)
-        .join(', '));
+        .join(', ') + `, fps [${own.map(block => block.fps?.toFixed(1)).join(' ')}]`);
     }
   }
   console.log(`\nSaved ${path.relative(repo, out)}`);

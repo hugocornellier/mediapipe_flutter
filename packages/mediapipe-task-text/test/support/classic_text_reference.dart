@@ -1,7 +1,23 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
+
+/// Google's pinned official wheel on this host, from core's runtime tables.
+({String runtime, String library, String wheel})? officialTextRuntime() {
+  final wheel = tasksRuntimeWheel(
+    Abi.current().toString().replaceFirst('_', '/'),
+  );
+  return wheel == null
+      ? null
+      : (
+          runtime: 'mediapipe==${wheel.version}',
+          library: wheel.librarySha256,
+          wheel: wheel.wheelSha256,
+        );
+}
 
 /// CI compares against Google's pinned CPU runtime on the same host.
 /// Missing or modified oracle files fail instead of falling back to a baseline.
@@ -24,19 +40,19 @@ Map<String, dynamic> loadClassicTextReference({String? directory}) {
             File.fromUri(root.resolve('provenance.json')).readAsStringSync(),
           )
           as Map<String, dynamic>;
-  if (receipt['source'] != 'official-python-api' ||
-      receipt['runtime'] != 'mediapipe==1.0.1' ||
+  final host = officialTextRuntime();
+  if (host == null ||
+      receipt['source'] != 'official-python-api' ||
+      receipt['runtime'] != host.runtime ||
       receipt['delegate'] != 'CPU' ||
-      receipt['library_sha256'] !=
-          '9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a' ||
-      receipt['wheel_sha256'] !=
-          '0a9fb67957f7d28e84f485e9c6716a43367b3f6f07170f31c3f72cac1addd031' ||
+      receipt['library_sha256'] != host.library ||
+      receipt['wheel_sha256'] != host.wheel ||
       receipt['reference_sha256'] != sha256.convert(bytes).toString() ||
       receipt['baseline_sha256'] != sha256.convert(baselineBytes).toString() ||
+      reference['runtime'] != host.runtime ||
+      reference['library_sha256'] != host.library ||
       [
-        'runtime',
         'delegate',
-        'library_sha256',
         'models',
         'abi',
       ].any((key) => jsonEncode(reference[key]) != jsonEncode(baseline[key]))) {

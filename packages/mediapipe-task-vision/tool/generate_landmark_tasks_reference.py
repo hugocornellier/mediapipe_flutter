@@ -88,6 +88,10 @@ def main():
     # GPU references cover the tasks whose GPU path the package offers.
     parser.add_argument('--tasks', default=','.join(MODELS),
                         help='Comma-separated subset of ' + ', '.join(MODELS))
+    # Google's desktop GPU paths cannot give Pose's float masks (Metal fails,
+    # UP-028; OpenGL ES returns 8-bit RGBA images, UP-030); the package
+    # refuses masks on those GPUs.
+    parser.add_argument('--no-pose-masks', action='store_true')
     args = parser.parse_args()
     selected = args.tasks.split(',')
     if not selected or not set(selected) <= MODELS.keys():
@@ -116,7 +120,7 @@ def main():
         option_type = getattr(vision, task_type.__name__ + 'Options')
         base = mp.tasks.BaseOptions(model_asset_path=str(ROOT / 'models' / model_name), delegate=delegate)
         configuration = dict(num_hands=2) if task_name in ('hand', 'gesture') else (
-            dict(output_segmentation_masks=True) if task_name == 'pose' else
+            dict(output_segmentation_masks=not args.no_pose_masks) if task_name == 'pose' else
             dict(output_face_blendshapes=True, output_segmentation_mask=True))
         configurations = [configuration]
         if task_name == 'holistic':

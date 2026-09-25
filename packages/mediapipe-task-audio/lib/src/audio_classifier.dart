@@ -3,114 +3,29 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_core/capabilities.dart';
+import 'package:mediapipe_flutter_core/io.dart'
+    show missingLinuxGraphicsLibraries, mpHostSystem;
+
+import '../audio_task_backend.dart';
+import 'audio_classifier_backend.dart';
+import 'audio_types.dart';
 
 import 'third_party/mediapipe/audio_classifier_bindings.dart' as mp;
-
-/// Why an Audio Classifier could not be created or run: Google's message.
-final class AudioClassifierException implements Exception {
-  /// Wraps Google's message for a failed call.
-  const AudioClassifierException(this.message);
-
-  /// Google's error text.
-  final String message;
-
-  @override
-  String toString() => 'AudioClassifierException: $message';
-}
-
-/// The delegates the package can report; Google's audio task runs on CPU.
-enum AudioDelegate {
-  /// The CPU delegate, the only one the official 1.0.1 audio task serves.
-  cpu,
-
-  /// Reported unavailable; never accepted by [AudioClassifier.create].
-  gpu,
-}
-
-/// Where Audio Classifier runs: CPU on the shared official 1.0.1 runtime,
-/// which core provides for macOS arm64 (macOS 14+).
-Future<TaskCapabilities<AudioDelegate>>
-queryAudioClassifierCapabilities() async =>
-    audioClassifierCapabilitiesForPlatform(await currentTaskPlatform());
-
-/// Evaluate support for an explicit platform snapshot without loading code.
-TaskCapabilities<AudioDelegate> audioClassifierCapabilitiesForPlatform(
-  TaskPlatform platform,
-) => TaskCapabilities.cpuOnTargets(
-  platform: platform,
-  cpu: AudioDelegate.cpu,
-  gpu: AudioDelegate.gpu,
-  gpuUnavailableReason: "Google's official audio task runs on CPU only.",
-);
-
-/// Samples to classify: interleaved frames at [sampleRate], in -1 to 1.
-final class AudioData {
-  /// Wraps [samples]; [channels] values make up one frame.
-  AudioData({
-    required this.samples,
-    required this.sampleRate,
-    this.channels = 1,
-  }) {
-    if (sampleRate <= 0) throw ArgumentError.value(sampleRate, 'sampleRate');
-    if (channels < 1 || samples.length % channels != 0) {
-      throw ArgumentError.value(channels, 'channels');
-    }
-  }
-
-  /// Interleaved samples: frame 0's channels, then frame 1's, and so on.
-  final Float32List samples;
-
-  /// Frames per second.
-  final double sampleRate;
-
-  /// Values per frame.
-  final int channels;
-}
-
-/// Options for [AudioClassifier.create], named as in Google's API.
-final class AudioClassifierOptions {
-  /// Exactly one of [modelPath] and [modelBytes].
-  AudioClassifierOptions({
-    this.modelPath,
-    this.modelBytes,
-    this.maxResults = -1,
-    this.scoreThreshold = 0,
-  }) {
-    if ((modelPath == null) == (modelBytes == null)) {
-      throw ArgumentError('Supply exactly one of modelPath and modelBytes.');
-    }
-    if (maxResults == 0) throw ArgumentError.value(maxResults, 'maxResults');
-  }
-
-  /// A model file on disk.
-  final String? modelPath;
-
-  /// A model already in memory.
-  final Uint8List? modelBytes;
-
-  /// The most categories per chunk; -1 for all.
-  final int maxResults;
-
-  /// Categories scoring below this are dropped.
-  final double scoreThreshold;
-}
-
-/// One category and its score.
-typedef AudioCategory = ({int index, double score, String? name});
-
-/// The categories of one chunk of the clip, which starts at [timestampMs].
-typedef AudioClassification = ({
-  int timestampMs,
-  List<AudioCategory> categories,
-});
 
 /// Google's official Audio Classifier (for example YAMNet) on audio clips.
 ///
 /// The native task is created once; each [classify] runs on a background
-/// isolate. Await [dispose] when finished.
+/// isolate. Where a platform plugin installs Google's mobile SDK
+/// (audio_task_backend.dart), the task runs there instead. Await [dispose]
+/// when finished.
 final class AudioClassifier {
-  AudioClassifier._(this._task, this._model);
+  AudioClassifier._(this._task, this._model) : _backend = null;
+
+  AudioClassifier._onBackend(BackendAudioClassifier this._backend)
+    : _task = 0,
+      _model = null;
+
+  final BackendAudioClassifier? _backend;
 
   final int _task;
 
@@ -121,10 +36,16 @@ final class AudioClassifier {
 
   /// Creates the task on the calling isolate.
   static Future<AudioClassifier> create(AudioClassifierOptions options) async {
+    if (audioTaskBackendFactory != null) {
+      return AudioClassifier._onBackend(
+        await BackendAudioClassifier.create(options),
+      );
+    }
     final support = await queryAudioClassifierCapabilities();
     if (support.unavailableReasons[AudioDelegate.cpu] case final reason?) {
       throw AudioClassifierException(reason);
     }
+    _requireRuntime();
     Pointer<Uint8>? model;
     if (options.modelBytes case final bytes?) {
       model = malloc<Uint8>(bytes.length);
@@ -136,7 +57,7 @@ final class AudioClassifier {
         native.ref.baseOptions
           ..fileDescriptor = -1
           ..delegate = 0
-          ..hostSystem = 2;
+          ..hostSystem = mpHostSystem;
         if (options.modelPath case final path?) {
           native.ref.baseOptions.modelAssetPath = path
               .toNativeUtf8(allocator: arena)
@@ -165,6 +86,7 @@ final class AudioClassifier {
   /// Classifies [audio], one result per chunk the model reads (0.975 s for
   /// YAMNet), in order.
   Future<List<AudioClassification>> classify(AudioData audio) {
+    if (_backend case final backend?) return backend.classify(audio);
     if (_disposing != null) {
       return Future.error(StateError('AudioClassifier has been disposed.'));
     }
@@ -180,10 +102,39 @@ final class AudioClassifier {
   }
 
   /// Waits for queued classifications, then closes the native task.
-  Future<void> dispose() => _disposing ??= _tail.then((_) {
-    _checked((error) => mp.close(Pointer.fromAddress(_task), error));
-    if (_model case final model?) malloc.free(model);
-  });
+  Future<void> dispose() =>
+      _backend?.dispose() ??
+      (_disposing ??= _tail.then((_) {
+        _checked((error) => mp.close(Pointer.fromAddress(_task), error));
+        if (_model case final model?) malloc.free(model);
+      }));
+}
+
+/// Resolves core's runtime before the first call, to explain a missing one.
+void _requireRuntime() {
+  try {
+    Native.addressOf<
+      NativeFunction<
+        Int32 Function(
+          Pointer<mp.MpAudioClassifierOptions>,
+          Pointer<Pointer<Void>>,
+          Pointer<Pointer<Char>>,
+        )
+      >
+    >(mp.create);
+  } on ArgumentError catch (error) {
+    if (missingLinuxGraphicsLibraries('$error') case final missing?) {
+      throw missing;
+    }
+    throw UnsupportedError(
+      Abi.current() == Abi.iosArm64
+          ? 'On iOS, the Audio Classifier runs in the official iOS SDK adapter '
+                'that mediapipe_flutter_vision builds: add that package and '
+                'mediapipe_flutter_core.tasks_runtime: true to the app pubspec.'
+          : 'Enable mediapipe_flutter_core.tasks_runtime: true in the app '
+                'pubspec hooks.user_defines to use the Audio Classifier.',
+    );
+  }
 }
 
 List<AudioClassification> _classify(

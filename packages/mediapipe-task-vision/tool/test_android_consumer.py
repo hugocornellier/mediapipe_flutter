@@ -137,8 +137,23 @@ def main():
         namespace = re.search(r'namespace = "([^"]+)"', content).group(1)
         activity = namespace + '.MainActivity'
         run(['flutter', 'pub', 'get'], app, root / 'pub.log')
-        run(['flutter', 'test', '-d', args.device, 'integration_test/tasks_test.dart',
-             '--reporter', 'expanded'], app, root / 'integration.log', timeout=2400)
+        # On hosted emulators flutter test sometimes installs the app and then
+        # hears nothing more. The first Gradle build takes about 4 minutes and
+        # the tests one more, so a run still going at 15 minutes has stalled;
+        # it runs once more, as gallery/tool/test_android_sdk_tasks.sh does.
+        for attempt in (1, 2):
+            try:
+                run(['flutter', 'test', '-d', args.device, 'integration_test/tasks_test.dart',
+                     '--reporter', 'expanded'], app, root / 'integration.log', timeout=900)
+                break
+            except subprocess.TimeoutExpired:
+                shutil.copy(root / 'integration.log', root / f'integration-stalled-{attempt}.log')
+                with (root / f'logcat-stalled-{attempt}.log').open('w') as output:
+                    subprocess.run([*adb, 'logcat', '-d', '-t', '500'], stdout=output,
+                                   stderr=subprocess.STDOUT, timeout=60, check=False)
+                if attempt == 2:
+                    raise
+                print('flutter test stalled; running it once more', flush=True)
         integration = (root / 'integration.log').read_text()
         totals = re.findall(r'\+(\d+)(?: ~(\d+))?: All tests passed!', integration)
         if not totals:

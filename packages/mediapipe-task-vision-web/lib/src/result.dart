@@ -138,10 +138,33 @@ GestureRecognizerResult decodeWebGestureResult(
 
 /// Copies a browser Holistic Landmarker result. Google's browser API lists
 /// each part per subject; Holistic reports at most one.
-HolisticLandmarkerResult decodeWebHolisticResult(Map<String, dynamic> data) {
+///
+/// With [landmarks], the worker sent every part packed into one buffer, in the
+/// order of `data['parts']`, whose entries name a part and its points per
+/// subject; otherwise the parts are in the JSON.
+HolisticLandmarkerResult decodeWebHolisticResult(
+  Map<String, dynamic> data, {
+  Float64List? landmarks,
+}) {
   final result = data['result'] as Map<String, dynamic>;
+  final packed = <String, List<List<VisionLandmark>>>{};
+  if (landmarks != null) {
+    var at = 0;
+    for (final entry in data['parts'] as List) {
+      final counts = (entry[1] as List).cast<int>();
+      final end = at + counts.fold(0, (a, b) => a + b) * packedLandmarkStride;
+      packed[entry[0] as String] = unpackLandmarks(
+        Float64List.sublistView(landmarks, at, end),
+        counts,
+        VisionLandmark.new,
+      );
+      at = end;
+    }
+  }
   List<VisionLandmark> part(String name) {
-    final subjects = _landmarks(data, null, result[name], VisionLandmark.new);
+    final subjects =
+        packed[name] ??
+        _landmarks(data, null, result[name], VisionLandmark.new);
     return subjects.isEmpty ? const [] : subjects.first;
   }
 

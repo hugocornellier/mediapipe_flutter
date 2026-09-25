@@ -6,8 +6,9 @@ import {
 
 // Each task: Google's class, its IMAGE and VIDEO methods, and the result field
 // holding its image landmarks, which travel packed; everything else in the
-// result travels as JSON. Holistic's several parts all travel as JSON. Mask
-// fields name their bytes per value; masks travel as transferred buffers.
+// result travels as JSON. Holistic's landmark parts travel packed together
+// (packParts). Mask fields name their bytes per value; masks travel as
+// transferred buffers.
 const TASKS = {
   face_landmarker: {name: 'FaceLandmarker', type: FaceLandmarker, landmarks: 'faceLandmarks'},
   hand_landmarker: {name: 'HandLandmarker', type: HandLandmarker, landmarks: 'landmarks'},
@@ -16,6 +17,8 @@ const TASKS = {
   gesture_recognizer: {name: 'GestureRecognizer', type: GestureRecognizer, landmarks: 'landmarks',
     image: 'recognize', video: 'recognizeForVideo'},
   holistic_landmarker: {name: 'HolisticLandmarker', type: HolisticLandmarker,
+    parts: ['faceLandmarks', 'poseLandmarks', 'poseWorldLandmarks', 'leftHandLandmarks',
+      'leftHandWorldLandmarks', 'rightHandLandmarks', 'rightHandWorldLandmarks'],
     masks: {poseSegmentationMasks: 4}},
   face_detector: {name: 'FaceDetector', type: FaceDetector},
   object_detector: {name: 'ObjectDetector', type: ObjectDetector},
@@ -149,7 +152,8 @@ async function run(type, input, timing) {
         ? task[spec.image ?? 'detect'](source, processing)
         : task[spec.video ?? 'detectForVideo'](source, input.timestamp, processing);
     const inferred = performance.now();
-    const packed = spec.landmarks ? pack(result[spec.landmarks] ?? []) : null;
+    const packed = spec.landmarks ? pack(result[spec.landmarks] ?? [])
+      : spec.parts ? packParts(result, spec.parts) : null;
     const masks = [];
     let plain = spec.json ? spec.json(result) : result;
     try {
@@ -158,9 +162,11 @@ async function run(type, input, timing) {
       closeMasks(result);
     }
     if (labels) plain.labels = labels;
+    const emptied = packed
+      ? Object.fromEntries((spec.parts ?? [spec.landmarks]).map(field => [field, []])) : {};
     const json = JSON.stringify({width: source.width, height: source.height,
-      timestamp: input.timestamp, counts: packed?.counts,
-      result: packed ? {...plain, [spec.landmarks]: []} : plain});
+      timestamp: input.timestamp, counts: packed?.counts, parts: packed?.parts,
+      result: {...plain, ...emptied}});
     timing.inference = inferred - started;
     timing.serialize = performance.now() - inferred;
     timing.timestamp = input.timestamp;
@@ -229,4 +235,17 @@ function pack(subjects) {
     }
   }
   return {counts, values};
+}
+// Several landmark fields in one buffer, one after another in [fields] order.
+// Each entry of [parts] names a field and its points per subject, so the
+// reader can slice the buffer apart.
+function packParts(result, fields) {
+  const subjects = [], parts = [];
+  for (const field of fields) {
+    const value = result[field] ?? [];
+    parts.push([field, value.map(points => points.length)]);
+    subjects.push(...value);
+  }
+  const packed = pack(subjects);
+  return packed && {parts, values: packed.values};
 }

@@ -7,7 +7,7 @@ HandLandmarker supports the same modes and delegates, with 21 image and world
 landmarks and handedness per hand. The adapter serves every other vision task
 too, through the same worker: Pose, Gesture and Holistic Landmarker, Face and
 Object Detector, Image Classifier and Embedder, Image Segmenter and both
-Interactive Segmenters (the stroke-based one on CPU only). Masks travel to Dart
+Interactive Segmenters, the stroke-based one on CPU or WebGL 2. Masks travel to Dart
 as transferred buffers. See
 [the status table](../mediapipe-task-vision/tool/VISION_TASKS_STATUS.md).
 Select GPU in the live gallery

@@ -2,12 +2,14 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_flutter_core/io.dart' show mpHostSystem;
 
 import '../../third_party/mediapipe/interactive_segmenter_bindings.dart' as mp;
 import '../../third_party/mediapipe/interactive_segmenter_wheel_bindings.dart'
     as wheel;
 import '../interface/interactive_segmenter_types.dart';
 import '../interface/vision_types.dart';
+import 'native_desktop_runtime.dart';
 import 'pixel_conversion.dart';
 
 /// One Interactive Segmenter session, owned by its persistent worker isolate:
@@ -129,6 +131,7 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
         'Interactive Segmenter supports macOS arm64 and Linux x64 here.',
       );
     }
+    if (Platform.isLinux) loadOfficialDesktopRuntime();
     if (options.delegate != VisionDelegate.cpu) {
       throw UnsupportedError(
         'Interactive Segmenter supports CPU only. The official macOS runtime '
@@ -141,7 +144,7 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
       native.ref.baseOptions
         ..fileDescriptor = -1
         ..delegate = 0
-        ..hostSystem = 2;
+        ..hostSystem = mpHostSystem;
       if (options.modelPath case final path?) {
         native.ref.baseOptions.modelAssetPath = path
             .toNativeUtf8(allocator: arena)
