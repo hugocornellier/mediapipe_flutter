@@ -27,6 +27,8 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
+      - name: Make flutter test wait for the simulator log reader
+        run: python3 -B tool/ci/patch_flutter_simulator_launch.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -97,6 +99,8 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
+      - name: Make flutter test wait for the simulator log reader
+        run: python3 -B tool/ci/patch_flutter_simulator_launch.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
