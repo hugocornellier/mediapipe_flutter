@@ -32,6 +32,8 @@ TaskCapabilities<VisionDelegate> faceLandmarkerCapabilitiesForPlatform(
       'windows/x64': null,
       'ios/arm64': '15.0',
       if (faceLandmarkerBackendFactory != null) 'android/arm64': null,
+      // Google's SDK ships x86_64; the emulator CI job runs it on the CPU.
+      if (faceLandmarkerBackendFactory != null) 'android/x64': null,
       if (faceLandmarkerBackendFactory != null) 'web/unknown': null,
     },
     VisionDelegate.gpu: {
