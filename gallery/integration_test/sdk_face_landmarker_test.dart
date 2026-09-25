@@ -317,7 +317,9 @@ void main() {
     }
     await tester.runAsync(() => waitFor(VisionDelegate.cpu));
     await tester.pump();
-    expect(find.text('GPU'), findsOneWidget);
+    // With SDK_GPU=skip (emulators) the demo may offer no GPU, and none is
+    // switched to below.
+    if (_gpu != 'skip') expect(find.text('GPU'), findsOneWidget);
     for (final delegate in _switches.skip(1)) {
       await tester.tap(
         find.text(delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'),
