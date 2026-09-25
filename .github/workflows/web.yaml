@@ -69,20 +69,51 @@ jobs:
           flutter analyze lib tool/web_api_probe.dart
           flutter test --platform chrome test/camera_geometry_test.dart test/camera_frame_test.dart test/camera_selection_test.dart
       - name: Build release gallery and API probe
+        id: build
         working-directory: gallery
         run: |
           flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
           flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
           python3 -B tool/write_web_build_info.py
-      - name: Browser runtime and webcam integration
+      # Each browser run is its own step so the coverage rows follow its outcome.
+      - name: Start the gallery server
+        run: nohup python3 -B gallery/tool/web_server.py > web-server.log 2>&1 &
+      - name: Chromium CPU runtime, API and face webcam
+        id: chromium_cpu
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
-        run: |
-          python3 -B gallery/tool/web_server.py &
-          node gallery/tool/browser/test_browser.mjs
-          node gallery/tool/browser/test_browser.mjs --suite=camera --task=hand
-          node gallery/tool/browser/test_browser.mjs --suite=api --delegate=gpu
-          xvfb-run -a node gallery/tool/browser/test_browser.mjs --browser=firefox --suite=api --headed=true
+        run: node gallery/tool/browser/test_browser.mjs
+      - name: Chromium CPU hand webcam
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: node gallery/tool/browser/test_browser.mjs --suite=camera --task=hand
+      - name: Chromium WebGL API
+        id: chromium_gpu
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: node gallery/tool/browser/test_browser.mjs --suite=api --delegate=gpu
+      - name: Firefox CPU API
+        id: firefox_cpu
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: xvfb-run -a node gallery/tool/browser/test_browser.mjs --browser=firefox --suite=api --headed=true
+      - name: Record web CPU task coverage (web-chromium-cpu)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite web-chromium-cpu --platform web --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.chromium_cpu.outcome }}
+      - name: Record web GPU task coverage (web-chromium-webgl)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite web-chromium-webgl --platform web --delegate gpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.chromium_gpu.outcome }}
+      - name: Record web CPU task coverage (web-firefox-cpu)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite web-firefox-cpu --platform web --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.firefox_cpu.outcome }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-web
+          path: build/coverage/
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:

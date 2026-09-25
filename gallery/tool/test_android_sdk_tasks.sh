@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the official Android SDK task tests on an emulator, CPU only: Hand
+# Runs the official Android SDK task tests on an emulator, CPU only: Face and Hand
 # Landmarker; Pose, Gesture and Holistic; Face and Object Detector and Image
 # Classifier; Image Embedder; Image Segmenter; then every live tile in one
 # process.
@@ -25,14 +25,22 @@ log=$(mktemp)
 for test in sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test \
     sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test runtime_test; do
   for attempt in 1 2; do
-    if flutter test -d "$device" "integration_test/$test.dart" \
-        --dart-define=SDK_GPU=skip --reporter expanded 2>&1 | tee "$log"; then
-      break
+    # A file takes under 6 minutes with the first Gradle build. On hosted
+    # emulators flutter test sometimes installs the app and then hears
+    # nothing more, so a file still running at 10 minutes has stalled.
+    status=0
+    timeout 600 flutter test -d "$device" "integration_test/$test.dart" \
+        --dart-define=SDK_GPU=skip --reporter expanded 2>&1 | tee "$log" || status=$?
+    [ "$status" = 0 ] && break
+    if [ "$status" = 124 ]; then
+      echo "$test stalled; the emulator's log follows"
+      adb -s "$device" logcat -d -t 300 || true
     fi
     # On hosted emulators flutter test sometimes cannot start the Dart
     # Development Service; no test ran, so the file runs once more.
-    if [ "$attempt" = 1 ] && grep -q "Failed to start Dart Development Service" "$log"; then
-      echo "Retrying $test: the Dart Development Service did not start"
+    if [ "$attempt" = 1 ] && { [ "$status" = 124 ] ||
+        grep -q "Failed to start Dart Development Service" "$log"; }; then
+      echo "Retrying $test"
       continue
     fi
     exit 1

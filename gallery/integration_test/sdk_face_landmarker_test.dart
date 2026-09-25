@@ -14,24 +14,40 @@ import 'package:mediapipe_gallery/live/live_tasks.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/main.dart';
 
+/// `skip` on emulators: SwiftShader GL accepts a GPU task, then TFLite's GL
+/// delegate fails on the first frame (see test_android_sdk_tasks.sh). GPU is
+/// then a phone check, as for the other SDK suites.
+const _gpu = String.fromEnvironment('SDK_GPU', defaultValue: 'optional');
+const _delegates = [VisionDelegate.cpu, if (_gpu != 'skip') VisionDelegate.gpu];
+const _switches = [
+  VisionDelegate.cpu,
+  if (_gpu != 'skip') ...[VisionDelegate.gpu, VisionDelegate.cpu],
+];
+
+// Face Landmarker through Google's official mobile SDKs: iOS through the
+// package's Objective-C adapter, Android through
+// mediapipe_flutter_vision_android. Runs on the iOS simulator and Android
+// emulator in CI (CPU), and on phones (CPU and GPU).
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'official Android CPU and GPU: face pixels, padding, optional outputs',
+    'official SDK CPU and GPU: face pixels, padding, optional outputs',
     (tester) async {
       await tester.runAsync(() async {
-        expect(Platform.isAndroid, isTrue);
-        expect(
-          faceLandmarkerBackendFactory,
-          isNotNull,
-          reason: 'Android SDK plugin must register automatically',
-        );
+        expect(Platform.isAndroid || Platform.isIOS, isTrue);
+        if (Platform.isAndroid) {
+          expect(
+            faceLandmarkerBackendFactory,
+            isNotNull,
+            reason: 'Android SDK plugin must register automatically',
+          );
+        }
         final assets = await GalleryAssets.unpack();
         final model = await _model();
         final frame = await _portrait();
         final references = <FaceLandmarkerResult>[];
-        for (final delegate in VisionDelegate.values) {
+        for (final delegate in _delegates) {
           final task = await FaceLandmarker.create(
             FaceLandmarkerOptions(
               modelBytes: model,
@@ -99,18 +115,20 @@ void main() {
           await task.dispose();
           await expectLater(task.detectImage(frame.image), throwsStateError);
         }
-        final delta = _delta(references[0], references[1]);
-        expect(
-          delta,
-          lessThan(0.03),
-          reason: 'CPU/GPU must detect the same face geometry',
-        );
-        _report('cpu_gpu', {'max_landmark_delta': delta});
+        if (references.length == 2) {
+          final delta = _delta(references[0], references[1]);
+          expect(
+            delta,
+            lessThan(0.03),
+            reason: 'CPU/GPU must detect the same face geometry',
+          );
+          _report('cpu_gpu', {'max_landmark_delta': delta});
+        }
         await expectLater(
           FaceLandmarker.create(
             FaceLandmarkerOptions(
               modelBytes: Uint8List.fromList([1, 2, 3]),
-              delegate: VisionDelegate.gpu,
+              delegate: _delegates.last,
             ),
           ),
           throwsA(isA<FaceLandmarkerException>()),
@@ -120,103 +138,89 @@ void main() {
     timeout: const Timeout(Duration(minutes: 3)),
   );
 
-  testWidgets(
-    'official Android VIDEO: tracking, rotation, queued frames, cleanup',
-    (tester) async {
-      await tester.runAsync(() async {
-        final assets = await GalleryAssets.unpack();
-        final frame = await _portrait();
-        for (final delegate in [
-          VisionDelegate.cpu,
-          VisionDelegate.gpu,
-          VisionDelegate.cpu,
-        ]) {
-          final task = await FaceLandmarker.create(
-            FaceLandmarkerOptions(
-              modelPath: assets.path('face_landmarker.task'),
-              delegate: delegate,
-              runningMode: VisionRunningMode.video,
-            ),
-          );
-          try {
-            await expectLater(task.detectImage(frame.image), throwsStateError);
-            await expectLater(
-              task.detectForVideo(frame.image, timestampMilliseconds: -1),
-              throwsArgumentError,
-            );
-            await expectLater(
-              task.detectForVideo(
-                frame.image,
-                timestampMilliseconds: 0,
-                rotationDegrees: 45,
-              ),
-              throwsArgumentError,
-            );
-            final results = await Future.wait([
-              task.detectForVideo(frame.image, timestampMilliseconds: 0),
-              task.detectForVideo(frame.image, timestampMilliseconds: 33),
-            ]);
-            _face(results.first);
-            expect(results.map((r) => r.timestampMilliseconds), [0, 33]);
-            await expectLater(
-              task.detectForVideo(frame.image, timestampMilliseconds: 33),
-              throwsArgumentError,
-            );
-            for (var i = 2; i < 20; i++) {
-              final result = await task.detectForVideo(
-                frame.image,
-                timestampMilliseconds: i * 33,
-              );
-              _face(result);
-              expect(result.timestampMilliseconds, i * 33);
-            }
-            final empty = await task.detectForVideo(
-              _blank(),
-              timestampMilliseconds: 660,
-            );
-            expect(empty.faceLandmarks, isEmpty);
-            _face(
-              await task.detectForVideo(
-                frame.image,
-                timestampMilliseconds: 693,
-              ),
-            );
-            _report('video', {
-              'delegate': delegate.name,
-              'face_frames': 21,
-              'blank_frames': 1,
-              'queued_frames': 2,
-            });
-          } finally {
-            await task.dispose();
-          }
-        }
-        // A camera can deliver a rotated sensor buffer. Rotate its pixels back
-        // before asking MediaPipe for the turn; geometry must remain in input space.
-        for (final delegate in VisionDelegate.values) {
-          final task = await FaceLandmarker.create(
-            FaceLandmarkerOptions(
-              modelBytes: await _model(),
-              delegate: delegate,
-            ),
-          );
-          try {
-            for (final turn in [0, 90, 180, 270]) {
-              final rotated = _rotate(frame, (360 - turn) % 360);
-              _face(await task.detectImage(rotated, rotationDegrees: turn));
-            }
-          } finally {
-            await task.dispose();
-          }
-        }
-      });
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
-
-  testWidgets('physical Android camera: CPU to GPU to CPU, front and back', (
+  testWidgets('official SDK VIDEO: tracking, rotation, queued frames, cleanup', (
     tester,
   ) async {
+    await tester.runAsync(() async {
+      final assets = await GalleryAssets.unpack();
+      final frame = await _portrait();
+      for (final delegate in _switches) {
+        final task = await FaceLandmarker.create(
+          FaceLandmarkerOptions(
+            modelPath: assets.path('face_landmarker.task'),
+            delegate: delegate,
+            runningMode: VisionRunningMode.video,
+          ),
+        );
+        try {
+          await expectLater(task.detectImage(frame.image), throwsStateError);
+          await expectLater(
+            task.detectForVideo(frame.image, timestampMilliseconds: -1),
+            throwsArgumentError,
+          );
+          await expectLater(
+            task.detectForVideo(
+              frame.image,
+              timestampMilliseconds: 0,
+              rotationDegrees: 45,
+            ),
+            throwsArgumentError,
+          );
+          final results = await Future.wait([
+            task.detectForVideo(frame.image, timestampMilliseconds: 0),
+            task.detectForVideo(frame.image, timestampMilliseconds: 33),
+          ]);
+          _face(results.first);
+          expect(results.map((r) => r.timestampMilliseconds), [0, 33]);
+          await expectLater(
+            task.detectForVideo(frame.image, timestampMilliseconds: 33),
+            throwsArgumentError,
+          );
+          for (var i = 2; i < 20; i++) {
+            final result = await task.detectForVideo(
+              frame.image,
+              timestampMilliseconds: i * 33,
+            );
+            _face(result);
+            expect(result.timestampMilliseconds, i * 33);
+          }
+          final empty = await task.detectForVideo(
+            _blank(),
+            timestampMilliseconds: 660,
+          );
+          expect(empty.faceLandmarks, isEmpty);
+          _face(
+            await task.detectForVideo(frame.image, timestampMilliseconds: 693),
+          );
+          _report('video', {
+            'delegate': delegate.name,
+            'face_frames': 21,
+            'blank_frames': 1,
+            'queued_frames': 2,
+          });
+        } finally {
+          await task.dispose();
+        }
+      }
+      // A camera can deliver a rotated sensor buffer. Rotate its pixels back
+      // before asking MediaPipe for the turn; geometry must remain in input space.
+      for (final delegate in _delegates) {
+        final task = await FaceLandmarker.create(
+          FaceLandmarkerOptions(modelBytes: await _model(), delegate: delegate),
+        );
+        try {
+          for (final turn in [0, 90, 180, 270]) {
+            final rotated = _rotate(frame, (360 - turn) % 360);
+            _face(await task.detectImage(rotated, rotationDegrees: turn));
+          }
+        } finally {
+          await task.dispose();
+        }
+      }
+    });
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('camera: CPU to GPU to CPU, front and back', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(body: Text('Testing Android Face Landmarker')),
@@ -228,12 +232,13 @@ void main() {
       );
       try {
         final cameras = await controller.findCameras();
+        // The iOS simulator has no camera; Android emulators emulate one.
+        if (cameras.isEmpty && Platform.isIOS) {
+          _report('camera', {'cameras': 0});
+          return;
+        }
         expect(cameras, isNotEmpty);
-        for (final delegate in [
-          VisionDelegate.cpu,
-          VisionDelegate.gpu,
-          VisionDelegate.cpu,
-        ]) {
+        for (final delegate in _switches) {
           await controller.start(
             delegate: delegate,
             modelAsset: 'assets/models/face_landmarker.task',
@@ -245,7 +250,7 @@ void main() {
           await controller.switchCamera();
           await _frames(controller);
           _cameraReport(controller);
-          await controller.start(delegate: VisionDelegate.gpu);
+          await controller.start(delegate: _delegates.last);
           await _frames(controller);
           _cameraReport(controller);
         }
@@ -256,61 +261,78 @@ void main() {
     });
   }, timeout: const Timeout(Duration(minutes: 4)));
 
-  testWidgets(
-    'Android gallery opens Live Face Landmarker and switches CPU/GPU',
-    (tester) async {
-      await tester.pumpWidget(const GalleryApp());
-      for (
-        var i = 0;
-        i < 100 && find.text('Live Face Landmarker').evaluate().isEmpty;
-        i++
-      ) {
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 100)),
-        );
-        await tester.pump();
+  testWidgets('gallery opens Live Face Landmarker and switches CPU/GPU', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const GalleryApp());
+    for (
+      var i = 0;
+      i < 100 && find.text('Live Face Landmarker').evaluate().isEmpty;
+      i++
+    ) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
+    }
+    expect(find.text('Live Face Landmarker'), findsOneWidget);
+    await tester.tap(find.text('Live Face Landmarker'));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(LiveCameraView), findsOneWidget);
+    final controller = tester
+        .widget<LiveCameraView>(find.byType(LiveCameraView))
+        .controller;
+    Future<void> waitFor(VisionDelegate delegate) async {
+      final deadline = DateTime.now().add(const Duration(seconds: 35));
+      while ((controller.delegate != delegate ||
+              controller.changing ||
+              controller.processedFrames < 20) &&
+          controller.error == null &&
+          DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
       }
-      expect(find.text('Live Face Landmarker'), findsOneWidget);
-      await tester.tap(find.text('Live Face Landmarker'));
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byType(LiveCameraView), findsOneWidget);
-      final controller = tester
-          .widget<LiveCameraView>(find.byType(LiveCameraView))
-          .controller;
-      Future<void> waitFor(VisionDelegate delegate) async {
-        final deadline = DateTime.now().add(const Duration(seconds: 35));
-        while ((controller.delegate != delegate ||
-                controller.changing ||
-                controller.processedFrames < 20) &&
-            controller.error == null &&
-            DateTime.now().isBefore(deadline)) {
-          await Future<void>.delayed(const Duration(milliseconds: 100));
-        }
-        expect(controller.error, isNull);
-        expect(controller.delegate, delegate);
-        expect(controller.processedFrames, greaterThanOrEqualTo(20));
-        expect(controller.result, isA<FaceLandmarkerResult>());
-      }
+      expect(controller.error, isNull);
+      expect(controller.delegate, delegate);
+      expect(controller.processedFrames, greaterThanOrEqualTo(20));
+      expect(controller.result, isA<FaceLandmarkerResult>());
+    }
 
-      await tester.runAsync(() => waitFor(VisionDelegate.cpu));
+    // A simulator may have no camera; the demo must then say so.
+    final deadline = DateTime.now().add(const Duration(seconds: 35));
+    while (controller.cameras.isEmpty &&
+        controller.error == null &&
+        controller.processedFrames == 0 &&
+        DateTime.now().isBefore(deadline)) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
       await tester.pump();
-      expect(find.text('GPU'), findsOneWidget);
-      await tester.tap(find.text('GPU'));
-      await tester.pump();
-      await tester.runAsync(() => waitFor(VisionDelegate.gpu));
-      await tester.pump();
-      await tester.tap(find.text('CPU'));
-      await tester.pump();
-      await tester.runAsync(() => waitFor(VisionDelegate.cpu));
-      _report('gallery', {
-        'delegates': ['cpu', 'gpu', 'cpu'],
-        'frames_per_stage': 20,
-      });
-      await controller.close();
+    }
+    if (controller.cameras.isEmpty && Platform.isIOS) {
+      expect(find.textContaining('No camera found'), findsOneWidget);
+      _report('gallery', {'cameras': 0});
+      await tester.runAsync(controller.close);
       await tester.pumpWidget(const MaterialApp(home: SizedBox()));
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
+      return;
+    }
+    await tester.runAsync(() => waitFor(VisionDelegate.cpu));
+    await tester.pump();
+    expect(find.text('GPU'), findsOneWidget);
+    for (final delegate in _switches.skip(1)) {
+      await tester.tap(
+        find.text(delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'),
+      );
+      await tester.pump();
+      await tester.runAsync(() => waitFor(delegate));
+      await tester.pump();
+    }
+    _report('gallery', {
+      'delegates': [for (final delegate in _switches) delegate.name],
+      'frames_per_stage': 20,
+    });
+    await controller.close();
+    await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }
 
 Future<Uint8List> _model() async {
@@ -451,5 +473,5 @@ void _cameraReport(LiveCameraController<FaceLandmarkerResult> c) =>
 void _report(String event, Map<String, Object?> data) {
   // Preserved in Test Lab logcat; timings are diagnostic, not a benchmark.
   // ignore: avoid_print
-  print('ANDROID_FACE_SDK ${jsonEncode({'event': event, ...data})}');
+  print('SDK_FACE_LANDMARKER ${jsonEncode({'event': event, ...data})}');
 }

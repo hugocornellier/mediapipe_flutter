@@ -27,6 +27,8 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
+      - name: Make flutter test wait for the simulator log reader
+        run: python3 -B tool/ci/patch_flutter_simulator_launch.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -97,6 +99,8 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
+      - name: Make flutter test wait for the simulator log reader
+        run: python3 -B tool/ci/patch_flutter_simulator_launch.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -104,6 +108,7 @@ jobs:
         working-directory: packages/mediapipe-task-vision
         run: |
           dart pub get
+          dart tool/download_face_landmarker.dart
           dart tool/download_landmark_tasks.dart
           dart tool/download_model.dart
           dart tool/download_image_tasks.dart
@@ -117,7 +122,7 @@ jobs:
       - name: Prepare the gallery with the official SDK tasks
         run: |
           python3 -B gallery/tool/prepare.py --target ios-simulator/arm64 \
-            --tasks hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,interactive_segmenter_legacy
+            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,interactive_segmenter_legacy
           cd gallery && flutter pub get
       - name: Boot an installed iPhone simulator
         id: simulator
@@ -137,10 +142,13 @@ jobs:
           xcrun simctl bootstatus "$device" -b
           echo "device=$device" >> "$GITHUB_OUTPUT"
       - name: Official references, pixel formats, rotation, VIDEO and every live tile
+        id: sdk
         working-directory: gallery
+        # bash runs with pipefail, so `| tee` keeps flutter test's exit status.
+        shell: bash
         run: |
           device=${{ steps.simulator.outputs.device }}
-          for test in sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test runtime_test; do
+          for test in sdk_face_landmarker_test sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test runtime_test; do
             for attempt in 1 2; do
               status=0
               # A hosted simulator sometimes stalls while loading the app and
@@ -160,6 +168,15 @@ jobs:
               exit "$status"
             done
           done
+      - name: Record ios CPU task coverage (ios-sdk-simulator)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite ios-sdk-simulator --platform ios --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.sdk.outcome }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-ios-sdk-simulator
+          path: build/coverage/
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
