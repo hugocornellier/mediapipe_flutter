@@ -51,6 +51,23 @@ final class PoseLandmarker {
         capabilities.unavailableReasons[options.delegate]!,
       );
     }
+    if ((Platform.isMacOS || Platform.isLinux) &&
+        options.delegate == VisionDelegate.gpu &&
+        options.outputSegmentationMasks) {
+      // Metal fails on the first frame; OpenGL ES returns 8-bit RGBA images
+      // where the API promises float confidences.
+      throw UnsupportedError(
+        Platform.isMacOS
+            ? 'Google\'s macOS runtime cannot initialize the pose '
+                  'segmentation mask upsampler on Metal (upstream-issues.md '
+                  'UP-028). Request masks on the CPU, or landmarks alone on '
+                  'the GPU.'
+            : 'Google\'s Linux runtime returns pose masks on OpenGL ES as '
+                  '8-bit RGBA images, not float confidences (upstream-issues.md '
+                  'UP-030). Request masks on the CPU, or landmarks alone on the '
+                  'GPU.',
+      );
+    }
     return PoseLandmarker._(
       await VisionTaskWorker.create(
         options,

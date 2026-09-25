@@ -177,6 +177,8 @@ TaskCapabilities<VisionDelegate> poseLandmarkerCapabilitiesForPlatform(
   sdkAdapter: poseLandmarkerBackendFactory != null,
   officialMacosRuntime: officialMacosRuntime,
   officialIosRuntime: officialIosRuntime,
+  linuxGpu: true,
+  macosGpu: true,
 );
 
 /// Query Gesture Recognizer support on this process platform without a model.
@@ -199,6 +201,8 @@ TaskCapabilities<VisionDelegate> gestureRecognizerCapabilitiesForPlatform(
   sdkAdapter: gestureRecognizerBackendFactory != null,
   officialMacosRuntime: officialMacosRuntime,
   officialIosRuntime: officialIosRuntime,
+  linuxGpu: true,
+  macosGpu: true,
 );
 
 /// Query Holistic Landmarker support on this process platform without a model.
@@ -221,16 +225,25 @@ TaskCapabilities<VisionDelegate> holisticLandmarkerCapabilitiesForPlatform(
   sdkAdapter: holisticLandmarkerBackendFactory != null,
   officialMacosRuntime: officialMacosRuntime,
   officialIosRuntime: officialIosRuntime,
+  desktopGpuGap:
+      'Google\'s desktop runtimes cannot open its face blendshapes model on '
+      'GPU (upstream-issues.md UP-026).',
 );
 
 /// CPU on the desktop wheels, the opt-in macOS runtime, the iOS SDK adapter
-/// and the registered Android and web adapters; GPU on the platform SDKs.
+/// and the registered Android and web adapters; GPU on the platform SDKs, and
+/// with [linuxGpu] on Linux's wheel (OpenGL ES, needing EGL and a GPU driver)
+/// and with [macosGpu] on the official macOS runtime (Metal), where CI
+/// compares it with Google's own GPU output on the same machine.
 TaskCapabilities<VisionDelegate> _sdkTaskCapabilities(
   TaskPlatform platform,
   String name, {
   required bool sdkAdapter,
   required bool officialMacosRuntime,
   required bool officialIosRuntime,
+  bool linuxGpu = false,
+  bool macosGpu = false,
+  String? desktopGpuGap,
 }) => TaskCapabilities.onTargets(
   platform: platform,
   delegates: {
@@ -245,6 +258,8 @@ TaskCapabilities<VisionDelegate> _sdkTaskCapabilities(
       if (sdkAdapter) 'web/unknown': null,
     },
     VisionDelegate.gpu: {
+      if (linuxGpu) 'linux/x64': null,
+      if (macosGpu && officialMacosRuntime) 'macos/arm64': '14.0',
       if (officialIosRuntime) 'ios/arm64': '15.0',
       if (sdkAdapter) 'android/arm64': null,
       if (sdkAdapter) 'web/unknown': null,
@@ -257,9 +272,13 @@ TaskCapabilities<VisionDelegate> _sdkTaskCapabilities(
     VisionDelegate.cpu:
         '$name requires Linux x64, Windows x64, the official macOS runtime, '
         'the official iOS SDK adapter, or the Android or web adapter package.',
-    VisionDelegate.gpu:
-        '$name GPU requires the official iOS SDK adapter or the Android or '
-        'web adapter; desktop GPU is not yet validated for this task.',
+    VisionDelegate.gpu: [
+      '$name GPU requires',
+      if (linuxGpu) 'Linux x64,',
+      if (macosGpu) 'the official macOS runtime,',
+      'the official iOS SDK adapter, or the Android or web adapter.',
+      ?desktopGpuGap,
+    ].join(' '),
   },
 );
 
@@ -321,6 +340,8 @@ TaskCapabilities<VisionDelegate> imageSegmenterCapabilitiesForPlatform(
   sdkAdapter: imageSegmenterBackendFactory != null,
   officialMacosRuntime: officialMacosRuntime,
   officialIosRuntime: officialIosRuntime,
+  linuxGpu: true,
+  macosGpu: true,
 );
 
 /// Query Interactive Segmenter Legacy support on this process platform.
@@ -398,6 +419,8 @@ TaskCapabilities<VisionDelegate> imageClassifierCapabilitiesForPlatform(
   sdkAdapter: imageClassifierBackendFactory != null,
   officialMacosRuntime: officialMacosRuntime,
   officialIosRuntime: officialIosRuntime,
+  linuxGpu: true,
+  macosGpu: true,
 );
 
 /// Query Image Embedder support on this process platform without a model.
@@ -419,6 +442,9 @@ TaskCapabilities<VisionDelegate> imageEmbedderCapabilitiesForPlatform(
   sdkAdapter: imageEmbedderBackendFactory != null,
   officialMacosRuntime: officialMacosRuntime,
   officialIosRuntime: officialIosRuntime,
+  macosGpu: true,
+  desktopGpuGap:
+      'Google\'s Linux runtime aborts on GPU (upstream-issues.md UP-027).',
 );
 
 /// Query Image Classifier and Image Embedder's validated CPU runtimes.
@@ -469,28 +495,36 @@ TaskCapabilities<VisionDelegate> interactiveSegmenterCapabilitiesForPlatform(
   bool officialIosRuntime = false,
 }) {
   final adapter = interactiveSegmenterBackendFactory != null;
-  return TaskCapabilities.cpuOnTargets(
+  return TaskCapabilities.onTargets(
     platform: platform,
-    cpu: VisionDelegate.cpu,
-    gpu: VisionDelegate.gpu,
-    targets: {
-      ...tasksRuntimeTargets,
-      // The vision package's own 1.0.1 wheel library exports the stateful API.
-      'linux/x64': null,
-      if (officialIosRuntime) 'ios/arm64': '15.0',
-      if (adapter) 'android/arm64': null,
-      if (adapter) 'android/x64': null,
-      if (adapter) 'web/unknown': null,
+    delegates: {
+      VisionDelegate.cpu: {
+        ...macosTasksRuntimeTargets,
+        // The vision package's own 1.0.1 wheel library exports the stateful API.
+        'linux/x64': null,
+        if (officialIosRuntime) 'ios/arm64': '15.0',
+        if (adapter) 'android/arm64': null,
+        if (adapter) 'android/x64': null,
+        if (adapter) 'web/unknown': null,
+      },
+      // Google's browser task runs MagicTouch on WebGL 2, as its sample does
+      // by default. Its mobile SDKs run it on CPU.
+      VisionDelegate.gpu: {if (adapter) 'web/unknown': null},
     },
     runtimeVersion: platform.operatingSystem == 'android' ? '1.0.0' : '1.0.1',
-    gpuUnavailableReason: platform.operatingSystem == 'macos'
-        ? 'The official MediaPipe macOS GPU stroke shader requests GLSL 330 in '
-              'an OpenGL 2.1 context and fails to compile. Confirmed on both the '
-              '1.0.0 and 1.0.1 official runtimes, so it is not fixed by changing '
-              'version. Metal itself is fine; only GL-shader calculators are '
-              'affected. This task supports CPU only.'
-        : 'Interactive Segmenter GPU is not validated on this platform; it '
-              'supports CPU only.',
+    unavailableReasons: {
+      VisionDelegate.cpu:
+          'InteractiveSegmenter requires macOS arm64, Linux x64, the official '
+          'iOS SDK adapter, or the Android or web adapter package.',
+      VisionDelegate.gpu: platform.operatingSystem == 'macos'
+          ? 'The official MediaPipe macOS GPU stroke shader requests GLSL 330 in '
+                'an OpenGL 2.1 context and fails to compile. Confirmed on both '
+                'the 1.0.0 and 1.0.1 official runtimes, so it is not fixed by '
+                'changing version. Metal itself is fine; only GL-shader '
+                'calculators are affected. This task supports CPU only.'
+          : 'Interactive Segmenter GPU runs in browsers only; elsewhere it '
+                'supports CPU only.',
+    },
   );
 }
 
@@ -525,6 +559,8 @@ TaskCapabilities<VisionDelegate> objectDetectorCapabilitiesForPlatform(
     },
     VisionDelegate.gpu: {
       'macos/arm64': '14.0',
+      // Needs EGL and a GPU driver; Google refuses software renderers.
+      'linux/x64': null,
       if (officialIosRuntime) 'ios/arm64': '15.0',
       if (objectDetectorBackendFactory != null) 'android/arm64': null,
       if (objectDetectorBackendFactory != null) 'web/unknown': null,
@@ -542,7 +578,7 @@ TaskCapabilities<VisionDelegate> objectDetectorCapabilitiesForPlatform(
         : 'Object Detector CPU requires Linux x64, Windows x64, the official '
               'iOS SDK adapter, or the Android or web adapter package.',
     VisionDelegate.gpu:
-        'Object Detector GPU requires macOS arm64 14.0+, the official iOS SDK '
-        'adapter, or the Android or web adapter.',
+        'Object Detector GPU requires macOS arm64 14.0+, Linux x64, the '
+        'official iOS SDK adapter, or the Android or web adapter.',
   },
 );

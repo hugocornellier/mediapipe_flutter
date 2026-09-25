@@ -1,7 +1,9 @@
 {
   "_comment": [
-    "Every samples-web task on every platform and delegate. 'required' cells must have a passing",
-    "row from this commit's CI (tier 'pr') or, once tier 'device' exists, from the nightly device run.",
+    "Every samples-web task on every platform and delegate. 'required' cells need a passing",
+    "row from this commit's pull-request CI; 'device' cells need one from physical hardware (the",
+    "manually dispatched device workflow, run for this commit or on main within 48 hours), and the",
+    "gate reports them as awaiting until one has run.",
     "'pending: <step>' cells are planned; 'unsupported: <reason>' cells are Google's limits.",
     "tool/coverage/gate.py enforces it; the vision package's capabilities test keeps it honest."
   ],
@@ -13,7 +15,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -39,7 +41,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -65,7 +67,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -73,11 +75,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "windows": {
         "cpu": "required",
@@ -91,7 +93,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -117,7 +119,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -125,11 +127,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "unsupported: Google's desktop runtimes cannot open Holistic's face blendshapes model on GPU (upstream-issues.md UP-026)"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "unsupported: Google's desktop runtimes cannot open Holistic's face blendshapes model on GPU (upstream-issues.md UP-026)"
       },
       "windows": {
         "cpu": "required",
@@ -143,7 +145,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -151,11 +153,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "windows": {
         "cpu": "required",
@@ -169,7 +171,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -177,11 +179,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "unsupported: Google's Linux 1.0.1 runtime aborts the embedder on OpenGL ES (upstream-issues.md UP-027)"
       },
       "windows": {
         "cpu": "required",
@@ -195,7 +197,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -203,11 +205,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "windows": {
         "cpu": "required",
@@ -217,7 +219,7 @@
     "interactive_segmenter": {
       "web": {
         "cpu": "required",
-        "gpu": "pending: step 2"
+        "gpu": "required"
       },
       "android": {
         "cpu": "required",
@@ -229,11 +231,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "unsupported: Google's macOS runtime cannot compile the stroke heatmap shader (upstream-issues.md UP-008)"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "unsupported: Google's Linux 1.0.1 runtime aborts the stroke segmenter on OpenGL ES (upstream-issues.md UP-029)"
       },
       "windows": {
         "cpu": "unsupported: Google's Windows wheels do not export the stroke API (step 6)",
@@ -247,7 +249,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -259,7 +261,7 @@
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "windows": {
         "cpu": "required",
@@ -273,7 +275,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "pending: step 3 (nightly Test Lab phones)"
+        "gpu": "device"
       },
       "ios": {
         "cpu": "required",
@@ -281,11 +283,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "windows": {
         "cpu": "required",
@@ -294,15 +296,15 @@
     },
     "audio_classifier": {
       "web": {
-        "cpu": "pending: step 2",
-        "gpu": "pending: step 2"
+        "cpu": "required",
+        "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
-        "cpu": "pending: step 3",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
-        "cpu": "pending: step 5",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "macos": {
@@ -310,25 +312,25 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "linux": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "windows": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       }
     },
     "language_detector": {
       "web": {
-        "cpu": "pending: step 2",
-        "gpu": "pending: step 2"
+        "cpu": "required",
+        "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
-        "cpu": "pending: step 3",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
-        "cpu": "pending: step 5",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "macos": {
@@ -336,25 +338,25 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "linux": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "windows": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       }
     },
     "text_classifier": {
       "web": {
-        "cpu": "pending: step 2",
-        "gpu": "pending: step 2"
+        "cpu": "required",
+        "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
-        "cpu": "pending: step 3",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
-        "cpu": "pending: step 5",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "macos": {
@@ -362,25 +364,25 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "linux": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "windows": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       }
     },
     "text_embedder": {
       "web": {
-        "cpu": "pending: step 2",
-        "gpu": "pending: step 2"
+        "cpu": "required",
+        "gpu": "unsupported: Google's browser task accepts the GPU delegate but runs on CPU (bit-identical outputs), so the API offers CPU only"
       },
       "android": {
-        "cpu": "pending: step 3",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
-        "cpu": "pending: step 5",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "macos": {
@@ -388,11 +390,11 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "linux": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "windows": {
-        "cpu": "pending: step 4",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       }
     }

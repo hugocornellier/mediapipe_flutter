@@ -15,11 +15,7 @@ final class InteractiveSegmenter {
   static Future<InteractiveSegmenter> create(
     InteractiveSegmenterOptions options,
   ) async {
-    if (options.delegate != VisionDelegate.cpu) {
-      throw const InteractiveSegmenterException(
-        'Interactive Segmenter supports CPU only.',
-      );
-    }
+    // CPU or WebGL 2; the worker reports a browser without worker WebGL 2.
     return InteractiveSegmenter._(
       await requireBrowserFactory(interactiveSegmenterBackendFactory)(options),
       options.delegate,

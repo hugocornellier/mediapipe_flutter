@@ -44,6 +44,15 @@ jobs:
       - name: Record linux CPU task coverage (linux-cpu)
         if: always() && runner.os == 'Linux'
         run: python3 -B tool/coverage/record.py --suite linux-cpu --platform linux --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.linux_cpu.outcome }}
+      # Core's shared runtime here is the vision package's wheel library; the
+      # suites compare with Google's Python on this runner.
+      - name: Text and audio against Google's Linux wheel
+        id: linux_text_audio
+        if: ${{ !cancelled() && runner.os == 'Linux' }}
+        run: python3 -B tool/test_text_audio.py
+      - name: Record linux CPU text and audio coverage (linux-text-audio)
+        if: always() && runner.os == 'Linux'
+        run: python3 -B tool/coverage/record.py --suite linux-text-audio --platform linux --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.linux_text_audio.outcome }}
       - uses: actions/upload-artifact@v4
         if: always() && runner.os == 'Linux'
         with:
@@ -68,6 +77,13 @@ jobs:
       - name: Record windows CPU task coverage (windows-cpu)
         if: always() && runner.os == 'Windows'
         run: python -B tool/coverage/record.py --suite windows-cpu --platform windows --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.windows_cpu.outcome }}
+      - name: Text and audio against Google's Windows wheel
+        id: windows_text_audio
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
+        run: python -B tool/test_text_audio.py
+      - name: Record windows CPU text and audio coverage (windows-text-audio)
+        if: always() && runner.os == 'Windows'
+        run: python -B tool/coverage/record.py --suite windows-text-audio --platform windows --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.windows_text_audio.outcome }}
       - uses: actions/upload-artifact@v4
         if: always() && runner.os == 'Windows'
         with:
@@ -90,10 +106,16 @@ jobs:
             build/codex-tmp/desktop-*/reference/**/*.json
             build/codex-tmp/gallery-desktop-*/*.log
             build/codex-tmp/gallery-desktop-*/report.json
+            build/codex-tmp/text-audio/*.log
+            build/codex-tmp/text-audio/report.json
+            build/classic-text-reference/*.json
+            build/classic-text-reference/*.log
+            build/audio-reference/*.json
+            build/audio-reference/*.log
           if-no-files-found: error
 
   linux-gpu:
-    name: Vision face and hand tasks / ubuntu-24.04 x64 GPU (Mesa, renamed renderer)
+    name: Vision tasks / ubuntu-24.04 x64 GPU (Mesa, renamed renderer)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -114,13 +136,16 @@ jobs:
           sudo apt-get install -y -qq libegl1 libgles2 libegl-mesa0 libgl1-mesa-dri \
             clang cmake ninja-build pkg-config libgtk-3-dev xvfb \
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good
-      - name: Download the face and hand models
+      - name: Download the vision models
         working-directory: packages/mediapipe-task-vision
         run: |
           dart pub get
           dart tool/download_model.dart
           dart tool/download_face_landmarker.dart
           dart tool/download_landmark_tasks.dart
+          dart tool/download_object_detector.dart
+          dart tool/download_image_tasks.dart
+          dart tool/download_segmenter_tasks.dart
       - name: Official 1.0.1 GPU references and Dart GPU suites on llvmpipe
         id: linux_gpu
         env:
@@ -131,10 +156,12 @@ jobs:
           force_gl_renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
           # Without a display the default EGL platform fails.
           EGL_PLATFORM: surfaceless
-        run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --test
+        run: >-
+          python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --test
+          --landmark-tasks --object-detector --image-tasks --segmenter-tasks
       - name: Record linux GPU task coverage (linux-gpu)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite linux-gpu --platform linux --delegate gpu --tasks face_detector,face_landmarker,hand_landmarker --outcome ${{ steps.linux_gpu.outcome }}
+        run: python3 -B tool/coverage/record.py --suite linux-gpu --platform linux --delegate gpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,image_classifier,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.linux_gpu.outcome }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -7,8 +7,8 @@
 library;
 
 export 'src/extensions.dart';
-export 'src/ffi_utils.dart';
+export 'src/ffi_utils_stub.dart' if (dart.library.ffi) 'src/ffi_utils.dart';
 export 'src/interface/containers.dart' show EmbeddingType;
 export 'universal_mediapipe_flutter_core.dart'
-    if (dart.library.html) 'src/web/mediapipe_flutter_core.dart'
+    if (dart.library.js_interop) 'src/web/mediapipe_flutter_core.dart'
     if (dart.library.io) 'src/io/mediapipe_flutter_core.dart';

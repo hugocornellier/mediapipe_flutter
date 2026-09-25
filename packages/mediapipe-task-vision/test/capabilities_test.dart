@@ -185,17 +185,68 @@ void main() {
     expect(result.unavailableReasons[VisionDelegate.gpu], isNotNull);
   });
 
-  test('Object Detector desktop x64 supports CPU and explains GPU scope', () {
-    for (final os in ['linux', 'windows']) {
-      final result = objectDetectorCapabilitiesForPlatform(
-        TaskPlatform(operatingSystem: os, architecture: 'x64'),
-      );
-      expect(result.supportedDelegates, {VisionDelegate.cpu});
-      expect(result.unavailableReasons[VisionDelegate.gpu], contains('macOS'));
+  test('Object Detector desktop x64: Linux GPU, Windows CPU only', () {
+    final linux = objectDetectorCapabilitiesForPlatform(
+      const TaskPlatform(operatingSystem: 'linux', architecture: 'x64'),
+    );
+    expect(linux.supportedDelegates, {VisionDelegate.cpu, VisionDelegate.gpu});
+    final windows = objectDetectorCapabilitiesForPlatform(
+      const TaskPlatform(operatingSystem: 'windows', architecture: 'x64'),
+    );
+    expect(windows.supportedDelegates, {VisionDelegate.cpu});
+    expect(windows.unavailableReasons[VisionDelegate.gpu], contains('Linux'));
+    expect(
+      windows.supportedTargets.keys,
+      containsAll(['linux/x64', 'windows/x64', 'macos/arm64']),
+    );
+  });
+
+  test('desktop GPU where Google\'s desktop runtimes run the task', () {
+    const linux = TaskPlatform(operatingSystem: 'linux', architecture: 'x64');
+    const windows = TaskPlatform(
+      operatingSystem: 'windows',
+      architecture: 'x64',
+    );
+    const macos = TaskPlatform(
+      operatingSystem: 'macos',
+      architecture: 'arm64',
+      version: '15.0',
+    );
+    for (final (claim, onLinux, onMac) in [
+      (poseLandmarkerCapabilitiesForPlatform, true, true),
+      (gestureRecognizerCapabilitiesForPlatform, true, true),
+      (imageClassifierCapabilitiesForPlatform, true, true),
+      (imageSegmenterCapabilitiesForPlatform, true, true),
+      // UP-027: Google's Linux runtime aborts the embedder on GPU.
+      (imageEmbedderCapabilitiesForPlatform, false, true),
+      // UP-026: neither runtime opens Holistic's blendshapes model on GPU.
+      (holisticLandmarkerCapabilitiesForPlatform, false, false),
+      // The legacy point segmenter's desktop GPU has not been compared.
+      (interactiveSegmenterLegacyCapabilitiesForPlatform, false, false),
+    ]) {
       expect(
-        result.supportedTargets.keys,
-        containsAll(['linux/x64', 'windows/x64', 'macos/arm64']),
+        claim(linux).supportedDelegates.contains(VisionDelegate.gpu),
+        onLinux,
+      );
+      expect(
+        claim(windows).supportedDelegates,
+        isNot(contains(VisionDelegate.gpu)),
+      );
+      // Metal through the official macOS runtime only.
+      expect(claim(macos).supportedDelegates, isEmpty);
+      expect(
+        claim(
+          macos,
+          officialMacosRuntime: true,
+        ).supportedDelegates.contains(VisionDelegate.gpu),
+        onMac,
       );
     }
+    expect(
+      holisticLandmarkerCapabilitiesForPlatform(
+        linux,
+      ).unavailableReasons[VisionDelegate.gpu],
+      contains('UP-026'),
+    );
   });
 }

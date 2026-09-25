@@ -1,5 +1,4 @@
 import 'dart:ffi';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -9,11 +8,23 @@ import '../interface/text_task_exception.dart';
 import 'text_task_worker.dart';
 import 'third_party/mediapipe/classic_text_bindings.dart' as mp;
 
+/// Where core's shared runtime serves these tasks: Google's macOS 1.0.1
+/// library, its Linux 1.0.1 and Windows 1.0.0 wheel libraries, and its iOS
+/// 1.0.1 SDK through the adapter mediapipe_flutter_vision builds.
+const _runtimeAbis = {
+  Abi.macosArm64,
+  Abi.linuxX64,
+  Abi.windowsX64,
+  Abi.iosArm64,
+};
+
 /// Validate availability before starting a worker or resolving inference calls.
 void requireTextTasksRuntime() {
-  if (!Platform.isMacOS || Abi.current() != Abi.macosArm64) {
+  if (!_runtimeAbis.contains(Abi.current())) {
     throw UnsupportedError(
-      'MediaPipe 1.0.1 text tasks currently support macOS arm64 CPU only.',
+      'MediaPipe text tasks run on macOS arm64, Linux x64, Windows x64 and '
+      'iOS arm64 CPU here, and in browsers and on Android through their '
+      'platform plugins.',
     );
   }
   try {
@@ -26,9 +37,16 @@ void requireTextTasksRuntime() {
         )
       >
     >(mp.classifierCreate);
-  } catch (_) {
+  } catch (error) {
+    if (missingLinuxGraphicsLibraries('$error') case final missing?) {
+      throw missing;
+    }
     throw UnsupportedError(
-      'Enable mediapipe_flutter_core.tasks_runtime: true in the app pubspec hooks.user_defines to use MediaPipe 1.0.1 text tasks.',
+      Abi.current() == Abi.iosArm64
+          ? 'On iOS, MediaPipe text tasks run in the official iOS SDK adapter '
+                'that mediapipe_flutter_vision builds: add that package and '
+                'mediapipe_flutter_core.tasks_runtime: true to the app pubspec.'
+          : 'Enable mediapipe_flutter_core.tasks_runtime: true in the app pubspec hooks.user_defines to use MediaPipe text tasks.',
     );
   }
 }
@@ -101,7 +119,7 @@ void fillTextBaseOptions(
   target
     ..fileDescriptor = -1
     ..delegate = 0
-    ..hostSystem = 2;
+    ..hostSystem = mpHostSystem;
   if (source.modelAssetPath case final path?) {
     target.modelAssetPath = path.toNativeUtf8(allocator: arena).cast();
   } else {

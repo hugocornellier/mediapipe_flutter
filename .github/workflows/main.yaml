@@ -233,7 +233,7 @@ jobs:
         run: python3 -B tool/coverage/record.py --suite macos-official-cpu --platform macos --delegate cpu --tasks face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.official.outcome }}
       - name: Record macos GPU task coverage (macos-official-metal)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite macos-official-metal --platform macos --delegate gpu --tasks face_landmarker,hand_landmarker,object_detector --outcome ${{ steps.official.outcome }}
+        run: python3 -B tool/coverage/record.py --suite macos-official-metal --platform macos --delegate gpu --tasks face_landmarker,gesture_recognizer,hand_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.official.outcome }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

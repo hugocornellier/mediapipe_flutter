@@ -1,10 +1,11 @@
 """Compare the official macOS landmark runtime with pinned references.
 
-Face Landmarker, Hand Landmarker and Object Detector run on CPU and Metal;
-Pose Landmarker, Gesture Recognizer, Holistic Landmarker, Image Classifier,
-Image Embedder, Image Segmenter and Interactive Segmenter Legacy on CPU. Each is compared with the official wheel's output,
-generated on this machine for both CPU and GPU: the wheel's CPU results drift
-between Apple CPUs, as cpu_reference.py records for every native job.
+Face, Hand, Pose, Gesture and Holistic Landmarker, Object Detector, Image
+Classifier, Image Embedder and Image Segmenter run on CPU and Metal (Image
+Segmenter in IMAGE mode: Google's Metal path aborts in VIDEO mode);
+Interactive Segmenter Legacy on CPU. Each is compared with the official wheel's
+output, generated on this machine for both CPU and GPU: the wheel's CPU results
+drift between Apple CPUs, as cpu_reference.py records for every native job.
 """
 import argparse
 import json
@@ -91,8 +92,8 @@ def main():
 
     gpu = output / 'gpu'
     run([str(python), '-B', str(PACKAGE / 'tool/prepare_gpu_reference.py'),
-         '--python', str(python), '--output-dir', str(gpu), '--hand',
-         '--object-detector'],
+         '--python', str(python), '--output-dir', str(gpu), '--landmark-tasks',
+         '--object-detector', '--image-tasks', '--segmenter-tasks'],
         REPO, env, output / 'gpu-reference.log')
 
     cpu = output / 'cpu'
@@ -122,7 +123,8 @@ def main():
          '--reporter', 'expanded'], root, env, output / 'dart-tests.log')
     print('Official macOS runtime comparisons passed for Face, Hand, Pose, '
           'Gesture, Holistic, Object Detector, Image Classifier, Image '
-          'Embedder, Image Segmenter and Interactive Segmenter Legacy, with Face, Hand and Object Detector on Metal.', flush=True)
+          'Embedder, Image Segmenter and Interactive Segmenter Legacy, all but '
+          'the last on Metal too.', flush=True)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,29 @@
+group = 'dev.mediapipe.flutter.text'
+version = '1.0'
+
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies { classpath 'com.android.tools.build:gradle:8.11.1' }
+}
+apply plugin: 'com.android.library'
+
+android {
+    namespace = 'dev.mediapipe.flutter.text'
+    compileSdk = 36
+    defaultConfig { minSdk = 24 }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+repositories { google(); mavenCentral() }
+dependencies {
+    // As in mediapipe_flutter_vision_android: Google's 1.0.0 POMs declare
+    // protobuf-javalite while the vision SDK needs full protobuf-java at
+    // runtime (google-ai-edge/mediapipe#6348). One app can hold all three
+    // plugins only if they agree, so this one uses the full runtime too.
+    implementation('com.google.mediapipe:tasks-text:1.0.0') {
+        exclude group: 'com.google.protobuf', module: 'protobuf-javalite'
+    }
+    implementation 'com.google.protobuf:protobuf-java:4.26.1'
+}

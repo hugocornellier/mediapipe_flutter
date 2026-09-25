@@ -7,6 +7,7 @@ depends on whether a maintainer source build is present. Deriving it here from
 grid honest, because the app only ships tasks whose runtime really exists.
 """
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import platform
@@ -15,6 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
+import urllib.request
 
 GALLERY = Path(__file__).resolve().parents[1]
 REPO = GALLERY.parent
@@ -72,13 +74,20 @@ WEB_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
              'hand_landmarker', 'holistic_landmarker', 'image_classifier',
              'image_embedder', 'image_segmenter', 'interactive_segmenter',
              'interactive_segmenter_legacy', 'object_detector',
-             'pose_landmarker'}
+             'pose_landmarker', 'audio_classifier', 'language_detector',
+             'text_classifier', 'text_embedder'}
 
-# The stateful MagicTouch runtime lives in mediapipe-core's tasks runtime,
-# which is published for macOS arm64 only, and the hook wants it opted into
-# through a separate user define.
+# The stateful MagicTouch runtime lives in mediapipe-core's tasks runtime on
+# macOS arm64 (Linux's vision wheel exports it itself), and the hook wants it
+# opted into through a separate user define.
 SHARED_RUNTIME_TASK = 'interactive_segmenter'
 SHARED_RUNTIME_TARGETS = {'macos/arm64'}
+# Core's tasks runtime serves the text and audio tasks on these targets. On
+# Linux and Windows it is Google's wheel library, which the vision tasks then
+# share instead of bundling a second copy; on iOS it is the vision package's
+# official SDK adapter.
+TEXT_AUDIO_TARGETS = {'macos/arm64', 'linux/x64', 'windows/x64', 'ios/arm64',
+                      'ios-simulator/arm64'}
 
 # The text package's three classic tasks, on the same shared runtime, with the
 # models its example downloads and verifies (make models_text). They are not
@@ -156,20 +165,53 @@ def _tasks_of(block):
     return {t.strip().strip("'") for t in match.group(1).split(',') if t.strip()}
 
 
+def _pinned_model(task):
+    """The URL and SHA-256 the text or audio package pins for [task]'s model."""
+    if task in AUDIO_TASKS:
+        source = (AUDIO / 'lib/models.dart').read_text()
+        url = re.search(r"const yamnetUrl =(.*?);", source, re.S).group(1)
+        sha = re.search(r"const yamnetSha256 =\s*'([0-9a-f]{64})'", source).group(1)
+    else:
+        constant = {'language_detector': 'languageDetectorModel',
+                    'text_classifier': 'bertClassifierModel',
+                    'text_embedder': 'universalSentenceEncoderModel'}[task]
+        source = (TEXT / 'lib/models.dart').read_text()
+        row = re.search(r'const DownloadAsset ' + constant + r' = \((.*?)\);', source, re.S).group(1)
+        url = re.search(r'url:(.*?),\s*sha256', row, re.S).group(1)
+        sha = re.search(r"sha256:\s*'([0-9a-f]{64})'", row).group(1)
+    return ''.join(re.findall(r"'([^']*)'", url)), sha
+
+
+def _download_model(task, destination):
+    """Fetches a missing text or audio model from its pinned URL.
+
+    The packages' own download tools run their build hooks, which refuse the
+    shared runtime on hosts without one, such as the Linux web runner.
+    """
+    url, sha = _pinned_model(task)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    data = urllib.request.urlopen(url, timeout=120).read()
+    if hashlib.sha256(data).hexdigest() != sha:
+        raise RuntimeError(f'{url} does not match its pinned SHA-256')
+    destination.write_bytes(data)
+
+
 def available_tasks(target):
     """Tasks whose runtime this target can actually obtain."""
     if target == 'web':
         return set(WEB_TASKS)
     source = (VISION / 'sdk_downloads.dart').read_text()
     if target in ('ios/arm64', 'ios-simulator/arm64'):
-        # Google's public SDK supplies these tasks without a maintainer build.
-        return set(OFFICIAL_IOS_TASKS)
+        # Google's public SDK supplies these tasks without a maintainer build;
+        # its adapter serves text and audio through core's runtime too.
+        return set(OFFICIAL_IOS_TASKS) | NON_VISION_TASKS
     if target.startswith('android'):
-        return ANDROID_TASKS | OFFICIAL_ANDROID_TASKS
+        # Text and audio run through their packages' Android SDK plugins.
+        return ANDROID_TASKS | OFFICIAL_ANDROID_TASKS | NON_VISION_TASKS
     if target in ('linux/x64', 'windows/x64'):
         for block in _blocks(source, 'const visionWheelReleases'):
             if re.search(r"target: '" + re.escape(target) + r"'", block):
-                return _tasks_of(block)
+                return _tasks_of(block) | NON_VISION_TASKS
         return set()
     tasks = set()
     if target in SHARED_RUNTIME_TARGETS:
@@ -211,6 +253,8 @@ def prepare(target, selected):
             source = VISION / 'models' / name
         else:
             continue
+        if not source.exists() and task in NON_VISION_TASKS:
+            _download_model(task, source)
         if not source.exists():
             missing.append(f'{task} -> {name}')
             continue
@@ -235,9 +279,10 @@ def prepare(target, selected):
     official_landmarks = (target == 'macos/arm64'
                           and OFFICIAL_MACOS_TASKS & bundled.keys())
     official_android = (target.startswith('android') and bundled
-                        and set(bundled) <= OFFICIAL_ANDROID_TASKS)
+                        and set(bundled) - NON_VISION_TASKS <= OFFICIAL_ANDROID_TASKS)
     if target == 'web':
-        subprocess.run([sys.executable, '-B', str(REPO / 'packages/mediapipe-task-vision-web/tool/prepare_runtime.py')], check=True)
+        for runtime in ('vision', 'text', 'audio'):
+            subprocess.run([sys.executable, '-B', str(REPO / f'packages/mediapipe-task-{runtime}-web/tool/prepare_runtime.py')], check=True)
     manifest = {
         'target': target,
         'tasks': sorted(bundled),
@@ -263,14 +308,30 @@ def prepare(target, selected):
     android_plugin = ('''  mediapipe_flutter_vision_android:
     path: ../packages/mediapipe-task-vision-android
 ''' if official_android else '')
+    if target.startswith('android'):
+        if set(TEXT_TASKS) & bundled.keys():
+            android_plugin += '''  mediapipe_flutter_text_android:
+    path: ../packages/mediapipe-task-text-android
+'''
+        if set(AUDIO_TASKS) & bundled.keys():
+            android_plugin += '''  mediapipe_flutter_audio_android:
+    path: ../packages/mediapipe-task-audio-android
+'''
     web_plugin = ('''  mediapipe_flutter_vision_web:
     path: ../packages/mediapipe-task-vision-web
+  mediapipe_flutter_text_web:
+    path: ../packages/mediapipe-task-text-web
+  mediapipe_flutter_audio_web:
+    path: ../packages/mediapipe-task-audio-web
 ''' if target == 'web' else '')
-    # The hook refuses the stateful MagicTouch task unless its shared runtime is
-    # opted into explicitly, on the core package rather than the vision one.
+    # Core's shared runtime is opted into explicitly, on the core package: the
+    # vision hook refuses the stateful MagicTouch task on macOS without it, and
+    # the text and audio tasks need it wherever they run natively.
     core = ('    mediapipe_flutter_core:\n      tasks_runtime: true\n'
-            if ({SHARED_RUNTIME_TASK, *NON_VISION_TASKS} & bundled.keys()
-                and target in SHARED_RUNTIME_TARGETS)
+            if (({SHARED_RUNTIME_TASK} & bundled.keys()
+                 and target in SHARED_RUNTIME_TARGETS)
+                or (NON_VISION_TASKS & bundled.keys()
+                    and target in TEXT_AUDIO_TARGETS))
             else '')
     # On the web, Google's JavaScript runs the stateful task. Host-side builds
     # such as `flutter test --platform chrome` still run the native hook, which
@@ -393,15 +454,15 @@ def main():
         raise SystemExit('No MediaPipe runtime target matches this host.')
     selected = available_tasks(target)
     if target.startswith('android') and not args.tasks:
-        # The public SDK needs no maintainer C++ build and supplies CPU/GPU.
-        selected = set(OFFICIAL_ANDROID_TASKS)
+        # The public SDKs need no maintainer C++ build; vision supplies CPU/GPU.
+        selected = set(OFFICIAL_ANDROID_TASKS) | NON_VISION_TASKS
     if args.tasks:
         requested = set(args.tasks.split(','))
         if not requested <= selected:
             raise SystemExit(f'Unavailable tasks for {target}: {requested - selected}')
         selected = requested
-    if (target.startswith('android') and selected - ANDROID_TASKS
-            and not selected <= OFFICIAL_ANDROID_TASKS):
+    if (target.startswith('android') and selected - ANDROID_TASKS - NON_VISION_TASKS
+            and not selected - NON_VISION_TASKS <= OFFICIAL_ANDROID_TASKS):
         # One app uses either the official plugin or the source-built runtime.
         raise SystemExit('On Android, tasks beyond the source-built face tasks '
                          'run only through the official SDK plugin, which serves '

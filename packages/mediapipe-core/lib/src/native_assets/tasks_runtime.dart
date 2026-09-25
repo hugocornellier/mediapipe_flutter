@@ -157,14 +157,100 @@ const tasksRuntimeReleases = <String, TasksRuntimeRelease>{
   ),
 };
 
+/// Google's desktop C API libraries, bundled unmodified from the official
+/// wheels, which export the text and audio tasks beside the vision ones.
+///
+/// These are the vision package's desktop pins, and its tests keep the two
+/// identical: two copies of Google's library in one process register its
+/// graphs twice and abort, so an app using both packages bundles this one and
+/// the vision hook maps its own assets onto it. Windows stays on the 1.0.0
+/// wheel the vision package validated; its text and audio C API and Python
+/// declarations are the same as 1.0.1's.
+const tasksWheelRuntimes = <String, OfficialWheelLibrary>{
+  'linux/x64': OfficialWheelLibrary(
+    target: 'linux/x64',
+    version: '1.0.1',
+    wheel: (
+      url:
+          'https://files.pythonhosted.org/packages/2a/58/'
+          'bdd5bada89d7a132375df05e962bf702c148b47043dca98d820d9395152b/'
+          'mediapipe-1.0.1-py3-none-manylinux_2_28_x86_64.whl',
+      sha256:
+          '121522251afc3c135e4b7b0c341dd5e050ad1ec87631127484f3c389ae385044',
+    ),
+    libraryName: 'libmediapipe.so',
+    librarySha256:
+        'b72e6d61a79d1080d29a96ba95e3cfa3e43f6c433c0acc3bc9b3eb7ac0ba103a',
+    notices: {
+      'LICENSE':
+          '8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8',
+      'NOTICE':
+          'e8e3eddc5c36d7413635455933650d7423b937185180e393f9a006bee60162e7',
+    },
+  ),
+  'windows/x64': OfficialWheelLibrary(
+    target: 'windows/x64',
+    version: '1.0.0',
+    wheel: (
+      url:
+          'https://files.pythonhosted.org/packages/68/53/'
+          'ffb67e668f23130aff197ec49be912be910c128b60658000d8bf263207c9/'
+          'mediapipe-1.0.0-py3-none-win_amd64.whl',
+      sha256:
+          'da57e6719bbab05007272c91d6ca2e0e2e370709491cbe344a372f87e25cf604',
+    ),
+    libraryName: 'libmediapipe.dll',
+    librarySha256:
+        'a8970c645c8c87c25ec9965cb5c898e803c6c42f7192b7de9a0541c62ae48cef',
+    notices: {
+      'LICENSE':
+          '8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8',
+      'NOTICE':
+          'd3b4a80a24a01fd445d4b70a610fd836ec3547c3a62eb835a1041956c38d9f56',
+    },
+  ),
+};
+
+/// Google's official wheel and unmodified library behind core's shared runtime
+/// on [target] (such as `linux/x64`), or null where core has none. Reference
+/// tools and tests check a same-host oracle against it.
+({String version, String librarySha256, String wheelSha256})? tasksRuntimeWheel(
+  String target,
+) {
+  if (tasksRuntimeReleases[target] case final release?) {
+    return (
+      version: tasksRuntimeVersion,
+      librarySha256: release.upstreamLibrarySha256,
+      wheelSha256: release.wheelSha256,
+    );
+  }
+  if (tasksWheelRuntimes[target] case final runtime?) {
+    return (
+      version: runtime.version,
+      librarySha256: runtime.librarySha256,
+      wheelSha256: runtime.wheel.sha256,
+    );
+  }
+  return null;
+}
+
+/// iOS targets where the text and audio tasks run in the official iOS SDK
+/// adapter that mediapipe_flutter_vision builds: Google implements every task
+/// in one MediaPipeTasksCommon, which an app must hold once.
+const tasksRuntimeIosTargets = {'ios/arm64', 'ios-simulator/arm64'};
+
+/// The adapter framework's install name, which core's asset resolves to.
+const tasksRuntimeIosAdapter = '@rpath/mediapipe_ios.framework/mediapipe_ios';
+
 /// The release for [target], or an [UnsupportedError] naming the targets that
-/// have one.
+/// have one. Targets served from a wheel ([tasksWheelRuntimes]) have none.
 TasksRuntimeRelease requireTasksRuntimeRelease(String target) {
   final release = tasksRuntimeReleases[target];
   if (release == null) {
     throw UnsupportedError(
       'The shared MediaPipe $tasksRuntimeVersion runtime has no release for '
-      '$target. Available targets: ${tasksRuntimeReleases.keys.join(', ')}.',
+      '$target. Available targets: '
+      '${[...tasksRuntimeReleases.keys, ...tasksWheelRuntimes.keys].join(', ')}.',
     );
   }
   return release;

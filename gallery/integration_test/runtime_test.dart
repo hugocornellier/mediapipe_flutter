@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:mediapipe_flutter_audio/mediapipe_flutter_audio.dart';
+import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/live/live_registry.dart';
@@ -58,5 +60,56 @@ void main() {
     // The record of which tiles this platform opened.
     // ignore: avoid_print
     print('RUNTIME_TILES ${visited.join(',')}');
+  });
+
+  // Text and audio run on core's shared runtime. On Linux and Windows that is
+  // the very library the vision tiles above loaded, mapped once for both; on
+  // macOS it is a separate official build whose symbols stay apart.
+  testWidgets('text and audio answer in the same process', (tester) async {
+    final assets = await GalleryAssets.unpack();
+    final bundled = assets.bundledTasks;
+    if (!bundled.contains('text_classifier') &&
+        !bundled.contains('audio_classifier')) {
+      markTestSkipped('This target bundles no text or audio task.');
+      return;
+    }
+    Future<Uint8List> asset(String path) async {
+      final data = await rootBundle.load(path);
+      return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    }
+
+    await tester.runAsync(() async {
+      if (bundled.contains('text_classifier')) {
+        final classifier = await TextClassifier.create(
+          TextClassifierOptions.fromAssetBuffer(
+            await asset('assets/models/bert_classifier.tflite'),
+          ),
+        );
+        try {
+          final result = await classifier.classify('What a wonderful day!');
+          expect(
+            result.classifications.first.categories.first.categoryName,
+            'positive',
+          );
+        } finally {
+          await classifier.dispose();
+        }
+      }
+      if (bundled.contains('audio_classifier')) {
+        final classifier = await AudioClassifier.create(
+          AudioClassifierOptions(
+            modelBytes: await asset('assets/models/yamnet.tflite'),
+          ),
+        );
+        try {
+          final chunks = await classifier.classify(
+            decodeWav(await asset('assets/samples/speech_16000_hz_mono.wav')),
+          );
+          expect(chunks.first.categories.first.name, 'Speech');
+        } finally {
+          await classifier.dispose();
+        }
+      }
+    });
   });
 }

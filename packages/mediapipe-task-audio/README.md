@@ -6,10 +6,17 @@ the [mediapipe_flutter](../../README.md) fork and is not published to pub.dev.
 
 ## Platforms
 
-The task runs on Google's unmodified **MediaPipe 1.0.1** runtime, which
-`mediapipe_flutter_core` bundles once and shares with the text tasks and
-MagicTouch: **macOS arm64 CPU, macOS 14+**. Other platforms need a separate
-1.0.1 integration. Query support before offering the task:
+The task runs on Google's unmodified runtime, which `mediapipe_flutter_core`
+bundles once and shares with the text tasks: **macOS arm64 CPU, macOS 14+**
+(MediaPipe 1.0.1), **Linux x64 CPU** (1.0.1) and **Windows x64 CPU** (1.0.0).
+On Linux and Windows that runtime is the vision package's wheel library, loaded
+once for both packages; Linux needs the system EGL and OpenGL ES libraries
+(`libegl1 libgles2` on Debian or Ubuntu) even for CPU. On **iOS 15+** it runs on
+Google's 1.0.1 iOS SDK, in the adapter `mediapipe_flutter_vision` builds (the
+app needs that package as well). Browsers and Android run it through
+[mediapipe_flutter_audio_web](../mediapipe-task-audio-web/README.md) and
+[mediapipe_flutter_audio_android](../mediapipe-task-audio-android/README.md).
+Query support before offering the task:
 
 ```dart
 final support = await queryAudioClassifierCapabilities();
@@ -49,8 +56,12 @@ channel count; Google's task resamples to the model's rate. `decodeWav` reads
 
 `dart run tool/download_model.dart` fetches YAMNet and checks its SHA-256. The
 tests compare every chunk of three official MediaPipe sample clips (speech at
-16 kHz and 48 kHz, and a clip YAMNet hears as animal and bird sounds) with Google's own Python 1.0.1 output
-(`test/fixtures/official_reference.json`): same categories and timestamps,
-scores within 0.00001, including resampling from 48 kHz. They also check model
+16 kHz and 48 kHz, and a clip YAMNet hears as animal and bird sounds) with Google's own Python output
+(`test/fixtures/official_reference.json`, from the macOS 1.0.1 wheel): same
+categories and timestamps, scores within 0.00001, including resampling from
+48 kHz. On Linux and Windows CI, `tool/prepare_audio_reference.py` regenerates
+that reference with Google's pinned wheel on the same runner, and
+`MEDIAPIPE_AUDIO_REFERENCE_DIR` points the tests at it
+(`tool/test_text_audio.py` at the repository root runs both packages this way). They also check model
 bytes, queued calls, the score threshold, error reporting, disposal and the C
 struct layouts against Google's ctypes definitions.

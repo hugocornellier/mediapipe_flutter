@@ -25,12 +25,33 @@ final class TaskPlatform {
 /// A null version means any version of that operating system is accepted.
 typedef RuntimeTargets = Map<String, String?>;
 
-/// Process targets the shared official 1.0.1 runtime has been validated on.
+/// Process targets core's shared runtime (`tasks_runtime: true`) serves the
+/// Audio Classifier and the text classifier, embedder and language detector on.
 ///
-/// This mirrors the build-time release table in core's hook code; the two are
+/// This mirrors the build-time release tables in core's hook code; the two are
 /// kept in step so that a platform is never reported supported without a
 /// runtime, or bundled without a validated support claim.
-const tasksRuntimeTargets = <String, String?>{'macos/arm64': '14.0'};
+const tasksRuntimeTargets = <String, String?>{
+  'macos/arm64': '14.0',
+  'linux/x64': null,
+  'windows/x64': null,
+  // Through the official iOS SDK adapter of mediapipe_flutter_vision.
+  'ios/arm64': '15.0',
+};
+
+/// The part of [tasksRuntimeTargets] whose runtime also serves EmbeddingGemma,
+/// Proofreader, Summarizer and the stateful Interactive Segmenter: Google's
+/// macOS 1.0.1 library. Those tasks are validated there only.
+const macosTasksRuntimeTargets = <String, String?>{'macos/arm64': '14.0'};
+
+/// The official MediaPipe release that serves core's text and audio tasks on
+/// [platform]: Google's Android SDKs and the pinned Windows wheel are 1.0.0,
+/// its other runtimes (iOS included) 1.0.1.
+String tasksRuntimeVersionOn(TaskPlatform platform) =>
+    switch (platform.operatingSystem) {
+      'android' || 'windows' => '1.0.0',
+      _ => '1.0.1',
+    };
 
 /// Declared package support on a platform. This is not an inference self-test.
 ///
@@ -132,8 +153,8 @@ final class TaskCapabilities<D extends Enum> {
 
   /// Describe the shared 1.0.1 distribution's validated macOS CPU support.
   ///
-  /// Equivalent to [TaskCapabilities.cpuOnTargets] with the shared runtime's
-  /// target table.
+  /// Equivalent to [TaskCapabilities.cpuOnTargets] with
+  /// [macosTasksRuntimeTargets].
   factory TaskCapabilities.macosCpu({
     required TaskPlatform platform,
     required D cpu,
@@ -144,6 +165,7 @@ final class TaskCapabilities<D extends Enum> {
     cpu: cpu,
     gpu: gpu,
     gpuUnavailableReason: gpuUnavailableReason,
+    targets: macosTasksRuntimeTargets,
   );
 
   const TaskCapabilities._(

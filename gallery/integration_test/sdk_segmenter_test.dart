@@ -16,6 +16,10 @@ import 'support/sdk_frames.dart';
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
 const _gpu = String.fromEnvironment('SDK_GPU', defaultValue: 'optional');
 
+/// Tasks a device run keeps on CPU because Google's SDK aborts the app on its
+/// GPU there, which no test can catch: `image_segmenter` on PowerVR (UP-023).
+const _gpuSkipped = String.fromEnvironment('SDK_GPU_SKIP_TASKS');
+
 /// Another runtime build and JPEG decoder than the reference's: the masks
 /// still agree except along the subject's outline.
 const _categoryAgreement = 0.95;
@@ -46,7 +50,9 @@ void main() {
         var shiftedClasses = false;
         for (final delegate in [
           VisionDelegate.cpu,
-          if (_gpu != 'skip') VisionDelegate.gpu,
+          if (_gpu != 'skip' &&
+              !_gpuSkipped.split(',').contains('image_segmenter'))
+            VisionDelegate.gpu,
         ]) {
           final ImageSegmenter task;
           try {

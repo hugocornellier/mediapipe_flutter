@@ -1,11 +1,12 @@
 import 'dart:async';
 
+import '../backend_text_task.dart';
 import '../interface/text_task_exception.dart';
 import 'classic_text_runtime.dart';
 import 'text_task_worker.dart';
 
 /// Adapts the original synchronous constructors to the shared worker lifecycle.
-final class PendingTextTask<R> {
+final class PendingTextTask<R> implements TextTaskRunner<R> {
   PendingTextTask._(this._ready) {
     unawaited(_ready.then<void>((_) {}, onError: (Object _, StackTrace _) {}));
   }
@@ -33,11 +34,13 @@ final class PendingTextTask<R> {
   Future<void>? _disposeFuture;
 
   /// Await initialization without exposing the native worker.
+  @override
   Future<void> get ready async {
     await _ready;
   }
 
   /// Preserve submission order, including requests queued before ready.
+  @override
   Future<R> run(String text) async {
     checkActive();
     if (text.contains('\u0000')) {
@@ -47,11 +50,13 @@ final class PendingTextTask<R> {
   }
 
   /// Reject new requests as soon as disposal begins.
+  @override
   void checkActive() {
     if (_disposing) throw StateError('Text task has been disposed.');
   }
 
   /// Wait for initialization, queued work, native close and isolate exit.
+  @override
   Future<void> dispose() {
     _disposing = true;
     return _disposeFuture ??= _close();

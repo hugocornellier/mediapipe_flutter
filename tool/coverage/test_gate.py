@@ -22,24 +22,24 @@ class GateTest(unittest.TestCase):
                     passed=passed, suite=suite)
 
     def test_required_cells_need_a_passing_row(self):
-        states, failures, _ = gate.evaluate(self.matrix, [self.row('web', 'cpu')])
+        states, failures, _, _ = gate.evaluate(self.matrix, [self.row('web', 'cpu')])
         self.assertEqual(states[('face_landmarker', 'web', 'cpu')], 'pass')
         self.assertEqual(failures, ['face_landmarker / windows / cpu: no row recorded'])
 
     def test_a_failing_row_names_its_suite(self):
         rows = [self.row('web', 'cpu'), self.row('windows', 'cpu', passed=False, suite='desktop')]
-        _, failures, _ = gate.evaluate(self.matrix, rows)
+        _, failures, _, _ = gate.evaluate(self.matrix, rows)
         self.assertEqual(failures, ['face_landmarker / windows / cpu: failed in desktop'])
 
     def test_any_pass_satisfies_a_cell(self):
         rows = [self.row('web', 'cpu', passed=False), self.row('web', 'cpu'),
                 self.row('windows', 'cpu')]
-        _, failures, _ = gate.evaluate(self.matrix, rows)
+        _, failures, _, _ = gate.evaluate(self.matrix, rows)
         self.assertEqual(failures, [])
 
     def test_passing_pending_cells_are_reported_ahead(self):
         rows = [self.row('web', 'cpu'), self.row('windows', 'cpu'), self.row('web', 'gpu')]
-        states, failures, ahead = gate.evaluate(self.matrix, rows)
+        states, failures, ahead, _ = gate.evaluate(self.matrix, rows)
         self.assertEqual(failures, [])
         self.assertEqual(states[('face_landmarker', 'web', 'gpu')], 'ahead')
         self.assertEqual(len(ahead), 1)
@@ -52,8 +52,25 @@ class GateTest(unittest.TestCase):
             for platform, delegates in platforms.items():
                 self.assertEqual(sorted(delegates), ['cpu', 'gpu'], (task, platform))
                 for status in delegates.values():
-                    self.assertTrue(status == 'required' or status.startswith(
+                    self.assertTrue(status in ('required', 'device') or status.startswith(
                         ('pending: ', 'unsupported: ')), status)
+
+    def test_device_cells_need_device_rows(self):
+        matrix = {'hand_landmarker': {'android': {'cpu': 'required', 'gpu': 'device'}}}
+        cpu = dict(task='hand_landmarker', platform='android', delegate='cpu', passed=True, suite='e')
+        gpu = dict(cpu, delegate='gpu', suite='emulator')
+        # A pull-request row is not device evidence.
+        states, failures, _, _ = gate.evaluate(matrix, [cpu, gpu])
+        self.assertEqual(len(failures), 1)
+        states, failures, _, awaiting = gate.evaluate(matrix, [cpu], strict_devices=False)
+        self.assertEqual((failures, awaiting), ([], ['hand_landmarker / android / gpu']))
+        self.assertEqual(states[('hand_landmarker', 'android', 'gpu')], 'awaiting')
+        # A failed device run fails even a lenient gate.
+        broken = dict(gpu, tier='device', passed=False, suite='akita')
+        _, failures, _, _ = gate.evaluate(matrix, [cpu, broken], strict_devices=False)
+        self.assertEqual(failures, ['hand_landmarker / android / gpu: failed in akita'])
+        states, failures, _, _ = gate.evaluate(matrix, [cpu, dict(broken, passed=True)])
+        self.assertEqual(failures, [])
 
     def test_record_refuses_unsupported_cells(self):
         with tempfile.TemporaryDirectory() as directory:

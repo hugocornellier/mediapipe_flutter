@@ -9,6 +9,7 @@ import 'sdk_hand_landmarker_test.dart' as hand;
 import 'sdk_interactive_segmenter_test.dart' as interactive;
 import 'sdk_landmark_tasks_test.dart' as landmarks;
 import 'sdk_segmenter_test.dart' as segmenter;
+import 'sdk_text_audio_test.dart' as text_audio;
 
 // Every official SDK suite in one app launch, for Firebase Test Lab, where each
 // device run counts against a small daily quota. Build with SDK_GPU=required on
@@ -26,5 +27,6 @@ void main() {
   group('embedder', embedder.main);
   group('segmenter', segmenter.main);
   group('interactive segmenter', interactive.main);
+  group('text and audio', text_audio.main);
   group('live tiles', runtime.main);
 }
