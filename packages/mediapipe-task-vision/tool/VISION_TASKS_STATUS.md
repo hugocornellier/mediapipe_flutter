@@ -48,7 +48,9 @@ emulator's software GL cannot run it.
 - **Web:** in Chrome, every task's output through the Dart adapter is identical
   to Google's JavaScript on the same image, on CPU and WebGL
   (`gallery/tool/browser/test_browser.mjs --suite=api`, both delegates, in CI).
-  Firefox runs the CPU suite.
+  Firefox and WebKit run the CPU suite, WebKit on macOS: Linux WebKit builds
+  give a worker's OffscreenCanvas no WebGL context, which Google's vision tasks
+  need even on CPU.
 - **iOS:** every task matches Google's references on the arm64 simulator (CPU)
   in CI (`gallery/integration_test/sdk_*_test.dart`). On an iPhone 15 Pro, Face,
   Hand, Pose, Gesture and Holistic Landmarker ran on CPU and Metal, within 0.014
