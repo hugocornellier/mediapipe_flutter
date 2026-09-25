@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:web/web.dart' as web;
 import '../live/camera_selection.dart';
+import '../live/frame_timings.dart';
 import '../live/live_subjects.dart';
 import '../live/live_task.dart';
 import 'pipeline_trace.dart';
@@ -53,6 +54,9 @@ class LiveCameraController<T> extends ChangeNotifier {
   late final JSFunction _visibility;
   Future<void> _operations = Future.value();
   Future<void>? _frame;
+
+  /// The newest camera frame that arrived while [_frame] ran; it starts next.
+  ({double arrived, double? captured})? _pending;
   Future<void>? _closing;
   final _clock = Stopwatch();
   bool _closed = false;
@@ -63,6 +67,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   double _lastVideoTime = -1;
   int _lastTimestamp = -1;
   String? _modelAsset;
+  String? _warmUpSample;
 
   /// Supplies the model instead of the bundled asset: one of Google's other
   /// official models, or a file the user uploaded. Null uses the asset.
@@ -81,11 +86,15 @@ class LiveCameraController<T> extends ChangeNotifier {
   DeviceOrientation deviceOrientation = DeviceOrientation.landscapeLeft;
   VisionDelegate delegate = VisionDelegate.cpu;
   int processedFrames = 0;
+
+  /// Camera frames never processed. A frame that arrives during inference
+  /// waits for it; it is skipped only if a newer one arrives first.
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
   double conversionMilliseconds = 0;
   double frameMilliseconds = 0;
   double _totalInference = 0, _totalConversion = 0, _totalFrame = 0;
+  final _recent = RecentFrameTimings();
   bool get isFrontCamera =>
       description?.lensDirection == CameraLensDirection.front;
   bool get canSwitchCamera => hasFrontAndBackCameras(cameras);
@@ -98,6 +107,14 @@ class LiveCameraController<T> extends ChangeNotifier {
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
       ? 0
       : processedFrames * 1000000 / _clock.elapsedMicroseconds;
+
+  /// The readout's figures, over the last [recentFrames] frames, so they
+  /// follow the current speed.
+  double get recentInferenceMilliseconds => _recent.inferenceMilliseconds;
+  double get recentConversionMilliseconds => _recent.conversionMilliseconds;
+  double get recentFrameMilliseconds => _recent.frameMilliseconds;
+  double get recentFramesPerSecond => _recent.framesPerSecond;
+  int get recentFrames => _recent.length;
 
   void _changed() {
     if (!_closed) notifyListeners();
@@ -177,15 +194,19 @@ class LiveCameraController<T> extends ChangeNotifier {
     return Future.value();
   }
 
+  /// [warmUpSample] is an image asset the task runs on before the camera
+  /// starts; see [_warmUp].
   Future<void> start({
     CameraDescription? description,
     VisionDelegate? delegate,
     String? modelAsset,
+    String? warmUpSample,
   }) {
     if (_closed) return Future.error(StateError('Camera demo is closed.'));
     this.description = description ?? this.description;
     final selected = this.description;
     final asset = _modelAsset = modelAsset ?? _modelAsset;
+    final sample = _warmUpSample = warmUpSample ?? _warmUpSample;
     final chosen = delegate ?? this.delegate;
     if (asset == null || selected == null) {
       return Future.error(StateError('No camera selected.'));
@@ -218,6 +239,11 @@ class LiveCameraController<T> extends ChangeNotifier {
         }
         await task.open(chosen, bytes);
         _opened = true;
+        if (_closed || generation != _generation) {
+          await _release();
+          return;
+        }
+        final warmedUpTo = await _warmUp(sample);
         if (_closed || generation != _generation) {
           await _release();
           return;
@@ -279,8 +305,10 @@ class LiveCameraController<T> extends ChangeNotifier {
         _totalInference = 0;
         _totalConversion = 0;
         _totalFrame = 0;
+        _recent.clear();
+        _pending = null;
         _lastVideoTime = -1;
-        _lastTimestamp = -1;
+        _lastTimestamp = warmedUpTo;
         _clock
           ..reset()
           ..start();
@@ -345,9 +373,18 @@ class LiveCameraController<T> extends ChangeNotifier {
     if (video.currentTime == _lastVideoTime) return;
     _lastVideoTime = video.currentTime;
     if (_frame != null) {
-      skippedFrames++;
+      // Starting the newest waiting frame as soon as inference finishes keeps
+      // the worker busy; waiting for the next camera frame instead left it
+      // idle for up to a frame interval, halving the rate once a frame took
+      // just over one.
+      if (_pending != null) skippedFrames++;
+      _pending = (arrived: arrived, captured: captured);
       return;
     }
+    _begin(generation, arrived, captured);
+  }
+
+  void _begin(int generation, double arrived, double? captured) {
     final timestamp = math.max(_lastTimestamp + 1, _clock.elapsedMilliseconds);
     _lastTimestamp = timestamp;
     _frame = () async {
@@ -399,6 +436,12 @@ class LiveCameraController<T> extends ChangeNotifier {
         _totalConversion += conversionMilliseconds;
         _totalInference += inferenceMilliseconds;
         _totalFrame += frameMilliseconds;
+        _recent.add(
+          inference: inferenceMilliseconds,
+          conversion: conversionMilliseconds,
+          frame: frameMilliseconds,
+          finishedMicroseconds: _clock.elapsedMicroseconds,
+        );
         _changed();
         if (trace != null) {
           trace.handled = PipelineTrace.now();
@@ -436,11 +479,53 @@ class LiveCameraController<T> extends ChangeNotifier {
       } finally {
         bitmap?.close();
         _frame = null;
+        final next = _pending;
+        _pending = null;
+        if (next != null && running && !_closed && generation == _generation) {
+          _begin(generation, next.arrived, next.captured);
+        }
       }
     }();
   }
 
+  /// Runs the task on [sample], then on a blank frame of its size, before the
+  /// camera starts. Its first call loads every model the task chains, and on
+  /// GPU compiles their shaders; on the camera's first frame that stall made
+  /// the start the slowest, most skipped part of a demo. Models past a
+  /// detector run only once it finds something, hence a sample with a
+  /// subject; the blank frame then clears the tracking the sample left.
+  /// Returns the last timestamp used, which camera frames continue after.
+  Future<int> _warmUp(String? sample) async {
+    final browserTask = task;
+    if (sample == null || browserTask is! BrowserLiveTask<T>) return -1;
+    final data = await rootBundle.load(sample);
+    final bytes = data.buffer.asUint8List(
+      data.offsetInBytes,
+      data.lengthInBytes,
+    );
+    final image = await web.window
+        .createImageBitmap(web.Blob(<web.BlobPart>[bytes.toJS].toJS))
+        .toDart;
+    final width = image.width, height = image.height;
+    try {
+      await browserTask.detectBrowserFrame(image, width, height, 0);
+    } finally {
+      image.close();
+    }
+    final blank = await web.window
+        .createImageBitmap(web.ImageData(width.toJS, height))
+        .toDart;
+    try {
+      await browserTask.detectBrowserFrame(blank, width, height, 1);
+    } finally {
+      blank.close();
+    }
+    if (task case final StatefulLiveTask stateful) stateful.forgetFrames();
+    return 1;
+  }
+
   Future<void> _release() async {
+    _pending = null;
     _cancelCallback();
     await _trackEnded?.cancel();
     _trackEnded = null;

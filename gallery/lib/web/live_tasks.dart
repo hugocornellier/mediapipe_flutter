@@ -256,12 +256,15 @@ final class ImageClassifierLiveTask
 
 /// Browser Image Embedder, reporting each frame's similarity to the first.
 final class ImageEmbedderLiveTask
-    implements BrowserLiveTask<EmbeddingSimilarity> {
+    implements BrowserLiveTask<EmbeddingSimilarity>, StatefulLiveTask {
   @override
   final settings = TaskSettingValues('image_embedder');
 
   ImageEmbedder? _task;
   VisionEmbedding? _first;
+
+  @override
+  void forgetFrames() => _first = null;
 
   @override
   String get name => 'Image Embedder';

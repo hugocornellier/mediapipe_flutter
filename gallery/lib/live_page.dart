@@ -120,6 +120,7 @@ class _LivePageState extends State<LivePage> {
             ? _controller.delegate
             : _delegates.first,
         modelAsset: 'assets/models/${widget.task.model}',
+        warmUpSample: 'assets/samples/${widget.task.sample}',
       );
     } on Object catch (error) {
       if (mounted) setState(() => _error = '$error');
@@ -327,13 +328,13 @@ class _LivePageState extends State<LivePage> {
               ),
             if (controller.running)
               Text(
-                '${controller.framesPerSecond.toStringAsFixed(1)} fps  ·  '
-                '${controller.averageFrameMilliseconds.toStringAsFixed(1)} ms '
-                'per frame over ${controller.processedFrames} '
+                '${controller.recentFramesPerSecond.toStringAsFixed(1)} fps  ·  '
+                '${controller.recentFrameMilliseconds.toStringAsFixed(1)} ms '
+                'per frame over the last ${controller.recentFrames} '
                 '${controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'} '
                 'frames\n'
-                'inference ${controller.averageInferenceMilliseconds.toStringAsFixed(1)} ms  ·  '
-                'convert ${controller.averageConversionMilliseconds.toStringAsFixed(2)} ms  ·  '
+                'inference ${controller.recentInferenceMilliseconds.toStringAsFixed(1)} ms  ·  '
+                'convert ${controller.recentConversionMilliseconds.toStringAsFixed(2)} ms  ·  '
                 '${controller.skippedFrames} skipped',
                 style: theme.textTheme.bodySmall,
                 textAlign: TextAlign.center,

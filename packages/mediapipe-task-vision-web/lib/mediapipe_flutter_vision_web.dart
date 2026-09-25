@@ -120,7 +120,8 @@ abstract final class MediaPipeVisionWeb {
         'outputFaceBlendshapes': options.outputFaceBlendshapes,
         'outputPoseSegmentationMasks': options.outputPoseSegmentationMask,
       },
-      decode: (data, _) => decodeWebHolisticResult(data),
+      decode: (data, landmarks) =>
+          decodeWebHolisticResult(data, landmarks: landmarks),
       error: VisionTaskException.new,
     );
     faceDetectorBackendFactory = (options) => WebVisionTask.create(
