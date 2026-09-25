@@ -143,6 +143,10 @@ jobs:
           api-level: 35
           target: google_apis
           arch: x86_64
+          # A phone profile, as flutter_litert's emulator job uses, with 4 GB:
+          # every task's models load into one app.
+          profile: pixel_6
+          ram-size: 4096M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated
           script: bash gallery/tool/test_android_sdk_tasks.sh emulator-5554
