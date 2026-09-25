@@ -124,7 +124,9 @@ Map<String, Object?> backendModel(BaseBaseOptions value) => {
 /// would answer differently from the native runtime.
 Map<String, Object?> backendClassifierOptions(BaseClassifierOptions value) => {
   'displayNamesLocale': ?value.displayNamesLocale,
-  'maxResults': ?value.maxResults,
+  // A negative count means every category, which Google's Android SDK only
+  // accepts as an unset option.
+  if (value.maxResults case final count? when count > 0) 'maxResults': count,
   'scoreThreshold': value.scoreThreshold ?? 0.0,
   'categoryAllowlist': ?value.categoryAllowlist,
   'categoryDenylist': ?value.categoryDenylist,

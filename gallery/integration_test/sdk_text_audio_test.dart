@@ -264,6 +264,21 @@ void main() {
         ),
         throwsStateError,
       );
+      // The default options: every category, as the native API returns.
+      final every = await AudioClassifier.create(
+        AudioClassifierOptions(
+          modelBytes: await asset('assets/models/yamnet.tflite'),
+        ),
+      );
+      try {
+        final chunks = await every.classify(
+          decodeWav(await asset('assets/samples/speech_16000_hz_mono.wav')),
+        );
+        expect(chunks.first.categories.first.name, 'Speech');
+        expect(chunks.first.categories, hasLength(greaterThan(3)));
+      } finally {
+        await every.dispose();
+      }
       await expectLater(
         AudioClassifier.create(
           AudioClassifierOptions(modelBytes: Uint8List.fromList([1, 2, 3])),

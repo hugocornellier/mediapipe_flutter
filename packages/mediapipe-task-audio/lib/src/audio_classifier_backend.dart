@@ -30,7 +30,9 @@ final class BackendAudioClassifier {
         await factory({
           'modelBytes': options.modelBytes,
           'modelPath': options.modelPath,
-          'maxResults': options.maxResults,
+          // -1 (every category) is the JavaScript default; Google's Android
+          // SDK rejects any count that is not positive, so it travels unset.
+          if (options.maxResults > 0) 'maxResults': options.maxResults,
           'scoreThreshold': options.scoreThreshold,
         }),
       );
