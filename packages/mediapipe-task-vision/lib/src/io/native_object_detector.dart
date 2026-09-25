@@ -14,9 +14,13 @@ final class NativeObjectDetector {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeObjectDetector(ObjectDetectorOptions options)
     : _gpu = options.delegate == VisionDelegate.gpu {
-    if (!Platform.isMacOS && !hasOfficialIosVisionRuntime() && _gpu) {
+    if (!Platform.isMacOS &&
+        !Platform.isLinux &&
+        !hasOfficialIosVisionRuntime() &&
+        _gpu) {
       throw UnsupportedError(
-        'GPU object inference requires macOS or the official iOS SDK adapter.',
+        'GPU object inference requires macOS, Linux or the official iOS SDK '
+        'adapter.',
       );
     }
     loadOfficialDesktopRuntime();

@@ -29,7 +29,7 @@ one. ✗ means the package refuses the task on that target.
 | Face Detector | WebGL | Metal | GPU | Metal | GL ES | CPU |
 | Face Landmarker | WebGL | Metal | GPU | Metal | GL ES | CPU |
 | Hand Landmarker | WebGL | Metal | GPU | Metal | GL ES | CPU |
-| Pose Landmarker | WebGL | Metal | GPU | Metal [d] | GL ES | CPU |
+| Pose Landmarker | WebGL | Metal | GPU | Metal [d] | GL ES [d] | CPU |
 | Gesture Recognizer | WebGL | Metal | GPU | Metal | GL ES | CPU |
 | Holistic Landmarker | WebGL | Metal | GPU | CPU [e] | CPU [e] | CPU |
 | Object Detector | WebGL | Metal | GPU | Metal | GL ES | CPU |
@@ -87,8 +87,9 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
   returns the same mask for every point, so the plugin does not serve it.
 - [b] Google's Windows wheels do not export the stateful Interactive Segmenter
   API. The Linux wheel does, and the package binds it there.
-- [d] UP-028: Google's macOS runtime cannot run Pose's segmentation masks on
-  Metal, so the package refuses masks there with that reason; landmarks run.
+- [d] UP-028 and UP-030: Google's desktop GPU paths give no float Pose masks
+  (Metal fails; OpenGL ES returns 8-bit RGBA images), so the package refuses
+  masks on those GPUs with the reason; landmarks run, and masks run on CPU.
 - [e] UP-026: neither desktop runtime opens Holistic's face blendshapes model
   on the GPU delegate.
 - [f] UP-027: Google's Linux runtime aborts the Image Embedder on OpenGL ES.

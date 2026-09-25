@@ -88,8 +88,9 @@ def main():
     # GPU references cover the tasks whose GPU path the package offers.
     parser.add_argument('--tasks', default=','.join(MODELS),
                         help='Comma-separated subset of ' + ', '.join(MODELS))
-    # Google's macOS runtime cannot run Pose's segmentation masks on Metal
-    # (UP-028); the package refuses them there.
+    # Google's desktop GPU paths cannot give Pose's float masks (Metal fails,
+    # UP-028; OpenGL ES returns 8-bit RGBA images, UP-030); the package
+    # refuses masks on those GPUs.
     parser.add_argument('--no-pose-masks', action='store_true')
     args = parser.parse_args()
     selected = args.tasks.split(',')

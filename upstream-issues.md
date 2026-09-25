@@ -640,6 +640,19 @@ Segmenting a positive stroke with the GPU delegate aborts the process with
 glibc's `corrupted size vs. prev_size while consolidating`. The browser task
 runs the same model on WebGL 2.
 
+## UP-030: Linux Pose masks on OpenGL ES are 8-bit RGBA images
+
+**Status:** observed September 25 with the official 1.0.1 Linux wheel on a
+hosted ubuntu-24.04 runner (Mesa, renderer renamed), through Google's own
+Python API. The package refuses Pose masks on Linux GPU with the reason;
+landmarks run on the GPU, and masks on the CPU.
+
+With `output_segmentation_masks` on the GPU delegate, `PoseLandmarker` returns
+each mask as a 4-channel 8-bit image (`numpy_view()` gives values 0 to 255,
+with the confidence in the red channel), where its CPU path returns one
+float32 confidence per pixel (VEC32F1). Image Segmenter's GPU masks on the
+same runtime stay float32.
+
 ## Integration pitfalls resolved in this repo
 
 These are recorded for continuity, not classified as confirmed MediaPipe defects.

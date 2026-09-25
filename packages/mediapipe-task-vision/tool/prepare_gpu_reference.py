@@ -205,12 +205,13 @@ def main():
              + (SEGMENTER_FILES if "segmenter" in groups else ()))
     # The tasks the package offers on this GPU: no Holistic on either (its
     # blendshapes model does not open on GPU, UP-026), no embedder on Linux
-    # (aborts, UP-027), and Pose without masks on Metal (UP-028).
+    # (aborts, UP-027), and Pose without masks (Metal fails, UP-028; OpenGL
+    # ES returns 8-bit RGBA masks, UP-030).
     from cpu_reference import host_target as _host
     on_metal = _host() == "macos/arm64"
     generator_arguments = {
         "landmark_tasks": ["--tasks", "hand,gesture,pose" if "landmark" in groups else "hand",
-                           *(["--no-pose-masks"] if on_metal else [])],
+                           "--no-pose-masks"],
         "image_tasks": ["--tasks", "classifier,embedder" if on_metal else "classifier"],
     }
     # Imported here: cpu_reference imports this module for difference().
