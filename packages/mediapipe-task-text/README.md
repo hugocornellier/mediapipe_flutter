@@ -18,8 +18,10 @@ TextEmbedder and LanguageDetector also run on **Linux x64 CPU** (Google's 1.0.1
 wheel library) and **Windows x64 CPU** (its 1.0.0 wheel library): the same
 library the vision package bundles there, loaded once for both packages. Linux
 needs the system EGL and OpenGL ES libraries (`libegl1 libgles2` on Debian or
-Ubuntu) even for CPU. Browsers and Android run those three through
-[mediapipe_flutter_text_web](../mediapipe-task-text-web/README.md) and
+Ubuntu) even for CPU. On **iOS 15+ (arm64 devices and simulator)** they run
+on Google's 1.0.1 iOS SDK, in the adapter `mediapipe_flutter_vision` builds, so
+the app needs that package as well. Browsers and Android run those three
+through [mediapipe_flutter_text_web](../mediapipe-task-text-web/README.md) and
 [mediapipe_flutter_text_android](../mediapipe-task-text-android/README.md). The
 2024 text runtime has been retired; its unvalidated Android, iOS and Intel macOS
 artifacts are no longer selected.

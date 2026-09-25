@@ -279,15 +279,15 @@ TaskCapabilities<VisionDelegate> _cpuTask(
   gpu: VisionDelegate.gpu,
   gpuUnavailableReason: 'The official audio and text tasks run on CPU here.',
   runtimeVersion: tasksRuntimeVersionOn(platform),
-  // A registered backend is Google's SDK or browser runtime for this very
-  // platform: mediapipe_flutter_text/audio's web, Android or iOS plugin.
+  // Core's runtime serves desktop and iOS; a registered backend is Google's
+  // browser runtime or Android SDK: mediapipe_flutter_text/audio's web or
+  // Android plugin.
   targets: {
     ...tasksRuntimeTargets,
     if (backend) ...{
       'web/unknown': null,
       'android/arm64': null,
       'android/x64': null,
-      'ios/arm64': '15.0',
     },
   },
 );

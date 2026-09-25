@@ -234,6 +234,14 @@ const tasksWheelRuntimes = <String, OfficialWheelLibrary>{
   return null;
 }
 
+/// iOS targets where the text and audio tasks run in the official iOS SDK
+/// adapter that mediapipe_flutter_vision builds: Google implements every task
+/// in one MediaPipeTasksCommon, which an app must hold once.
+const tasksRuntimeIosTargets = {'ios/arm64', 'ios-simulator/arm64'};
+
+/// The adapter framework's install name, which core's asset resolves to.
+const tasksRuntimeIosAdapter = '@rpath/mediapipe_ios.framework/mediapipe_ios';
+
 /// The release for [target], or an [UnsupportedError] naming the targets that
 /// have one. Targets served from a wheel ([tasksWheelRuntimes]) have none.
 TasksRuntimeRelease requireTasksRuntimeRelease(String target) {

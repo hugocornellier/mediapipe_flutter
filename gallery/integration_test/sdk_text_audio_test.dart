@@ -14,9 +14,10 @@ import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 import 'package:mediapipe_flutter_text/text_task_backend.dart';
 
 /// Text Classifier, Text Embedder, Language Detector and Audio Classifier
-/// through Google's official mobile SDKs (the text and audio packages'
-/// Android and iOS plugins), against Google's own 1.0.1 outputs for the same
-/// inputs (the packages' checked-in references, from the macOS wheel).
+/// through Google's official mobile SDKs (the text and audio packages' Android
+/// plugins; on iOS the vision package's SDK adapter, which core's runtime
+/// resolves to), against Google's own 1.0.1 outputs for the same inputs (the
+/// packages' checked-in references, from the macOS wheel).
 /// Another runtime build on another CPU, so scores get a cross-runtime bound.
 /// Runs on the Android emulator and iOS simulator in CI, and on phones.
 const _scoreBound = 2e-3;
@@ -37,10 +38,11 @@ void main() {
   ) async {
     await tester.runAsync(() async {
       expect(Platform.isAndroid || Platform.isIOS, isTrue);
+      // Android's plugin registers a backend; iOS runs the native bindings.
       expect(
-        textTaskBackendFactory,
-        isNotNull,
-        reason: 'the text SDK plugin must register automatically',
+        textTaskBackendFactory != null,
+        Platform.isAndroid,
+        reason: 'the text SDK plugin must register automatically on Android',
       );
       final bert = await asset('assets/models/bert_classifier.tflite');
       for (final (text, options, expected)
@@ -216,9 +218,9 @@ void main() {
   ) async {
     await tester.runAsync(() async {
       expect(
-        audioTaskBackendFactory,
-        isNotNull,
-        reason: 'the audio SDK plugin must register automatically',
+        audioTaskBackendFactory != null,
+        Platform.isAndroid,
+        reason: 'the audio SDK plugin must register automatically on Android',
       );
       final task = await AudioClassifier.create(
         AudioClassifierOptions(

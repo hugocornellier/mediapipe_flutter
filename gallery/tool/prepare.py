@@ -84,8 +84,10 @@ SHARED_RUNTIME_TASK = 'interactive_segmenter'
 SHARED_RUNTIME_TARGETS = {'macos/arm64'}
 # Core's tasks runtime serves the text and audio tasks on these targets. On
 # Linux and Windows it is Google's wheel library, which the vision tasks then
-# share instead of bundling a second copy.
-TEXT_AUDIO_TARGETS = {'macos/arm64', 'linux/x64', 'windows/x64'}
+# share instead of bundling a second copy; on iOS it is the vision package's
+# official SDK adapter.
+TEXT_AUDIO_TARGETS = {'macos/arm64', 'linux/x64', 'windows/x64', 'ios/arm64',
+                      'ios-simulator/arm64'}
 
 # The text package's three classic tasks, on the same shared runtime, with the
 # models its example downloads and verifies (make models_text). They are not
@@ -200,8 +202,9 @@ def available_tasks(target):
         return set(WEB_TASKS)
     source = (VISION / 'sdk_downloads.dart').read_text()
     if target in ('ios/arm64', 'ios-simulator/arm64'):
-        # Google's public SDK supplies these tasks without a maintainer build.
-        return set(OFFICIAL_IOS_TASKS)
+        # Google's public SDK supplies these tasks without a maintainer build;
+        # its adapter serves text and audio through core's runtime too.
+        return set(OFFICIAL_IOS_TASKS) | NON_VISION_TASKS
     if target.startswith('android'):
         # Text and audio run through their packages' Android SDK plugins.
         return ANDROID_TASKS | OFFICIAL_ANDROID_TASKS | NON_VISION_TASKS

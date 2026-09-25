@@ -304,7 +304,7 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
-        "cpu": "pending: step 5",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "macos": {
@@ -330,7 +330,7 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
-        "cpu": "pending: step 5",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "macos": {
@@ -356,7 +356,7 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
-        "cpu": "pending: step 5",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "macos": {
@@ -382,7 +382,7 @@
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "ios": {
-        "cpu": "pending: step 5",
+        "cpu": "required",
         "gpu": "unsupported: Google runs this task on CPU only on this platform"
       },
       "macos": {

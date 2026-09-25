@@ -3,7 +3,8 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_core/io.dart' show mpHostSystem;
+import 'package:mediapipe_flutter_core/io.dart'
+    show missingLinuxGraphicsLibraries, mpHostSystem;
 
 import '../audio_task_backend.dart';
 import 'audio_classifier_backend.dart';
@@ -44,6 +45,7 @@ final class AudioClassifier {
     if (support.unavailableReasons[AudioDelegate.cpu] case final reason?) {
       throw AudioClassifierException(reason);
     }
+    _requireRuntime();
     Pointer<Uint8>? model;
     if (options.modelBytes case final bytes?) {
       model = malloc<Uint8>(bytes.length);
@@ -106,6 +108,33 @@ final class AudioClassifier {
         _checked((error) => mp.close(Pointer.fromAddress(_task), error));
         if (_model case final model?) malloc.free(model);
       }));
+}
+
+/// Resolves core's runtime before the first call, to explain a missing one.
+void _requireRuntime() {
+  try {
+    Native.addressOf<
+      NativeFunction<
+        Int32 Function(
+          Pointer<mp.MpAudioClassifierOptions>,
+          Pointer<Pointer<Void>>,
+          Pointer<Pointer<Char>>,
+        )
+      >
+    >(mp.create);
+  } on ArgumentError catch (error) {
+    if (missingLinuxGraphicsLibraries('$error') case final missing?) {
+      throw missing;
+    }
+    throw UnsupportedError(
+      Abi.current() == Abi.iosArm64
+          ? 'On iOS, the Audio Classifier runs in the official iOS SDK adapter '
+                'that mediapipe_flutter_vision builds: add that package and '
+                'mediapipe_flutter_core.tasks_runtime: true to the app pubspec.'
+          : 'Enable mediapipe_flutter_core.tasks_runtime: true in the app '
+                'pubspec hooks.user_defines to use the Audio Classifier.',
+    );
+  }
 }
 
 List<AudioClassification> _classify(

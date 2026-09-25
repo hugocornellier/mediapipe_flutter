@@ -9,15 +9,22 @@ import 'text_task_worker.dart';
 import 'third_party/mediapipe/classic_text_bindings.dart' as mp;
 
 /// Where core's shared runtime serves these tasks: Google's macOS 1.0.1
-/// library, and its Linux 1.0.1 and Windows 1.0.0 wheel libraries.
-const _runtimeAbis = {Abi.macosArm64, Abi.linuxX64, Abi.windowsX64};
+/// library, its Linux 1.0.1 and Windows 1.0.0 wheel libraries, and its iOS
+/// 1.0.1 SDK through the adapter mediapipe_flutter_vision builds.
+const _runtimeAbis = {
+  Abi.macosArm64,
+  Abi.linuxX64,
+  Abi.windowsX64,
+  Abi.iosArm64,
+};
 
 /// Validate availability before starting a worker or resolving inference calls.
 void requireTextTasksRuntime() {
   if (!_runtimeAbis.contains(Abi.current())) {
     throw UnsupportedError(
-      'MediaPipe text tasks run on macOS arm64, Linux x64 and Windows x64 CPU '
-      'here, and on the web, Android and iOS through their platform plugins.',
+      'MediaPipe text tasks run on macOS arm64, Linux x64, Windows x64 and '
+      'iOS arm64 CPU here, and in browsers and on Android through their '
+      'platform plugins.',
     );
   }
   try {
@@ -35,7 +42,11 @@ void requireTextTasksRuntime() {
       throw missing;
     }
     throw UnsupportedError(
-      'Enable mediapipe_flutter_core.tasks_runtime: true in the app pubspec hooks.user_defines to use MediaPipe text tasks.',
+      Abi.current() == Abi.iosArm64
+          ? 'On iOS, MediaPipe text tasks run in the official iOS SDK adapter '
+                'that mediapipe_flutter_vision builds: add that package and '
+                'mediapipe_flutter_core.tasks_runtime: true to the app pubspec.'
+          : 'Enable mediapipe_flutter_core.tasks_runtime: true in the app pubspec hooks.user_defines to use MediaPipe text tasks.',
     );
   }
 }

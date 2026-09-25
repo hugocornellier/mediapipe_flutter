@@ -17,6 +17,20 @@ Future<void> main(List<String> arguments) =>
       if (!enabled || !input.config.buildCodeAssets) return;
       final code = input.config.code;
       final target = buildTarget(code);
+      if (tasksRuntimeIosTargets.contains(target)) {
+        // Google's iOS SDK implements every task in one MediaPipeTasksCommon,
+        // so the text and audio tasks run in the adapter the vision package
+        // builds over it, which bundles that copy once for all tasks.
+        requireDynamicLinking(code);
+        output.assets.code.add(
+          CodeAsset(
+            package: input.packageName,
+            name: tasksRuntimeAssetName,
+            linkMode: DynamicLoadingSystem(Uri(path: tasksRuntimeIosAdapter)),
+          ),
+        );
+        return;
+      }
       final wheelRuntime = tasksWheelRuntimes[target];
       if (wheelRuntime != null) {
         requireDynamicLinking(code);

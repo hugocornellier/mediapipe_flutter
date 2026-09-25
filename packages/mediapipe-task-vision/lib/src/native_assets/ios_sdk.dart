@@ -25,6 +25,9 @@ const officialIosTasks = {
 
 /// Google 1.0.1 XCFrameworks, pinned from upstream's Package.swift.
 /// Inference code is linked from these binaries, never compiled from source.
+/// MediaPipeTasksCommon implements every task's Objective-C classes; the Text
+/// and Audio frameworks carry only their headers, which the adapter's text
+/// and audio bridges compile against.
 const officialIosSdkArchives = <String, DownloadAsset>{
   'MediaPipeTasksVision': (
     url:
@@ -44,7 +47,27 @@ const officialIosSdkArchives = <String, DownloadAsset>{
         'MediaPipeTaskGraphs-1.0.1.xcframework.zip',
     sha256: '673e8f5be771dd54374e90224e1ac3a0a0ac0bbb686201595d9b6c49cb21378d',
   ),
+  'MediaPipeTasksText': (
+    url:
+        'https://dl.google.com/cpdc/20260911-163655/'
+        'MediaPipeTasksText-1.0.1.xcframework.zip',
+    sha256: 'e9116fc78f43edd606616cd5ad983f1d9f2f6ee69df22829198a2ef1e984da8d',
+  ),
+  'MediaPipeTasksAudio': (
+    url:
+        'https://dl.google.com/cpdc/20260911-163655/'
+        'MediaPipeTasksAudio-1.0.1.xcframework.zip',
+    sha256: 'd458eb5bf2f84281550f0b29b0455f34851d8db2522b91926143c1b625412306',
+  ),
 };
+
+/// The adapter's sources: the vision tasks, then the text and audio tasks
+/// (one translation unit each: Google's frameworks repeat shared headers).
+const _adapterSources = [
+  'native/ios/face_sdk_bridge.mm',
+  'native/ios/text_sdk_bridge.mm',
+  'native/ios/audio_sdk_bridge.mm',
+];
 
 /// Registers one physical library, with aliases pointing to the same image.
 /// Flutter turns mediapipe_ios.dylib into this framework on both iOS SDKs.
@@ -93,12 +116,6 @@ Future<void> buildOfficialIosSdk(
       'requested ${tasks.join(', ')}.',
     );
   }
-  if (input.metadata['mediapipe_flutter_core']['tasks_runtime'] == true) {
-    throw StateError(
-      'official_ios_sdk cannot coexist with core.tasks_runtime: true. '
-      'Bundle only one MediaPipe runtime on iOS.',
-    );
-  }
   if (!Platform.isMacOS) {
     throw UnsupportedError('The iOS SDK adapter requires Xcode on macOS.');
   }
@@ -133,11 +150,16 @@ Future<void> buildOfficialIosSdk(
     sdk,
     '--show-sdk-path',
   ])).trim();
-  final source = input.packageRoot.resolve('native/ios/face_sdk_bridge.mm');
+  final sources = [
+    for (final path in _adapterSources) input.packageRoot.resolve(path),
+  ];
   final headers = Directory.fromUri(
     input.packageRoot.resolve('third_party/mediapipe/tasks/c/'),
   );
-  output.dependencies.add(source);
+  output.dependencies.addAll(sources);
+  output.dependencies.add(
+    input.packageRoot.resolve('native/ios/sdk_bridge_support.h'),
+  );
   await for (final file in headers.list(recursive: true)) {
     if (file is File && file.path.endsWith('.h')) {
       output.dependencies.add(file.uri);
@@ -158,7 +180,9 @@ Future<void> buildOfficialIosSdk(
     '-I', input.packageRoot.resolve('third_party/').toFilePath(),
     '-F', roots['MediaPipeTasksVision']!.path,
     '-F', roots['MediaPipeTasksCommon']!.path,
-    source.toFilePath(),
+    '-F', roots['MediaPipeTasksText']!.path,
+    '-F', roots['MediaPipeTasksAudio']!.path,
+    for (final source in sources) source.toFilePath(),
     '-framework', 'MediaPipeTasksVision',
     '-framework', 'MediaPipeTasksCommon',
     // Static calculator registrations must survive dead stripping, as in
@@ -199,7 +223,7 @@ Future<void> buildOfficialIosSdk(
       'archives': {
         for (final e in officialIosSdkArchives.entries) e.key: {'url': e.value.url, 'sha256': e.value.sha256},
       },
-      'adapter_sha256': (await sha256.bind(File.fromUri(source).openRead()).first).toString(),
+      'adapter_sha256': {for (final (i, path) in _adapterSources.indexed) path: (await sha256.bind(File.fromUri(sources[i]).openRead()).first).toString()},
       'sha256': (await sha256.bind(library.openRead()).first).toString(),
       'bytes': await library.length(),
       'tasks': tasks.toList()..sort(),

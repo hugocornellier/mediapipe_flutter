@@ -47,8 +47,7 @@ final class BackendTextTask<R> implements TextTaskRunner<R> {
         (throw UnsupportedError(
           'Text tasks here run through a platform plugin that is missing: '
           'add mediapipe_flutter_text_web for browsers, or '
-          'mediapipe_flutter_text_android or mediapipe_flutter_text_ios for '
-          'mobile.',
+          'mediapipe_flutter_text_android for Android.',
         ));
     final ready = Future(
       () => factory(task, options),

@@ -35,6 +35,8 @@ const tasksRuntimeTargets = <String, String?>{
   'macos/arm64': '14.0',
   'linux/x64': null,
   'windows/x64': null,
+  // Through the official iOS SDK adapter of mediapipe_flutter_vision.
+  'ios/arm64': '15.0',
 };
 
 /// The part of [tasksRuntimeTargets] whose runtime also serves EmbeddingGemma,
@@ -44,7 +46,7 @@ const macosTasksRuntimeTargets = <String, String?>{'macos/arm64': '14.0'};
 
 /// The official MediaPipe release that serves core's text and audio tasks on
 /// [platform]: Google's Android SDKs and the pinned Windows wheel are 1.0.0,
-/// its other runtimes 1.0.1.
+/// its other runtimes (iOS included) 1.0.1.
 String tasksRuntimeVersionOn(TaskPlatform platform) =>
     switch (platform.operatingSystem) {
       'android' || 'windows' => '1.0.0',

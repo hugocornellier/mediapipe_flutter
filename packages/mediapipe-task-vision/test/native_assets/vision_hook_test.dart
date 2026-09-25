@@ -186,6 +186,7 @@ void main() {
           targetArchitecture: Architecture.arm64,
           targetIOSSdk: device ? IOSSdk.iPhoneOS : IOSSdk.iPhoneSimulator,
           userDefines: defines({
+            'official_ios_sdk': false,
             'tasks': [release.tasks.first],
             'prebuilt': true,
           }),
@@ -310,12 +311,39 @@ void main() {
         targetArchitecture: Architecture.arm64,
         targetIOSSdk: IOSSdk.iPhoneSimulator,
         userDefines: defines({
+          'official_ios_sdk': false,
           'tasks': ['object_detector'],
         }),
         check: (_, _) =>
             fail('Unvalidated simulator task unexpectedly accepted'),
       ),
       failsWith<UnsupportedError>(contains('object_detector')),
+    );
+  });
+
+  test('iOS text and audio need the SDK adapter the default builds', () {
+    // Core's tasks_runtime resolves to that adapter on iOS; the source-built
+    // face runtime has no text or audio tasks to offer it.
+    expect(
+      testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.iOS,
+        targetArchitecture: Architecture.arm64,
+        userDefines: defines({
+          'official_ios_sdk': false,
+          'tasks': ['face_landmarker'],
+        }),
+        assets: {
+          'mediapipe_flutter_core': [
+            EncodedAsset('hooks/metadata', {
+              'key': 'tasks_runtime',
+              'value': true,
+            }),
+          ],
+        },
+        check: (_, _) => fail('Text and audio were left without a runtime'),
+      ),
+      failsWith<StateError>(contains('official iOS SDK adapter')),
     );
   });
 

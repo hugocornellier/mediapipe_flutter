@@ -118,11 +118,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: gallery/.dart_tool/hooks_runner/shared/mediapipe_flutter_vision/build/official-ios-sdk/*/sdk.zip
-          key: official-ios-sdk-${{ hashFiles('packages/mediapipe-task-vision/sdk_downloads.dart') }}
+          key: official-ios-sdk-${{ hashFiles('packages/mediapipe-task-vision/sdk_downloads.dart', 'packages/mediapipe-task-vision/lib/src/native_assets/ios_sdk.dart') }}
       - name: Prepare the gallery with the official SDK tasks
         run: |
           python3 -B gallery/tool/prepare.py --target ios-simulator/arm64 \
-            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,interactive_segmenter_legacy
+            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,interactive_segmenter_legacy,audio_classifier,language_detector,text_classifier,text_embedder
           cd gallery && flutter pub get
       - name: Boot an installed iPhone simulator
         id: simulator
@@ -171,6 +171,34 @@ jobs:
       - name: Record ios CPU task coverage (ios-sdk-simulator)
         if: always()
         run: python3 -B tool/coverage/record.py --suite ios-sdk-simulator --platform ios --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.sdk.outcome }}
+      # Text and audio run in the same SDK adapter, which core's runtime
+      # resolves to on iOS.
+      - name: Text and audio through Google's iOS SDK
+        id: text_audio
+        if: ${{ !cancelled() && steps.simulator.outcome == 'success' }}
+        working-directory: gallery
+        # bash runs with pipefail, so `| tee` keeps flutter test's exit status.
+        shell: bash
+        run: |
+          device=${{ steps.simulator.outputs.device }}
+          for attempt in 1 2; do
+            status=0
+            perl -e 'alarm shift; exec @ARGV' 900 flutter test -d "$device" \
+              integration_test/sdk_text_audio_test.dart \
+              --dart-define=SDK_GPU=skip --reporter expanded 2>&1 | tee -a sdk-ios-simulator.log || status=$?
+            [ "$status" = 0 ] && exit 0
+            if [ "$status" = 142 ] && [ "$attempt" = 1 ]; then
+              echo "sdk_text_audio_test stalled; rebooting the simulator and retrying"
+              xcrun simctl shutdown "$device" || true
+              xcrun simctl boot "$device"
+              xcrun simctl bootstatus "$device" -b
+              continue
+            fi
+            exit "$status"
+          done
+      - name: Record ios CPU text and audio coverage (ios-sdk-simulator-text-audio)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite ios-sdk-simulator-text-audio --platform ios --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.text_audio.outcome }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

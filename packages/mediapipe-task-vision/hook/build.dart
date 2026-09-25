@@ -106,12 +106,27 @@ void main(List<String> arguments) async {
       output.metadata['official_android_sdk'] = '1.0.0';
       return;
     }
-    if (officialIosSdk == true) {
+    // Google's SDK is also the default on iOS devices and the arm64 simulator:
+    // its adapter serves every vision task there, and the text and audio
+    // tasks core's tasks_runtime asks for. `official_ios_sdk: false` selects
+    // the source-built face runtime instead.
+    final isIos = target == 'ios/arm64' || target == 'ios-simulator/arm64';
+    final useIosSdk =
+        officialIosSdk as bool? ?? (isIos && useOfficialMacosLandmarks != true);
+    if (useIosSdk) {
       if (useOfficialMacosLandmarks == true) {
         throw StateError('Select only one official platform SDK.');
       }
       await buildOfficialIosSdk(input, output, tasks: tasks);
       return;
+    }
+    if (isIos &&
+        input.metadata['mediapipe_flutter_core']['tasks_runtime'] == true) {
+      throw StateError(
+        'On iOS, the text and audio tasks of mediapipe_flutter_core.tasks_runtime '
+        'run in the official iOS SDK adapter, which official_ios_sdk: false '
+        'turns off.',
+      );
     }
     // Linux's official wheel library exports the stateful API itself, so the
     // task binds the vision asset there and needs no shared runtime.

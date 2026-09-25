@@ -11,8 +11,9 @@ bundles once and shares with the text tasks: **macOS arm64 CPU, macOS 14+**
 (MediaPipe 1.0.1), **Linux x64 CPU** (1.0.1) and **Windows x64 CPU** (1.0.0).
 On Linux and Windows that runtime is the vision package's wheel library, loaded
 once for both packages; Linux needs the system EGL and OpenGL ES libraries
-(`libegl1 libgles2` on Debian or Ubuntu) even for CPU. Browsers and Android run
-it through
+(`libegl1 libgles2` on Debian or Ubuntu) even for CPU. On **iOS 15+** it runs on
+Google's 1.0.1 iOS SDK, in the adapter `mediapipe_flutter_vision` builds (the
+app needs that package as well). Browsers and Android run it through
 [mediapipe_flutter_audio_web](../mediapipe-task-audio-web/README.md) and
 [mediapipe_flutter_audio_android](../mediapipe-task-audio-android/README.md).
 Query support before offering the task:

@@ -13,7 +13,7 @@ except the macOS face tasks' default archives:
 | Target | Runtime |
 | --- | --- |
 | Web | `@mediapipe/tasks-vision` 1.0.1 JavaScript/WASM through `mediapipe_flutter_vision_web` |
-| iOS arm64 and simulator | Google's 1.0.1 XCFrameworks through the official iOS SDK adapter (`official_ios_sdk: true`) |
+| iOS arm64 and simulator | Google's 1.0.1 XCFrameworks through the official iOS SDK adapter (the default) |
 | Android | `com.google.mediapipe:tasks-vision:1.0.0` through `mediapipe_flutter_vision_android` |
 | macOS arm64 | the official 1.0.0 wheel's library (`official_macos_landmark_tasks: true`); the stateful Interactive Segmenter uses core's shared 1.0.1 runtime |
 | Linux x64 | the official 1.0.1 wheel's library |

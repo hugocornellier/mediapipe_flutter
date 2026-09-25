@@ -96,6 +96,7 @@ void main() {
       unorderedEquals([
         ...tasksRuntimeReleases.keys,
         ...tasksWheelRuntimes.keys,
+        'ios/arm64',
       ]),
     );
     expect(macosTasksRuntimeTargets.keys, tasksRuntimeReleases.keys);
@@ -129,6 +130,35 @@ void main() {
             contains('$os/$architecture'),
           ),
         ),
+      );
+    }
+  });
+
+  test("iOS resolves to the vision package's SDK adapter", () async {
+    for (final sdk in [IOSSdk.iPhoneOS, IOSSdk.iPhoneSimulator]) {
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.iOS,
+        targetArchitecture: Architecture.arm64,
+        targetIOSSdk: sdk,
+        userDefines: PackageUserDefines(
+          workspacePubspec: PackageUserDefinesSource(
+            defines: {'tasks_runtime': true},
+            basePath: Uri.directory('.'),
+          ),
+        ),
+        check: (_, output) {
+          final asset = output.assets.code.single;
+          expect(asset.file, isNull);
+          expect(
+            asset.linkMode,
+            isA<DynamicLoadingSystem>().having(
+              (mode) => mode.uri.path,
+              'path',
+              tasksRuntimeIosAdapter,
+            ),
+          );
+        },
       );
     }
   });
