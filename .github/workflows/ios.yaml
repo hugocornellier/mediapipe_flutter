@@ -138,6 +138,8 @@ jobs:
           echo "device=$device" >> "$GITHUB_OUTPUT"
       - name: Official references, pixel formats, rotation, VIDEO and every live tile
         working-directory: gallery
+        # bash runs with pipefail, so `| tee` keeps flutter test's exit status.
+        shell: bash
         run: |
           device=${{ steps.simulator.outputs.device }}
           for test in sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test runtime_test; do
