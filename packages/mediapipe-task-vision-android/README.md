@@ -26,9 +26,9 @@ same. Android 24 or later is required. The SDK serves every vision task except
 the point-based Interactive Segmenter Legacy, which Google's 1.0.0 Android task
 cannot run correctly (it ignores the keypoint; upstream-issues.md UP-020). The
 selection avoids loading the source-built MediaPipe runtime into the same
-process. Every task runs on the x86_64 emulator's CPU in CI, and nightly on CPU
+process. Every task runs on the x86_64 emulator's CPU in CI, and on demand on CPU
 and GPU on a Pixel 8a (Mali), a Galaxy S24 (Adreno) and a Galaxy A12 (PowerVR)
-in Firebase Test Lab (.github/workflows/android-face-testlab.yml). See
+in Firebase Test Lab (.github/workflows/android-face-testlab.yml, manual). See
 [the status table](../mediapipe-task-vision/tool/VISION_TASKS_STATUS.md).
 
 Segmentation masks travel from native memory over a separate binary channel,

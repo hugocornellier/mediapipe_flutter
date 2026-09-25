@@ -28,10 +28,10 @@ PLATFORMS = ['web', 'android', 'ios', 'macos', 'linux', 'windows']
 RECORDING_WORKFLOWS = ['.github/workflows/android.yaml', '.github/workflows/ios.yaml',
                        '.github/workflows/web.yaml', '.github/workflows/desktop.yaml',
                        '.github/workflows/main.yaml']
-# Physical-device workflows: nightly on main, and dispatched for a branch.
-# Their rows carry tier 'device'; the gate does not wait for them.
+# Physical-device workflows, dispatched by hand for a branch or main. Their
+# rows carry tier 'device'; the gate does not wait for them.
 DEVICE_WORKFLOWS = ['.github/workflows/android-face-testlab.yml']
-# How old a nightly on main may be when this commit has no device run.
+# How old a run on main may be when this commit has no device run.
 DEVICE_WINDOW_HOURS = 48
 
 
@@ -76,7 +76,7 @@ def evaluate(matrix, rows, strict_devices=True):
                     elif key in failed or strict_devices:
                         states[key] = 'fail'
                         reason = (f'failed in {failed[key]}' if key in failed
-                                  else f'no device run for this commit or nightly within '
+                                  else f'no device run for this commit or on main within '
                                        f'{DEVICE_WINDOW_HOURS} h')
                         failures.append(f'{task} / {platform} / {delegate}: {reason}')
                     else:
@@ -188,8 +188,8 @@ def main():
         report += ['### Required cells without a passing row', ''] + [f'- {f}' for f in failures] + ['']
     if awaiting:
         report += ['### Awaiting a physical-device run', '',
-                   'Dispatch the device workflows for this branch, or rely on the nightly '
-                   'once merged.', ''] + [f'- {a}' for a in awaiting] + ['']
+                   'Dispatch the device workflow (Android devices, Firebase Test Lab) for '
+                   'this branch or main.', ''] + [f'- {a}' for a in awaiting] + ['']
     if ahead:
         report += ['### Ahead of plan', ''] + [f'- {a}' for a in ahead] + ['']
     text = '\n'.join(report)

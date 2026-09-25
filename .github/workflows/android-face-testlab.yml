@@ -3,14 +3,13 @@ name: Android devices (Firebase Test Lab)
 # Every official SDK suite (gallery/integration_test/sdk_all_test.dart): the
 # vision tasks on CPU and GPU, Face Landmarker's camera checks, and the text
 # and audio tasks, on physical phones covering the three Android GPU families:
-# Mali (Pixel 8a), Adreno (Galaxy S24) and PowerVR (Galaxy A12). Nightly, and
-# on demand for a branch, whose own copy of this file then runs. Its coverage
-# rows are the device tier that tool/coverage/gate.py accepts for GPU cells.
-# Keeps this file name: GitHub lists a dispatchable workflow only when the
-# default branch holds a file of that name.
+# Mali (Pixel 8a), Adreno (Galaxy S24) and PowerVR (Galaxy A12). Manual only:
+# each run bills physical devices, so it is dispatched for a branch, whose own
+# copy of this file then runs. It signs in with the FIREBASE_TEST_LAB_CREDENTIALS
+# repository secret. Its coverage rows are the device tier that
+# tool/coverage/gate.py accepts for GPU cells. Keeps this file name: GitHub lists
+# a dispatchable workflow only when the default branch holds a file of that name.
 on:
-  schedule:
-    - cron: '0 7 * * *'
   workflow_dispatch:
     inputs:
       devices:
