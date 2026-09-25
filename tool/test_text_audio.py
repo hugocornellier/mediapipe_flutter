@@ -52,6 +52,8 @@ def main():
     run([python, '-m', 'pip', 'install', '--disable-pip-version-check',
          runtime['wheel_url'] + '#sha256=' + runtime['wheel_sha256']], REPO, evidence / 'pip.log')
 
+    for package in (TEXT, AUDIO):
+        run(['dart', 'pub', 'get'], package, evidence / f'{package.name}-pub.log')
     run(['dart', 'tool/download_classic_text.dart'], TEXT, evidence / 'text-models.log')
     run(['dart', 'run', 'tool/download_model.dart'], AUDIO, evidence / 'audio-model.log')
     text_reference = REPO / 'build/classic-text-reference'
