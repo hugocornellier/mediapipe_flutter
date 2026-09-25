@@ -117,10 +117,15 @@ Map<String, Object?> backendModel(BaseBaseOptions value) => {
 };
 
 /// Classifier options named as in Google's JavaScript API.
+///
+/// An unset threshold is sent as 0, as Google's Python and C APIs do: left
+/// unset, its JavaScript and mobile SDKs apply the model's own threshold (the
+/// language detector's drops all but the top language), so the same options
+/// would answer differently from the native runtime.
 Map<String, Object?> backendClassifierOptions(BaseClassifierOptions value) => {
   'displayNamesLocale': ?value.displayNamesLocale,
   'maxResults': ?value.maxResults,
-  'scoreThreshold': ?value.scoreThreshold,
+  'scoreThreshold': value.scoreThreshold ?? 0.0,
   'categoryAllowlist': ?value.categoryAllowlist,
   'categoryDenylist': ?value.categoryDenylist,
 };

@@ -776,12 +776,14 @@ async function textAudioChecks() {
     const textFiles = await text.FilesetResolver.forTextTasks(asset('packages/mediapipe_flutter_text_web/assets/runtime/wasm'));
     const heads = result => result.classifications.map(h => h.categories.map(c =>
       [c.index, c.score, c.categoryName || null, c.displayName || null]));
+    // The package sends an unset score threshold as 0, as Google's Python and
+    // C APIs do (backend_text_task.dart), so the reference passes it too.
     const classifier = [];
     for (const [input, options] of [['Hello, world!', {}],
         ['This was a terrible movie. I hated every minute.', {}],
         ['Hello, world!', {maxResults: 1}], ['Hello, world!', {categoryDenylist: ['positive']}]]) {
       const task = await text.TextClassifier.createFromOptions(textFiles,
-        {...options, baseOptions: {modelAssetBuffer: await bytes('assets/models/bert_classifier.tflite')}});
+        {scoreThreshold: 0, ...options, baseOptions: {modelAssetBuffer: await bytes('assets/models/bert_classifier.tflite')}});
       classifier.push(heads(task.classify(input)));
       task.close();
     }
@@ -798,7 +800,7 @@ async function textAudioChecks() {
       task.close();
     }
     const detector = await text.LanguageDetector.createFromOptions(textFiles,
-      {maxResults: 3, baseOptions: {modelAssetBuffer: await bytes('assets/models/language_detector.tflite')}});
+      {maxResults: 3, scoreThreshold: 0, baseOptions: {modelAssetBuffer: await bytes('assets/models/language_detector.tflite')}});
     const language = ['Hello, world!', 'Quiero agua, por favor.', 'こんにちは、元気ですか？'].map(t =>
       detector.detect(t).languages.map(l => [l.languageCode, l.probability]));
     detector.close();
