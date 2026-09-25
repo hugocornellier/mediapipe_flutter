@@ -115,7 +115,7 @@ jobs:
           if-no-files-found: error
 
   linux-gpu:
-    name: Vision face and hand tasks / ubuntu-24.04 x64 GPU (Mesa, renamed renderer)
+    name: Vision tasks / ubuntu-24.04 x64 GPU (Mesa, renamed renderer)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -136,13 +136,16 @@ jobs:
           sudo apt-get install -y -qq libegl1 libgles2 libegl-mesa0 libgl1-mesa-dri \
             clang cmake ninja-build pkg-config libgtk-3-dev xvfb \
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good
-      - name: Download the face and hand models
+      - name: Download the vision models
         working-directory: packages/mediapipe-task-vision
         run: |
           dart pub get
           dart tool/download_model.dart
           dart tool/download_face_landmarker.dart
           dart tool/download_landmark_tasks.dart
+          dart tool/download_object_detector.dart
+          dart tool/download_image_tasks.dart
+          dart tool/download_segmenter_tasks.dart
       - name: Official 1.0.1 GPU references and Dart GPU suites on llvmpipe
         id: linux_gpu
         env:
@@ -153,10 +156,12 @@ jobs:
           force_gl_renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
           # Without a display the default EGL platform fails.
           EGL_PLATFORM: surfaceless
-        run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --test
+        run: >-
+          python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --test
+          --landmark-tasks --object-detector --image-tasks --segmenter-tasks
       - name: Record linux GPU task coverage (linux-gpu)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite linux-gpu --platform linux --delegate gpu --tasks face_detector,face_landmarker,hand_landmarker --outcome ${{ steps.linux_gpu.outcome }}
+        run: python3 -B tool/coverage/record.py --suite linux-gpu --platform linux --delegate gpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,image_classifier,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.linux_gpu.outcome }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

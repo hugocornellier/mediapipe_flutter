@@ -75,11 +75,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "windows": {
         "cpu": "required",
@@ -127,11 +127,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "unsupported: Google's desktop runtimes cannot open Holistic's face blendshapes model on GPU (upstream-issues.md UP-026)"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "unsupported: Google's desktop runtimes cannot open Holistic's face blendshapes model on GPU (upstream-issues.md UP-026)"
       },
       "windows": {
         "cpu": "required",
@@ -153,11 +153,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "windows": {
         "cpu": "required",
@@ -179,11 +179,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "unsupported: Google's Linux 1.0.1 runtime aborts the embedder on OpenGL ES (upstream-issues.md UP-027)"
       },
       "windows": {
         "cpu": "required",
@@ -205,11 +205,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "windows": {
         "cpu": "required",
@@ -231,11 +231,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "unsupported: Google's macOS runtime cannot compile the stroke heatmap shader (upstream-issues.md UP-008)"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "unsupported: Google's Linux 1.0.1 runtime aborts the stroke segmenter on OpenGL ES (upstream-issues.md UP-029)"
       },
       "windows": {
         "cpu": "unsupported: Google's Windows wheels do not export the stroke API (step 6)",
@@ -261,7 +261,7 @@
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "windows": {
         "cpu": "required",
@@ -283,11 +283,11 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "pending: step 4"
+        "gpu": "required"
       },
       "windows": {
         "cpu": "required",

@@ -162,6 +162,44 @@ void main() {
       await legacy.dispose();
     }
   }, skip: _unvalidatedHost);
+  // Image Segmenter's IMAGE mode on GPU, against the official GPU references
+  // tool/prepare_gpu_reference.py --segmenter-tasks writes on this host (the
+  // official macOS Metal path aborts in VIDEO mode; see its generator).
+  group('GPU inference', () {
+    final gpuReference = _gpuSkip == null
+        ? loadFaceReference('segmenter_tasks', 'official_gpu_reference.json')
+        : null;
+    final gpuCases = [
+      ...?(gpuReference?['cases'] as List?)?.cast<Map<String, dynamic>>(),
+    ].where((c) => c['task'] == 'image' && c['timestamp_ms'] == null);
+    tearDownAll(() => reportReferenceDeltas('image_segmenter'));
+    for (final expected in gpuCases) {
+      test(
+        'official image / ${expected['input']} / ${expected['options']}',
+        () async {
+          final (process, close) = await _create(
+            expected,
+            delegate: VisionDelegate.gpu,
+          );
+          try {
+            _compare(
+              await process(
+                _image(expected),
+                expected['rotation_degrees'] as int,
+                null,
+              ),
+              expected['result'],
+              'result',
+              true,
+            );
+          } finally {
+            await close();
+          }
+        },
+      );
+    }
+  }, skip: _gpuSkip);
+
   test('options reject empty mask selections and malformed metadata', () {
     expect(
       () => ImageSegmenterOptions(
@@ -246,6 +284,7 @@ VisionImage _image(Map<String, dynamic> expected) {
 Future<_Task> _create(
   Map<String, dynamic> expected, {
   Uint8List? modelBytes,
+  VisionDelegate delegate = VisionDelegate.cpu,
 }) async {
   final options = expected['options'] as Map<String, dynamic>;
   final name = expected['task'] as String;
@@ -262,6 +301,7 @@ Future<_Task> _create(
             : VisionRunningMode.video,
         outputConfidenceMasks: confidence,
         outputCategoryMask: category,
+        delegate: delegate,
       ),
     );
     return (
@@ -363,22 +403,58 @@ Map<String, dynamic> _mask(int width, int height, List<num> values) {
   };
 }
 
-void _compare(dynamic actual, dynamic expected, [String path = 'result']) {
+void _compare(
+  dynamic actual,
+  dynamic expected, [
+  String path = 'result',
+  bool gpu = false,
+]) {
   if (expected is Map) {
     expect(actual, isA<Map>(), reason: path);
     expect((actual as Map).keys, unorderedEquals(expected.keys), reason: path);
     for (final key in expected.keys) {
-      _compare(actual[key], expected[key], '$path.$key');
+      // GPU masks come from another process's GPU run: the statistics are
+      // compared, their exact bytes are not.
+      if (gpu && key == 'sha256') continue;
+      _compare(actual[key], expected[key], '$path.$key', gpu);
     }
   } else if (expected is List) {
     expect(actual, isA<List>(), reason: path);
     expect(actual, hasLength(expected.length), reason: path);
     for (var i = 0; i < expected.length; i++) {
-      _compare(actual[i], expected[i], '$path[$i]');
+      _compare(actual[i], expected[i], '$path[$i]', gpu);
     }
+  } else if (expected is num && gpu && actual is num) {
+    final group = path.contains('category_mask')
+        ? 'category_mask'
+        : 'confidence_masks';
+    recordReferenceDelta(
+      'image_segmenter',
+      'gpu',
+      group,
+      path,
+      actual,
+      expected,
+    );
+    expect(actual, closeTo(expected, _gpuTolerances[group]!), reason: path);
   } else if (expected is double) {
     expect(actual, closeTo(expected, 0.00001), reason: path);
   } else {
     expect(actual, expected, reason: path);
   }
 }
+
+// Mask statistics on GPU against Google's own GPU masks from the same host:
+// confidences in 0 to 1, category indices (a mean moves when an outline pixel
+// changes class).
+const _gpuTolerances = {'confidence_masks': 0.01, 'category_mask': 0.05};
+
+/// Why the GPU comparisons cannot run on this host, or null when they can.
+final _gpuSkip = Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] == null
+    ? 'GPU Image Segmenter compares with same-host official GPU outputs '
+          '(MEDIAPIPE_GPU_REFERENCE_DIR).'
+    : Platform.isMacOS && _unvalidatedHost != null
+    ? 'macOS GPU runs on the official runtime only.'
+    : Platform.isMacOS || Platform.isLinux
+    ? null
+    : 'Desktop GPU is validated on Linux and macOS.';

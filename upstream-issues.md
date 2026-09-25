@@ -586,6 +586,60 @@ lasts as long as the upload; blocking the host removes both the upload and
 the wait. The Linux 1.0.1 library contains the same uploader (over libcurl,
 with `ca_bundle_path` as its CA file); no slow close has been seen on Linux.
 
+## UP-026: Holistic cannot open its face blendshapes model on a desktop GPU
+
+**Status:** observed September 25 through Google's own Python API with the
+official 1.0.0 macOS wheel (on a hosted macos-15 runner and on macOS 27) and
+the official 1.0.1 Linux wheel (OpenGL ES on Mesa, renderer renamed as in the
+desktop GPU job). Holistic stays on CPU on desktop.
+
+`HolisticLandmarker` on the GPU delegate fails when its graph opens, in the
+inference calculator of the face blendshapes subgraph, whether or not
+blendshapes or the segmentation mask are requested. On Metal:
+`inference_calculator_metal.cc:284 TFLGpuDelegateBindMetalBufferToTensor(...)
+== true (0 vs. 1)`. On Linux the same node fails to open while reporting a
+tensor of shape `[52, 1, 1, 1]`, the blendshapes model's. Face Landmarker's own
+blendshapes run on these GPUs, so the gap is Holistic's graph.
+
+## UP-027: Linux Image Embedder aborts on OpenGL ES
+
+**Status:** observed September 25 with the official 1.0.1 Linux wheel on a
+hosted ubuntu-24.04 runner (Mesa, renderer renamed as in the desktop GPU job),
+through Google's own Python API. The package keeps the Linux embedder on CPU;
+it runs on Metal on macOS.
+
+`ImageEmbedder` with the GPU delegate aborts the process (SIGABRT) during its
+first embeds, with glibc reporting `corrupted size vs. prev_size while
+consolidating`. Google's Python also declares the embedding result with the
+wrong layout and overruns it on every embed (the text package's
+`tool/official_embedding_layout.py`; the vision image generator now corrects
+it too), but correcting that layout in the probe changed nothing: the GPU path
+still aborts. The classifier, segmenter and detector run on the same GPU.
+
+## UP-028: Pose segmentation masks fail on Metal
+
+**Status:** observed September 25 through Google's own Python API with the
+official 1.0.0 macOS wheel, on a hosted macos-15 runner and on macOS 27. The
+package refuses the combination with an explanation instead of failing on the
+first frame; Pose landmarks run on Metal.
+
+With `output_segmentation_masks` on, `PoseLandmarker` fails on its first
+frame in `TensorsToSegmentationCalculator`:
+`tensors_to_segmentation_converter_metal.cc:223 upsample_program_ Problem
+initializing the program`. Without masks the task runs on Metal. On Linux's
+OpenGL ES path the masks work, and so does Image Segmenter's own mask
+conversion on Metal.
+
+## UP-029: Linux stateful Interactive Segmenter aborts on OpenGL ES
+
+**Status:** observed September 25 with the official 1.0.1 Linux wheel on a
+hosted ubuntu-24.04 runner (Mesa, renderer renamed), through Google's own
+Python API. The package keeps the task on CPU on Linux, as on macOS (UP-008).
+
+Segmenting a positive stroke with the GPU delegate aborts the process with
+glibc's `corrupted size vs. prev_size while consolidating`. The browser task
+runs the same model on WebGL 2.
+
 ## Integration pitfalls resolved in this repo
 
 These are recorded for continuity, not classified as confirmed MediaPipe defects.

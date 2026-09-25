@@ -51,6 +51,16 @@ final class PoseLandmarker {
         capabilities.unavailableReasons[options.delegate]!,
       );
     }
+    if (Platform.isMacOS &&
+        options.delegate == VisionDelegate.gpu &&
+        options.outputSegmentationMasks) {
+      // Google's graph would fail on the first frame instead.
+      throw UnsupportedError(
+        'Google\'s macOS runtime cannot initialize the pose segmentation '
+        'mask upsampler on Metal (upstream-issues.md UP-028). Request masks '
+        'on the CPU, or landmarks alone on the GPU.',
+      );
+    }
     return PoseLandmarker._(
       await VisionTaskWorker.create(
         options,

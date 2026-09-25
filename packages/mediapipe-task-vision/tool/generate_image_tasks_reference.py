@@ -28,11 +28,49 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def use_header_embedding_layout():
+    """Makes Google's Python read embedding results with the C header's layout.
+
+    As in the text package's tool/official_embedding_layout.py: the wheel's
+    ctypes declare MpEmbeddingResult as 24 bytes with the timestamp flag first,
+    while the library writes the header's 32 bytes. Python then overruns its
+    allocation on every embed (under glibc this surfaced as "corrupted size vs.
+    prev_size" on GPU) and reads the timestamp flag from padding.
+    """
+    global vision
+    import ctypes
+    import importlib
+    from mediapipe.tasks.python.components.containers import embedding_result_c as module
+    old = module.MpEmbeddingResultC
+    assert [name for name, _ in old._fields_] == [
+        'embeddings', 'embeddings_count', 'has_timestamp_ms', 'timestamp_ms'], old._fields_
+
+    class MpEmbeddingResultC(ctypes.Structure):
+        _fields_ = [('embeddings', ctypes.POINTER(module.MpEmbeddingC)),
+                    ('embeddings_count', ctypes.c_uint32),
+                    ('timestamp_ms', ctypes.c_int64),
+                    ('has_timestamp_ms', ctypes.c_bool)]
+    module.MpEmbeddingResultC = MpEmbeddingResultC
+    # `import mediapipe` already bound the old struct into the embedder's C
+    # signatures; rebuild them, and the vision namespace that re-exports them.
+    from mediapipe.tasks.python.vision import image_embedder
+    importlib.reload(image_embedder)
+    vision.ImageEmbedder = image_embedder.ImageEmbedder
+    vision.ImageEmbedderOptions = image_embedder.ImageEmbedderOptions
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--delegate', choices=['cpu', 'gpu'], default='cpu')
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'test/fixtures/image_tasks')
+    # Google's Linux 1.0.1 runtime aborts the embedder on GPU (UP-027).
+    parser.add_argument('--tasks', default=','.join(MODELS),
+                        help='Comma-separated subset of ' + ', '.join(MODELS))
     args = parser.parse_args()
+    use_header_embedding_layout()
+    selected = args.tasks.split(',')
+    if not selected or not set(selected) <= MODELS.keys():
+        raise SystemExit('--tasks must name some of ' + ', '.join(MODELS))
     assert mp.__version__ == VERSION
     assert digest(Path(mp.__file__).parent / 'tasks/c' / LIBRARY_NAME) == LIBRARY_SHA256
     for name, sha in MODELS.values():
@@ -54,6 +92,8 @@ def main():
         return mp.Image(image_format=mp.ImageFormat.SRGB, data=value)
 
     for task_name, (model_name, model_sha) in MODELS.items():
+        if task_name not in selected:
+            continue
         base = mp.tasks.BaseOptions(model_asset_path=str(ROOT / 'models' / model_name), delegate=delegate)
         factory = vision.ImageClassifier.create_from_options if task_name == 'classifier' else vision.ImageEmbedder.create_from_options
         option_sets = [dict(max_results=3, score_threshold=0.0)] if task_name == 'classifier' else [

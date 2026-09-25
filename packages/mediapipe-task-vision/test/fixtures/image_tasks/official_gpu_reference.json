@@ -1446,7 +1446,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 0
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -2495,7 +2495,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 1000
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -3544,7 +3544,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 2000
       },
       "file": "landmark-ex1.jpg",
       "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
@@ -4593,7 +4593,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 3000
       }
     },
     {
@@ -5640,7 +5640,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 4000
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -6694,7 +6694,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 5000
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -7746,7 +7746,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 0
       }
     },
     {
@@ -8796,7 +8796,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 33
       }
     },
     {
@@ -9846,7 +9846,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 66
       }
     },
     {
@@ -10893,7 +10893,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 0
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -11942,7 +11942,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 1000
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -12991,7 +12991,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 2000
       },
       "file": "landmark-ex1.jpg",
       "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
@@ -14040,7 +14040,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 3000
       }
     },
     {
@@ -15087,7 +15087,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 4000
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -16141,7 +16141,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 5000
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -17193,7 +17193,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 0
       }
     },
     {
@@ -18243,7 +18243,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 33
       }
     },
     {
@@ -19293,7 +19293,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 66
       }
     },
     {
@@ -20340,7 +20340,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 0
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -21389,7 +21389,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 1000
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -22438,7 +22438,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 2000
       },
       "file": "landmark-ex1.jpg",
       "sha256": "17a32597df503211ed126797bf8f5281f6e122545be925cfd3bf65658dc5f0ec"
@@ -23487,7 +23487,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 3000
       }
     },
     {
@@ -24534,7 +24534,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 4000
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -25588,7 +25588,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 5000
       },
       "raw": "portrait-301x209.rgb",
       "sha256": "242611c8ea93118b4196bf24ed2b4dfe81dda22f57c91104b8ad233c9e921c77"
@@ -26640,7 +26640,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 0
       }
     },
     {
@@ -27690,7 +27690,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 33
       }
     },
     {
@@ -28740,7 +28740,7 @@
             "head_name": "feature"
           }
         ],
-        "timestamp_ms": null
+        "timestamp_ms": 66
       }
     }
   ]
