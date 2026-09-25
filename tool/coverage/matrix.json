@@ -223,7 +223,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "unsupported: Google's Android SDK runs the stroke segmenter on CPU only"
+        "gpu": "unsupported: Google's Android SDK GPU path is unreliable: Test Lab phones showed PowerVR refusing its stroke shader and Mali's mask agreeing with CPU on 94% of pixels"
       },
       "ios": {
         "cpu": "required",

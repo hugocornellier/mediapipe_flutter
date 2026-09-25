@@ -63,25 +63,99 @@ void main() {
     expect(controller.changing, isFalse);
   });
 
-  test('processes one frame at a time and counts the ones it skips', () async {
+  test('runs the newest frame that arrived during inference next', () async {
     await started();
     camera.emit();
     await settle();
     expect(task.detectCalls, 1);
-    camera.emit();
-    camera.emit();
+    camera.emit(ScriptedCamera.smallFrame(width: 6));
+    camera.emit(ScriptedCamera.smallFrame(width: 8));
     await settle();
     expect(task.detectCalls, 1, reason: 'busy: no second inference');
-    expect(controller.skippedFrames, 2);
+    expect(controller.skippedFrames, 1, reason: 'the newer frame replaced it');
     expect(controller.processedFrames, 0);
     task.finish(7);
     await settle();
     expect(controller.processedFrames, 1);
     expect(controller.result, 7);
-    expect(controller.frameSize, isNotNull);
+    expect(task.detectCalls, 2, reason: 'the waiting frame runs at once');
+    task.finish(8);
+    await settle();
+    expect(controller.frameSize!.width, 8, reason: 'the newest frame ran');
+    expect(controller.recentFrames, 2);
     camera.emit();
     await settle();
-    expect(task.detectCalls, 2, reason: 'idle again: next frame runs');
+    expect(task.detectCalls, 3, reason: 'idle again: the next frame runs');
+  });
+
+  test('warms up on the sample, then a blank frame, before capture', () async {
+    // A 2x2 grey PNG: the warm-up decodes the sample it is given.
+    final png = Uint8List.fromList([
+      137,
+      80,
+      78,
+      71,
+      13,
+      10,
+      26,
+      10,
+      0,
+      0,
+      0,
+      13,
+      73,
+      72,
+      68,
+      82,
+      0,
+      0,
+      0,
+      2, //
+      0, 0, 0, 2, 8, 6, 0, 0, 0, 114, 182, 13, 36, 0, 0, 0, 17, 73, 68, 65, //
+      84,
+      120,
+      156,
+      99,
+      104,
+      104,
+      104,
+      248,
+      15,
+      194,
+      12,
+      48,
+      6,
+      0,
+      86,
+      244,
+      9, //
+      253, 75, 75, 233, 44, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130, //
+    ]);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMessageHandler(
+          'flutter/assets',
+          (_) async => ByteData.sublistView(png),
+        );
+    await controller.findCameras();
+    final starting = controller.start(
+      modelAsset: 'model.task',
+      warmUpSample: 'sample.png',
+    );
+    for (var frame = 0; frame < 2; frame++) {
+      while (task.pending.isEmpty) {
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+      }
+      expect(camera.activeStreams, 0, reason: 'no capture during warm-up');
+      task.finish();
+    }
+    await starting;
+    expect(controller.running, isTrue);
+    expect(task.timestamps, [0, 1]);
+    expect(task.forgot, 1, reason: 'the camera finds the task fresh');
+    expect(controller.processedFrames, 0, reason: 'warm-up is not shown');
+    camera.emit();
+    await settle();
+    expect(task.timestamps.last, greaterThan(1));
   });
 
   test('timestamps strictly increase even within one millisecond', () async {

@@ -11,9 +11,11 @@ import 'sdk_landmark_tasks_test.dart' as landmarks;
 import 'sdk_segmenter_test.dart' as segmenter;
 import 'sdk_text_audio_test.dart' as text_audio;
 
-// Every official SDK suite in one app launch, for Firebase Test Lab, where each
-// device run counts against a small daily quota. Build with SDK_GPU=required on
-// a physical device so a GPU refusal fails its test instead of being recorded.
+// Every official SDK suite in one app launch: on Firebase Test Lab, where each
+// device run counts against a small daily quota, and on the CI emulator, where
+// each extra install and launch risked losing the emulator. Build with
+// SDK_GPU=required on a physical device so a GPU refusal fails its test instead
+// of being recorded.
 // The live tiles run last: they open the camera, which is dark in a device rack.
 void main() {
   // The binding reports the run as finished to Android from a tearDownAll it

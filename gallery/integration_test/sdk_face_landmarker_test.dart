@@ -14,6 +14,8 @@ import 'package:mediapipe_gallery/live/live_tasks.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/main.dart';
 
+import 'support/gallery_tiles.dart';
+
 /// `skip` on emulators: SwiftShader GL accepts a GPU task, then TFLite's GL
 /// delegate fails on the first frame (see test_android_sdk_tasks.sh). GPU is
 /// then a phone check, as for the other SDK suites.
@@ -265,18 +267,9 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(const GalleryApp());
-    for (
-      var i = 0;
-      i < 100 && find.text('Live Face Landmarker').evaluate().isEmpty;
-      i++
-    ) {
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 100)),
-      );
-      await tester.pump();
-    }
-    expect(find.text('Live Face Landmarker'), findsOneWidget);
-    await tester.tap(find.text('Live Face Landmarker'));
+    final tile = await scrollToGalleryTile(tester, 'Live Face Landmarker');
+    expect(tile, findsOneWidget);
+    await tester.tap(tile);
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(LiveCameraView), findsOneWidget);
     final controller = tester
@@ -317,7 +310,9 @@ void main() {
     }
     await tester.runAsync(() => waitFor(VisionDelegate.cpu));
     await tester.pump();
-    expect(find.text('GPU'), findsOneWidget);
+    // With SDK_GPU=skip (emulators) the demo may offer no GPU, and none is
+    // switched to below.
+    if (_gpu != 'skip') expect(find.text('GPU'), findsOneWidget);
     for (final delegate in _switches.skip(1)) {
       await tester.tap(
         find.text(delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'),

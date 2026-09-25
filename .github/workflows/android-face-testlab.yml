@@ -166,7 +166,9 @@ jobs:
           MODEL: ${{ matrix.model }}
         run: |
           python3 -B tool/coverage/record.py --tier device --suite "android-$MODEL-cpu" --platform android --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker,audio_classifier,language_detector,text_classifier,text_embedder --outcome "$OUTCOME"
-          # Interactive Segmenter has no GPU path in Google's Android SDK.
+          # Interactive Segmenter's GPU is not declared on Android: PowerVR refuses
+          # its stroke shader and Mali's mask differs from CPU, so its suite only
+          # records the GPU.
           gpu=$(python3 -c "import os; skip = set(os.environ['GPU_SKIP'].split(',')); print(','.join(t for t in 'face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker'.split(',') if t not in skip | {'interactive_segmenter'}))")
           python3 -B tool/coverage/record.py --tier device --suite "android-$MODEL-gpu" --platform android --delegate gpu --tasks "$gpu" --outcome "$OUTCOME"
       - uses: actions/upload-artifact@v4

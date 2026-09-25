@@ -129,6 +129,69 @@ its next frame 15.9 ms (median) after the camera frame arrived, against an
 `e2e` of 33.7 ms for Flutter's overlay; drawing took 0.34 ms. Both variants'
 screenshots are beside the results.
 
+## Holistic, and the newest frame at once (2026-09-25)
+
+Question: Holistic Landmarker runs at about Google's own speed (30 ms of GPU
+inference, 45 ms of CPU), so why did the live demo skip so many camera frames,
+and start worse still?
+
+Method: the same runner with `--tile="Live Holistic Landmarker"
+--image=gallery/assets/samples/pose.jpg --headless --isolated`: the camera
+clip is the gallery's full-body sample, and Playwright's Chromium runs without
+a window on the Metal GPU (ANGLE, Apple M4 Max), so stages tied to the display
+(`e2e`, `refresh`) follow no real screen. Builds `before` (`890823a`) and
+`after` (this change) interleaved as above. Each block now also records its
+processed frame rate (`fps`, handled camera frames per second; the camera
+delivers 30) and its startup: the time from opening the tile (CPU) or choosing
+GPU to the first result, and the first five frames' `inference`.
+
+Changes:
+
+1. **The newest frame at once.** A camera frame that arrives during inference
+   now waits for it and starts the moment it finishes; a newer arrival replaces
+   it, and only replaced frames count as skipped. Before, the controller waited
+   for the next camera frame, so a frame that took just over the 33 ms interval
+   left the task idle until the one after, halving the rate.
+2. **Warm-up.** Before the camera starts, the task runs once on the tile's
+   sample and once on a blank frame. The first call loads every model the task
+   chains and, on GPU, compiles their shaders; the sample has a subject, so the
+   models past the detector run too, and the blank frame clears the tracking
+   it leaves. Tasks that learn from frames (Image Embedder's reference) forget
+   the warm-up.
+3. **Holistic's landmarks packed** into one transferred buffer, as fix 3 did for
+   the single-part tasks.
+4. **The readout averages the last 30 frames**, so it follows the current speed
+   instead of carrying the first, slower frames.
+
+Steady state, `results/holistic-before-after-*.json`, 450 frames per block,
+block means (fps per block):
+
+| | fps | `inference` | `detectDone` | `e2e` | `transport` |
+| --- | --- | --- | --- | --- | --- |
+| GPU before | 25.1, 19.1 | 29.85 | 31.38 | 52.48 | 0.294 |
+| GPU after | **30.0, 30.0** | 28.95 | 30.28 | 51.00 | 0.244 |
+| CPU before | 15.0, 15.0 | 44.87 | 46.42 | 67.97 | 0.306 |
+| CPU after | **22.1, 22.1** | 44.75 | 65.09 | 83.76 | 0.239 |
+
+On GPU every camera frame is now processed, with no added latency. On CPU,
+inference (45 ms) outlasts the frame interval, so a frame now waits for the one
+before it: 47% more results, each about 16 ms later on screen. Google's own
+demos make the same trade, looping inference back to back.
+
+Startup, `results/holistic-startup-*.json`, 4 blocks per variant and delegate:
+
+| | first camera frame's `inference` | first result |
+| --- | --- | --- |
+| GPU before | 476 to 531 ms | 952 to 1022 ms after choosing GPU |
+| GPU after | **45 to 49 ms** | **835 to 843 ms** |
+| CPU before | 145 to 156 ms | 808 to 893 ms after opening |
+| CPU after | **55 to 59 ms** | 884 to 901 ms |
+
+The warm-up moves the GPU's half-second first frame, and the skipped frames
+behind it, before the camera starts, and the first result arrives about 130 ms
+sooner. On CPU the first frame is three times faster and the first result
+arrives about when it did.
+
 ## Running it
 
 From a checkout, with Google Chrome, ffmpeg, `npm ci` done in
@@ -138,6 +201,9 @@ gallery/tool/prepare.py --target web`):
 ```sh
 (cd gallery && flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn)
 node packages/mediapipe-task-vision/tool/benchmarks/2026-09-22-web-live-pipeline/run.mjs --label=current --isolated
+# Another demo, its own clip subject, and no window:
+node packages/mediapipe-task-vision/tool/benchmarks/2026-09-22-web-live-pipeline/run.mjs --label=holistic --isolated \
+  --tile="Live Holistic Landmarker" --image=gallery/assets/samples/pose.jpg --headless
 ```
 
 To compare builds, copy each `gallery/build/web` aside and pass them:
