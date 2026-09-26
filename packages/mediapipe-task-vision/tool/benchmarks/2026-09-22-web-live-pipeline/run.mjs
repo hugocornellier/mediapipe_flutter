@@ -177,7 +177,7 @@ try {
       // Startup is timed from opening the tile (CPU, the default delegate) or
       // from choosing another delegate, which restarts the task.
       const openedAt = await page.evaluate(() => performance.now());
-      await page.getByRole('group', {name: new RegExp(tile)}).click();
+      await page.getByRole('button', {name: new RegExp(tile)}).click();
       await page.waitForFunction(() => globalThis.mediapipeVision && typeof __pipelineTrace === 'function',
         null, {timeout: 60000});
       await page.evaluate(() => {
