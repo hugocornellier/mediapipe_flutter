@@ -39,8 +39,23 @@ class LiveCameraView extends StatelessWidget {
                 container.style
                   ..width = '100%'
                   ..height = '100%'
+                  ..position = 'relative'
                   ..pointerEvents = 'none';
+                controller.video.style
+                  ..position = 'absolute'
+                  ..left = '0'
+                  ..top = '0';
                 container.append(controller.video);
+                if (controller.useCanvasPreview) {
+                  controller.previewCanvas.style
+                    ..position = 'absolute'
+                    ..left = '0'
+                    ..top = '0'
+                    ..width = '100%'
+                    ..height = '100%'
+                    ..pointerEvents = 'none';
+                  container.append(controller.previewCanvas);
+                }
               },
             ),
             LayoutBuilder(

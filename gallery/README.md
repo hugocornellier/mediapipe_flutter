@@ -66,8 +66,8 @@ Three gates, in order:
 3. **Demonstrable**: a screen of its own, which is what `GalleryDemo` names.
    Entries without one are known to the gallery but never become tiles.
 
-Anything bundled but not validated, and anything validated without a screen, is
-listed in the about sheet with the package's own reason rather than hidden.
+Tasks without a validated runtime or a screen do not appear as tiles. The
+package's status table below records their support details.
 
 The visible tiles depend on the target and follow the package's
 [status table](../packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md):

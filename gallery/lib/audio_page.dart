@@ -9,6 +9,9 @@ import 'package:mediapipe_flutter_vision/capabilities.dart';
 import 'package:record/record.dart';
 
 import 'catalog.dart';
+import 'gallery_content_surface.dart';
+import 'gallery_task_header.dart';
+import 'gallery_settings_scaffold.dart';
 import 'live/task_models.dart';
 import 'live/task_settings.dart';
 import 'live/task_settings_panel.dart';
@@ -17,9 +20,16 @@ import 'live/task_settings_panel.dart';
 /// its results beside the same settings panel, with MediaPipe Studio's
 /// settings and model selection.
 class AudioPage extends StatefulWidget {
-  const AudioPage({super.key, required this.task});
+  const AudioPage({
+    super.key,
+    required this.task,
+    this.onOpenMenu,
+    this.framed = false,
+  });
 
   final GalleryTask task;
+  final VoidCallback? onOpenMenu;
+  final bool framed;
 
   @override
   State<AudioPage> createState() => _AudioPageState();
@@ -33,6 +43,7 @@ const _clips = <String, String>{
 };
 
 class _AudioPageState extends State<AudioPage> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   late final TaskSettingValues _values = TaskSettingValues('audio_classifier');
   late final List<TaskSetting> _settings =
       taskSettings['audio_classifier'] ?? const [];
@@ -288,169 +299,162 @@ class _AudioPageState extends State<AudioPage> {
     final theme = Theme.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 900;
     final audio = _audio;
-    return Scaffold(
+    return GallerySettingsScaffold(
+      scaffoldKey: _scaffoldKey,
+      framed: widget.framed,
+      wide: wide,
       appBar: AppBar(
-        title: Text(widget.task.title),
+        primary: !wide,
+        automaticallyImplyLeading: false,
+        leading: widget.onOpenMenu == null
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.menu),
+                tooltip: 'Open navigation',
+                onPressed: widget.onOpenMenu,
+              ),
+        flexibleSpace: GalleryTaskHeader(taskTitle: widget.task.title),
         actions: [
           if (!wide)
             IconButton(
               icon: const Icon(Icons.tune),
               tooltip: 'Settings',
-              onPressed: () => showModalBottomSheet<void>(
-                context: context,
-                isScrollControlled: true,
-                showDragHandle: true,
-                builder: (context) => SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.6,
-                  child: _panel(),
-                ),
-              ),
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
             ),
         ],
       ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(
-                      value: false,
-                      icon: Icon(Icons.audio_file),
-                      label: Text('Clips'),
-                    ),
-                    ButtonSegment(
-                      value: true,
-                      icon: Icon(Icons.mic),
-                      label: Text('Microphone'),
-                    ),
-                  ],
-                  selected: {_microphone},
-                  onSelectionChanged: _busy
-                      ? null
-                      : (selection) => _setMicrophone(selection.first),
+      content: GalleryContentSurface(
+        framed: widget.framed,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  icon: Icon(Icons.audio_file),
+                  label: Text('Clips'),
                 ),
-                const SizedBox(height: 16),
-                if (_microphone)
-                  Text(
-                    _stream == null
-                        ? 'Starting the microphone…'
-                        : 'Listening: each 0.975 s window is classified as it '
-                              'arrives, newest first.',
-                    style: theme.textTheme.bodySmall,
-                  )
-                else ...[
-                  Text('Audio clip', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final MapEntry(key: file, value: label)
-                          in _clips.entries)
-                        ChoiceChip(
-                          label: Text(label),
-                          selected: _uploadedClip == null && _clip == file,
-                          onSelected: _busy
-                              ? null
-                              : (_) {
-                                  setState(() {
-                                    _clip = file;
-                                    _uploadedClip = null;
-                                  });
-                                  unawaited(_run());
-                                },
-                        ),
-                      ChoiceChip(
-                        avatar: const Icon(Icons.upload, size: 18),
-                        label: Text(_uploadedClip?.name ?? 'Upload WAV'),
-                        selected: _uploadedClip != null,
-                        onSelected: _busy ? null : (_) => _uploadClip(),
-                      ),
-                    ],
+                ButtonSegment(
+                  value: true,
+                  icon: Icon(Icons.mic),
+                  label: Text('Microphone'),
+                ),
+              ],
+              selected: {_microphone},
+              onSelectionChanged: _busy
+                  ? null
+                  : (selection) => _setMicrophone(selection.first),
+            ),
+            const SizedBox(height: 16),
+            if (_microphone)
+              Text(
+                _stream == null
+                    ? 'Starting the microphone…'
+                    : 'Listening: each 0.975 s window is classified as it '
+                          'arrives, newest first.',
+                style: theme.textTheme.bodySmall,
+              )
+            else ...[
+              Text('Audio clip', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final MapEntry(key: file, value: label)
+                      in _clips.entries)
+                    ChoiceChip(
+                      label: Text(label),
+                      selected: _uploadedClip == null && _clip == file,
+                      onSelected: _busy
+                          ? null
+                          : (_) {
+                              setState(() {
+                                _clip = file;
+                                _uploadedClip = null;
+                              });
+                              unawaited(_run());
+                            },
+                    ),
+                  ChoiceChip(
+                    avatar: const Icon(Icons.upload, size: 18),
+                    label: Text(_uploadedClip?.name ?? 'Upload WAV'),
+                    selected: _uploadedClip != null,
+                    onSelected: _busy ? null : (_) => _uploadClip(),
                   ),
-                  if (audio != null && !_microphone)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        '${(audio.samples.length / audio.channels / audio.sampleRate).toStringAsFixed(2)} s · '
-                        '${audio.sampleRate.round()} Hz · '
-                        '${audio.channels} channel${audio.channels == 1 ? '' : 's'}',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
                 ],
-                const SizedBox(height: 20),
-                if (_busy) const LinearProgressIndicator(),
-                if (_error case final error?)
-                  Text(error, style: TextStyle(color: theme.colorScheme.error))
-                else ...[
-                  if (_milliseconds case final ms?)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        'Done in ${ms.toStringAsFixed(1)} ms',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  for (final chunk
-                      in _microphone
-                          ? _heard
-                          : _chunks ?? const <AudioClassification>[])
-                    Card.outlined(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${(chunk.timestampMs / 1000).toStringAsFixed(2)} s',
-                              style: theme.textTheme.labelLarge,
-                            ),
-                            const SizedBox(height: 6),
-                            if (chunk.categories.isEmpty)
-                              Text(
-                                'Nothing above the score threshold.',
-                                style: theme.textTheme.bodySmall,
-                              ),
-                            for (final category in chunk.categories)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              if (audio != null && !_microphone)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    '${(audio.samples.length / audio.channels / audio.sampleRate).toStringAsFixed(2)} s · '
+                    '${audio.sampleRate.round()} Hz · '
+                    '${audio.channels} channel${audio.channels == 1 ? '' : 's'}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+            ],
+            const SizedBox(height: 20),
+            if (_busy) const LinearProgressIndicator(),
+            if (_error case final error?)
+              Text(error, style: TextStyle(color: theme.colorScheme.error))
+            else ...[
+              if (_milliseconds case final ms?)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Done in ${ms.toStringAsFixed(1)} ms',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+              for (final chunk
+                  in _microphone
+                      ? _heard
+                      : _chunks ?? const <AudioClassification>[])
+                Card.outlined(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${(chunk.timestampMs / 1000).toStringAsFixed(2)} s',
+                          style: theme.textTheme.labelLarge,
+                        ),
+                        const SizedBox(height: 6),
+                        if (chunk.categories.isEmpty)
+                          Text(
+                            'Nothing above the score threshold.',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        for (final category in chunk.categories)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(category.name ?? ''),
-                                        ),
-                                        Text(category.score.toStringAsFixed(3)),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 3),
-                                    LinearProgressIndicator(
-                                      value: category.score,
-                                    ),
+                                    Expanded(child: Text(category.name ?? '')),
+                                    Text(category.score.toStringAsFixed(3)),
                                   ],
                                 ),
-                              ),
-                          ],
-                        ),
-                      ),
+                                const SizedBox(height: 3),
+                                LinearProgressIndicator(value: category.score),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ],
-            ),
-          ),
-          if (wide) ...[
-            const VerticalDivider(width: 1),
-            SizedBox(width: 340, child: _panel()),
+                  ),
+                ),
+            ],
           ],
-        ],
+        ),
       ),
+      settings: _panel(),
     );
   }
 }

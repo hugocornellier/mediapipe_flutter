@@ -149,7 +149,7 @@ final class GestureRecognizerLiveTask
 }
 
 final class HolisticLandmarkerLiveTask
-    implements LiveTask<HolisticLandmarkerResult> {
+    implements LiveTask<HolisticLandmarkerResult>, FixedFrameSizeLiveTask {
   @override
   final settings = TaskSettingValues('holistic_landmarker');
 

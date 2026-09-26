@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
+import '../gallery_theme.dart';
 import 'camera_geometry.dart';
 
 /// One set of landmarks and the official edges joining them, with an
@@ -107,7 +108,7 @@ List<LandmarkFigure> figuresFor(Object? result) => switch (result) {
     (
       landmarks: person.faceLandmarks,
       edges: FaceLandmarkConnections.contours,
-      color: const Color(0xFFF4A8FF),
+      color: GalleryTheme.white,
       label: null,
     ),
   ],
@@ -118,13 +119,13 @@ LandmarkFigure _hand(List<VisionLandmark> landmarks, int i, {String? label}) =>
     (
       landmarks: landmarks,
       edges: HandLandmarkConnections.all,
-      color: i == 0 ? const Color(0xFF63E6BE) : const Color(0xFFFFD166),
+      color: i == 0 ? GalleryTheme.accentLight : GalleryTheme.white,
       label: label,
     );
 
 LandmarkFigure _pose(List<VisionLandmark> landmarks) => (
   landmarks: landmarks,
   edges: PoseLandmarkConnections.all,
-  color: const Color(0xFF8AB4FF),
+  color: GalleryTheme.accentLight,
   label: null,
 );

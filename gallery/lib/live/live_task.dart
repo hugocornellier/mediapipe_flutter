@@ -39,6 +39,10 @@ abstract interface class StatefulLiveTask {
   void forgetFrames();
 }
 
+/// VIDEO tasks whose temporal state requires every frame to have the same
+/// dimensions. A differently sized sample must not seed their state.
+abstract interface class FixedFrameSizeLiveTask {}
+
 /// Optional transport for decoded browser frames.
 abstract interface class BrowserLiveTask<T> implements LiveTask<T> {
   Future<T> detectBrowserFrame(

@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 import 'catalog.dart';
+import 'gallery_content_surface.dart';
+import 'gallery_task_header.dart';
+import 'gallery_theme.dart';
 import 'main.dart';
 import 'segment/editor_controller.dart';
 import 'segment/mask_overlay.dart';
@@ -16,10 +19,18 @@ import 'segment/mask_overlay.dart';
 /// copied unchanged. They already coalesce in-flight requests, keep the task's
 /// float mask intact, and serialise stroke edits against native work.
 class SegmentPage extends StatefulWidget {
-  const SegmentPage({super.key, required this.task, required this.assets});
+  const SegmentPage({
+    super.key,
+    required this.task,
+    required this.assets,
+    this.onOpenMenu,
+    this.framed = false,
+  });
 
   final GalleryTask task;
   final GalleryAssets assets;
+  final VoidCallback? onOpenMenu;
+  final bool framed;
 
   @override
   State<SegmentPage> createState() => _SegmentPageState();
@@ -140,8 +151,19 @@ class _SegmentPageState extends State<SegmentPage> {
     final editor = _editor;
     final error = _error ?? editor?.error;
     return Scaffold(
+      backgroundColor: widget.framed
+          ? theme.colorScheme.surfaceContainerLow
+          : null,
       appBar: AppBar(
-        title: Text(widget.task.title),
+        automaticallyImplyLeading: false,
+        leading: widget.onOpenMenu == null
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.menu),
+                tooltip: 'Open navigation',
+                onPressed: widget.onOpenMenu,
+              ),
+        flexibleSpace: GalleryTaskHeader(taskTitle: widget.task.title),
         actions: [
           IconButton(
             icon: const Icon(Icons.undo),
@@ -158,137 +180,140 @@ class _SegmentPageState extends State<SegmentPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Container(
-              color: Colors.black,
-              width: double.infinity,
-              child: error != null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          error,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white70),
+      body: GalleryContentSurface(
+        framed: widget.framed,
+        child: Column(
+          children: [
+            Expanded(
+              child: Container(
+                color: GalleryTheme.preview,
+                width: double.infinity,
+                child: error != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            error,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: GalleryTheme.white),
+                          ),
                         ),
-                      ),
-                    )
-                  : editor == null || !editor.ready
-                  ? const Center(child: CircularProgressIndicator())
-                  : Center(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) => GestureDetector(
-                          onPanStart: (details) {
-                            final point = _pointFor(
-                              details.localPosition,
-                              constraints.biggest,
-                            );
-                            if (point != null) editor.begin(point);
-                          },
-                          onPanUpdate: (details) {
-                            final point = _pointFor(
-                              details.localPosition,
-                              constraints.biggest,
-                            );
-                            if (point != null) editor.extend(point);
-                          },
-                          onPanEnd: (_) => editor.end(),
-                          // A single point is never a valid lasso, so let
-                          // taps fall through rather than silently drop.
-                          onTapUp: editor.brush == SegmentationBrushMode.lasso
-                              ? null
-                              : (details) {
-                                  final point = _pointFor(
-                                    details.localPosition,
-                                    constraints.biggest,
-                                  );
-                                  if (point == null) return;
-                                  editor
-                                    ..begin(point)
-                                    ..end();
-                                },
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image(
-                                image: widget.assets.imageProvider(
-                                  widget.task.sample,
+                      )
+                    : editor == null || !editor.ready
+                    ? const Center(child: CircularProgressIndicator())
+                    : Center(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) => GestureDetector(
+                            onPanStart: (details) {
+                              final point = _pointFor(
+                                details.localPosition,
+                                constraints.biggest,
+                              );
+                              if (point != null) editor.begin(point);
+                            },
+                            onPanUpdate: (details) {
+                              final point = _pointFor(
+                                details.localPosition,
+                                constraints.biggest,
+                              );
+                              if (point != null) editor.extend(point);
+                            },
+                            onPanEnd: (_) => editor.end(),
+                            // A single point is never a valid lasso, so let
+                            // taps fall through rather than silently drop.
+                            onTapUp: editor.brush == SegmentationBrushMode.lasso
+                                ? null
+                                : (details) {
+                                    final point = _pointFor(
+                                      details.localPosition,
+                                      constraints.biggest,
+                                    );
+                                    if (point == null) return;
+                                    editor
+                                      ..begin(point)
+                                      ..end();
+                                  },
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image(
+                                  image: widget.assets.imageProvider(
+                                    widget.task.sample,
+                                  ),
+                                  fit: BoxFit.contain,
                                 ),
-                                fit: BoxFit.contain,
-                              ),
-                              if (_maskImage case final image?)
-                                CustomPaint(painter: _MaskPainter(image)),
-                            ],
+                                if (_maskImage case final image?)
+                                  CustomPaint(painter: _MaskPainter(image)),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(
-                  editor?.lastInferenceMs == null
-                      ? _hintFor(editor?.brush)
-                      : '${editor!.lastInferenceMs!.toStringAsFixed(1)} ms  ·  '
-                            '${editor.completedRequests} requests, '
-                            '${editor.coalescedRequests} coalesced',
-                  style: theme.textTheme.bodySmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                SegmentedButton<SegmentationBrushMode>(
-                  segments: const [
-                    ButtonSegment(
-                      value: SegmentationBrushMode.positive,
-                      icon: Icon(Icons.add_circle_outline),
-                      label: Text('Include'),
-                    ),
-                    ButtonSegment(
-                      value: SegmentationBrushMode.negative,
-                      icon: Icon(Icons.remove_circle_outline),
-                      label: Text('Exclude'),
-                    ),
-                    ButtonSegment(
-                      value: SegmentationBrushMode.lasso,
-                      icon: Icon(Icons.gesture),
-                      label: Text('Lasso'),
-                    ),
-                  ],
-                  selected: {editor?.brush ?? SegmentationBrushMode.positive},
-                  // The controller reads `brush` when a stroke begins, so a
-                  // change mid-stroke cannot alter the stroke already running.
-                  onSelectionChanged: editor == null || !editor.ready
-                      ? null
-                      : (selection) =>
-                            setState(() => editor.brush = selection.first),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Text('Threshold'),
-                    Expanded(
-                      child: Slider(
-                        value: _threshold,
-                        min: 0.05,
-                        max: 0.95,
-                        onChanged: (value) {
-                          setState(() => _threshold = value);
-                          unawaited(_repaintMask());
-                        },
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    editor?.lastInferenceMs == null
+                        ? _hintFor(editor?.brush)
+                        : '${editor!.lastInferenceMs!.toStringAsFixed(1)} ms  ·  '
+                              '${editor.completedRequests} requests, '
+                              '${editor.coalescedRequests} coalesced',
+                    style: theme.textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  SegmentedButton<SegmentationBrushMode>(
+                    segments: const [
+                      ButtonSegment(
+                        value: SegmentationBrushMode.positive,
+                        icon: Icon(Icons.add_circle_outline),
+                        label: Text('Include'),
                       ),
-                    ),
-                    Text(_threshold.toStringAsFixed(2)),
-                  ],
-                ),
-              ],
+                      ButtonSegment(
+                        value: SegmentationBrushMode.negative,
+                        icon: Icon(Icons.remove_circle_outline),
+                        label: Text('Exclude'),
+                      ),
+                      ButtonSegment(
+                        value: SegmentationBrushMode.lasso,
+                        icon: Icon(Icons.gesture),
+                        label: Text('Lasso'),
+                      ),
+                    ],
+                    selected: {editor?.brush ?? SegmentationBrushMode.positive},
+                    // The controller reads `brush` when a stroke begins, so a
+                    // change mid-stroke cannot alter the stroke already running.
+                    onSelectionChanged: editor == null || !editor.ready
+                        ? null
+                        : (selection) =>
+                              setState(() => editor.brush = selection.first),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Text('Threshold'),
+                      Expanded(
+                        child: Slider(
+                          value: _threshold,
+                          min: 0.05,
+                          max: 0.95,
+                          onChanged: (value) {
+                            setState(() => _threshold = value);
+                            unawaited(_repaintMask());
+                          },
+                        ),
+                      ),
+                      Text(_threshold.toStringAsFixed(2)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

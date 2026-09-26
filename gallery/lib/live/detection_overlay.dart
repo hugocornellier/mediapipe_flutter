@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
+import '../gallery_theme.dart';
 import 'camera_geometry.dart';
 import 'embedding_similarity.dart';
 
@@ -31,7 +32,7 @@ class DetectionOverlay extends CustomPainter {
   /// A classifier's top classes, listed in the preview's corner.
   final List<String> classes;
 
-  static const _color = Color(0xFFFFB454);
+  static const _color = GalleryTheme.accentLight;
 
   @override
   void paint(Canvas canvas, Size size) {

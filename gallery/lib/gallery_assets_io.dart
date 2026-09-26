@@ -24,7 +24,22 @@ final class GalleryAssets {
 
   ImageProvider imageProvider(String name) => FileImage(file(name));
 
+  static Future<GalleryAssets>? _unpacked;
+
+  /// Unpacks once per process; later calls share the first directory. Each
+  /// unpack writes every bundled model, so the device suites, which ask once
+  /// per test, filled an iPhone with copies until writes failed.
   static Future<GalleryAssets> unpack() async {
+    try {
+      return await (_unpacked ??= _unpack());
+    } catch (_) {
+      // A failed unpack is not kept, so a later call can try again.
+      _unpacked = null;
+      rethrow;
+    }
+  }
+
+  static Future<GalleryAssets> _unpack() async {
     final directory = await Directory.systemTemp.createTemp(
       'mediapipe-gallery-',
     );
