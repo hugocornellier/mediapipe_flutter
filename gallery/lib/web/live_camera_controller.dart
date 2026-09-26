@@ -49,6 +49,8 @@ class LiveCameraController<T> extends ChangeNotifier {
     ..style.width = '100%'
     ..style.height = '100%'
     ..style.objectFit = 'contain';
+  final previewCanvas = web.HTMLCanvasElement();
+  bool get useCanvasPreview => _isIOSBrowser;
   web.MediaStream? _stream;
   StreamSubscription<web.Event>? _trackEnded;
   late final JSFunction _visibility;
@@ -298,6 +300,7 @@ class LiveCameraController<T> extends ChangeNotifier {
           return;
         }
         video.style.transform = isFrontCamera ? 'scaleX(-1)' : '';
+        previewCanvas.style.transform = video.style.transform;
         frameSize = Size(
           video.videoWidth.toDouble(),
           video.videoHeight.toDouble(),
@@ -400,6 +403,18 @@ class LiveCameraController<T> extends ChangeNotifier {
         final conversion = Stopwatch()..start();
         bitmap = await web.window.createImageBitmap(video).toDart;
         final width = bitmap.width, height = bitmap.height;
+        if (useCanvasPreview) {
+          // iOS WebKit can composite a live <video> at the wrong scale even
+          // while createImageBitmap and detections see the full frame. Paint
+          // those same pixels into a canvas so preview and overlay agree.
+          if (previewCanvas.width != width || previewCanvas.height != height) {
+            previewCanvas
+              ..width = width
+              ..height = height;
+          }
+          (previewCanvas.getContext('2d') as web.CanvasRenderingContext2D)
+              .drawImage(bitmap, 0, 0);
+        }
         conversion.stop();
         trace?.bitmap = PipelineTrace.now();
         if (_closed || generation != _generation) return;
@@ -610,6 +625,15 @@ bool get _isMobileBrowser {
   final userAgent = web.window.navigator.userAgent.toLowerCase();
   return userAgent.contains('android') ||
       userAgent.contains('iphone') ||
+      userAgent.contains('ipad') ||
+      userAgent.contains('ipod') ||
+      (userAgent.contains('macintosh') &&
+          web.window.navigator.maxTouchPoints > 1);
+}
+
+bool get _isIOSBrowser {
+  final userAgent = web.window.navigator.userAgent.toLowerCase();
+  return userAgent.contains('iphone') ||
       userAgent.contains('ipad') ||
       userAgent.contains('ipod') ||
       (userAgent.contains('macintosh') &&

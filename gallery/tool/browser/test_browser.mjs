@@ -695,6 +695,23 @@ async function cameraChecks() {
   await multiplePage.goto(gallery);
   await multiplePage.getByRole('button', {name: /Live Face Landmarker/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 12);
+  assert.ok(await multiplePage.evaluate(() => {
+    const video = document.querySelector('video');
+    const canvas = video?.parentElement?.querySelector('canvas');
+    if (!video || !canvas) return false;
+    const videoRect = video.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const pixel = canvas.getContext('2d').getImageData(
+      Math.floor(canvas.width / 2), Math.floor(canvas.height / 2), 1, 1,
+    ).data;
+    return canvas.width === video.videoWidth &&
+      canvas.height === video.videoHeight &&
+      canvas.style.transform === video.style.transform &&
+      Math.abs(canvasRect.width - videoRect.width) < 1 &&
+      Math.abs(canvasRect.height - videoRect.height) < 1 &&
+      pixel[3] === 255;
+  }), 'the iOS preview canvas must show the same full frame used for detection');
+  report.checks.push('ios-canvas-preview-matches-detected-frame');
   const firstDevice = await multiplePage.evaluate(() => window.testCaptureTracks.at(-1).getSettings().deviceId);
   await multiplePage.getByRole('button', {name: 'Switch to back camera'}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 12 &&
