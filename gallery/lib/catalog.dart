@@ -42,37 +42,32 @@ typedef PlannedTask = ({
   String reason,
 });
 
-/// Audio and text tasks, listed as MediaPipe Studio lists them. Their
-/// packages run them on macOS arm64 and in browsers; elsewhere their cards
-/// say so.
+/// Audio and text tasks, listed as MediaPipe Studio lists them. Every
+/// platform runs them now; a build prepared without one shows its card.
 const plannedTasks = <PlannedTask>[
   (
     category: GalleryCategory.audio,
     title: 'Audio Classifier',
     summary: 'Sound categories in a clip or the microphone.',
-    reason:
-        'The audio package runs this on macOS arm64, Android and in browsers.',
+    reason: 'Not bundled in this build.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Language Detector',
     summary: 'The language of a piece of text.',
-    reason:
-        'The text package runs this on macOS arm64, Android and in browsers.',
+    reason: 'Not bundled in this build.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Text Classifier',
     summary: 'Sentiment and categories of a piece of text.',
-    reason:
-        'The text package runs this on macOS arm64, Android and in browsers.',
+    reason: 'Not bundled in this build.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Text Embedder',
     summary: 'Text as a vector, compared by similarity.',
-    reason:
-        'The text package runs this on macOS arm64, Android and in browsers.',
+    reason: 'Not bundled in this build.',
   ),
 ];
 
