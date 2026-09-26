@@ -9,6 +9,9 @@ import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 
 import 'support/scripted_camera.dart';
 
+class FixedSizeScriptedTask extends ScriptedTask
+    implements FixedFrameSizeLiveTask {}
+
 // The controller's lifecycle rules, pinned without hardware or native code.
 // Capture is a scripted camera platform and the task completes inference when
 // the test says so, which is how start-during-stop, switch-during-inference and
@@ -156,6 +159,24 @@ void main() {
     camera.emit();
     await settle();
     expect(task.timestamps.last, greaterThan(1));
+  });
+
+  test('fixed-size video tasks start with a camera frame', () async {
+    await controller.close();
+    task = FixedSizeScriptedTask();
+    controller = LiveCameraController<int>(task);
+    await controller.findCameras();
+    await controller.start(
+      modelAsset: 'model.task',
+      warmUpSample: 'sample.png',
+    );
+    expect(controller.running, isTrue);
+    expect(task.detectCalls, 0, reason: 'the sample must not seed video state');
+    camera.emit();
+    await settle();
+    expect(task.detectCalls, 1);
+    expect(task.timestamps, [0]);
+    task.finish();
   });
 
   test('timestamps strictly increase even within one millisecond', () async {

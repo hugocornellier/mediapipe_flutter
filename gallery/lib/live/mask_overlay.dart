@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
+import '../gallery_theme.dart';
 import 'camera_geometry.dart';
 
 /// Paints an Image Segmenter category mask as tinted cells over every block of
@@ -22,7 +23,7 @@ class MaskOverlay extends CustomPainter {
 
   /// Cells across the mask's longer side.
   static const _cells = 96;
-  static const _color = Color(0xFFFFB454);
+  static const _color = GalleryTheme.accentLight;
 
   @override
   void paint(Canvas canvas, Size size) {

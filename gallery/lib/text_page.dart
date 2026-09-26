@@ -9,6 +9,9 @@ import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 import 'catalog.dart';
+import 'gallery_content_surface.dart';
+import 'gallery_task_header.dart';
+import 'gallery_settings_scaffold.dart';
 import 'live/task_models.dart';
 import 'live/task_settings.dart';
 import 'live/task_settings_panel.dart';
@@ -17,9 +20,16 @@ import 'live/task_settings_panel.dart';
 /// its results beside the same settings panel, with MediaPipe Studio's
 /// settings and model selection.
 class TextPage extends StatefulWidget {
-  const TextPage({super.key, required this.task});
+  const TextPage({
+    super.key,
+    required this.task,
+    this.onOpenMenu,
+    this.framed = false,
+  });
 
   final GalleryTask task;
+  final VoidCallback? onOpenMenu;
+  final bool framed;
 
   @override
   State<TextPage> createState() => _TextPageState();
@@ -29,6 +39,7 @@ class TextPage extends StatefulWidget {
 typedef _Row = ({String label, double score});
 
 class _TextPageState extends State<TextPage> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   late final String _id = widget.task.runtimeId;
   late final TaskSettingValues _values = TaskSettingValues(_id);
   late final List<TaskSetting> _settings = taskSettings[_id] ?? const [];
@@ -248,109 +259,106 @@ class _TextPageState extends State<TextPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 900;
-    return Scaffold(
+    return GallerySettingsScaffold(
+      scaffoldKey: _scaffoldKey,
+      framed: widget.framed,
+      wide: wide,
       appBar: AppBar(
-        title: Text(widget.task.title),
+        primary: !wide,
+        automaticallyImplyLeading: false,
+        leading: widget.onOpenMenu == null
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.menu),
+                tooltip: 'Open navigation',
+                onPressed: widget.onOpenMenu,
+              ),
+        flexibleSpace: GalleryTaskHeader(taskTitle: widget.task.title),
         actions: [
           if (!wide)
             IconButton(
               icon: const Icon(Icons.tune),
               tooltip: 'Settings',
-              onPressed: () => showModalBottomSheet<void>(
-                context: context,
-                isScrollControlled: true,
-                showDragHandle: true,
-                builder: (context) => SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.6,
-                  child: _panel(),
-                ),
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+            ),
+        ],
+      ),
+      content: GalleryContentSurface(
+        framed: widget.framed,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            TextField(
+              controller: _first,
+              minLines: 3,
+              maxLines: 6,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: _embedder ? 'First text' : 'Text',
               ),
             ),
-        ],
-      ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                TextField(
-                  controller: _first,
-                  minLines: 3,
-                  maxLines: 6,
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: _embedder ? 'First text' : 'Text',
+            if (_embedder) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _second,
+                minLines: 3,
+                maxLines: 6,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Second text',
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.icon(
+                onPressed: _busy ? null : _run,
+                icon: const Icon(Icons.play_arrow),
+                label: Text(_embedder ? 'Compare' : 'Run'),
+              ),
+            ),
+            const SizedBox(height: 20),
+            if (_busy) const LinearProgressIndicator(),
+            if (_error case final error?)
+              Text(error, style: TextStyle(color: theme.colorScheme.error))
+            else ...[
+              if (_milliseconds case final ms?)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Done in ${ms.toStringAsFixed(1)} ms',
+                    style: theme.textTheme.bodySmall,
                   ),
                 ),
-                if (_embedder) ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _second,
-                    minLines: 3,
-                    maxLines: 6,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Second text',
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: FilledButton.icon(
-                    onPressed: _busy ? null : _run,
-                    icon: const Icon(Icons.play_arrow),
-                    label: Text(_embedder ? 'Compare' : 'Run'),
-                  ),
+              if (_embedder && _similarity != null)
+                Text(
+                  'Cosine similarity: ${_similarity!.toStringAsFixed(4)}',
+                  style: theme.textTheme.titleMedium,
                 ),
-                const SizedBox(height: 20),
-                if (_busy) const LinearProgressIndicator(),
-                if (_error case final error?)
-                  Text(error, style: TextStyle(color: theme.colorScheme.error))
-                else ...[
-                  if (_milliseconds case final ms?)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        'Done in ${ms.toStringAsFixed(1)} ms',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  if (_embedder && _similarity != null)
-                    Text(
-                      'Cosine similarity: ${_similarity!.toStringAsFixed(4)}',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                  if (!_embedder)
-                    for (final row in _rows ?? const <_Row>[])
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+              if (!_embedder)
+                for (final row in _rows ?? const <_Row>[])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                Expanded(child: Text(row.label)),
-                                Text(row.score.toStringAsFixed(3)),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            LinearProgressIndicator(value: row.score),
+                            Expanded(child: Text(row.label)),
+                            Text(row.score.toStringAsFixed(3)),
                           ],
                         ),
-                      ),
-                ],
-              ],
-            ),
-          ),
-          if (wide) ...[
-            const VerticalDivider(width: 1),
-            SizedBox(width: 340, child: _panel()),
+                        const SizedBox(height: 4),
+                        LinearProgressIndicator(value: row.score),
+                      ],
+                    ),
+                  ),
+            ],
           ],
-        ],
+        ),
       ),
+      settings: _panel(),
     );
   }
 }

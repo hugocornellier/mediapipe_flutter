@@ -148,7 +148,7 @@ final class ScriptedCamera extends CameraPlatform {
 }
 
 /// A task whose inference the test completes by hand.
-final class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
+class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
   @override
   final settings = TaskSettingValues('scripted');
 

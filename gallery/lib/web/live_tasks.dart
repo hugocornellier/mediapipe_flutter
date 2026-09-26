@@ -158,7 +158,8 @@ final class GestureRecognizerLiveTask
 
 /// Browser transport for the same public HolisticLandmarker task.
 final class HolisticLandmarkerLiveTask
-    extends _WebLiveTask<HolisticLandmarkerResult> {
+    extends _WebLiveTask<HolisticLandmarkerResult>
+    implements FixedFrameSizeLiveTask {
   @override
   final settings = TaskSettingValues('holistic_landmarker');
 

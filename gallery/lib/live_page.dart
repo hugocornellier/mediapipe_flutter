@@ -6,6 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 import 'catalog.dart';
+import 'gallery_content_surface.dart';
+import 'gallery_task_header.dart';
+import 'gallery_theme.dart';
+import 'gallery_settings_scaffold.dart';
 import 'live/live_camera_controller.dart';
 import 'live/live_camera_view.dart';
 import 'live/live_registry.dart';
@@ -24,17 +28,22 @@ class LivePage extends StatefulWidget {
     required this.task,
     required this.platform,
     required this.officialMacosLandmarkTasks,
+    this.onOpenMenu,
+    this.framed = false,
   });
 
   final GalleryTask task;
   final TaskPlatform platform;
   final Set<String> officialMacosLandmarkTasks;
+  final VoidCallback? onOpenMenu;
+  final bool framed;
 
   @override
   State<LivePage> createState() => _LivePageState();
 }
 
 class _LivePageState extends State<LivePage> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   late final LiveDemo _demo = liveDemoFor(widget.task.id)!;
   late final LiveTask<Object?> _task = _demo.task();
   late final LiveCameraController<Object?> _controller =
@@ -218,15 +227,7 @@ class _LivePageState extends State<LivePage> {
     ),
   );
 
-  void _openSettings() => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    builder: (context) => SizedBox(
-      height: MediaQuery.sizeOf(context).height * 0.6,
-      child: _panel(),
-    ),
-  );
+  void _openSettings() => _scaffoldKey.currentState?.openEndDrawer();
 
   Future<void> _flipCamera() async {
     try {
@@ -241,12 +242,23 @@ class _LivePageState extends State<LivePage> {
     final theme = Theme.of(context);
     final controller = _controller;
     final busy = controller.changing;
-    // A side panel where there is room for it, as in MediaPipe Studio;
-    // otherwise a sheet behind a settings button.
+    // Wide layouts keep settings beside the preview; compact ones use a drawer.
     final wide = MediaQuery.sizeOf(context).width >= 900;
-    return Scaffold(
+    return GallerySettingsScaffold(
+      scaffoldKey: _scaffoldKey,
+      framed: widget.framed,
+      wide: wide,
       appBar: AppBar(
-        title: Text(widget.task.title),
+        primary: !wide,
+        automaticallyImplyLeading: false,
+        leading: widget.onOpenMenu == null
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.menu),
+                tooltip: 'Open navigation',
+                onPressed: widget.onOpenMenu,
+              ),
+        flexibleSpace: GalleryTaskHeader(taskTitle: widget.task.title),
         actions: [
           if (controller.canSwitchCamera)
             IconButton(
@@ -268,16 +280,11 @@ class _LivePageState extends State<LivePage> {
             ),
         ],
       ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: _camera(theme, controller, busy, wide)),
-          if (wide) ...[
-            const VerticalDivider(width: 1),
-            SizedBox(width: 340, child: _panel()),
-          ],
-        ],
+      content: GalleryContentSurface(
+        framed: widget.framed,
+        child: _camera(theme, controller, busy, wide),
       ),
+      settings: _panel(),
     );
   }
 
@@ -290,7 +297,7 @@ class _LivePageState extends State<LivePage> {
     children: [
       Expanded(
         child: Container(
-          color: Colors.black,
+          color: GalleryTheme.preview,
           width: double.infinity,
           child: LiveCameraView(
             controller: controller,
@@ -304,7 +311,7 @@ class _LivePageState extends State<LivePage> {
               final String error => Text(
                 error,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70),
+                style: const TextStyle(color: GalleryTheme.white),
               ),
               null => const CircularProgressIndicator(),
             },

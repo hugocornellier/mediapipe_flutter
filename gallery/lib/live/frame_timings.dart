@@ -11,7 +11,7 @@ typedef _Frame = ({
 /// the current speed instead of an average still carrying the first, slower
 /// frames.
 class RecentFrameTimings {
-  RecentFrameTimings({this.capacity = 30});
+  RecentFrameTimings({this.capacity = 300});
 
   final int capacity;
   final _frames = ListQueue<_Frame>();

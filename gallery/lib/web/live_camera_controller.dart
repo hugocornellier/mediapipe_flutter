@@ -243,7 +243,9 @@ class LiveCameraController<T> extends ChangeNotifier {
           await _release();
           return;
         }
-        final warmedUpTo = await _warmUp(sample);
+        final warmedUpTo = task is FixedFrameSizeLiveTask
+            ? -1
+            : await _warmUp(sample);
         if (_closed || generation != _generation) {
           await _release();
           return;

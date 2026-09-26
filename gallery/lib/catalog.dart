@@ -6,8 +6,8 @@ import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 /// How a tile demonstrates its task.
 enum GalleryDemo {
-  /// Known to the gallery and reported in the about sheet, but with no screen
-  /// of its own, so it never becomes a tile.
+  /// Known to the gallery, but with no screen of its own, so it never becomes
+  /// a tile.
   none,
 
   /// Live camera capture.
@@ -42,37 +42,32 @@ typedef PlannedTask = ({
   String reason,
 });
 
-/// Audio and text tasks, listed as MediaPipe Studio lists them. Their
-/// packages run them on macOS arm64 and in browsers; elsewhere their cards
-/// say so.
+/// Audio and text tasks, listed as MediaPipe Studio lists them. Every
+/// platform runs them now; a build prepared without one shows its card.
 const plannedTasks = <PlannedTask>[
   (
     category: GalleryCategory.audio,
     title: 'Audio Classifier',
     summary: 'Sound categories in a clip or the microphone.',
-    reason:
-        'The audio package runs this on macOS arm64, Android and in browsers.',
+    reason: 'Not bundled in this build.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Language Detector',
     summary: 'The language of a piece of text.',
-    reason:
-        'The text package runs this on macOS arm64, Android and in browsers.',
+    reason: 'Not bundled in this build.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Text Classifier',
     summary: 'Sentiment and categories of a piece of text.',
-    reason:
-        'The text package runs this on macOS arm64, Android and in browsers.',
+    reason: 'Not bundled in this build.',
   ),
   (
     category: GalleryCategory.text,
     title: 'Text Embedder',
     summary: 'Text as a vector, compared by similarity.',
-    reason:
-        'The text package runs this on macOS arm64, Android and in browsers.',
+    reason: 'Not bundled in this build.',
   ),
 ];
 
@@ -552,22 +547,3 @@ List<GalleryTask> supportedTasks(
         task.capabilitiesFor(platform, officialMacosLandmarkTasks).isSupported)
       task,
 ];
-
-/// Tasks bundled by this build whose runtime is not validated here, with the
-/// package's own reason. Shown only in the about sheet, never as a tile.
-Map<GalleryTask, String> unvalidatedTasks(
-  TaskPlatform platform,
-  Set<String> bundled,
-  Set<String> officialMacosLandmarkTasks,
-) => {
-  for (final task in _catalog)
-    if (bundled.contains(task.runtimeId) &&
-        !task.capabilitiesFor(platform, officialMacosLandmarkTasks).isSupported)
-      task:
-          task
-              .capabilitiesFor(platform, officialMacosLandmarkTasks)
-              .unavailableReasons
-              .values
-              .firstOrNull ??
-          'Not validated on this platform.',
-};

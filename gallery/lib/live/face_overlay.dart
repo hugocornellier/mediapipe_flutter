@@ -4,6 +4,7 @@ import 'dart:ui' show PointMode;
 import 'package:flutter/material.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
+import '../gallery_theme.dart';
 import 'camera_geometry.dart';
 
 /// Paints the facial landmarks and their connections over the preview.
@@ -29,18 +30,18 @@ class FaceOverlay extends CustomPainter {
     final result = this.result;
     if (result == null) return;
     final connections = Paint()
-      ..color = const Color(0x7063e6be)
+      ..color = GalleryTheme.accentLight.withValues(alpha: 0.45)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.7;
     final contour = Paint()
-      ..color = const Color(0xff63e6be)
+      ..color = GalleryTheme.accentLight
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     final iris = Paint()
-      ..color = const Color(0xffffce73)
+      ..color = GalleryTheme.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.8;
-    final point = Paint()..color = Colors.white;
+    final point = Paint()..color = GalleryTheme.white;
     canvas.save();
     canvas.clipRect(Offset.zero & size);
     for (final face in result.faceLandmarks) {

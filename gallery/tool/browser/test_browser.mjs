@@ -600,7 +600,7 @@ async function cameraChecks() {
   observe(page);
   await installCaptureObservations(page);
   await page.goto(gallery);
-  await page.getByRole('group', {name: subject.tile}).click();
+  await page.getByRole('button', {name: subject.tile}).click();
   await wait(page, points => {
     const video = document.querySelector('video');
     return Number(video?.getAttribute('data-processed-frames')) >= 12 &&
@@ -648,13 +648,13 @@ async function cameraChecks() {
     document.querySelector('video')?.getAttribute('data-landmarks') === points, subject.points);
   assert.equal(await page.evaluate(() => mediapipeVision.stats().activeWorkers), 1);
   report.checks.push('live-cpu-gpu-cpu-switch-' + taskName + '-inference-worker-cleanup');
-  await page.getByRole('button', {name: 'Back', exact: true}).click();
+  await page.getByText('Home', {exact: true}).click();
   await wait(page, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended') &&
     window.testFrameCallbacks.size === 0);
-  await page.getByRole('group', {name: subject.tile}).click();
+  await page.getByRole('button', {name: subject.tile}).click();
   await wait(page, points => document.querySelector('video')?.getAttribute('data-landmarks') === points, subject.points);
-  await page.getByRole('button', {name: 'Back', exact: true}).click();
+  await page.getByText('Home', {exact: true}).click();
   await wait(page, () => mediapipeVision.stats().activeWorkers === 0 &&
     mediapipeVision.stats().pendingRequests === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended') &&
@@ -674,7 +674,7 @@ async function cameraChecks() {
   const deniedPage = await denied.newPage();
   observe(deniedPage);
   await deniedPage.goto(gallery);
-  await deniedPage.getByRole('group', {name: /Live Face Landmarker/}).click();
+  await deniedPage.getByRole('button', {name: /Live Face Landmarker/}).click();
   await deniedPage.getByText(/Camera permission denied/).waitFor();
   await wait(deniedPage, () => mediapipeVision.stats().activeWorkers === 0);
   await deniedPage.screenshot({path: path.join(evidence, 'permission-denied.png')});
@@ -693,7 +693,7 @@ async function cameraChecks() {
   observe(multiplePage);
   await installCaptureObservations(multiplePage, true);
   await multiplePage.goto(gallery);
-  await multiplePage.getByRole('group', {name: /Live Face Landmarker/}).click();
+  await multiplePage.getByRole('button', {name: /Live Face Landmarker/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 12);
   const firstDevice = await multiplePage.evaluate(() => window.testCaptureTracks.at(-1).getSettings().deviceId);
   await multiplePage.getByRole('button', {name: 'Switch to back camera'}).click();
@@ -707,12 +707,12 @@ async function cameraChecks() {
     document.querySelector('video')?.style.transform === 'scaleX(-1)');
   const thirdDevice = await multiplePage.evaluate(() => window.testCaptureTracks.at(-1).getSettings().deviceId);
   assert.equal(thirdDevice, firstDevice);
-  await multiplePage.getByRole('button', {name: 'Back', exact: true}).click();
+  await multiplePage.getByText('Home', {exact: true}).click();
   await wait(multiplePage, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended'));
   report.checks.push('mobile-browser-front-back-front-switch-and-mirroring');
   // Trigger the actual worker error handler while gallery capture is active.
-  await multiplePage.getByRole('group', {name: /Live Face Landmarker/}).click();
+  await multiplePage.getByRole('button', {name: /Live Face Landmarker/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 3);
   await multiplePage.waitForFunction(() => {
     if (mediapipeVision.stats().pendingRequests === 0) return false;
@@ -723,8 +723,8 @@ async function cameraChecks() {
   await wait(multiplePage, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended'));
   report.checks.push('worker-error-rejects-pending-requests-and-releases-capture');
-  await multiplePage.getByRole('button', {name: 'Back', exact: true}).click();
-  await multiplePage.getByRole('group', {name: /Live Face Landmarker/}).click();
+  await multiplePage.getByText('Home', {exact: true}).click();
+  await multiplePage.getByRole('button', {name: /Live Face Landmarker/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 3);
   await multiplePage.evaluate(() => {
     window.testCaptureTracks.find(t => t.readyState === 'live').dispatchEvent(new Event('ended'));
@@ -741,7 +741,7 @@ async function cameraChecks() {
   const missingPage = await missingContext.newPage();
   observe(missingPage);
   await missingPage.goto(gallery);
-  await missingPage.getByRole('group', {name: /Live Face Landmarker/}).click();
+  await missingPage.getByRole('button', {name: /Live Face Landmarker/}).click();
   await missingPage.getByText(/No camera found/).waitFor();
   await wait(missingPage, () => mediapipeVision.stats().activeWorkers === 0);
   report.checks.push('browser-no-video-device-and-worker-cleanup');
