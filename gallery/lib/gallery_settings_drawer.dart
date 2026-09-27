@@ -28,7 +28,7 @@ class GallerySettingsSurface extends StatelessWidget {
         left: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
     ),
-    child: ColoredBox(
+    child: Material(
       color: Theme.of(context).colorScheme.surfaceContainerLow,
       child: child,
     ),
