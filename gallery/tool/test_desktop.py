@@ -46,11 +46,13 @@ def main():
     run(['flutter', 'pub', 'get'], 'pub')
     run(['flutter', 'analyze', 'lib', 'test',
          'integration_test/desktop_cpu_camera_test.dart',
+         'integration_test/face_landmarker_still_image_test.dart',
          'integration_test/runtime_test.dart',
          'integration_test/text_tasks_test.dart',
          'integration_test/audio_task_test.dart'], 'analyze')
     run(['flutter', 'test', 'test'], 'unit')
-    for name in ['assets_test', 'runtime_test', 'text_tasks_test', 'audio_task_test']:
+    for name in ['assets_test', 'runtime_test', 'text_tasks_test',
+                 'audio_task_test', 'face_landmarker_still_image_test']:
         run(['flutter', 'test', '-d', target,
              f'integration_test/{name}.dart', '--reporter', 'expanded'], name)
     for task in ['face', 'hand']:
@@ -74,6 +76,7 @@ def main():
                    'assets', 'cross-task-runtime-coexistence',
                    'text-and-audio-share-the-vision-runtime',
                    'gallery-supplied-camera-rgba-bgra-switch-restart-cleanup',
+                   'face-landmarker-still-image-inference-and-overlay',
                    'live-tasks-face-hand',
                    'release-build'],
         'physical_webcam_tested': False,

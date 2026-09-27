@@ -16,6 +16,8 @@ class LiveCameraView extends StatelessWidget {
     required this.controller,
     required this.painter,
     required this.placeholder,
+    required this.showConnections,
+    required this.showPoints,
   });
 
   final LiveCameraController<Object?> controller;
@@ -25,6 +27,8 @@ class LiveCameraView extends StatelessWidget {
 
   /// Shown until the camera is live.
   final Widget placeholder;
+  final bool showConnections;
+  final bool showPoints;
 
   @override
   Widget build(BuildContext context) {

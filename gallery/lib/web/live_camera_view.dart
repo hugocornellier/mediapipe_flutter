@@ -14,10 +14,14 @@ class LiveCameraView extends StatelessWidget {
     required this.controller,
     required this.painter,
     required this.placeholder,
+    required this.showConnections,
+    required this.showPoints,
   });
   final LiveCameraController<Object?> controller;
   final CustomPainter? Function(PreviewTransform transform) painter;
   final Widget placeholder;
+  final bool showConnections;
+  final bool showPoints;
   @override
   Widget build(BuildContext context) {
     final frame = controller.frameSize;
@@ -25,6 +29,10 @@ class LiveCameraView extends StatelessWidget {
     // Removing its platform view during stream replacement can prevent Chrome
     // from delivering requestVideoFrameCallback on the restarted stream.
     if (frame == null) return Center(child: placeholder);
+    controller.setOverlayOptions(
+      connections: showConnections,
+      points: showPoints,
+    );
     return Center(
       child: AspectRatio(
         aspectRatio: frame.width / frame.height,
@@ -67,6 +75,20 @@ class LiveCameraView extends StatelessWidget {
                   mirror: controller.isFrontCamera,
                 );
                 if (testHooks) _publishProbes(context, transform);
+                if (controller.workerOverlayCanvas case final canvas?) {
+                  return HtmlElementView.fromTagName(
+                    key: ValueKey(canvas),
+                    tagName: 'div',
+                    onElementCreated: (element) {
+                      final container = element as web.HTMLElement;
+                      container.style
+                        ..width = '100%'
+                        ..height = '100%'
+                        ..pointerEvents = 'none';
+                      container.append(canvas);
+                    },
+                  );
+                }
                 final overlay = painter(transform);
                 return overlay == null
                     ? const SizedBox.shrink()

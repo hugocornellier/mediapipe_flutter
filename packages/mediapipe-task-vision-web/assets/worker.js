@@ -2,7 +2,75 @@ import {
   FilesetResolver, FaceDetector, FaceLandmarker, GestureRecognizer, HandLandmarker,
   HolisticLandmarker, ImageClassifier, ImageEmbedder, ImageSegmenter,
   InteractiveSegmenter, InteractiveSegmenterLegacy, ObjectDetector, PoseLandmarker,
+  DrawingUtils,
 } from './runtime/vision_bundle.mjs';
+
+let overlay;
+let drawing;
+
+function drawOverlay(result, width, height, options) {
+  if (overlay.width !== width || overlay.height !== height) {
+    overlay.width = width;
+    overlay.height = height;
+  }
+  const context = overlay.getContext('2d');
+  context.clearRect(0, 0, width, height);
+  const accent = '#8cd0d6', white = '#ffffff';
+  const lines = (points, edges, color, lineWidth = 2) => {
+    if (options.connections && points?.length) {
+      drawing.drawConnectors(points, edges, {color, lineWidth});
+    }
+  };
+  const dots = (points, color, radius = 2.5) => {
+    if (options.points && points?.length) {
+      drawing.drawLandmarks(points, {color, radius});
+    }
+  };
+  const hand = (points, index) => {
+    const color = index === 0 ? accent : white;
+    lines(points, HandLandmarker.HAND_CONNECTIONS, color);
+    dots(points, color);
+  };
+  const pose = points => {
+    lines(points, PoseLandmarker.POSE_CONNECTIONS, accent);
+    dots(points, accent);
+  };
+  switch (spec.name) {
+    case 'FaceLandmarker':
+      for (const face of result.faceLandmarks ?? []) {
+        lines(face, FaceLandmarker.FACE_LANDMARKS_TESSELATION, '#8cd0d673', 0.7);
+        lines(face, FaceLandmarker.FACE_LANDMARKS_CONTOURS, accent, 1.5);
+        lines(face, FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS, white, 1.8);
+        lines(face, FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS, white, 1.8);
+        dots(face, white, 1.4);
+      }
+      break;
+    case 'HandLandmarker':
+      (result.landmarks ?? []).forEach(hand);
+      break;
+    case 'GestureRecognizer':
+      (result.landmarks ?? []).forEach((points, index) => {
+        hand(points, index);
+        const label = result.gestures?.[index]?.[0]?.categoryName;
+        if (label && points.length) {
+          context.font = '600 16px sans-serif';
+          context.fillStyle = index === 0 ? accent : white;
+          context.fillText(label, points[0].x * width + 8, points[0].y * height + 8);
+        }
+      });
+      break;
+    case 'PoseLandmarker':
+      (result.landmarks ?? []).forEach(pose);
+      break;
+    case 'HolisticLandmarker':
+      pose(result.poseLandmarks);
+      hand(result.leftHandLandmarks, 0);
+      hand(result.rightHandLandmarks, 1);
+      lines(result.faceLandmarks, FaceLandmarker.FACE_LANDMARKS_CONTOURS, white);
+      dots(result.faceLandmarks, white);
+      break;
+  }
+}
 
 // Each task: Google's class, its IMAGE and VIDEO methods, and the result field
 // holding its image landmarks, which travel packed; everything else in the
@@ -65,13 +133,21 @@ self.onmessage = ({data}) => {
       timing.sent = performance.timeOrigin + performance.now();
       const transfers = result?.masks ? [...result.masks] : [];
       if (result?.landmarks) transfers.push(result.landmarks.buffer);
-      self.postMessage({id: data.id, result, timing}, transfers);
+      self.postMessage({id: data.id, result, timing,
+        overlayFailed: result?.overlayFailed}, transfers);
     } catch (error) {
       self.postMessage({id: data.id, error: error?.message || String(error)});
     }
   });
 };
 async function run(type, input, timing) {
+  if (type === 'overlay') {
+    overlay = input.overlay;
+    const context = overlay.getContext('2d');
+    if (!context) throw new Error('Worker canvas 2D context is unavailable');
+    drawing = new DrawingUtils(context);
+    return null;
+  }
   if (type === 'create') {
     const files = await FilesetResolver.forVisionTasks(new URL('./runtime/wasm', import.meta.url).href, true);
     const {modelBytes, modelPath, delegate, task: name = 'face_landmarker', ...settings} = input;
@@ -110,6 +186,7 @@ async function run(type, input, timing) {
   if (type === 'close') {
     task?.close();
     task = undefined;
+    overlay = drawing = undefined;
     return null;
   }
   let source = input.bitmap;
@@ -170,7 +247,19 @@ async function run(type, input, timing) {
     timing.inference = inferred - started;
     timing.serialize = performance.now() - inferred;
     timing.timestamp = input.timestamp;
-    return {json, landmarks: packed?.values, masks};
+    let overlayFailed = false;
+    if (drawing && input.overlayOptions && (spec.landmarks || spec.parts)) {
+      try {
+        drawOverlay(result, source.width, source.height, input.overlayOptions);
+      } catch (error) {
+        // Inference succeeded. Keep delivering results and let the gallery's
+        // Flutter painter take over on the next frame.
+        console.warn('Worker overlay failed; using Flutter painter', error);
+        overlay = drawing = undefined;
+        overlayFailed = true;
+      }
+    }
+    return {json, landmarks: packed?.values, masks, overlayFailed};
   } finally {
     owned?.close();
   }

@@ -14,6 +14,12 @@ import 'src/result.dart';
 external JSPromise<JSNumber> _create(JSObject options);
 @JS('mediapipeVision.detect')
 external JSPromise<_Detection> _detect(JSNumber id, JSObject input);
+@JS('mediapipeVision.attachOverlay')
+external JSPromise<JSAny?> _attachOverlay(JSNumber id, JSObject canvas);
+@JS('mediapipeVision.setOverlayOptions')
+external void _setOverlayOptions(JSNumber id, JSObject options);
+@JS('mediapipeVision.overlayActive')
+external JSBoolean _overlayActive(JSNumber id);
 
 /// A worker result: JSON, plus the image landmarks packed when possible and
 /// the masks the JSON names by index.
@@ -254,7 +260,8 @@ abstract final class MediaPipeVisionWeb {
 }
 
 /// One official browser task on its own worker, with requests serialized.
-final class WebVisionTask<R> implements VisionTaskFrameBackend<R> {
+final class WebVisionTask<R>
+    implements VisionTaskFrameBackend<R>, VisionTaskOverlayBackend {
   WebVisionTask._(this._id, this._decode, this._error);
   final JSNumber _id;
   final R Function(Map<String, dynamic> data, Float64List? landmarks) _decode;
@@ -398,6 +405,24 @@ final class WebVisionTask<R> implements VisionTaskFrameBackend<R> {
     'rotation': rotationDegrees,
     'timestamp': timestampMilliseconds,
   });
+
+  @override
+  Future<void> attachOverlay(Object canvas) async {
+    await _workerResult(
+      _attachOverlay(_id, canvas as web.HTMLCanvasElement),
+      _error,
+    );
+  }
+
+  @override
+  void setOverlayOptions({required bool connections, required bool points}) =>
+      _setOverlayOptions(
+        _id,
+        {'connections': connections, 'points': points}.jsify()! as JSObject,
+      );
+
+  @override
+  bool get overlayActive => _overlayActive(_id).toDart;
 
   @override
   Future<void> dispose() => _disposing ??= _tail.then((_) async {

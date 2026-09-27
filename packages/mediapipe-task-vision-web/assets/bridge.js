@@ -30,6 +30,7 @@
       if (input?.bitmap) transfers.push(input.bitmap);
       if (input?.pixels) transfers.push(input.pixels.buffer);
       if (input?.modelBytes) transfers.push(input.modelBytes.buffer);
+      if (input?.overlay) transfers.push(input.overlay);
       try {
         state.worker.postMessage({id, type, input}, transfers);
       } catch (error) {
@@ -44,7 +45,8 @@
     async create(options) {
       const worker = new Worker(new URL('worker.js', base), {type: 'module'});
       const id = next++;
-      const state = {id, worker, pending: new Map(), next: 0, dead: false};
+      const state = {id, worker, pending: new Map(), next: 0, dead: false,
+        overlayActive: false, overlayOptions: {connections: true, points: false}};
       workers.set(id, state);
       totalCreated++;
       worker.onmessage = ({data}) => {
@@ -56,6 +58,7 @@
         if (data.timing && globalThis.mediapipeVision.onTiming) {
           globalThis.mediapipeVision.onTiming(data.timing);
         }
+        if (data.overlayFailed) state.overlayActive = false;
         if (data.error) pending.reject(new Error(data.error));
         else pending.resolve(data.result);
       };
@@ -78,8 +81,23 @@
         input.bitmap?.close();
         return Promise.reject(new Error('MediaPipe task is closed'));
       }
+      if (state.overlayActive) input.overlayOptions = state.overlayOptions;
       return request(state, 'detect', input);
     },
+    async attachOverlay(id, canvas) {
+      const state = workers.get(id);
+      if (!state || typeof canvas.transferControlToOffscreen !== 'function') {
+        throw new Error('Worker canvas overlay is unavailable');
+      }
+      const overlay = canvas.transferControlToOffscreen();
+      await request(state, 'overlay', {overlay});
+      state.overlayActive = true;
+    },
+    setOverlayOptions(id, options) {
+      const state = workers.get(id);
+      if (state) state.overlayOptions = options;
+    },
+    overlayActive(id) { return workers.get(id)?.overlayActive ?? false; },
     async close(id) {
       const state = workers.get(id);
       if (!state) return;
@@ -89,6 +107,7 @@
     // Read-only diagnostics used by release-browser tests.
     stats() {
       return {activeWorkers: workers.size, totalCreated, totalClosed,
+        activeOverlays: [...workers.values()].filter(s => s.overlayActive).length,
         pendingRequests: [...workers.values()].reduce((n, s) => n + s.pending.size, 0)};
     },
   };

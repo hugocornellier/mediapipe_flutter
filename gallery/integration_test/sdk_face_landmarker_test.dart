@@ -263,11 +263,11 @@ void main() {
     });
   }, timeout: const Timeout(Duration(minutes: 4)));
 
-  testWidgets('gallery opens Live Face Landmarker and switches CPU/GPU', (
+  testWidgets('gallery opens Face Landmarker and switches CPU/GPU', (
     tester,
   ) async {
     await tester.pumpWidget(const GalleryApp());
-    final tile = await scrollToGalleryTile(tester, 'Live Face Landmarker');
+    final tile = await scrollToGalleryTile(tester, 'Face Landmarker');
     expect(tile, findsOneWidget);
     await tester.tap(tile);
     await tester.pump(const Duration(milliseconds: 500));

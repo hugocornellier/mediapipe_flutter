@@ -87,7 +87,7 @@ final class _SmokeWindow extends StatelessWidget {
   Widget build(BuildContext context) => const MaterialApp(
     home: Scaffold(
       body: Center(
-        child: Text('Testing Live Face Landmarker with the physical camera…'),
+        child: Text('Testing Face Landmarker with the physical camera…'),
       ),
     ),
   );

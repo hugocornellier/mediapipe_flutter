@@ -48,6 +48,18 @@ abstract interface class VisionTaskFrameBackend<R>
   );
 }
 
+/// Optional browser canvas drawing on the task's owning worker.
+abstract interface class VisionTaskOverlayBackend {
+  /// Transfers a browser canvas to the task's worker for drawing.
+  Future<void> attachOverlay(Object canvas);
+
+  /// Chooses which landmark details the browser worker draws.
+  void setOverlayOptions({required bool connections, required bool points});
+
+  /// False when canvas transfer is unsupported or worker drawing fails.
+  bool get overlayActive;
+}
+
 /// Installed by a platform plugin before the first HandLandmarker is created.
 Future<VisionTaskBackend<HandLandmarkerResult>> Function(HandLandmarkerOptions)?
 handLandmarkerBackendFactory;

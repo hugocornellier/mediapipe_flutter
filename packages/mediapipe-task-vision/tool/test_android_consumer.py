@@ -137,23 +137,28 @@ def main():
         namespace = re.search(r'namespace = "([^"]+)"', content).group(1)
         activity = namespace + '.MainActivity'
         run(['flutter', 'pub', 'get'], app, root / 'pub.log')
-        # On hosted emulators flutter test sometimes installs the app and then
-        # hears nothing more. The first Gradle build takes about 4 minutes and
-        # the tests one more, so a run still going at 15 minutes has stalled;
-        # it runs once more, as gallery/tool/test_android_sdk_tasks.sh does.
+        # Hosted emulators can stall or lose the VM service while attaching
+        # after the first Gradle build. Retry those startup failures once;
+        # an assertion from a running test still fails immediately.
         for attempt in (1, 2):
             try:
                 run(['flutter', 'test', '-d', args.device, 'integration_test/tasks_test.dart',
                      '--reporter', 'expanded'], app, root / 'integration.log', timeout=900)
                 break
-            except subprocess.TimeoutExpired:
-                shutil.copy(root / 'integration.log', root / f'integration-stalled-{attempt}.log')
-                with (root / f'logcat-stalled-{attempt}.log').open('w') as output:
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as failure:
+                integration_log = root / 'integration.log'
+                output_text = integration_log.read_text(errors='replace')
+                vm_disconnected = ('Service connection disposed' in output_text
+                                   and 'Failed to load' in output_text)
+                if not isinstance(failure, subprocess.TimeoutExpired) and not vm_disconnected:
+                    raise
+                shutil.copy(integration_log, root / f'integration-retry-{attempt}.log')
+                with (root / f'logcat-retry-{attempt}.log').open('w') as output:
                     subprocess.run([*adb, 'logcat', '-d', '-t', '500'], stdout=output,
                                    stderr=subprocess.STDOUT, timeout=60, check=False)
                 if attempt == 2:
                     raise
-                print('flutter test stalled; running it once more', flush=True)
+                print('flutter test could not start; running it once more', flush=True)
         integration = (root / 'integration.log').read_text()
         totals = re.findall(r'\+(\d+)(?: ~(\d+))?: All tests passed!', integration)
         if not totals:

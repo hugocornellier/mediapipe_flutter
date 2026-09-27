@@ -35,6 +35,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   final _clock = Stopwatch();
   int _generation = 0;
   int _lastTimestamp = -1;
+  int _timestampOffset = 0;
   bool _closed = false;
   bool _disposed = false;
 
@@ -163,7 +164,40 @@ class LiveCameraController<T> extends ChangeNotifier {
       _changed();
       return Future.value();
     }
-    return start();
+    // Holistic's VIDEO graph requires one fixed frame size. Front and back
+    // cameras can deliver different sizes, so it needs a fresh task too.
+    if (task is FixedFrameSizeLiveTask) {
+      return start(description: description);
+    }
+    final selected = description!;
+    final generation = ++_generation;
+    running = false;
+    changing = true;
+    error = null;
+    _changed();
+    return _enqueue(() async {
+      await _releaseCamera();
+      if (_closed || generation != _generation) return;
+      try {
+        if (task case final StatefulLiveTask stateful) stateful.forgetFrames();
+        await _openCamera(selected, generation);
+        if (_closed || generation != _generation) {
+          await _release();
+          return;
+        }
+        _resetTimings();
+        _timestampOffset = _lastTimestamp;
+        running = true;
+      } catch (failure) {
+        if (generation == _generation) error = _message(failure);
+        await _release();
+      } finally {
+        if (generation == _generation) {
+          changing = false;
+          _changed();
+        }
+      }
+    });
   }
 
   /// Starts capture on the selected camera.
@@ -195,7 +229,12 @@ class LiveCameraController<T> extends ChangeNotifier {
     result = null;
     _changed();
     return _enqueue(() async {
-      await _release();
+      final keepCamera = _camera != null && description == null;
+      if (keepCamera) {
+        await _releaseTask();
+      } else {
+        await _release();
+      }
       if (_closed || generation != _generation) return;
       var fallBack = false;
       try {
@@ -224,42 +263,14 @@ class LiveCameraController<T> extends ChangeNotifier {
           await _release();
           return;
         }
-        final camera = CameraController(
-          selected,
-          ResolutionPreset.medium,
-          enableAudio: false,
-          imageFormatGroup: defaultTargetPlatform == TargetPlatform.android
-              ? ImageFormatGroup.yuv420
-              : ImageFormatGroup.bgra8888,
-        );
-        _camera = camera;
-        await camera.initialize();
+        if (!keepCamera) await _openCamera(selected, generation);
         if (_closed || generation != _generation) {
           await _release();
           return;
         }
-        camera.addListener(_cameraChanged);
-        frameSize = null;
-        frameRotationDegrees = 0;
-        processedFrames = 0;
-        skippedFrames = 0;
-        inferenceMilliseconds = 0;
-        conversionMilliseconds = 0;
-        frameMilliseconds = 0;
-        _totalInferenceMilliseconds = 0;
-        _totalConversionMilliseconds = 0;
-        _totalFrameMilliseconds = 0;
-        _recent.clear();
-        _pending = null;
+        _resetTimings();
+        _timestampOffset = 0;
         _lastTimestamp = warmedUpTo;
-        _clock
-          ..reset()
-          ..start();
-        await camera.startImageStream((image) => _onFrame(image, generation));
-        if (_closed || generation != _generation) {
-          await _release();
-          return;
-        }
         running = true;
       } catch (failure) {
         if (generation == _generation) {
@@ -282,6 +293,42 @@ class LiveCameraController<T> extends ChangeNotifier {
         unawaited(start(delegate: VisionDelegate.cpu));
       }
     });
+  }
+
+  Future<void> _openCamera(CameraDescription selected, int generation) async {
+    final camera = CameraController(
+      selected,
+      ResolutionPreset.medium,
+      enableAudio: false,
+      imageFormatGroup: defaultTargetPlatform == TargetPlatform.android
+          ? ImageFormatGroup.yuv420
+          : ImageFormatGroup.bgra8888,
+    );
+    _camera = camera;
+    await camera.initialize();
+    if (_closed || generation != _generation) return;
+    camera.addListener(_cameraChanged);
+    frameSize = null;
+    frameRotationDegrees = 0;
+    // The callback reads the current generation so a delegate change can keep
+    // this camera and its image stream alive while replacing only the task.
+    await camera.startImageStream((image) => _onFrame(image, _generation));
+  }
+
+  void _resetTimings() {
+    processedFrames = 0;
+    skippedFrames = 0;
+    inferenceMilliseconds = 0;
+    conversionMilliseconds = 0;
+    frameMilliseconds = 0;
+    _totalInferenceMilliseconds = 0;
+    _totalConversionMilliseconds = 0;
+    _totalFrameMilliseconds = 0;
+    _recent.clear();
+    _pending = null;
+    _clock
+      ..reset()
+      ..start();
   }
 
   void _cameraChanged() {
@@ -307,7 +354,10 @@ class LiveCameraController<T> extends ChangeNotifier {
   }
 
   void _begin(CameraImage image, int generation) {
-    final timestamp = math.max(_clock.elapsedMilliseconds, _lastTimestamp + 1);
+    final timestamp = math.max(
+      _timestampOffset + _clock.elapsedMilliseconds,
+      _lastTimestamp + 1,
+    );
     _lastTimestamp = timestamp;
     _frame = _process(image, generation, timestamp).whenComplete(() {
       _frame = null;
@@ -445,6 +495,11 @@ class LiveCameraController<T> extends ChangeNotifier {
   }
 
   Future<void> _release() async {
+    await _releaseCamera();
+    await _releaseTask();
+  }
+
+  Future<void> _releaseCamera() async {
     _pending = null;
     final camera = _camera;
     _camera = null;
@@ -467,6 +522,13 @@ class LiveCameraController<T> extends ChangeNotifier {
       }
     }
     await _frame;
+    frameSize = null;
+    _clock.stop();
+  }
+
+  Future<void> _releaseTask() async {
+    _pending = null;
+    await _frame;
     if (_opened) {
       _opened = false;
       try {
@@ -475,7 +537,6 @@ class LiveCameraController<T> extends ChangeNotifier {
         error ??= _message(failure);
       }
     }
-    _clock.stop();
   }
 
   /// Waits for capture and in-flight inference to stop before releasing resources.
