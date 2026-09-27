@@ -47,8 +47,17 @@ abstract base class _WebLiveTask<R>
       _task!.attachBrowserOverlay(canvas);
 
   @override
-  void setOverlayOptions({required bool connections, required bool points}) =>
-      _task?.setBrowserOverlayOptions(connections: connections, points: points);
+  void setOverlayOptions({
+    required bool connections,
+    required bool points,
+    required bool mirrored,
+    required double scale,
+  }) => _task?.setBrowserOverlayOptions(
+    connections: connections,
+    points: points,
+    mirrored: mirrored,
+    scale: scale,
+  );
 
   @override
   bool get overlayActive => _task?.browserOverlayActive ?? false;

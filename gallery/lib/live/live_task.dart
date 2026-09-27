@@ -57,6 +57,11 @@ abstract interface class BrowserLiveTask<T> implements LiveTask<T> {
 /// available when the browser cannot transfer a canvas or drawing fails.
 abstract interface class BrowserOverlayLiveTask {
   Future<void> attachOverlay(Object canvas);
-  void setOverlayOptions({required bool connections, required bool points});
+  void setOverlayOptions({
+    required bool connections,
+    required bool points,
+    required bool mirrored,
+    required double scale,
+  });
   bool get overlayActive;
 }

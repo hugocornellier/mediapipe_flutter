@@ -29,10 +29,6 @@ class LiveCameraView extends StatelessWidget {
     // Removing its platform view during stream replacement can prevent Chrome
     // from delivering requestVideoFrameCallback on the restarted stream.
     if (frame == null) return Center(child: placeholder);
-    controller.setOverlayOptions(
-      connections: showConnections,
-      points: showPoints,
-    );
     return Center(
       child: AspectRatio(
         aspectRatio: frame.width / frame.height,
@@ -73,6 +69,11 @@ class LiveCameraView extends StatelessWidget {
                   rotationDegrees: 0,
                   viewSize: constraints.biggest,
                   mirror: controller.isFrontCamera,
+                );
+                controller.setOverlayOptions(
+                  connections: showConnections,
+                  points: showPoints,
+                  scale: transform.scale,
                 );
                 if (testHooks) _publishProbes(context, transform);
                 if (controller.workerOverlayCanvas case final canvas?) {

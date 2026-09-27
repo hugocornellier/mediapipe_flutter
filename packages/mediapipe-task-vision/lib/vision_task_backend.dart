@@ -53,8 +53,13 @@ abstract interface class VisionTaskOverlayBackend {
   /// Transfers a browser canvas to the task's worker for drawing.
   Future<void> attachOverlay(Object canvas);
 
-  /// Chooses which landmark details the browser worker draws.
-  void setOverlayOptions({required bool connections, required bool points});
+  /// Chooses the browser worker's drawing details and preview transform.
+  void setOverlayOptions({
+    required bool connections,
+    required bool points,
+    required bool mirrored,
+    required double scale,
+  });
 
   /// False when canvas transfer is unsupported or worker drawing fails.
   bool get overlayActive;
