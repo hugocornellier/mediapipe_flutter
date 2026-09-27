@@ -11,6 +11,7 @@ import 'package:mediapipe_gallery/live/live_subjects.dart';
 import 'package:mediapipe_gallery/main.dart';
 
 import 'support/live_subject.dart';
+import 'support/gallery_tiles.dart';
 import 'support/supplied_camera.dart';
 
 /// `works` where MediaPipe accepts this machine's GPU, `refused` where it
@@ -34,17 +35,9 @@ void main() {
       LiveCameraController<Object?>? controller;
       try {
         await tester.pumpWidget(const GalleryApp());
-        for (
-          var i = 0;
-          i < 100 && find.text(subject.tile).evaluate().isEmpty;
-          i++
-        ) {
-          await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 100)),
-          );
-          await tester.pump();
-        }
-        await tester.tap(find.text(subject.tile));
+        final tileTitle = await scrollToGalleryTile(tester, subject.tile);
+        expect(tileTitle, findsOneWidget);
+        await tester.tap(tileTitle);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         controller = tester
