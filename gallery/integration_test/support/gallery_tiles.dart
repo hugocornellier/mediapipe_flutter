@@ -15,7 +15,9 @@ Future<Finder> scrollToGalleryTile(WidgetTester tester, String title) async {
     );
     await tester.pump();
   }
-  final tile = find.text(title);
+  // The wide layout also shows this name in the sidebar. Select the Home
+  // grid's tile so the finder remains unique on desktop.
+  final tile = find.descendant(of: grid.first, matching: find.text(title));
   await tester.scrollUntilVisible(
     tile,
     300,

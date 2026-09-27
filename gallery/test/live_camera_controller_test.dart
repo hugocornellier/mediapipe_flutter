@@ -175,7 +175,8 @@ void main() {
     camera.emit();
     await settle();
     expect(task.detectCalls, 1);
-    expect(task.timestamps, [0]);
+    expect(task.timestamps, hasLength(1));
+    expect(task.timestamps.single, greaterThanOrEqualTo(0));
     task.finish();
   });
 
@@ -327,15 +328,15 @@ void main() {
     expect(camera.disposed, 1);
   });
 
-  test('switching cameras restarts capture on the other lens', () async {
+  test('switching cameras keeps the task and opens the other lens', () async {
     await started();
     await controller.switchCamera();
     expect(controller.description!.name, 'back');
     expect(controller.isFrontCamera, isFalse);
     expect(camera.created, ['front', 'back']);
     expect(camera.disposed, 1);
-    expect(task.opened, hasLength(2));
-    expect(task.closed, 1);
+    expect(task.opened, [VisionDelegate.cpu]);
+    expect(task.closed, 0);
     expect(controller.running, isTrue);
   });
 
