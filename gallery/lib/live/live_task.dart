@@ -13,8 +13,15 @@ abstract interface class LiveTask<T> {
   /// The values [open] builds the task with; the page edits them and reopens.
   TaskSettingValues get settings;
 
-  /// Creates the underlying VIDEO-mode task.
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes);
+  /// Creates the task in the requested running mode.
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  });
+
+  /// Processes a still image with a task opened in image mode.
+  Future<T> detectImage(VisionImage image);
 
   /// Runs one frame. Called at most once at a time.
   ///

@@ -10,13 +10,24 @@ abstract base class _WebLiveTask<R>
     implements BrowserLiveTask<R>, BrowserOverlayLiveTask {
   SdkVisionTask<R>? _task;
 
-  /// Creates the VIDEO-mode task.
-  Future<SdkVisionTask<R>> create(VisionDelegate delegate, Uint8List model);
+  /// Creates a task in the requested running mode.
+  Future<SdkVisionTask<R>> create(
+    VisionDelegate delegate,
+    Uint8List model,
+    VisionRunningMode mode,
+  );
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
-    _task = await create(delegate, modelBytes);
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
+    _task = await create(delegate, modelBytes, mode);
   }
+
+  @override
+  Future<R> detectImage(VisionImage image) => _task!.detectImage(image);
 
   @override
   Future<R> detect(
@@ -82,10 +93,11 @@ final class FaceLandmarkerLiveTask extends _WebLiveTask<FaceLandmarkerResult> {
   Future<FaceLandmarker> create(
     VisionDelegate delegate,
     Uint8List model,
+    VisionRunningMode mode,
   ) => FaceLandmarker.create(
     FaceLandmarkerOptions(
       modelBytes: model,
-      runningMode: VisionRunningMode.video,
+      runningMode: mode,
       delegate: delegate,
       numFaces: settings.count('numFaces'),
       minFaceDetectionConfidence: settings.share('minFaceDetectionConfidence'),
@@ -108,10 +120,11 @@ final class HandLandmarkerLiveTask extends _WebLiveTask<HandLandmarkerResult> {
   Future<HandLandmarker> create(
     VisionDelegate delegate,
     Uint8List model,
+    VisionRunningMode mode,
   ) => HandLandmarker.create(
     HandLandmarkerOptions(
       modelBytes: model,
-      runningMode: VisionRunningMode.video,
+      runningMode: mode,
       delegate: delegate,
       numHands: settings.count('numHands'),
       minHandDetectionConfidence: settings.share('minHandDetectionConfidence'),
@@ -133,10 +146,11 @@ final class PoseLandmarkerLiveTask extends _WebLiveTask<PoseLandmarkerResult> {
   Future<PoseLandmarker> create(
     VisionDelegate delegate,
     Uint8List model,
+    VisionRunningMode mode,
   ) => PoseLandmarker.create(
     PoseLandmarkerOptions(
       modelBytes: model,
-      runningMode: VisionRunningMode.video,
+      runningMode: mode,
       delegate: delegate,
       numPoses: settings.count('numPoses'),
       minPoseDetectionConfidence: settings.share('minPoseDetectionConfidence'),
@@ -160,10 +174,11 @@ final class GestureRecognizerLiveTask
   Future<GestureRecognizer> create(
     VisionDelegate delegate,
     Uint8List model,
+    VisionRunningMode mode,
   ) => GestureRecognizer.create(
     GestureRecognizerOptions(
       modelBytes: model,
-      runningMode: VisionRunningMode.video,
+      runningMode: mode,
       delegate: delegate,
       numHands: settings.count('numHands'),
       minHandDetectionConfidence: settings.share('minHandDetectionConfidence'),
@@ -191,10 +206,11 @@ final class HolisticLandmarkerLiveTask
   Future<HolisticLandmarker> create(
     VisionDelegate delegate,
     Uint8List model,
+    VisionRunningMode mode,
   ) => HolisticLandmarker.create(
     HolisticLandmarkerOptions(
       modelBytes: model,
-      runningMode: VisionRunningMode.video,
+      runningMode: mode,
       delegate: delegate,
       minFaceDetectionConfidence: settings.share('minFaceDetectionConfidence'),
       minFaceSuppressionThreshold: settings.share(
@@ -221,16 +237,19 @@ final class FaceDetectorLiveTask extends _WebLiveTask<FaceDetectorResult> {
   String get name => 'Face Detector';
 
   @override
-  Future<FaceDetector> create(VisionDelegate delegate, Uint8List model) =>
-      FaceDetector.create(
-        FaceDetectorOptions(
-          modelBytes: model,
-          runningMode: VisionRunningMode.video,
-          delegate: delegate,
-          minDetectionConfidence: settings.share('minDetectionConfidence'),
-          minSuppressionThreshold: settings.share('minSuppressionThreshold'),
-        ),
-      );
+  Future<FaceDetector> create(
+    VisionDelegate delegate,
+    Uint8List model,
+    VisionRunningMode mode,
+  ) => FaceDetector.create(
+    FaceDetectorOptions(
+      modelBytes: model,
+      runningMode: mode,
+      delegate: delegate,
+      minDetectionConfidence: settings.share('minDetectionConfidence'),
+      minSuppressionThreshold: settings.share('minSuppressionThreshold'),
+    ),
+  );
 }
 
 /// Browser transport for the same public ObjectDetector task.
@@ -242,16 +261,19 @@ final class ObjectDetectorLiveTask extends _WebLiveTask<ObjectDetectorResult> {
   String get name => 'Object Detector';
 
   @override
-  Future<ObjectDetector> create(VisionDelegate delegate, Uint8List model) =>
-      ObjectDetector.create(
-        ObjectDetectorOptions(
-          modelBytes: model,
-          runningMode: VisionRunningMode.video,
-          delegate: delegate,
-          maxResults: settings.count('maxResults'),
-          scoreThreshold: settings.share('scoreThreshold'),
-        ),
-      );
+  Future<ObjectDetector> create(
+    VisionDelegate delegate,
+    Uint8List model,
+    VisionRunningMode mode,
+  ) => ObjectDetector.create(
+    ObjectDetectorOptions(
+      modelBytes: model,
+      runningMode: mode,
+      delegate: delegate,
+      maxResults: settings.count('maxResults'),
+      scoreThreshold: settings.share('scoreThreshold'),
+    ),
+  );
 }
 
 /// Browser transport for the same public ImageClassifier task.
@@ -264,16 +286,19 @@ final class ImageClassifierLiveTask
   String get name => 'Image Classifier';
 
   @override
-  Future<ImageClassifier> create(VisionDelegate delegate, Uint8List model) =>
-      ImageClassifier.create(
-        ImageClassifierOptions(
-          modelBytes: model,
-          runningMode: VisionRunningMode.video,
-          delegate: delegate,
-          maxResults: settings.count('maxResults'),
-          scoreThreshold: settings.share('scoreThreshold'),
-        ),
-      );
+  Future<ImageClassifier> create(
+    VisionDelegate delegate,
+    Uint8List model,
+    VisionRunningMode mode,
+  ) => ImageClassifier.create(
+    ImageClassifierOptions(
+      modelBytes: model,
+      runningMode: mode,
+      delegate: delegate,
+      maxResults: settings.count('maxResults'),
+      scoreThreshold: settings.share('scoreThreshold'),
+    ),
+  );
 }
 
 /// Browser Image Embedder, reporting each frame's similarity to the first.
@@ -292,18 +317,26 @@ final class ImageEmbedderLiveTask
   String get name => 'Image Embedder';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _first = null;
     _task = await ImageEmbedder.create(
       ImageEmbedderOptions(
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         delegate: delegate,
         l2Normalize: settings.on('l2Normalize'),
         quantize: settings.on('quantize'),
       ),
     );
   }
+
+  @override
+  Future<EmbeddingSimilarity> detectImage(VisionImage image) async =>
+      EmbeddingSimilarity(await _task!.embedImage(image), null);
 
   EmbeddingSimilarity _compare(ImageEmbedderResult result) {
     final embedding = result.embeddings.first;
@@ -363,17 +396,25 @@ final class ImageSegmenterLiveTask
   String get name => 'Image Segmenter';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _task = await ImageSegmenter.create(
       ImageSegmenterOptions(
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         delegate: delegate,
         outputConfidenceMasks: false,
         outputCategoryMask: true,
       ),
     );
   }
+
+  @override
+  Future<SegmentationResult> detectImage(VisionImage image) =>
+      _task!.segmentImage(image);
 
   @override
   Future<SegmentationResult> detect(

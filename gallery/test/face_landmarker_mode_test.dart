@@ -58,10 +58,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Choose image'), findsOneWidget);
-    expect(
-      find.text('Choose an image to find face landmarks.'),
-      findsOneWidget,
-    );
+    expect(find.text('Choose an image to analyze.'), findsOneWidget);
     expect(
       find.text('No camera found. Connect a webcam and try again.'),
       findsNothing,

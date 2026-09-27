@@ -169,8 +169,9 @@ DetectionOverlay? detectionOverlayFor(
       showBoxes: boxes,
       showPoints: points,
       classes: [
-        'Similarity to the first frame: ${similarity.toStringAsFixed(3)}',
-        '${result.embeddings.first.floatEmbedding?.length ?? 0} values',
+        if (similarity != null)
+          'Similarity to the first frame: ${similarity.toStringAsFixed(3)}',
+        '${result.embeddings.first.floatEmbedding?.length ?? result.embeddings.first.quantizedEmbedding?.length ?? 0} values',
       ],
     ),
     _ => null,

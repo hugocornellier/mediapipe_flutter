@@ -6,11 +6,11 @@ bundled, its support is validated here, and it has a screen to show.
 
 ## Running it
 
-**Web:** [try the live Face Landmarker demo](https://hugocornellier.github.io/mediapipe_flutter/),
+**Web:** [try the gallery](https://hugocornellier.github.io/mediapipe_flutter/),
 or run `python3.12 -B gallery/tool/prepare.py --target web` from the root, then
-`cd gallery && flutter run -d chrome --release`. Web exposes FaceLandmarker CPU
-and GPU, with Google's pinned official JS/WASM runtime on a worker. Select GPU
-in Face Landmarker to use WebGL 2. Allow camera
+`cd gallery && flutter run -d chrome --release`. Supported vision tasks use
+Google's pinned official JS/WASM runtime on a worker; GPU tasks use WebGL 2.
+Allow camera
 access on HTTPS or localhost. See [web tests and deployment](tool/WEB_FACE.md).
 
 The pubspec and assets are generated, because the task list is per target and
@@ -84,6 +84,10 @@ editor wherever its runtime runs.
 `lib/live/` shares camera capture, serial VIDEO-mode inference, frame skipping,
 timings, camera switching, stop/start, cleanup and overlay geometry across live
 tasks. It handles desktop RGBA, Apple BGRA and Android YUV camera buffers.
+Every camera-based vision page also has a **Mode** selector. Choose **Still
+image** to open a JPG, PNG or WebP file and run IMAGE-mode inference with the
+same model, settings and CPU/GPU delegate. Switching back to **Camera** reopens
+the VIDEO-mode task. Interactive Segmenter is image-only and uses its own editor.
 Windows exposes CPU only. Face and Hand Landmarker also expose GPU on Linux,
 Apple platforms, Android and web.
 Web uses browser-native capture and transferable bitmaps while sharing these
@@ -95,15 +99,17 @@ controls and the same overlay painter. Web GPU requires worker WebGL 2 support.
 cd gallery
 flutter test -d macos integration_test/assets_test.dart
 flutter test -d macos integration_test/runtime_test.dart
+flutter test -d macos integration_test/vision_still_image_modes_test.dart
 ```
 
 Run one file per invocation: `flutter test -d macos integration_test/` cannot
 start a second app instance on the device and fails to load the later file.
 
 These check the bundle the app was actually built with: that every visible tile
-can load its model and sample, and that the live demo's model resolves. Both
-derive their asset names from the catalog, so they cannot drift from what the
-screens ask for.
+can load its model and sample, that the live demo's model resolves, and that
+all ten camera vision demos process their sample in still image mode. The
+tests derive their asset names from the catalog, so they cannot drift from
+what the screens ask for.
 
 The Desktop tasks workflow also builds the actual Windows/Linux gallery,
 checks native camera plugin registration and enumeration, visits all live task
