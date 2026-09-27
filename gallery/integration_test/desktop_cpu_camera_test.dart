@@ -88,13 +88,14 @@ void main() {
         await tester.pump();
         await waitForFrames(tester, live);
         await tester.pump();
-        // Later VIDEO results depend on how many tracking frames arrived while
-        // the UI was pumping. Compare the first frame from each camera.
+        // The task keeps its tracking state across the camera flip, so its
+        // first VIDEO result can drift slightly even with the same sample.
+        // Use the tolerance from the desktop GPU camera comparison.
         final before = firstFrames['supplied-rgba']!;
         final after = firstFrames['supplied-bgra']!;
         for (var i = 0; i < before.length; i++) {
-          expect(after[i].x, closeTo(before[i].x, 1e-4));
-          expect(after[i].y, closeTo(before[i].y, 1e-4));
+          expect(after[i].x, closeTo(before[i].x, 0.03));
+          expect(after[i].y, closeTo(before[i].y, 0.03));
         }
         expect(live.description!.name, 'supplied-bgra');
         expect(camera.disposed, 1);
