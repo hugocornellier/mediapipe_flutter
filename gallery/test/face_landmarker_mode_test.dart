@@ -48,9 +48,7 @@ void main() {
     expect(find.text('Mode'), findsOneWidget);
     expect(find.text('Camera'), findsOneWidget);
     expect(
-      tester
-          .getTopRight(find.byKey(const ValueKey('face-landmarker-mode')))
-          .dx,
+      tester.getTopRight(find.byKey(const ValueKey('face-landmarker-mode'))).dx,
       greaterThan(300),
     );
     expect(tester.takeException(), isNull);
