@@ -239,7 +239,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     _cancelCallback();
     _changed();
     return _enqueue(() async {
-      await _releaseCamera();
+      await _releaseCamera(preservePreview: true);
       if (_closed || generation != _generation) return;
       try {
         if (task case final StatefulLiveTask stateful) stateful.forgetFrames();
@@ -293,7 +293,7 @@ class LiveCameraController<T> extends ChangeNotifier {
       if (keepCamera) {
         await _releaseTask();
       } else {
-        await _release();
+        await _release(preservePreview: true);
       }
       if (_closed || generation != _generation) return;
       try {
@@ -641,12 +641,12 @@ class LiveCameraController<T> extends ChangeNotifier {
     return 1;
   }
 
-  Future<void> _release() async {
-    await _releaseCamera();
+  Future<void> _release({bool preservePreview = false}) async {
+    await _releaseCamera(preservePreview: preservePreview);
     await _releaseTask();
   }
 
-  Future<void> _releaseCamera() async {
+  Future<void> _releaseCamera({bool preservePreview = false}) async {
     _pending = null;
     _cancelCallback();
     await _trackEnded?.cancel();
@@ -660,7 +660,9 @@ class LiveCameraController<T> extends ChangeNotifier {
     }
     video.srcObject = null;
     await _frame;
-    frameSize = null;
+    // Keep HtmlElementView mounted while a replacement stream opens. Removing
+    // the video element can abort play() on a slower browser camera flip.
+    if (!preservePreview) frameSize = null;
     result = null;
     _clock.stop();
   }

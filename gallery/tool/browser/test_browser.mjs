@@ -559,6 +559,11 @@ async function installCaptureObservations(page, emulateMobileFacing = false) {
             deviceId: {exact: target.deviceId}}};
         }
         stream = await getUserMedia(requested);
+        if (emulateFacing && window.testCaptureTracks.length > 0) {
+          // Let Flutter rebuild while the previous stream is released. A slow
+          // mobile flip must keep the video element mounted until play().
+          await new Promise(resolve => setTimeout(resolve, 250));
+        }
         window.testCaptureDiagnostics.push({stage: 'getUserMedia', status: 'passed', constraints,
           settings: stream.getVideoTracks().map(t => t.getSettings())});
       } catch (error) {
