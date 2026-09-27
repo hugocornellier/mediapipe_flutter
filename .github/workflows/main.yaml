@@ -16,8 +16,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  gallery-face-still-image:
-    name: Face Landmarker still image / macOS arm64
+  gallery-vision-still-images:
+    name: Vision still images / macOS arm64
     runs-on: macos-15
     timeout-minutes: 30
     steps:
@@ -30,18 +30,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Download Face Landmarker model
+      - name: Download the camera vision models
         working-directory: packages/mediapipe-task-vision
         run: |
           dart pub get
+          dart tool/download_model.dart
           dart tool/download_face_landmarker.dart
-      - name: Prepare Face Landmarker gallery
+          dart tool/download_landmark_tasks.dart
+          dart tool/download_image_tasks.dart
+          dart tool/download_object_detector.dart
+          dart tool/download_segmenter_tasks.dart
+      - name: Prepare the camera vision gallery
         run: |
-          python3 -B gallery/tool/prepare.py --target macos/arm64 --tasks face_landmarker
+          python3 -B gallery/tool/prepare.py --target macos/arm64 --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker
           cd gallery && flutter pub get
-      - name: Test still image inference and overlay
+      - name: Test Face Landmarker still image inference and overlay
         working-directory: gallery
         run: flutter test -d macos integration_test/face_landmarker_still_image_test.dart --reporter expanded
+      - name: Test still image inference for every camera vision task
+        working-directory: gallery
+        run: flutter test -d macos integration_test/vision_still_image_modes_test.dart --reporter expanded
 
   modern-task-matrix:
     name: Modern tasks / options and sustained CPU inference
