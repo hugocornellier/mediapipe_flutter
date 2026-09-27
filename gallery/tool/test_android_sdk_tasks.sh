@@ -31,7 +31,7 @@ for attempt in 1 2; do
   status=0
   timeout 900 flutter test -d "$device" integration_test/sdk_all_test.dart \
       --dart-define=SDK_GPU=skip --reporter expanded 2>&1 | tee "$log" || status=$?
-  [ "$status" = 0 ] && exit 0
+  [ "$status" = 0 ] && break
   if [ "$status" = 124 ]; then
     echo "sdk_all_test stalled; the emulator's log follows"
     adb -s "$device" logcat -d -t 300 || true
@@ -45,3 +45,6 @@ for attempt in 1 2; do
   fi
   exit 1
 done
+timeout 300 flutter test -d "$device" \
+  integration_test/face_landmarker_still_image_test.dart \
+  --reporter expanded

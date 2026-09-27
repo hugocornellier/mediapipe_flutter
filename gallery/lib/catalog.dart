@@ -293,7 +293,7 @@ final _catalog = <GalleryTask>[
     runtimeId: 'face_landmarker',
     demo: GalleryDemo.live,
     title: 'Face Landmarker',
-    summary: 'Facial landmarks on the camera feed, with frame timings.',
+    summary: 'Facial landmarks from the camera or a still image.',
     model: 'face_landmarker.task',
     sample: 'portrait.jpg',
     capabilities: faceLandmarkerCapabilitiesForPlatform,

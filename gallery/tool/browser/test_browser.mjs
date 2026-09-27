@@ -638,12 +638,21 @@ async function cameraChecks() {
   assert.ok(await page.locator('video').evaluate(v => Number(v.getAttribute('data-timestamp'))) > report.camera.timestamp);
   report.checks.push('real-getusermedia-y4m-' + taskName + '-blank-recovery-timestamps');
 
+  const tracksBeforeResize = await page.evaluate(() => {
+    window.testPreviewVideo = document.querySelector('video');
+    return window.testCaptureTracks.length;
+  });
   for (const viewport of [{width: 390, height: 844}, {width: 1440, height: 900}]) {
     await page.setViewportSize(viewport);
     await page.waitForFunction(() => {
       const rect = document.querySelector('video')?.getBoundingClientRect();
       return rect && Math.abs(rect.width / rect.height - 4 / 3) < 0.01;
     });
+    await page.waitForTimeout(300);
+    assert.ok(await page.evaluate(() => document.querySelector('video') === window.testPreviewVideo),
+      'responsive layout replaced the live video element');
+    assert.equal(await page.evaluate(() => window.testCaptureTracks.length), tracksBeforeResize,
+      'responsive layout recaptured the camera');
     await page.screenshot({path: path.join(evidence, 'camera-' + viewport.width + '.png')});
   }
   report.checks.push('portrait-and-landscape-preview-aspect-ratio');
@@ -947,7 +956,11 @@ try {
             capture:window.testCaptureDiagnostics,
             video: (() => {const v=document.querySelector('video'); return v ? {
               width:v.videoWidth,height:v.videoHeight,readyState:v.readyState,frames:v.getAttribute('data-processed-frames'),
-              mediaError:v.error?.message,
+              mediaError:v.error?.message,currentTime:v.currentTime,paused:v.paused,
+              sameElement:v === window.testPreviewVideo,
+              tracks:[...(v.srcObject?.getTracks() ?? [])].map(t => ({readyState:t.readyState,muted:t.muted,enabled:t.enabled})),
+              callbacks:window.testFrameCallbacks?.size,
+              stats:globalThis.mediapipeVision?.stats(),
             }: null;})(),
           })),null,2));
           await page.screenshot({path: path.join(evidence, 'failure.png')});

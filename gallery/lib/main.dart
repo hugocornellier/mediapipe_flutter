@@ -211,33 +211,31 @@ class _GalleryShellState extends State<_GalleryShell> {
         ),
       );
       final theme = Theme.of(context);
-      final page = wide
-          ? Theme(
-              data: theme.copyWith(
+      final page = Theme(
+        data: wide
+            ? theme.copyWith(
                 appBarTheme: theme.appBarTheme.copyWith(
                   backgroundColor: theme.colorScheme.surfaceContainerLow,
                   surfaceTintColor: Colors.transparent,
                   scrolledUnderElevation: 0,
                   elevation: 0,
                 ),
-              ),
-              child: content,
-            )
-          : content;
+              )
+            : theme,
+        child: content,
+      );
       return Scaffold(
         key: _scaffoldKey,
         drawer: wide
             ? null
             : Drawer(shape: const RoundedRectangleBorder(), child: sidebar),
         drawerScrimColor: GalleryTheme.preview.withValues(alpha: 0.54),
-        body: wide
-            ? Row(
-                children: [
-                  SizedBox(width: _sidebarWidth, child: sidebar),
-                  Expanded(child: page),
-                ],
-              )
-            : page,
+        body: Row(
+          children: [
+            if (wide) SizedBox(width: _sidebarWidth, child: sidebar),
+            Expanded(key: const ValueKey('gallery-content'), child: page),
+          ],
+        ),
       );
     },
   );

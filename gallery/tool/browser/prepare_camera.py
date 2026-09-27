@@ -30,7 +30,10 @@ for name, subject in SUBJECTS.items():
         'ffmpeg', '-n', '-hide_banner', '-loglevel', 'error',
         '-loop', '1', '-framerate', '10', '-t', '3', '-i', str(subject),
         '-f', 'lavfi', '-t', '3', '-i', 'color=black:s=640x480:r=10',
-        '-loop', '1', '-framerate', '10', '-t', '3', '-i', str(subject),
+        # Keep the final subject visible long enough for resize, delegate,
+        # and navigation checks while one camera stream stays open. Chrome's
+        # file-backed fake camera stops producing frames at end of file.
+        '-loop', '1', '-framerate', '10', '-t', '54', '-i', str(subject),
         '-filter_complex', filter_chain, '-map', '[out]',
         '-r', '10', '-pix_fmt', 'yuv420p', str(output),
     ], check=True)

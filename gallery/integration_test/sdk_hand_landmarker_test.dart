@@ -209,9 +209,7 @@ void main() {
     timeout: const Timeout(Duration(minutes: 3)),
   );
 
-  testWidgets('gallery opens Hand Landmarker and runs frames', (
-    tester,
-  ) async {
+  testWidgets('gallery opens Hand Landmarker and runs frames', (tester) async {
     await tester.pumpWidget(const GalleryApp());
     final tile = await scrollToGalleryTile(tester, 'Hand Landmarker');
     expect(tile, findsOneWidget);

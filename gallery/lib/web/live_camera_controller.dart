@@ -325,7 +325,14 @@ class LiveCameraController<T> extends ChangeNotifier {
           await _release();
           return;
         }
-        if (!keepCamera) await _openCamera(selected, generation);
+        if (keepCamera) {
+          // A rebuild of the platform view can pause the existing video even
+          // though its camera track remains live. Resume it before requesting
+          // the next frame after a delegate or settings change.
+          await video.play().toDart;
+        } else {
+          await _openCamera(selected, generation);
+        }
         if (_closed || generation != _generation) {
           await _release();
           return;
