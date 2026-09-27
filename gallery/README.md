@@ -33,6 +33,11 @@ description, none of which `flutter create` provides. For macOS it also
 verifies Google's pinned 1.0.0 wheel, prepares its official runtime, and opts
 Face Landmarker, Hand Landmarker and Pose Landmarker into it. The ordinary package runtime
 rows remain unchanged.
+The macOS gallery also maps its stateful Interactive Segmenter, classic text,
+and audio bindings to that same official 1.0.0 image. Two independent MediaPipe
+wheel libraries in one app register the same graphs and abort when the second
+loads. Other consumers keep the core package's default 1.0.1 runtime unless
+they explicitly select this gallery-style mapping.
 
 For Android, `python3 gallery/tool/prepare.py --target android/arm64` selects
 Google's released vision SDK and its Flutter plugin. Face Landmarker and

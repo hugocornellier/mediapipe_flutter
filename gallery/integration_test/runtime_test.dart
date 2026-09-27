@@ -62,9 +62,8 @@ void main() {
     print('RUNTIME_TILES ${visited.join(',')}');
   });
 
-  // Text and audio run on core's shared runtime. On Linux and Windows that is
-  // the very library the vision tiles above loaded, mapped once for both; on
-  // macOS it is a separate official build whose symbols stay apart.
+  // Text and audio run on core's shared runtime. Vision bindings must resolve
+  // to that same library when both are present in one desktop process.
   testWidgets('text and audio answer in the same process', (tester) async {
     final assets = await GalleryAssets.unpack();
     final bundled = assets.bundledTasks;
@@ -109,6 +108,44 @@ void main() {
         } finally {
           await classifier.dispose();
         }
+      }
+    });
+  });
+
+  testWidgets('stateful segmenter opens after vision, text, and audio', (
+    tester,
+  ) async {
+    final assets = await GalleryAssets.unpack();
+    if (!assets.bundledTasks.contains('interactive_segmenter')) {
+      markTestSkipped('This target bundles no stateful segmenter.');
+      return;
+    }
+    await tester.runAsync(() async {
+      final model = await rootBundle.load(
+        'assets/models/interactive_segmentation.task',
+      );
+      final task = await InteractiveSegmenter.create(
+        InteractiveSegmenterOptions(
+          modelBytes: model.buffer.asUint8List(
+            model.offsetInBytes,
+            model.lengthInBytes,
+          ),
+        ),
+      );
+      try {
+        await task.setImage(VisionImage.fromFile(assets.path('animals.jpg')));
+        final mask = await task.segment([
+          SegmentationStroke(
+            brushMode: SegmentationBrushMode.positive,
+            points: [SegmentationPoint(x: 0.42, y: 0.6)],
+          ),
+        ]);
+        expect(mask.width, greaterThan(0));
+        expect(mask.height, greaterThan(0));
+        expect(mask.confidence.length, mask.width * mask.height);
+        expect(mask.confidence.any((value) => value > 0.5), isTrue);
+      } finally {
+        await task.dispose();
       }
     });
   });

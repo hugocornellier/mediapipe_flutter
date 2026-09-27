@@ -89,6 +89,33 @@ void main() {
     expect(visionTasks.difference(validated), {sharedRuntimeTask});
   });
 
+  test('web adapter gallery does not bundle a host runtime', () async {
+    for (final (os, architecture) in [
+      (OS.macOS, Architecture.arm64),
+      (OS.linux, Architecture.x64),
+    ]) {
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: os,
+        targetArchitecture: architecture,
+        userDefines: defines({
+          'web_adapter_only': true,
+          'tasks': ['face_landmarker', 'hand_landmarker'],
+        }),
+        check: (_, output) {
+          expect(output.assets.code.map((asset) => asset.id).toSet(), {
+            'package:mediapipe_flutter_vision/face_landmarker.dylib',
+            'package:mediapipe_flutter_vision/vision.dylib',
+          });
+          for (final asset in output.assets.code) {
+            expect(asset.file, isNull);
+            expect(asset.linkMode, isA<LookupInProcess>());
+          }
+        },
+      );
+    }
+  });
+
   test('desktop rows pin the library core bundles for text and audio', () {
     // An app with vision and text or audio loads one copy: core bundles it
     // and the vision hook maps its assets onto it, which needs the same file.
@@ -291,6 +318,45 @@ void main() {
             'package:mediapipe_flutter_vision/vision.dylib',
           ]);
           expect(assets.single.linkMode, isA<DynamicLoadingBundled>());
+        },
+      );
+    },
+    skip:
+        File(
+          '${officialMacosLandmarkRuntime.localBuildDirectory}'
+          '${officialMacosLandmarkRuntime.libraryName}',
+        ).existsSync()
+        ? false
+        : 'Run tool/prepare_official_macos_landmark_runtime.py first.',
+  );
+
+  test(
+    'core shared runtime makes face-only macOS use the vision image',
+    () async {
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.macOS,
+        targetArchitecture: Architecture.arm64,
+        userDefines: defines({
+          'tasks': ['face_landmarker'],
+          'official_macos_landmark_tasks': true,
+        }),
+        assets: {
+          'mediapipe_flutter_core': [
+            EncodedAsset('hooks/metadata', {
+              'key': 'tasks_runtime',
+              'value': true,
+            }),
+            EncodedAsset('hooks/metadata', {
+              'key': 'use_macos_vision_runtime',
+              'value': true,
+            }),
+          ],
+        },
+        check: (_, output) {
+          expect(output.assets.code.map((asset) => asset.id), [
+            'package:mediapipe_flutter_vision/vision.dylib',
+          ]);
         },
       );
     },

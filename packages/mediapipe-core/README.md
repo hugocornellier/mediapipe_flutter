@@ -9,6 +9,13 @@ vision package pins, which the vision hook then shares instead of bundling a
 second copy, and on iOS the vision package's adapter over Google's 1.0.1 iOS
 SDK, which implements every task in one framework. Apps enable it with
 `hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`.
+For a macOS app that also bundles the official vision 1.0.0 monolith, set
+`use_macos_vision_runtime: true` under the same core user defines and enable
+`mediapipe_flutter_vision.official_macos_landmark_tasks: true` with at least one
+official task. Core then resolves to the vision framework instead of bundling a
+second MediaPipe image. The gallery validates this mapping for its classic
+text tasks, Audio Classifier, and stateful Interactive Segmenter; it has not
+validated the newer text tasks on the 1.0.0 runtime.
 Its inherited container types also remain available for compatibility.
 
 
