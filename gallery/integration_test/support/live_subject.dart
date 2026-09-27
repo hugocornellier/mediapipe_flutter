@@ -47,7 +47,7 @@ final class LiveSubject {
 
   static final face = LiveSubject._(
     task: 'face',
-    tile: 'Live Face Landmarker',
+    tile: 'Face Landmarker',
     model: 'face_landmarker.task',
     sample: 'portrait.jpg',
     points: 478,
@@ -68,7 +68,7 @@ final class LiveSubject {
 
   static final hand = LiveSubject._(
     task: 'hand',
-    tile: 'Live Hand Landmarker',
+    tile: 'Hand Landmarker',
     model: 'hand_landmarker.task',
     sample: 'thumb_up.jpg',
     points: 21,

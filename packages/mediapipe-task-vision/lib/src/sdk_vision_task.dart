@@ -120,6 +120,35 @@ class SdkVisionTask<R> {
     );
   }
 
+  /// Attaches an optional browser canvas; callers can keep their painter as a
+  /// fallback if the browser does not support worker canvas transfer.
+  Future<void> attachBrowserOverlay(Object canvas) {
+    final backend = _backend;
+    if (backend is! VisionTaskOverlayBackend) {
+      throw UnsupportedError('Backend has no browser overlay.');
+    }
+    return (backend as VisionTaskOverlayBackend).attachOverlay(canvas);
+  }
+
+  /// Updates the browser overlay's connection and landmark visibility.
+  void setBrowserOverlayOptions({
+    required bool connections,
+    required bool points,
+  }) {
+    final backend = _backend;
+    if (backend is VisionTaskOverlayBackend) {
+      (backend as VisionTaskOverlayBackend).setOverlayOptions(
+        connections: connections,
+        points: points,
+      );
+    }
+  }
+
+  /// Whether the browser worker is still drawing into its attached canvas.
+  bool get browserOverlayActive =>
+      _backend is VisionTaskOverlayBackend &&
+      (_backend as VisionTaskOverlayBackend).overlayActive;
+
   /// Finishes queued requests and releases the task; repeated calls are safe.
   Future<void> dispose() => _disposing ??= _backend.dispose();
 }

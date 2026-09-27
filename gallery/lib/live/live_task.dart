@@ -52,3 +52,11 @@ abstract interface class BrowserLiveTask<T> implements LiveTask<T> {
     int timestamp,
   );
 }
+
+/// Optional worker-rendered browser overlay. The regular Flutter painter stays
+/// available when the browser cannot transfer a canvas or drawing fails.
+abstract interface class BrowserOverlayLiveTask {
+  Future<void> attachOverlay(Object canvas);
+  void setOverlayOptions({required bool connections, required bool points});
+  bool get overlayActive;
+}

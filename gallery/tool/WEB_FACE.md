@@ -1,7 +1,7 @@
 # Web FaceLandmarker gallery
 
 [Try it now](https://hugocornellier.github.io/mediapipe_flutter/): open
-**Live Face Landmarker**, allow the camera, and put a face in view. Web currently
+**Face Landmarker**, allow the camera, and put a face in view. Web currently
 supports CPU/WASM and GPU/WebGL 2. Select **GPU** while the camera is running
 to recreate the task with Google's GPU delegate. If browser hardware acceleration
 or worker WebGL 2 is unavailable, the task reports an error; select CPU and restart.
@@ -12,8 +12,11 @@ SwiftShader software WebGL; this validates the GPU code path, not physical GPU
 performance. The deployed release repeats the live delegate-switch test.
 
 The gallery uses the official checksum-pinned Google Tasks Vision 1.0.1 runtime,
-with inference on a module worker and the same Flutter landmark painter and controls
-as native platforms. Model, runtime, worker and CanvasKit assets are self-hosted.
+with inference on a module worker. Its five live landmark tasks use Google's
+DrawingUtils on a worker canvas when supported, with the Flutter painter as a
+fallback. Chromium Hand GPU and Firefox Gesture GPU use the painter because
+worker drawing slowed those combinations in local benchmarks. Model, runtime,
+worker and CanvasKit assets are self-hosted.
 
 ## Local release verification
 

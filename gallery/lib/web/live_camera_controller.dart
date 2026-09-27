@@ -50,6 +50,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     ..style.height = '100%'
     ..style.objectFit = 'contain';
   final previewCanvas = web.HTMLCanvasElement();
+  web.HTMLCanvasElement? workerOverlayCanvas;
   bool get useCanvasPreview => _isIOSBrowser;
   web.MediaStream? _stream;
   StreamSubscription<web.Event>? _trackEnded;
@@ -68,6 +69,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   bool _videoCallback = false;
   double _lastVideoTime = -1;
   int _lastTimestamp = -1;
+  int _timestampOffset = 0;
   String? _modelAsset;
   String? _warmUpSample;
 
@@ -100,6 +102,35 @@ class LiveCameraController<T> extends ChangeNotifier {
   bool get isFrontCamera =>
       description?.lensDirection == CameraLensDirection.front;
   bool get canSwitchCamera => hasFrontAndBackCameras(cameras);
+  bool get _canUseWorkerOverlay {
+    if (task.name != 'Face Landmarker' &&
+        task.name != 'Hand Landmarker' &&
+        task.name != 'Pose Landmarker' &&
+        task.name != 'Gesture Recognizer' &&
+        task.name != 'Holistic Landmarker') {
+      return false;
+    }
+    // The measured Chrome Hand GPU slowdown was repeatable. Keep the existing
+    // painter for Hand GPU until the worker graphics contention is resolved.
+    if (delegate == VisionDelegate.gpu &&
+        task.name == 'Hand Landmarker' &&
+        web.window.navigator.userAgent.contains('Chrome/')) {
+      return false;
+    }
+    if (delegate == VisionDelegate.gpu &&
+        task.name == 'Gesture Recognizer' &&
+        web.window.navigator.userAgent.contains('Firefox/')) {
+      return false;
+    }
+    return true;
+  }
+
+  void setOverlayOptions({required bool connections, required bool points}) {
+    if (task case final BrowserOverlayLiveTask overlayTask) {
+      overlayTask.setOverlayOptions(connections: connections, points: points);
+    }
+  }
+
   double get averageInferenceMilliseconds =>
       processedFrames == 0 ? 0 : _totalInference / processedFrames;
   double get averageConversionMilliseconds =>
@@ -191,9 +222,46 @@ class LiveCameraController<T> extends ChangeNotifier {
     if (!canSwitchCamera || _closed) return Future.value();
     description = oppositeFacingCamera(cameras, description);
     result = null;
-    if (running) return start();
+    if (!running) {
+      _changed();
+      return Future.value();
+    }
+    // Holistic's VIDEO graph requires one fixed frame size. Front and back
+    // cameras can deliver different sizes, so it needs a fresh task too.
+    if (task is FixedFrameSizeLiveTask) {
+      return start(description: description);
+    }
+    final selected = description!;
+    final generation = ++_generation;
+    running = false;
+    changing = true;
+    error = null;
+    _cancelCallback();
     _changed();
-    return Future.value();
+    return _enqueue(() async {
+      await _releaseCamera();
+      if (_closed || generation != _generation) return;
+      try {
+        if (task case final StatefulLiveTask stateful) stateful.forgetFrames();
+        await _openCamera(selected, generation);
+        if (_closed || generation != _generation) {
+          await _release();
+          return;
+        }
+        _resetTimings();
+        _timestampOffset = _lastTimestamp;
+        running = true;
+        _schedule(generation);
+      } catch (failure) {
+        if (generation == _generation) error = _message(failure);
+        await _release();
+      } finally {
+        if (generation == _generation) {
+          changing = false;
+          _changed();
+        }
+      }
+    });
   }
 
   /// [warmUpSample] is an image asset the task runs on before the camera
@@ -221,7 +289,12 @@ class LiveCameraController<T> extends ChangeNotifier {
     _cancelCallback();
     _changed();
     return _enqueue(() async {
-      await _release();
+      final keepCamera = _stream != null && description == null;
+      if (keepCamera) {
+        await _releaseTask();
+      } else {
+        await _release();
+      }
       if (_closed || generation != _generation) return;
       try {
         if (!web.window.isSecureContext) {
@@ -252,71 +325,30 @@ class LiveCameraController<T> extends ChangeNotifier {
           await _release();
           return;
         }
-        final constraints = <String, Object>{
-          'width': {'ideal': 640},
-          'height': {'ideal': 480},
-          if (selected.lensDirection == CameraLensDirection.front ||
-              selected.lensDirection == CameraLensDirection.back)
-            'facingMode': {
-              (_isMobileBrowser && selected.name != 'default'
-                      ? 'exact'
-                      : 'ideal'):
-                  selected.lensDirection == CameraLensDirection.front
-                  ? 'user'
-                  : 'environment',
-            }
-          else
-            'deviceId': {'exact': selected.name},
-        };
-        _stream = await web.window.navigator.mediaDevices
-            .getUserMedia(
-              web.MediaStreamConstraints(
-                video: constraints.jsify()!,
-                audio: false.toJS,
-              ),
-            )
-            .toDart;
+        if (!keepCamera) await _openCamera(selected, generation);
         if (_closed || generation != _generation) {
           await _release();
           return;
         }
-        video.srcObject = _stream;
-        _trackEnded = const web.EventStreamProvider<web.Event>('ended')
-            .forTarget(_stream!.getVideoTracks().toDart.first)
-            .listen((_) {
-              if (_closed || generation != _generation) return;
-              error = 'Camera disconnected. Reconnect it and reopen this page.';
-              unawaited(stop());
-            });
-        await video.play().toDart;
-        if (video.videoWidth == 0 || video.videoHeight == 0) {
-          await video.onLoadedMetadata.first.timeout(
-            const Duration(seconds: 10),
-          );
+        if (_canUseWorkerOverlay && task is BrowserOverlayLiveTask) {
+          final canvas = web.HTMLCanvasElement();
+          canvas.style
+            ..width = '100%'
+            ..height = '100%'
+            ..objectFit = 'contain'
+            ..pointerEvents = 'none'
+            ..transform = video.style.transform;
+          try {
+            await (task as BrowserOverlayLiveTask).attachOverlay(canvas);
+            workerOverlayCanvas = canvas;
+          } catch (_) {
+            // A browser without transferable canvases keeps Flutter drawing.
+            workerOverlayCanvas = null;
+          }
         }
-        await _enumerate();
-        if (_closed || generation != _generation) {
-          await _release();
-          return;
-        }
-        video.style.transform = isFrontCamera ? 'scaleX(-1)' : '';
-        previewCanvas.style.transform = video.style.transform;
-        frameSize = Size(
-          video.videoWidth.toDouble(),
-          video.videoHeight.toDouble(),
-        );
-        processedFrames = 0;
-        skippedFrames = 0;
-        _totalInference = 0;
-        _totalConversion = 0;
-        _totalFrame = 0;
-        _recent.clear();
-        _pending = null;
-        _lastVideoTime = -1;
+        _resetTimings();
+        _timestampOffset = 0;
         _lastTimestamp = warmedUpTo;
-        _clock
-          ..reset()
-          ..start();
         running = true;
         _schedule(generation);
       } catch (failure) {
@@ -329,6 +361,66 @@ class LiveCameraController<T> extends ChangeNotifier {
         }
       }
     });
+  }
+
+  Future<void> _openCamera(CameraDescription selected, int generation) async {
+    final constraints = <String, Object>{
+      'width': {'ideal': 640},
+      'height': {'ideal': 480},
+      if (selected.lensDirection == CameraLensDirection.front ||
+          selected.lensDirection == CameraLensDirection.back)
+        'facingMode': {
+          (_isMobileBrowser && selected.name != 'default'
+              ? 'exact'
+              : 'ideal'): selected.lensDirection == CameraLensDirection.front
+              ? 'user'
+              : 'environment',
+        }
+      else
+        'deviceId': {'exact': selected.name},
+    };
+    _stream = await web.window.navigator.mediaDevices
+        .getUserMedia(
+          web.MediaStreamConstraints(
+            video: constraints.jsify()!,
+            audio: false.toJS,
+          ),
+        )
+        .toDart;
+    if (_closed || generation != _generation) return;
+    video.srcObject = _stream;
+    _trackEnded = const web.EventStreamProvider<web.Event>('ended')
+        .forTarget(_stream!.getVideoTracks().toDart.first)
+        .listen((_) {
+          if (_closed || _stream == null) return;
+          error = 'Camera disconnected. Reconnect it and reopen this page.';
+          unawaited(stop());
+        });
+    await video.play().toDart;
+    if (video.videoWidth == 0 || video.videoHeight == 0) {
+      await video.onLoadedMetadata.first.timeout(const Duration(seconds: 10));
+    }
+    if (_closed || generation != _generation) return;
+    await _enumerate();
+    if (_closed || generation != _generation) return;
+    video.style.transform = isFrontCamera ? 'scaleX(-1)' : '';
+    previewCanvas.style.transform = video.style.transform;
+    workerOverlayCanvas?.style.transform = video.style.transform;
+    frameSize = Size(video.videoWidth.toDouble(), video.videoHeight.toDouble());
+  }
+
+  void _resetTimings() {
+    processedFrames = 0;
+    skippedFrames = 0;
+    _totalInference = 0;
+    _totalConversion = 0;
+    _totalFrame = 0;
+    _recent.clear();
+    _pending = null;
+    _lastVideoTime = -1;
+    _clock
+      ..reset()
+      ..start();
   }
 
   void _schedule(int generation) {
@@ -390,7 +482,10 @@ class LiveCameraController<T> extends ChangeNotifier {
   }
 
   void _begin(int generation, double arrived, double? captured) {
-    final timestamp = math.max(_lastTimestamp + 1, _clock.elapsedMilliseconds);
+    final timestamp = math.max(
+      _lastTimestamp + 1,
+      _timestampOffset + _clock.elapsedMilliseconds,
+    );
     _lastTimestamp = timestamp;
     _frame = () async {
       web.ImageBitmap? bitmap;
@@ -435,6 +530,11 @@ class LiveCameraController<T> extends ChangeNotifier {
         if (_closed || generation != _generation) return;
         frameSize = Size(width.toDouble(), height.toDouble());
         result = detected;
+        if (workerOverlayCanvas != null &&
+            task is BrowserOverlayLiveTask &&
+            !(task as BrowserOverlayLiveTask).overlayActive) {
+          workerOverlayCanvas = null;
+        }
         processedFrames++;
         if (testHooks) {
           video.setAttribute(
@@ -542,6 +642,11 @@ class LiveCameraController<T> extends ChangeNotifier {
   }
 
   Future<void> _release() async {
+    await _releaseCamera();
+    await _releaseTask();
+  }
+
+  Future<void> _releaseCamera() async {
     _pending = null;
     _cancelCallback();
     await _trackEnded?.cancel();
@@ -555,13 +660,20 @@ class LiveCameraController<T> extends ChangeNotifier {
     }
     video.srcObject = null;
     await _frame;
+    frameSize = null;
+    result = null;
+    _clock.stop();
+  }
+
+  Future<void> _releaseTask() async {
+    _pending = null;
+    _cancelCallback();
+    await _frame;
+    workerOverlayCanvas = null;
     if (_opened) {
       _opened = false;
       await task.close();
     }
-    frameSize = null;
-    result = null;
-    _clock.stop();
   }
 
   Future<void> stop() {

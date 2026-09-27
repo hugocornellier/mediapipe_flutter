@@ -6,7 +6,8 @@ import '../live/task_settings.dart';
 
 /// Browser transport shared by every public task on the official web adapter:
 /// each demo supplies only its name and how its task is built.
-abstract base class _WebLiveTask<R> implements BrowserLiveTask<R> {
+abstract base class _WebLiveTask<R>
+    implements BrowserLiveTask<R>, BrowserOverlayLiveTask {
   SdkVisionTask<R>? _task;
 
   /// Creates the VIDEO-mode task.
@@ -40,6 +41,17 @@ abstract base class _WebLiveTask<R> implements BrowserLiveTask<R> {
     height: height,
     timestampMilliseconds: timestamp,
   );
+
+  @override
+  Future<void> attachOverlay(Object canvas) =>
+      _task!.attachBrowserOverlay(canvas);
+
+  @override
+  void setOverlayOptions({required bool connections, required bool points}) =>
+      _task?.setBrowserOverlayOptions(connections: connections, points: points);
+
+  @override
+  bool get overlayActive => _task?.browserOverlayActive ?? false;
 
   @override
   Future<void> close() async {

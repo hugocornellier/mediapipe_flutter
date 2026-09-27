@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// The grid sorts tiles by title and builds only those near the screen, so on
 /// a short phone a tile further down has no widget until it is scrolled to: a
-/// Galaxy S24 shows three tiles, and Live Hand Landmarker is the fourth.
+/// Galaxy S24 shows three tiles, and Hand Landmarker is the fourth.
 Future<Finder> scrollToGalleryTile(WidgetTester tester, String title) async {
   final grid = find.byType(CustomScrollView);
   for (var i = 0; i < 100 && grid.evaluate().isEmpty; i++) {

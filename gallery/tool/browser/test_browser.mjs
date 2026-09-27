@@ -15,11 +15,11 @@ const delegate = argumentsMap.delegate === 'gpu' ? 'GPU' : 'CPU';
 // so across a mirror it reports each probe's left/right partner, while a hand
 // keeps its numbering (only its handedness flips).
 const TASKS = {
-  face: {tile: /Live Face Landmarker/, points: '478', fixture: 'web-camera.y4m',
+  face: {tile: /^Face Landmarker$/, points: '478', fixture: 'web-camera.y4m',
     task: 'FaceLandmarker', model: 'face_landmarker.task', landmarks: 'faceLandmarks',
     options: {numFaces: 1},
     partners: {1: 1, 152: 152, 10: 10, 468: 473, 473: 468, 61: 291, 291: 61, 33: 263, 263: 33}},
-  hand: {tile: /Live Hand Landmarker/, points: '21', fixture: 'web-camera-hand.y4m',
+  hand: {tile: /^Hand Landmarker$/, points: '21', fixture: 'web-camera-hand.y4m',
     task: 'HandLandmarker', model: 'hand_landmarker.task', landmarks: 'landmarks',
     options: {numHands: 2},
     partners: {0: 0, 4: 4, 8: 8, 12: 12, 16: 16, 20: 20, 5: 5, 17: 17}},
@@ -639,6 +639,7 @@ async function cameraChecks() {
   report.checks.push('portrait-and-landscape-preview-aspect-ratio');
   // Switch the actual running gallery task, ensuring the requested delegate
   // completes inference and releases its worker before switching back.
+  const tracksBeforeDelegateSwitch = await page.evaluate(() => window.testCaptureTracks.length);
   await page.getByRole('button', {name: 'GPU', exact: true}).click({timeout: 30000});
   await wait(page, points => document.querySelector('video')?.getAttribute('data-delegate') === 'gpu' &&
     document.querySelector('video')?.getAttribute('data-landmarks') === points, subject.points);
@@ -647,6 +648,9 @@ async function cameraChecks() {
   await wait(page, points => document.querySelector('video')?.getAttribute('data-delegate') === 'cpu' &&
     document.querySelector('video')?.getAttribute('data-landmarks') === points, subject.points);
   assert.equal(await page.evaluate(() => mediapipeVision.stats().activeWorkers), 1);
+  assert.ok(await page.evaluate(expected => window.testCaptureTracks.length === expected &&
+    window.testCaptureTracks.at(-1).readyState === 'live', tracksBeforeDelegateSwitch),
+  'changing delegate must keep the current camera stream');
   report.checks.push('live-cpu-gpu-cpu-switch-' + taskName + '-inference-worker-cleanup');
   await page.getByText('Home', {exact: true}).click();
   await wait(page, () => mediapipeVision.stats().activeWorkers === 0 &&
@@ -674,7 +678,7 @@ async function cameraChecks() {
   const deniedPage = await denied.newPage();
   observe(deniedPage);
   await deniedPage.goto(gallery);
-  await deniedPage.getByRole('button', {name: /Live Face Landmarker/}).click();
+  await deniedPage.getByRole('button', {name: /^Face Landmarker$/}).click();
   await deniedPage.getByText(/Camera permission denied/).waitFor();
   await wait(deniedPage, () => mediapipeVision.stats().activeWorkers === 0);
   await deniedPage.screenshot({path: path.join(evidence, 'permission-denied.png')});
@@ -693,7 +697,7 @@ async function cameraChecks() {
   observe(multiplePage);
   await installCaptureObservations(multiplePage, true);
   await multiplePage.goto(gallery);
-  await multiplePage.getByRole('button', {name: /Live Face Landmarker/}).click();
+  await multiplePage.getByRole('button', {name: /^Face Landmarker$/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 12);
   assert.ok(await multiplePage.evaluate(() => {
     const video = document.querySelector('video');
@@ -712,6 +716,7 @@ async function cameraChecks() {
       pixel[3] === 255;
   }), 'the iOS preview canvas must show the same full frame used for detection');
   report.checks.push('ios-canvas-preview-matches-detected-frame');
+  const workersBeforeCameraFlip = await multiplePage.evaluate(() => mediapipeVision.stats().totalCreated);
   const firstDevice = await multiplePage.evaluate(() => window.testCaptureTracks.at(-1).getSettings().deviceId);
   await multiplePage.getByRole('button', {name: 'Switch to back camera'}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 12 &&
@@ -724,12 +729,14 @@ async function cameraChecks() {
     document.querySelector('video')?.style.transform === 'scaleX(-1)');
   const thirdDevice = await multiplePage.evaluate(() => window.testCaptureTracks.at(-1).getSettings().deviceId);
   assert.equal(thirdDevice, firstDevice);
+  assert.equal(await multiplePage.evaluate(() => mediapipeVision.stats().totalCreated), workersBeforeCameraFlip,
+    'flipping the camera must keep the existing task worker');
   await multiplePage.getByText('Home', {exact: true}).click();
   await wait(multiplePage, () => mediapipeVision.stats().activeWorkers === 0 &&
     window.testCaptureTracks.every(t => t.readyState === 'ended'));
   report.checks.push('mobile-browser-front-back-front-switch-and-mirroring');
   // Trigger the actual worker error handler while gallery capture is active.
-  await multiplePage.getByRole('button', {name: /Live Face Landmarker/}).click();
+  await multiplePage.getByRole('button', {name: /^Face Landmarker$/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 3);
   await multiplePage.waitForFunction(() => {
     if (mediapipeVision.stats().pendingRequests === 0) return false;
@@ -741,7 +748,7 @@ async function cameraChecks() {
     window.testCaptureTracks.every(t => t.readyState === 'ended'));
   report.checks.push('worker-error-rejects-pending-requests-and-releases-capture');
   await multiplePage.getByText('Home', {exact: true}).click();
-  await multiplePage.getByRole('button', {name: /Live Face Landmarker/}).click();
+  await multiplePage.getByRole('button', {name: /^Face Landmarker$/}).click();
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 3);
   await multiplePage.evaluate(() => {
     window.testCaptureTracks.find(t => t.readyState === 'live').dispatchEvent(new Event('ended'));
@@ -758,7 +765,7 @@ async function cameraChecks() {
   const missingPage = await missingContext.newPage();
   observe(missingPage);
   await missingPage.goto(gallery);
-  await missingPage.getByRole('button', {name: /Live Face Landmarker/}).click();
+  await missingPage.getByRole('button', {name: /^Face Landmarker$/}).click();
   await missingPage.getByText(/No camera found/).waitFor();
   await wait(missingPage, () => mediapipeVision.stats().activeWorkers === 0);
   report.checks.push('browser-no-video-device-and-worker-cleanup');

@@ -301,6 +301,8 @@ class _LivePageState extends State<LivePage> {
           width: double.infinity,
           child: LiveCameraView(
             controller: controller,
+            showConnections: _showConnections,
+            showPoints: _showPoints,
             painter: (transform) => _demo.overlay(
               controller.result,
               transform,

@@ -285,7 +285,7 @@ class _NavigationSidebar extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(12, 28, 12, 8),
                           child: Text(
-                            category.title.toUpperCase(),
+                            category.title,
                             style: theme.textTheme.labelMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w700,

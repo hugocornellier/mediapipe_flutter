@@ -10,7 +10,7 @@ bundled, its support is validated here, and it has a screen to show.
 or run `python3.12 -B gallery/tool/prepare.py --target web` from the root, then
 `cd gallery && flutter run -d chrome --release`. Web exposes FaceLandmarker CPU
 and GPU, with Google's pinned official JS/WASM runtime on a worker. Select GPU
-in Live Face Landmarker to use WebGL 2. Allow camera
+in Face Landmarker to use WebGL 2. Allow camera
 access on HTTPS or localhost. See [web tests and deployment](tool/WEB_FACE.md).
 
 The pubspec and assets are generated, because the task list is per target and
@@ -31,12 +31,12 @@ cd gallery && flutter run -d macos --release
 excludes the x86_64 simulator slice, and adds the camera entitlement and usage
 description, none of which `flutter create` provides. For macOS it also
 verifies Google's pinned 1.0.0 wheel, prepares its official runtime, and opts
-Live Face Landmarker, Live Hand Landmarker and Live Pose Landmarker into it. The ordinary package runtime
+Face Landmarker, Hand Landmarker and Pose Landmarker into it. The ordinary package runtime
 rows remain unchanged.
 
 For Android, `python3 gallery/tool/prepare.py --target android/arm64` selects
-Google's released vision SDK and its Flutter plugin. Live Face Landmarker and
-Live Hand Landmarker support CPU and GPU, with Android YUV camera conversion.
+Google's released vision SDK and its Flutter plugin. Face Landmarker and
+Hand Landmarker support CPU and GPU, with Android YUV camera conversion.
 Hand has run on an emulator's CPU only so far; see
 [its status](../packages/mediapipe-task-vision/tool/HAND_LANDMARKER_STATUS.md). A physical Pixel 7
 Test Lab run validates both delegates and front/back camera capture; see
@@ -115,5 +115,5 @@ exposure, so a manual pass remains useful. To check capture, prepare the target
 then use `flutter run -d windows --release -t tool/live_face_camera_smoke.dart`
 (or `-d linux`). It processes twenty CPU camera frames twice and records JSON in
 the system temporary directory; put a face in view and check the face count.
-Run the normal gallery's Live Face Landmarker page to check preview mirroring and
+Run the normal gallery's Face Landmarker page to check preview mirroring and
 visual landmark alignment; the smoke test displays counts rather than an overlay.
