@@ -102,32 +102,28 @@ class LiveCameraController<T> extends ChangeNotifier {
   bool get isFrontCamera =>
       description?.lensDirection == CameraLensDirection.front;
   bool get canSwitchCamera => hasFrontAndBackCameras(cameras);
-  bool get _canUseWorkerOverlay {
-    if (task.name != 'Face Landmarker' &&
-        task.name != 'Hand Landmarker' &&
-        task.name != 'Pose Landmarker' &&
-        task.name != 'Gesture Recognizer' &&
-        task.name != 'Holistic Landmarker') {
-      return false;
-    }
-    // The measured Chrome Hand GPU slowdown was repeatable. Keep the existing
-    // painter for Hand GPU until the worker graphics contention is resolved.
-    if (delegate == VisionDelegate.gpu &&
-        task.name == 'Hand Landmarker' &&
-        web.window.navigator.userAgent.contains('Chrome/')) {
-      return false;
-    }
-    if (delegate == VisionDelegate.gpu &&
-        task.name == 'Gesture Recognizer' &&
-        web.window.navigator.userAgent.contains('Firefox/')) {
-      return false;
-    }
-    return true;
-  }
+  bool get _canUseWorkerOverlay => const {
+    'Face Landmarker',
+    'Hand Landmarker',
+    'Pose Landmarker',
+    'Gesture Recognizer',
+    'Holistic Landmarker',
+    'Face Detector',
+    'Object Detector',
+  }.contains(task.name);
 
-  void setOverlayOptions({required bool connections, required bool points}) {
+  void setOverlayOptions({
+    required bool connections,
+    required bool points,
+    required double scale,
+  }) {
     if (task case final BrowserOverlayLiveTask overlayTask) {
-      overlayTask.setOverlayOptions(connections: connections, points: points);
+      overlayTask.setOverlayOptions(
+        connections: connections,
+        points: points,
+        mirrored: isFrontCamera,
+        scale: scale,
+      );
     }
   }
 
@@ -339,12 +335,12 @@ class LiveCameraController<T> extends ChangeNotifier {
         }
         if (_canUseWorkerOverlay && task is BrowserOverlayLiveTask) {
           final canvas = web.HTMLCanvasElement();
+          if (testHooks) canvas.setAttribute('data-worker-overlay', '');
           canvas.style
             ..width = '100%'
             ..height = '100%'
             ..objectFit = 'contain'
-            ..pointerEvents = 'none'
-            ..transform = video.style.transform;
+            ..pointerEvents = 'none';
           try {
             await (task as BrowserOverlayLiveTask).attachOverlay(canvas);
             workerOverlayCanvas = canvas;
@@ -412,7 +408,6 @@ class LiveCameraController<T> extends ChangeNotifier {
     if (_closed || generation != _generation) return;
     video.style.transform = isFrontCamera ? 'scaleX(-1)' : '';
     previewCanvas.style.transform = video.style.transform;
-    workerOverlayCanvas?.style.transform = video.style.transform;
     frameSize = Size(video.videoWidth.toDouble(), video.videoHeight.toDouble());
   }
 
@@ -553,6 +548,14 @@ class LiveCameraController<T> extends ChangeNotifier {
           final count = liveSubjectCount(detected);
           video.setAttribute('data-subjects', count.subjects.toString());
           video.setAttribute('data-landmarks', count.points.toString());
+          final detections = switch (detected) {
+            FaceDetectorResult(:final detections) => detections.length,
+            ObjectDetectorResult(:final detections) => detections.length,
+            _ => null,
+          };
+          if (detections != null) {
+            video.setAttribute('data-detections', detections.toString());
+          }
         }
         conversionMilliseconds = conversion.elapsedMicroseconds / 1000;
         inferenceMilliseconds = inference.elapsedMicroseconds / 1000;

@@ -929,6 +929,14 @@ async function textAudioChecks() {
   }
   await wait(page, () => mediapipeText.stats().activeWorkers === 0 && mediapipeAudio.stats().activeWorkers === 0);
   report.checks.push('text-audio-worker-cleanup');
+  // Exercise the gallery's default settings as well as the package API.
+  await page.goto(gallery);
+  await page.getByRole('button', {name: /Text Embedder/}).click();
+  await page.getByRole('button', {name: 'Compare', exact: true}).click();
+  await wait(page, () => document.body.innerText.includes('Cosine similarity:'), null, 60000);
+  const galleryText = await page.locator('body').innerText();
+  assert.match(galleryText, /Cosine similarity: -?\d+\.\d+/);
+  report.checks.push('gallery-text-embedder-compare');
 }
 
 try {

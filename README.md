@@ -1,227 +1,153 @@
-# mediapipe_flutter
+# MediaPipe Tasks for Flutter
 
-MediaPipe Tasks for Flutter. An independent development fork of
-[google/flutter-mediapipe](https://github.com/google/flutter-mediapipe), maintained
-by [Hugo Cornellier](https://github.com/hugocornellier). This is not an official
-Google package. No packages from this fork have been published to pub.dev.
+<p align="center">
+  <a href="https://flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.47.5-02569B?logo=flutter" alt="Tested with Flutter 3.47.5"></a>
+  <a href="https://github.com/hugocornellier/mediapipe_flutter/actions/workflows/web.yaml"><img src="https://github.com/hugocornellier/mediapipe_flutter/actions/workflows/web.yaml/badge.svg" alt="Web CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0 license"></a>
+</p>
 
-**[Try the live Face Landmarker gallery in your browser](https://hugocornellier.github.io/mediapipe_flutter/).**
-Web FaceLandmarker uses Google's official Tasks Vision 1.0.1 JS/WASM runtime on
-a module worker, with CPU/WASM and GPU/WebGL 2 delegates. Release Chrome/Firefox reference tests and Chrome
-camera lifecycle tests run in GitHub CI. See the
-[web adapter guide](packages/mediapipe-task-vision-web/README.md).
+Run Google's MediaPipe Tasks from Dart and Flutter: detect faces and objects,
+track landmarks, classify images and audio, embed text, and more. The vision
+package exposes one Dart API for still images and video frames, with official
+MediaPipe runtimes selected for each supported platform.
 
-## Development baseline
+**[Try the live gallery](https://hugocornellier.github.io/mediapipe_flutter/)** ·
+**[Vision package guide](packages/mediapipe-task-vision/README.md)** ·
+**[Task and platform support](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)**
 
-Use **Flutter 3.47.5 stable / Dart 3.13.4**, with Xcode 27 for Apple targets.
-Package SDK constraints start at Dart 3.12. Build hooks use the supported
-`hooks` and `code_assets` APIs; no experimental flags or global Flutter
-configuration changes are needed.
+> **Publication status:** These packages are not on pub.dev yet; their
+> manifests currently set `publish_to: none`. This guide is written for app
+> developers, and the local checkout instructions below work today. Do not use
+> a `flutter pub add mediapipe_flutter_*` command until the packages are
+> published.
 
-Text classification (BERT), text embedding (Universal Sentence Encoder), and
-language detection use the shared MediaPipe 1.0.1 runtime on macOS arm64 CPU,
-macOS 14+. Official-output and lifecycle tests cover path/buffer models,
-initialization errors, queued inference, disposal and owned Dart results.
+## Packages
 
-**EmbeddingGemma 300M** runs Google's modern MediaPipe 1.0.1 pipeline on macOS
-arm64 CPU, macOS 14+. It provides owned 768-value embeddings, all eight official
-formatting modes and optional output quantization. Run `make example_embedding`
-for sentence comparison. Fresh Flutter debug/release integration tests compare
-all 17 cases against official Python outputs and verify coexistence with vision.
-
-**Proofreader 200M** runs the official version-1 `.litertlm` model on the same
-macOS CPU runtime. It returns corrected text and Google's ordered edits, with
-both completed and streaming APIs. The text demo includes a Proofreader tab;
-nine reference inputs match Google's completed and streaming results exactly.
-
-**Summarizer 200M** uses the official version-1 two-mode `.litertlm` model on the
-same macOS CPU runtime. Completed and streaming APIs support TL;DR paragraphs
-and key points. The text demo includes a Summarizer tab. Ten reference cases
-match Google's output exactly; empty-input errors are preserved.
-
-The official MediaPipe v1.0.0 Face Detector and Face Landmarker run on macOS arm64
-in CPU and Metal GPU IMAGE/VIDEO modes, with tests against Google's Python reference outputs. A live
-camera example uses `camera_desktop`, with all 478 facial landmarks and irises. Native builds use
-pinned upstream source and static OpenCV; no task pipeline or model is patched.
-Both tasks accept `delegate: VisionDelegate.cpu` (default) or `VisionDelegate.gpu`.
-The camera demo exposes the same choice; each task download contains both backends.
-
-The optional **MagicTouch Interactive Segmenter** uses Google's official 1.0.1
-stateful image/stroke pipeline on CPU: macOS arm64 (macOS 14+), Linux x64, iOS,
-Android and the web. A separate image editor supports positive, negative and
-lasso strokes, undo and mask overlays. Run `make example_segmenter`; see the
-[segmenter guide](packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md).
-
-This is a development baseline. GenAI inference and mobile platforms still need
-validation. Public prebuilt runtimes are available for both macOS arm64 face
-tasks and the optional segmenter. The face tasks also have a validated local
-arm64 iOS simulator CPU target; simulator archives are not yet published.
-The iOS and Android workflows build pinned runtimes from source and test face
-CPU inference in fresh Flutter consumers on a simulator/emulator. Android CI
-uses x86_64 and checks debug/release APKs; iOS CI uses an arm64 simulator and
-checks embedded frameworks and a standalone debug app. Face Landmarker CPU and
-GPU inference and live camera capture have been exercised on a physical
-iPhone 15 Pro and a Pixel 7 in Firebase Test Lab; both records note that no
-face was in view of the physical camera. The per-platform live-camera status
-is tracked in the vision package's
-[Face Landmarker status matrix](packages/mediapipe-task-vision/tool/FACE_LANDMARKER_STATUS.md).
-
-**Hand Landmarker runs on all six targets** through Google's official runtimes:
-web (CPU and WebGL 2), macOS arm64 (CPU and Metal), iOS and Android (Google's
-mobile SDKs), Linux x64 (CPU and GPU) and Windows x64 (CPU). The gallery has a
-Live Hand Landmarker tile on each. CI checks it against Google's reference
-output on every platform: the iOS simulator and Android emulator run on the CPU
-only, and no physical phone has run it yet. See the
-[Hand Landmarker status matrix](packages/mediapipe-task-vision/tool/HAND_LANDMARKER_STATUS.md).
-
-**Linux x64 and Windows x64 run eleven vision tasks on CPU**, served by pinned
-official MediaPipe 1.0.0 wheels: Face Detector, Face Landmarker, Object Detector,
-Image Classifier, Image Embedder, Hand Landmarker, Gesture Recognizer, Pose
-Landmarker, Holistic Landmarker, Image Segmenter and the legacy Interactive
-Segmenter. Every push runs `.github/workflows/desktop.yaml`, which regenerates
-reference outputs through Google's official Python API on each runner, compares
-Dart against them, and launches relocated debug and release Flutter bundles for
-real inference. macOS arm64 keeps its own source-built runtime, so its CPU
-results for these tasks are not validated; see `upstream-issues.md`.
-
-## Packages and platform status
-
-| Package | Directory | Status |
+| Package | Use it for | Guide |
 | --- | --- | --- |
-| `mediapipe_flutter_core` | [mediapipe-core](packages/mediapipe-core/) | Shared types, FFI utilities, build-time download helpers |
-| `mediapipe_flutter_text` | [mediapipe-task-text](packages/mediapipe-task-text/) | Six text tasks on one MediaPipe 1.0.1 runtime; macOS 14+ arm64 CPU. Text Classifier, Text Embedder and Language Detector also run on Linux and Windows x64 and iOS CPU, in browsers and on Android |
-| `mediapipe_flutter_genai` | [mediapipe-task-genai](packages/mediapipe-task-genai/) | Legacy LLM wrapper; tooling updated, inference unvalidated |
-| `mediapipe_flutter_vision` | [mediapipe-task-vision](packages/mediapipe-task-vision/) | All twelve vision tasks on web, iOS, Android, macOS, Linux and Windows through Google's runtimes, with two upstream gaps; see the [status table](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md) |
-| `mediapipe_flutter_vision_web` | [mediapipe-task-vision-web](packages/mediapipe-task-vision-web/) | Every vision task on Google's official CPU/WASM and GPU/WebGL 2 runtime; live browser camera gallery |
-| `mediapipe_flutter_audio` | [mediapipe-task-audio](packages/mediapipe-task-audio/) | Audio Classifier on core's shared runtime; macOS 14+ arm64, Linux x64, Windows x64 and iOS CPU, and in browsers and on Android |
-| `mediapipe_flutter_text_web` | [mediapipe-task-text-web](packages/mediapipe-task-text-web/) | Text Classifier, Text Embedder and Language Detector on Google's official @mediapipe/tasks-text 1.0.1, CPU |
-| `mediapipe_flutter_text_android` | [mediapipe-task-text-android](packages/mediapipe-task-text-android/) | Text Classifier, Text Embedder and Language Detector on Google's Android SDK (tasks-text 1.0.0), CPU |
-| `mediapipe_flutter_audio_android` | [mediapipe-task-audio-android](packages/mediapipe-task-audio-android/) | Audio Classifier on Google's Android SDK (tasks-audio 1.0.0), CPU |
-| `mediapipe_flutter_audio_web` | [mediapipe-task-audio-web](packages/mediapipe-task-audio-web/) | Audio Classifier on Google's official @mediapipe/tasks-audio 1.0.1, CPU, for clips and the microphone |
+| `mediapipe_flutter_vision` | Face, hand, pose, gesture and holistic landmarks; detection, classification, embedding and segmentation | [Vision](packages/mediapipe-task-vision/README.md) |
+| `mediapipe_flutter_text` | Language detection, text classification and embedding, plus supported modern text tasks | [Text](packages/mediapipe-task-text/README.md) |
+| `mediapipe_flutter_audio` | Audio classification | [Audio](packages/mediapipe-task-audio/README.md) |
 
-The migrated text package supports macOS arm64, and its three classic tasks also
-Linux and Windows x64; its old Android, iOS and Intel macOS artifacts have been
-retired. GenAI artifacts exist for macOS arm64, Android arm64, and iOS arm64
-devices. Artifact availability does not establish tested platform support.
-Linux and Windows x64 vision runtimes come from Google's published wheels, whose
-libraries and notices the build hook extracts and verifies by digest. There are no
-published iOS simulator or arm64 desktop task runtimes in this baseline. On Linux
-x64, Face Detector and Face Landmarker can also use the GPU through Google's 1.0.1
-runtime, which needs the system EGL and OpenGL ES libraries; Windows is CPU-only.
-Unsupported native targets fail with an explicit build error.
-Web FaceLandmarker bundles the pinned official NPM runtime through its separate
-Flutter web adapter.
+`mediapipe_flutter_core` supplies shared types and native runtimes where tasks
+need them. Web and Android vision use companion adapter packages; the
+[Vision installation guide](packages/mediapipe-task-vision/README.md#installation)
+shows when to add them. The GenAI package remains experimental and is not part
+of this getting-started path.
 
-## Packaging
+## Quick start: Face Landmarker
 
-Depend on the task packages you use. At build time, each implemented task package
-downloads its native library for the target platform, verifies SHA-256, and lets Dart or
-Flutter bundle it with the application. Verified downloads are cached under
-the hook's shared output directory. Partial or mismatched downloads are rejected.
-
-Model files remain separate. Applications bundle or download only the models they
-need; runtime hooks do not fetch models. `make models` downloads the three pinned
-text models, BlazeFace short-range, and the complete Face Landmarker float16
-version-1 Face Landmarker bundle, plus the MagicTouch int8 version-1 task bundle
-and EmbeddingGemma 300M, Proofreader 200M and Summarizer 200M version-1 models.
-
-GenAI's native library remains the inherited April/May 2024 Google-hosted build.
-Its URLs and hashes are checked in, and FFI bindings use the existing headers.
-The shared `native_assets.dart` helpers are imported by hooks, not by task runtime
-entry points.
-
-Vision downloads separate 5.0 MB Face Detector and 5.5 MB Face Landmarker archives from the public
-[native runtime repository](https://github.com/hugocornellier/mediapipe_flutter_native/releases).
-The unpacked libraries are about 13.7 MB and 15.9 MB, with separate 224 KB and
-3.8 MB models. Both tasks are enabled by default; apps can select a subset with
-`hooks.user_defines.mediapipe_flutter_vision.tasks` in their pubspec. The camera
-demo selects both face tasks. Both archive
-and library digests are pinned. The hook extracts the runtime using Dart and
-requires no Bazel, CMake, Ninja, or GitHub credentials. The Dart/Flutter source
-repository is public; no packages from this fork are published to pub.dev yet.
-
-Interactive Segmenter is **opt-in** with `tasks: [interactive_segmenter]`.
-On macOS it, all six text tasks and the Audio Classifier require the app setting
-`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`; on Linux and
-Windows the text and audio tasks do. Core owns one shared native asset. On
-Linux and Windows it is the same Google wheel library the vision package pins,
-so an app using vision too bundles and loads one copy: the vision hook maps its
-tasks onto core's (two copies would register Google's graphs twice and abort).
-On macOS it is a 32.6 MB download / 100.9 MB library. Its existing immutable
-release retains the `interactive-segmenter-v1.0.1-1` name. Separate models are
-30.5 MB for MagicTouch, 183.8 MB for EmbeddingGemma, and 117.6 MB each for
-Proofreader and Summarizer. Only download the models your app uses.
-Face-only apps do not download or bundle this runtime. Modern text builds also
-compile a small C adapter with Xcode's Clang to copy native streaming callbacks
-before their buffers expire; Google's inference library remains unchanged.
-
-The old text library is no longer downloaded or bundled. TextClassifier,
-TextEmbedder and LanguageDetector use the same runtime as the newer tasks.
-See the [text package guide](packages/mediapipe-task-text/README.md) for usage.
-
-`make native_vision` optionally builds pinned MediaPipe v1.0.0 and static OpenCV
-4.12.0. The hook uses that verified local build when present. `make release_vision`
-prepares a deterministic public archive with provenance, checksums, and notices.
-See the vision package's [release instructions](packages/mediapipe-task-vision/tool/RELEASING.md).
-
-## Local development
-
-Install Xcode. From the repository root:
+Use Flutter **3.47.5 stable** for the version exercised in CI. The packages
+require Dart 3.12 or newer. For now, clone the repository beside your app and
+add the vision package by path:
 
 ```sh
-make get
-make models
-make analyze
-make test_only
-make build_text
-make test_vision_flutter
+git clone https://github.com/hugocornellier/mediapipe_flutter.git
 ```
 
-The full source-build CI sequence, `make ci`, additionally requires Python 3 and
-`brew install bazelisk cmake ninja`. To launch the text example, run `make example_text`.
+```yaml
+# Your app's pubspec.yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  mediapipe_flutter_vision:
+    path: ../mediapipe_flutter/packages/mediapipe-task-vision
 
-Other targets:
+flutter:
+  assets:
+    - assets/models/face_landmarker.task
+```
 
-- `make test`: fetch models and run the tests, downloading runtimes as needed.
-- `make format` / `make check_format`: apply / check Dart formatting.
-- `make generate`: regenerate header-based bindings and check the text 1.0.1 ABI
-  against its pinned Python ctypes reference.
-- `make test_vision_flutter`: generate a macOS host and verify debug/release bundling.
-- `make test_vision_prebuilt`: test a fresh app against the public native download
-  with native build tools blocked.
-- `make example_vision`: download the model and launch the macOS live camera demo.
-- `make build_vision_camera`: build the camera demo in release mode, without opening a camera.
-- `make example_segmenter`: prepare the MagicTouch assets and open the macOS image editor.
-- `make example_embedding`: prepare models and open similarity, proofreading and summarization.
-- `make test_text_stream_bridge`: check callback ownership under AddressSanitizer.
-- `make test_embedding_macos`: download models/runtimes into a fresh consumer and
-  verify official outputs, shared bundling and task coexistence in debug/release.
-- `make test_segmenter_prebuilt`: validate an isolated public-download consumer
-  in debug/release and record CPU timings.
-- `make headers`: maintainer-only header import from a local MediaPipe checkout.
-- `make sdks`: legacy Google bucket discovery, requiring Google access; writes
-  candidate manifests without replacing the reviewed runtime pins.
+Download the [official Face Landmarker model](https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task)
+to `assets/models/face_landmarker.task`. Models are supplied by your app;
+native runtime downloads do not include them.
 
-Dependencies between packages and examples use local paths. The examples'
-model assets and build outputs are ignored by Git. CI runs on pull requests and
-pushes to this fork's `main`, using the same pinned stable SDK.
+```dart
+import 'dart:typed_data';
 
-The `hooks` dependency stays below 2.1, the range validated here. Newer
-releases need `meta` 1.18, which Flutter 3.47 provides, so moving up is a
-separate, tested upgrade. GenAI's Freezed/Bloc major migrations
-are deferred with its runtime recovery.
+import 'package:flutter/services.dart';
+import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
-## Remaining work
+Future<int> countFaces(Uint8List rgba, int width, int height) async {
+  final model = await rootBundle.load('assets/models/face_landmarker.task');
+  final landmarker = await FaceLandmarker.create(
+    FaceLandmarkerOptions(
+      modelBytes: model.buffer.asUint8List(
+        model.offsetInBytes,
+        model.lengthInBytes,
+      ),
+    ),
+  );
+  try {
+    final result = await landmarker.detectImage(
+      VisionImage.fromPixels(
+        pixels: rgba,
+        width: width,
+        height: height,
+        format: VisionPixelFormat.rgba,
+      ),
+    );
+    return result.faceLandmarks.length;
+  } finally {
+    await landmarker.dispose();
+  }
+}
+```
 
-- Expose native LIVE_STREAM callbacks; the camera demo currently uses official
-  VIDEO mode on a worker isolate. Camera capture remains an app dependency.
-- Validate Intel macOS and mobile device builds and inference.
-- Recover or replace the legacy GenAI backend separately; its example tests
-  cover Dart state, not LLM inference. Current `.litertlm` support is not implied.
-- Validate GenAI coexistence separately from the shared text/vision runtime.
-- Extend the pinned native build/release process to additional tasks and platforms.
+Pass decoded RGBA bytes to this function. For camera frames, convert the
+camera's pixel format first and use `VisionRunningMode.video` with increasing
+timestamps. The [Vision guide](packages/mediapipe-task-vision/README.md#video-and-live-cameras)
+shows the video call and platform setup.
 
-## Upstream and license
+The gallery lets you switch between **Camera** and **Still image** on Face
+Detector, Face Landmarker, Hand Landmarker, Gesture Recognizer, Holistic
+Landmarker, Pose Landmarker, Object Detector, Image Classifier, Image Embedder
+and Image Segmenter. In still image mode, choose a JPG, PNG or WebP file and
+the same settings and delegate apply to that image. Interactive Segmenter is
+an image editor and has no camera mode.
 
-See [UPSTREAM.md](UPSTREAM.md) for provenance and the rename map. The original
-[Apache-2.0 license](LICENSE), [AUTHORS](AUTHORS), and copyright notices are retained.
+## What runs where?
+
+| Platform | Vision runtime | Delegates |
+| --- | --- | --- |
+| Web | Official MediaPipe Tasks Vision JavaScript/WASM adapter | CPU/WASM, WebGL 2 |
+| iOS | Official MediaPipe iOS SDK | CPU, Metal where supported |
+| Android | Official MediaPipe Android SDK adapter | CPU, GPU on supported devices |
+| macOS Apple Silicon | Official MediaPipe native runtime | CPU, Metal where supported |
+| Linux x64 | Official MediaPipe wheel runtime | CPU, OpenGL ES for supported tasks |
+| Windows x64 | Official MediaPipe wheel runtime | CPU |
+
+Availability varies by task. The [support matrix](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
+names every task, delegate and known upstream limit. CPU is the default;
+requesting GPU never silently switches to CPU if initialization fails.
+
+## Models, builds and examples
+
+- **Models are separate from runtimes.** Bundle the model as a Flutter asset or
+  download it in your app. Flutter asset keys belong in `modelBytes` after
+  `rootBundle.load`; `modelPath` is a native file path or a browser URL.
+- **Native runtimes are selected at build time.** The build hooks download and
+  verify the native libraries for supported targets. Select the tasks your app
+  uses under `hooks.user_defines.mediapipe_flutter_vision.tasks` to avoid
+  bundling unused runtimes.
+- **Web and Android require adapters.** Add their companion packages when
+  targeting those platforms. A checkout also needs the verified web runtime
+  prepared before a web build. See [Installation](packages/mediapipe-task-vision/README.md#installation).
+- **Live capture is app code.** The package processes images and video frames;
+  use a Flutter camera plugin to capture frames. The
+  [gallery](gallery/README.md) demonstrates camera lifecycle, overlays and
+  delegate switching.
+
+For a complete Flutter app, clone this repository and follow the
+[gallery setup](gallery/README.md). The [Face Landmarker example](packages/mediapipe-task-vision/example/README.md)
+is a smaller native camera app. The gallery is also
+[deployed on GitHub Pages](https://hugocornellier.github.io/mediapipe_flutter/).
+
+## Origin and license
+
+This is an independent development fork of
+[google/flutter-mediapipe](https://github.com/google/flutter-mediapipe),
+maintained by [Hugo Cornellier](https://github.com/hugocornellier); it is not
+an official Google package. MediaPipe runtime and model provenance is recorded
+in [UPSTREAM.md](UPSTREAM.md) and the package guides. Source is licensed under
+[Apache-2.0](LICENSE), with upstream notices retained.

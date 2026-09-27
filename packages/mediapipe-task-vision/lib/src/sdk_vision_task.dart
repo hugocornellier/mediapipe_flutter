@@ -134,12 +134,16 @@ class SdkVisionTask<R> {
   void setBrowserOverlayOptions({
     required bool connections,
     required bool points,
+    bool mirrored = false,
+    double scale = 1,
   }) {
     final backend = _backend;
     if (backend is VisionTaskOverlayBackend) {
       (backend as VisionTaskOverlayBackend).setOverlayOptions(
         connections: connections,
         points: points,
+        mirrored: mirrored,
+        scale: scale,
       );
     }
   }

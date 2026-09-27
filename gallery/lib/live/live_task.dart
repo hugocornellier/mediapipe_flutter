@@ -13,8 +13,15 @@ abstract interface class LiveTask<T> {
   /// The values [open] builds the task with; the page edits them and reopens.
   TaskSettingValues get settings;
 
-  /// Creates the underlying VIDEO-mode task.
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes);
+  /// Creates the task in the requested running mode.
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  });
+
+  /// Processes a still image with a task opened in image mode.
+  Future<T> detectImage(VisionImage image);
 
   /// Runs one frame. Called at most once at a time.
   ///
@@ -57,6 +64,11 @@ abstract interface class BrowserLiveTask<T> implements LiveTask<T> {
 /// available when the browser cannot transfer a canvas or drawing fails.
 abstract interface class BrowserOverlayLiveTask {
   Future<void> attachOverlay(Object canvas);
-  void setOverlayOptions({required bool connections, required bool points});
+  void setOverlayOptions({
+    required bool connections,
+    required bool points,
+    required bool mirrored,
+    required double scale,
+  });
   bool get overlayActive;
 }

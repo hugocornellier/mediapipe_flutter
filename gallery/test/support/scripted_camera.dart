@@ -174,7 +174,11 @@ class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
   String get name => 'scripted';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     opened.add(delegate);
     if (openFailure case (
       final refused,
@@ -183,6 +187,9 @@ class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
       throw error;
     }
   }
+
+  @override
+  Future<int> detectImage(VisionImage image) async => 1;
 
   @override
   Future<int> detect(

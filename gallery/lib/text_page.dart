@@ -111,7 +111,7 @@ class _TextPageState extends State<TextPage> {
   Future<Object> _open() async {
     if (_task case final task?) return task;
     final bytes = await _bytes();
-    final classifier = ClassifierOptions(
+    ClassifierOptions classifier() => ClassifierOptions(
       maxResults: _values.count('maxResults'),
       scoreThreshold: _values.share('scoreThreshold'),
     );
@@ -119,13 +119,13 @@ class _TextPageState extends State<TextPage> {
       'text_classifier' => await TextClassifier.create(
         TextClassifierOptions.fromAssetBuffer(
           bytes,
-          classifierOptions: classifier,
+          classifierOptions: classifier(),
         ),
       ),
       'language_detector' => await LanguageDetector.create(
         LanguageDetectorOptions.fromAssetBuffer(
           bytes,
-          classifierOptions: classifier,
+          classifierOptions: classifier(),
         ),
       ),
       _ => await TextEmbedder.create(

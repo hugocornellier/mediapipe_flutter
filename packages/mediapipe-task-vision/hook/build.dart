@@ -63,6 +63,25 @@ void main(List<String> arguments) async {
     }
     output.dependencies.add(input.packageRoot.resolve('sdk_downloads.dart'));
     final tasks = selection.cast<String>().toSet();
+    final webAdapterOnly = input.userDefines['web_adapter_only'] ?? false;
+    if (webAdapterOnly is! bool) {
+      throw const FormatException('web_adapter_only must be a boolean.');
+    }
+    if (webAdapterOnly) {
+      // Flutter's Chrome test runner also builds host native assets. The web
+      // gallery uses the JavaScript adapter, so these bindings are never called
+      // there and must not download an unrelated host runtime.
+      for (final name in {..._assetNames(tasks), 'vision.dylib'}) {
+        output.assets.code.add(
+          CodeAsset(
+            package: input.packageName,
+            name: name,
+            linkMode: LookupInProcess(),
+          ),
+        );
+      }
+      return;
+    }
     final officialIosSdk = input.userDefines['official_ios_sdk'];
     if (officialIosSdk != null && officialIosSdk is! bool) {
       throw const FormatException('official_ios_sdk must be a boolean.');
@@ -141,6 +160,17 @@ void main(List<String> arguments) async {
         );
       }
       // Core's hook rejects targets its runtime table has no release for.
+    }
+    if (input.metadata['mediapipe_flutter_core']['use_macos_vision_runtime'] ==
+        true) {
+      if (target != 'macos/arm64' ||
+          useOfficialMacosLandmarks != true ||
+          tasks.intersection(officialMacosLandmarkRuntime.tasks).isEmpty) {
+        throw StateError(
+          'core.use_macos_vision_runtime requires the official macOS vision '
+          'runtime with at least one selected official task.',
+        );
+      }
     }
     if (useOfficialMacosLandmarks == true) {
       if (target != officialMacosLandmarkRuntime.target) {
@@ -412,7 +442,12 @@ Future<void> _bundleAliases(
 }) async {
   final digest = (await sha256.bind(library.openRead()).first).toString();
   var names = _assetNames(tasks);
-  if (oneImage && names.contains('vision.dylib')) names = {'vision.dylib'};
+  if (oneImage &&
+      (names.contains('vision.dylib') ||
+          input.metadata['mediapipe_flutter_core']['use_macos_vision_runtime'] ==
+              true)) {
+    names = {'vision.dylib'};
+  }
   for (final assetName in names) {
     final stem = assetName.substring(0, assetName.length - '.dylib'.length);
     final bundled = File.fromUri(

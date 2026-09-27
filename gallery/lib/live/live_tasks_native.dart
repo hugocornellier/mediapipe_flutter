@@ -18,12 +18,16 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
   String get name => 'Face Landmarker';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _task = await FaceLandmarker.create(
       FaceLandmarkerOptions(
         delegate: delegate,
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         numFaces: settings.count('numFaces'),
         minFaceDetectionConfidence: settings.share(
           'minFaceDetectionConfidence',
@@ -33,6 +37,10 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
       ),
     );
   }
+
+  @override
+  Future<FaceLandmarkerResult> detectImage(VisionImage image) =>
+      _task!.detectImage(image);
 
   @override
   Future<FaceLandmarkerResult> detect(
@@ -63,12 +71,16 @@ final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
   String get name => 'Hand Landmarker';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _task = await HandLandmarker.create(
       HandLandmarkerOptions(
         delegate: delegate,
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         numHands: settings.count('numHands'),
         minHandDetectionConfidence: settings.share(
           'minHandDetectionConfidence',
@@ -78,6 +90,10 @@ final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
       ),
     );
   }
+
+  @override
+  Future<HandLandmarkerResult> detectImage(VisionImage image) =>
+      _task!.detectImage(image);
 
   @override
   Future<HandLandmarkerResult> detect(
@@ -109,12 +125,16 @@ final class GestureRecognizerLiveTask
   String get name => 'Gesture Recognizer';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _task = await GestureRecognizer.create(
       GestureRecognizerOptions(
         delegate: delegate,
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         numHands: settings.count('numHands'),
         minHandDetectionConfidence: settings.share(
           'minHandDetectionConfidence',
@@ -128,6 +148,10 @@ final class GestureRecognizerLiveTask
       ),
     );
   }
+
+  @override
+  Future<GestureRecognizerResult> detectImage(VisionImage image) =>
+      _task!.recognizeImage(image);
 
   @override
   Future<GestureRecognizerResult> detect(
@@ -159,12 +183,16 @@ final class HolisticLandmarkerLiveTask
   String get name => 'Holistic Landmarker';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _task = await HolisticLandmarker.create(
       HolisticLandmarkerOptions(
         delegate: delegate,
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         minFaceDetectionConfidence: settings.share(
           'minFaceDetectionConfidence',
         ),
@@ -186,6 +214,10 @@ final class HolisticLandmarkerLiveTask
       ),
     );
   }
+
+  @override
+  Future<HolisticLandmarkerResult> detectImage(VisionImage image) =>
+      _task!.detectImage(image);
 
   @override
   Future<HolisticLandmarkerResult> detect(
@@ -216,12 +248,16 @@ final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
   String get name => 'Pose Landmarker';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _task = await PoseLandmarker.create(
       PoseLandmarkerOptions(
         delegate: delegate,
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         numPoses: settings.count('numPoses'),
         minPoseDetectionConfidence: settings.share(
           'minPoseDetectionConfidence',
@@ -232,6 +268,10 @@ final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
       ),
     );
   }
+
+  @override
+  Future<PoseLandmarkerResult> detectImage(VisionImage image) =>
+      _task!.detectImage(image);
 
   @override
   Future<PoseLandmarkerResult> detect(
@@ -262,17 +302,25 @@ final class FaceDetectorLiveTask implements LiveTask<FaceDetectorResult> {
   String get name => 'Face Detector';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _task = await FaceDetector.create(
       FaceDetectorOptions(
         delegate: delegate,
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         minDetectionConfidence: settings.share('minDetectionConfidence'),
         minSuppressionThreshold: settings.share('minSuppressionThreshold'),
       ),
     );
   }
+
+  @override
+  Future<FaceDetectorResult> detectImage(VisionImage image) =>
+      _task!.detectImage(image);
 
   @override
   Future<FaceDetectorResult> detect(
@@ -303,17 +351,25 @@ final class ObjectDetectorLiveTask implements LiveTask<ObjectDetectorResult> {
   String get name => 'Object Detector';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _task = await ObjectDetector.create(
       ObjectDetectorOptions(
         delegate: delegate,
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         maxResults: settings.count('maxResults'),
         scoreThreshold: settings.share('scoreThreshold'),
       ),
     );
   }
+
+  @override
+  Future<ObjectDetectorResult> detectImage(VisionImage image) =>
+      _task!.detectImage(image);
 
   @override
   Future<ObjectDetectorResult> detect(
@@ -344,17 +400,25 @@ final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
   String get name => 'Image Classifier';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _task = await ImageClassifier.create(
       ImageClassifierOptions(
         delegate: delegate,
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         maxResults: settings.count('maxResults'),
         scoreThreshold: settings.share('scoreThreshold'),
       ),
     );
   }
+
+  @override
+  Future<ImageClassifierResult> detectImage(VisionImage image) =>
+      _task!.classifyImage(image);
 
   @override
   Future<ImageClassifierResult> detect(
@@ -391,17 +455,27 @@ final class ImageEmbedderLiveTask
   String get name => 'Image Embedder';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _first = null;
     _task = await ImageEmbedder.create(
       ImageEmbedderOptions(
         delegate: delegate,
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         l2Normalize: settings.on('l2Normalize'),
         quantize: settings.on('quantize'),
       ),
     );
+  }
+
+  @override
+  Future<EmbeddingSimilarity> detectImage(VisionImage image) async {
+    final result = await _task!.embedImage(image);
+    return EmbeddingSimilarity(result, null);
   }
 
   @override
@@ -442,17 +516,25 @@ final class ImageSegmenterLiveTask implements LiveTask<SegmentationResult> {
   String get name => 'Image Segmenter';
 
   @override
-  Future<void> open(VisionDelegate delegate, Uint8List modelBytes) async {
+  Future<void> open(
+    VisionDelegate delegate,
+    Uint8List modelBytes, {
+    VisionRunningMode mode = VisionRunningMode.video,
+  }) async {
     _task = await ImageSegmenter.create(
       ImageSegmenterOptions(
         delegate: delegate,
         modelBytes: modelBytes,
-        runningMode: VisionRunningMode.video,
+        runningMode: mode,
         outputConfidenceMasks: false,
         outputCategoryMask: true,
       ),
     );
   }
+
+  @override
+  Future<SegmentationResult> detectImage(VisionImage image) =>
+      _task!.segmentImage(image);
 
   @override
   Future<SegmentationResult> detect(

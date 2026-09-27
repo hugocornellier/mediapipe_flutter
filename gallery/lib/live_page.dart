@@ -14,6 +14,7 @@ import 'gallery_theme.dart';
 import 'gallery_settings_scaffold.dart';
 import 'live/live_camera_controller.dart';
 import 'live/camera_geometry.dart';
+import 'live/embedding_similarity.dart';
 import 'live/live_camera_view.dart';
 import 'live/live_registry.dart';
 import 'live/task_models.dart';
@@ -22,9 +23,9 @@ import 'live/task_settings_panel.dart';
 
 /// One live camera demo, whichever task the tile names.
 ///
-/// Capture, the VIDEO-mode task lifecycle, frame skipping, delegate switching
-/// and timings all live in [LiveCameraController]; this screen only picks the
-/// task and painter out of the registry and draws the controls.
+/// Camera capture and timing live in [LiveCameraController]. This page shares
+/// model settings, delegate selection and overlays between camera and image
+/// inference for every vision demo in the live registry.
 class LivePage extends StatefulWidget {
   const LivePage({
     super.key,
@@ -84,14 +85,14 @@ class _LivePageState extends State<LivePage> {
   bool _autoStarted = false;
   bool _showConnections = true;
   bool _showPoints = false;
-  late _FaceInputMode _mode = widget.initialStillImage && _hasImageMode
-      ? _FaceInputMode.image
-      : _FaceInputMode.camera;
+  late _VisionInputMode _mode = widget.initialStillImage && _hasImageMode
+      ? _VisionInputMode.image
+      : _VisionInputMode.camera;
   Uint8List? _imageBytes;
   VisionImage? _imageInput;
   Size? _imageSize;
   String? _imageName;
-  FaceLandmarkerResult? _imageResult;
+  Object? _imageResult;
   String? _imageError;
   bool _imageBusy = false;
   int _imageRevision = 0;
@@ -99,13 +100,16 @@ class _LivePageState extends State<LivePage> {
   Future<void> _imageOperations = Future.value();
   Future<void> _cameraStopped = Future.value();
 
-  bool get _hasImageMode => widget.task.id == 'face_landmarker_live';
+  bool get _hasImageMode => widget.task.live;
 
   @override
   void initState() {
     super.initState();
+    if (!_delegates.contains(_controller.delegate)) {
+      _controller.delegate = _delegates.first;
+    }
     _controller.addListener(_onControllerChanged);
-    if (_mode == _FaceInputMode.camera) _findCameras();
+    if (_mode == _VisionInputMode.camera) _findCameras();
   }
 
   void _onControllerChanged() {
@@ -124,7 +128,7 @@ class _LivePageState extends State<LivePage> {
       }
       // Open the demo already running. Guarded so that pressing Stop, or
       // switching delegate, is never undone by a later rebuild.
-      if (_mode == _FaceInputMode.camera &&
+      if (_mode == _VisionInputMode.camera &&
           _controller.description != null &&
           !_autoStarted) {
         _autoStarted = true;
@@ -147,7 +151,7 @@ class _LivePageState extends State<LivePage> {
   }
 
   Future<void> _start() async {
-    if (_mode != _FaceInputMode.camera) return;
+    if (_mode != _VisionInputMode.camera) return;
     if (_controller.description == null) return;
     try {
       // Start on the current delegate where the task supports it, otherwise
@@ -173,7 +177,7 @@ class _LivePageState extends State<LivePage> {
 
   void _setDelegate(VisionDelegate delegate) {
     setState(() => _controller.delegate = delegate);
-    if (_mode == _FaceInputMode.image || _controller.running) {
+    if (_mode == _VisionInputMode.image || _controller.running) {
       _restartCurrentMode();
     }
   }
@@ -264,14 +268,14 @@ class _LivePageState extends State<LivePage> {
   }
 
   void _restartCurrentMode({bool startCameraIfStopped = false}) {
-    if (_mode == _FaceInputMode.image) {
+    if (_mode == _VisionInputMode.image) {
       if (_imageInput != null) unawaited(_detectImage());
     } else if (_controller.running || startCameraIfStopped) {
       unawaited(_start());
     }
   }
 
-  Future<void> _setMode(_FaceInputMode mode) async {
+  Future<void> _setMode(_VisionInputMode mode) async {
     if (_mode == mode) return;
     ++_imageRevision;
     ++_modeRevision;
@@ -281,7 +285,7 @@ class _LivePageState extends State<LivePage> {
       _imageError = null;
       _imageBusy = false;
     });
-    if (mode == _FaceInputMode.image) {
+    if (mode == _VisionInputMode.image) {
       try {
         _cameraStopped = _controller.stop();
         await _cameraStopped;
@@ -337,7 +341,7 @@ class _LivePageState extends State<LivePage> {
             format: VisionPixelFormat.rgba,
           );
           if (!mounted ||
-              _mode != _FaceInputMode.image ||
+              _mode != _VisionInputMode.image ||
               modeRevision != _modeRevision) {
             return;
           }
@@ -358,7 +362,7 @@ class _LivePageState extends State<LivePage> {
       }
     } on Object catch (error) {
       if (mounted &&
-          _mode == _FaceInputMode.image &&
+          _mode == _VisionInputMode.image &&
           modeRevision == _modeRevision) {
         setState(() => _imageError = '$error');
       }
@@ -370,7 +374,6 @@ class _LivePageState extends State<LivePage> {
     if (input == null) return Future.value();
     final revision = ++_imageRevision;
     final delegate = _controller.delegate;
-    final settings = _task.settings;
     final modelLoader = _controller.modelLoader;
     setState(() {
       _imageBusy = true;
@@ -378,61 +381,48 @@ class _LivePageState extends State<LivePage> {
       _imageError = null;
     });
     final operation = _imageOperations.then((_) async {
-      FaceLandmarker? detector;
+      var opened = false;
       try {
         await _cameraStopped;
         final model = modelLoader != null
             ? await modelLoader()
             : await _bundledModelBytes();
         if (!mounted ||
-            _mode != _FaceInputMode.image ||
+            _mode != _VisionInputMode.image ||
             revision != _imageRevision) {
           return;
         }
-        detector = await FaceLandmarker.create(
-          FaceLandmarkerOptions(
-            modelBytes: model,
-            runningMode: VisionRunningMode.image,
-            delegate: delegate,
-            numFaces: settings.count('numFaces'),
-            minFaceDetectionConfidence: settings.share(
-              'minFaceDetectionConfidence',
-            ),
-            minFacePresenceConfidence: settings.share(
-              'minFacePresenceConfidence',
-            ),
-            minTrackingConfidence: settings.share('minTrackingConfidence'),
-          ),
-        );
+        await _task.open(delegate, model, mode: VisionRunningMode.image);
+        opened = true;
         if (!mounted ||
-            _mode != _FaceInputMode.image ||
+            _mode != _VisionInputMode.image ||
             revision != _imageRevision) {
           return;
         }
-        final result = await detector.detectImage(input);
+        final result = await _task.detectImage(input);
         if (mounted &&
-            _mode == _FaceInputMode.image &&
+            _mode == _VisionInputMode.image &&
             revision == _imageRevision) {
           setState(() => _imageResult = result);
         }
       } on Object catch (error) {
         if (mounted &&
-            _mode == _FaceInputMode.image &&
+            _mode == _VisionInputMode.image &&
             revision == _imageRevision) {
           setState(() => _imageError = '$error');
         }
       } finally {
         try {
-          await detector?.dispose();
+          if (opened) await _task.close();
         } on Object catch (error) {
           if (mounted &&
-              _mode == _FaceInputMode.image &&
+              _mode == _VisionInputMode.image &&
               revision == _imageRevision) {
             setState(() => _imageError ??= '$error');
           }
         }
         if (mounted &&
-            _mode == _FaceInputMode.image &&
+            _mode == _VisionInputMode.image &&
             revision == _imageRevision) {
           setState(() => _imageBusy = false);
         }
@@ -446,6 +436,32 @@ class _LivePageState extends State<LivePage> {
     final data = await rootBundle.load('assets/models/${widget.task.model}');
     return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   }
+
+  String _imageSummary(Object result) => switch (result) {
+    FaceLandmarkerResult(:final faceLandmarks) =>
+      '${faceLandmarks.length} ${faceLandmarks.length == 1 ? 'face' : 'faces'} detected',
+    FaceDetectorResult(:final detections) =>
+      '${detections.length} ${detections.length == 1 ? 'face' : 'faces'} detected',
+    HandLandmarkerResult(:final handLandmarks) =>
+      '${handLandmarks.length} ${handLandmarks.length == 1 ? 'hand' : 'hands'} detected',
+    GestureRecognizerResult(:final handLandmarks) =>
+      '${handLandmarks.length} ${handLandmarks.length == 1 ? 'hand' : 'hands'} recognized',
+    PoseLandmarkerResult(:final poseLandmarks) =>
+      '${poseLandmarks.length} ${poseLandmarks.length == 1 ? 'pose' : 'poses'} detected',
+    HolisticLandmarkerResult(:final poseLandmarks) =>
+      poseLandmarks.isEmpty ? 'No pose detected' : 'Body landmarks detected',
+    ObjectDetectorResult(:final detections) =>
+      '${detections.length} ${detections.length == 1 ? 'object' : 'objects'} detected',
+    ImageClassifierResult(:final classifications) =>
+      '${classifications.firstOrNull?.categories.length ?? 0} classes returned',
+    EmbeddingSimilarity(:final result) =>
+      '${result.embeddings.length} embeddings generated',
+    SegmentationResult(:final categoryMask) =>
+      categoryMask == null
+          ? 'No category mask returned'
+          : 'Segmentation complete',
+    _ => 'Analysis complete',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -470,7 +486,7 @@ class _LivePageState extends State<LivePage> {
               ),
         flexibleSpace: GalleryTaskHeader(taskTitle: widget.task.title),
         actions: [
-          if (_mode == _FaceInputMode.camera && controller.canSwitchCamera)
+          if (_mode == _VisionInputMode.camera && controller.canSwitchCamera)
             IconButton(
               icon: Icon(
                 defaultTargetPlatform == TargetPlatform.iOS
@@ -497,16 +513,18 @@ class _LivePageState extends State<LivePage> {
                   const Text('Mode'),
                   const SizedBox(width: 8),
                   DropdownButtonHideUnderline(
-                    child: DropdownButton<_FaceInputMode>(
-                      key: const ValueKey('face-landmarker-mode'),
+                    child: DropdownButton<_VisionInputMode>(
+                      key: ValueKey(
+                        '${widget.task.runtimeId.replaceAll('_', '-')}-mode',
+                      ),
                       value: _mode,
                       items: const [
                         DropdownMenuItem(
-                          value: _FaceInputMode.camera,
+                          value: _VisionInputMode.camera,
                           child: Text('Camera'),
                         ),
                         DropdownMenuItem(
-                          value: _FaceInputMode.image,
+                          value: _VisionInputMode.image,
                           child: Text('Still image'),
                         ),
                       ],
@@ -522,7 +540,7 @@ class _LivePageState extends State<LivePage> {
       ),
       content: GalleryContentSurface(
         framed: widget.framed,
-        child: _mode == _FaceInputMode.image
+        child: _mode == _VisionInputMode.image
             ? _stillImage(theme, wide)
             : _camera(theme, controller, busy, wide),
       ),
@@ -539,7 +557,7 @@ class _LivePageState extends State<LivePage> {
           child: _imageBytes == null || _imageSize == null
               ? Center(
                   child: Text(
-                    _imageError ?? 'Choose an image to find face landmarks.',
+                    _imageError ?? 'Choose an image to analyze.',
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: GalleryTheme.white),
                   ),
@@ -553,8 +571,8 @@ class _LivePageState extends State<LivePage> {
                         Image.memory(_imageBytes!, fit: BoxFit.fill),
                         LayoutBuilder(
                           builder: (context, constraints) => CustomPaint(
-                            key: const ValueKey(
-                              'face-landmarker-still-overlay',
+                            key: ValueKey(
+                              '${widget.task.runtimeId.replaceAll('_', '-')}-still-overlay',
                             ),
                             painter: _demo.overlay(
                               _imageResult,
@@ -594,11 +612,7 @@ class _LivePageState extends State<LivePage> {
               ),
             if (_imageName != null)
               Text(_imageName!, maxLines: 1, overflow: TextOverflow.ellipsis),
-            if (_imageResult != null)
-              Text(
-                '${_imageResult!.faceLandmarks.length} '
-                '${_imageResult!.faceLandmarks.length == 1 ? 'face' : 'faces'} detected',
-              ),
+            if (_imageResult != null) Text(_imageSummary(_imageResult!)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 12,
@@ -729,4 +743,4 @@ class _LivePageState extends State<LivePage> {
   );
 }
 
-enum _FaceInputMode { camera, image }
+enum _VisionInputMode { camera, image }

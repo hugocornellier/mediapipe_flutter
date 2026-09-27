@@ -303,7 +303,7 @@ final _catalog = <GalleryTask>[
     runtimeId: 'hand_landmarker',
     demo: GalleryDemo.live,
     title: 'Hand Landmarker',
-    summary: 'Hand landmarks and handedness on the camera feed.',
+    summary: 'Hand landmarks and handedness in camera frames or an image.',
     model: 'hand_landmarker.task',
     sample: 'hands.jpg',
     capabilities: _hand,
@@ -314,7 +314,7 @@ final _catalog = <GalleryTask>[
     runtimeId: 'pose_landmarker',
     demo: GalleryDemo.live,
     title: 'Pose Landmarker',
-    summary: 'Pose landmarks and skeleton on the camera feed.',
+    summary: 'Pose landmarks and skeleton in camera frames or an image.',
     model: 'pose_landmarker_lite.task',
     sample: 'pose.jpg',
     capabilities: _pose,
@@ -325,7 +325,7 @@ final _catalog = <GalleryTask>[
     runtimeId: 'gesture_recognizer',
     demo: GalleryDemo.live,
     title: 'Gesture Recognizer',
-    summary: 'Hand landmarks and the recognised gesture on the camera feed.',
+    summary: 'Hand landmarks and recognized gestures in video or an image.',
     model: 'gesture_recognizer.task',
     sample: 'thumb_up.jpg',
     capabilities: _gesture,
@@ -336,7 +336,7 @@ final _catalog = <GalleryTask>[
     runtimeId: 'holistic_landmarker',
     demo: GalleryDemo.live,
     title: 'Holistic Landmarker',
-    summary: 'Body, hands and face together on the camera feed.',
+    summary: 'Body, hands and face together in video or an image.',
     model: 'holistic_landmarker.task',
     sample: 'pose.jpg',
     capabilities: _holistic,
@@ -347,7 +347,7 @@ final _catalog = <GalleryTask>[
     runtimeId: 'face_detector',
     demo: GalleryDemo.live,
     title: 'Face Detector',
-    summary: 'Face boxes and six keypoints on the camera feed.',
+    summary: 'Face boxes and six keypoints in video or an image.',
     model: 'blaze_face_short_range.tflite',
     sample: 'portrait.jpg',
     capabilities: faceDetectorCapabilitiesForPlatform,
@@ -357,7 +357,7 @@ final _catalog = <GalleryTask>[
     runtimeId: 'object_detector',
     demo: GalleryDemo.live,
     title: 'Object Detector',
-    summary: 'Labelled boxes over everyday objects on the camera feed.',
+    summary: 'Labeled object boxes in camera frames or an image.',
     model: 'efficientdet_lite0.tflite',
     sample: 'group.jpeg',
     capabilities: _objects,
@@ -368,7 +368,7 @@ final _catalog = <GalleryTask>[
     runtimeId: 'image_classifier',
     demo: GalleryDemo.live,
     title: 'Image Classifier',
-    summary: 'The top three classes for the camera feed.',
+    summary: 'The top three classes for camera frames or an image.',
     model: 'efficientnet_lite0.tflite',
     sample: 'portrait.jpg',
     capabilities: _classifier,
@@ -379,7 +379,7 @@ final _catalog = <GalleryTask>[
     runtimeId: 'image_embedder',
     demo: GalleryDemo.live,
     title: 'Image Embedder',
-    summary: 'How similar each frame is to the first, from feature vectors.',
+    summary: 'Feature vectors from an image or live frame comparisons.',
     model: 'mobilenet_v3_small.tflite',
     sample: 'portrait.jpg',
     capabilities: _embedder,
@@ -462,7 +462,7 @@ final _catalog = <GalleryTask>[
     runtimeId: 'image_segmenter',
     demo: GalleryDemo.live,
     title: 'Image Segmenter',
-    summary: 'People and objects masked in each camera frame.',
+    summary: 'Segmentation masks for camera frames or an image.',
     model: 'deeplab_v3.tflite',
     sample: 'portrait.jpg',
     capabilities: _segmenter,
@@ -470,7 +470,8 @@ final _catalog = <GalleryTask>[
   ),
   // Two different implementations share the MagicTouch name. This is the
   // stateless legacy API inside the combined vision runtime; the stateful
-  // InteractiveSegmenter below is a separate 1.0.1 runtime with its own
+  // InteractiveSegmenter below uses core's runtime (the gallery maps it to
+  // the official vision image on macOS), with its own
   // support table. Their capability queries are not interchangeable.
   GalleryTask(
     id: 'interactive_segmenter_legacy',
@@ -501,7 +502,7 @@ final _catalog = <GalleryTask>[
     sample: 'speech_16000_hz_mono.wav',
     capabilities: _audio,
   ),
-  // The text package's classic tasks, on the shared 1.0.1 runtime: macOS
+  // The text package's classic tasks, on the shared runtime: macOS
   // arm64 CPU, where prepare.py bundles their models.
   GalleryTask(
     id: 'language_detector',
