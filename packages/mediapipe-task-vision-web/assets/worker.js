@@ -16,15 +16,28 @@ function drawOverlay(result, width, height, options) {
   const context = overlay.getContext('2d');
   context.clearRect(0, 0, width, height);
   const accent = '#8cd0d6', white = '#ffffff';
+  // The preview is mirrored independently. Mirror only the shapes here, so
+  // labels stay readable, and keep stroke sizes in displayed CSS pixels.
+  const pixel = Number.isFinite(options.scale) && options.scale > 0 ? 1 / options.scale : 1;
   const lines = (points, edges, color, lineWidth = 2) => {
     if (options.connections && points?.length) {
-      drawing.drawConnectors(points, edges, {color, lineWidth});
+      drawing.drawConnectors(points, edges, {color, lineWidth: lineWidth * pixel});
     }
   };
   const dots = (points, color, radius = 2.5) => {
     if (options.points && points?.length) {
-      drawing.drawLandmarks(points, {color, radius});
+      drawing.drawLandmarks(points, {color, radius: radius * pixel});
     }
+  };
+  const label = (text, x, y, color, size = 16) => {
+    context.save();
+    if (options.mirrored) context.setTransform(1, 0, 0, 1, 0, 0);
+    context.font = `600 ${size * pixel}px sans-serif`;
+    context.fillStyle = color;
+    context.shadowColor = '#000000';
+    context.shadowBlur = 3 * pixel;
+    context.fillText(text, x, y);
+    context.restore();
   };
   const hand = (points, index) => {
     const color = index === 0 ? accent : white;
@@ -35,7 +48,13 @@ function drawOverlay(result, width, height, options) {
     lines(points, PoseLandmarker.POSE_CONNECTIONS, accent);
     dots(points, accent);
   };
-  switch (spec.name) {
+  context.save();
+  if (options.mirrored) {
+    context.translate(width, 0);
+    context.scale(-1, 1);
+  }
+  try {
+    switch (spec.name) {
     case 'FaceLandmarker':
       for (const face of result.faceLandmarks ?? []) {
         lines(face, FaceLandmarker.FACE_LANDMARKS_TESSELATION, '#8cd0d673', 0.7);
@@ -51,11 +70,10 @@ function drawOverlay(result, width, height, options) {
     case 'GestureRecognizer':
       (result.landmarks ?? []).forEach((points, index) => {
         hand(points, index);
-        const label = result.gestures?.[index]?.[0]?.categoryName;
-        if (label && points.length) {
-          context.font = '600 16px sans-serif';
-          context.fillStyle = index === 0 ? accent : white;
-          context.fillText(label, points[0].x * width + 8, points[0].y * height + 8);
+        const name = result.gestures?.[index]?.[0]?.categoryName;
+        if (name && points.length) {
+          label(name, (options.mirrored ? 1 - points[0].x : points[0].x) * width + 8 * pixel,
+            points[0].y * height + 24 * pixel, index === 0 ? accent : white);
         }
       });
       break;
@@ -69,6 +87,28 @@ function drawOverlay(result, width, height, options) {
       lines(result.faceLandmarks, FaceLandmarker.FACE_LANDMARKS_CONTOURS, white);
       dots(result.faceLandmarks, white);
       break;
+    case 'FaceDetector':
+    case 'ObjectDetector':
+      for (const detection of result.detections ?? []) {
+        const box = detection.boundingBox;
+        if (!box) continue;
+        if (options.connections) {
+          drawing.drawBoundingBox(box, {
+            color: accent, fillColor: 'transparent', lineWidth: 2 * pixel,
+          });
+          const category = detection.categories?.[0];
+          const name = spec.name === 'FaceDetector' ? 'face' : category?.categoryName ?? '?';
+          const score = Math.round((category?.score ?? 0) * 100);
+          const left = options.mirrored ? width - box.originX - box.width : box.originX;
+          label(`${name} ${score}%`, left + 4 * pixel,
+            box.originY + 19 * pixel, accent, 15);
+        }
+        if (options.points) dots(detection.keypoints, accent, 3);
+      }
+      break;
+    }
+  } finally {
+    context.restore();
   }
 }
 
@@ -88,8 +128,8 @@ const TASKS = {
     parts: ['faceLandmarks', 'poseLandmarks', 'poseWorldLandmarks', 'leftHandLandmarks',
       'leftHandWorldLandmarks', 'rightHandLandmarks', 'rightHandWorldLandmarks'],
     masks: {poseSegmentationMasks: 4}},
-  face_detector: {name: 'FaceDetector', type: FaceDetector},
-  object_detector: {name: 'ObjectDetector', type: ObjectDetector},
+  face_detector: {name: 'FaceDetector', type: FaceDetector, boxes: true},
+  object_detector: {name: 'ObjectDetector', type: ObjectDetector, boxes: true},
   image_classifier: {name: 'ImageClassifier', type: ImageClassifier,
     image: 'classify', video: 'classifyForVideo'},
   // Quantized embeddings are typed arrays, which JSON would turn into objects.
@@ -248,7 +288,7 @@ async function run(type, input, timing) {
     timing.serialize = performance.now() - inferred;
     timing.timestamp = input.timestamp;
     let overlayFailed = false;
-    if (drawing && input.overlayOptions && (spec.landmarks || spec.parts)) {
+    if (drawing && input.overlayOptions && (spec.landmarks || spec.parts || spec.boxes)) {
       try {
         drawOverlay(result, source.width, source.height, input.overlayOptions);
       } catch (error) {

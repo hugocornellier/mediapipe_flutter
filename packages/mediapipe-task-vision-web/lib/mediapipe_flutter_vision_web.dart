@@ -415,11 +415,21 @@ final class WebVisionTask<R>
   }
 
   @override
-  void setOverlayOptions({required bool connections, required bool points}) =>
-      _setOverlayOptions(
-        _id,
-        {'connections': connections, 'points': points}.jsify()! as JSObject,
-      );
+  void setOverlayOptions({
+    required bool connections,
+    required bool points,
+    required bool mirrored,
+    required double scale,
+  }) => _setOverlayOptions(
+    _id,
+    {
+          'connections': connections,
+          'points': points,
+          'mirrored': mirrored,
+          'scale': scale,
+        }.jsify()!
+        as JSObject,
+  );
 
   @override
   bool get overlayActive => _overlayActive(_id).toDart;
