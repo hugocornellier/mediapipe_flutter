@@ -139,7 +139,18 @@ jobs:
       # make get/models already ran above for the independent references.
       # Keep the remaining make ci checks, with visible stage boundaries.
       - name: Build official native face tasks from source
-        run: make native_vision
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if make native_vision 2>&1 | tee native-vision-build.log; then
+              exit 0
+            fi
+            if ! grep -Eq 'SocketTimeoutException|Error downloading|Download from .* failed' native-vision-build.log || [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            echo "Native dependency download failed; retrying cached build ($attempt/3)."
+            sleep 20
+          done
       - name: Analyze, format-check and test all packages
         id: packages
         run: |
