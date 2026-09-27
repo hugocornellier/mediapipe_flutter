@@ -16,6 +16,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gallery-face-still-image:
+    name: Face Landmarker still image / macOS arm64
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download Face Landmarker model
+        working-directory: packages/mediapipe-task-vision
+        run: |
+          dart pub get
+          dart tool/download_face_landmarker.dart
+      - name: Prepare Face Landmarker gallery
+        run: |
+          python3 -B gallery/tool/prepare.py --target macos/arm64 --tasks face_landmarker
+          cd gallery && flutter pub get
+      - name: Test still image inference and overlay
+        working-directory: gallery
+        run: flutter test -d macos integration_test/face_landmarker_still_image_test.dart --reporter expanded
+
   modern-task-matrix:
     name: Modern tasks / options and sustained CPU inference
     runs-on: macos-15

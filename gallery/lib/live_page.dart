@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:mediapipe_flutter_vision/capabilities.dart';
+import 'package:flutter/services.dart';
+import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
 import 'catalog.dart';
 import 'gallery_content_surface.dart';
@@ -11,6 +13,7 @@ import 'gallery_task_header.dart';
 import 'gallery_theme.dart';
 import 'gallery_settings_scaffold.dart';
 import 'live/live_camera_controller.dart';
+import 'live/camera_geometry.dart';
 import 'live/live_camera_view.dart';
 import 'live/live_registry.dart';
 import 'live/task_models.dart';
@@ -28,6 +31,8 @@ class LivePage extends StatefulWidget {
     required this.task,
     required this.platform,
     required this.officialMacosLandmarkTasks,
+    this.initialStillImage = false,
+    this.stillImagePicker,
     this.onOpenMenu,
     this.framed = false,
   });
@@ -35,6 +40,8 @@ class LivePage extends StatefulWidget {
   final GalleryTask task;
   final TaskPlatform platform;
   final Set<String> officialMacosLandmarkTasks;
+  final bool initialStillImage;
+  final Future<XFile?> Function()? stillImagePicker;
   final VoidCallback? onOpenMenu;
   final bool framed;
 
@@ -77,12 +84,28 @@ class _LivePageState extends State<LivePage> {
   bool _autoStarted = false;
   bool _showConnections = true;
   bool _showPoints = false;
+  late _FaceInputMode _mode = widget.initialStillImage && _hasImageMode
+      ? _FaceInputMode.image
+      : _FaceInputMode.camera;
+  Uint8List? _imageBytes;
+  VisionImage? _imageInput;
+  Size? _imageSize;
+  String? _imageName;
+  FaceLandmarkerResult? _imageResult;
+  String? _imageError;
+  bool _imageBusy = false;
+  int _imageRevision = 0;
+  int _modeRevision = 0;
+  Future<void> _imageOperations = Future.value();
+  Future<void> _cameraStopped = Future.value();
+
+  bool get _hasImageMode => widget.task.id == 'face_landmarker_live';
 
   @override
   void initState() {
     super.initState();
     _controller.addListener(_onControllerChanged);
-    _findCameras();
+    if (_mode == _FaceInputMode.camera) _findCameras();
   }
 
   void _onControllerChanged() {
@@ -101,7 +124,9 @@ class _LivePageState extends State<LivePage> {
       }
       // Open the demo already running. Guarded so that pressing Stop, or
       // switching delegate, is never undone by a later rebuild.
-      if (_controller.description != null && !_autoStarted) {
+      if (_mode == _FaceInputMode.camera &&
+          _controller.description != null &&
+          !_autoStarted) {
         _autoStarted = true;
         unawaited(_start());
       }
@@ -112,6 +137,8 @@ class _LivePageState extends State<LivePage> {
 
   @override
   void dispose() {
+    _imageRevision++;
+    _modeRevision++;
     _controller.removeListener(_onControllerChanged);
     _controller.close();
     _controller.dispose();
@@ -120,6 +147,7 @@ class _LivePageState extends State<LivePage> {
   }
 
   Future<void> _start() async {
+    if (_mode != _FaceInputMode.camera) return;
     if (_controller.description == null) return;
     try {
       // Start on the current delegate where the task supports it, otherwise
@@ -140,15 +168,13 @@ class _LivePageState extends State<LivePage> {
   /// does; a stopped one picks it up when it starts.
   void _setSetting(String key, Object value) {
     setState(() => _task.settings[key] = value);
-    if (_controller.running) unawaited(_start());
+    _restartCurrentMode();
   }
 
   void _setDelegate(VisionDelegate delegate) {
-    _controller.delegate = delegate;
-    if (_controller.running) {
-      unawaited(_start());
-    } else {
-      setState(() {});
+    setState(() => _controller.delegate = delegate);
+    if (_mode == _FaceInputMode.image || _controller.running) {
+      _restartCurrentMode();
     }
   }
 
@@ -162,7 +188,7 @@ class _LivePageState extends State<LivePage> {
         _modelStatus = null;
       });
       _controller.modelLoader = null;
-      unawaited(_start());
+      _restartCurrentMode(startCameraIfStopped: true);
       return;
     }
     setState(() => _modelStatus = 'Downloading ${model.name}…');
@@ -175,7 +201,7 @@ class _LivePageState extends State<LivePage> {
         _modelStatus = null;
       });
       _controller.modelLoader = () async => bytes;
-      unawaited(_start());
+      _restartCurrentMode(startCameraIfStopped: true);
     } on Object catch (error) {
       if (mounted) setState(() => _modelStatus = '$error');
     }
@@ -198,7 +224,7 @@ class _LivePageState extends State<LivePage> {
         _modelStatus = null;
       });
       _controller.modelLoader = () async => bytes;
-      unawaited(_start());
+      _restartCurrentMode(startCameraIfStopped: true);
     } on Object catch (error) {
       if (mounted) setState(() => _modelStatus = '$error');
     }
@@ -237,6 +263,190 @@ class _LivePageState extends State<LivePage> {
     }
   }
 
+  void _restartCurrentMode({bool startCameraIfStopped = false}) {
+    if (_mode == _FaceInputMode.image) {
+      if (_imageInput != null) unawaited(_detectImage());
+    } else if (_controller.running || startCameraIfStopped) {
+      unawaited(_start());
+    }
+  }
+
+  Future<void> _setMode(_FaceInputMode mode) async {
+    if (_mode == mode) return;
+    ++_imageRevision;
+    ++_modeRevision;
+    setState(() {
+      _mode = mode;
+      _imageResult = null;
+      _imageError = null;
+      _imageBusy = false;
+    });
+    if (mode == _FaceInputMode.image) {
+      try {
+        _cameraStopped = _controller.stop();
+        await _cameraStopped;
+        if (mounted && _mode == mode && _imageInput != null && !_imageBusy) {
+          await _detectImage();
+        }
+      } on Object catch (error) {
+        if (mounted && _mode == mode) setState(() => _imageError = '$error');
+      }
+    } else {
+      await _imageOperations;
+      if (mounted && _mode == mode) {
+        if (_controller.description == null) {
+          await _findCameras();
+        } else {
+          await _start();
+        }
+      }
+    }
+  }
+
+  Future<void> _chooseImage() async {
+    final modeRevision = _modeRevision;
+    try {
+      final file =
+          await (widget.stillImagePicker?.call() ??
+              openFile(
+                acceptedTypeGroups: const [
+                  XTypeGroup(
+                    label: 'Images',
+                    extensions: ['jpg', 'jpeg', 'png', 'webp'],
+                  ),
+                ],
+              ));
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      try {
+        final frame = await codec.getNextFrame();
+        final image = frame.image;
+        try {
+          final rgba = await image.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          );
+          if (rgba == null) throw StateError('Could not decode this image.');
+          final input = VisionImage.fromPixels(
+            pixels: rgba.buffer.asUint8List(
+              rgba.offsetInBytes,
+              rgba.lengthInBytes,
+            ),
+            width: image.width,
+            height: image.height,
+            format: VisionPixelFormat.rgba,
+          );
+          if (!mounted ||
+              _mode != _FaceInputMode.image ||
+              modeRevision != _modeRevision) {
+            return;
+          }
+          setState(() {
+            _imageBytes = bytes;
+            _imageInput = input;
+            _imageSize = Size(image.width.toDouble(), image.height.toDouble());
+            _imageName = file.name;
+            _imageResult = null;
+            _imageError = null;
+          });
+          unawaited(_detectImage());
+        } finally {
+          image.dispose();
+        }
+      } finally {
+        codec.dispose();
+      }
+    } on Object catch (error) {
+      if (mounted &&
+          _mode == _FaceInputMode.image &&
+          modeRevision == _modeRevision) {
+        setState(() => _imageError = '$error');
+      }
+    }
+  }
+
+  Future<void> _detectImage() {
+    final input = _imageInput;
+    if (input == null) return Future.value();
+    final revision = ++_imageRevision;
+    final delegate = _controller.delegate;
+    final settings = _task.settings;
+    final modelLoader = _controller.modelLoader;
+    setState(() {
+      _imageBusy = true;
+      _imageResult = null;
+      _imageError = null;
+    });
+    final operation = _imageOperations.then((_) async {
+      FaceLandmarker? detector;
+      try {
+        await _cameraStopped;
+        final model = modelLoader != null
+            ? await modelLoader()
+            : await _bundledModelBytes();
+        if (!mounted ||
+            _mode != _FaceInputMode.image ||
+            revision != _imageRevision) {
+          return;
+        }
+        detector = await FaceLandmarker.create(
+          FaceLandmarkerOptions(
+            modelBytes: model,
+            runningMode: VisionRunningMode.image,
+            delegate: delegate,
+            numFaces: settings.count('numFaces'),
+            minFaceDetectionConfidence: settings.share(
+              'minFaceDetectionConfidence',
+            ),
+            minFacePresenceConfidence: settings.share(
+              'minFacePresenceConfidence',
+            ),
+            minTrackingConfidence: settings.share('minTrackingConfidence'),
+          ),
+        );
+        if (!mounted ||
+            _mode != _FaceInputMode.image ||
+            revision != _imageRevision) {
+          return;
+        }
+        final result = await detector.detectImage(input);
+        if (mounted &&
+            _mode == _FaceInputMode.image &&
+            revision == _imageRevision) {
+          setState(() => _imageResult = result);
+        }
+      } on Object catch (error) {
+        if (mounted &&
+            _mode == _FaceInputMode.image &&
+            revision == _imageRevision) {
+          setState(() => _imageError = '$error');
+        }
+      } finally {
+        try {
+          await detector?.dispose();
+        } on Object catch (error) {
+          if (mounted &&
+              _mode == _FaceInputMode.image &&
+              revision == _imageRevision) {
+            setState(() => _imageError ??= '$error');
+          }
+        }
+        if (mounted &&
+            _mode == _FaceInputMode.image &&
+            revision == _imageRevision) {
+          setState(() => _imageBusy = false);
+        }
+      }
+    });
+    _imageOperations = operation;
+    return operation;
+  }
+
+  Future<Uint8List> _bundledModelBytes() async {
+    final data = await rootBundle.load('assets/models/${widget.task.model}');
+    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -260,7 +470,7 @@ class _LivePageState extends State<LivePage> {
               ),
         flexibleSpace: GalleryTaskHeader(taskTitle: widget.task.title),
         actions: [
-          if (controller.canSwitchCamera)
+          if (_mode == _FaceInputMode.camera && controller.canSwitchCamera)
             IconButton(
               icon: Icon(
                 defaultTargetPlatform == TargetPlatform.iOS
@@ -278,15 +488,154 @@ class _LivePageState extends State<LivePage> {
               tooltip: 'Settings',
               onPressed: _openSettings,
             ),
+          if (_hasImageMode)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Mode'),
+                  const SizedBox(width: 8),
+                  DropdownButtonHideUnderline(
+                    child: DropdownButton<_FaceInputMode>(
+                      key: const ValueKey('face-landmarker-mode'),
+                      value: _mode,
+                      items: const [
+                        DropdownMenuItem(
+                          value: _FaceInputMode.camera,
+                          child: Text('Camera'),
+                        ),
+                        DropdownMenuItem(
+                          value: _FaceInputMode.image,
+                          child: Text('Still image'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) unawaited(_setMode(value));
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
       content: GalleryContentSurface(
         framed: widget.framed,
-        child: _camera(theme, controller, busy, wide),
+        child: _mode == _FaceInputMode.image
+            ? _stillImage(theme, wide)
+            : _camera(theme, controller, busy, wide),
       ),
       settings: _panel(),
     );
   }
+
+  Widget _stillImage(ThemeData theme, bool wide) => Column(
+    children: [
+      Expanded(
+        child: Container(
+          color: GalleryTheme.preview,
+          width: double.infinity,
+          child: _imageBytes == null || _imageSize == null
+              ? Center(
+                  child: Text(
+                    _imageError ?? 'Choose an image to find face landmarks.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: GalleryTheme.white),
+                  ),
+                )
+              : Center(
+                  child: AspectRatio(
+                    aspectRatio: _imageSize!.width / _imageSize!.height,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.memory(_imageBytes!, fit: BoxFit.fill),
+                        LayoutBuilder(
+                          builder: (context, constraints) => CustomPaint(
+                            key: const ValueKey(
+                              'face-landmarker-still-overlay',
+                            ),
+                            painter: _demo.overlay(
+                              _imageResult,
+                              PreviewTransform.fit(
+                                frameSize: _imageSize!,
+                                rotationDegrees: 0,
+                                viewSize: constraints.biggest,
+                                mirror: false,
+                              ),
+                              _showConnections,
+                              _showPoints,
+                            ),
+                          ),
+                        ),
+                        if (_imageBusy)
+                          const Center(child: CircularProgressIndicator()),
+                      ],
+                    ),
+                  ),
+                ),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            if (_imageError != null && _imageBytes != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  _imageError!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            if (_imageName != null)
+              Text(_imageName!, maxLines: 1, overflow: TextOverflow.ellipsis),
+            if (_imageResult != null)
+              Text(
+                '${_imageResult!.faceLandmarks.length} '
+                '${_imageResult!.faceLandmarks.length == 1 ? 'face' : 'faces'} detected',
+              ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                FilledButton.icon(
+                  onPressed: _chooseImage,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: Text(
+                    _imageBytes == null ? 'Choose image' : 'Change image',
+                  ),
+                ),
+                if (!wide && _delegates.length > 1)
+                  SegmentedButton<VisionDelegate>(
+                    segments: [
+                      for (final delegate in _delegates)
+                        ButtonSegment(
+                          value: delegate,
+                          label: Text(
+                            delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+                          ),
+                        ),
+                    ],
+                    selected: {_controller.delegate},
+                    onSelectionChanged: _imageBusy
+                        ? null
+                        : (selection) => _setDelegate(selection.first),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
 
   Widget _camera(
     ThemeData theme,
@@ -379,3 +728,5 @@ class _LivePageState extends State<LivePage> {
     ],
   );
 }
+
+enum _FaceInputMode { camera, image }

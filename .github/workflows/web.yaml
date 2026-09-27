@@ -91,6 +91,8 @@ jobs:
           done
           cat web-server.log
           exit 1
+      - name: Face Landmarker still image in Chromium
+        run: node gallery/tool/browser/test_still_image.mjs
       - name: Chromium CPU runtime, API and face webcam
         id: chromium_cpu
         env:
