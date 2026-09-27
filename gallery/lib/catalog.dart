@@ -470,7 +470,8 @@ final _catalog = <GalleryTask>[
   ),
   // Two different implementations share the MagicTouch name. This is the
   // stateless legacy API inside the combined vision runtime; the stateful
-  // InteractiveSegmenter below is a separate 1.0.1 runtime with its own
+  // InteractiveSegmenter below uses core's runtime (the gallery maps it to
+  // the official vision image on macOS), with its own
   // support table. Their capability queries are not interchangeable.
   GalleryTask(
     id: 'interactive_segmenter_legacy',
@@ -501,7 +502,7 @@ final _catalog = <GalleryTask>[
     sample: 'speech_16000_hz_mono.wav',
     capabilities: _audio,
   ),
-  // The text package's classic tasks, on the shared 1.0.1 runtime: macOS
+  // The text package's classic tasks, on the shared runtime: macOS
   // arm64 CPU, where prepare.py bundles their models.
   GalleryTask(
     id: 'language_detector',

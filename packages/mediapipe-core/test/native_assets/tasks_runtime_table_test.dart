@@ -163,6 +163,35 @@ void main() {
     }
   });
 
+  test(
+    'macOS can resolve core tasks through the gallery vision image',
+    () async {
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.macOS,
+        targetArchitecture: Architecture.arm64,
+        userDefines: PackageUserDefines(
+          workspacePubspec: PackageUserDefinesSource(
+            defines: {'tasks_runtime': true, 'use_macos_vision_runtime': true},
+            basePath: Uri.directory('.'),
+          ),
+        ),
+        check: (_, output) {
+          final asset = output.assets.code.single;
+          expect(asset.file, isNull);
+          expect(
+            asset.linkMode,
+            isA<DynamicLoadingSystem>().having(
+              (mode) => mode.uri.path,
+              'path',
+              '@rpath/vision.framework/vision',
+            ),
+          );
+        },
+      );
+    },
+  );
+
   test('the hook stays inert without the opt-in on any target', () async {
     await testCodeBuildHook(
       mainMethod: hook.main,
