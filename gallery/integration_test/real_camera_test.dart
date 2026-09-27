@@ -12,6 +12,7 @@ import 'package:mediapipe_gallery/live/live_subjects.dart';
 import 'package:mediapipe_gallery/main.dart';
 
 import 'support/alignment_oracle.dart';
+import 'support/gallery_tiles.dart';
 import 'support/live_subject.dart';
 
 // A real camera must be in front of this test, showing one face, or one hand
@@ -81,18 +82,9 @@ void main() {
         expect(cameras, isNotEmpty, reason: 'this test needs a real camera');
 
         await tester.pumpWidget(const GalleryApp());
-        for (
-          var i = 0;
-          i < 100 && find.text(subject.tile).evaluate().isEmpty;
-          i++
-        ) {
-          await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 100)),
-          );
-          await tester.pump();
-        }
-        expect(find.text(subject.tile), findsOneWidget);
-        await tester.tap(find.text(subject.tile));
+        final tileTitle = await scrollToGalleryTile(tester, subject.tile);
+        expect(tileTitle, findsOneWidget);
+        await tester.tap(tileTitle);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         controller = tester

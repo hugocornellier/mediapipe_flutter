@@ -11,6 +11,7 @@ import 'package:mediapipe_gallery/live/live_subjects.dart';
 import 'package:mediapipe_gallery/main.dart';
 
 import 'support/live_subject.dart';
+import 'support/gallery_tiles.dart';
 import 'support/supplied_camera.dart';
 
 // Hosted runners have no physical webcam. Replace capture only: the gallery,
@@ -46,29 +47,17 @@ void main() {
       LiveCameraController<Object?>? controller;
       try {
         await tester.pumpWidget(const GalleryApp());
-        for (
-          var i = 0;
-          i < 100 && find.text(subject.tile).evaluate().isEmpty;
-          i++
-        ) {
-          await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 100)),
-          );
-          await tester.pump();
-        }
-        expect(find.text(subject.tile), findsOneWidget);
+        final tileTitle = await scrollToGalleryTile(tester, subject.tile);
+        expect(tileTitle, findsOneWidget);
         // Linux offers GPU for face and hand; this test stays on the CPU
         // default. Windows has no GPU path.
         final gpuOffered = Platform.isLinux ? findsOneWidget : findsNothing;
-        final tile = find.ancestor(
-          of: find.text(subject.tile),
-          matching: find.byType(Card),
-        );
+        final tile = find.ancestor(of: tileTitle, matching: find.byType(Card));
         expect(
           find.descendant(of: tile, matching: find.text('GPU')),
           gpuOffered,
         );
-        await tester.tap(find.text(subject.tile));
+        await tester.tap(tileTitle);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         controller = tester
@@ -100,7 +89,7 @@ void main() {
         await waitForFrames(tester, live);
         await tester.pump();
         // Later VIDEO results depend on how many tracking frames arrived while
-        // the UI was pumping. Compare the first frame of each fresh task.
+        // the UI was pumping. Compare the first frame from each camera.
         final before = firstFrames['supplied-rgba']!;
         final after = firstFrames['supplied-bgra']!;
         for (var i = 0; i < before.length; i++) {
