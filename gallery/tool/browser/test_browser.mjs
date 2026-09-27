@@ -725,8 +725,33 @@ async function cameraChecks() {
   assert.notEqual(firstDevice, secondDevice);
   assert.ok(await multiplePage.evaluate(() => window.testCaptureTracks.some(t => t.readyState === 'ended')));
   await multiplePage.getByRole('button', {name: 'Switch to front camera'}).click();
-  await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 12 &&
-    document.querySelector('video')?.style.transform === 'scaleX(-1)');
+  try {
+    await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 12 &&
+      document.querySelector('video')?.style.transform === 'scaleX(-1)');
+  } catch (error) {
+    const state = await multiplePage.evaluate(() => {
+      const video = document.querySelector('video');
+      return {
+        video: video && {
+          width: video.videoWidth,
+          height: video.videoHeight,
+          readyState: video.readyState,
+          frames: video.getAttribute('data-processed-frames'),
+          mirror: video.style.transform,
+          srcObject: Boolean(video.srcObject),
+        },
+        tracks: window.testCaptureTracks.map(track => ({
+          readyState: track.readyState,
+          settings: track.getSettings(),
+        })),
+        capture: window.testCaptureDiagnostics,
+        workers: mediapipeVision.stats(),
+        body: document.body.innerText.slice(0, 1000),
+      };
+    });
+    fs.writeFileSync(path.join(evidence, 'front-flip-timeout.json'), JSON.stringify(state, null, 2));
+    throw new Error('front camera did not resume after flip: ' + JSON.stringify(state), {cause: error});
+  }
   const thirdDevice = await multiplePage.evaluate(() => window.testCaptureTracks.at(-1).getSettings().deviceId);
   assert.equal(thirdDevice, firstDevice);
   assert.equal(await multiplePage.evaluate(() => mediapipeVision.stats().totalCreated), workersBeforeCameraFlip,
