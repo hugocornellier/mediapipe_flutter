@@ -48,3 +48,6 @@ done
 timeout 300 flutter test -d "$device" \
   integration_test/face_landmarker_still_image_test.dart \
   --reporter expanded
+timeout 900 flutter test -d "$device" \
+  integration_test/gallery_journey_test.dart \
+  --reporter expanded

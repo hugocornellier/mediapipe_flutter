@@ -50,6 +50,9 @@ jobs:
       - name: Test still image inference for every camera vision task
         working-directory: gallery
         run: flutter test -d macos integration_test/vision_still_image_modes_test.dart --reporter expanded
+      - name: Exercise every prepared gallery page through its sidebar
+        working-directory: gallery
+        run: flutter test -d macos integration_test/gallery_journey_test.dart --reporter expanded
 
   modern-task-matrix:
     name: Modern tasks / options and sustained CPU inference
