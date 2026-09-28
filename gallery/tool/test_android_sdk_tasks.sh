@@ -2,9 +2,10 @@
 # Runs the official Android SDK task tests on an emulator, CPU only: Face and
 # Hand Landmarker; Pose, Gesture and Holistic; Face and Object Detector and
 # Image Classifier; Image Embedder; Image Segmenter; the text and audio tasks;
-# then every live tile. They run as sdk_all_test.dart, one app launch as on
-# Test Lab: each extra install and launch was another chance for a hosted
-# emulator to lose its Dart Development Service or die outright.
+# then every live tile and the gallery journey through the sidebar. They run as
+# sdk_all_test.dart, one app launch as on Test Lab: each extra install and
+# launch was another chance for a hosted emulator to lose its Dart Development
+# Service or die outright.
 #
 # The emulator's SwiftShader GL accepts a GPU task, then TFLite's GL delegate
 # fails on the first frame, so GPU stays a phone check. `flutter test`
@@ -47,7 +48,4 @@ for attempt in 1 2; do
 done
 timeout 300 flutter test -d "$device" \
   integration_test/face_landmarker_still_image_test.dart \
-  --reporter expanded
-timeout 900 flutter test -d "$device" \
-  integration_test/gallery_journey_test.dart \
   --reporter expanded

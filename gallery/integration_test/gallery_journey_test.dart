@@ -20,6 +20,10 @@ void main() {
   testWidgets('every sidebar task opens and runs its bundled sample', (
     tester,
   ) async {
+    // A tap that lands on something else, such as a closing drawer's scrim,
+    // fails at that tap instead of several steps later.
+    WidgetController.hitTestWarningShouldBeFatal = true;
+    addTearDown(() => WidgetController.hitTestWarningShouldBeFatal = false);
     final setup = await tester.runAsync(
       () async => (
         await GalleryAssets.unpack(),
@@ -84,6 +88,9 @@ void main() {
       expect(tile, findsOneWidget, reason: task.id);
       await tester.tap(tile);
       await tester.pump();
+      // On phones the drawer closes over the new page, and its scrim takes
+      // every tap until the drawer has gone.
+      await _until(tester, () => find.byType(Drawer).evaluate().isEmpty);
       await _until(
         tester,
         () => find
