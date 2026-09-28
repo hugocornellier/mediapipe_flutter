@@ -40,8 +40,6 @@ jobs:
           dart tool/download_image_tasks.dart
           dart tool/download_object_detector.dart
           dart tool/download_segmenter_tasks.dart
-      - name: Prepare the official macOS runtime
-        run: python3 -B packages/mediapipe-task-vision/tool/prepare_official_macos_landmark_runtime.py
       - name: Prepare the camera vision gallery
         run: |
           python3 -B gallery/tool/prepare.py --target macos/arm64 --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker

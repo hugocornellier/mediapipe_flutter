@@ -214,6 +214,10 @@ def available_tasks(target):
                 return _tasks_of(block) | NON_VISION_TASKS
         return set()
     tasks = set()
+    if target == 'macos/arm64':
+        # Google's official wheel serves these without a maintainer build;
+        # prepare() fetches that runtime whenever one of them is bundled.
+        tasks |= OFFICIAL_MACOS_TASKS
     if target in SHARED_RUNTIME_TARGETS:
         tasks.add(SHARED_RUNTIME_TASK)
         tasks |= set(TEXT_TASKS) | set(AUDIO_TASKS)
