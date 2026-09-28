@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'sdk_face_landmarker_test.dart' as face;
+import 'gallery_journey_test.dart' as journey;
 import 'runtime_test.dart' as runtime;
 import 'sdk_detection_tasks_test.dart' as detection;
 import 'sdk_embedder_test.dart' as embedder;
@@ -16,7 +17,9 @@ import 'sdk_text_audio_test.dart' as text_audio;
 // each extra install and launch risked losing the emulator. Build with
 // SDK_GPU=required on a physical device so a GPU refusal fails its test instead
 // of being recorded.
-// The live tiles run last: they open the camera, which is dark in a device rack.
+// The live tiles run after the suites: they open the camera, which is dark in a
+// device rack. The gallery journey comes last and opens every page the way a
+// user does, through the sidebar.
 void main() {
   // The binding reports the run as finished to Android from a tearDownAll it
   // registers when first created. Created inside a suite's group, it would end
@@ -31,4 +34,5 @@ void main() {
   group('interactive segmenter', interactive.main);
   group('text and audio', text_audio.main);
   group('live tiles', runtime.main);
+  group('gallery journey', journey.main);
 }

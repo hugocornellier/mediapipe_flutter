@@ -203,48 +203,53 @@ class _SegmentPageState extends State<SegmentPage> {
                     ? const Center(child: CircularProgressIndicator())
                     : Center(
                         child: LayoutBuilder(
-                          builder: (context, constraints) => GestureDetector(
-                            onPanStart: (details) {
-                              final point = _pointFor(
-                                details.localPosition,
-                                constraints.biggest,
-                              );
-                              if (point != null) editor.begin(point);
-                            },
-                            onPanUpdate: (details) {
-                              final point = _pointFor(
-                                details.localPosition,
-                                constraints.biggest,
-                              );
-                              if (point != null) editor.extend(point);
-                            },
-                            onPanEnd: (_) => editor.end(),
-                            // A single point is never a valid lasso, so let
-                            // taps fall through rather than silently drop.
-                            onTapUp: editor.brush == SegmentationBrushMode.lasso
-                                ? null
-                                : (details) {
-                                    final point = _pointFor(
-                                      details.localPosition,
-                                      constraints.biggest,
-                                    );
-                                    if (point == null) return;
-                                    editor
-                                      ..begin(point)
-                                      ..end();
-                                  },
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Image(
-                                  image: widget.assets.imageProvider(
-                                    widget.task.sample,
+                          builder: (context, constraints) => Semantics(
+                            label: 'Segmentation image',
+                            child: GestureDetector(
+                              key: const ValueKey('segment-canvas'),
+                              onPanStart: (details) {
+                                final point = _pointFor(
+                                  details.localPosition,
+                                  constraints.biggest,
+                                );
+                                if (point != null) editor.begin(point);
+                              },
+                              onPanUpdate: (details) {
+                                final point = _pointFor(
+                                  details.localPosition,
+                                  constraints.biggest,
+                                );
+                                if (point != null) editor.extend(point);
+                              },
+                              onPanEnd: (_) => editor.end(),
+                              // A single point is never a valid lasso, so let
+                              // taps fall through rather than silently drop.
+                              onTapUp:
+                                  editor.brush == SegmentationBrushMode.lasso
+                                  ? null
+                                  : (details) {
+                                      final point = _pointFor(
+                                        details.localPosition,
+                                        constraints.biggest,
+                                      );
+                                      if (point == null) return;
+                                      editor
+                                        ..begin(point)
+                                        ..end();
+                                    },
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image(
+                                    image: widget.assets.imageProvider(
+                                      widget.task.sample,
+                                    ),
+                                    fit: BoxFit.contain,
                                   ),
-                                  fit: BoxFit.contain,
-                                ),
-                                if (_maskImage case final image?)
-                                  CustomPaint(painter: _MaskPainter(image)),
-                              ],
+                                  if (_maskImage case final image?)
+                                    CustomPaint(painter: _MaskPainter(image)),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -296,14 +301,23 @@ class _SegmentPageState extends State<SegmentPage> {
                     children: [
                       const Text('Threshold'),
                       Expanded(
-                        child: Slider(
-                          value: _threshold,
-                          min: 0.05,
-                          max: 0.95,
-                          onChanged: (value) {
-                            setState(() => _threshold = value);
-                            unawaited(_repaintMask());
-                          },
+                        // As in TaskSettingsPanel: Flutter 3.47's Slider keeps
+                        // its value-bubble overlay entry shown, and on web an
+                        // entry in the page's overlay is an empty page-sized
+                        // semantics node above every control, so DOM hit tests
+                        // land on it. The value is printed beside the slider.
+                        child: Overlay.wrap(
+                          alwaysSizeToContent: true,
+                          child: Slider(
+                            showValueIndicator: ShowValueIndicator.never,
+                            value: _threshold,
+                            min: 0.05,
+                            max: 0.95,
+                            onChanged: (value) {
+                              setState(() => _threshold = value);
+                              unawaited(_repaintMask());
+                            },
+                          ),
                         ),
                       ),
                       Text(_threshold.toStringAsFixed(2)),

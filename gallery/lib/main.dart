@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/semantics.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:mediapipe_flutter_vision/capabilities.dart';
 
 import 'catalog.dart';
@@ -50,7 +51,10 @@ Future<void> main() async {
 }
 
 class GalleryApp extends StatelessWidget {
-  const GalleryApp({super.key});
+  const GalleryApp({super.key, this.stillImagePicker});
+
+  /// Lets device tests choose a fixture through the real gallery controls.
+  final Future<XFile?> Function()? stillImagePicker;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -62,12 +66,14 @@ class GalleryApp extends StatelessWidget {
     darkTheme: GalleryTheme.data(
       Brightness.dark,
     ).copyWith(pageTransitionsTheme: _pageTransitions),
-    home: const HomePage(),
+    home: HomePage(stillImagePicker: stillImagePicker),
   );
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, this.stillImagePicker});
+
+  final Future<XFile?> Function()? stillImagePicker;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -108,7 +114,12 @@ class _HomePageState extends State<HomePage> {
           ))
             if (task.hasOwnPage) task,
         ];
-        return _GalleryShell(assets: assets, platform: platform, tasks: tasks);
+        return _GalleryShell(
+          assets: assets,
+          platform: platform,
+          tasks: tasks,
+          stillImagePicker: widget.stillImagePicker,
+        );
       },
     ),
   );
@@ -120,11 +131,13 @@ class _GalleryShell extends StatefulWidget {
     required this.assets,
     required this.platform,
     required this.tasks,
+    this.stillImagePicker,
   });
 
   final GalleryAssets assets;
   final TaskPlatform platform;
   final List<GalleryTask> tasks;
+  final Future<XFile?> Function()? stillImagePicker;
 
   @override
   State<_GalleryShell> createState() => _GalleryShellState();
@@ -159,6 +172,7 @@ class _GalleryShellState extends State<_GalleryShell> {
     return switch (task.demo) {
       GalleryDemo.live => LivePage(
         task: task,
+        stillImagePicker: widget.stillImagePicker,
         platform: widget.platform,
         officialMacosLandmarkTasks: widget.assets.officialMacosLandmarkTasks,
         onOpenMenu: openMenu,
@@ -270,6 +284,7 @@ class _NavigationSidebar extends StatelessWidget {
             children: [
               Expanded(
                 child: ListView(
+                  key: const ValueKey('gallery-sidebar'),
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
                   children: [
                     _item(
