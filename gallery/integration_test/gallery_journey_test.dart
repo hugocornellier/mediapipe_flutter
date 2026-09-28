@@ -85,6 +85,9 @@ void main() {
             .descendant(of: sidebar, matching: find.byType(Scrollable))
             .first,
       );
+      // scrollUntilVisible ends by jumping the list without a frame, so the
+      // tile's position is stale until the list is laid out again.
+      await _settle(tester);
       expect(tile, findsOneWidget, reason: task.id);
       await tester.tap(tile);
       await tester.pump();
