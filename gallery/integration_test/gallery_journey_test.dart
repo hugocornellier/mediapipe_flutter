@@ -53,13 +53,21 @@ void main() {
         },
       ),
     );
-    await _until(tester, () => find.text('Home').evaluate().isNotEmpty);
+    // The shell's content pane exists in both layouts; the sidebar's "Home"
+    // is inside a closed drawer on phones.
+    await _until(
+      tester,
+      () => find.byKey(const ValueKey('gallery-content')).evaluate().isNotEmpty,
+    );
 
     final visited = <String>[];
     for (final task in tasks) {
+      // One line per page, so a stalled run shows where it stopped.
+      // ignore: avoid_print
+      print('GALLERY_JOURNEY_PAGE ${task.id}');
       if (tester.getSize(find.byType(HomePage)).width < 900) {
         await tester.tap(find.byTooltip('Open navigation'));
-        await tester.pumpAndSettle();
+        await _settle(tester);
       }
       final sidebar = find.byKey(const ValueKey('gallery-sidebar'));
       final tile = find.descendant(
@@ -107,7 +115,7 @@ void main() {
           );
           expect(mode, findsOneWidget, reason: task.id);
           await tester.tap(mode);
-          await tester.pumpAndSettle();
+          await _settle(tester);
           await tester.tap(find.text('Still image').last);
           await tester.pump();
           await _until(
@@ -217,6 +225,16 @@ const _textCategories = <String, String>{
   'language_detector': 'fr',
   'text_classifier': 'positive',
 };
+
+/// Lets a drawer or menu finish animating. Unlike pumpAndSettle it gives up
+/// after a few seconds, because a live camera preview never stops scheduling
+/// frames.
+Future<void> _settle(WidgetTester tester) async {
+  final end = DateTime.now().add(const Duration(seconds: 3));
+  do {
+    await tester.pump(const Duration(milliseconds: 100));
+  } while (tester.binding.hasScheduledFrame && DateTime.now().isBefore(end));
+}
 
 Future<void> _until(WidgetTester tester, bool Function() done) async {
   for (var i = 0; i < 480; i++) {
