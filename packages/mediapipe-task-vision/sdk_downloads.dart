@@ -106,7 +106,14 @@ const officialMacosLandmarkRuntime = VisionRuntimeRelease(
     'object_detector',
     'pose_landmarker',
   },
-  archive: null,
+  // Written by tool/prepare_official_macos_landmark_runtime.py --release.
+  archive: (
+    url:
+        'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
+        'download/official-landmarks-v1.0.0/'
+        'mediapipe-official-vision-1.0.0-macos-arm64.tar.gz',
+    sha256: 'f662a259669792872d54da3a4f0932e63d87f423473fc08acf7d8d0528d9fb8d',
+  ),
   libraryName: 'libmediapipe.dylib',
   // Unsigned-image digest; tool/prepare_official_macos_landmark_runtime.py
   // pins the same value and records the signed digest in the manifest.

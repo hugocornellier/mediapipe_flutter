@@ -9,7 +9,7 @@ PACKAGE = Path(__file__).resolve().parents[1]
 APP = PACKAGE.parents[1] / "build/flutter_vision_smoke"
 
 
-def test_app(app=APP, package=PACKAGE, env=None):
+def test_app(app=APP, package=PACKAGE, env=None, hooks=''):
     def run(args):
         subprocess.run(args, cwd=app, env=env, check=True)
 
@@ -38,7 +38,7 @@ flutter:
     - assets/model.tflite
     - assets/face_landmarker.task
     - assets/portrait.rgb
-""")
+""" + hooks)
     (app / "assets").mkdir(exist_ok=True)
     shutil.copyfile(PACKAGE / "models/blaze_face_short_range.tflite",
                     app / "assets/model.tflite")
