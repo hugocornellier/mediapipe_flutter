@@ -100,8 +100,9 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
   Camera frames are not affected. iOS has the same defect; the adapter repairs
   it.
 - UP-023: Google's Android Image Segmenter aborts the app on GPU on a PowerVR
-  GPU (Galaxy A12), inside Google's result conversion. CPU works there, and GPU
-  matches Google's GPU reference on Mali (Pixel 8a).
+  GPU (Galaxy A12, Pixel 10, Pixel 11), inside Google's result conversion. CPU
+  works there, and GPU matches Google's GPU reference on Mali (Pixel 8a). The
+  package withdraws that task's GPU on PowerVR, named by the Android adapter.
 - UP-024: Google's Android Image Segmenter category mask is one class low on
   GPU on an Adreno GPU (Galaxy S24): person reads 14, not 15. Confidence masks
   are right, so the most confident class recovers it.

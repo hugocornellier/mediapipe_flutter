@@ -5,6 +5,7 @@ final class TaskPlatform {
     required this.operatingSystem,
     required this.architecture,
     this.version,
+    this.gpu,
   });
 
   /// Dart operating system name, or `web` outside native platforms.
@@ -16,9 +17,19 @@ final class TaskPlatform {
   /// Product version such as `14.0`, rather than the Darwin kernel version.
   final String? version;
 
+  /// The GPU's OpenGL ES renderer and vendor where an adapter names them (the
+  /// Android vision adapter does), e.g. `Mali-G715 (ARM)`; null when unknown.
+  /// A task that fails on one GPU family can then declare it unsupported.
+  final String? gpu;
+
   /// `operatingSystem/architecture`, the key used by runtime target tables.
   String get target => '$operatingSystem/$architecture';
 }
+
+/// Names this device's GPU for [TaskPlatform.gpu]. An adapter package that can
+/// read it sets this when it registers, before the platform is first read; it
+/// is called once, with the rest of the platform.
+Future<String?> Function()? taskPlatformGpuReader;
 
 /// Minimum product version for one process target, e.g. `macos/arm64: 14.0`.
 ///

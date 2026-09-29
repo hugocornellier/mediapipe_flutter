@@ -17,6 +17,10 @@ export 'src/interface/interactive_segmenter_types.dart';
 export 'src/interface/object_detector_types.dart';
 export 'src/interface/segmenter_task_types.dart';
 export 'src/interface/landmark_codec.dart';
+// An adapter that can name the GPU sets this, so capabilities can exclude a
+// GPU family a task fails on.
+export 'package:mediapipe_flutter_core/capabilities.dart'
+    show taskPlatformGpuReader;
 
 /// A serialized, asynchronous adapter to one task of an official platform SDK.
 abstract interface class VisionTaskBackend<R> {
