@@ -45,7 +45,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Mode'), findsOneWidget);
+    expect(find.text('MODE'), findsOneWidget);
     expect(find.text('Camera'), findsOneWidget);
     expect(
       tester.getTopRight(find.byKey(const ValueKey('face-landmarker-mode'))).dx,

@@ -80,7 +80,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   bool changing = false;
   String? error;
 
-  /// Always null here: the web adapter reports GPU failures as [error].
+  /// Why the demo moved from GPU to CPU, when the browser refused the GPU.
   String? notice;
   T? result;
   List<CameraDescription> cameras = const [];
@@ -281,6 +281,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     running = false;
     changing = true;
     error = null;
+    if (chosen == VisionDelegate.gpu) notice = null;
     result = null;
     _cancelCallback();
     _changed();
@@ -292,6 +293,8 @@ class LiveCameraController<T> extends ChangeNotifier {
         await _release(preservePreview: true);
       }
       if (_closed || generation != _generation) return;
+      var taskReady = false;
+      var fallBack = false;
       try {
         if (!web.window.isSecureContext) {
           throw StateError('Camera access requires HTTPS or localhost.');
@@ -317,6 +320,7 @@ class LiveCameraController<T> extends ChangeNotifier {
         final warmedUpTo = task is FixedFrameSizeLiveTask
             ? -1
             : await _warmUp(sample);
+        taskReady = true;
         if (_closed || generation != _generation) {
           await _release();
           return;
@@ -355,13 +359,26 @@ class LiveCameraController<T> extends ChangeNotifier {
         running = true;
         _schedule(generation);
       } catch (failure) {
-        if (generation == _generation) error = _message(failure);
+        if (generation == _generation) {
+          // A browser without WebGL2 (or one that loses the context) fails
+          // while the GPU task opens or warms up; the demo then uses CPU,
+          // visibly, as the native demo does.
+          if (chosen == VisionDelegate.gpu && !taskReady) {
+            notice = 'GPU unavailable, using CPU. ${_message(failure)}';
+            fallBack = true;
+          } else {
+            error = _message(failure);
+          }
+        }
         await _release();
       } finally {
         if (generation == _generation) {
           changing = false;
           _changed();
         }
+      }
+      if (fallBack && !_closed && generation == _generation) {
+        unawaited(start(delegate: VisionDelegate.cpu));
       }
     });
   }

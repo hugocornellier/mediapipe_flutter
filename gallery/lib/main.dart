@@ -299,12 +299,8 @@ class _NavigationSidebar extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(12, 28, 12, 8),
                           child: Text(
-                            category.title,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1,
-                            ),
+                            category.title.toUpperCase(),
+                            style: GalleryTheme.label(theme),
                           ),
                         ),
                         for (final task in sorted)
@@ -333,6 +329,7 @@ class _NavigationSidebar extends StatelessWidget {
     VoidCallback onTap,
   ) {
     final scheme = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Semantics(
@@ -344,8 +341,10 @@ class _NavigationSidebar extends StatelessWidget {
           child: ListTile(
             title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
             selected: selected,
-            selectedColor: scheme.onPrimary,
-            selectedTileColor: scheme.primary,
+            selectedColor: dark ? GalleryTheme.white : scheme.onPrimary,
+            selectedTileColor: dark
+                ? GalleryTheme.darkNavSelected
+                : scheme.primary,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -676,7 +675,7 @@ class _DelegateBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: gpu
-            ? theme.colorScheme.primaryContainer
+            ? GalleryTheme.accent
             : theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
       ),
@@ -685,9 +684,7 @@ class _DelegateBadge extends StatelessWidget {
         style: theme.textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
           letterSpacing: 0.4,
-          color: gpu
-              ? theme.colorScheme.onPrimaryContainer
-              : theme.colorScheme.onSurfaceVariant,
+          color: gpu ? GalleryTheme.white : theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );

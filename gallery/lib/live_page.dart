@@ -107,9 +107,7 @@ class _LivePageState extends State<LivePage> {
   @override
   void initState() {
     super.initState();
-    if (!_delegates.contains(_controller.delegate)) {
-      _controller.delegate = _delegates.first;
-    }
+    _controller.delegate = preferredDelegate(_delegates);
     _controller.addListener(_onControllerChanged);
     if (_mode == _VisionInputMode.camera) _findCameras();
   }
@@ -157,11 +155,11 @@ class _LivePageState extends State<LivePage> {
     if (_controller.description == null) return;
     try {
       // Start on the current delegate where the task supports it, otherwise
-      // on the first it does (Object Detector is Metal-only on macOS).
+      // on the preferred one (Object Detector is Metal-only on macOS).
       await _controller.start(
         delegate: _delegates.contains(_controller.delegate)
             ? _controller.delegate
-            : _delegates.first,
+            : preferredDelegate(_delegates),
         modelAsset: 'assets/models/${widget.task.model}',
         warmUpSample: 'assets/samples/${widget.task.sample}',
       );
@@ -375,7 +373,7 @@ class _LivePageState extends State<LivePage> {
     final input = _imageInput;
     if (input == null) return Future.value();
     final revision = ++_imageRevision;
-    final delegate = _controller.delegate;
+    var delegate = _controller.delegate;
     final modelLoader = _controller.modelLoader;
     setState(() {
       _imageBusy = true;
@@ -394,7 +392,15 @@ class _LivePageState extends State<LivePage> {
             revision != _imageRevision) {
           return;
         }
-        await _task.open(delegate, model, mode: VisionRunningMode.image);
+        try {
+          await _task.open(delegate, model, mode: VisionRunningMode.image);
+        } on Object {
+          // GPU is only the default; a platform that refuses it gets CPU.
+          if (delegate != VisionDelegate.gpu) rethrow;
+          delegate = VisionDelegate.cpu;
+          _controller.delegate = delegate;
+          await _task.open(delegate, model, mode: VisionRunningMode.image);
+        }
         opened = true;
         if (!mounted ||
             _mode != _VisionInputMode.image ||
@@ -518,7 +524,7 @@ class _LivePageState extends State<LivePage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Mode'),
+                  Text('MODE', style: GalleryTheme.label(Theme.of(context))),
                   const SizedBox(width: 8),
                   DropdownButtonHideUnderline(
                     child: DropdownButton<_VisionInputMode>(

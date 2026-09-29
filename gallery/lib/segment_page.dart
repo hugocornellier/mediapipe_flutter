@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
@@ -12,6 +13,7 @@ import 'gallery_theme.dart';
 import 'main.dart';
 import 'segment/editor_controller.dart';
 import 'segment/mask_overlay.dart';
+import 'web/test_hooks.dart';
 
 /// MagicTouch segmentation: drag over a subject to select it.
 ///
@@ -54,11 +56,13 @@ class _SegmentPageState extends State<SegmentPage> {
             widget.assets.officialMacosLandmarkTasks,
           )
           .supportedDelegates
+          // TODO: the browser GPU segmenter returns its first mask for every
+          // later stroke, wherever the tap lands. Offer GPU on web once each
+          // stroke gets its own mask (CPU does).
+          .where((delegate) => !kIsWeb || delegate != VisionDelegate.gpu)
           .toList()
         ..sort((a, b) => a.index.compareTo(b.index));
-  late VisionDelegate _delegate = _delegates.isEmpty
-      ? VisionDelegate.cpu
-      : _delegates.first;
+  late VisionDelegate _delegate = preferredDelegate(_delegates);
 
   @override
   void initState() {
@@ -138,6 +142,7 @@ class _SegmentPageState extends State<SegmentPage> {
     final revision = Object.hash(mask, _threshold);
     if (revision == _paintedRevision) return;
     _paintedRevision = revision;
+    if (testHooks) _logMask(mask);
     final rgba = maskRgba(mask.confidence, _threshold);
     final image = await _decode(rgba, mask.width, mask.height);
     if (!mounted) {
@@ -148,6 +153,42 @@ class _SegmentPageState extends State<SegmentPage> {
       _maskImage?.dispose();
       _maskImage = image;
     });
+  }
+
+  /// For the browser tests (`?test-hooks`): the strokes sent and the mask's
+  /// area, bounding box and centroid, normalized to the image, as one line.
+  void _logMask(SegmentationMask mask) {
+    final confidence = mask.confidence;
+    var count = 0, minX = mask.width, minY = mask.height, maxX = -1, maxY = -1;
+    var sumX = 0.0, sumY = 0.0;
+    for (var y = 0; y < mask.height; y++) {
+      for (var x = 0; x < mask.width; x++) {
+        if (confidence[y * mask.width + x] < _threshold) continue;
+        count++;
+        sumX += x;
+        sumY += y;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+    String n(num value, int size) => (value / size).toStringAsFixed(2);
+    final strokes = [
+      for (final stroke in _editor?.strokes ?? const <SegmentationStroke>[])
+        '${stroke.brushMode.name}@'
+            '${stroke.points.map((p) => '${p.x.toStringAsFixed(2)},'
+                '${p.y.toStringAsFixed(2)}').join(' ')}',
+    ];
+    debugPrint(
+      'SEGMENT_MASK delegate=${_delegate.name} strokes=[${strokes.join('; ')}] '
+      'size=${mask.width}x${mask.height} '
+      'area=${(count / (mask.width * mask.height)).toStringAsFixed(3)} '
+      '${count == 0 ? 'empty' : 'bbox=${n(minX, mask.width)},${n(minY, mask.height)}-'
+                '${n(maxX, mask.width)},${n(maxY, mask.height)} '
+                'centroid=${n(sumX / count, mask.width)},'
+                '${n(sumY / count, mask.height)}'}',
+    );
   }
 
   Future<ui.Image> _decode(Uint8List rgba, int width, int height) {
@@ -249,6 +290,11 @@ class _SegmentPageState extends State<SegmentPage> {
                             label: 'Segmentation image',
                             child: GestureDetector(
                               key: const ValueKey('segment-canvas'),
+                              // On web a click on a tappable semantics node
+                              // arrives as a positionless tap, which put every
+                              // stroke at the image centre. Real pointer events
+                              // carry where the user clicked.
+                              excludeFromSemantics: true,
                               onPanStart: (details) {
                                 final point = _pointFor(
                                   details.localPosition,
@@ -312,33 +358,10 @@ class _SegmentPageState extends State<SegmentPage> {
                     style: theme.textTheme.bodySmall,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
-                  SegmentedButton<SegmentationBrushMode>(
-                    segments: const [
-                      ButtonSegment(
-                        value: SegmentationBrushMode.positive,
-                        icon: Icon(Icons.add_circle_outline),
-                        label: Text('Include'),
-                      ),
-                      ButtonSegment(
-                        value: SegmentationBrushMode.negative,
-                        icon: Icon(Icons.remove_circle_outline),
-                        label: Text('Exclude'),
-                      ),
-                      ButtonSegment(
-                        value: SegmentationBrushMode.lasso,
-                        icon: Icon(Icons.gesture),
-                        label: Text('Lasso'),
-                      ),
-                    ],
-                    selected: {editor?.brush ?? SegmentationBrushMode.positive},
-                    // The controller reads `brush` when a stroke begins, so a
-                    // change mid-stroke cannot alter the stroke already running.
-                    onSelectionChanged: editor == null || !editor.ready
-                        ? null
-                        : (selection) =>
-                              setState(() => editor.brush = selection.first),
-                  ),
+                  // TODO: finish Exclude (negative) and Lasso strokes on every
+                  // platform, then restore the Include/Exclude/Lasso selector
+                  // (a SegmentedButton<SegmentationBrushMode> setting
+                  // editor.brush). Until then the gallery offers Include only.
                   if (_delegates.length > 1) ...[
                     const SizedBox(height: 8),
                     SegmentedButton<VisionDelegate>(
