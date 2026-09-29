@@ -17,11 +17,10 @@ try {
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(base);
   await page.getByRole('button', {name: /Face Landmarker/}).click();
-  await page.getByText('MODE', {exact: true}).waitFor();
-  await page.getByText('Camera', {exact: true}).click();
-  await page.waitForTimeout(500);
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('Enter');
+  const mode = page.locator('[flt-semantics-identifier="face-landmarker-mode"]');
+  await mode.waitFor();
+  await mode.click();
+  await page.getByRole('menuitem', {name: 'Still image', exact: true}).click();
   await page.getByRole('button', {name: 'Choose image'}).waitFor();
 
   const chooserPromise = page.waitForEvent('filechooser');

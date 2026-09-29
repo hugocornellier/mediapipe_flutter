@@ -40,7 +40,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('MODE'), findsOneWidget);
+    expect(find.byKey(const ValueKey('face-landmarker-mode')), findsOneWidget);
     expect(find.text('Still image'), findsOneWidget);
     expect(find.text('Choose image'), findsOneWidget);
 

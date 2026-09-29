@@ -529,25 +529,29 @@ class _LivePageState extends State<LivePage> {
                     const SizedBox(width: 8),
                   ],
                   DropdownButtonHideUnderline(
-                    child: DropdownButton<_VisionInputMode>(
-                      key: ValueKey(
-                        '${widget.task.runtimeId.replaceAll('_', '-')}-mode',
+                    child: Semantics(
+                      identifier:
+                          '${widget.task.runtimeId.replaceAll('_', '-')}-mode',
+                      child: DropdownButton<_VisionInputMode>(
+                        key: ValueKey(
+                          '${widget.task.runtimeId.replaceAll('_', '-')}-mode',
+                        ),
+                        style: compact ? theme.textTheme.bodyMedium : null,
+                        value: _mode,
+                        items: const [
+                          DropdownMenuItem(
+                            value: _VisionInputMode.camera,
+                            child: Text('Camera'),
+                          ),
+                          DropdownMenuItem(
+                            value: _VisionInputMode.image,
+                            child: Text('Still image'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) unawaited(_setMode(value));
+                        },
                       ),
-                      style: compact ? theme.textTheme.bodyMedium : null,
-                      value: _mode,
-                      items: const [
-                        DropdownMenuItem(
-                          value: _VisionInputMode.camera,
-                          child: Text('Camera'),
-                        ),
-                        DropdownMenuItem(
-                          value: _VisionInputMode.image,
-                          child: Text('Still image'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) unawaited(_setMode(value));
-                      },
                     ),
                   ),
                 ],
