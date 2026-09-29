@@ -65,6 +65,24 @@ void main() {
             capabilities.unavailableReasons[VisionDelegate.gpu],
             contains('UP-023'),
           );
+          // Asked for anyway, the plugin refuses it before Google's task
+          // exists, so the app lives on to run the CPU checks below.
+          await expectLater(
+            ImageSegmenter.create(
+              ImageSegmenterOptions(
+                modelBytes: model,
+                delegate: VisionDelegate.gpu,
+                outputCategoryMask: true,
+              ),
+            ),
+            throwsA(
+              isA<VisionTaskException>().having(
+                (error) => error.message,
+                'message',
+                contains('UP-023'),
+              ),
+            ),
+          );
           _report('gpu_withdrawn', {'gpu': capabilities.platform.gpu});
         }
         for (final delegate in [

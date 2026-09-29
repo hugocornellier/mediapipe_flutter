@@ -270,8 +270,8 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
       throw new IllegalArgumentException("Unknown delegate: " + delegate);
     }
     // UP-023: on a PowerVR GPU Google's Image Segmenter aborts the process when
-    // it converts a GPU result, which nothing here could catch. The Dart side
-    // refuses it first; this covers callers that reach the channel directly.
+    // it converts a GPU result, which nothing here could catch. Capabilities
+    // withdraw it there; a caller that asks anyway is refused before it exists.
     if ("gpu".equals(delegate) && "image_segmenter".equals(name) && powerVr()) {
       throw new IllegalStateException("UP-023: Google's Image Segmenter aborts the app on this"
           + " PowerVR GPU (" + gpuName() + "); use the CPU delegate");

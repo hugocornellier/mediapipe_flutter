@@ -32,15 +32,6 @@ final class ImageSegmenter {
 
   /// Load a segmentation model and open its graph off the calling isolate.
   static Future<ImageSegmenter> create(ImageSegmenterOptions options) async {
-    // Declared support is checked on Android too: there Google's GPU task
-    // aborts the whole app on a PowerVR GPU (UP-023), which no caller can
-    // catch, so it must be refused before it runs.
-    final capabilities = await queryImageSegmenterCapabilities();
-    if (!capabilities.supportedDelegates.contains(options.delegate)) {
-      throw UnsupportedError(
-        capabilities.unavailableReasons[options.delegate]!,
-      );
-    }
     if (Platform.isAndroid && imageSegmenterBackendFactory != null) {
       return ImageSegmenter._(
         null,
@@ -53,6 +44,12 @@ final class ImageSegmenter {
           maxTimestamp: 0x7fffffffffffffff ~/ 1000,
         ),
         options.delegate,
+      );
+    }
+    final capabilities = await queryImageSegmenterCapabilities();
+    if (!capabilities.supportedDelegates.contains(options.delegate)) {
+      throw UnsupportedError(
+        capabilities.unavailableReasons[options.delegate]!,
       );
     }
     return ImageSegmenter._(

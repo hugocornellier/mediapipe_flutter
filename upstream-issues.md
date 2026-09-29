@@ -537,10 +537,10 @@ suite passed first.
 
 The Android adapter now reads the GPU's OpenGL ES renderer and vendor once
 (`TaskPlatform.gpu`). On a PowerVR GPU, `queryImageSegmenterCapabilities()`
-reports GPU unsupported with this issue as the reason, `ImageSegmenter.create`
-throws `UnsupportedError` for it, and the plugin refuses a GPU Image Segmenter
-for callers that reach its channel directly. Other tasks, and other GPUs, keep
-the GPU delegate.
+reports GPU unsupported with this issue as the reason, and the plugin refuses to
+create a GPU Image Segmenter there, so `ImageSegmenter.create` throws a
+`VisionTaskException` instead of the app aborting. Other tasks, and other GPUs,
+keep the GPU delegate.
 
 ## UP-024: Android Image Segmenter GPU category mask is one class low on Adreno
 
