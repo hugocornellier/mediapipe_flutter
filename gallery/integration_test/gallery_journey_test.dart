@@ -159,6 +159,7 @@ void main() {
               reason: '${task.id}: $camera',
             );
             checks.add('${task.id}:camera:none');
+            _note('${task.id}: no camera ($camera)');
           } else {
             for (final delegate in delegates) {
               if (choices) await _tapDelegate(tester, delegate);
@@ -166,6 +167,9 @@ void main() {
                   delegate == VisionDelegate.gpu && _gpu == 'optional';
               if (!await _liveFrames(tester, delegate, optional: optional)) {
                 gpuRefused = true;
+                _note(
+                  '${task.id}: live GPU refused, CPU from here: ${_screen(tester)}',
+                );
                 await _tapDelegate(tester, VisionDelegate.cpu);
                 break;
               }
@@ -200,6 +204,9 @@ void main() {
               optional: optional,
             )) {
               gpuRefused = true;
+              _note(
+                '${task.id}: still GPU refused, CPU from here: ${_screen(tester)}',
+              );
               continue;
             }
             checks.add('${task.id}:${delegate.name}:still');
@@ -360,15 +367,27 @@ Future<void> _tapDelegate(WidgetTester tester, VisionDelegate delegate) async {
   final control = find.byWidgetPredicate(
     (widget) => widget is SegmentedButton<VisionDelegate>,
   );
-  await _until(
-    tester,
-    () =>
-        control.evaluate().isNotEmpty &&
+  final deadline = DateTime.now().add(const Duration(minutes: 2));
+  while (true) {
+    await tester.pump();
+    final found = control.evaluate().isNotEmpty;
+    if (found &&
         tester
                 .widget<SegmentedButton<VisionDelegate>>(control)
                 .onSelectionChanged !=
-            null,
-  );
+            null) {
+      break;
+    }
+    if (DateTime.now().isAfter(deadline)) {
+      fail(
+        'The CPU/GPU control stayed ${found ? 'disabled' : 'missing'} '
+        'for ${delegate.name}: ${_screen(tester)}',
+      );
+    }
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 250)),
+    );
+  }
   await tester.tap(
     find.descendant(
       of: control,
@@ -397,7 +416,7 @@ Future<bool> _liveFrames(
     if (optional && view.evaluate().isNotEmpty) {
       final live = tester.widget<LiveCameraView>(view);
       if (live.controller.delegate == delegate &&
-          live.controller.error != null) {
+          (live.controller.error != null || live.placeholder is Text)) {
         return false;
       }
     }
@@ -406,7 +425,7 @@ Future<bool> _liveFrames(
     );
   }
   if (optional) return false;
-  fail('No live $label frames');
+  fail('No live $label frames: ${_screen(tester)}');
 }
 
 /// Waits for a still image result from [delegate] that matches [expected]. An
@@ -427,12 +446,45 @@ Future<bool> _stillRan(
         .map((text) => text.data ?? '')
         .toList();
     if (texts.any(ran.hasMatch) && texts.any(expected.hasMatch)) return true;
+    final error = _imageError(tester);
+    if (error != null) {
+      if (optional) return false;
+      fail('$label still image failed: $error');
+    }
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 250)),
     );
   }
   if (optional) return false;
-  fail('No $label still image result matching $expected');
+  fail('No $label still image result matching $expected: ${_screen(tester)}');
+}
+
+/// The error a still image page shows in the theme's error colour, if any.
+String? _imageError(WidgetTester tester) {
+  final page = find.byType(LivePage);
+  if (page.evaluate().isEmpty) return null;
+  final color = Theme.of(tester.element(page)).colorScheme.error;
+  for (final text in tester.widgetList<Text>(
+    find.descendant(of: page, matching: find.byType(Text)),
+  )) {
+    if (text.style?.color == color && (text.data ?? '').isNotEmpty) {
+      return text.data;
+    }
+  }
+  return null;
+}
+
+/// Every text on screen, for failure messages and notes.
+String _screen(WidgetTester tester) => tester
+    .widgetList<Text>(find.byType(Text))
+    .map((text) => text.data)
+    .whereType<String>()
+    .where((text) => text.trim().isNotEmpty)
+    .join(' | ');
+
+void _note(String message) {
+  // ignore: avoid_print
+  print('GALLERY_JOURNEY_NOTE $message');
 }
 
 Future<void> _until(WidgetTester tester, bool Function() done) async {

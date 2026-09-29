@@ -70,9 +70,14 @@ try {
     // Firefox takes camera access from the preference above instead.
   }
   const page = await context.newPage();
-  page.on('pageerror', error => report.errors.push(String(error)));
+  // Each error names the step it happened in; some engines throw errors with
+  // no message, so the name and the top of the stack are kept too.
+  let step = 'load';
+  page.on('pageerror', error => report.errors.push(
+    `${step}: ${error.name || 'Error'}: ${error.message || '(no message)'}` +
+    (error.stack ? ` | ${error.stack.split('\n').slice(0, 3).join(' / ')}` : '')));
   page.on('response', response => {
-    if (response.status() >= 400) report.errors.push(`${response.status()} ${response.url()}`);
+    if (response.status() >= 400) report.errors.push(`${step}: ${response.status()} ${response.url()}`);
   });
   const manifestResponse = await page.request.get(new URL('assets/assets/manifest.json', base).href);
   assert.ok(manifestResponse.ok(), 'release manifest unavailable');
@@ -97,6 +102,7 @@ try {
 
   for (const id of expected) {
     const spec = cases[id];
+    step = `${id}:open`;
     const item = sidebarItem(spec.title);
     await item.click();
     await page.getByText(spec.title, {exact: true}).last().waitFor();
@@ -106,11 +112,13 @@ try {
       // The page opens with the camera running. Each delegate must keep frames
       // coming, and the second is reached by switching while the camera runs.
       for (const delegate of delegates) {
+        step = `${id}:${delegate}:live`;
         if (delegates.length > 1) await delegateButton(delegate).click({timeout: 120000});
         await liveFrames(delegate).waitFor({timeout: 120000});
         report.checks.push(`${id}:${delegate}:live`);
       }
       await page.screenshot({path: path.join(evidence, `${id}-live.png`)});
+      step = `${id}:mode`;
       await page.getByRole('button', {name: 'Camera', exact: true}).click();
       await page.getByRole('menuitem', {name: 'Still image', exact: true}).click();
       const choose = page.getByRole('button', {name: 'Choose image'});
@@ -122,6 +130,7 @@ try {
       // The image runs on the delegate the camera ended on; switching back
       // runs it again on the other.
       for (const delegate of [...delegates].reverse()) {
+        step = `${id}:${delegate}:still`;
         if (delegates.length > 1) await delegateButton(delegate).click({timeout: 120000});
         await stillRan(delegate).waitFor({timeout: 120000});
         await page.getByText(spec.result).waitFor();
@@ -130,12 +139,14 @@ try {
       assert.equal(await page.getByText(spec.sample, {exact: true}).count(), 1);
       await page.screenshot({path: path.join(evidence, `${id}-still.png`)});
     } else if (spec.text) {
+      step = `${id}:run`;
       await page.getByRole('button', {name: id === 'text_embedder' ? 'Compare' : 'Run', exact: true}).click();
       await (spec.row ? page.getByRole('progressbar', {name: spec.row}) : page.getByText(spec.result))
         .waitFor({timeout: 120000});
       await page.getByText(/Done in \d+\.\d ms/).waitFor();
       report.checks.push(`${id}:cpu:run`);
     } else if (spec.audio) {
+      step = `${id}:run`;
       // Each timestamped row is one group labelled with its top categories.
       await page.getByRole('group', {name: /^0\.00 s Speech \d\.\d{3}/}).waitFor({timeout: 120000});
       await page.getByText(/Done in \d+\.\d ms/).waitFor();
@@ -144,6 +155,7 @@ try {
       const delegates = delegatesFor(id);
       assert.ok(delegates.length > 0, `${id} has no required web delegate`);
       for (const delegate of delegates) {
+        step = `${id}:${delegate}:tap`;
         // Switching reopens the task, so the image is tapped again after it.
         if (delegates.length > 1) await delegateButton(delegate).click({timeout: 120000});
         await page.getByRole('button', {name: 'Segmentation image', exact: true}).click({timeout: 120000});
@@ -157,6 +169,7 @@ try {
     report.tasks.push(id);
   }
   assert.deepEqual(new Set(report.tasks), new Set(expected));
+  step = 'end';
   assert.deepEqual(report.errors, []);
   report.status = 'passed';
   console.log(`Gallery journey passed: ${report.tasks.join(', ')}`);
