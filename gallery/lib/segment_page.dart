@@ -331,6 +331,7 @@ class _SegmentPageState extends State<SegmentPage> {
                           child: LayoutBuilder(
                             builder: (context, constraints) => Semantics(
                               label: 'Segmentation image',
+                              identifier: 'segment-canvas-${_delegate.name}',
                               child: GestureDetector(
                                 key: const ValueKey('segment-canvas'),
                                 // On web a click on a tappable semantics node
