@@ -28,7 +28,7 @@ const _switches = [
 
 // Face Landmarker through Google's official mobile SDKs: iOS through the
 // package's Objective-C adapter, Android through
-// mediapipe_flutter_vision_android. Runs on the iOS simulator and Android
+// mediapipe_flutter_vision. Runs on the iOS simulator and Android
 // emulator in CI (CPU), and on phones (CPU and GPU).
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

@@ -45,7 +45,7 @@ const _crossRuntime = 0.03;
 
 // Hand Landmarker through Google's official mobile SDKs: iOS through the
 // package's Objective-C adapter, Android through
-// mediapipe_flutter_vision_android. Runs on the iOS simulator and Android
+// mediapipe_flutter_vision. Runs on the iOS simulator and Android
 // emulator in CI, and on phones.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

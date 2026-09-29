@@ -1,6 +1,6 @@
 SHELL := /bin/bash
-DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-genai packages/mediapipe-task-vision tool/builder tool/task_benchmarks
-FLUTTER_PACKAGES := packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter packages/mediapipe-task-vision-android packages/mediapipe-task-vision-web
+DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-genai tool/builder tool/task_benchmarks
+FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 # The gallery's pubspec is generated per target by gallery/tool/prepare.py, so
 # it is format-checked without package resolution and analyzed by the
@@ -9,9 +9,7 @@ GALLERY_SOURCES := lib test integration_test tool
 # The generated pubspec (sdk ^3.12.0) may be absent when formatting, and
 # unresolved files default to the newest language version, whose style differs.
 GALLERY_FORMAT := dart format --language-version=3.12
-# The web adapter's pubspec lists its generated runtime asset directories, so
-# it is likewise analyzed by the web workflow after prepare_runtime.py.
-ANALYZE_PACKAGES := $(filter-out packages/mediapipe-task-vision-web,$(ALL_PACKAGES))
+ANALYZE_PACKAGES := $(ALL_PACKAGES)
 VISION_NATIVE_ARGS ?=
 
 .PHONY: get models native_vision release_vision analyze format check_format generate generate_core generate_text generate_genai generate_vision test test_only test_core test_text test_vision test_vision_flutter test_vision_prebuilt test_examples build_text build_vision_camera example_text example_vision ci headers sdks
@@ -106,6 +104,11 @@ test_audio:
 test_vision:
 	cd packages/mediapipe-task-vision && dart test --reporter expanded
 
+.PHONY: test_vision_web
+test_vision_web:
+	python3 -B gallery/tool/prepare.py --target web
+	cd gallery && flutter test --platform chrome test/vision_web --reporter expanded
+
 test_vision_flutter:
 	cd packages/mediapipe-task-vision && python3 tool/test_flutter_macos.py
 
@@ -120,7 +123,7 @@ test_vision_camera_soak:
 # GenAI example tests cover Dart state only; they do not validate LLM inference.
 test_examples:
 	cd packages/mediapipe-task-text/example && flutter test --reporter expanded
-	cd packages/mediapipe-task-text/example_embedding && dart test --reporter expanded
+	cd packages/mediapipe-task-text/example_embedding && flutter test --reporter expanded
 	cd packages/mediapipe-task-genai/example && flutter test --reporter expanded
 	cd packages/mediapipe-task-vision/example && flutter test --reporter expanded
 	cd packages/mediapipe-task-vision/example_segmenter && flutter test --reporter expanded

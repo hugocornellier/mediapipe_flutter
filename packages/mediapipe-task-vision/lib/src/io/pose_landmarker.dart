@@ -15,7 +15,7 @@ import 'vision_task_worker.dart';
 /// Official PoseLandmarker, with owned results and serialized image/video inference.
 ///
 /// On Android, a registered official SDK adapter
-/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// (`mediapipe_flutter_vision`) runs the task; elsewhere Google's
 /// native runtime runs it on a worker isolate.
 final class PoseLandmarker {
   PoseLandmarker._(this._worker, this._sdk, this.delegate);

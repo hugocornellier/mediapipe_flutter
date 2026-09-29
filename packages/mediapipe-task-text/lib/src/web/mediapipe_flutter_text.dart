@@ -4,7 +4,7 @@
 
 // The classic text tasks in a browser: the same public API as the native
 // library, run by Google's official @mediapipe/tasks-text on a worker that
-// mediapipe_flutter_text_web installs (text_task_backend.dart).
+// mediapipe_flutter_text installs (text_task_backend.dart).
 
 import 'dart:typed_data';
 

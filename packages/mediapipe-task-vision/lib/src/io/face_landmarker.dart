@@ -9,7 +9,7 @@ import 'native_face_landmarker.dart';
 /// Official MediaPipe Face Landmarker, with inference serialized on a worker isolate.
 ///
 /// Supports CPU/Metal on macOS and with the official iOS SDK adapter.
-/// Android CPU/GPU uses the mediapipe_flutter_vision_android Flutter plugin.
+/// Android CPU/GPU uses the mediapipe_flutter_vision Flutter plugin.
 /// Source-built iOS runtimes support CPU only.
 /// Both targets support IMAGE/VIDEO modes. Await [dispose].
 final class FaceLandmarker {

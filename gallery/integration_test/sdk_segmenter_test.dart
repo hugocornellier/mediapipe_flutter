@@ -32,7 +32,7 @@ const _turnedAgreement = 0.97;
 
 // Image Segmenter through Google's official mobile SDKs: iOS through the
 // package's Objective-C adapter, Android through
-// mediapipe_flutter_vision_android.
+// mediapipe_flutter_vision.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

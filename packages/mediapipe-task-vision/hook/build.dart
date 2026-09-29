@@ -63,25 +63,6 @@ void main(List<String> arguments) async {
     }
     output.dependencies.add(input.packageRoot.resolve('sdk_downloads.dart'));
     final tasks = selection.cast<String>().toSet();
-    final webAdapterOnly = input.userDefines['web_adapter_only'] ?? false;
-    if (webAdapterOnly is! bool) {
-      throw const FormatException('web_adapter_only must be a boolean.');
-    }
-    if (webAdapterOnly) {
-      // Flutter's Chrome test runner also builds host native assets. The web
-      // gallery uses the JavaScript adapter, so these bindings are never called
-      // there and must not download an unrelated host runtime.
-      for (final name in {..._assetNames(tasks), 'vision.dylib'}) {
-        output.assets.code.add(
-          CodeAsset(
-            package: input.packageName,
-            name: name,
-            linkMode: LookupInProcess(),
-          ),
-        );
-      }
-      return;
-    }
     final officialIosSdk = input.userDefines['official_ios_sdk'];
     if (officialIosSdk != null && officialIosSdk is! bool) {
       throw const FormatException('official_ios_sdk must be a boolean.');
@@ -91,7 +72,7 @@ void main(List<String> arguments) async {
       throw const FormatException('official_android_sdk must be a boolean.');
     }
     // Google's SDK is the default on the Android targets it is validated on
-    // (arm64 phones, the x86_64 emulator): the mediapipe_flutter_vision_android
+    // (arm64 phones, the x86_64 emulator): the mediapipe_flutter_vision
     // plugin serves every task there. `official_android_sdk: false` selects
     // the source-built face runtime instead.
     final useAndroidSdk =
@@ -108,7 +89,7 @@ void main(List<String> arguments) async {
         throw UnsupportedError(
           'official_android_sdk requires Android, only '
           '${officialAndroidTasks.join(' and ')}, and the '
-          'mediapipe_flutter_vision_android Flutter plugin.',
+          'mediapipe_flutter_vision Flutter plugin.',
         );
       }
       // The Flutter plugin owns Google's Java/JNI SDK. These unused C bindings

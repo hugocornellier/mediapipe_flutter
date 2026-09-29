@@ -91,7 +91,8 @@ function median(values) {
 // Google's official IMAGE task, run in the page over PNG screenshot pixels.
 async function detectScreenshot(page, png) {
   return page.evaluate(async ({base64, spec}) => {
-    const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
+    const pin = await (await fetch(new URL('assets/packages/mediapipe_flutter_vision/assets/runtime.json', document.baseURI))).json();
+    const runtime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${pin.version}/`);
     const bundle = await import(new URL('vision_bundle.mjs', runtime));
     const files = await bundle.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const task = await bundle[spec.task].createFromOptions(files, {
@@ -218,7 +219,8 @@ async function apiChecks() {
   fs.writeFileSync(path.join(evidence, 'api-report.json'), JSON.stringify(api, null, 2));
   assert.equal(api.status, 'passed', JSON.stringify(api));
   const direct = await page.evaluate(async delegate => {
-    const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
+    const pin = await (await fetch(new URL('assets/packages/mediapipe_flutter_vision/assets/runtime.json', document.baseURI))).json();
+    const runtime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${pin.version}/`);
     const {FilesetResolver, FaceLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
     const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const task = await FaceLandmarker.createFromOptions(files, {
@@ -251,7 +253,8 @@ async function apiChecks() {
   // Hand Landmarker through the Dart API versus Google's JavaScript on the
   // same image, runtime and delegate.
   const hand = await page.evaluate(async delegate => {
-    const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
+    const pin = await (await fetch(new URL('assets/packages/mediapipe_flutter_vision/assets/runtime.json', document.baseURI))).json();
+    const runtime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${pin.version}/`);
     const {FilesetResolver, HandLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
     const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const task = await HandLandmarker.createFromOptions(files, {
@@ -286,7 +289,8 @@ async function apiChecks() {
   // on the sample the Dart probe used. Holistic's IMAGE mode keeps state, so
   // only first calls are comparable.
   const landmarkTasks = await page.evaluate(async delegate => {
-    const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
+    const pin = await (await fetch(new URL('assets/packages/mediapipe_flutter_vision/assets/runtime.json', document.baseURI))).json();
+    const runtime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${pin.version}/`);
     const vision = await import(new URL('vision_bundle.mjs', runtime));
     const files = await vision.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const points = list => (list ?? []).map(p => [p.x, p.y, p.z]);
@@ -335,7 +339,8 @@ async function apiChecks() {
   // Face Detector, Object Detector and Image Classifier the same way. Google's
   // boxes are float pixels; the Dart API truncates them, as its C API does.
   const detectionTasks = await page.evaluate(async delegate => {
-    const runtime = new URL('assets/packages/mediapipe_flutter_vision_web/assets/runtime/', document.baseURI);
+    const pin = await (await fetch(new URL('assets/packages/mediapipe_flutter_vision/assets/runtime.json', document.baseURI))).json();
+    const runtime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${pin.version}/`);
     const vision = await import(new URL('vision_bundle.mjs', runtime));
     const files = await vision.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const response = await fetch(new URL('assets/assets/samples/portrait.jpg', document.baseURI));
@@ -509,7 +514,7 @@ async function iosUserAgentCpuCheck() {
   };
   // Inspect the actual module worker used by the Dart API, not just the page.
   const workerState = page.waitForEvent('worker', {
-    predicate: worker => worker.url().endsWith('/mediapipe_flutter_vision_web/assets/worker.js'),
+    predicate: worker => worker.url().endsWith('/mediapipe_flutter_vision/assets/worker.js'),
   }).then(worker => worker.evaluate(() => ({
     user_agent: navigator.userAgent,
     document_type: typeof document,
@@ -849,8 +854,10 @@ async function textAudioChecks() {
   const official = await page.evaluate(async () => {
     const asset = name => new URL('assets/' + name, document.baseURI).href;
     const bytes = async name => new Uint8Array(await (await fetch(asset(name))).arrayBuffer());
-    const text = await import(asset('packages/mediapipe_flutter_text_web/assets/runtime/text_bundle.mjs'));
-    const textFiles = await text.FilesetResolver.forTextTasks(asset('packages/mediapipe_flutter_text_web/assets/runtime/wasm'));
+    const textPin = await (await fetch(asset('packages/mediapipe_flutter_text/assets/runtime.json'))).json();
+    const textRuntime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@${textPin.version}/`);
+    const text = await import(new URL('text_bundle.mjs', textRuntime).href);
+    const textFiles = await text.FilesetResolver.forTextTasks(new URL('wasm', textRuntime).href);
     const heads = result => result.classifications.map(h => h.categories.map(c =>
       [c.index, c.score, c.categoryName || null, c.displayName || null]));
     // The package sends an unset score threshold as 0, as Google's Python and
@@ -881,8 +888,10 @@ async function textAudioChecks() {
     const language = ['Hello, world!', 'Quiero agua, por favor.', 'こんにちは、元気ですか？'].map(t =>
       detector.detect(t).languages.map(l => [l.languageCode, l.probability]));
     detector.close();
-    const audio = await import(asset('packages/mediapipe_flutter_audio_web/assets/runtime/audio_bundle.mjs'));
-    const audioFiles = await audio.FilesetResolver.forAudioTasks(asset('packages/mediapipe_flutter_audio_web/assets/runtime/wasm'));
+    const audioPin = await (await fetch(asset('packages/mediapipe_flutter_audio/assets/runtime.json'))).json();
+    const audioRuntime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-audio@${audioPin.version}/`);
+    const audio = await import(new URL('audio_bundle.mjs', audioRuntime).href);
+    const audioFiles = await audio.FilesetResolver.forAudioTasks(new URL('wasm', audioRuntime).href);
     const yamnet = await audio.AudioClassifier.createFromOptions(audioFiles,
       {baseOptions: {modelAssetBuffer: await bytes('assets/models/yamnet.tflite')}});
     const clips = {};

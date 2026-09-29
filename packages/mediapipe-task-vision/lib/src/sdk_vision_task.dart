@@ -160,7 +160,7 @@ class SdkVisionTask<R> {
 /// The registered browser adapter factory, or an error naming the plugin.
 F requireBrowserFactory<F extends Object>(F? factory) {
   if (factory == null) {
-    throw StateError('Add mediapipe_flutter_vision_web to the Flutter app.');
+    throw StateError('MediaPipe vision web backend did not register.');
   }
   return factory;
 }

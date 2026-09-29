@@ -28,7 +28,7 @@ const _scoreDelta = 0.05;
 
 // Face Detector, Object Detector and Image Classifier through Google's
 // official mobile SDKs: iOS through the package's Objective-C adapter, Android
-// through mediapipe_flutter_vision_android.
+// through mediapipe_flutter_vision.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

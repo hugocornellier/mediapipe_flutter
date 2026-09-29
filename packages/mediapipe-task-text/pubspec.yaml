@@ -7,14 +7,22 @@ repository: https://github.com/hugocornellier/mediapipe_flutter/tree/main/packag
 issue_tracker: https://github.com/hugocornellier/mediapipe_flutter/issues/
 
 platforms:
+  android:
+  ios:
   linux:
   macos:
   windows:
+  web:
 
 environment:
   sdk: ^3.12.0
+  flutter: '>=3.47.0'
 
 dependencies:
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   async: ^2.13.0
   code_assets: ^1.2.1
   ffi: ^2.1.4
@@ -25,12 +33,34 @@ dependencies:
   native_toolchain_c: '>=0.19.2 <0.19.3'
   mediapipe_flutter_core:
     path: ../mediapipe-core
+  web: ^1.1.1
 
 dev_dependencies:
   crypto: ^3.0.6
+  flutter_test:
+    sdk: flutter
   lints: ^6.1.0
   path: ^1.9.1
   test: ^1.31.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: dev.mediapipe.flutter.text
+        pluginClass: MediaPipeTextPlugin
+        dartPluginClass: MediaPipeTextAndroid
+        dartFileName: mediapipe_flutter_text_android.dart
+      web:
+        pluginClass: MediaPipeTextWeb
+        fileName: mediapipe_flutter_text_web.dart
+  assets:
+    - path: assets/bridge.js
+      platforms: [web]
+    - path: assets/worker.js
+      platforms: [web]
+    - path: assets/runtime.json
+      platforms: [web]
 
 # Used when this package is the root (Dart tests/tools). Consumers opt in in
 # their own pubspec, keeping the shared runtime optional for vision-only apps.

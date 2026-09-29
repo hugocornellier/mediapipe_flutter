@@ -1,5 +1,5 @@
 /// Google's official MediaPipe Audio Classifier: on the shared 1.0.1 runtime
-/// natively, and through mediapipe_flutter_audio_web in browsers.
+/// natively, and through mediapipe_flutter_audio in browsers.
 library;
 
 export 'src/audio_types.dart';

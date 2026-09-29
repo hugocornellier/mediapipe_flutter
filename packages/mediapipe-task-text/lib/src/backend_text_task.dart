@@ -46,8 +46,7 @@ final class BackendTextTask<R> implements TextTaskRunner<R> {
         textTaskBackendFactory ??
         (throw UnsupportedError(
           'Text tasks here run through a platform plugin that is missing: '
-          'add mediapipe_flutter_text_web for browsers, or '
-          'mediapipe_flutter_text_android for Android.',
+          'the mediapipe_flutter_text platform backend did not register.',
         ));
     final ready = Future(
       () => factory(task, options),

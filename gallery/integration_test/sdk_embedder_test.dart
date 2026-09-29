@@ -22,7 +22,7 @@ const _crossRuntime = 0.99;
 
 // Image Embedder through Google's official mobile SDKs: iOS through the
 // package's Objective-C adapter, Android through
-// mediapipe_flutter_vision_android.
+// mediapipe_flutter_vision.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

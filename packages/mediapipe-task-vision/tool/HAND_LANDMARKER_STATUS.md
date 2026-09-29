@@ -8,10 +8,10 @@ Every target uses Google's official runtime, with no rebuild of MediaPipe:
 
 | Target | Runtime |
 | --- | --- |
-| Web | `@mediapipe/tasks-vision` 1.0.1 JavaScript/WASM through `mediapipe_flutter_vision_web` |
+| Web | `@mediapipe/tasks-vision` 1.0.1 JavaScript/WASM through `mediapipe_flutter_vision` |
 | macOS arm64 | the official 1.0.0 wheel's library (the gallery's opt-in official runtime) |
 | iOS arm64 and simulator | Google's 1.0.1 XCFrameworks through `native/ios/face_sdk_bridge.mm` |
-| Android | `com.google.mediapipe:tasks-vision:1.0.0` through `mediapipe_flutter_vision_android` |
+| Android | `com.google.mediapipe:tasks-vision:1.0.0` through `mediapipe_flutter_vision` |
 | Linux x64 | the official 1.0.1 wheel's library (CPU and GPU) |
 | Windows x64 | the official 1.0.0 wheel's library (CPU only) |
 

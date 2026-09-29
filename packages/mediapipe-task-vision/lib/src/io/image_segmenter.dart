@@ -16,7 +16,7 @@ import 'vision_task_worker.dart';
 /// Official Image Segmenter with owned masks and serialized inference.
 ///
 /// On Android, a registered official SDK adapter
-/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// (`mediapipe_flutter_vision`) runs the task; elsewhere Google's
 /// native runtime runs it on a worker isolate.
 final class ImageSegmenter {
   ImageSegmenter._(this._worker, this._sdk, this.delegate);

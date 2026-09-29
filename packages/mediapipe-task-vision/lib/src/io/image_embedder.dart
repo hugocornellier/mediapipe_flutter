@@ -17,7 +17,7 @@ import 'vision_task_worker.dart';
 /// Official Image Embedder with owned vectors and serialized native inference.
 ///
 /// On Android, a registered official SDK adapter
-/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// (`mediapipe_flutter_vision`) runs the task; elsewhere Google's
 /// native runtime runs it on a worker isolate.
 final class ImageEmbedder {
   ImageEmbedder._(this._worker, this._sdk, this.delegate);

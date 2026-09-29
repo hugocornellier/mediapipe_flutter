@@ -91,7 +91,7 @@ jobs:
   # through the text and audio packages' Android SDK plugins in the same app.
   # Face and Hand Landmarker, Pose, Gesture, Holistic, Face and Object Detector, Image Classifier
   # and Image Embedder run through Google's Android SDK (tasks-vision 1.0.0) and
-  # mediapipe_flutter_vision_android, so this job needs no source build. The emulator runs them on the CPU only; see
+  # mediapipe_flutter_vision, so this job needs no source build. The emulator runs them on the CPU only; see
   # gallery/tool/test_android_sdk_tasks.sh.
   sdk-tasks:
     name: Landmark, detection and classification tasks / official Android SDK on an x64 emulator

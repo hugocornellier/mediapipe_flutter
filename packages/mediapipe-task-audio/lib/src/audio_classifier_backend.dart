@@ -20,8 +20,7 @@ final class BackendAudioClassifier {
     if (factory == null) {
       throw UnsupportedError(
         'Audio Classifier here runs through a platform plugin that is '
-        'missing: add mediapipe_flutter_audio_web for browsers, or '
-        'mediapipe_flutter_audio_android for Android.',
+        'missing: the mediapipe_flutter_audio platform backend did not register.',
       );
     }
     try {

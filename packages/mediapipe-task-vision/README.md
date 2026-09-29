@@ -9,7 +9,7 @@ MediaPipe task runtimes on supported platforms.
 **[See every task and platform](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)** ·
 **[Browse the Flutter example](https://github.com/hugocornellier/mediapipe_flutter/tree/main/packages/mediapipe-task-vision/example)**
 
-> **Not published yet:** This package and its adapters currently have
+> **Not published yet:** This package currently has
 > `publish_to: none`. The checkout instructions below work now. Once the
 > packages are published to pub.dev, apps can replace the path dependencies
 > with published versions; there is no published version to install today.
@@ -48,45 +48,26 @@ dependencies:
     path: ../mediapipe_flutter/packages/mediapipe-task-vision
 ```
 
-For **Android**, also add the adapter to the same `dependencies:` section:
+The package registers its Android and web backends automatically. The official
+iOS SDK is the default on iOS devices and arm64 simulators. Browser builds load
+the pinned JavaScript/WASM runtime from jsDelivr. For offline use or a strict
+Content Security Policy, see [Self-hosting the web runtime](#self-hosting-the-web-runtime).
 
-```yaml
-  mediapipe_flutter_vision_android:
-    path: ../mediapipe_flutter/packages/mediapipe-task-vision-android
+### Self-hosting the web runtime
+
+Run `python3 -B packages/mediapipe-task-vision/tool/prepare_runtime.py` from
+the checkout root. The tool verifies the pinned npm archive and writes the
+bundle and `wasm/` under `assets/runtime/`. Copy that directory to your app's
+`web/mediapipe/vision/`, then set the base URL before creating a task:
+
+```dart
+import 'package:mediapipe_flutter_vision/web_runtime.dart';
+
+VisionWebRuntime.baseUrl = 'mediapipe/vision/';
 ```
 
-It registers the official Android SDK adapter; the vision package alone does
-not register it.
-The official iOS SDK is the default on iOS devices and arm64 simulators and
-needs no extra Flutter adapter dependency.
-
-For **web**, add this adapter to `dependencies:`:
-
-```yaml
-  mediapipe_flutter_vision_web:
-    path: ../mediapipe_flutter/packages/mediapipe-task-vision-web
-```
-
-From the checkout root, prepare its checksum-verified JavaScript/WASM runtime
-before building:
-
-```sh
-python3 -B packages/mediapipe-task-vision-web/tool/prepare_runtime.py
-```
-
-For a web build, add this section to your app's `pubspec.yaml`:
-
-```yaml
-hooks:
-  user_defines:
-    mediapipe_flutter_vision:
-      web_adapter_only: true
-```
-
-This prevents a host native build hook from downloading an unused desktop
-runtime. Remove that setting for native builds. The
-[gallery preparation script](https://github.com/hugocornellier/mediapipe_flutter/blob/main/gallery/tool/prepare.py)
-generates the right adapter dependencies and hook settings for each target.
+The app must serve the copied files with CORS and CSP rules appropriate to its
+origin.
 
 ### Choose native tasks at build time
 
@@ -268,7 +249,7 @@ before offering a GPU toggle.
 | --- | --- | --- |
 | Web | WASM | WebGL 2 in a worker, when supported |
 | iOS | Official SDK | Metal for supported tasks |
-| Android | Official SDK adapter | Supported Android GPUs; arm64 devices |
+| Android | Official SDK | Supported Android GPUs; arm64 devices |
 | macOS Apple Silicon | Official native runtime | Metal for supported tasks |
 | Linux x64 | Official wheel runtime | OpenGL ES for supported tasks; EGL and a GPU driver required |
 | Windows x64 | Official wheel runtime | Not available |
@@ -283,9 +264,9 @@ before depending on a particular combination.
 
 Native build hooks download pinned libraries and verify their digests. You do
 not need to build MediaPipe or copy native libraries into a normal consuming
-app. The first build needs network access for its selected runtime. The web
-adapter instead bundles Google's verified JavaScript/WASM distribution after
-the preparation step above. Models remain separate on every platform.
+app. The first build needs network access for its selected runtime. Browser
+tasks load the pinned JavaScript/WASM distribution from jsDelivr by default.
+Models remain separate on every platform.
 
 - [Live gallery](https://hugocornellier.github.io/mediapipe_flutter/) — try
   vision, audio and text tasks in a browser.

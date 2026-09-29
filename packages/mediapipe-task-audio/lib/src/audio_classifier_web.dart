@@ -3,7 +3,7 @@ import 'audio_types.dart';
 
 /// Google's official Audio Classifier (for example YAMNet) on audio clips,
 /// run in a browser by Google's @mediapipe/tasks-audio on a worker that
-/// mediapipe_flutter_audio_web installs.
+/// mediapipe_flutter_audio installs.
 ///
 /// Await [dispose] when finished.
 final class AudioClassifier {
@@ -11,7 +11,7 @@ final class AudioClassifier {
 
   final BackendAudioClassifier _backend;
 
-  /// Starts Google's browser task; needs mediapipe_flutter_audio_web.
+  /// Starts Google's browser task; needs mediapipe_flutter_audio.
   static Future<AudioClassifier> create(AudioClassifierOptions options) async =>
       AudioClassifier._(await BackendAudioClassifier.create(options));
 

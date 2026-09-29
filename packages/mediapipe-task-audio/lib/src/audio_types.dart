@@ -46,7 +46,7 @@ TaskCapabilities<AudioDelegate> audioClassifierCapabilitiesForPlatform(
     // Core's runtime, iOS included (the vision package's SDK adapter).
     ...tasksRuntimeTargets,
     // A registered backend is Google's browser runtime or Android SDK for
-    // this very platform (mediapipe_flutter_audio_web or _android).
+    // this very platform (mediapipe_flutter_audio or _android).
     if (audioTaskBackendFactory != null) ...{
       'web/unknown': null,
       'android/arm64': null,

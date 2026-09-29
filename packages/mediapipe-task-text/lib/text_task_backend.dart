@@ -1,9 +1,9 @@
-/// The hook through which a platform plugin, such as
-/// mediapipe_flutter_text_web, runs the classic text tasks (Text Classifier,
+/// The hook through which this package's platform code runs the classic text
+/// tasks (Text Classifier,
 /// Text Embedder, Language Detector) on Google's runtime for its platform.
 library;
 
-/// One of Google's text tasks, created and run by a platform plugin.
+/// One of Google's text tasks, created and run by a platform backend.
 abstract interface class TextTaskBackend {
   /// Runs [text] and returns Google's JavaScript result, as JSON values.
   Future<Map<String, dynamic>> run(String text);
@@ -16,7 +16,7 @@ abstract interface class TextTaskBackend {
 /// `language_detector`) from [options] named as in Google's JavaScript API,
 /// plus `modelBytes` (a `Uint8List`) or `modelPath` (a URL in a browser).
 ///
-/// Installed by a platform plugin (mediapipe_flutter_text_web in browsers);
+/// Installed by this package's platform code in browsers and on Android;
 /// null where the package runs Google's runtime itself.
 Future<TextTaskBackend> Function(String task, Map<String, Object?> options)?
 textTaskBackendFactory;

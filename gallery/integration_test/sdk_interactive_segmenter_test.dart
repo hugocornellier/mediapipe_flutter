@@ -13,7 +13,7 @@ import 'support/sdk_frames.dart';
 
 // Google's stateful MagicTouch Interactive Segmenter through the official
 // mobile SDKs: iOS through the package's Objective-C adapter, Android through
-// mediapipe_flutter_vision_android. The reference is CPU. On Android the suite
+// mediapipe_flutter_vision. The reference is CPU. On Android the suite
 // also records what Google's GPU delegate does, which is not declared: on Test
 // Lab phones PowerVR refused its stroke shader and Mali's mask agreed with CPU
 // on 94% of pixels (tool/coverage/matrix.json). Whatever SDK_GPU says, a GPU

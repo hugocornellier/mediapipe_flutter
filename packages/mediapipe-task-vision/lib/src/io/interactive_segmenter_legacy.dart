@@ -19,7 +19,7 @@ import 'vision_task_worker.dart';
 /// history on Google's 1.0.1 runtime and has its own API and blockers.
 ///
 /// On Android, a registered official SDK adapter
-/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// (`mediapipe_flutter_vision`) runs the task; elsewhere Google's
 /// native runtime runs it on a worker isolate.
 final class InteractiveSegmenterLegacy {
   InteractiveSegmenterLegacy._(this._worker, this._sdk, this.delegate);

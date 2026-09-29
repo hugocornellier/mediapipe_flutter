@@ -15,7 +15,7 @@ import 'vision_task_worker.dart';
 /// Official Holistic Landmarker with serialized, owned image/video results.
 ///
 /// On Android, a registered official SDK adapter
-/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// (`mediapipe_flutter_vision`) runs the task; elsewhere Google's
 /// native runtime runs it on a worker isolate.
 final class HolisticLandmarker {
   HolisticLandmarker._(this._worker, this._sdk, this.delegate);

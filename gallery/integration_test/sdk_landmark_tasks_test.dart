@@ -28,7 +28,7 @@ const _crossRuntime = 0.03;
 
 // Pose Landmarker, Gesture Recognizer and Holistic Landmarker through Google's
 // official mobile SDKs: iOS through the package's Objective-C adapter, Android
-// through mediapipe_flutter_vision_android.
+// through mediapipe_flutter_vision.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

@@ -24,7 +24,7 @@ final class InteractiveSegmenter {
   /// Requested inference backend, fixed at creation.
   final VisionDelegate delegate;
 
-  /// Google's Android SDK, through `mediapipe_flutter_vision_android`.
+  /// Google's Android SDK, through `mediapipe_flutter_vision`.
   final InteractiveSegmenterBackend? _backend;
   final _events = ReceivePort();
   final _ready = Completer<void>();

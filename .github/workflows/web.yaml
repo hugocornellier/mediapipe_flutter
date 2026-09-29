@@ -42,30 +42,15 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium firefox webkit
-      - name: Analyze adapter
-        working-directory: packages/mediapipe-task-vision-web
+      - name: Analyze and test vision browser code
+        working-directory: packages/mediapipe-task-vision
         run: |
           flutter pub get
           flutter analyze lib test
-          # Chrome sometimes never connects to flutter test on a hosted runner,
-          # which then waits out the job's timeout; the suite takes seconds, so
-          # a five-minute hang is retried once.
-          for attempt in 1 2; do
-            status=0
-            timeout 300 flutter test --platform chrome || status=$?
-            if [ "$status" = 124 ] && [ "$attempt" = 1 ]; then
-              echo "flutter test --platform chrome hung; retrying"
-              continue
-            fi
-            exit "$status"
-          done
-      - name: Analyze shared native and browser APIs
-        working-directory: packages/mediapipe-task-vision
-        run: flutter analyze lib
-      - name: Analyze the text and audio browser adapters
+      - name: Analyze text and audio browser code
         run: |
-          for adapter in text audio; do
-            (cd packages/mediapipe-task-$adapter-web && flutter pub get && flutter analyze lib)
+          for family in text audio; do
+            (cd packages/mediapipe-task-$family && flutter pub get && flutter analyze lib)
           done
       - name: Analyze and test gallery geometry
         working-directory: gallery
@@ -73,6 +58,17 @@ jobs:
           flutter pub get
           flutter analyze lib tool/web_api_probe.dart tool/web_text_audio_probe.dart
           flutter test --platform chrome test/camera_geometry_test.dart test/camera_frame_test.dart test/camera_selection_test.dart
+          # The symlink runs the tests in the family package with this web
+          # gallery's published face-only host hook configuration.
+          for attempt in 1 2; do
+            status=0
+            timeout 300 flutter test --platform chrome test/vision_web || status=$?
+            if [ "$status" = 124 ] && [ "$attempt" = 1 ]; then
+              echo "flutter test --platform chrome hung; retrying"
+              continue
+            fi
+            exit "$status"
+          done
       - name: Build release gallery and API probe
         id: build
         working-directory: gallery
