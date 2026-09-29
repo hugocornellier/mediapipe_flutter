@@ -81,11 +81,14 @@ function drawOverlay(result, width, height, options) {
       (result.landmarks ?? []).forEach(pose);
       break;
     case 'HolisticLandmarker':
-      pose(result.poseLandmarks);
-      hand(result.leftHandLandmarks, 0);
-      hand(result.rightHandLandmarks, 1);
-      lines(result.faceLandmarks, FaceLandmarker.FACE_LANDMARKS_CONTOURS, white);
-      dots(result.faceLandmarks, white);
+      // Each part lists one set of points per person, as packParts reads it.
+      (result.poseLandmarks ?? []).forEach(pose);
+      (result.leftHandLandmarks ?? []).forEach(points => hand(points, 0));
+      (result.rightHandLandmarks ?? []).forEach(points => hand(points, 1));
+      for (const face of result.faceLandmarks ?? []) {
+        lines(face, FaceLandmarker.FACE_LANDMARKS_CONTOURS, white);
+        dots(face, white);
+      }
       break;
     case 'FaceDetector':
     case 'ObjectDetector':
