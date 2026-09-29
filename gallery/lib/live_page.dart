@@ -93,6 +93,8 @@ class _LivePageState extends State<LivePage> {
   Size? _imageSize;
   String? _imageName;
   Object? _imageResult;
+  VisionDelegate? _imageDelegate;
+  double? _imageMilliseconds;
   String? _imageError;
   bool _imageBusy = false;
   int _imageRevision = 0;
@@ -399,11 +401,17 @@ class _LivePageState extends State<LivePage> {
             revision != _imageRevision) {
           return;
         }
+        final inference = Stopwatch()..start();
         final result = await _task.detectImage(input);
+        inference.stop();
         if (mounted &&
             _mode == _VisionInputMode.image &&
             revision == _imageRevision) {
-          setState(() => _imageResult = result);
+          setState(() {
+            _imageResult = result;
+            _imageDelegate = delegate;
+            _imageMilliseconds = inference.elapsedMicroseconds / 1000;
+          });
         }
       } on Object catch (error) {
         if (mounted &&
@@ -613,6 +621,13 @@ class _LivePageState extends State<LivePage> {
             if (_imageName != null)
               Text(_imageName!, maxLines: 1, overflow: TextOverflow.ellipsis),
             if (_imageResult != null) Text(_imageSummary(_imageResult!)),
+            // Which delegate produced this result, so switching shows a change.
+            if (_imageResult != null && _imageMilliseconds != null)
+              Text(
+                'Inference ${_imageMilliseconds!.toStringAsFixed(1)} ms on '
+                '${_imageDelegate == VisionDelegate.gpu ? 'GPU' : 'CPU'}',
+                style: theme.textTheme.bodySmall,
+              ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 12,

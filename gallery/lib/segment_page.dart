@@ -23,12 +23,14 @@ class SegmentPage extends StatefulWidget {
     super.key,
     required this.task,
     required this.assets,
+    required this.platform,
     this.onOpenMenu,
     this.framed = false,
   });
 
   final GalleryTask task;
   final GalleryAssets assets;
+  final TaskPlatform platform;
   final VoidCallback? onOpenMenu;
   final bool framed;
 
@@ -43,6 +45,20 @@ class _SegmentPageState extends State<SegmentPage> {
   String? _error;
   double _threshold = 0.5;
   int _paintedRevision = -1;
+  int _openRevision = 0;
+
+  late final List<VisionDelegate> _delegates =
+      widget.task
+          .capabilitiesFor(
+            widget.platform,
+            widget.assets.officialMacosLandmarkTasks,
+          )
+          .supportedDelegates
+          .toList()
+        ..sort((a, b) => a.index.compareTo(b.index));
+  late VisionDelegate _delegate = _delegates.isEmpty
+      ? VisionDelegate.cpu
+      : _delegates.first;
 
   @override
   void initState() {
@@ -51,6 +67,7 @@ class _SegmentPageState extends State<SegmentPage> {
   }
 
   Future<void> _open() async {
+    final revision = ++_openRevision;
     try {
       final model = await rootBundle.load('assets/models/${widget.task.model}');
       final task = await InteractiveSegmenter.create(
@@ -59,9 +76,11 @@ class _SegmentPageState extends State<SegmentPage> {
             model.offsetInBytes,
             model.lengthInBytes,
           ),
+          delegate: _delegate,
         ),
       );
-      if (!mounted) {
+      // A later open (a delegate switch) or leaving the page replaces this one.
+      if (!mounted || revision != _openRevision) {
         await task.dispose();
         return;
       }
@@ -74,8 +93,31 @@ class _SegmentPageState extends State<SegmentPage> {
       );
       if (mounted) setState(() {});
     } on Object catch (error) {
-      if (mounted) setState(() => _error = '$error');
+      if (mounted && revision == _openRevision) {
+        setState(() => _error = '$error');
+      }
     }
+  }
+
+  /// Reopens the segmenter on [delegate] with the same image; strokes and the
+  /// mask start over, since they belong to the task being replaced.
+  Future<void> _setDelegate(VisionDelegate delegate) async {
+    if (delegate == _delegate) return;
+    final editor = _editor;
+    final task = _task;
+    editor?.removeListener(_onEditorChanged);
+    setState(() {
+      _delegate = delegate;
+      _editor = null;
+      _task = null;
+      _error = null;
+      _maskImage?.dispose();
+      _maskImage = null;
+      _paintedRevision = -1;
+    });
+    await editor?.close();
+    await task?.dispose();
+    if (mounted) await _open();
   }
 
   void _onEditorChanged() {
@@ -263,7 +305,8 @@ class _SegmentPageState extends State<SegmentPage> {
                   Text(
                     editor?.lastInferenceMs == null
                         ? _hintFor(editor?.brush)
-                        : '${editor!.lastInferenceMs!.toStringAsFixed(1)} ms  ·  '
+                        : '${editor!.lastInferenceMs!.toStringAsFixed(1)} ms '
+                              'on ${_delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'}  ·  '
                               '${editor.completedRequests} requests, '
                               '${editor.coalescedRequests} coalesced',
                     style: theme.textTheme.bodySmall,
@@ -296,6 +339,27 @@ class _SegmentPageState extends State<SegmentPage> {
                         : (selection) =>
                               setState(() => editor.brush = selection.first),
                   ),
+                  if (_delegates.length > 1) ...[
+                    const SizedBox(height: 8),
+                    SegmentedButton<VisionDelegate>(
+                      segments: [
+                        for (final delegate in _delegates)
+                          ButtonSegment(
+                            value: delegate,
+                            label: Text(
+                              delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+                            ),
+                          ),
+                      ],
+                      selected: {_delegate},
+                      // Disabled until the open task is ready, so a switch
+                      // never overlaps an open still in flight.
+                      onSelectionChanged: editor == null || !editor.ready
+                          ? null
+                          : (selection) =>
+                                unawaited(_setDelegate(selection.first)),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Row(
                     children: [
