@@ -113,28 +113,9 @@ class _TaskSettingsPanelState extends State<TaskSettingsPanel> {
             child: Text(status, style: theme.textTheme.bodySmall),
           ),
         const SizedBox(height: 16),
-        if (widget.settings.isNotEmpty) ...[
-          Text('Settings', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          for (final setting in widget.settings) _row(setting, theme),
-          const SizedBox(height: 16),
-        ],
-        if (widget.onConnections != null) ...[
-          Text('Display', style: theme.textTheme.titleMedium),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text('Connections', style: theme.textTheme.bodyMedium),
-            value: widget.connections,
-            onChanged: widget.onConnections,
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text('Points', style: theme.textTheme.bodyMedium),
-            value: widget.points,
-            onChanged: widget.onPoints,
-          ),
-          const SizedBox(height: 16),
-        ],
+        // Right after the model, so switching delegates never needs a scroll
+        // however many settings a task has; the list builds lazily, so a
+        // control at its end may not exist until scrolled to.
         Text('Delegate', style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         // A single delegate is stated rather than offered as a choice.
@@ -158,6 +139,29 @@ class _TaskSettingsPanelState extends State<TaskSettingsPanel> {
                 ? (selection) => widget.onDelegate(selection.first)
                 : null,
           ),
+        const SizedBox(height: 16),
+        if (widget.settings.isNotEmpty) ...[
+          Text('Settings', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          for (final setting in widget.settings) _row(setting, theme),
+          const SizedBox(height: 16),
+        ],
+        if (widget.onConnections != null) ...[
+          Text('Display', style: theme.textTheme.titleMedium),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('Connections', style: theme.textTheme.bodyMedium),
+            value: widget.connections,
+            onChanged: widget.onConnections,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('Points', style: theme.textTheme.bodyMedium),
+            value: widget.points,
+            onChanged: widget.onPoints,
+          ),
+          const SizedBox(height: 16),
+        ],
       ],
     );
   }

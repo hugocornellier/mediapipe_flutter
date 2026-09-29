@@ -25,7 +25,7 @@ try {
   await page.getByRole('button', {name: /Gesture Recognizer/}).click();
 
   for (const delegate of ['cpu', 'gpu']) {
-    if (delegate === 'gpu') await page.getByRole('button', {name: 'GPU', exact: true}).click();
+    await page.getByRole('button', {name: delegate.toUpperCase(), exact: true}).click({timeout: 120000});
     await page.waitForFunction(expected => {
       const video = document.querySelector('video');
       return video?.getAttribute('data-delegate') === expected &&
@@ -67,7 +67,7 @@ try {
     }
     await page.getByRole('button', {name: new RegExp(task)}).click();
     for (const delegate of ['cpu', 'gpu']) {
-      if (delegate === 'gpu') await page.getByRole('button', {name: 'GPU', exact: true}).click();
+      await page.getByRole('button', {name: delegate.toUpperCase(), exact: true}).click({timeout: 120000});
       await page.waitForFunction(expected => {
         const video = document.querySelector('video');
         return video?.getAttribute('data-delegate') === expected &&

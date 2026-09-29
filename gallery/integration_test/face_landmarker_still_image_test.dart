@@ -40,7 +40,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Mode'), findsOneWidget);
+    expect(find.text('MODE'), findsOneWidget);
     expect(find.text('Still image'), findsOneWidget);
     expect(find.text('Choose image'), findsOneWidget);
 

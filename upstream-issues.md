@@ -522,16 +522,25 @@ this task follows its strokes.
 ## UP-023: Android Image Segmenter GPU aborts on a PowerVR GPU
 
 **Status:** observed September 23 on a physical Galaxy A12 (PowerVR Rogue
-GE8320, Android 12) in Firebase Test Lab, with Google's tasks-vision 1.0.0.
-Not worked around: the abort happens inside Google's native code, which the
+GE8320, Android 12), and on September 29 on a Pixel 10 (Android 16) and a
+Pixel 11 (Android 17), whose Tensor chips also carry PowerVR GPUs, all in
+Firebase Test Lab with Google's tasks-vision 1.0.0. Worked around by refusing
+the delegate, since the abort happens inside Google's native code, which the
 plugin cannot catch.
 
 Image Segmenter on the GPU delegate terminates the app while Google's Java
 task converts the result: `PacketGetter` aborts with `image_frame.cc:298]
 Invalid format: UNKNOWN`. The same test passed on CPU on that phone (every
 category cell agreed with Google's reference), and on GPU on a Pixel 8a (Mali)
-and a Galaxy S24 (Adreno) the task ran. Apps that offer Image Segmenter on GPU
-should expect this on PowerVR devices and prefer CPU there.
+and a Galaxy S24 (Adreno) the task ran. On the Pixels every other task's GPU
+suite passed first.
+
+The Android adapter now reads the GPU's OpenGL ES renderer and vendor once
+(`TaskPlatform.gpu`). On a PowerVR GPU, `queryImageSegmenterCapabilities()`
+reports GPU unsupported with this issue as the reason, and the plugin refuses to
+create a GPU Image Segmenter there, so `ImageSegmenter.create` throws a
+`VisionTaskException` instead of the app aborting. Other tasks, and other GPUs,
+keep the GPU delegate.
 
 ## UP-024: Android Image Segmenter GPU category mask is one class low on Adreno
 

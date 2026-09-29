@@ -256,6 +256,15 @@ TaskCapabilities<VisionDelegate> _officialMacosHolistic(
   officialIosRuntime: true,
 );
 
+/// The delegate a demo opens on: GPU wherever this platform offers it for the
+/// task, as Google's web demo does, otherwise the first supported delegate.
+VisionDelegate preferredDelegate(Iterable<VisionDelegate> supported) =>
+    supported.contains(VisionDelegate.gpu)
+    ? VisionDelegate.gpu
+    : supported.isEmpty
+    ? VisionDelegate.cpu
+    : supported.first;
+
 /// The text tasks' support: CPU on core's shared 1.0.1 runtime, and in
 /// browsers and on mobile once a platform plugin has installed its backend.
 TaskCapabilities<VisionDelegate> _text(TaskPlatform platform) =>

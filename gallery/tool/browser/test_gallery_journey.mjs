@@ -33,23 +33,72 @@ const cases = {
   text_embedder: {title: 'Text Embedder', text: true, result: /Cosine similarity: -?\d+\.\d+/},
 };
 
-const report = {browser: browserName, checks: [], tasks: [], errors: []};
+// The delegates each page must offer and run come from the coverage matrix the
+// gate enforces: a required web GPU cell that the UI stops offering fails here.
+const matrix = JSON.parse(fs.readFileSync(path.join(repo, 'tool/coverage/matrix.json'), 'utf8')).cells;
+const delegatesFor = id => ['cpu', 'gpu'].filter(delegate => matrix[id]?.web?.[delegate] === 'required');
+
+const report = {browser: browserName, checks: [], tasks: [], errors: [], steps: [], events: []};
+// Each step and browser event carries the wall clock, to line up with the
+// browser's own logs.
+let step = 'launch';
+const enter = name => {
+  step = name;
+  report.steps.push(`${new Date().toISOString()} ${name}`);
+};
+// A browser that drops the page leaves Playwright reporting only that it is
+// closed; these events say which part went and during which step.
+let closing = false;
+const lifecycle = event => {
+  if (closing) return;
+  const line = `${new Date().toISOString()} ${step}: ${event}`;
+  report.events.push(line);
+  console.log(`Journey event: ${line}`);
+};
 // Hosted Linux has no GPU, and Google's vision tasks need a WebGL context even
-// on CPU, so allow software WebGL there as test_browser.mjs does.
+// on CPU, so allow software WebGL there as test_browser.mjs does. Each engine
+// also gets a fake camera: Chromium plays the face fixture when it has been
+// prepared, Firefox its synthetic stream, and WebKit its mock capture device.
 const linux = process.platform === 'linux';
+const fixture = path.join(repo, 'build/codex-tmp/web-camera.y4m');
 const browser = await ({chromium, firefox, webkit}[browserName]).launch({
   headless: args.headed !== 'true',
   ...(browserName === 'chromium' ? {
     channel: 'chromium',
-    args: linux ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [],
+    args: [
+      '--use-fake-ui-for-media-stream',
+      '--use-fake-device-for-media-stream',
+      ...(fs.existsSync(fixture) ? ['--use-file-for-fake-video-capture=' + fixture] : []),
+      ...(linux ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
+    ],
   } : {}),
-  ...(browserName === 'firefox' && linux ? {firefoxUserPrefs: {'webgl.force-enabled': true}} : {}),
+  ...(browserName === 'firefox' ? {firefoxUserPrefs: {
+    'media.navigator.streams.fake': true,
+    'media.navigator.permission.disabled': true,
+    ...(linux ? {'webgl.force-enabled': true} : {}),
+  }} : {}),
 });
+browser.on('disconnected', () => lifecycle('browser disconnected'));
+let page;
 try {
-  const page = await browser.newPage({viewport: {width: 1280, height: 900}});
-  page.on('pageerror', error => report.errors.push(String(error)));
+  const context = await browser.newContext({viewport: {width: 1280, height: 900}});
+  context.on('close', () => lifecycle('context closed'));
+  try {
+    await context.grantPermissions(['camera'], {origin: new URL(base).origin});
+  } catch {
+    // Firefox takes camera access from the preference above instead.
+  }
+  page = await context.newPage();
+  page.on('crash', () => lifecycle('page crashed'));
+  page.on('close', () => lifecycle('page closed'));
+  // Each error names the step it happened in; some engines throw errors with
+  // no message, so the name and the top of the stack are kept too.
+  enter('load');
+  page.on('pageerror', error => report.errors.push(
+    `${step}: ${error.name || 'Error'}: ${error.message || '(no message)'}` +
+    (error.stack ? ` | ${error.stack.split('\n').slice(0, 3).join(' / ')}` : '')));
   page.on('response', response => {
-    if (response.status() >= 400) report.errors.push(`${response.status()} ${response.url()}`);
+    if (response.status() >= 400) report.errors.push(`${step}: ${response.status()} ${response.url()}`);
   });
   const manifestResponse = await page.request.get(new URL('assets/assets/manifest.json', base).href);
   assert.ok(manifestResponse.ok(), 'release manifest unavailable');
@@ -61,15 +110,39 @@ try {
   // role, so match the item's own anchor by its exact text.
   const sidebarItem = title => page.locator('a[flt-tappable]')
     .filter({hasText: new RegExp(`^${title}$`)});
+  // The sidebar marks its item current in the frame that builds the item's
+  // page, so nothing after this finds a control of the previous page.
+  const openedPage = title => page.locator('a[flt-tappable][aria-current="true"]')
+    .filter({hasText: new RegExp(`^${title}$`)});
+  // A segment of a CPU/GPU control; clicking waits until the page enables it.
+  const delegateButton = delegate => page.getByRole('button', {name: delegate.toUpperCase(), exact: true});
+  // The live page's stats line counts recent frames on the running delegate.
+  const liveFrames = delegate =>
+    page.getByText(new RegExp(`over the last [1-9]\\d* ${delegate.toUpperCase()} frames`));
+  // A still image result names the delegate that produced it.
+  const stillRan = delegate =>
+    page.getByText(new RegExp(`^Inference \\d+\\.\\d ms on ${delegate.toUpperCase()}$`));
   await page.goto(base);
   await sidebarItem('Home').waitFor({timeout: 120000});
 
   for (const id of expected) {
     const spec = cases[id];
-    const item = sidebarItem(spec.title);
-    await item.click();
-    await page.getByText(spec.title, {exact: true}).last().waitFor();
+    enter(`${id}:open`);
+    await sidebarItem(spec.title).click();
+    await openedPage(spec.title).waitFor();
     if (spec.sample) {
+      const delegates = delegatesFor(id);
+      assert.ok(delegates.length > 0, `${id} has no required web delegate`);
+      // The page opens with the camera running. Each delegate must keep frames
+      // coming, and the second is reached by switching while the camera runs.
+      for (const delegate of delegates) {
+        enter(`${id}:${delegate}:live`);
+        if (delegates.length > 1) await delegateButton(delegate).click({timeout: 120000});
+        await liveFrames(delegate).waitFor({timeout: 120000});
+        report.checks.push(`${id}:${delegate}:live`);
+      }
+      await page.screenshot({path: path.join(evidence, `${id}-live.png`)});
+      enter(`${id}:mode`);
       await page.getByRole('button', {name: 'Camera', exact: true}).click();
       await page.getByRole('menuitem', {name: 'Still image', exact: true}).click();
       const choose = page.getByRole('button', {name: 'Choose image'});
@@ -78,34 +151,67 @@ try {
       await choose.click();
       const chooser = await chooserPromise;
       await chooser.setFiles(path.join(repo, 'gallery/assets/samples', spec.sample));
-      await page.getByText(spec.result).waitFor({timeout: 120000});
+      // The image runs on the delegate the camera ended on; switching back
+      // runs it again on the other.
+      for (const delegate of [...delegates].reverse()) {
+        enter(`${id}:${delegate}:still`);
+        if (delegates.length > 1) await delegateButton(delegate).click({timeout: 120000});
+        await stillRan(delegate).waitFor({timeout: 120000});
+        await page.getByText(spec.result).waitFor();
+        report.checks.push(`${id}:${delegate}:still`);
+      }
       assert.equal(await page.getByText(spec.sample, {exact: true}).count(), 1);
+      await page.screenshot({path: path.join(evidence, `${id}-still.png`)});
     } else if (spec.text) {
+      enter(`${id}:run`);
       await page.getByRole('button', {name: id === 'text_embedder' ? 'Compare' : 'Run', exact: true}).click();
       await (spec.row ? page.getByRole('progressbar', {name: spec.row}) : page.getByText(spec.result))
         .waitFor({timeout: 120000});
       await page.getByText(/Done in \d+\.\d ms/).waitFor();
+      report.checks.push(`${id}:cpu:run`);
     } else if (spec.audio) {
+      enter(`${id}:run`);
       // Each timestamped row is one group labelled with its top categories.
       await page.getByRole('group', {name: /^0\.00 s Speech \d\.\d{3}/}).waitFor({timeout: 120000});
       await page.getByText(/Done in \d+\.\d ms/).waitFor();
+      report.checks.push(`${id}:cpu:run`);
     } else if (spec.segment) {
-      await page.getByRole('button', {name: 'Segmentation image', exact: true}).click({timeout: 120000});
-      await page.getByText(/\d+ requests, \d+ coalesced/).waitFor({timeout: 120000});
+      const delegates = delegatesFor(id);
+      assert.ok(delegates.length > 0, `${id} has no required web delegate`);
+      for (const delegate of delegates) {
+        enter(`${id}:${delegate}:tap`);
+        // Switching reopens the task, so the image is tapped again after it.
+        if (delegates.length > 1) await delegateButton(delegate).click({timeout: 120000});
+        // The canvas takes real pointer events, not a semantics tap (which
+        // has no position), so click the middle of its labelled area.
+        const image = page.getByLabel('Segmentation image', {exact: true});
+        await image.waitFor({timeout: 120000});
+        const box = await image.boundingBox();
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        await page.getByText(new RegExp(
+          `\\d+\\.\\d ms on ${delegate.toUpperCase()}\\s+·\\s+\\d+ requests, \\d+ coalesced`,
+        )).waitFor({timeout: 120000});
+        report.checks.push(`${id}:${delegate}:tap`);
+      }
+      await page.screenshot({path: path.join(evidence, `${id}.png`)});
     }
     report.tasks.push(id);
   }
   assert.deepEqual(new Set(report.tasks), new Set(expected));
+  enter('end');
   assert.deepEqual(report.errors, []);
-  report.checks.push('every-release-sidebar-task-navigation-and-inference');
   report.status = 'passed';
   console.log(`Gallery journey passed: ${report.tasks.join(', ')}`);
+  console.log(`Checks: ${report.checks.join(', ')}`);
 } catch (error) {
   report.status = 'failed';
   report.error = String(error.stack || error);
   console.error(error);
   process.exitCode = 1;
+  // Only a page that is still open can show where the step stopped.
+  await page?.screenshot({path: path.join(evidence, 'failure.png'), timeout: 10000}).catch(() => {});
 } finally {
   fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify(report, null, 2) + '\n');
+  closing = true;
   await browser.close();
 }

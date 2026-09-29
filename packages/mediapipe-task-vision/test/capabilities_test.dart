@@ -1,4 +1,5 @@
 import 'package:mediapipe_flutter_vision/capabilities.dart';
+import 'package:mediapipe_flutter_vision/vision_task_backend.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -249,4 +250,65 @@ void main() {
       contains('UP-026'),
     );
   });
+
+  test(
+    'Image Segmenter offers only CPU on an Android PowerVR GPU (UP-023)',
+    () {
+      // The Android adapter registers this; a stub stands in for it here.
+      imageSegmenterBackendFactory = (_) => throw UnimplementedError();
+      addTearDown(() => imageSegmenterBackendFactory = null);
+      TaskPlatform android(String? gpu) => TaskPlatform(
+        operatingSystem: 'android',
+        architecture: 'arm64',
+        gpu: gpu,
+      );
+      for (final gpu in [
+        'PowerVR D-Series DXT-48-1536 (Imagination Technologies)',
+        'PowerVR Rogue GE8320 (Imagination Technologies)',
+      ]) {
+        final capabilities = imageSegmenterCapabilitiesForPlatform(
+          android(gpu),
+        );
+        expect(capabilities.supportedDelegates, {
+          VisionDelegate.cpu,
+        }, reason: gpu);
+        expect(
+          capabilities.unavailableReasons[VisionDelegate.gpu],
+          allOf(contains('UP-023'), contains(gpu)),
+        );
+      }
+      // Other GPUs, and a GPU the adapter could not name, keep both delegates.
+      for (final gpu in [
+        'Mali-G715 (ARM)',
+        'Adreno (TM) 750 (Qualcomm)',
+        null,
+      ]) {
+        expect(
+          imageSegmenterCapabilitiesForPlatform(
+            android(gpu),
+          ).supportedDelegates,
+          {VisionDelegate.cpu, VisionDelegate.gpu},
+          reason: gpu,
+        );
+      }
+      // Only Image Segmenter is withdrawn, and only on Android.
+      imageClassifierBackendFactory = (_) => throw UnimplementedError();
+      addTearDown(() => imageClassifierBackendFactory = null);
+      expect(
+        imageClassifierCapabilitiesForPlatform(
+          android('PowerVR Rogue GE8320 (Imagination Technologies)'),
+        ).supportedDelegates,
+        contains(VisionDelegate.gpu),
+      );
+      const linuxPowerVr = TaskPlatform(
+        operatingSystem: 'linux',
+        architecture: 'x64',
+        gpu: 'PowerVR B-Series BXE-4-32 (Imagination Technologies)',
+      );
+      expect(
+        imageSegmenterCapabilitiesForPlatform(linuxPowerVr).supportedDelegates,
+        contains(VisionDelegate.gpu),
+      );
+    },
+  );
 }

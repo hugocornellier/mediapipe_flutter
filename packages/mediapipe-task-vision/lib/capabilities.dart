@@ -236,7 +236,8 @@ TaskCapabilities<VisionDelegate> holisticLandmarkerCapabilitiesForPlatform(
 /// and the registered Android and web adapters; GPU on the platform SDKs, and
 /// with [linuxGpu] on Linux's wheel (OpenGL ES, needing EGL and a GPU driver)
 /// and with [macosGpu] on the official macOS runtime (Metal), where CI
-/// compares it with Google's own GPU output on the same machine.
+/// compares it with Google's own GPU output on the same machine. An
+/// [androidGpuGap] withdraws the Android GPU and is the reason reported.
 TaskCapabilities<VisionDelegate> _sdkTaskCapabilities(
   TaskPlatform platform,
   String name, {
@@ -246,6 +247,7 @@ TaskCapabilities<VisionDelegate> _sdkTaskCapabilities(
   bool linuxGpu = false,
   bool macosGpu = false,
   String? desktopGpuGap,
+  String? androidGpuGap,
 }) => TaskCapabilities.onTargets(
   platform: platform,
   delegates: {
@@ -263,7 +265,7 @@ TaskCapabilities<VisionDelegate> _sdkTaskCapabilities(
       if (linuxGpu) 'linux/x64': null,
       if (macosGpu && officialMacosRuntime) 'macos/arm64': '14.0',
       if (officialIosRuntime) 'ios/arm64': '15.0',
-      if (sdkAdapter) 'android/arm64': null,
+      if (sdkAdapter && androidGpuGap == null) 'android/arm64': null,
       if (sdkAdapter) 'web/unknown': null,
     },
   },
@@ -274,15 +276,25 @@ TaskCapabilities<VisionDelegate> _sdkTaskCapabilities(
     VisionDelegate.cpu:
         '$name requires Linux x64, Windows x64, the official macOS runtime, '
         'the official iOS SDK adapter, or the Android or web adapter package.',
-    VisionDelegate.gpu: [
-      '$name GPU requires',
-      if (linuxGpu) 'Linux x64,',
-      if (macosGpu) 'the official macOS runtime,',
-      'the official iOS SDK adapter, or the Android or web adapter.',
-      ?desktopGpuGap,
-    ].join(' '),
+    VisionDelegate.gpu:
+        androidGpuGap ??
+        [
+          '$name GPU requires',
+          if (linuxGpu) 'Linux x64,',
+          if (macosGpu) 'the official macOS runtime,',
+          'the official iOS SDK adapter, or the Android or web adapter.',
+          ?desktopGpuGap,
+        ].join(' '),
   },
 );
+
+/// Whether [platform] is an Android device whose GPU is Imagination's PowerVR,
+/// as the Android adapter names it.
+bool _androidPowerVr(TaskPlatform platform) {
+  final gpu = platform.gpu?.toLowerCase() ?? '';
+  return platform.operatingSystem == 'android' &&
+      (gpu.contains('powervr') || gpu.contains('imagination'));
+}
 
 /// Query the validated Hand, Gesture, Pose and Holistic task runtimes.
 ///
@@ -331,7 +343,10 @@ queryImageSegmenterCapabilities() async =>
       officialIosRuntime: hasOfficialIosVisionRuntime(),
     );
 
-/// Image Segmenter, declared as [imageClassifierCapabilitiesForPlatform].
+/// Image Segmenter, declared as [imageClassifierCapabilitiesForPlatform],
+/// except on an Android PowerVR GPU: there Google's task aborts the app when it
+/// converts a GPU result, which no caller can catch (upstream-issues.md
+/// UP-023), so only the CPU is offered.
 TaskCapabilities<VisionDelegate> imageSegmenterCapabilitiesForPlatform(
   TaskPlatform platform, {
   bool officialMacosRuntime = false,
@@ -344,6 +359,11 @@ TaskCapabilities<VisionDelegate> imageSegmenterCapabilitiesForPlatform(
   officialIosRuntime: officialIosRuntime,
   linuxGpu: true,
   macosGpu: true,
+  androidGpuGap: _androidPowerVr(platform)
+      ? "Google's Android Image Segmenter aborts the app on this PowerVR GPU "
+            '(${platform.gpu}); use the CPU delegate. See upstream-issues.md '
+            'UP-023.'
+      : null,
 );
 
 /// Query Interactive Segmenter Legacy support on this process platform.

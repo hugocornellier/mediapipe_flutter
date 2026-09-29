@@ -611,6 +611,9 @@ async function cameraChecks() {
   await installCaptureObservations(page);
   await page.goto(gallery);
   await page.getByRole('button', {name: subject.tile}).click();
+  // The gallery opens on GPU where offered; the expected points are the
+  // chosen delegate's, so select it rather than rely on the default.
+  await page.getByRole('button', {name: delegate, exact: true}).click({timeout: 120000});
   await wait(page, points => {
     const video = document.querySelector('video');
     return Number(video?.getAttribute('data-processed-frames')) >= 12 &&

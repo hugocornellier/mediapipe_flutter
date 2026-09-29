@@ -17,7 +17,7 @@ try {
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(base);
   await page.getByRole('button', {name: /Face Landmarker/}).click();
-  await page.getByText('Mode', {exact: true}).waitFor();
+  await page.getByText('MODE', {exact: true}).waitFor();
   await page.getByText('Camera', {exact: true}).click();
   await page.waitForTimeout(500);
   await page.keyboard.press('ArrowDown');

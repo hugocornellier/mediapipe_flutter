@@ -1,5 +1,6 @@
 ## Unreleased
 
+* Report Image Segmenter GPU unsupported on Android PowerVR GPUs and refuse to create it, since Google's task aborts the app there (UP-023).
 * Add official MediaPipe 1.0.1 MagicTouch Interactive Segmenter for macOS arm64 CPU, macOS 14+.
 * Expose stateful image replacement and complete positive/negative/lasso stroke histories with owned confidence masks.
 * Add an optional checksum-verified public runtime download; face-only defaults remain unchanged.
