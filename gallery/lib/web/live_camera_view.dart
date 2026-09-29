@@ -16,12 +16,16 @@ class LiveCameraView extends StatelessWidget {
     required this.placeholder,
     required this.showConnections,
     required this.showPoints,
+    this.foreground,
   });
   final LiveCameraController<Object?> controller;
   final CustomPainter? Function(PreviewTransform transform) painter;
   final Widget placeholder;
   final bool showConnections;
   final bool showPoints;
+
+  /// Drawn above the overlay and sized to the visible frame.
+  final Widget? foreground;
   @override
   Widget build(BuildContext context) {
     final frame = controller.frameSize;
@@ -96,6 +100,7 @@ class LiveCameraView extends StatelessWidget {
                     : CustomPaint(painter: overlay);
               },
             ),
+            ?foreground,
           ],
         ),
       ),
