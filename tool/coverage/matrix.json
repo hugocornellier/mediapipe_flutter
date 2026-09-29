@@ -219,7 +219,7 @@
     "interactive_segmenter": {
       "web": {
         "cpu": "required",
-        "gpu": "required"
+        "gpu": "pending: the gallery offers CPU only on web until the browser GPU segmenter returns a new mask per stroke (it repeats its first)"
       },
       "android": {
         "cpu": "required",

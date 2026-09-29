@@ -182,7 +182,12 @@ try {
         enter(`${id}:${delegate}:tap`);
         // Switching reopens the task, so the image is tapped again after it.
         if (delegates.length > 1) await delegateButton(delegate).click({timeout: 120000});
-        await page.getByRole('button', {name: 'Segmentation image', exact: true}).click({timeout: 120000});
+        // The canvas takes real pointer events, not a semantics tap (which
+        // has no position), so click the middle of its labelled area.
+        const image = page.getByLabel('Segmentation image', {exact: true});
+        await image.waitFor({timeout: 120000});
+        const box = await image.boundingBox();
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
         await page.getByText(new RegExp(
           `\\d+\\.\\d ms on ${delegate.toUpperCase()}\\s+·\\s+\\d+ requests, \\d+ coalesced`,
         )).waitFor({timeout: 120000});
