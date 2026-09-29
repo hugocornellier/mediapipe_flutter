@@ -5,6 +5,12 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.RectF;
+import android.opengl.EGL14;
+import android.opengl.EGLConfig;
+import android.opengl.EGLContext;
+import android.opengl.EGLDisplay;
+import android.opengl.EGLSurface;
+import android.opengl.GLES20;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -70,6 +76,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -143,6 +150,14 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
   }
 
   @Override public void onMethodCall(MethodCall call, MethodChannel.Result reply) {
+    if ("gpuRenderer".equals(call.method)) {
+      // Not on the worker: probing makes a GL context current on its thread.
+      new Thread(() -> {
+        String name = gpuName();
+        main.post(() -> reply.success(name));
+      }, "MediaPipe GPU name").start();
+      return;
+    }
     if (!Arrays.asList("create", "detect", "setImage", "segment", "close").contains(call.method)) {
       reply.notImplemented();
       return;
@@ -169,6 +184,70 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
     });
   }
 
+  // The GPU's GL renderer and vendor, read once. Empty when no GLES context can
+  // be made (then no GPU family is singled out).
+  private static volatile String gpuName;
+
+  /** The GPU's name, probed on a thread of its own so no caller's GL state moves. */
+  private static String gpuName() {
+    String name = gpuName;
+    if (name != null) return name;
+    String[] found = {""};
+    Thread probe = new Thread(() -> found[0] = probeGpuName(), "MediaPipe GPU probe");
+    probe.start();
+    try {
+      probe.join(5000);
+    } catch (InterruptedException interrupted) {
+      Thread.currentThread().interrupt();
+    }
+    synchronized (MediaPipeVisionPlugin.class) {
+      if (gpuName == null) gpuName = found[0];
+      return gpuName;
+    }
+  }
+
+  private static boolean powerVr() {
+    String name = gpuName().toLowerCase(Locale.ROOT);
+    return name.contains("powervr") || name.contains("imagination");
+  }
+
+  /** `renderer (vendor)` from a 1x1 offscreen GLES 2 context, or empty. */
+  private static String probeGpuName() {
+    EGLDisplay display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
+    int[] version = new int[2];
+    if (display == EGL14.EGL_NO_DISPLAY || !EGL14.eglInitialize(display, version, 0, version, 1)) {
+      return "";
+    }
+    EGLConfig[] configs = new EGLConfig[1];
+    int[] count = new int[1];
+    int[] wanted = {EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
+        EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT, EGL14.EGL_NONE};
+    if (!EGL14.eglChooseConfig(display, wanted, 0, configs, 0, 1, count, 0) || count[0] < 1) {
+      return "";
+    }
+    EGLContext glContext = EGL14.eglCreateContext(display, configs[0], EGL14.EGL_NO_CONTEXT,
+        new int[] {EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE}, 0);
+    EGLSurface surface = EGL14.eglCreatePbufferSurface(display, configs[0],
+        new int[] {EGL14.EGL_WIDTH, 1, EGL14.EGL_HEIGHT, 1, EGL14.EGL_NONE}, 0);
+    String name = "";
+    try {
+      if (glContext != EGL14.EGL_NO_CONTEXT && surface != EGL14.EGL_NO_SURFACE
+          && EGL14.eglMakeCurrent(display, surface, surface, glContext)) {
+        String renderer = GLES20.glGetString(GLES20.GL_RENDERER);
+        String vendor = GLES20.glGetString(GLES20.GL_VENDOR);
+        name = (renderer == null ? "" : renderer) + (vendor == null ? "" : " (" + vendor + ")");
+        EGL14.eglMakeCurrent(display, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE,
+            EGL14.EGL_NO_CONTEXT);
+      }
+    } finally {
+      if (surface != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(display, surface);
+      if (glContext != EGL14.EGL_NO_CONTEXT) EGL14.eglDestroyContext(display, glContext);
+      // The default display is shared with Flutter and MediaPipe: never terminated.
+      EGL14.eglReleaseThread();
+    }
+    return name;
+  }
+
   private int create(MethodCall call) {
     BaseOptions.Builder base = BaseOptions.builder();
     byte[] model = call.argument("modelBytes");
@@ -189,6 +268,13 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
     String delegate = call.argument("delegate");
     if (!"cpu".equals(delegate) && !"gpu".equals(delegate)) {
       throw new IllegalArgumentException("Unknown delegate: " + delegate);
+    }
+    // UP-023: on a PowerVR GPU Google's Image Segmenter aborts the process when
+    // it converts a GPU result, which nothing here could catch. The Dart side
+    // refuses it first; this covers callers that reach the channel directly.
+    if ("gpu".equals(delegate) && "image_segmenter".equals(name) && powerVr()) {
+      throw new IllegalStateException("UP-023: Google's Image Segmenter aborts the app on this"
+          + " PowerVR GPU (" + gpuName() + "); use the CPU delegate");
     }
     // GPU initialization failures propagate; never silently substitute CPU.
     base.setDelegate("gpu".equals(delegate) ? Delegate.GPU : Delegate.CPU);

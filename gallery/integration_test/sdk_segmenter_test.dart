@@ -16,8 +16,9 @@ import 'support/sdk_frames.dart';
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
 const _gpu = String.fromEnvironment('SDK_GPU', defaultValue: 'optional');
 
-/// Tasks a device run keeps on CPU because Google's SDK aborts the app on its
-/// GPU there, which no test can catch: `image_segmenter` on PowerVR (UP-023).
+/// Tasks a device run keeps on CPU. The package itself now withdraws
+/// `image_segmenter` GPU on PowerVR (UP-023); the device workflow still lists it
+/// for the Galaxy A12 so that phone records no GPU coverage for the task.
 const _gpuSkipped = String.fromEnvironment('SDK_GPU_SKIP_TASKS');
 
 /// Another runtime build and JPEG decoder than the reference's: the masks
@@ -48,9 +49,28 @@ void main() {
         final frame = await loadSample('portrait.jpg');
         final references = <VisionDelegate, SegmentationResult>{};
         var shiftedClasses = false;
+        // The package declares the GPU unsupported on a PowerVR GPU (UP-023)
+        // and refuses to create it. A phone that must run the GPU may lose it
+        // only to that documented gap, not to a misread GPU name.
+        final capabilities = await queryImageSegmenterCapabilities();
+        final gpuDeclared = capabilities.supportedDelegates.contains(
+          VisionDelegate.gpu,
+        );
+        if (!gpuDeclared && _gpu == 'required') {
+          expect(
+            capabilities.platform.gpu,
+            anyOf(contains('PowerVR'), contains('Imagination')),
+          );
+          expect(
+            capabilities.unavailableReasons[VisionDelegate.gpu],
+            contains('UP-023'),
+          );
+          _report('gpu_withdrawn', {'gpu': capabilities.platform.gpu});
+        }
         for (final delegate in [
           VisionDelegate.cpu,
           if (_gpu != 'skip' &&
+              gpuDeclared &&
               !_gpuSkipped.split(',').contains('image_segmenter'))
             VisionDelegate.gpu,
         ]) {

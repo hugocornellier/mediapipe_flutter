@@ -56,9 +56,18 @@ Future<TaskPlatform> _readPlatform() async {
       // Unknown version is reported as unavailable, not assumed compatible.
     }
   }
+  String? gpu;
+  if (taskPlatformGpuReader case final read?) {
+    try {
+      gpu = await read();
+    } on Object {
+      // An unnamed GPU leaves every capability table as declared.
+    }
+  }
   return TaskPlatform(
     operatingSystem: Platform.operatingSystem,
     architecture: Abi.current().toString().split('_').last,
     version: version,
+    gpu: gpu,
   );
 }
