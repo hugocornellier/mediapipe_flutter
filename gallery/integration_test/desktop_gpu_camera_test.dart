@@ -51,6 +51,7 @@ void main() {
             firstFrames.putIfAbsent(live.delegate, () => subjects.first);
           }
         });
+        await selectDelegate(tester, live, VisionDelegate.cpu);
         camera.deliverFrames = true;
         await waitForFrames(tester, live);
         expect(live.delegate, VisionDelegate.cpu);

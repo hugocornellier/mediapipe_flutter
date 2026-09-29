@@ -82,18 +82,22 @@ modern stateful C API is not available in the public source build. See
    immutable. A rebuild requires a new tag and an updated row in core's
    `tasks_runtime.dart` release table.
 
-## Gallery's official macOS landmark runtime
+## Official macOS runtime
 
-The gallery alone opts Live Face Landmarker, Live Hand Landmarker and Live Pose Landmarker into Google's
-official 1.0.0 macOS arm64
-wheel runtime. `gallery/tool/prepare.py` runs
-`tool/prepare_official_macos_landmark_runtime.py`, which verifies the wheel,
-extracts its library and notices, corrects `LC_ID_DYLIB`, shortens equivalent
+Apps that set `official_macos_landmark_tasks: true` use Google's official 1.0.0
+macOS arm64 wheel runtime for the tasks in `officialMacosLandmarkRuntime`.
+`tool/prepare_official_macos_landmark_runtime.py` verifies the wheel, extracts
+its library and notices, corrects `LC_ID_DYLIB`, shortens equivalent
 system-framework load paths to leave Flutter install-name capacity, re-signs,
-and proves the native payload stayed unchanged. The
-result remains in the ignored package build directory and is never a release
-asset; ordinary consumers continue to use the published face-landmarker
-archive.
+and proves the native payload stayed unchanged. A maintainer's prepared copy in
+the ignored package build directory takes precedence; everyone else downloads
+the `official-landmarks-v1.0.0` release archive, which
+`--release <dir>` writes deterministically. The hook pins the unsigned image,
+so the archive's ad-hoc signature is not part of the pin.
+
+Before publishing a new archive, run
+`python3 -B tool/test_prebuilt_macos.py --official-landmarks --local-release <dir>`;
+after publishing, run it again without `--local-release`.
 
 Run `python3 -B tool/test_official_macos_landmark_runtime.py` on macOS arm64 to
 run Face Landmarker's CPU/GPU comparisons and Hand/Pose's checked-in official

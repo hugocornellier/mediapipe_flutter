@@ -255,7 +255,10 @@ void main() {
       'object_detector',
       'pose_landmarker',
     });
-    expect(release.archive, isNull);
+    expect(release.archive, isNotNull);
+    expect(release.archive!.url, startsWith('https://github.com/'));
+    expect(release.archive!.url, contains('/${release.release}/'));
+    expect(release.archive!.sha256, matches(RegExp(r'^[a-f0-9]{64}$')));
     expect(release.libraryName, 'libmediapipe.dylib');
     expect(release.librarySha256, matches(RegExp(r'^[a-f0-9]{64}$')));
     expect(release.officialWheel, isNotNull);

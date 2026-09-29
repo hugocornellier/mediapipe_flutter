@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show debugPrintSynchronously;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
@@ -46,6 +47,10 @@ class _SegmentPageState extends State<SegmentPage> {
   ui.Image? _maskImage;
   String? _error;
   double _threshold = 0.5;
+
+  /// The sample's width over height. The tap area takes exactly this shape,
+  /// so a tap's position is measured against the picture, not the letterbox.
+  double? _imageAspect;
   int _paintedRevision = -1;
   int _openRevision = 0;
 
@@ -56,10 +61,6 @@ class _SegmentPageState extends State<SegmentPage> {
             widget.assets.officialMacosLandmarkTasks,
           )
           .supportedDelegates
-          // TODO: the browser GPU segmenter returns its first mask for every
-          // later stroke, wherever the tap lands. Offer GPU on web once each
-          // stroke gets its own mask (CPU does).
-          .where((delegate) => !kIsWeb || delegate != VisionDelegate.gpu)
           .toList()
         ..sort((a, b) => a.index.compareTo(b.index));
   late VisionDelegate _delegate = preferredDelegate(_delegates);
@@ -67,7 +68,22 @@ class _SegmentPageState extends State<SegmentPage> {
   @override
   void initState() {
     super.initState();
+    _resolveImageAspect();
     unawaited(_open());
+  }
+
+  void _resolveImageAspect() {
+    final stream = widget.assets
+        .imageProvider(widget.task.sample)
+        .resolve(ImageConfiguration.empty);
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener((info, _) {
+      stream.removeListener(listener);
+      final aspect = info.image.width / info.image.height;
+      info.dispose();
+      if (mounted) setState(() => _imageAspect = aspect);
+    });
+    stream.addListener(listener);
   }
 
   Future<void> _open() async {
@@ -189,6 +205,31 @@ class _SegmentPageState extends State<SegmentPage> {
                 'centroid=${n(sumX / count, mask.width)},'
                 '${n(sumY / count, mask.height)}'}',
     );
+    // `?test-hooks=mask` also logs the exact strokes and the mask, one byte
+    // per pixel, for comparison with Google's Python reference.
+    if (Uri.base.queryParameters['test-hooks'] == 'mask') {
+      final bytes = Uint8List(confidence.length);
+      for (var i = 0; i < confidence.length; i++) {
+        bytes[i] = (confidence[i] * 255).round().clamp(0, 255);
+      }
+      debugPrintSynchronously(
+        'SEGMENT_MASK_DATA ${jsonEncode({
+          'delegate': _delegate.name,
+          'width': mask.width,
+          'height': mask.height,
+          'strokes': [
+            for (final stroke in _editor?.strokes ?? const <SegmentationStroke>[]) {
+                'brush': stroke.brushMode.name,
+                'completed': stroke.isCompleted,
+                'points': [
+                  for (final p in stroke.points) [p.x, p.y],
+                ],
+              },
+          ],
+          'mask': base64Encode(bytes),
+        })}',
+      );
+    }
   }
 
   Future<ui.Image> _decode(Uint8List rgba, int width, int height) {
@@ -282,61 +323,71 @@ class _SegmentPageState extends State<SegmentPage> {
                           ),
                         ),
                       )
-                    : editor == null || !editor.ready
+                    : editor == null || !editor.ready || _imageAspect == null
                     ? const Center(child: CircularProgressIndicator())
                     : Center(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) => Semantics(
-                            label: 'Segmentation image',
-                            child: GestureDetector(
-                              key: const ValueKey('segment-canvas'),
-                              // On web a click on a tappable semantics node
-                              // arrives as a positionless tap, which put every
-                              // stroke at the image centre. Real pointer events
-                              // carry where the user clicked.
-                              excludeFromSemantics: true,
-                              onPanStart: (details) {
-                                final point = _pointFor(
-                                  details.localPosition,
-                                  constraints.biggest,
-                                );
-                                if (point != null) editor.begin(point);
-                              },
-                              onPanUpdate: (details) {
-                                final point = _pointFor(
-                                  details.localPosition,
-                                  constraints.biggest,
-                                );
-                                if (point != null) editor.extend(point);
-                              },
-                              onPanEnd: (_) => editor.end(),
-                              // A single point is never a valid lasso, so let
-                              // taps fall through rather than silently drop.
-                              onTapUp:
-                                  editor.brush == SegmentationBrushMode.lasso
-                                  ? null
-                                  : (details) {
-                                      final point = _pointFor(
-                                        details.localPosition,
-                                        constraints.biggest,
-                                      );
-                                      if (point == null) return;
-                                      editor
-                                        ..begin(point)
-                                        ..end();
-                                    },
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image(
-                                    image: widget.assets.imageProvider(
-                                      widget.task.sample,
+                        child: AspectRatio(
+                          aspectRatio: _imageAspect!,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) => Semantics(
+                              label: 'Segmentation image',
+                              child: GestureDetector(
+                                key: const ValueKey('segment-canvas'),
+                                // On web a click on a tappable semantics node
+                                // arrives as a positionless tap, which put every
+                                // stroke at the image centre. Real pointer events
+                                // carry where the user clicked.
+                                excludeFromSemantics: true,
+                                onPanStart: (details) {
+                                  final point = _pointFor(
+                                    details.localPosition,
+                                    constraints.biggest,
+                                  );
+                                  if (point != null) editor.begin(point);
+                                },
+                                onPanUpdate: (details) {
+                                  final point = _pointFor(
+                                    details.localPosition,
+                                    constraints.biggest,
+                                  );
+                                  if (point != null) editor.extend(point);
+                                },
+                                onPanEnd: (_) => editor.end(),
+                                // A single point is never a valid lasso, so let
+                                // taps fall through rather than silently drop.
+                                onTapUp:
+                                    editor.brush == SegmentationBrushMode.lasso
+                                    ? null
+                                    : (details) {
+                                        final point = _pointFor(
+                                          details.localPosition,
+                                          constraints.biggest,
+                                        );
+                                        if (point == null) return;
+                                        editor
+                                          ..begin(point)
+                                          ..end();
+                                      },
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Image(
+                                      image: widget.assets.imageProvider(
+                                        widget.task.sample,
+                                      ),
+                                      fit: BoxFit.contain,
                                     ),
-                                    fit: BoxFit.contain,
-                                  ),
-                                  if (_maskImage case final image?)
-                                    CustomPaint(painter: _MaskPainter(image)),
-                                ],
+                                    if (_maskImage case final image?)
+                                      CustomPaint(painter: _MaskPainter(image)),
+                                    // The stroke being drawn, as Google's
+                                    // sample shows it until the pointer lifts.
+                                    CustomPaint(
+                                      painter: _StrokePainter(
+                                        editor.activePoints,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -418,6 +469,42 @@ class _SegmentPageState extends State<SegmentPage> {
       ),
     );
   }
+}
+
+class _StrokePainter extends CustomPainter {
+  const _StrokePainter(this.points);
+
+  /// Normalized to the picture, which fills this painter exactly.
+  final List<SegmentationPoint> points;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.isEmpty) return;
+    final paint = Paint()
+      ..color = GalleryTheme.accentLight
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final path = Path()
+      ..moveTo(points.first.x * size.width, points.first.y * size.height);
+    for (final point in points.skip(1)) {
+      path.lineTo(point.x * size.width, point.y * size.height);
+    }
+    if (points.length == 1) {
+      canvas.drawCircle(
+        Offset(points.first.x * size.width, points.first.y * size.height),
+        3,
+        paint..style = PaintingStyle.fill,
+      );
+    } else {
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_StrokePainter oldDelegate) =>
+      oldDelegate.points.length != points.length;
 }
 
 class _MaskPainter extends CustomPainter {

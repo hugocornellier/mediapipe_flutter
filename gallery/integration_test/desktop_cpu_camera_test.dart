@@ -49,8 +49,8 @@ void main() {
         await tester.pumpWidget(const GalleryApp());
         final tileTitle = await scrollToGalleryTile(tester, subject.tile);
         expect(tileTitle, findsOneWidget);
-        // Linux offers GPU for face and hand; this test stays on the CPU
-        // default. Windows has no GPU path.
+        // Linux offers GPU for face and hand, and the page opens on it; this
+        // test selects CPU. Windows has no GPU path.
         final gpuOffered = Platform.isLinux ? findsOneWidget : findsNothing;
         final tile = find.ancestor(of: tileTitle, matching: find.byType(Card));
         expect(
@@ -74,6 +74,7 @@ void main() {
             );
           }
         });
+        await selectDelegate(tester, live, VisionDelegate.cpu);
         camera.deliverFrames = true;
         await waitForFrames(tester, live);
         await tester.pump();

@@ -7,15 +7,19 @@ equivalent system-framework paths to leave Flutter's install-name capacity,
 applies an ad-hoc signature, and verifies that code, data, sections and fixups
 are unchanged.  The pinned identity is the unsigned image (everything before
 the signature blob, with the two sizes codesign rewrites masked), so a new
-Xcode changes the recorded file hash but not the pin.  Nothing is published by
-this tool.
+Xcode changes the recorded file hash but not the pin.  With --release, it also
+writes the deterministic archive published as the pinned download.  Nothing is
+uploaded by this tool.
 """
 import argparse
+import gzip
 import hashlib
+import io
 import json
 from pathlib import Path
 import re
 import subprocess
+import tarfile
 import urllib.request
 import zipfile
 
@@ -35,6 +39,8 @@ ORIGINAL_INSTALL_NAME = '@rpath/libmediapipe_source.so'
 # recorded in the manifest.
 UNSIGNED_SHA256 = 'b4c9e10a77fabea6ecbd88f93686ee9414c01762531eb3d487240958b2327fdc'
 MINIMUM_OS = '14.0'
+RELEASE_TAG = 'official-landmarks-v1.0.0'
+ARCHIVE_NAME = 'mediapipe-official-vision-1.0.0-macos-arm64.tar.gz'
 NOTICE_SHA256 = {
     'LICENSE': '8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8',
     'NOTICE': 'd3b4a80a24a01fd445d4b70a610fd836ec3547c3a62eb835a1041956c38d9f56',
@@ -135,14 +141,54 @@ def prepare(wheel, output):
         'signing_toolchain': toolchain,
         'files': {name: digest(data) for name, data in sorted(files.items())},
         'packaging': packaging,
-        'scope': ('Official runtime selected only for the gallery Live Face Landmarker, '
-                  'Live Hand Landmarker and Live Pose Landmarker.'),
+        'scope': ('Official runtime for the macOS arm64 tasks selected with '
+                  'official_macos_landmark_tasks: true.'),
     }
     files['manifest.json'] = (json.dumps(manifest, indent=2) + '\n').encode()
     for name, data in files.items():
         (output / name).write_bytes(data)
     check_library(library)
     print(json.dumps({'output': str(output), 'manifest': manifest}, indent=2))
+    return files
+
+
+def package(files, destination):
+    """Write the published archive: exactly the files the hook accepts."""
+    destination.mkdir(parents=True, exist_ok=True)
+    archive = destination / ARCHIVE_NAME
+    # Identical input bytes yield an identical archive, independent of local
+    # filenames, timestamps, filesystem permissions, and Unix account names.
+    with archive.open('wb') as raw:
+        with gzip.GzipFile(filename='', mode='wb', fileobj=raw, mtime=0) as compressed:
+            with tarfile.open(fileobj=compressed, mode='w',
+                              format=tarfile.USTAR_FORMAT) as bundle:
+                for name, content in sorted(files.items()):
+                    member = tarfile.TarInfo(name)
+                    member.size = len(content)
+                    member.mode = 0o644
+                    bundle.addfile(member, io.BytesIO(content))
+    archive_sha = digest(archive.read_bytes())
+    (destination / 'SHA256SUMS').write_text(f'{archive_sha}  {ARCHIVE_NAME}\n')
+    (destination / 'manifest.json').write_bytes(files['manifest.json'])
+    (destination / 'RELEASE_NOTES.md').write_text(f"""Google's official MediaPipe {VERSION} macOS arm64 runtime, unmodified in code.
+
+The library is `{UPSTREAM_LIBRARY}` from the official PyPI wheel
+(`{WHEEL_URL.rsplit('/', 1)[-1]}`, SHA-256 `{WHEEL_SHA256}`). Only its
+Mach-O metadata changes: `LC_ID_DYLIB` is corrected to `{INSTALL_NAME}`,
+equivalent system-framework load paths are shortened, and the library carries
+an ad-hoc signature. `manifest.json` records each change and proves the code,
+data, sections and fixups are unchanged. The Flutter package pins the unsigned
+image, so the signature can be replaced without changing the pin.
+
+Used on macOS arm64 by apps that set `official_macos_landmark_tasks: true`.
+The archive includes Google's LICENSE and NOTICE from the wheel.
+
+- Archive SHA-256: `{archive_sha}`
+- Unsigned-image SHA-256: `{UNSIGNED_SHA256}`
+- Library size: {len(files[LIBRARY_NAME]):,} bytes
+""")
+    print(json.dumps({'tag': RELEASE_TAG, 'archive': str(archive),
+                      'sha256': archive_sha}, indent=2))
 
 
 def main():
@@ -152,10 +198,14 @@ def main():
     parser.add_argument('--output', type=Path,
                         default=PACKAGE / 'build/native/official-macos-landmarks',
                         help='Prepared runtime directory')
+    parser.add_argument('--release', type=Path,
+                        help=f'Also write the {RELEASE_TAG} archive to this directory')
     args = parser.parse_args()
     wheel = fetch_wheel(
         args.wheel or REPO / 'build/wheels' / WHEEL_URL.rsplit('/', 1)[-1])
-    prepare(wheel, args.output)
+    files = prepare(wheel, args.output)
+    if args.release:
+        package(files, args.release)
 
 
 if __name__ == '__main__':

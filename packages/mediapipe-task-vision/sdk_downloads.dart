@@ -106,7 +106,14 @@ const officialMacosLandmarkRuntime = VisionRuntimeRelease(
     'object_detector',
     'pose_landmarker',
   },
-  archive: null,
+  // Written by tool/prepare_official_macos_landmark_runtime.py --release.
+  archive: (
+    url:
+        'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
+        'download/official-landmarks-v1.0.0/'
+        'mediapipe-official-vision-1.0.0-macos-arm64.tar.gz',
+    sha256: 'f662a259669792872d54da3a4f0932e63d87f423473fc08acf7d8d0528d9fb8d',
+  ),
   libraryName: 'libmediapipe.dylib',
   // Unsigned-image digest; tool/prepare_official_macos_landmark_runtime.py
   // pins the same value and records the signed digest in the manifest.
@@ -206,7 +213,14 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     target: 'ios/arm64',
     release: 'vision-ios-device-v1.0.0-1',
     tasks: {'face_detector', 'face_landmarker'},
-    archive: null,
+    archive: (
+      url:
+          'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
+          'download/vision-ios-device-v1.0.0-1/'
+          'mediapipe-vision-1.0.0-ios-arm64.tar.gz',
+      sha256:
+          '44ae254eb7e0e6e55ad92c664211f1efc72f30b30a9c238d3bcce829b9670da0',
+    ),
     libraryName: 'libmediapipe.dylib',
     librarySha256:
         'a060f2d1f503e938e4e21432170c1b788563ed7123a6e1a71a9ab3185bae3654',
@@ -217,7 +231,14 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     target: 'ios-simulator/arm64',
     release: 'vision-ios-v1.0.0-1',
     tasks: {'face_detector', 'face_landmarker'},
-    archive: null,
+    archive: (
+      url:
+          'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
+          'download/vision-ios-v1.0.0-1/'
+          'mediapipe-vision-1.0.0-ios-simulator-arm64.tar.gz',
+      sha256:
+          '7392cfb6969c2926cf6adebc3bc918622330b2e38aad1b0a7d7b28c4f8616cb9',
+    ),
     libraryName: 'libmediapipe.dylib',
     librarySha256:
         'a4fea1f2abddb6d656b043b5471a09a64df1308475422da9800c8f880cd2aa9e',

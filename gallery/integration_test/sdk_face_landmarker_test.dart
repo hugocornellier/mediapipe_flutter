@@ -308,6 +308,22 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: SizedBox()));
       return;
     }
+    // The page opens on GPU where it is offered (or on CPU after a visible
+    // GPU refusal); the switches below start from CPU, so select it.
+    await tester.runAsync(() async {
+      final deadline = DateTime.now().add(const Duration(seconds: 90));
+      while ((controller.changing || !controller.running) &&
+          controller.error == null &&
+          DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+    });
+    await tester.pump();
+    expect(controller.error, isNull);
+    if (controller.delegate != VisionDelegate.cpu) {
+      await tester.tap(find.text('CPU'));
+      await tester.pump();
+    }
     await tester.runAsync(() => waitFor(VisionDelegate.cpu));
     await tester.pump();
     // With SDK_GPU=skip (emulators) the demo may offer no GPU, and none is
