@@ -181,6 +181,7 @@ class _GalleryShellState extends State<_GalleryShell> {
       GalleryDemo.segment => SegmentPage(
         task: task,
         assets: widget.assets,
+        platform: widget.platform,
         onOpenMenu: openMenu,
         framed: wide,
       ),
