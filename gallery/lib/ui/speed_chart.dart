@@ -280,9 +280,10 @@ class SpeedChartPainter extends CustomPainter {
         if (history.chartSamples(delegate).isNotEmpty) delegate,
     ];
     final span = math.max(10.0, history.durationSeconds);
-    // The ceiling can only grow during a session. It reads the recorded peak,
-    // not screen-width averages that change when the time axis expands.
-    final range = math.max(15.0, history.peakMilliseconds * 1.15);
+    // Scale to the values the user can actually see. The chart draws
+    // quarter-second averages, so a raw startup spike must not leave the
+    // visible lines compressed against an unrelated ceiling.
+    final range = math.max(15.0, history.chartPeak(series) * 1.15);
     final yStep = _step(range, 4, const [1, 2, 2.5, 5]);
     final yMax = (range / yStep).ceil() * yStep;
     Offset at(SpeedSample sample) => Offset(

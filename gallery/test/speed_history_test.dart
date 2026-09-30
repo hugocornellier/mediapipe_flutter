@@ -59,20 +59,20 @@ void main() {
     expect(history.recent(VisionDelegate.cpu, frames: 40), closeTo(31, 1e-9));
   });
 
-  test('past chart points and the vertical peak stay fixed as time grows', () {
+  test('the vertical peak follows the values actually drawn', () {
     final history = SpeedHistory()
       ..add(VisionDelegate.cpu, 20, _ms(0))
       ..add(VisionDelegate.cpu, 10, _ms(100))
       ..add(VisionDelegate.cpu, 8, _ms(300));
     final first = history.chartSamples(VisionDelegate.cpu).first;
     expect(first.milliseconds, 15);
-    expect(history.peakMilliseconds, 20);
+    expect(history.chartPeak([VisionDelegate.cpu]), 15);
 
     for (var i = 4; i <= 400; i++) {
       history.add(VisionDelegate.cpu, 5, _ms(i * 100));
     }
     expect(history.chartSamples(VisionDelegate.cpu).first, first);
-    expect(history.peakMilliseconds, 20);
+    expect(history.chartPeak([VisionDelegate.cpu]), 15);
     expect(history.durationSeconds, greaterThan(30));
   });
 
