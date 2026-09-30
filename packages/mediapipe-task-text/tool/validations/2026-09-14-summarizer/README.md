@@ -1,4 +1,4 @@
-# Summarizer macOS validation — 2026-09-14
+# Summarizer macOS validation, 2026-09-14
 
 Passed on macOS 26.4 arm64, Flutter 3.44.8 / Dart 3.12.2. Uses the official
 MediaPipe 1.0.1 runtime and version-1 Summarization 200M two-mode model. Native

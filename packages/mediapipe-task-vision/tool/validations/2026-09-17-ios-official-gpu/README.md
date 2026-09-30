@@ -1,4 +1,4 @@
-# Official iOS SDK CPU/Metal validation — 2026-09-17
+# Official iOS SDK CPU/Metal validation, 2026-09-17
 
 Device: iPhone 15 Pro, Apple A17 Pro, iOS 26.5. Release builds use Google's
 prebuilt MediaPipe Tasks 1.0.1 SDK through the Objective-C++ FFI adapter. See

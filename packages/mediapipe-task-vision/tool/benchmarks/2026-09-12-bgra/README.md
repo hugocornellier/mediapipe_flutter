@@ -1,4 +1,4 @@
-# BGRA packing experiment — Apple M4 Max
+# BGRA packing experiment, Apple M4 Max
 
 The first pipeline profile identified full-frame BGRA packing as an avoidable
 cost. The candidate replaces four byte loads/stores per pixel with a 32-bit
