@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_vision/capabilities.dart';
 
+import '../ui/components.dart';
+import '../ui/design.dart';
 import 'task_models.dart';
 import 'task_settings.dart';
 
-/// A task's settings and delegate, laid out as MediaPipe Studio shows them.
+/// A task's model, delegate and settings, in the design's settings panel.
 ///
 /// Sliders report a value once the drag ends, so a task is rebuilt once per
-/// change rather than once per pixel dragged.
+/// change rather than once per pixel dragged; display settings apply while
+/// dragged, since they only redraw.
 class TaskSettingsPanel extends StatefulWidget {
   const TaskSettingsPanel({
     super.key,
@@ -24,21 +28,21 @@ class TaskSettingsPanel extends StatefulWidget {
     required this.modelStatus,
     required this.onModel,
     required this.onUpload,
-    this.connections = false,
-    this.points = false,
-    this.onConnections,
-    this.onPoints,
+    this.bundledModel,
+    this.standardModel = 'Standard',
+    this.labels = const [],
   });
 
-  /// Overlay display: skeleton or box outlines, and individual points. Pages
-  /// without an overlay, such as the text demos, leave these null.
-  final bool connections;
-  final bool points;
-  final ValueChanged<bool>? onConnections;
-  final ValueChanged<bool>? onPoints;
+  /// The bundled model's file, shown under the model choice.
+  final String? bundledModel;
 
-  /// Google's other official models for the task; the bundled one is
-  /// "Standard".
+  /// The bundled model's name in the model list.
+  final String standardModel;
+
+  /// The running model's labels, which a [LabelSetting] chooses from.
+  final List<String> labels;
+
+  /// Google's other official models for the task.
   final List<TaskModel> models;
 
   /// The chosen official model, or null for the standard or uploaded one.
@@ -50,7 +54,9 @@ class TaskSettingsPanel extends StatefulWidget {
   /// A download in progress or a model that failed to load.
   final String? modelStatus;
   final void Function(TaskModel? model) onModel;
-  final VoidCallback onUpload;
+
+  /// Null where the task takes no other model.
+  final VoidCallback? onUpload;
 
   final List<TaskSetting> settings;
   final TaskSettingValues values;
@@ -72,188 +78,297 @@ class _TaskSettingsPanelState extends State<TaskSettingsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    final c = GalleryColors.of(context);
+    final muted = TextStyle(color: c.muted, fontSize: Sizes.sm);
+    final enabled = widget.enabled;
+    final model = widget.model;
+    final file =
+        widget.uploaded ??
+        (model == null
+            ? widget.bundledModel
+            : '${model.name} · ${(model.bytes / 1e6).toStringAsFixed(1)} MB');
+    final shownSettings = [
+      for (final setting in widget.settings)
+        if (_shown(setting)) setting,
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Model Selection', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        _Section(
+          label: 'Model',
           children: [
-            ChoiceChip(
-              avatar: const Icon(Icons.grid_view, size: 18),
-              label: const Text('Standard'),
-              selected: widget.model == null && widget.uploaded == null,
-              onSelected: widget.enabled ? (_) => widget.onModel(null) : null,
-            ),
-            for (final model in widget.models)
-              ChoiceChip(
-                label: Text(
-                  '${model.name} · '
-                  '${(model.bytes / 1e6).toStringAsFixed(1)} MB',
-                ),
-                selected: widget.model == model,
-                onSelected: widget.enabled
-                    ? (_) => widget.onModel(model)
-                    : null,
-              ),
-            ChoiceChip(
-              avatar: const Icon(Icons.upload, size: 18),
-              label: Text(widget.uploaded ?? 'Upload'),
+            Segmented<bool>(
+              expand: true,
+              segments: [
+                (value: false, label: 'Standard', icon: null, key: null),
+                if (widget.onUpload != null)
+                  (
+                    value: true,
+                    label: 'Upload',
+                    icon: LucideIcons.upload,
+                    key: const ValueKey('model-upload'),
+                  ),
+              ],
               selected: widget.uploaded != null,
-              onSelected: widget.enabled ? (_) => widget.onUpload() : null,
+              onChanged: !enabled
+                  ? null
+                  : (upload) {
+                      if (upload) {
+                        widget.onUpload?.call();
+                      } else if (widget.uploaded != null) {
+                        widget.onModel(null);
+                      }
+                    },
             ),
+            if (widget.models.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SelectField<TaskModel?>(
+                key: const ValueKey('model-select'),
+                label: 'Model',
+                value: widget.uploaded == null ? model : null,
+                options: [
+                  (null, widget.standardModel),
+                  for (final m in widget.models)
+                    (m, '${m.name} · ${(m.bytes / 1e6).toStringAsFixed(1)} MB'),
+                ],
+                onChanged: enabled ? widget.onModel : null,
+              ),
+            ],
+            if (file != null) ...[
+              const SizedBox(height: 12),
+              Text(file, style: muted),
+            ],
+            if (widget.modelStatus case final status?) ...[
+              const SizedBox(height: 8),
+              Text(status, style: muted),
+            ],
           ],
         ),
-        if (widget.modelStatus case final status?)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(status, style: theme.textTheme.bodySmall),
-          ),
-        const SizedBox(height: 16),
-        // Right after the model, so switching delegates never needs a scroll
-        // however many settings a task has; the list builds lazily, so a
-        // control at its end may not exist until scrolled to.
-        Text('Delegate', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        // A single delegate is stated rather than offered as a choice.
-        if (widget.delegates.length < 2)
-          Text(
-            '${widget.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'} only on '
-            'this platform',
-            style: theme.textTheme.bodyMedium,
-          )
-        else
-          SegmentedButton<VisionDelegate>(
-            segments: [
-              for (final delegate in widget.delegates)
-                ButtonSegment(
-                  value: delegate,
-                  label: Text(delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'),
-                ),
+        _Section(
+          label: 'Delegate',
+          children: [
+            Segmented<VisionDelegate>(
+              expand: true,
+              segments: [
+                for (final delegate in widget.delegates)
+                  (
+                    value: delegate,
+                    label: delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+                    icon: null,
+                    key: ValueKey('delegate-${delegate.name}'),
+                  ),
+              ],
+              selected: widget.delegate,
+              onChanged: enabled && widget.delegates.length > 1
+                  ? widget.onDelegate
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            if (widget.delegates.length < 2)
+              Text(
+                '${widget.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'} '
+                'only on this platform',
+                style: muted.copyWith(fontSize: Sizes.xs),
+              )
+            else if (widget.delegate == VisionDelegate.gpu)
+              Row(
+                children: [
+                  const StatusDot(),
+                  const SizedBox(width: 7),
+                  Text(
+                    'GPU accelerated',
+                    style: TextStyle(color: c.teal, fontSize: Sizes.xs),
+                  ),
+                ],
+              )
+            else
+              Text(
+                'Running on the CPU',
+                style: muted.copyWith(fontSize: Sizes.xs),
+              ),
+          ],
+        ),
+        if (shownSettings.isNotEmpty)
+          _Section(
+            label: 'Task settings',
+            children: [
+              for (final (i, setting) in shownSettings.indexed) ...[
+                if (i > 0) const SizedBox(height: 19),
+                _row(setting),
+              ],
             ],
-            selected: {widget.delegate},
-            onSelectionChanged: widget.enabled
-                ? (selection) => widget.onDelegate(selection.first)
-                : null,
           ),
-        const SizedBox(height: 16),
-        if (widget.settings.isNotEmpty) ...[
-          Text('Settings', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          for (final setting in widget.settings) _row(setting, theme),
-          const SizedBox(height: 16),
-        ],
-        if (widget.onConnections != null) ...[
-          Text('Display', style: theme.textTheme.titleMedium),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text('Connections', style: theme.textTheme.bodyMedium),
-            value: widget.connections,
-            onChanged: widget.onConnections,
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text('Points', style: theme.textTheme.bodyMedium),
-            value: widget.points,
-            onChanged: widget.onPoints,
-          ),
-          const SizedBox(height: 16),
-        ],
       ],
     );
   }
 
-  Widget _row(TaskSetting setting, ThemeData theme) => switch (setting) {
-    CountSetting() => _labelled(
-      setting.label,
-      '${widget.values.count(setting.key)}',
-      theme,
-      Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.remove),
-            tooltip: 'Fewer',
-            onPressed:
-                widget.enabled && widget.values.count(setting.key) > setting.min
-                ? () => widget.onChanged(
-                    setting.key,
-                    widget.values.count(setting.key) - 1,
-                  )
-                : null,
+  /// A [LabelSetting] shows once the model's labels are known, and only for
+  /// the choice it belongs to.
+  bool _shown(TaskSetting setting) => switch (setting) {
+    LabelSetting(:final whenKey, :final whenValue) =>
+      widget.labels.isNotEmpty && widget.values[whenKey] == whenValue,
+    _ => true,
+  };
+
+  /// Display settings redraw only, so a slider may apply while dragged.
+  void _slide(ShareSetting setting, double value) {
+    setState(() => _dragging[setting.key] = value);
+    if (setting.display) {
+      widget.onChanged(setting.key, (value * 20).round() / 20);
+    }
+  }
+
+  Widget _row(TaskSetting setting) {
+    final c = GalleryColors.of(context);
+    final enabled = widget.enabled || setting.display;
+    Widget line(Widget trailing) => Row(
+      children: [
+        Expanded(
+          child: Text(
+            setting.label,
+            style: TextStyle(color: c.soft, fontSize: Sizes.sm),
           ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'More',
-            onPressed:
-                widget.enabled && widget.values.count(setting.key) < setting.max
-                ? () => widget.onChanged(
-                    setting.key,
-                    widget.values.count(setting.key) + 1,
-                  )
+        ),
+        const SizedBox(width: 10),
+        trailing,
+      ],
+    );
+    return switch (setting) {
+      CountSetting(:final min, :final max) => line(
+        CountStepper(
+          key: ValueKey('setting-${setting.key}'),
+          value: widget.values.count(setting.key),
+          onDecrease: enabled && widget.values.count(setting.key) > min
+              ? () => widget.onChanged(
+                  setting.key,
+                  widget.values.count(setting.key) - 1,
+                )
+              : null,
+          onIncrease: enabled && widget.values.count(setting.key) < max
+              ? () => widget.onChanged(
+                  setting.key,
+                  widget.values.count(setting.key) + 1,
+                )
+              : null,
+        ),
+      ),
+      ShareSetting() => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          line(
+            Text(
+              (_dragging[setting.key] ?? widget.values.share(setting.key))
+                  .toStringAsFixed(2),
+              style: TextStyle(
+                color: c.teal,
+                fontSize: Sizes.xs,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          // Flutter 3.47's Slider keeps its value-bubble overlay entry shown
+          // at all times. In the page's overlay, each entry becomes a
+          // page-sized web semantics node that swallows every click, so each
+          // slider gets an overlay of its own. The value is printed above.
+          SizedBox(
+            height: 28,
+            child: Overlay.wrap(
+              alwaysSizeToContent: true,
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  overlayShape: SliderComponentShape.noOverlay,
+                  tickMarkShape: SliderTickMarkShape.noTickMark,
+                ),
+                child: Slider(
+                  key: ValueKey('setting-${setting.key}'),
+                  semanticFormatterCallback: (value) =>
+                      '${setting.label} ${value.toStringAsFixed(2)}',
+                  value:
+                      _dragging[setting.key] ??
+                      widget.values.share(setting.key),
+                  divisions: 20,
+                  onChanged: enabled ? (value) => _slide(setting, value) : null,
+                  onChangeEnd: enabled
+                      ? (value) {
+                          setState(() => _dragging.remove(setting.key));
+                          // Twentieths, so 0.35 is not applied as
+                          // 0.35000000000000003.
+                          widget.onChanged(
+                            setting.key,
+                            (value * 20).round() / 20,
+                          );
+                        }
+                      : null,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      SwitchSetting() => line(
+        DesignSwitch(
+          key: ValueKey('setting-${setting.key}'),
+          label: setting.label,
+          value: widget.values.on(setting.key),
+          onChanged: enabled
+              ? (value) => widget.onChanged(setting.key, value)
+              : null,
+        ),
+      ),
+      ChoiceSetting(:final options) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          line(const SizedBox.shrink()),
+          const SizedBox(height: 8),
+          SelectField<int>(
+            key: ValueKey('setting-${setting.key}'),
+            label: setting.label,
+            value: widget.values.choice(setting.key),
+            options: [for (final (i, option) in options.indexed) (i, option)],
+            onChanged: enabled
+                ? (value) => widget.onChanged(setting.key, value)
                 : null,
           ),
         ],
       ),
-    ),
-    ShareSetting() => _labelled(
-      setting.label,
-      (_dragging[setting.key] ?? widget.values.share(setting.key))
-          .toStringAsFixed(2),
-      theme,
-      // Flutter 3.47's Slider keeps its value-bubble overlay entry shown at
-      // all times. In the page's overlay, each entry becomes a page-sized web
-      // semantics node that swallows every click, so each slider gets an
-      // overlay of its own. The value is printed beside the label instead.
-      Overlay.wrap(
-        alwaysSizeToContent: true,
-        child: Slider(
-          showValueIndicator: ShowValueIndicator.never,
-          value: _dragging[setting.key] ?? widget.values.share(setting.key),
-          divisions: 20,
-          onChanged: widget.enabled
-              ? (value) => setState(() => _dragging[setting.key] = value)
-              : null,
-          onChangeEnd: widget.enabled
-              ? (value) {
-                  setState(() => _dragging.remove(setting.key));
-                  // Twentieths, so 0.35 is not applied as 0.35000000000000003.
-                  widget.onChanged(setting.key, (value * 20).round() / 20);
-                }
-              : null,
-        ),
+      LabelSetting() => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          line(const SizedBox.shrink()),
+          const SizedBox(height: 8),
+          SelectField<int>(
+            key: ValueKey('setting-${setting.key}'),
+            label: setting.label,
+            value: widget.values.choice(setting.key) < widget.labels.length
+                ? widget.values.choice(setting.key)
+                : 0,
+            options: [
+              for (final (i, label) in widget.labels.indexed) (i, label),
+            ],
+            onChanged: (value) => widget.onChanged(setting.key, value),
+          ),
+        ],
       ),
-    ),
-    SwitchSetting() => SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(setting.label, style: theme.textTheme.bodyMedium),
-      value: widget.values.on(setting.key),
-      onChanged: widget.enabled
-          ? (value) => widget.onChanged(setting.key, value)
-          : null,
-    ),
-  };
+    };
+  }
+}
 
-  Widget _labelled(
-    String label,
-    String value,
-    ThemeData theme,
-    Widget control,
-  ) => Padding(
-    padding: const EdgeInsets.only(bottom: 4),
+/// One settings section: a rule, its label and its controls.
+class _Section extends StatelessWidget {
+  const _Section({required this.label, required this.children});
+
+  final String label;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 20),
+    decoration: BoxDecoration(
+      border: Border(top: BorderSide(color: GalleryColors.of(context).line)),
+    ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-            Text(value, style: theme.textTheme.bodyMedium),
-          ],
-        ),
-        control,
-      ],
+      children: [Eyebrow(label), const SizedBox(height: 12), ...children],
     ),
   );
 }

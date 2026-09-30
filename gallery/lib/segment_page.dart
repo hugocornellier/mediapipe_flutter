@@ -5,15 +5,19 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart' show debugPrintSynchronously;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'catalog.dart';
-import 'gallery_content_surface.dart';
-import 'gallery_task_header.dart';
 import 'gallery_theme.dart';
+import 'live/task_settings.dart';
+import 'live/task_settings_panel.dart';
 import 'main.dart';
 import 'segment/editor_controller.dart';
 import 'segment/mask_overlay.dart';
+import 'ui/components.dart';
+import 'ui/design.dart';
+import 'ui/workspace.dart';
 import 'web/test_hooks.dart';
 
 /// MagicTouch segmentation: drag over a subject to select it.
@@ -28,14 +32,12 @@ class SegmentPage extends StatefulWidget {
     required this.assets,
     required this.platform,
     this.onOpenMenu,
-    this.framed = false,
   });
 
   final GalleryTask task;
   final GalleryAssets assets;
   final TaskPlatform platform;
   final VoidCallback? onOpenMenu;
-  final bool framed;
 
   @override
   State<SegmentPage> createState() => _SegmentPageState();
@@ -46,7 +48,21 @@ class _SegmentPageState extends State<SegmentPage> {
   InteractiveSegmenter? _task;
   ui.Image? _maskImage;
   String? _error;
-  double _threshold = 0.5;
+  late final _values = TaskSettingValues(widget.task.runtimeId);
+  late final List<TaskSetting> _settings =
+      taskSettings[widget.task.runtimeId] ?? const [];
+
+  /// Bumped on every rebuild, so the settings sheet redraws with the page.
+  final _revision = ValueNotifier<int>(0);
+
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    _revision.value++;
+  }
+
+  /// Kept off the ends, where a mask would be all or nothing.
+  double get _threshold => _values.share('threshold').clamp(0.05, 0.95);
 
   /// The sample's width over height. The tap area takes exactly this shape,
   /// so a tap's position is measured against the picture, not the letterbox.
@@ -250,6 +266,7 @@ class _SegmentPageState extends State<SegmentPage> {
     unawaited(_editor?.close());
     unawaited(_task?.dispose());
     _maskImage?.dispose();
+    _revision.dispose();
     super.dispose();
   }
 
@@ -269,205 +286,199 @@ class _SegmentPageState extends State<SegmentPage> {
     return SegmentationPoint(x: x, y: y);
   }
 
+  Widget _panel() => TaskSettingsPanel(
+    settings: _settings,
+    values: _values,
+    delegates: _delegates,
+    delegate: _delegate,
+    // Until the open task is ready, so a switch never overlaps an open
+    // still in flight.
+    enabled: _editor?.ready ?? false,
+    onChanged: (key, value) {
+      setState(() => _values[key] = value);
+      unawaited(_repaintMask());
+    },
+    onDelegate: (delegate) => unawaited(_setDelegate(delegate)),
+    models: const [],
+    model: null,
+    uploaded: null,
+    modelStatus: null,
+    onModel: (_) {},
+    onUpload: null,
+    bundledModel: widget.task.model,
+  );
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = GalleryColors.of(context);
+    final phone = MediaQuery.sizeOf(context).width < Sizes.compact;
     final editor = _editor;
     final error = _error ?? editor?.error;
-    return Scaffold(
-      backgroundColor: widget.framed
-          ? theme.colorScheme.surfaceContainerLow
-          : null,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: widget.onOpenMenu == null
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.menu),
-                tooltip: 'Open navigation',
-                onPressed: widget.onOpenMenu,
-              ),
-        flexibleSpace: GalleryTaskHeader(taskTitle: widget.task.title),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.undo),
-            tooltip: 'Undo stroke',
-            onPressed: editor?.canUndo ?? false ? () => editor!.undo() : null,
-          ),
-          IconButton(
-            icon: const Icon(Icons.layers_clear),
-            tooltip: 'Clear selection',
-            // clear() reloads the image, which drops every stroke and the mask.
-            onPressed: editor != null && editor.ready && editor.canUndo
-                ? () => unawaited(editor.clear())
-                : null,
-          ),
-        ],
+    return TaskWorkspace(
+      title: widget.task.title,
+      onOpenMenu: widget.onOpenMenu,
+      // Rebuilt with the page, so the sheet shows the current values.
+      settings: ListenableBuilder(
+        listenable: _revision,
+        builder: (context, _) => _panel(),
       ),
-      body: GalleryContentSurface(
-        framed: widget.framed,
-        child: Column(
-          children: [
-            Expanded(
-              child: Container(
-                color: GalleryTheme.preview,
-                width: double.infinity,
-                child: error != null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            error,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: GalleryTheme.white),
-                          ),
-                        ),
-                      )
-                    : editor == null || !editor.ready || _imageAspect == null
-                    ? const Center(child: CircularProgressIndicator())
-                    : Center(
-                        child: AspectRatio(
-                          aspectRatio: _imageAspect!,
-                          child: LayoutBuilder(
-                            builder: (context, constraints) => Semantics(
-                              label: 'Segmentation image',
-                              identifier: 'segment-canvas-${_delegate.name}',
-                              child: GestureDetector(
-                                key: const ValueKey('segment-canvas'),
-                                // On web a click on a tappable semantics node
-                                // arrives as a positionless tap, which put every
-                                // stroke at the image centre. Real pointer events
-                                // carry where the user clicked.
-                                excludeFromSemantics: true,
-                                onPanStart: (details) {
+      children: [
+        PageHeading(
+          eyebrow: '${widget.task.category.title} / Live demo',
+          title: widget.task.title,
+          summary: widget.task.summary,
+          trailing: phone
+              ? null
+              : OutlineButton(
+                  icon: LucideIcons.circleHelp,
+                  label: 'Help',
+                  tooltip: 'Help',
+                  onPressed: () => showTaskHelp(context, widget.task),
+                ),
+        ),
+        SizedBox(height: phone ? 24 : 32),
+        FeedFrame(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (error != null)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      error,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Color(0xFFF0F3F2)),
+                    ),
+                  ),
+                )
+              else if (editor == null || !editor.ready || _imageAspect == null)
+                const Center(child: CircularProgressIndicator())
+              else
+                Center(
+                  child: AspectRatio(
+                    aspectRatio: _imageAspect!,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => Semantics(
+                        label: 'Segmentation image',
+                        identifier: 'segment-canvas-${_delegate.name}',
+                        child: GestureDetector(
+                          key: const ValueKey('segment-canvas'),
+                          // On web a click on a tappable semantics node
+                          // arrives as a positionless tap, which put every
+                          // stroke at the image centre. Real pointer events
+                          // carry where the user clicked.
+                          excludeFromSemantics: true,
+                          onPanStart: (details) {
+                            final point = _pointFor(
+                              details.localPosition,
+                              constraints.biggest,
+                            );
+                            if (point != null) editor.begin(point);
+                          },
+                          onPanUpdate: (details) {
+                            final point = _pointFor(
+                              details.localPosition,
+                              constraints.biggest,
+                            );
+                            if (point != null) editor.extend(point);
+                          },
+                          onPanEnd: (_) => editor.end(),
+                          // A single point is never a valid lasso, so let
+                          // taps fall through rather than silently drop.
+                          onTapUp: editor.brush == SegmentationBrushMode.lasso
+                              ? null
+                              : (details) {
                                   final point = _pointFor(
                                     details.localPosition,
                                     constraints.biggest,
                                   );
-                                  if (point != null) editor.begin(point);
+                                  if (point == null) return;
+                                  editor
+                                    ..begin(point)
+                                    ..end();
                                 },
-                                onPanUpdate: (details) {
-                                  final point = _pointFor(
-                                    details.localPosition,
-                                    constraints.biggest,
-                                  );
-                                  if (point != null) editor.extend(point);
-                                },
-                                onPanEnd: (_) => editor.end(),
-                                // A single point is never a valid lasso, so let
-                                // taps fall through rather than silently drop.
-                                onTapUp:
-                                    editor.brush == SegmentationBrushMode.lasso
-                                    ? null
-                                    : (details) {
-                                        final point = _pointFor(
-                                          details.localPosition,
-                                          constraints.biggest,
-                                        );
-                                        if (point == null) return;
-                                        editor
-                                          ..begin(point)
-                                          ..end();
-                                      },
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    Image(
-                                      image: widget.assets.imageProvider(
-                                        widget.task.sample,
-                                      ),
-                                      fit: BoxFit.contain,
-                                    ),
-                                    if (_maskImage case final image?)
-                                      CustomPaint(painter: _MaskPainter(image)),
-                                    // The stroke being drawn, as Google's
-                                    // sample shows it until the pointer lifts.
-                                    CustomPaint(
-                                      painter: _StrokePainter(
-                                        editor.activePoints,
-                                      ),
-                                    ),
-                                  ],
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image(
+                                image: widget.assets.imageProvider(
+                                  widget.task.sample,
                                 ),
+                                fit: BoxFit.contain,
                               ),
-                            ),
+                              if (_maskImage case final image?)
+                                CustomPaint(painter: _MaskPainter(image)),
+                              // The stroke being drawn, as Google's sample
+                              // shows it until the pointer lifts.
+                              CustomPaint(
+                                painter: _StrokePainter(editor.activePoints),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text(
-                    editor?.lastInferenceMs == null
-                        ? _hintFor(editor?.brush)
-                        : '${editor!.lastInferenceMs!.toStringAsFixed(1)} ms '
-                              'on ${_delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'}  ·  '
-                              '${editor.completedRequests} requests, '
-                              '${editor.coalescedRequests} coalesced',
-                    style: theme.textTheme.bodySmall,
-                    textAlign: TextAlign.center,
+                    ),
                   ),
-                  // TODO: finish Exclude (negative) and Lasso strokes on every
-                  // platform, then restore the Include/Exclude/Lasso selector
-                  // (a SegmentedButton<SegmentationBrushMode> setting
-                  // editor.brush). Until then the gallery offers Include only.
-                  if (_delegates.length > 1) ...[
-                    const SizedBox(height: 8),
-                    SegmentedButton<VisionDelegate>(
-                      segments: [
-                        for (final delegate in _delegates)
-                          ButtonSegment(
-                            value: delegate,
-                            label: Text(
-                              delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
-                            ),
-                          ),
-                      ],
-                      selected: {_delegate},
-                      // Disabled until the open task is ready, so a switch
-                      // never overlaps an open still in flight.
-                      onSelectionChanged: editor == null || !editor.ready
-                          ? null
-                          : (selection) =>
-                                unawaited(_setDelegate(selection.first)),
+                ),
+              Positioned(
+                left: 14,
+                bottom: 14,
+                child: Row(
+                  children: [
+                    FeedButton(
+                      icon: LucideIcons.undo2,
+                      tooltip: 'Undo stroke',
+                      onPressed: editor?.canUndo ?? false
+                          ? () => editor!.undo()
+                          : null,
+                    ),
+                    const SizedBox(width: 7),
+                    FeedButton(
+                      icon: LucideIcons.eraser,
+                      tooltip: 'Clear selection',
+                      // clear() reloads the image, which drops every stroke
+                      // and the mask.
+                      onPressed:
+                          editor != null && editor.ready && editor.canUndo
+                          ? () => unawaited(editor.clear())
+                          : null,
                     ),
                   ],
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Text('Threshold'),
-                      Expanded(
-                        // As in TaskSettingsPanel: Flutter 3.47's Slider keeps
-                        // its value-bubble overlay entry shown, and on web an
-                        // entry in the page's overlay is an empty page-sized
-                        // semantics node above every control, so DOM hit tests
-                        // land on it. The value is printed beside the slider.
-                        child: Overlay.wrap(
-                          alwaysSizeToContent: true,
-                          child: Slider(
-                            showValueIndicator: ShowValueIndicator.never,
-                            value: _threshold,
-                            min: 0.05,
-                            max: 0.95,
-                            onChanged: (value) {
-                              setState(() => _threshold = value);
-                              unawaited(_repaintMask());
-                            },
-                          ),
-                        ),
-                      ),
-                      Text(_threshold.toStringAsFixed(2)),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+        FeedStatus(
+          parts: [
+            if (editor?.lastInferenceMs case final ms?) ...[
+              '${ms.toStringAsFixed(1)} ms',
+              '${editor!.completedRequests} requests',
+              '${editor.coalescedRequests} coalesced',
+            ] else
+              _hintFor(editor?.brush),
+          ],
+          delegate: _delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+        ),
+        // TODO: finish Exclude (negative) and Lasso strokes on every
+        // platform, then restore the Include/Exclude/Lasso selector (a
+        // Segmented<SegmentationBrushMode> setting editor.brush). Until then
+        // the gallery offers Include only.
+        const SizedBox(height: 11),
+        OutputCard(
+          title: 'Selection',
+          count: editor?.canUndo ?? false ? 'Include' : null,
+          empty: _hintFor(editor?.brush),
+          child: editor?.mask == null
+              ? null
+              : Text(
+                  'Pixels above ${_threshold.toStringAsFixed(2)} confidence '
+                  'are drawn as the selection.',
+                  style: TextStyle(color: c.muted, fontSize: Sizes.sm),
+                ),
+        ),
+      ],
     );
   }
 }

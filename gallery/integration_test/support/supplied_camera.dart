@@ -9,6 +9,7 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_subjects.dart';
 
+import 'delegate_control.dart';
 import 'live_subject.dart';
 
 /// Selects [delegate] on the page's CPU/GPU control once the page has
@@ -37,13 +38,7 @@ Future<void> selectDelegate(
 
   await settle();
   if (controller.delegate == delegate) return;
-  await tester.tap(
-    find.descendant(
-      of: find.byType(SegmentedButton<VisionDelegate>),
-      matching: find.text(delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'),
-    ),
-  );
-  await tester.pump();
+  await tapDelegate(tester, delegate);
   await settle();
   expect(controller.delegate, delegate);
 }

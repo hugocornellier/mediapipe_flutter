@@ -45,20 +45,18 @@ void main() {
     );
     await tester.pump();
 
-    // A phone drops the label and lays the title out beside the actions,
-    // so the two never overdraw each other.
-    expect(find.text('MODE'), findsNothing);
-    expect(find.text('Camera'), findsOneWidget);
+    // A phone keeps the title in the top bar and the Camera / Still image
+    // switch in full under the heading, as the design lays them out.
     final mode = find.byKey(const ValueKey('face-landmarker-mode'));
-    expect(tester.getTopRight(mode).dx, greaterThan(300));
+    expect(mode, findsOneWidget);
+    expect(find.text('Camera'), findsOneWidget);
+    expect(find.text('Still image'), findsOneWidget);
     expect(
-      tester.getTopRight(find.text(task.title)).dx,
-      lessThanOrEqualTo(tester.getTopLeft(mode).dx),
+      tester.getTopLeft(mode).dy,
+      greaterThan(tester.getBottomLeft(find.text(task.summary)).dy),
     );
     expect(tester.takeException(), isNull);
-    await tester.tap(find.byKey(const ValueKey('face-landmarker-mode')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Still image').last);
+    await tester.tap(find.byKey(const ValueKey('face-landmarker-mode-image')));
     await tester.pumpAndSettle();
 
     expect(find.text('Choose image'), findsOneWidget);
@@ -68,9 +66,7 @@ void main() {
       findsNothing,
     );
 
-    await tester.tap(find.byKey(const ValueKey('face-landmarker-mode')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Camera').last);
+    await tester.tap(find.byKey(const ValueKey('face-landmarker-mode-camera')));
     await tester.pumpAndSettle();
     expect(
       find.text('No camera found. Connect a webcam and try again.'),

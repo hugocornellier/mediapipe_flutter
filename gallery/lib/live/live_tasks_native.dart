@@ -34,6 +34,8 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
         ),
         minFacePresenceConfidence: settings.share('minFacePresenceConfidence'),
         minTrackingConfidence: settings.share('minTrackingConfidence'),
+        // Scored in the Output card, as Google's demo lists them.
+        outputFaceBlendshapes: true,
       ),
     );
   }
@@ -505,7 +507,8 @@ final class ImageEmbedderLiveTask
   }
 }
 
-/// Image Segmenter, returning only the category mask the overlay draws.
+/// Image Segmenter, returning the category mask and, for Output Type
+/// Confidence Mask, the confidence masks.
 final class ImageSegmenterLiveTask implements LiveTask<SegmentationResult> {
   @override
   final settings = TaskSettingValues('image_segmenter');
@@ -526,7 +529,7 @@ final class ImageSegmenterLiveTask implements LiveTask<SegmentationResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: mode,
-        outputConfidenceMasks: false,
+        outputConfidenceMasks: settings.choice('outputConfidenceMasks') == 1,
         outputCategoryMask: true,
       ),
     );

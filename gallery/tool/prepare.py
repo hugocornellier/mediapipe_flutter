@@ -328,6 +328,8 @@ dependencies:
   crypto: ^3.0.6
   file_selector: ^1.0.3
   record: ^7.1.1
+  # The gallery's icons, as its design uses (ISC).
+  lucide_icons_flutter: ^3.1.20
 {camera}
 
 dev_dependencies:
@@ -345,6 +347,16 @@ hooks:
 
 flutter:
   uses-material-design: true
+  # Arimo (OFL, fonts/OFL.txt) has Arial's metrics, the design's typeface,
+  # and renders the same on every platform including the web.
+  fonts:
+    - family: Arimo
+      fonts:
+        - asset: fonts/Arimo-400.ttf
+        - asset: fonts/Arimo-600.ttf
+          weight: 600
+        - asset: fonts/Arimo-700.ttf
+          weight: 700
   assets:
     - assets/manifest.json
 {entries}

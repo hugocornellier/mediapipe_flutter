@@ -17,10 +17,8 @@ try {
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(base);
   await page.getByRole('button', {name: /Face Landmarker/}).click();
-  const mode = page.locator('[flt-semantics-identifier="face-landmarker-mode"]');
-  await mode.waitFor();
-  await mode.click();
-  await page.getByRole('menuitem', {name: 'Still image', exact: true}).click();
+  await page.locator('[flt-semantics-identifier="face-landmarker-mode"]').waitFor();
+  await page.getByRole('button', {name: 'Still image', exact: true}).click();
   await page.getByRole('button', {name: 'Choose image'}).waitFor();
 
   const chooserPromise = page.waitForEvent('filechooser');
@@ -31,8 +29,9 @@ try {
     mimeType: 'image/jpeg',
     buffer: fs.readFileSync(portrait),
   });
-  await page.getByText('1 face detected', {exact: true}).waitFor({timeout: 120000});
-  assert.equal(await page.getByText('portrait.jpg', {exact: true}).count(), 1);
+  // The status line under the image reads "portrait.jpg · 1 face detected ·
+  // Inference 12.3 ms · GPU".
+  await page.getByText(/^portrait\.jpg · 1 face detected · /).waitFor({timeout: 120000});
   assert.deepEqual(errors, []);
   await page.screenshot({path: path.join(evidence, 'result.png')});
   fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({

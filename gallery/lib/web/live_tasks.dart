@@ -1,5 +1,7 @@
 import 'dart:typed_data';
+
 import 'package:mediapipe_vision/mediapipe_vision.dart';
+
 import '../live/embedding_similarity.dart';
 import '../live/live_task.dart';
 import '../live/task_settings.dart';
@@ -104,6 +106,8 @@ final class FaceLandmarkerLiveTask extends _WebLiveTask<FaceLandmarkerResult> {
       minFaceDetectionConfidence: settings.share('minFaceDetectionConfidence'),
       minFacePresenceConfidence: settings.share('minFacePresenceConfidence'),
       minTrackingConfidence: settings.share('minTrackingConfidence'),
+      // Scored in the Output card, as Google's demo lists them.
+      outputFaceBlendshapes: true,
     ),
   );
 }
@@ -384,8 +388,8 @@ final class ImageEmbedderLiveTask
   }
 }
 
-/// Browser Image Segmenter, returning only the category mask the overlay
-/// draws.
+/// Browser Image Segmenter, returning the category mask and, for Output
+/// Type Confidence Mask, the confidence masks.
 final class ImageSegmenterLiveTask
     implements BrowserLiveTask<SegmentationResult> {
   @override
@@ -407,7 +411,7 @@ final class ImageSegmenterLiveTask
         modelBytes: modelBytes,
         runningMode: mode,
         delegate: delegate,
-        outputConfidenceMasks: false,
+        outputConfidenceMasks: settings.choice('outputConfidenceMasks') == 1,
         outputCategoryMask: true,
       ),
     );

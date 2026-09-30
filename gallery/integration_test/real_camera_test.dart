@@ -9,7 +9,9 @@ import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/live/live_subjects.dart';
+import 'package:mediapipe_gallery/live/overlay_visibility.dart';
 import 'package:mediapipe_gallery/main.dart';
+import 'package:mediapipe_gallery/ui/components.dart';
 
 import 'support/alignment_oracle.dart';
 import 'support/gallery_tiles.dart';
@@ -171,7 +173,7 @@ void main() {
         }
 
         // Phase 3: exercise the internal lifecycle without exposing controls.
-        expect(find.byType(FilledButton), findsNothing);
+        expect(find.byType(StillCard), findsNothing);
         await tester.runAsync(live.stop);
         await tester.runAsync(() async {
           while (live.changing) {
@@ -342,29 +344,9 @@ String _windowsScreenshot(String path) => [
       '[System.Drawing.Imaging.ImageFormat]::Png)',
 ].join('\n');
 
-/// Flips the settings panel's Connections switch: in the side panel on wide
-/// screens, or through the Settings sheet on phones, which is closed again so
-/// the preview is uncovered.
+/// Shows or hides the overlay, as the gallery offers no switch for it. The
+/// running camera redraws the page on its next frame.
 Future<void> _toggleConnections(WidgetTester tester) async {
-  final sheet = find.byTooltip('Settings');
-  final opened = sheet.evaluate().isNotEmpty;
-  if (opened) {
-    await tester.tap(sheet);
-    await tester.pump();
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 500)),
-    );
-    await tester.pump();
-  }
-  final toggle = find.widgetWithText(SwitchListTile, 'Connections');
-  await tester.tap(toggle);
+  debugHideOverlay = !debugHideOverlay;
   await tester.pump();
-  if (opened) {
-    Navigator.of(tester.element(toggle)).pop();
-    await tester.pump();
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 500)),
-    );
-    await tester.pump();
-  }
 }

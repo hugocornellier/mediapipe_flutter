@@ -13,6 +13,10 @@ import 'package:mediapipe_gallery/live_page.dart';
 import 'package:mediapipe_gallery/main.dart';
 import 'package:mediapipe_gallery/segment_page.dart';
 import 'package:mediapipe_gallery/text_page.dart';
+import 'package:mediapipe_gallery/ui/components.dart';
+import 'package:mediapipe_gallery/ui/design.dart';
+
+import 'support/delegate_control.dart';
 
 /// GPU coverage follows the SDK suites: 'required' on physical phones fails a
 /// GPU refusal, 'skip' on emulators and simulators never tries GPU, and the
@@ -95,14 +99,15 @@ void main() {
       // One line per page, so a stalled run shows where it stopped.
       // ignore: avoid_print
       print('GALLERY_JOURNEY_PAGE ${task.id}');
-      if (tester.getSize(find.byType(HomePage)).width < 900) {
+      // Below the design's wide breakpoint the sidebar is a drawer.
+      if (tester.getSize(find.byType(HomePage)).width < Sizes.wide) {
         await tester.tap(find.byTooltip('Open navigation'));
         await _settle(tester);
       }
       final sidebar = find.byKey(const ValueKey('gallery-sidebar'));
       final tile = find.descendant(
         of: sidebar,
-        matching: find.widgetWithText(ListTile, task.title),
+        matching: find.text(task.title),
       );
       await tester.scrollUntilVisible(
         tile,
@@ -162,7 +167,7 @@ void main() {
             _note('${task.id}: no camera ($camera)');
           } else {
             for (final delegate in delegates) {
-              if (choices) await _tapDelegate(tester, delegate);
+              if (choices) await tapDelegate(tester, delegate);
               final optional =
                   delegate == VisionDelegate.gpu && _gpu == 'optional';
               if (!await _liveFrames(tester, delegate, optional: optional)) {
@@ -170,31 +175,31 @@ void main() {
                 _note(
                   '${task.id}: live GPU refused, CPU from here: ${_screen(tester)}',
                 );
-                await _tapDelegate(tester, VisionDelegate.cpu);
+                await tapDelegate(tester, VisionDelegate.cpu);
                 break;
               }
               checks.add('${task.id}:${delegate.name}:live');
             }
           }
-          final mode = find.byWidgetPredicate(
-            (widget) => widget is DropdownButton,
+          final still = find.byKey(
+            ValueKey('${task.runtimeId.replaceAll('_', '-')}-mode-image'),
           );
-          expect(mode, findsOneWidget, reason: task.id);
-          await tester.tap(mode);
-          await _settle(tester);
-          await tester.tap(find.text('Still image').last);
+          expect(still, findsOneWidget, reason: task.id);
+          await tester.ensureVisible(still);
+          await tester.tap(still);
           await tester.pump();
           await _until(
             tester,
             () => find.text('Choose image').evaluate().isNotEmpty,
           );
+          await tester.ensureVisible(find.text('Choose image'));
           await tester.tap(find.text('Choose image'));
           final expected = _stillResults[task.runtimeId];
           expect(expected, isNotNull, reason: '${task.id} needs a result');
           // Each delegate runs the image again, the last one first since the
           // page is already on it.
           for (final delegate in delegatesFor(task).reversed) {
-            if (choices) await _tapDelegate(tester, delegate);
+            if (choices) await tapDelegate(tester, delegate);
             final optional =
                 delegate == VisionDelegate.gpu && _gpu == 'optional';
             if (!await _stillRan(
@@ -222,15 +227,17 @@ void main() {
           break;
         case GalleryDemo.text:
           checks.add('${task.id}:cpu:run');
-          await tester.tap(
-            find.text(task.runtimeId == 'text_embedder' ? 'Compare' : 'Run'),
+          final run = find.text(
+            task.runtimeId == 'text_embedder' ? 'Compare' : 'Run',
           );
+          await tester.ensureVisible(run);
+          await tester.tap(run);
           await _until(
             tester,
             () => find.textContaining('Done in').evaluate().isNotEmpty,
           );
           if (task.runtimeId == 'text_embedder') {
-            expect(find.textContaining('Cosine similarity:'), findsOneWidget);
+            expect(find.text('Cosine similarity'), findsOneWidget);
           } else {
             final category = _textCategories[task.runtimeId];
             expect(category, isNotNull, reason: '${task.id} needs a result');
@@ -269,11 +276,12 @@ void main() {
                 .whereType<String>()
                 .join(' | '),
           );
+          await tester.ensureVisible(canvas);
           await tester.tap(canvas);
           for (final (index, delegate) in delegatesFor(task).indexed) {
             if (index > 0) {
               // Switching reopens the task, so the image is tapped again.
-              await _tapDelegate(tester, delegate);
+              await tapDelegate(tester, delegate);
               await _until(tester, () => canvas.evaluate().isNotEmpty);
               await _settle(tester);
               await tester.tap(canvas);
@@ -281,10 +289,11 @@ void main() {
             final label = delegate == VisionDelegate.gpu ? 'GPU' : 'CPU';
             await _until(
               tester,
-              () => find
-                  .textContaining(RegExp('ms on $label\\s+·\\s+\\d+ requests,'))
-                  .evaluate()
-                  .isNotEmpty,
+              () => _status(tester).any(
+                (status) =>
+                    status.delegate == label &&
+                    status.parts.any(RegExp(r'^\d+ requests$').hasMatch),
+              ),
             );
             checks.add('${task.id}:${delegate.name}:tap');
           }
@@ -357,41 +366,9 @@ Future<String?> _cameraProblem(WidgetTester tester) async {
   fail('The camera page neither ran nor reported a problem');
 }
 
-/// Selects [delegate] on the page's CPU/GPU control once the page enables it;
-/// a tap on a disabled control would be ignored.
-Future<void> _tapDelegate(WidgetTester tester, VisionDelegate delegate) async {
-  final control = find.byWidgetPredicate(
-    (widget) => widget is SegmentedButton<VisionDelegate>,
-  );
-  final deadline = DateTime.now().add(const Duration(minutes: 2));
-  while (true) {
-    await tester.pump();
-    final found = control.evaluate().isNotEmpty;
-    if (found &&
-        tester
-                .widget<SegmentedButton<VisionDelegate>>(control)
-                .onSelectionChanged !=
-            null) {
-      break;
-    }
-    if (DateTime.now().isAfter(deadline)) {
-      fail(
-        'The CPU/GPU control stayed ${found ? 'disabled' : 'missing'} '
-        'for ${delegate.name}: ${_screen(tester)}',
-      );
-    }
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 250)),
-    );
-  }
-  await tester.tap(
-    find.descendant(
-      of: control,
-      matching: find.text(delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'),
-    ),
-  );
-  await tester.pump();
-}
+/// The status lines under the page's feed.
+Iterable<FeedStatus> _status(WidgetTester tester) =>
+    tester.widgetList<FeedStatus>(find.byType(FeedStatus));
 
 /// Waits for the live stats line to count frames on [delegate]. An [optional]
 /// delegate that errors or stays silent for a minute returns false.
@@ -401,14 +378,22 @@ Future<bool> _liveFrames(
   required bool optional,
 }) async {
   final label = delegate == VisionDelegate.gpu ? 'GPU' : 'CPU';
-  final frames = find.textContaining(
-    RegExp('over the last [1-9]\\d* $label frames'),
-  );
   final deadline = DateTime.now().add(Duration(seconds: optional ? 60 : 120));
   while (DateTime.now().isBefore(deadline)) {
     await tester.pump();
-    if (frames.evaluate().isNotEmpty) return true;
     final view = find.byType(LiveCameraView);
+    if (view.evaluate().isNotEmpty) {
+      final controller = tester.widget<LiveCameraView>(view).controller;
+      // Frames counted since the page last started on this delegate, as the
+      // status line under the feed reports them.
+      if (controller.running &&
+          !controller.changing &&
+          controller.delegate == delegate &&
+          controller.recentFrames > 0 &&
+          _status(tester).any((status) => status.delegate == label)) {
+        return true;
+      }
+    }
     if (optional && view.evaluate().isNotEmpty) {
       final live = tester.widget<LiveCameraView>(view);
       if (live.controller.delegate == delegate &&
@@ -433,15 +418,18 @@ Future<bool> _stillRan(
   required bool optional,
 }) async {
   final label = delegate == VisionDelegate.gpu ? 'GPU' : 'CPU';
-  final ran = RegExp('^Inference \\d+\\.\\d ms on $label\$');
+  final ran = RegExp(r'^Inference \d+\.\d ms$');
   final deadline = DateTime.now().add(Duration(seconds: optional ? 60 : 120));
   while (DateTime.now().isBefore(deadline)) {
     await tester.pump();
-    final texts = tester
-        .widgetList<Text>(find.byType(Text))
-        .map((text) => text.data ?? '')
-        .toList();
-    if (texts.any(ran.hasMatch) && texts.any(expected.hasMatch)) return true;
+    if (_status(tester).any(
+      (status) =>
+          status.delegate == label &&
+          status.parts.any(ran.hasMatch) &&
+          status.parts.any(expected.hasMatch),
+    )) {
+      return true;
+    }
     final error = _imageError(tester);
     if (error != null) {
       if (optional) return false;

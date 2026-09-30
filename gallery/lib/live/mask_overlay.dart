@@ -1,102 +1,234 @@
-import 'dart:math' as math;
+import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
-import '../gallery_theme.dart';
 import 'camera_geometry.dart';
 
-/// Paints an Image Segmenter category mask as tinted cells over every block of
-/// pixels that is not background, and lists the classes it covers. Background
-/// is class 0, except in a single-class model such as the selfie segmenter,
-/// whose one class is 0 and whose background is 255.
-///
-/// Google's segmenter answers a rotated frame with the upright mask resized to
-/// the frame's dimensions (upstream-issues.md UP-017), so cells are placed in
-/// the upright frame rather than turned as landmarks are.
-class MaskOverlay extends CustomPainter {
-  const MaskOverlay(this.mask, this.labels, {required this.transform});
+/// Google's web demo colors for Image Segmenter classes, by class index:
+/// background in Google Blue, a person in cyan. Classes past the end of the
+/// table are left transparent, as the demo leaves them.
+const segmenterLegendColors = <Color>[
+  Color.fromARGB(255, 66, 133, 244),
+  Color.fromARGB(200, 128, 0, 0),
+  Color.fromARGB(200, 0, 128, 0),
+  Color.fromARGB(200, 128, 128, 0),
+  Color.fromARGB(200, 0, 0, 128),
+  Color.fromARGB(200, 128, 0, 128),
+  Color.fromARGB(200, 0, 128, 128),
+  Color.fromARGB(200, 128, 128, 128),
+  Color.fromARGB(200, 64, 0, 0),
+  Color.fromARGB(200, 0, 255, 0),
+  Color.fromARGB(200, 192, 0, 0),
+  Color.fromARGB(200, 255, 105, 180),
+  Color.fromARGB(200, 192, 128, 0),
+  Color.fromARGB(200, 64, 0, 128),
+  Color.fromARGB(200, 192, 0, 128),
+  Color.fromARGB(255, 0, 255, 255),
+  Color.fromARGB(200, 0, 128, 0),
+  Color.fromARGB(200, 128, 64, 0),
+  Color.fromARGB(200, 0, 192, 0),
+  Color.fromARGB(200, 128, 192, 0),
+  Color.fromARGB(200, 0, 64, 128),
+];
 
-  final CategoryMask mask;
-  final List<String> labels;
-  final PreviewTransform transform;
+/// How a segmentation result is drawn: every class in its legend color, or
+/// the confidence of one class as the opacity of Google's blue.
+typedef MaskStyle = ({bool confidence, int selectedClass});
 
-  /// Cells across the mask's longer side.
-  static const _cells = 96;
-  static const _color = GalleryTheme.accentLight;
+/// Turns segmentation results into mask images at the mask's full
+/// resolution, one at a time, keeping only the newest result while one is
+/// being built so a slow build never queues frames.
+final class SegmentationMaskImages extends ChangeNotifier {
+  ui.Image? _image;
+  SegmentationResult? _wanted;
+  MaskStyle _style = (confidence: false, selectedClass: 0);
+  bool _building = false;
+  bool _disposed = false;
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final step = math.max(1, math.max(mask.width, mask.height) ~/ _cells);
-    final fill = Paint()..color = _color.withValues(alpha: 0.45);
-    final background = labels.length == 1 ? 255 : 0;
-    final cells = <int, int>{};
-    var total = 0;
-    for (var y = 0; y < mask.height; y += step) {
-      final bottom = math.min(y + step, mask.height) / mask.height;
-      int? start;
-      for (var x = 0; x <= mask.width; x += step) {
-        final value = x < mask.width
-            ? mask.categories[y * mask.width + x]
-            : background;
-        if (x < mask.width) {
-          total++;
-          if (value != background) cells[value] = (cells[value] ?? 0) + 1;
+  /// The newest finished mask, laid out as the upright frame.
+  ui.Image? get image => _image;
+
+  /// Builds the mask image for [result] in [style]; null clears it.
+  void show(SegmentationResult? result, MaskStyle style) {
+    if (identical(result, _wanted) && style == _style) return;
+    _wanted = result;
+    _style = style;
+    if (!_building) unawaited(_build());
+  }
+
+  Future<void> _build() async {
+    _building = true;
+    try {
+      while (true) {
+        final result = _wanted;
+        final style = _style;
+        final pixels = result == null ? null : maskPixels(result, style);
+        final image = pixels == null
+            ? null
+            : await _decode(pixels.rgba, pixels.width, pixels.height);
+        if (_disposed) {
+          image?.dispose();
+          return;
         }
-        // One rectangle per run of covered cells in this row.
-        if (value != background) {
-          start ??= x;
-        } else if (start != null) {
-          canvas.drawRect(
-            Rect.fromPoints(
-              transform.mapUpright(start / mask.width, y / mask.height),
-              transform.mapUpright(
-                math.min(x, mask.width) / mask.width,
-                bottom,
-              ),
-            ),
-            fill,
-          );
-          start = null;
-        }
+        _image?.dispose();
+        _image = image;
+        notifyListeners();
+        if (identical(result, _wanted) && style == _style) return;
       }
-    }
-    final covered = cells.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    for (final (i, MapEntry(key: value, value: count)) in covered.indexed) {
-      final name = value < labels.length ? labels[value] : 'class $value';
-      _text(canvas, '$name ${(100 * count / total).round()}%', i);
+    } finally {
+      _building = false;
     }
   }
 
-  void _text(Canvas canvas, String text, int line) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: const TextStyle(
-          color: _color,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          shadows: [Shadow(blurRadius: 3)],
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    painter.paint(canvas, Offset(12, 12 + line * 22.0));
+  static Future<ui.Image> _decode(Uint8List rgba, int width, int height) {
+    final done = Completer<ui.Image>();
+    ui.decodeImageFromPixels(
+      rgba,
+      width,
+      height,
+      ui.PixelFormat.rgba8888,
+      done.complete,
+    );
+    return done.future;
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _image?.dispose();
+    _image = null;
+    super.dispose();
+  }
+}
+
+/// The RGBA pixels of [result] drawn in [style], or null when the result
+/// lacks the mask that style needs. Colors are premultiplied by their alpha,
+/// as [ui.decodeImageFromPixels] reads them.
+({Uint8List rgba, int width, int height})? maskPixels(
+  SegmentationResult result,
+  MaskStyle style,
+) {
+  if (style.confidence) {
+    final masks = result.confidenceMasks;
+    if (masks == null || style.selectedClass >= masks.length) return null;
+    final mask = masks[style.selectedClass];
+    final confidence = mask.confidence;
+    final rgba = Uint8List(confidence.length * 4);
+    for (var i = 0, o = 0; i < confidence.length; i++, o += 4) {
+      final alpha = (confidence[i].clamp(0.0, 1.0) * 255).round();
+      rgba[o + 2] = alpha;
+      rgba[o + 3] = alpha;
+    }
+    return (rgba: rgba, width: mask.width, height: mask.height);
+  }
+  final mask = result.categoryMask;
+  if (mask == null) return null;
+  // One word per pixel, its bytes in RGBA order on little-endian machines.
+  final palette = Uint32List(256);
+  for (final (i, color) in segmenterLegendColors.indexed) {
+    final alpha = (color.a * 255).round();
+    int channel(double value) => (value * alpha).round();
+    palette[i] =
+        channel(color.r) |
+        channel(color.g) << 8 |
+        channel(color.b) << 16 |
+        alpha << 24;
+  }
+  final categories = mask.categories;
+  final words = Uint32List(categories.length);
+  for (var i = 0; i < categories.length; i++) {
+    words[i] = palette[categories[i]];
+  }
+  return (
+    rgba: words.buffer.asUint8List(),
+    width: mask.width,
+    height: mask.height,
+  );
+}
+
+/// Paints the newest mask image over the preview, scaled with filtering so
+/// its edges stay smooth, at [opacity].
+///
+/// Google's segmenter answers a rotated frame with the upright mask resized to
+/// the frame's dimensions (upstream-issues.md UP-017), so the mask covers the
+/// upright frame rather than being turned as landmarks are.
+class MaskOverlay extends CustomPainter {
+  MaskOverlay(this.masks, {required this.transform, required this.opacity})
+    : super(repaint: masks);
+
+  final SegmentationMaskImages masks;
+  final PreviewTransform transform;
+  final double opacity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final image = masks.image;
+    if (image == null || opacity <= 0) return;
+    final topLeft = transform.mapUpright(0, 0);
+    final bottomRight = transform.mapUpright(1, 1);
+    canvas
+      ..save()
+      ..translate(topLeft.dx, topLeft.dy)
+      // A mirrored preview gives a negative width, which flips the mask too.
+      ..scale(
+        (bottomRight.dx - topLeft.dx) / image.width,
+        (bottomRight.dy - topLeft.dy) / image.height,
+      )
+      ..drawImage(
+        image,
+        Offset.zero,
+        Paint()
+          ..filterQuality = FilterQuality.medium
+          ..color = Color.fromRGBO(0, 0, 0, opacity),
+      )
+      ..restore();
   }
 
   @override
   bool shouldRepaint(MaskOverlay oldDelegate) =>
-      oldDelegate.mask != mask || oldDelegate.transform != transform;
+      oldDelegate.masks != masks ||
+      oldDelegate.transform != transform ||
+      oldDelegate.opacity != opacity;
 }
 
-/// The mask overlay for a live Image Segmenter result, or null otherwise.
-MaskOverlay? maskOverlayFor(Object? result, PreviewTransform transform) =>
-    switch (result) {
-      SegmentationResult(:final categoryMask?, :final labels) => MaskOverlay(
-        categoryMask,
-        labels,
-        transform: transform,
-      ),
-      _ => null,
-    };
+/// Google's legend: a color box and the label of each of the model's classes.
+class SegmenterLegend extends StatelessWidget {
+  const SegmenterLegend(this.labels, {super.key});
+
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodySmall;
+    return Wrap(
+      key: const ValueKey('segmenter-legend'),
+      alignment: WrapAlignment.center,
+      spacing: 12,
+      runSpacing: 6,
+      children: [
+        for (final (i, label) in labels.indexed)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: i < segmenterLegendColors.length
+                      ? segmenterLegendColors[i]
+                      : Colors.transparent,
+                  border: Border.all(color: Colors.black26),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(label, style: style),
+            ],
+          ),
+      ],
+    );
+  }
+}
