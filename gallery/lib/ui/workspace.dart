@@ -79,7 +79,8 @@ class TopBar extends StatelessWidget {
   }
 }
 
-/// The settings column: CONFIGURATION / Settings over its sections.
+/// The settings column: its sections, under a Close button in a phone's
+/// sheet.
 class SettingsColumn extends StatelessWidget {
   const SettingsColumn({super.key, required this.child, this.onClose});
 
@@ -88,35 +89,18 @@ class SettingsColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = GalleryColors.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(22, 32, 22, 32),
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Eyebrow('Configuration'),
-                  const SizedBox(height: 7),
-                  Text(
-                    'Settings',
-                    style: TextStyle(color: c.text, fontSize: 20),
-                  ),
-                ],
-              ),
+        if (onClose != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlineButton(
+              icon: LucideIcons.x,
+              tooltip: 'Close settings',
+              onPressed: onClose,
             ),
-            if (onClose != null)
-              OutlineButton(
-                icon: LucideIcons.x,
-                tooltip: 'Close settings',
-                onPressed: onClose,
-              ),
-          ],
-        ),
-        const SizedBox(height: 34),
+          ),
         child,
       ],
     );
@@ -301,30 +285,29 @@ class TaskToolbar extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          // One row at every width: Info drops its label when the row is
+          // tight, and the page's switch shrinks only on the narrowest.
           final info = OutlineButton(
             icon: LucideIcons.info,
-            label: phone ? null : 'Info',
+            label: phone || constraints.maxWidth < 450 ? null : 'Info',
             tooltip: 'About this task',
             onPressed: () => showTaskInfo(context, task),
           );
-          if (lead != null && constraints.maxWidth < 450) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Align(alignment: Alignment.centerRight, child: info),
-                const SizedBox(height: 10),
-                lead,
-              ],
-            );
-          }
           return Row(
             children: [
               Expanded(
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: lead ?? const SizedBox.shrink(),
+                  child: lead == null
+                      ? const SizedBox.shrink()
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: lead,
+                        ),
                 ),
               ),
+              const SizedBox(width: 12),
               info,
             ],
           );

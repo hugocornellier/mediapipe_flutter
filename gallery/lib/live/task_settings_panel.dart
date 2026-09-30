@@ -96,6 +96,7 @@ class _TaskSettingsPanelState extends State<TaskSettingsPanel> {
       children: [
         _Section(
           label: 'Model',
+          divider: false,
           children: [
             Segmented<bool>(
               expand: true,
@@ -332,16 +333,25 @@ class _TaskSettingsPanelState extends State<TaskSettingsPanel> {
 
 /// One settings section: a rule, its label and its controls.
 class _Section extends StatelessWidget {
-  const _Section({required this.label, required this.children});
+  const _Section({
+    required this.label,
+    required this.children,
+    this.divider = true,
+  });
 
   final String label;
   final List<Widget> children;
+
+  /// A line above the section; the first one has nothing above it to part.
+  final bool divider;
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(vertical: 20),
     decoration: BoxDecoration(
-      border: Border(top: BorderSide(color: GalleryColors.of(context).line)),
+      border: divider
+          ? Border(top: BorderSide(color: GalleryColors.of(context).line))
+          : null,
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

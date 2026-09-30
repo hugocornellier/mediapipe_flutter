@@ -45,14 +45,19 @@ void main() {
     );
     await tester.pump();
 
-    // A phone keeps the Camera / Still image switch below Info.
+    // Even on a phone, Info shares the Camera / Still image switch's row.
     final mode = find.byKey(const ValueKey('face-landmarker-mode'));
+    final info = find.byTooltip('About this task');
     expect(mode, findsOneWidget);
     expect(find.text('Camera'), findsOneWidget);
     expect(find.text('Still image'), findsOneWidget);
     expect(
-      tester.getTopLeft(mode).dy,
-      greaterThan(tester.getBottomLeft(find.byTooltip('About this task')).dy),
+      (tester.getCenter(mode).dy - tester.getCenter(info).dy).abs(),
+      lessThan(4),
+    );
+    expect(
+      tester.getTopRight(mode).dx,
+      lessThanOrEqualTo(tester.getTopLeft(info).dx),
     );
     expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const ValueKey('face-landmarker-mode-image')));

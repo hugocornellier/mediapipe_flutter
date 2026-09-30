@@ -733,7 +733,7 @@ class _LivePageState extends State<LivePage> {
                 left: 14,
                 bottom: 14,
                 child: FeedButton(
-                  icon: LucideIcons.rotateCcw,
+                  icon: LucideIcons.switchCamera,
                   tooltip: controller.isFrontCamera
                       ? 'Switch to back camera'
                       : 'Switch to front camera',

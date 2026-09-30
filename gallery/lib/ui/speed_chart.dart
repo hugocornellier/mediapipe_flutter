@@ -47,10 +47,6 @@ class _StatsCardState extends State<StatsCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Eyebrow('Stats'),
-          const SizedBox(height: 7),
-          Text('Inference time', style: TextStyle(color: c.text, fontSize: 16)),
-          const SizedBox(height: 14),
           Wrap(
             spacing: 18,
             runSpacing: 6,
