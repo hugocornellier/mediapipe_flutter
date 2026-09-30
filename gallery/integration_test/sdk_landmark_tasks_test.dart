@@ -5,8 +5,8 @@ import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/vision_task_backend.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:mediapipe_gallery/main.dart';
 
 import 'support/mask_grids.dart';
@@ -28,7 +28,7 @@ const _crossRuntime = 0.03;
 
 // Pose Landmarker, Gesture Recognizer and Holistic Landmarker through Google's
 // official mobile SDKs: iOS through the package's Objective-C adapter, Android
-// through mediapipe_flutter_vision.
+// through mediapipe_vision.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -57,11 +57,7 @@ void main() {
           ]) {
             final _Task task;
             try {
-              task = await subject.open(
-                model,
-                delegate,
-                VisionRunningMode.image,
-              );
+              task = await subject.open(model, delegate, RunningMode.image);
             } on VisionTaskException catch (error) {
               if (delegate == VisionDelegate.cpu || _gpu == 'required') {
                 rethrow;
@@ -88,7 +84,7 @@ void main() {
                 final fresh = await subject.open(
                   model,
                   delegate,
-                  VisionRunningMode.image,
+                  RunningMode.image,
                 );
                 try {
                   return await fresh.image(image, rotation: rotation);
@@ -166,7 +162,7 @@ void main() {
             subject.open(
               Uint8List.fromList([1, 2, 3]),
               VisionDelegate.cpu,
-              VisionRunningMode.image,
+              RunningMode.image,
             ),
             throwsA(isA<VisionTaskException>()),
           );
@@ -186,7 +182,7 @@ void main() {
           final task = await subject.open(
             await _model(subject.model),
             VisionDelegate.cpu,
-            VisionRunningMode.video,
+            RunningMode.video,
           );
           try {
             await expectLater(task.image(frame.image), throwsStateError);
@@ -256,7 +252,7 @@ final class _Subject {
   final Future<_Task> Function(
     Uint8List model,
     VisionDelegate delegate,
-    VisionRunningMode mode,
+    RunningMode mode,
   )
   open;
 

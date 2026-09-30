@@ -12,7 +12,7 @@ Future<void> runSegmenterTasksSmoke() async {
     modelBytes: segmenterModel.buffer.asUint8List(segmenterModel.offsetInBytes,
       segmenterModel.lengthInBytes),
     outputCategoryMask: true,
-    runningMode: VisionRunningMode.video,
+    runningMode: RunningMode.video,
   ));
   try {
     final requests = [for (var i = 0; i < 3; i++)

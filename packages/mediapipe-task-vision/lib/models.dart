@@ -1,4 +1,79 @@
-import 'package:mediapipe_flutter_core/model_store.dart';
+import 'package:mediapipe_core/model_store.dart';
+
+/// Verified official models accepted by vision task options.
+abstract final class VisionModels {
+  /// Face Detector, short range.
+  static const faceDetector = DownloadAsset(
+    url: blazeFaceShortRangeUrl,
+    sha256: blazeFaceShortRangeSha256,
+  );
+
+  /// Face Landmarker, float16.
+  static const faceLandmarker = DownloadAsset(
+    url: faceLandmarkerUrl,
+    sha256: faceLandmarkerSha256,
+  );
+
+  /// Object Detector, EfficientDet Lite0.
+  static const objectDetector = DownloadAsset(
+    url: efficientDetLite0Url,
+    sha256: efficientDetLite0Sha256,
+  );
+
+  /// Image Classifier, EfficientNet Lite0.
+  static const imageClassifier = DownloadAsset(
+    url: efficientNetLite0Url,
+    sha256: efficientNetLite0Sha256,
+  );
+
+  /// Image Embedder, MobileNet V3 Small.
+  static const imageEmbedder = DownloadAsset(
+    url: mobileNetV3SmallUrl,
+    sha256: mobileNetV3SmallSha256,
+  );
+
+  /// Image Segmenter, DeepLab V3.
+  static const imageSegmenter = DownloadAsset(
+    url: deepLabV3Url,
+    sha256: deepLabV3Sha256,
+  );
+
+  /// Interactive Segmenter, MagicTouch task bundle.
+  static const interactiveSegmenter = DownloadAsset(
+    url: interactiveSegmenterModelUrl,
+    sha256: interactiveSegmenterModelSha256,
+  );
+
+  /// Legacy Interactive Segmenter, MagicTouch float32.
+  static const interactiveSegmenterLegacy = DownloadAsset(
+    url: magicTouchUrl,
+    sha256: magicTouchSha256,
+  );
+
+  /// Hand Landmarker, float16.
+  static const handLandmarker = DownloadAsset(
+    url: handLandmarkerUrl,
+    sha256: handLandmarkerSha256,
+  );
+
+  /// Gesture Recognizer, float16.
+  static const gestureRecognizer = DownloadAsset(
+    url: gestureRecognizerUrl,
+    sha256: gestureRecognizerSha256,
+  );
+
+  /// Pose Landmarker Lite, float16.
+  static const poseLandmarker = DownloadAsset(
+    url: poseLandmarkerLiteUrl,
+    sha256: poseLandmarkerLiteSha256,
+  );
+
+  /// Holistic Landmarker, float16.
+  static const holisticLandmarker = DownloadAsset(
+    url: holisticLandmarkerUrl,
+    sha256: holisticLandmarkerSha256,
+  );
+}
 
 /// Versioned official DeepLab-v3 float32 image segmentation model.
 const deepLabV3Url =

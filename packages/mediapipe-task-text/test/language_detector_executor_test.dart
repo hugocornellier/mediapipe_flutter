@@ -10,8 +10,9 @@ library;
 import 'dart:io' as io;
 
 import 'package:path/path.dart' as path;
-import 'package:mediapipe_flutter_core/io.dart';
-import 'package:mediapipe_flutter_text/io.dart';
+import 'package:mediapipe_core/io.dart';
+import 'package:mediapipe_text/io.dart';
+import 'package:mediapipe_text/src/io/tasks/language_detection/language_detector_executor.dart';
 import 'package:test/test.dart';
 
 void main() {

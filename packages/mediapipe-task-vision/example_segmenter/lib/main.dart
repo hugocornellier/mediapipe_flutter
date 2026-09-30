@@ -7,7 +7,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'editor_controller.dart';
 import 'editor_geometry.dart';

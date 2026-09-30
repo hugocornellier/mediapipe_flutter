@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 import 'support/face_reference.dart';
 
@@ -312,8 +312,8 @@ Future<_Task> _create(
   final name = expected['task'] as String;
   final modelPath = modelBytes == null ? _models[name]!.$1 : null;
   final mode = expected['timestamp_ms'] == null
-      ? VisionRunningMode.image
-      : VisionRunningMode.video;
+      ? RunningMode.image
+      : RunningMode.video;
   switch (name) {
     case 'hand':
       final task = await HandLandmarker.create(

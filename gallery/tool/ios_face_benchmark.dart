@@ -8,10 +8,10 @@ import 'dart:ui' as ui;
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/src/io/native_face_landmarker.dart';
-import 'package:mediapipe_flutter_vision/src/io/native_frame_timings.dart';
-import 'package:mediapipe_flutter_vision/src/io/native_ios_sdk.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/src/io/native_face_landmarker.dart';
+import 'package:mediapipe_vision/src/io/native_frame_timings.dart';
+import 'package:mediapipe_vision/src/io/native_ios_sdk.dart';
 
 const _variant = iosImageStorageMode;
 const _frames = int.fromEnvironment('BENCH_FRAMES', defaultValue: 60);
@@ -111,7 +111,7 @@ Future<void> main() async {
           FaceLandmarkerOptions(
             modelBytes: model,
             delegate: delegate,
-            runningMode: VisionRunningMode.video,
+            runningMode: RunningMode.video,
           ),
         );
         final samples = <Map<String, int>>[];
@@ -196,7 +196,7 @@ Map<String, Object?> _profile(
     FaceLandmarkerOptions(
       modelBytes: model,
       delegate: delegate,
-      runningMode: VisionRunningMode.video,
+      runningMode: RunningMode.video,
     ),
   );
   final image = f.image();

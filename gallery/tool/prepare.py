@@ -48,7 +48,7 @@ def set_plist_key(path, key, value):
 ANDROID_TASKS = {'face_detector', 'face_landmarker'}
 WEB_HOST_TEST_TASKS = {'face_detector', 'face_landmarker'}
 
-# Tasks the mediapipe_flutter_vision plugin runs through Google's
+# Tasks the mediapipe_vision plugin runs through Google's
 # official SDK; see hook/build.dart officialAndroidTasks.
 OFFICIAL_ANDROID_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
                           'hand_landmarker', 'holistic_landmarker', 'image_classifier',
@@ -294,7 +294,7 @@ def prepare(target, selected):
               else '  camera: ^0.12.1' if target == 'web' or target.startswith(('ios', 'android')) else '')
     # The one setting an app writes besides `tasks`, and only for macOS: every
     # other target picks its runtime by default, which this proves.
-    core = ('    mediapipe_flutter_core:\n      tasks_runtime: true\n'
+    core = ('    mediapipe_core:\n      tasks_runtime: true\n'
             if macos_engine else '')
     # Chrome tests also run the host native hook. Its published face pair is
     # sufficient there; browser tasks use the JavaScript runtime instead.
@@ -313,13 +313,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../packages/mediapipe-task-vision
-  mediapipe_flutter_core:
+  mediapipe_core:
     path: ../packages/mediapipe-core
-  mediapipe_flutter_text:
+  mediapipe_text:
     path: ../packages/mediapipe-task-text
-  mediapipe_flutter_audio:
+  mediapipe_audio:
     path: ../packages/mediapipe-task-audio
   web: ^1.1.1
   # Verifies downloaded models; picks a model file to upload; records the
@@ -339,7 +339,7 @@ dev_dependencies:
 
 hooks:
   user_defines:
-{core}    mediapipe_flutter_vision:
+{core}    mediapipe_vision:
       tasks: [{', '.join(native_tasks)}]
 
 flutter:

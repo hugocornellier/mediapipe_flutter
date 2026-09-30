@@ -1,6 +1,6 @@
 # iOS SDK adapter
 
-`mediapipe_flutter_core`'s build hook compiles these Objective-C++ bridges into
+`mediapipe_core`'s build hook compiles these Objective-C++ bridges into
 one `mediapipe_ios` framework over Google's prebuilt MediaPipe 1.0.1 iOS
 XCFrameworks (pinned in `lib/src/native_assets/ios_sdk.dart`). Google's
 `MediaPipeTasksCommon` implements every task, so an app holds it once and

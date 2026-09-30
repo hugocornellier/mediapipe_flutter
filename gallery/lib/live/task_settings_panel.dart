@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mediapipe_flutter_vision/capabilities.dart';
+import 'package:mediapipe_vision/capabilities.dart';
 
 import 'task_models.dart';
 import 'task_settings.dart';

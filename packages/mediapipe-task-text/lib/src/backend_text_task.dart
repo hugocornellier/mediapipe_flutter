@@ -9,9 +9,9 @@
 
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_core/interface.dart';
+import 'package:mediapipe_core/interface.dart';
 
-import '../text_task_backend.dart';
+import 'text_task_backend.dart';
 import 'interface/text_task_exception.dart';
 
 /// What the task classes need from the runtime running them: the native
@@ -46,7 +46,7 @@ final class BackendTextTask<R> implements TextTaskRunner<R> {
         textTaskBackendFactory ??
         (throw UnsupportedError(
           'Text tasks here run through a platform plugin that is missing: '
-          'the mediapipe_flutter_text platform backend did not register.',
+          'the mediapipe_text platform backend did not register.',
         ));
     final ready = Future(
       () => factory(task, options),

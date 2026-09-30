@@ -8,8 +8,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_text/text_summarizer.dart';
-import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/summarizer_bindings.dart'
+import 'package:mediapipe_text/text_summarizer.dart';
+import 'package:mediapipe_text/src/io/third_party/mediapipe/summarizer_bindings.dart'
     as mp;
 import 'package:test/test.dart';
 
@@ -127,7 +127,7 @@ void main() {
         final entry = (reference['errors'] as List).singleWhere(
           (e) => e['mode'] == mode.name.toUpperCase(),
         );
-        final error = isA<TextSummarizerException>().having(
+        final error = isA<TextTaskException>().having(
           (e) => e.message,
           'message',
           entry['message'],
@@ -243,14 +243,14 @@ void main() {
   test('creation errors propagate without hanging', () async {
     await expectLater(
       TextSummarizer.create(TextSummarizerOptions(modelPath: '$model.missing')),
-      throwsA(isA<TextSummarizerException>()),
+      throwsA(isA<TextTaskException>()),
     );
     await expectLater(
       TextSummarizer.create(
         TextSummarizerOptions(modelPath: model, delegate: TextDelegate.gpu),
       ),
       throwsA(
-        isA<TextSummarizerException>().having(
+        isA<TextTaskException>().having(
           (e) => e.message,
           'message',
           contains('CPU'),

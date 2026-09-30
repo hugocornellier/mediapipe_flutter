@@ -1,34 +1,24 @@
-import 'dart:typed_data';
-
 import 'face_detector_types.dart';
+import 'vision_task_types.dart';
+
+export 'vision_task_types.dart' show VisionTaskException;
 
 /// Configuration of the official Face Landmarker task.
-final class FaceLandmarkerOptions {
+final class FaceLandmarkerOptions extends VisionModelOptions {
   /// Supply exactly one model source. Defaults match Google's task API.
   FaceLandmarkerOptions({
-    this.modelPath,
-    Uint8List? modelBytes,
-    this.runningMode = VisionRunningMode.image,
-    this.delegate = VisionDelegate.cpu,
+    super.model,
+    super.modelPath,
+    super.modelBytes,
+    super.runningMode,
+    super.delegate,
     this.numFaces = 1,
     this.minFaceDetectionConfidence = 0.5,
     this.minFacePresenceConfidence = 0.5,
     this.minTrackingConfidence = 0.5,
     this.outputFaceBlendshapes = false,
     this.outputFacialTransformationMatrixes = false,
-  }) : modelBytes = modelBytes == null
-           ? null
-           : Uint8List.fromList(modelBytes).asUnmodifiableView() {
-    if ((modelPath == null) == (modelBytes == null)) {
-      throw ArgumentError('Supply exactly one of modelPath and modelBytes.');
-    }
-    if (modelPath != null &&
-        (modelPath!.isEmpty || modelPath!.contains('\u0000'))) {
-      throw ArgumentError.value(modelPath, 'modelPath', 'Invalid path');
-    }
-    if (modelBytes != null && modelBytes.isEmpty) {
-      throw ArgumentError.value(modelBytes, 'modelBytes', 'Must not be empty');
-    }
+  }) {
     if (numFaces < 1 || numFaces > 0x7fffffff) {
       throw ArgumentError.value(
         numFaces,
@@ -46,19 +36,6 @@ final class FaceLandmarkerOptions {
       }
     }
   }
-
-  /// Filesystem path on native targets, or a browser-accessible URL on web.
-  /// Flutter asset keys must be loaded through rootBundle into [modelBytes].
-  final String? modelPath;
-
-  /// Owned, read-only model bytes, useful with Flutter's rootBundle.
-  final Uint8List? modelBytes;
-
-  /// Fixed for the lifetime of this task.
-  final VisionRunningMode runningMode;
-
-  /// Inference backend. The official blendshape stage always uses CPU.
-  final VisionDelegate delegate;
 
   /// Maximum number of faces. Official video smoothing applies only at 1.
   final int numFaces;
@@ -178,28 +155,4 @@ final class FaceLandmarkerResult {
 
   /// Input video timestamp, or null in IMAGE mode.
   final int? timestampMilliseconds;
-}
-
-/// Failure reported by the native Face Landmarker or its worker isolate.
-final class FaceLandmarkerException implements Exception {
-  /// Creates an error with an optional MediaPipe/Abseil status code.
-  const FaceLandmarkerException(
-    this.message, {
-    this.statusCode,
-    this.gpuUnavailable = false,
-  });
-
-  /// Diagnostic text from the native API or worker.
-  final String message;
-
-  /// Native status code, or null for an isolate/runtime failure.
-  final int? statusCode;
-
-  /// True when MediaPipe refused [VisionDelegate.gpu] on this machine, for
-  /// example on Linux without EGL or with only a software renderer such as
-  /// llvmpipe. The package never retries on CPU; create a CPU task instead.
-  final bool gpuUnavailable;
-
-  @override
-  String toString() => 'FaceLandmarkerException($statusCode): $message';
 }

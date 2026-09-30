@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_audio/audio_task_backend.dart';
+import 'package:mediapipe_audio/platform_interface.dart';
 
-const _channel = MethodChannel('mediapipe_flutter_audio/android');
+const _channel = MethodChannel('mediapipe_audio/android');
 
 /// Automatically registers Google's Android audio SDK with Flutter.
 abstract final class MediaPipeAudioAndroid {

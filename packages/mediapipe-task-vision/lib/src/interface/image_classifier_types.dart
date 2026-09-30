@@ -5,6 +5,7 @@ export 'vision_task_types.dart';
 final class ImageClassifierOptions extends VisionModelOptions {
   /// Defaults match the official task; allowlists and denylists are exclusive.
   ImageClassifierOptions({
+    super.model,
     super.modelPath,
     super.modelBytes,
     super.runningMode,

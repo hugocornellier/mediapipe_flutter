@@ -28,9 +28,9 @@ from official_wheels import macos_engine  # noqa: E402
 
 OFFICIAL_HOOKS = '''hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [face_detector, face_landmarker]
 '''
 

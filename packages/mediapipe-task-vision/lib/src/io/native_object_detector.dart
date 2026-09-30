@@ -48,7 +48,7 @@ final class NativeObjectDetector {
         base.model_asset_buffer_count = bytes.length;
       }
       native.ref
-        ..running_mode = options.runningMode == VisionRunningMode.video
+        ..running_mode = options.runningMode == RunningMode.video
             ? mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
             : mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
         ..max_results = options.maxResults
@@ -152,7 +152,7 @@ Pointer<Pointer<Char>> _strings(Arena arena, List<String> values) {
 void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) => checkedCall(
   call,
   onError: (message, statusCode) =>
-      ObjectDetectorException(message, statusCode: statusCode),
+      VisionTaskException(message, statusCode: statusCode),
 );
 
 ObjectDetection _copyDetection(mp.MpDetection value) => ObjectDetection(

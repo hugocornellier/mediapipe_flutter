@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_text/embedding_gemma.dart';
+import 'package:mediapipe_text/embedding_gemma.dart';
 
 import 'proofreader_page.dart';
 import 'summarizer_page.dart';

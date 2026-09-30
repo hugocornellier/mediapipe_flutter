@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_core/native_assets.dart';
 
 const _mediaPipeRevision = '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120';
 const _openCvRevision = '49486f61fb25722cbcf586b7f4320921d46fb38e';
@@ -26,7 +26,7 @@ VisionLibraryTarget visionLibraryTarget(String target) => switch (target) {
   'ios-simulator/arm64' => VisionLibraryTarget.iosSimulatorArm64,
   'ios/arm64' => VisionLibraryTarget.iosArm64,
   _ => throw UnsupportedError(
-    'mediapipe_flutter_vision has no native runtime validation for $target.',
+    'mediapipe_vision has no native runtime validation for $target.',
   ),
 };
 

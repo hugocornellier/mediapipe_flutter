@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
 import 'package:test/test.dart';
 
 // Google's macOS engine, the archive core downloads, served from loopback.

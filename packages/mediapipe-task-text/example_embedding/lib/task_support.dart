@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mediapipe_flutter_text/capabilities.dart';
+import 'package:mediapipe_text/capabilities.dart';
 
 /// Display the package's supported backend and explain disabled GPU selection.
 class TaskSupport extends StatefulWidget {

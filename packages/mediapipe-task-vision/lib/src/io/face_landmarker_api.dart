@@ -145,7 +145,7 @@ final class FaceLandmarkerApi {
   }
 }
 
-const _engine = 'package:mediapipe_flutter_core/mediapipe.dylib';
+const _engine = 'package:mediapipe_core/mediapipe.dylib';
 
 @Native<
   UnsignedInt Function(

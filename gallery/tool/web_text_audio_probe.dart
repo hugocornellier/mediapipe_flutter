@@ -13,11 +13,10 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_audio/mediapipe_flutter_audio.dart';
-import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
-import 'package:mediapipe_flutter_core/model_store.dart';
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
-import 'package:mediapipe_flutter_text/web_runtime.dart';
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_text/web_runtime.dart';
 import 'package:record/record.dart';
 
 @JS('mediapipeTextAudioReport')
@@ -219,7 +218,7 @@ Future<Object?> _language() async {
   }
 }
 
-List<Object?> _chunks(List<AudioClassification> result) => [
+List<Object?> _chunks(List<AudioClassifierResult> result) => [
   for (final chunk in result)
     [
       chunk.timestampMs,
@@ -250,7 +249,7 @@ Future<Object?> _audio() async {
       AudioData(samples: Float32List(16000), sampleRate: 16000),
     ),
   );
-  await _rejects<AudioClassifierException>(
+  await _rejects<MediaPipeException>(
     () => AudioClassifier.create(
       AudioClassifierOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
     ),

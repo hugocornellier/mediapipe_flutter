@@ -1,3 +1,5 @@
+import 'package:mediapipe_core/mediapipe_exception.dart';
+
 import '../../../capabilities.dart';
 import '../interface/text_proofreader_types.dart';
 import 'native_text_proofreader.dart';
@@ -5,8 +7,18 @@ import 'text_task_worker.dart';
 
 /// Official Proofreader inference and streaming on a persistent worker.
 ///
-/// Enable `mediapipe_flutter_core.tasks_runtime: true` in app hook settings.
+/// Enable `mediapipe_core.tasks_runtime: true` in app hook settings.
 /// Requests are serialized. Await [dispose] to drain native work and exit.
+///
+/// ```dart
+/// final task = await TextProofreader.create(
+///   TextProofreaderOptions(model: TextModels.proofreader),
+/// );
+/// final result = await task.proofread('Hello');
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class TextProofreader {
   TextProofreader._(this.delegate, this._worker);
 
@@ -15,15 +27,19 @@ final class TextProofreader {
   final TextTaskWorker<
     TextProofreaderResult,
     TextProofreaderUpdate,
-    TextProofreaderException
+    TextTaskException
   >
   _worker;
 
   /// Load the official model off the calling isolate.
   static Future<TextProofreader> create(TextProofreaderOptions options) async {
+    await options.prepareModel();
     final support = await queryTextTaskCapabilities(TextTask.proofreader);
     if (support.unavailableReasons[options.delegate] case final reason?) {
-      throw TextProofreaderException(reason);
+      throw RuntimeUnavailableException(
+        'TextProofreader is unavailable on this platform.',
+        fix: reason,
+      );
     }
     return TextProofreader._(
       options.delegate,
@@ -51,7 +67,5 @@ final class TextProofreader {
   Future<void> dispose() => _worker.dispose();
 }
 
-TextProofreaderException _exception(Object error) =>
-    error is TextProofreaderException
-    ? error
-    : TextProofreaderException(error.toString());
+TextTaskException _exception(Object error) =>
+    error is TextTaskException ? error : TextTaskException(error.toString());

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:mediapipe_flutter_vision/capabilities.dart';
-import 'package:mediapipe_flutter_vision/face_landmarker_backend.dart';
+import 'package:mediapipe_vision/capabilities.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:test/test.dart';
 
 // The CI coverage gate (tool/coverage/gate.py) requires a passing row for

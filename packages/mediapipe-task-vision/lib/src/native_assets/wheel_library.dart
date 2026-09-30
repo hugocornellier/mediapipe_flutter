@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_core/native_assets.dart';
 
 /// A checksum-pinned native C API distributed in Google's official wheel,
 /// with the vision tasks its build hook serves from it.

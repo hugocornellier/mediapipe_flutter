@@ -1,7 +1,7 @@
 @Tags(['native-assets'])
 library;
 
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:test/test.dart';
 
 void main() {

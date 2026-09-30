@@ -1,5 +1,5 @@
-import 'package:mediapipe_flutter_vision/capabilities.dart';
-import 'package:mediapipe_flutter_vision/vision_task_backend.dart';
+import 'package:mediapipe_vision/capabilities.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -1,6 +1,10 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/platform_interface.dart';
+export 'text_task_exception.dart' show TextTaskException;
+
 /// Official task formatting modes. Formatting is performed inside MediaPipe.
 enum EmbeddingTaskType {
   /// Search query.
@@ -83,19 +87,28 @@ enum TextDelegate {
 final class EmbeddingGemmaOptions {
   /// Supply exactly one model source. Models are separate optional downloads.
   EmbeddingGemmaOptions({
-    this.modelPath,
+    this.model,
+    String? modelPath,
     Uint8List? modelBytes,
     this.delegate = TextDelegate.cpu,
     this.l2Normalize = false,
     this.quantize = false,
-  }) : modelBytes = modelBytes == null
+  }) : _modelPath = modelPath,
+       _modelBytes = modelBytes == null
            ? null
            : Uint8List.fromList(modelBytes).asUnmodifiableView() {
-    if ((modelPath == null) == (modelBytes == null)) {
-      throw ArgumentError('Supply exactly one of modelPath and modelBytes.');
+    if ([
+          model,
+          modelPath,
+          modelBytes,
+        ].where((source) => source != null).length !=
+        1) {
+      throw ArgumentError(
+        'Supply exactly one of model, modelPath and modelBytes.',
+      );
     }
     if (modelPath != null &&
-        (modelPath!.isEmpty || modelPath!.contains('\u0000'))) {
+        (modelPath.isEmpty || modelPath.contains('\u0000'))) {
       throw ArgumentError.value(
         modelPath,
         'modelPath',
@@ -108,11 +121,27 @@ final class EmbeddingGemmaOptions {
     }
   }
 
+  /// Pinned official model, downloaded and verified when creating the task.
+  final DownloadAsset? model;
+
+  final String? _modelPath;
+  final Uint8List? _modelBytes;
+  ModelSource? _resolvedModel;
+
+  /// Resolves a pinned model before this task is passed to the runtime.
+  Future<void> prepareModel() => _resolveModel();
+
+  Future<void> _resolveModel() async {
+    if (model case final selected?) {
+      _resolvedModel = await resolvePinnedModel(selected);
+    }
+  }
+
   /// Filesystem path, not a Flutter asset key. Prefer this for large models.
-  final String? modelPath;
+  String? get modelPath => _resolvedModel?.path ?? _modelPath;
 
   /// Owned model bytes for applications using Flutter assets.
-  final Uint8List? modelBytes;
+  Uint8List? get modelBytes => _resolvedModel?.bytes ?? _modelBytes;
 
   /// Backend, fixed at task creation. No silent fallback is performed.
   final TextDelegate delegate;
@@ -198,20 +227,4 @@ final class TextEmbeddingResult {
 
   /// Optional timestamp supplied by MediaPipe (absent for text inputs).
   final int? timestampMs;
-}
-
-/// Native task or worker failure, including Google's error message when present.
-final class EmbeddingGemmaException implements Exception {
-  /// Describe the failed operation and optional native status.
-  const EmbeddingGemmaException(this.message, {this.status});
-
-  /// Native or worker error description.
-  final String message;
-
-  /// Google C API status, when available.
-  final int? status;
-
-  @override
-  String toString() =>
-      'EmbeddingGemmaException${status == null ? '' : ' ($status)'}: $message';
 }

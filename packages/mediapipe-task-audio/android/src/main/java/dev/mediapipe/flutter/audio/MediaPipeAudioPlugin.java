@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Google's unmodified Audio Classifier (tasks-audio 1.0.0) for mediapipe_flutter_audio, on
+ * Google's unmodified Audio Classifier (tasks-audio 1.0.0) for mediapipe_audio, on
  * clips. One worker thread creates, runs and closes every task; results travel in the JSON shape
  * of Google's JavaScript API, which the Dart package decodes on every platform.
  */
@@ -50,7 +50,7 @@ public final class MediaPipeAudioPlugin implements FlutterPlugin, MethodChannel.
   @Override public void onAttachedToEngine(FlutterPluginBinding binding) {
     context = binding.getApplicationContext();
     worker = Executors.newSingleThreadExecutor(r -> new Thread(r, "MediaPipe audio tasks"));
-    channel = new MethodChannel(binding.getBinaryMessenger(), "mediapipe_flutter_audio/android");
+    channel = new MethodChannel(binding.getBinaryMessenger(), "mediapipe_audio/android");
     channel.setMethodCallHandler(this);
   }
 

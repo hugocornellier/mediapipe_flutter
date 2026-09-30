@@ -9,9 +9,9 @@ environment:
 dependencies:
   camera: ^0.12.1
   camera_desktop: ^1.2.2
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ..
-  mediapipe_flutter_core:
+  mediapipe_core:
     path: ../../mediapipe-core
   flutter:
     sdk: flutter
@@ -35,5 +35,5 @@ flutter:
 
 hooks:
   user_defines:
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [face_detector, face_landmarker]

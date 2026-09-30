@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/interface.dart';
+import 'package:mediapipe_vision/interface.dart';
 
 void main() {
   test(

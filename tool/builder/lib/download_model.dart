@@ -7,7 +7,7 @@ import 'dart:io' as io;
 import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_core/native_assets.dart';
 import 'package:path/path.dart' as path;
 
 import 'repo_finder.dart';

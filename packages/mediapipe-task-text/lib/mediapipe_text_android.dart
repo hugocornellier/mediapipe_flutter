@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_text/text_task_backend.dart';
+import 'package:mediapipe_text/platform_interface.dart';
 
-const _channel = MethodChannel('mediapipe_flutter_text/android');
+const _channel = MethodChannel('mediapipe_text/android');
 
 /// Automatically registers Google's Android text SDK with Flutter.
 abstract final class MediaPipeTextAndroid {

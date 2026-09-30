@@ -30,7 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 /**
- * Google's unmodified text tasks (tasks-text 1.0.0) for mediapipe_flutter_text. One worker
+ * Google's unmodified text tasks (tasks-text 1.0.0) for mediapipe_text. One worker
  * thread creates, runs and closes every task; results travel in the JSON shape of Google's
  * JavaScript API, which the Dart package decodes on every platform.
  */
@@ -58,7 +58,7 @@ public final class MediaPipeTextPlugin implements FlutterPlugin, MethodChannel.M
   @Override public void onAttachedToEngine(FlutterPluginBinding binding) {
     context = binding.getApplicationContext();
     worker = Executors.newSingleThreadExecutor(r -> new Thread(r, "MediaPipe text tasks"));
-    channel = new MethodChannel(binding.getBinaryMessenger(), "mediapipe_flutter_text/android");
+    channel = new MethodChannel(binding.getBinaryMessenger(), "mediapipe_text/android");
     channel.setMethodCallHandler(this);
   }
 

@@ -1,7 +1,7 @@
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/live_page.dart';
 

@@ -1,19 +1,19 @@
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_core/capabilities.dart';
+import 'package:mediapipe_core/capabilities.dart';
+import 'package:mediapipe_core/mediapipe_exception.dart';
+import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/platform_interface.dart';
 
-import '../audio_task_backend.dart';
+import 'audio_task_backend.dart';
 
-/// Why an Audio Classifier could not be created or run: Google's message.
-final class AudioClassifierException implements Exception {
-  /// Wraps Google's message for a failed call.
-  const AudioClassifierException(this.message);
-
-  /// Google's error text.
-  final String message;
+/// Failure in a MediaPipe audio task, reported by Google's runtime.
+final class AudioTaskException extends MediaPipeException {
+  /// Wraps Google's message for a failed call, with the original [cause].
+  const AudioTaskException(super.message, {super.cause});
 
   @override
-  String toString() => 'AudioClassifierException: $message';
+  String toString() => 'AudioTaskException: $message';
 }
 
 /// The delegates the package can report; Google's audio task runs on CPU.
@@ -46,7 +46,7 @@ TaskCapabilities<AudioDelegate> audioClassifierCapabilitiesForPlatform(
     // Core's runtime, iOS included (its SDK adapter).
     ...tasksRuntimeTargets,
     // A registered backend is Google's browser runtime or Android SDK for
-    // this very platform (mediapipe_flutter_audio or _android).
+    // this very platform (mediapipe_audio or _android).
     if (audioTaskBackendFactory != null) ...{
       'web/unknown': null,
       'android/arm64': null,
@@ -81,17 +81,51 @@ final class AudioData {
 
 /// Options for [AudioClassifier.create], named as in Google's API.
 final class AudioClassifierOptions {
-  /// Exactly one of [modelPath] and [modelBytes].
+  /// Supply exactly one pinned [model], [modelPath], or [modelBytes].
   AudioClassifierOptions({
+    this.model,
     this.modelPath,
-    this.modelBytes,
+    Uint8List? modelBytes,
     this.maxResults = -1,
     this.scoreThreshold = 0,
-  }) {
-    if ((modelPath == null) == (modelBytes == null)) {
-      throw ArgumentError('Supply exactly one of modelPath and modelBytes.');
+  }) : modelBytes = modelBytes == null
+           ? null
+           : Uint8List.fromList(modelBytes).asUnmodifiableView() {
+    if ([
+          model,
+          modelPath,
+          modelBytes,
+        ].where((source) => source != null).length !=
+        1) {
+      throw ArgumentError(
+        'Supply exactly one of model, modelPath and modelBytes.',
+      );
+    }
+    if (modelPath != null &&
+        (modelPath!.isEmpty || modelPath!.contains('\u0000'))) {
+      throw ArgumentError.value(modelPath, 'modelPath', 'Invalid model path.');
+    }
+    if (modelBytes != null && modelBytes.isEmpty) {
+      throw ArgumentError.value(modelBytes, 'modelBytes', 'Must not be empty.');
     }
     if (maxResults == 0) throw ArgumentError.value(maxResults, 'maxResults');
+  }
+
+  /// Pinned official model, downloaded and verified when the task is created.
+  final DownloadAsset? model;
+
+  /// Resolve [model] while preserving the other classifier options.
+  Future<AudioClassifierOptions> resolveModel() async {
+    if (model case final selected?) {
+      final source = await resolvePinnedModel(selected);
+      return AudioClassifierOptions(
+        modelPath: source.path,
+        modelBytes: source.bytes,
+        maxResults: maxResults,
+        scoreThreshold: scoreThreshold,
+      );
+    }
+    return this;
   }
 
   /// A model file on disk.
@@ -108,10 +142,10 @@ final class AudioClassifierOptions {
 }
 
 /// One category and its score.
-typedef AudioCategory = ({int index, double score, String? name});
+typedef AudioClassifierCategory = ({int index, double score, String? name});
 
 /// The categories of one chunk of the clip, which starts at [timestampMs].
-typedef AudioClassification = ({
+typedef AudioClassifierResult = ({
   int timestampMs,
-  List<AudioCategory> categories,
+  List<AudioClassifierCategory> categories,
 });

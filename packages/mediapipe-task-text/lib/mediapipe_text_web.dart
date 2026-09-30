@@ -1,61 +1,61 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
-import 'dart:js_interop_unsafe';
 import 'dart:typed_data';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-import 'package:mediapipe_flutter_audio/audio_task_backend.dart';
+import 'package:mediapipe_text/platform_interface.dart';
 import 'package:web/web.dart' as web;
 
 import 'web_runtime.dart';
 
-@JS('mediapipeAudio.create')
+@JS('mediapipeText.create')
 external JSPromise<JSNumber> _create(JSObject options);
-@JS('mediapipeAudio.run')
+@JS('mediapipeText.run')
 external JSPromise<JSString> _run(JSNumber id, JSObject input);
-@JS('mediapipeAudio.close')
+@JS('mediapipeText.close')
 external JSPromise<JSAny?> _close(JSNumber id);
 
-/// Flutter registration for Google's official browser audio runtime.
-abstract final class MediaPipeAudioWeb {
-  /// Installs the browser backend before the first Audio Classifier.
+/// Flutter registration for Google's official browser text runtime.
+abstract final class MediaPipeTextWeb {
+  /// Installs the browser backend before the first text task is created.
   static void registerWith(Registrar registrar) {
-    audioTaskBackendFactory = _WorkerAudioTask.create;
+    textTaskBackendFactory = _WorkerTextTask.create;
   }
 }
 
-/// Google's Audio Classifier on its own worker (assets/worker.js).
-final class _WorkerAudioTask implements AudioTaskBackend {
-  _WorkerAudioTask._(this._id);
+/// One of Google's text tasks on its own worker (assets/worker.js).
+final class _WorkerTextTask implements TextTaskBackend {
+  _WorkerTextTask._(this._id);
 
   final JSNumber _id;
   static Future<void>? _loaded;
 
-  static Future<AudioTaskBackend> create(Map<String, Object?> options) async {
+  static Future<TextTaskBackend> create(
+    String task,
+    Map<String, Object?> options,
+  ) async {
     await (_loaded ??= _loadBridge(
-      'assets/packages/mediapipe_flutter_audio/assets/bridge.js',
+      'assets/packages/mediapipe_text/assets/bridge.js',
       () => _loaded = null,
     ));
     final bytes = options['modelBytes'] as Uint8List?;
     final path = options['modelPath'] as String?;
     final input = {
       ...options,
+      'task': task,
       'modelBytes': bytes == null ? null : Uint8List.fromList(bytes).toJS,
       // A model path is a URL here, resolved against the page.
       'modelPath': path == null ? null : Uri.base.resolve(path).toString(),
       'runtimeBaseUrl': MediaPipeWebRuntime.resolve(Uri.base),
     }.jsify()!;
-    return _WorkerAudioTask._(await _create(input as JSObject).toDart);
+    return _WorkerTextTask._(await _create(input as JSObject).toDart);
   }
 
   @override
-  Future<List<Object?>> classify(Float32List samples, double sampleRate) async {
-    final input = JSObject()
-      ..['samples'] = Float32List.fromList(samples).toJS
-      ..['sampleRate'] = sampleRate.toJS;
-    final json = await _run(_id, input).toDart;
-    return jsonDecode(json.toDart) as List<Object?>;
+  Future<Map<String, dynamic>> run(String text) async {
+    final json = await _run(_id, {'text': text}.jsify()! as JSObject).toDart;
+    return jsonDecode(json.toDart) as Map<String, dynamic>;
   }
 
   @override

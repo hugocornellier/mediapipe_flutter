@@ -1,4 +1,10 @@
-import 'package:mediapipe_flutter_core/model_store.dart';
+import 'package:mediapipe_core/model_store.dart';
+
+/// Verified official models accepted by audio task options.
+abstract final class AudioModels {
+  /// Google's YAMNet audio classifier.
+  static const yamnet = yamnetModel;
+}
 
 /// Google's YAMNet audio classifier, version 1, as MediaPipe Studio uses it.
 const yamnetUrl =

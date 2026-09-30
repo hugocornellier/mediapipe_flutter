@@ -165,7 +165,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../packages/mediapipe-task-vision
 dev_dependencies:
   archive: ^4.2.0
@@ -177,7 +177,7 @@ dev_dependencies:
     sdk: flutter
 hooks:
   user_defines:
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       prebuilt: true
       tasks: [''' + ', '.join(selected) + ''']
 flutter:

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 abstract interface class SegmentationBackend {
   Future<void> setImage(VisionImage image);

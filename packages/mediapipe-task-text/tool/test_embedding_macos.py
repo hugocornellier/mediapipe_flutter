@@ -46,11 +46,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_core:
+  mediapipe_core:
     path: ../packages/mediapipe-core
-  mediapipe_flutter_text:
+  mediapipe_text:
     path: ../packages/mediapipe-task-text
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../packages/mediapipe-task-vision
 dev_dependencies:
   integration_test:
@@ -62,9 +62,9 @@ flutter:
     - assets/
 hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [face_detector, face_landmarker, interactive_segmenter]
       prebuilt: true
 ''')
@@ -84,19 +84,19 @@ hooks:
     shutil.copyfile(PACKAGE / 'test/support/classic_text_validation.dart', app / 'lib/classic_text_validation.dart')
     (app / 'bin').mkdir()
     (app / 'bin/download_models.dart').write_text('''import 'dart:io';
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_text/models.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 Future<void> main() async {
-  await downloadVerified(bertClassifierModel, File('assets/bert_classifier.tflite'));
-  await downloadVerified(universalSentenceEncoderModel, File('assets/universal_sentence_encoder.tflite'));
-  await downloadVerified(languageDetectorModel, File('assets/language_detector.tflite'));
-  await downloadVerified(embeddingGemmaModel, File('assets/embedding_gemma.task'));
-  await downloadVerified(proofreaderModel, File('assets/proofread_quant_200m.litertlm'));
-  await downloadVerified(summarizerModel, File('assets/summarization_quant_200m_2modes.litertlm'));
-  await downloadVerified(DownloadAsset(url: interactiveSegmenterModelUrl, sha256: interactiveSegmenterModelSha256), File('assets/interactive_segmentation.task'));
-  await downloadVerified(DownloadAsset(url: blazeFaceShortRangeUrl, sha256: blazeFaceShortRangeSha256), File('assets/blaze_face_short_range.tflite'));
-  await downloadVerified(DownloadAsset(url: faceLandmarkerUrl, sha256: faceLandmarkerSha256), File('assets/face_landmarker.task'));
+  await downloadVerified(TextModels.bertClassifier, File('assets/bert_classifier.tflite'));
+  await downloadVerified(TextModels.universalSentenceEncoder, File('assets/universal_sentence_encoder.tflite'));
+  await downloadVerified(TextModels.languageDetector, File('assets/language_detector.tflite'));
+  await downloadVerified(TextModels.embeddingGemma, File('assets/embedding_gemma.task'));
+  await downloadVerified(TextModels.proofreader, File('assets/proofread_quant_200m.litertlm'));
+  await downloadVerified(TextModels.summarizer, File('assets/summarization_quant_200m_2modes.litertlm'));
+  await downloadVerified(VisionModels.interactiveSegmenter, File('assets/interactive_segmentation.task'));
+  await downloadVerified(VisionModels.faceDetector, File('assets/blaze_face_short_range.tflite'));
+  await downloadVerified(VisionModels.faceLandmarker, File('assets/face_landmarker.task'));
 }
 ''')
     (app / 'lib/main.dart').write_text('''import 'dart:convert';

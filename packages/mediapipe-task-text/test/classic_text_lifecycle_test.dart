@@ -5,8 +5,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_core/io.dart';
-import 'package:mediapipe_flutter_text/io.dart';
+import 'package:mediapipe_core/io.dart';
+import 'package:mediapipe_text/io.dart';
 import 'package:test/test.dart';
 
 typedef _Task = (Future<Object> Function(String), Future<void> Function());

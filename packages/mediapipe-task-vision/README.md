@@ -1,4 +1,4 @@
-# mediapipe_flutter_vision
+# mediapipe_vision
 
 MediaPipe vision tasks for Dart and Flutter. Use one Dart API to detect faces
 and objects, track face/hand/pose landmarks, recognize gestures, classify or
@@ -44,7 +44,7 @@ Add the vision package to your app's `pubspec.yaml`:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../mediapipe_flutter/packages/mediapipe-task-vision
 ```
 
@@ -55,10 +55,10 @@ Content Security Policy, see [Self-hosting the web runtime](#self-hosting-the-we
 
 ### Self-hosting the web runtime
 
-One setting in `mediapipe_flutter_core` covers every task family. From the app
-root, `dart run mediapipe_flutter_core:web_runtime web/mediapipe` writes the
+One setting in `mediapipe_core` covers every task family. From the app
+root, `dart run mediapipe_core:web_runtime web/mediapipe` writes the
 verified runtimes; then set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';`
-(from `package:mediapipe_flutter_vision/web_runtime.dart`) before creating a
+(from `package:mediapipe_vision/web_runtime.dart`) before creating a
 task. See [core's README](../mediapipe-core/README.md#web-runtime).
 
 ### Choose native tasks at build time
@@ -69,15 +69,15 @@ bundle only the tasks you use, add a task list to your app's `pubspec.yaml`:
 ```yaml
 hooks:
   user_defines:
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [face_landmarker]
 ```
 
 Task selection is a **build-time** choice: creating an omitted task will not
 make its native runtime appear later. On macOS Apple Silicon, tasks beyond the
-default face pair run on Google's engine, which `mediapipe_flutter_core`
+default face pair run on Google's engine, which `mediapipe_core`
 bundles once for every family when the app sets
-`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true` (see
+`hooks.user_defines.mediapipe_core.tasks_runtime: true` (see
 [core's README](../mediapipe-core/README.md)). Other platforms need nothing
 more than the task list. The
 [support matrix](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
@@ -101,7 +101,7 @@ Load the model bytes and pass a decoded RGBA image to the task:
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 Future<void> detectFaces(Uint8List rgba, int width, int height) async {
   final asset = await rootBundle.load('assets/models/face_landmarker.task');
@@ -149,9 +149,9 @@ lists the versioned models and SHA-256 values used by the gallery.
 
 ### Still images in other vision tasks
 
-Create each task with `VisionRunningMode.image` (the default), then call its
+Create each task with `RunningMode.image` (the default), then call its
 image method. For camera or video frames, create it with
-`VisionRunningMode.video` and call the corresponding video method with a
+`RunningMode.video` and call the corresponding video method with a
 strictly increasing timestamp. The gallery exposes a **Camera / Still image**
 selector for all ten tasks below on supported platforms.
 
@@ -183,7 +183,7 @@ millisecond timestamps**:
 final task = await FaceLandmarker.create(
   FaceLandmarkerOptions(
     modelBytes: modelBytes,
-    runningMode: VisionRunningMode.video,
+    runningMode: RunningMode.video,
   ),
 );
 try {

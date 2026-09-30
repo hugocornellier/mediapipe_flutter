@@ -1,8 +1,8 @@
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_core/capabilities.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_core/capabilities.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
 import 'package:test/test.dart';
 
 import '../../hook/build.dart' as hook;
@@ -155,7 +155,7 @@ void main() {
     expect(tasksRuntimeMissing('macos/arm64', enabled: false), isFalse);
     expect(tasksRuntimeMissing('android/arm64', enabled: false), isFalse);
     expect(
-      tasksRuntimeRequired('mediapipe_flutter_text', 'linux/x64'),
+      tasksRuntimeRequired('mediapipe_text', 'linux/x64'),
       contains('Remove tasks_runtime: false'),
     );
     expect(

@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/ios_sdk.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_core/src/native_assets/ios_sdk.dart';
+import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
 
 /// Bundles Google's MediaPipe engine once per app for every task family.
 ///
-/// `hooks.user_defines.mediapipe_flutter_core.tasks_runtime` is optional: it
+/// `hooks.user_defines.mediapipe_core.tasks_runtime` is optional: it
 /// defaults to on where the engine costs nothing extra (iOS, Linux x64,
 /// Windows x64) and off on macOS, where it is 95 MB. Like every setting here,
 /// it is harmless on targets it does not apply to, since an app's
@@ -21,12 +21,12 @@ Future<void> main(List<String> arguments) => build(arguments, (
   final requested = input.userDefines['tasks_runtime'];
   if (requested != null && requested is! bool) {
     throw const FormatException(
-      'mediapipe_flutter_core.tasks_runtime must be a boolean.',
+      'mediapipe_core.tasks_runtime must be a boolean.',
     );
   }
   if (input.userDefines['use_macos_vision_runtime'] != null) {
     throw const FormatException(
-      'mediapipe_flutter_core.use_macos_vision_runtime was removed: core now '
+      'mediapipe_core.use_macos_vision_runtime was removed: core now '
       "bundles Google's macOS engine and the vision tasks use it. Delete the "
       'key; set tasks_runtime: true instead.',
     );

@@ -1,16 +1,13 @@
 import 'dart:io';
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 Future<void> main() async {
-  for (final (name, url, digest) in [
-    ('deeplab_v3.tflite', deepLabV3Url, deepLabV3Sha256),
-    ('magic_touch.tflite', magicTouchUrl, magicTouchSha256),
+  for (final (name, model) in [
+    ('deeplab_v3.tflite', VisionModels.imageSegmenter),
+    ('magic_touch.tflite', VisionModels.interactiveSegmenterLegacy),
   ]) {
-    await downloadVerified(
-      DownloadAsset(url: url, sha256: digest),
-      File('models/$name'),
-    );
+    await downloadVerified(model, File('models/$name'));
     stdout.writeln('Verified model: models/$name');
   }
 }

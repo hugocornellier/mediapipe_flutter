@@ -4,8 +4,7 @@ import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-import 'package:mediapipe_flutter_vision/face_landmarker_backend.dart';
-import 'package:mediapipe_flutter_vision/interface.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:web/web.dart' as web;
 
 import 'web_runtime.dart';
@@ -53,7 +52,7 @@ abstract final class MediaPipeVisionWeb {
       },
       decode: (data, landmarks) =>
           decodeWebFaceResult(data, landmarks: landmarks),
-      error: FaceLandmarkerException.new,
+      error: VisionTaskException.new,
     );
     handLandmarkerBackendFactory = (options) => WebVisionTask.create(
       task: 'hand_landmarker',
@@ -142,7 +141,7 @@ abstract final class MediaPipeVisionWeb {
         'minSuppressionThreshold': options.minSuppressionThreshold,
       },
       decode: (data, _) => decodeWebFaceDetectorResult(data),
-      error: FaceDetectorException.new,
+      error: VisionTaskException.new,
     );
     objectDetectorBackendFactory = (options) => WebVisionTask.create(
       task: 'object_detector',
@@ -158,7 +157,7 @@ abstract final class MediaPipeVisionWeb {
         categoryDenylist: options.categoryDenylist,
       ),
       decode: (data, _) => decodeWebObjectDetectorResult(data),
-      error: ObjectDetectorException.new,
+      error: VisionTaskException.new,
     );
     imageClassifierBackendFactory = (options) => WebVisionTask.create(
       task: 'image_classifier',
@@ -195,7 +194,7 @@ abstract final class MediaPipeVisionWeb {
           modelBytes: options.modelBytes,
           modelPath: options.modelPath,
           delegate: options.delegate,
-          runningMode: VisionRunningMode.image,
+          runningMode: RunningMode.image,
           settings: {
             'outputConfidenceMasks': options.outputConfidenceMasks,
             'outputCategoryMask': options.outputCategoryMask,
@@ -210,10 +209,10 @@ abstract final class MediaPipeVisionWeb {
             modelBytes: options.modelBytes,
             modelPath: options.modelPath,
             delegate: options.delegate,
-            runningMode: VisionRunningMode.image,
+            runningMode: RunningMode.image,
             settings: const {},
             decode: (data, _) => data['result'] as Map<String, dynamic>,
-            error: InteractiveSegmenterException.new,
+            error: VisionTaskException.new,
           ),
         );
     imageSegmenterBackendFactory = (options) => WebVisionTask.create(
@@ -285,7 +284,7 @@ final class WebVisionTask<R>
   static Future<void> _load() => _loaded ??= () async {
     final script = web.HTMLScriptElement()
       ..src = Uri.base
-          .resolve('assets/packages/mediapipe_flutter_vision/assets/bridge.js')
+          .resolve('assets/packages/mediapipe_vision/assets/bridge.js')
           .toString();
     final ready = Completer<void>();
     script.onLoad.first.then((_) => ready.complete());
@@ -311,7 +310,7 @@ final class WebVisionTask<R>
     required Uint8List? modelBytes,
     required String? modelPath,
     required VisionDelegate delegate,
-    required VisionRunningMode runningMode,
+    required RunningMode runningMode,
     required Map<String, Object?> settings,
     required R Function(Map<String, dynamic> data, Float64List? landmarks)
     decode,

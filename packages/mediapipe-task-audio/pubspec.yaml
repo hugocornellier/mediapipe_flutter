@@ -1,10 +1,16 @@
-name: mediapipe_flutter_audio
-publish_to: none
-description: MediaPipe's official Audio Classifier for Dart and Flutter.
-version: 0.0.1
-
+name: mediapipe_audio
+description: "Google's MediaPipe Audio Classifier for Flutter on Android, iOS, macOS, Linux, Windows and the web, with Google's pinned YAMNet model."
+version: 0.1.0
 repository: https://github.com/hugocornellier/mediapipe_flutter/tree/main/packages/mediapipe-task-audio
-issue_tracker: https://github.com/hugocornellier/mediapipe_flutter/issues/
+issue_tracker: https://github.com/hugocornellier/mediapipe_flutter/issues
+topics:
+  - mediapipe
+  - machine-learning
+  - audio
+  - audio-classification
+# Not published yet; `tool/publish_check.py` in mediapipe-core runs the
+# publish dry run on a copy without this line.
+publish_to: none
 
 platforms:
   android:
@@ -26,7 +32,7 @@ dependencies:
   code_assets: ^1.2.1
   ffi: ^2.1.4
   hooks: ^2.2.0
-  mediapipe_flutter_core:
+  mediapipe_core:
     path: ../mediapipe-core
   web: ^1.1.1
 
@@ -44,10 +50,10 @@ flutter:
         package: dev.mediapipe.flutter.audio
         pluginClass: MediaPipeAudioPlugin
         dartPluginClass: MediaPipeAudioAndroid
-        dartFileName: mediapipe_flutter_audio_android.dart
+        dartFileName: mediapipe_audio_android.dart
       web:
         pluginClass: MediaPipeAudioWeb
-        fileName: mediapipe_flutter_audio_web.dart
+        fileName: mediapipe_audio_web.dart
   assets:
     - path: assets/bridge.js
       platforms: [web]
@@ -60,5 +66,5 @@ flutter:
 # their own pubspec, as for the text package.
 hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true

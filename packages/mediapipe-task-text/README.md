@@ -1,6 +1,6 @@
 # MediaPipe Text for Flutter
 
-`mediapipe_flutter_text` provides summarization, proofreading, classification, embedding, and language
+`mediapipe_text` provides summarization, proofreading, classification, embedding, and language
 detection through MediaPipe's native task pipelines. It is part of the public
 [mediapipe_flutter](../../README.md) fork and is not published to pub.dev.
 
@@ -19,19 +19,19 @@ wheel library) and **Windows x64 CPU** (its 1.0.0 wheel library): the same
 library the vision package bundles there, loaded once for both packages. Linux
 needs the system EGL and OpenGL ES libraries (`libegl1 libgles2` on Debian or
 Ubuntu) even for CPU. On **iOS 15+ (arm64 devices and simulator)** they run
-on Google's 1.0.1 iOS SDK, in the adapter `mediapipe_flutter_core` builds. Browsers and Android run those three
+on Google's 1.0.1 iOS SDK, in the adapter `mediapipe_core` builds. Browsers and Android run those three
 through this package's integrated web and Android backends. Add only
-`mediapipe_flutter_text` to your app. The
+`mediapipe_text` to your app. The
 2024 text runtime has been retired; its unvalidated Android, iOS and Intel macOS
 artifacts are no longer selected.
 
-Every text consumer must enable `hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true`
+Every text consumer must enable `hooks.user_defines.mediapipe_core.tasks_runtime: true`
 in its app pubspec, as shown below. Models remain separate optional downloads.
 
 Browser tasks load the pinned JavaScript/WASM runtime from jsDelivr by default.
-To self-host, run `dart run mediapipe_flutter_core:web_runtime web/mediapipe`
+To self-host, run `dart run mediapipe_core:web_runtime web/mediapipe`
 from the app root and set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';` (from
-`package:mediapipe_flutter_text/web_runtime.dart`) before the first task. One
+`package:mediapipe_text/web_runtime.dart`) before the first task. One
 setting covers every family; see
 [core's README](../mediapipe-core/README.md#web-runtime).
 
@@ -40,7 +40,7 @@ setting covers every family; see
 Query support before offering a delegate in your app:
 
 ```dart
-import 'package:mediapipe_flutter_text/capabilities.dart';
+import 'package:mediapipe_text/capabilities.dart';
 
 final support = await queryTextTaskCapabilities(TextTask.embeddingGemma);
 final canUseCpu = support.supportedDelegates.contains(TextDelegate.cpu);
@@ -78,7 +78,7 @@ Enable the shared runtime in the **consuming app's** pubspec:
 ```yaml
 hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
 ```
 
@@ -92,12 +92,12 @@ historical `interactive-segmenter-v1.0.1-1` release name; it contains Google's f
 
 Download the separate, pinned 183.8 MB model with
 `dart tool/download_embedding_gemma.dart`. Applications can use the public
-`embeddingGemmaModel` URL/checksum from `package:mediapipe_flutter_text/models.dart`
+`embeddingGemmaModel` URL/checksum from `package:mediapipe_text/models.dart`
 with core's `downloadVerified`, or bundle the model as a Flutter asset. See
 [Gemma Terms](https://ai.google.dev/gemma/terms) for the model's license.
 
 ```dart
-import 'package:mediapipe_flutter_text/embedding_gemma.dart';
+import 'package:mediapipe_text/embedding_gemma.dart';
 
 final task = await EmbeddingGemma.create(
   EmbeddingGemmaOptions(modelPath: '/path/to/embedding_gemma.task'),
@@ -163,7 +163,7 @@ SHA-256 work with core's `downloadVerified` for app-managed downloads. Models
 remain optional, separate files; enabling the runtime does not download them.
 
 ```dart
-import 'package:mediapipe_flutter_text/text_proofreader.dart';
+import 'package:mediapipe_text/text_proofreader.dart';
 
 final task = await TextProofreader.create(TextProofreaderOptions(
   modelPath: '/path/to/proofread_quant_200m.litertlm',
@@ -224,7 +224,7 @@ with core's `downloadVerified`. The [model overview](https://developers.google.c
 links its Gemma terms. Enabling the shared runtime does not download models.
 
 ```dart
-import 'package:mediapipe_flutter_text/text_summarizer.dart';
+import 'package:mediapipe_text/text_summarizer.dart';
 
 final task = await TextSummarizer.create(TextSummarizerOptions(
   modelPath: '/path/to/summarization_quant_200m_2modes.litertlm',
@@ -278,7 +278,7 @@ by the tests and example:
 
 `make models_text` downloads only these three models. Their public URL/checksum
 pins are `bertClassifierModel`, `universalSentenceEncoderModel` and
-`languageDetectorModel` in `package:mediapipe_flutter_text/models.dart`.
+`languageDetectorModel` in `package:mediapipe_text/models.dart`.
 
 Declare bundled models under `flutter.assets` in the application's pubspec, as
 the example does. A model's Flutter asset key is not a filesystem path: load its
@@ -288,7 +288,7 @@ bytes and use `fromAssetBuffer`, or pass a real file path to `fromAssetPath`.
 
 ```dart
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 final data = await rootBundle.load('assets/bert_classifier.tflite');
 final classifier = await TextClassifier.create(

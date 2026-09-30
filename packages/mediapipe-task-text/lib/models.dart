@@ -1,4 +1,25 @@
-import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_core/model_store.dart';
+
+/// Verified official models accepted by text task options.
+abstract final class TextModels {
+  /// BERT text classifier.
+  static const bertClassifier = bertClassifierModel;
+
+  /// Universal Sentence Encoder text embedder.
+  static const universalSentenceEncoder = universalSentenceEncoderModel;
+
+  /// Language detector.
+  static const languageDetector = languageDetectorModel;
+
+  /// EmbeddingGemma text embedder.
+  static const embeddingGemma = embeddingGemmaModel;
+
+  /// Proofreader, 200M parameters.
+  static const proofreader = proofreaderModel;
+
+  /// Summarizer, 200M parameters.
+  static const summarizer = summarizerModel;
+}
 
 /// Google's unmodified BERT sentiment classifier, float32, version 1.
 const DownloadAsset bertClassifierModel = DownloadAsset(

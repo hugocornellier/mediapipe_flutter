@@ -3,9 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart'
-    show ClassifierOptions, EmbedderOptions;
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 // The text demos' three tasks, from the gallery's bundled models, in the same
 // app as the vision runtimes: core's shared runtime must load and answer beside

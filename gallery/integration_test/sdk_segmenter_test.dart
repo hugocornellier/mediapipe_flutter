@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/vision_task_backend.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:mediapipe_gallery/main.dart';
 
 import 'support/mask_grids.dart';
@@ -32,7 +32,7 @@ const _turnedAgreement = 0.97;
 
 // Image Segmenter through Google's official mobile SDKs: iOS through the
 // package's Objective-C adapter, Android through
-// mediapipe_flutter_vision.
+// mediapipe_vision.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -249,7 +249,7 @@ void main() {
         final task = await ImageSegmenter.create(
           ImageSegmenterOptions(
             modelBytes: await _model(),
-            runningMode: VisionRunningMode.video,
+            runningMode: RunningMode.video,
             outputConfidenceMasks: false,
             outputCategoryMask: true,
           ),

@@ -1,23 +1,23 @@
 # MediaPipe Audio for Flutter
 
-`mediapipe_flutter_audio` runs Google's official MediaPipe **Audio Classifier**
+`mediapipe_audio` runs Google's official MediaPipe **Audio Classifier**
 (for example YAMNet's 521 sound categories) from Dart and Flutter. It is part of
 the [mediapipe_flutter](../../README.md) fork and is not published to pub.dev.
 
 ## Platforms
 
-The task runs on Google's unmodified runtime, which `mediapipe_flutter_core`
+The task runs on Google's unmodified runtime, which `mediapipe_core`
 bundles once and shares with the text tasks: **macOS arm64 CPU, macOS 14+**
 (MediaPipe 1.0.1), **Linux x64 CPU** (1.0.1) and **Windows x64 CPU** (1.0.0).
 On Linux and Windows that runtime is the vision package's wheel library, loaded
 once for both packages; Linux needs the system EGL and OpenGL ES libraries
 (`libegl1 libgles2` on Debian or Ubuntu) even for CPU. On **iOS 15+** it runs on
-Google's 1.0.1 iOS SDK, in the adapter `mediapipe_flutter_core` builds. Browsers and Android use this package's
-integrated backends. Add only `mediapipe_flutter_audio` for the audio task.
+Google's 1.0.1 iOS SDK, in the adapter `mediapipe_core` builds. Browsers and Android use this package's
+integrated backends. Add only `mediapipe_audio` for the audio task.
 Browser tasks load the pinned JavaScript/WASM runtime from jsDelivr by default.
-To self-host, run `dart run mediapipe_flutter_core:web_runtime web/mediapipe`
+To self-host, run `dart run mediapipe_core:web_runtime web/mediapipe`
 from the app root and set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';` (from
-`package:mediapipe_flutter_audio/web_runtime.dart`) before the first task. One
+`package:mediapipe_audio/web_runtime.dart`) before the first task. One
 setting covers every family; see
 [core's README](../mediapipe-core/README.md#web-runtime).
 Query support before offering the task:
@@ -32,7 +32,7 @@ Every consumer enables the shared runtime in its app pubspec:
 ```yaml
 hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
 ```
 

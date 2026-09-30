@@ -18,7 +18,7 @@ android {
 }
 repositories { google(); mavenCentral() }
 dependencies {
-    // As in mediapipe_flutter_vision: Google's 1.0.0 POMs declare
+    // As in mediapipe_vision: Google's 1.0.0 POMs declare
     // protobuf-javalite while the vision SDK needs full protobuf-java at
     // runtime (google-ai-edge/mediapipe#6348). One app can hold all three
     // plugins only if they agree, so this one uses the full runtime too.

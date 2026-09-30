@@ -1,12 +1,12 @@
 /// Query per-task delegate support without loading a model.
 library;
 
-import 'package:mediapipe_flutter_core/capabilities.dart';
+import 'package:mediapipe_core/capabilities.dart';
 import 'src/capabilities/official_runtime_stub.dart'
     if (dart.library.io) 'src/capabilities/official_runtime_io.dart';
-import 'face_landmarker_backend.dart';
+import 'src/face_landmarker_backend.dart';
 
-export 'package:mediapipe_flutter_core/capabilities.dart'
+export 'package:mediapipe_core/capabilities.dart'
     show TaskCapabilities, TaskPlatform;
 export 'src/interface/vision_types.dart' show VisionDelegate;
 
@@ -320,19 +320,6 @@ bool _androidPowerVr(TaskPlatform platform) {
       (gpu.contains('powervr') || gpu.contains('imagination'));
 }
 
-/// Query the validated Hand, Gesture, Pose and Holistic task runtimes.
-///
-/// [useOfficialMacosRuntime] is reserved for Hand and Pose, the two tasks whose
-/// official macOS runtime has been checked against the pinned reference. The
-/// runtime probe fails closed if the build hook selected the source monolith.
-Future<TaskCapabilities<VisionDelegate>> queryLandmarkTaskCapabilities({
-  bool useOfficialMacosRuntime = false,
-}) async => landmarkTaskCapabilitiesForPlatform(
-  await currentTaskPlatform(),
-  officialMacosRuntime:
-      useOfficialMacosRuntime && hasOfficialMacosLandmarkRuntime(),
-);
-
 /// Evaluate landmark task CPU coverage without loading native code.
 TaskCapabilities<VisionDelegate> landmarkTaskCapabilitiesForPlatform(
   TaskPlatform platform, {
@@ -351,7 +338,7 @@ TaskCapabilities<VisionDelegate> landmarkTaskCapabilitiesForPlatform(
   unavailableReasons: const {
     VisionDelegate.cpu:
         'Landmark task CPU inference requires Linux x64, Windows x64, or '
-        "Google's macOS engine (mediapipe_flutter_core.tasks_runtime: true).",
+        "Google's macOS engine (mediapipe_core.tasks_runtime: true).",
     VisionDelegate.gpu: 'Landmark task GPU inference has not been validated.',
   },
 );
@@ -413,11 +400,6 @@ interactiveSegmenterLegacyCapabilitiesForPlatform(
   officialMacosRuntime: officialMacosRuntime,
   officialIosRuntime: officialIosRuntime,
 );
-
-/// Query the desktop CPU rule the two segmenters share on Linux and Windows.
-Future<TaskCapabilities<VisionDelegate>>
-querySegmenterTaskCapabilities() async =>
-    segmenterTaskCapabilitiesForPlatform(await currentTaskPlatform());
 
 /// Evaluate segmenter task CPU coverage on the desktop wheels without loading
 /// native code. Image Segmenter and the legacy MagicTouch API have their own
@@ -489,13 +471,6 @@ TaskCapabilities<VisionDelegate> imageEmbedderCapabilitiesForPlatform(
       'Google\'s Linux runtime aborts on GPU (upstream-issues.md UP-027).',
 );
 
-/// Query Image Classifier and Image Embedder's validated CPU runtimes.
-Future<TaskCapabilities<VisionDelegate>> queryImageTaskCapabilities() async =>
-    imageTaskCapabilitiesForPlatform(
-      await currentTaskPlatform(),
-      officialMacosRuntime: hasOfficialMacosLandmarkRuntime(),
-    );
-
 /// Evaluate the two image tasks without loading native code or a model.
 TaskCapabilities<VisionDelegate> imageTaskCapabilitiesForPlatform(
   TaskPlatform platform, {
@@ -514,7 +489,7 @@ TaskCapabilities<VisionDelegate> imageTaskCapabilitiesForPlatform(
   unavailableReasons: const {
     VisionDelegate.cpu:
         'Image task CPU inference requires Linux x64, Windows x64, or '
-        "Google's macOS engine (mediapipe_flutter_core.tasks_runtime: true).",
+        "Google's macOS engine (mediapipe_core.tasks_runtime: true).",
     VisionDelegate.gpu: 'Image task GPU inference has not been validated.',
   },
 );

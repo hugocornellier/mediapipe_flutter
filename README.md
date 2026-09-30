@@ -25,11 +25,11 @@ MediaPipe runtimes selected for each supported platform.
 
 | Package | Use it for | Guide |
 | --- | --- | --- |
-| `mediapipe_flutter_vision` | Face, hand, pose, gesture and holistic landmarks; detection, classification, embedding and segmentation | [Vision](packages/mediapipe-task-vision/README.md) |
-| `mediapipe_flutter_text` | Language detection, text classification and embedding, plus supported modern text tasks | [Text](packages/mediapipe-task-text/README.md) |
-| `mediapipe_flutter_audio` | Audio classification | [Audio](packages/mediapipe-task-audio/README.md) |
+| `mediapipe_vision` | Face, hand, pose, gesture and holistic landmarks; detection, classification, embedding and segmentation | [Vision](packages/mediapipe-task-vision/README.md) |
+| `mediapipe_text` | Language detection, text classification and embedding, plus supported modern text tasks | [Text](packages/mediapipe-task-text/README.md) |
+| `mediapipe_audio` | Audio classification | [Audio](packages/mediapipe-task-audio/README.md) |
 
-`mediapipe_flutter_core` supplies shared types and native runtimes where tasks
+`mediapipe_core` supplies shared types and native runtimes where tasks
 need them. Web and Android vision use companion adapter packages; the
 [Vision installation guide](packages/mediapipe-task-vision/README.md#installation)
 shows when to add them. The GenAI package remains experimental and is not part
@@ -50,7 +50,7 @@ git clone https://github.com/hugocornellier/mediapipe_flutter.git
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../mediapipe_flutter/packages/mediapipe-task-vision
 
 flutter:
@@ -66,7 +66,7 @@ native runtime downloads do not include them.
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 Future<int> countFaces(Uint8List rgba, int width, int height) async {
   final model = await rootBundle.load('assets/models/face_landmarker.task');
@@ -95,7 +95,7 @@ Future<int> countFaces(Uint8List rgba, int width, int height) async {
 ```
 
 Pass decoded RGBA bytes to this function. For camera frames, convert the
-camera's pixel format first and use `VisionRunningMode.video` with increasing
+camera's pixel format first and use `RunningMode.video` with increasing
 timestamps. The [Vision guide](packages/mediapipe-task-vision/README.md#video-and-live-cameras)
 shows the video call and platform setup.
 
@@ -128,7 +128,7 @@ requesting GPU never silently switches to CPU if initialization fails.
   `rootBundle.load`; `modelPath` is a native file path or a browser URL.
 - **Native runtimes are selected at build time.** The build hooks download and
   verify the native libraries for supported targets. Select the tasks your app
-  uses under `hooks.user_defines.mediapipe_flutter_vision.tasks` to avoid
+  uses under `hooks.user_defines.mediapipe_vision.tasks` to avoid
   bundling unused runtimes.
 - **Web and Android require adapters.** Add their companion packages when
   targeting those platforms. A checkout also needs the verified web runtime

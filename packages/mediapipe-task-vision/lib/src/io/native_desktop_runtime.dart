@@ -1,12 +1,11 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:mediapipe_flutter_core/io.dart'
-    show missingLinuxGraphicsLibraries;
+import 'package:mediapipe_core/io.dart' show missingLinuxGraphicsLibraries;
 
 @Native<Void Function(Pointer<Char>)>(
   symbol: 'MpErrorFree',
-  assetId: 'package:mediapipe_flutter_core/mediapipe.dylib',
+  assetId: 'package:mediapipe_core/mediapipe.dylib',
 )
 external void _errorFree(Pointer<Char> error);
 

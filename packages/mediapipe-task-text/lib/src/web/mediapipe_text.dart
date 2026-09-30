@@ -4,18 +4,29 @@
 
 // The classic text tasks in a browser: the same public API as the native
 // library, run by Google's official @mediapipe/tasks-text on a worker that
-// mediapipe_flutter_text installs (text_task_backend.dart).
+// mediapipe_text installs (text_task_backend.dart).
 
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_core/interface.dart';
-import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
-import 'package:mediapipe_flutter_text/interface.dart';
+import 'package:mediapipe_core/interface.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart';
+import 'package:mediapipe_text/interface.dart';
 
 import '../backend_text_task.dart';
 import '../interface/embedding_gemma_types.dart' show TextEmbedding;
 
 /// {@macro TextClassifier}
+///
+/// ```dart
+/// final task = await TextClassifier.create(
+///   TextClassifierOptions(model: TextModels.bertClassifier),
+/// );
+/// final result = await task.classify('Hello');
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 class TextClassifier extends BaseTextClassifier {
   /// Starts loading at once; initialization failures reach [classify].
   TextClassifier(TextClassifierOptions options)
@@ -32,6 +43,7 @@ class TextClassifier extends BaseTextClassifier {
 
   /// Starts Google's browser Text Classifier.
   static Future<TextClassifier> create(TextClassifierOptions options) async {
+    await options.prepareModel();
     final task = TextClassifier(options);
     await task._task.ready;
     return task;
@@ -49,9 +61,32 @@ class TextClassifier extends BaseTextClassifier {
 class TextClassifierOptions extends BaseTextClassifierOptions {
   /// Classifies with the model in [baseOptions].
   TextClassifierOptions({
-    required BaseOptions baseOptions,
+    this.model,
+    BaseOptions? baseOptions,
     this.classifierOptions = const ClassifierOptions(),
-  }) : baseOptions = _checkedBaseOptions(baseOptions);
+  }) : _baseOptions = baseOptions == null
+           ? null
+           : _checkedBaseOptions(baseOptions) {
+    if ((model == null) == (baseOptions == null)) {
+      throw ArgumentError('Supply exactly one of model and baseOptions.');
+    }
+  }
+
+  /// Pinned official model, downloaded on task creation.
+  final DownloadAsset? model;
+  BaseOptions? _baseOptions;
+
+  /// Resolves a pinned model before creating a task.
+  Future<void> prepareModel() => _resolveModel();
+
+  Future<void> _resolveModel() async {
+    if (model case final selected?) {
+      final source = await resolvePinnedModel(selected);
+      _baseOptions = source.path != null
+          ? BaseOptions.path(source.path!)
+          : BaseOptions.memory(source.bytes!);
+    }
+  }
 
   /// {@macro TextClassifierOptions.fromAssetPath}
   ///
@@ -74,7 +109,9 @@ class TextClassifierOptions extends BaseTextClassifierOptions {
   );
 
   @override
-  final BaseOptions baseOptions;
+  BaseOptions get baseOptions =>
+      _baseOptions ??
+      (throw StateError('Create the task before reading baseOptions.'));
 
   @override
   final ClassifierOptions classifierOptions;
@@ -102,6 +139,16 @@ class TextClassifierResult extends BaseTextClassifierResult {
 }
 
 /// {@macro TextEmbedder}
+///
+/// ```dart
+/// final task = await TextEmbedder.create(
+///   TextEmbedderOptions(model: TextModels.universalSentenceEncoder),
+/// );
+/// final result = await task.embed('Hello');
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 class TextEmbedder extends BaseTextEmbedder {
   /// Starts loading at once; initialization failures reach [embed].
   TextEmbedder(TextEmbedderOptions options)
@@ -118,6 +165,7 @@ class TextEmbedder extends BaseTextEmbedder {
 
   /// Starts Google's browser Text Embedder.
   static Future<TextEmbedder> create(TextEmbedderOptions options) async {
+    await options.prepareModel();
     final task = TextEmbedder(options);
     await task._task.ready;
     return task;
@@ -147,9 +195,32 @@ class TextEmbedder extends BaseTextEmbedder {
 class TextEmbedderOptions extends BaseTextEmbedderOptions {
   /// Embeds with the model in [baseOptions].
   TextEmbedderOptions({
-    required BaseOptions baseOptions,
+    this.model,
+    BaseOptions? baseOptions,
     this.embedderOptions = const EmbedderOptions(),
-  }) : baseOptions = _checkedBaseOptions(baseOptions);
+  }) : _baseOptions = baseOptions == null
+           ? null
+           : _checkedBaseOptions(baseOptions) {
+    if ((model == null) == (baseOptions == null)) {
+      throw ArgumentError('Supply exactly one of model and baseOptions.');
+    }
+  }
+
+  /// Pinned official model, downloaded on task creation.
+  final DownloadAsset? model;
+  BaseOptions? _baseOptions;
+
+  /// Resolves a pinned model before creating a task.
+  Future<void> prepareModel() => _resolveModel();
+
+  Future<void> _resolveModel() async {
+    if (model case final selected?) {
+      final source = await resolvePinnedModel(selected);
+      _baseOptions = source.path != null
+          ? BaseOptions.path(source.path!)
+          : BaseOptions.memory(source.bytes!);
+    }
+  }
 
   /// {@macro TextEmbedderOptions.fromAssetPath}
   ///
@@ -172,7 +243,9 @@ class TextEmbedderOptions extends BaseTextEmbedderOptions {
   );
 
   @override
-  final BaseOptions baseOptions;
+  BaseOptions get baseOptions =>
+      _baseOptions ??
+      (throw StateError('Create the task before reading baseOptions.'));
 
   @override
   final EmbedderOptions embedderOptions;
@@ -200,6 +273,16 @@ class TextEmbedderResult extends BaseEmbedderResult {
 }
 
 /// {@macro LanguageDetector}
+///
+/// ```dart
+/// final task = await LanguageDetector.create(
+///   LanguageDetectorOptions(model: TextModels.languageDetector),
+/// );
+/// final result = await task.detect('Bonjour');
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 class LanguageDetector extends BaseLanguageDetector {
   /// Starts loading at once; initialization failures reach [detect].
   LanguageDetector(LanguageDetectorOptions options)
@@ -218,6 +301,7 @@ class LanguageDetector extends BaseLanguageDetector {
   static Future<LanguageDetector> create(
     LanguageDetectorOptions options,
   ) async {
+    await options.prepareModel();
     final task = LanguageDetector(options);
     await task._task.ready;
     return task;
@@ -231,12 +315,36 @@ class LanguageDetector extends BaseLanguageDetector {
 }
 
 /// {@macro LanguageDetectorOptions}
+// ignore: must_be_immutable
 class LanguageDetectorOptions extends BaseLanguageDetectorOptions {
   /// Detects with the model in [baseOptions].
   LanguageDetectorOptions({
-    required BaseOptions baseOptions,
+    this.model,
+    BaseOptions? baseOptions,
     this.classifierOptions = const ClassifierOptions(),
-  }) : baseOptions = _checkedBaseOptions(baseOptions);
+  }) : _baseOptions = baseOptions == null
+           ? null
+           : _checkedBaseOptions(baseOptions) {
+    if ((model == null) == (baseOptions == null)) {
+      throw ArgumentError('Supply exactly one of model and baseOptions.');
+    }
+  }
+
+  /// Pinned official model, downloaded on task creation.
+  final DownloadAsset? model;
+  BaseOptions? _baseOptions;
+
+  /// Resolves a pinned model before creating a task.
+  Future<void> prepareModel() => _resolveModel();
+
+  Future<void> _resolveModel() async {
+    if (model case final selected?) {
+      final source = await resolvePinnedModel(selected);
+      _baseOptions = source.path != null
+          ? BaseOptions.path(source.path!)
+          : BaseOptions.memory(source.bytes!);
+    }
+  }
 
   /// {@macro LanguageDetectorOptions.fromAssetPath}
   ///
@@ -259,7 +367,9 @@ class LanguageDetectorOptions extends BaseLanguageDetectorOptions {
   );
 
   @override
-  final BaseOptions baseOptions;
+  BaseOptions get baseOptions =>
+      _baseOptions ??
+      (throw StateError('Create the task before reading baseOptions.'));
 
   @override
   final ClassifierOptions classifierOptions;

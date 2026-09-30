@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 Future<void> main(List<String> arguments) async {
   if (arguments.length != 2) {

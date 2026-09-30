@@ -108,7 +108,7 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
   // Masks travel on their own binary channel: a frame's confidence masks can
   // outgrow the Java heap that the method codec copies its reply onto.
   private static final String TAG = "MediaPipeVision";
-  private static final String MASKS = "mediapipe_flutter_vision/android/masks";
+  private static final String MASKS = "mediapipe_vision/android/masks";
 
   private MethodChannel channel;
   private BinaryMessenger messenger;
@@ -129,7 +129,7 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
     context = binding.getApplicationContext();
     worker = Executors.newSingleThreadExecutor(r -> new Thread(r, "MediaPipe vision tasks"));
     messenger = binding.getBinaryMessenger();
-    channel = new MethodChannel(messenger, "mediapipe_flutter_vision/android");
+    channel = new MethodChannel(messenger, "mediapipe_vision/android");
     channel.setMethodCallHandler(this);
     messenger.setMessageHandler(MASKS, (message, reply) -> reply.reply(message == null ? null
         : maskData.remove(message.order(ByteOrder.LITTLE_ENDIAN).getInt(0))));

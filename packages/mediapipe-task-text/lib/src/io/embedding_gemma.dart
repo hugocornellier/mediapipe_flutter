@@ -1,14 +1,26 @@
 import 'dart:async';
 import 'dart:isolate';
 
+import 'package:mediapipe_core/mediapipe_exception.dart';
+
 import '../../../capabilities.dart';
 import '../interface/embedding_gemma_types.dart';
 import 'native_embedding_gemma.dart';
 
 /// Official EmbeddingGemma pipeline on a persistent inference worker.
 ///
-/// Enable `mediapipe_flutter_core.tasks_runtime: true` in build-hook settings.
+/// Enable `mediapipe_core.tasks_runtime: true` in build-hook settings.
 /// Currently supports macOS arm64 CPU, macOS 14+. Await [dispose] when finished.
+///
+/// ```dart
+/// final task = await EmbeddingGemma.create(
+///   EmbeddingGemmaOptions(model: TextModels.embeddingGemma),
+/// );
+/// final result = await task.embed('Hello');
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class EmbeddingGemma {
   EmbeddingGemma._(this.delegate) {
     _events.listen(_receive);
@@ -24,14 +36,18 @@ final class EmbeddingGemma {
   int _nextId = 0;
   bool _disposing = false;
   Future<void>? _disposeFuture;
-  EmbeddingGemmaException? _failure;
+  TextTaskException? _failure;
 
   /// Load the model off the calling isolate. Initialization failures complete
   /// this future with an error, including a missing runtime or invalid model.
   static Future<EmbeddingGemma> create(EmbeddingGemmaOptions options) async {
+    await options.prepareModel();
     final support = await queryTextTaskCapabilities(TextTask.embeddingGemma);
     if (support.unavailableReasons[options.delegate] case final reason?) {
-      throw EmbeddingGemmaException(reason);
+      throw RuntimeUnavailableException(
+        'EmbeddingGemma is unavailable on this platform.',
+        fix: reason,
+      );
     }
     final task = EmbeddingGemma._(options.delegate);
     try {
@@ -101,31 +117,27 @@ final class EmbeddingGemma {
       case SendPort port:
         _commands = port;
         _ready.complete();
-      case (
-        int id,
-        TextEmbeddingResult? result,
-        EmbeddingGemmaException? error,
-      ):
+      case (int id, TextEmbeddingResult? result, TextTaskException? error):
         final completer = _pending.remove(id);
         if (error != null) {
           completer?.completeError(error);
         } else {
           completer?.complete(result);
         }
-      case EmbeddingGemmaException error:
+      case TextTaskException error:
         _fail(error);
       case List<dynamic> error:
-        _fail(EmbeddingGemmaException('Worker failed: ${error.join('\n')}'));
+        _fail(TextTaskException('Worker failed: ${error.join('\n')}'));
       case null:
         if (!_ready.isCompleted || _pending.isNotEmpty || !_disposing) {
-          _fail(const EmbeddingGemmaException('EmbeddingGemma worker exited.'));
+          _fail(const TextTaskException('EmbeddingGemma worker exited.'));
         }
         _events.close();
         _exited.complete();
     }
   }
 
-  void _fail(EmbeddingGemmaException error) {
+  void _fail(TextTaskException error) {
     _failure ??= error;
     if (!_ready.isCompleted) _ready.completeError(error);
     for (final completer in _pending.values) {
@@ -145,7 +157,7 @@ Future<void> _runWorker((SendPort, EmbeddingGemmaOptions) initial) async {
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, Object?);
       TextEmbeddingResult? result;
-      EmbeddingGemmaException? failure;
+      TextTaskException? failure;
       try {
         if (input == null) {
           native.close();
@@ -170,7 +182,5 @@ Future<void> _runWorker((SendPort, EmbeddingGemmaOptions) initial) async {
   }
 }
 
-EmbeddingGemmaException _exception(Object error) =>
-    error is EmbeddingGemmaException
-    ? error
-    : EmbeddingGemmaException(error.toString());
+TextTaskException _exception(Object error) =>
+    error is TextTaskException ? error : TextTaskException(error.toString());

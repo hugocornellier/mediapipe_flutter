@@ -24,6 +24,16 @@ identities, documentation, and local dependencies follow the renamed packages.
 Native MediaPipe symbols, SDK download URLs, and upstream license notices retain
 their original identity. Existing package versions are preserved at this stage.
 
+## Google's names restored
+
+On 2026-09-30 the packages took Google's names again (`mediapipe_core`,
+`mediapipe_vision`, `mediapipe_text`, `mediapipe_genai`, plus the new
+`mediapipe_audio`), since this code is meant to replace Google's packages, and
+moved to version 0.1.0. Directory names (`packages/mediapipe-core`,
+`packages/mediapipe-task-*`) are unchanged. The `mediapipe_flutter_native`
+release host keeps its name, and validation evidence keeps the names it was
+recorded with.
+
 The root marker used by the build tooling is `.mediapipe_flutter-root`.
 
 ## Tracking upstream

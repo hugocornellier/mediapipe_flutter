@@ -1,6 +1,6 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache-2.0.
 // The 1.0.1 C API of Text Classifier, Text Embedder and Language Detector,
-// which mediapipe_flutter_text binds, over Google's prebuilt Objective-C
+// which mediapipe_text binds, over Google's prebuilt Objective-C
 // Tasks SDK. Google implements these classes in MediaPipeTasksCommon, which
 // this adapter already links for the vision tasks, so every task in the app
 // shares one copy of Google's task graphs. No inference code lives here.

@@ -12,10 +12,10 @@ except the macOS face tasks' default archives:
 
 | Target | Runtime |
 | --- | --- |
-| Web | `@mediapipe/tasks-vision` 1.0.1 JavaScript/WASM through `mediapipe_flutter_vision` |
+| Web | `@mediapipe/tasks-vision` 1.0.1 JavaScript/WASM through `mediapipe_vision` |
 | iOS arm64 and simulator | Google's 1.0.1 XCFrameworks through the official iOS SDK adapter (the default) |
-| Android | `com.google.mediapipe:tasks-vision:1.0.0` through `mediapipe_flutter_vision` |
-| macOS arm64 | the official 1.0.0 wheel's library, which core bundles once for every family (`mediapipe_flutter_core.tasks_runtime: true`) |
+| Android | `com.google.mediapipe:tasks-vision:1.0.0` through `mediapipe_vision` |
+| macOS arm64 | the official 1.0.0 wheel's library, which core bundles once for every family (`mediapipe_core.tasks_runtime: true`) |
 | Linux x64 | the official 1.0.1 wheel's library |
 | Windows x64 | the official 1.0.0 wheel's library |
 

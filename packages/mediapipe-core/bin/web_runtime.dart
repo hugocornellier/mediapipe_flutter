@@ -2,18 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:mediapipe_flutter_core/src/web_runtime_host.dart';
+import 'package:mediapipe_core/src/web_runtime_host.dart';
 
-const _families = [
-  'mediapipe_flutter_vision',
-  'mediapipe_flutter_text',
-  'mediapipe_flutter_audio',
-];
+const _families = ['mediapipe_vision', 'mediapipe_text', 'mediapipe_audio'];
 
 /// Copies Google's pinned, verified browser runtimes into a folder the app
 /// serves, for every task family the app depends on. Run from the app root:
 ///
-///     dart run mediapipe_flutter_core:web_runtime web/mediapipe
+///     dart run mediapipe_core:web_runtime web/mediapipe
 ///
 /// then set `MediaPipeWebRuntime.baseUrl = 'mediapipe/'` before creating the
 /// first task.
@@ -30,10 +26,10 @@ Future<void> main(List<String> arguments) async {
   }
   if (arguments.length != 1 || arguments.single.startsWith('-')) {
     stderr.writeln(
-      'Usage: dart run mediapipe_flutter_core:web_runtime <output folder>',
+      'Usage: dart run mediapipe_core:web_runtime <output folder>',
     );
     stderr.writeln(
-      '   or: dart run mediapipe_flutter_core:web_runtime --hashes <runtime.json>',
+      '   or: dart run mediapipe_core:web_runtime --hashes <runtime.json>',
     );
     exit(64);
   }

@@ -1,7 +1,7 @@
 /// Extension point for platform SDK adapters. Applications use FaceLandmarker.
 library;
 
-import 'src/interface/face_landmarker_types.dart';
+import 'interface/face_landmarker_types.dart';
 import 'vision_task_backend.dart';
 
 export 'vision_task_backend.dart';

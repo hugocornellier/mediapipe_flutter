@@ -1,6 +1,6 @@
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_core/native_assets.dart';
 import 'package:test/test.dart';
 
 void main() {

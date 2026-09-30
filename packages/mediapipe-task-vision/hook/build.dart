@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/ios_sdk.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/android_library.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_core/src/native_assets/ios_sdk.dart';
+import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_vision/src/native_assets/android_library.dart';
+import 'package:mediapipe_vision/src/native_assets/vision_library.dart';
 
 import '../sdk_downloads.dart';
 
@@ -27,12 +27,12 @@ const officialAndroidTasks = {
 };
 
 /// The two tasks whose bindings name their own assets. Every other task binds
-/// Google's engine through the one asset mediapipe_flutter_core bundles.
+/// Google's engine through the one asset mediapipe_core bundles.
 const _faceTasks = {'face_detector', 'face_landmarker'};
 
 /// Bundles what the selected vision tasks need beyond core's engine.
 ///
-/// Google's MediaPipe engine is mediapipe_flutter_core's: vision, text and
+/// Google's MediaPipe engine is mediapipe_core's: vision, text and
 /// audio all bind its one asset, so an app loads one copy. This hook adds only
 /// the face runtimes the package builds from source (small macOS libraries,
 /// and the iOS and Android opt-outs) and maps the face assets elsewhere.
@@ -51,10 +51,10 @@ void main(List<String> arguments) async {
     _optionalBool(input, 'prebuilt');
     if (input.userDefines['official_macos_landmark_tasks'] != null) {
       throw const FormatException(
-        'mediapipe_flutter_vision.official_macos_landmark_tasks was removed: '
+        'mediapipe_vision.official_macos_landmark_tasks was removed: '
         "on macOS every task except the two face tasks runs on Google's "
-        'engine, which mediapipe_flutter_core bundles. Delete the key and set '
-        'hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true.',
+        'engine, which mediapipe_core bundles. Delete the key and set '
+        'hooks.user_defines.mediapipe_core.tasks_runtime: true.',
       );
     }
     final selection =
@@ -63,7 +63,7 @@ void main(List<String> arguments) async {
         selection.isEmpty ||
         selection.any((task) => !visionTasks.contains(task))) {
       throw FormatException(
-        'mediapipe_flutter_vision.tasks must be a nonempty list of '
+        'mediapipe_vision.tasks must be a nonempty list of '
         '${visionTasks.join(', ')}.',
       );
     }
@@ -71,19 +71,19 @@ void main(List<String> arguments) async {
     var tasks = selection.cast<String>().toSet();
     final officialIosSdk = _optionalBool(input, 'official_ios_sdk');
     final officialAndroidSdk = _optionalBool(input, 'official_android_sdk');
-    final core = input.metadata['mediapipe_flutter_core'];
+    final core = input.metadata['mediapipe_core'];
     final coreRuntime = core['tasks_runtime'] == true;
 
     if (target == 'android/arm64' || target == 'android/x64') {
       // Google's SDK is the default on the Android targets it is validated on
-      // (arm64 phones, the x86_64 emulator): the mediapipe_flutter_vision
+      // (arm64 phones, the x86_64 emulator): the mediapipe_vision
       // plugin serves every task there. `official_android_sdk: false`
       // selects the source-built face runtime instead.
       if (officialAndroidSdk ?? true) {
         final missing = tasks.difference(officialAndroidTasks);
         if (missing.isNotEmpty) {
           throw UnsupportedError(
-            "Google's Android SDK, which the mediapipe_flutter_vision plugin "
+            "Google's Android SDK, which the mediapipe_vision plugin "
             'runs, serves ${officialAndroidTasks.join(', ')}; not '
             '${missing.join(', ')}.',
           );
@@ -121,9 +121,7 @@ void main(List<String> arguments) async {
           );
         }
         if (adapter is! String) {
-          throw StateError(
-            tasksRuntimeRequired('mediapipe_flutter_vision', target),
-          );
+          throw StateError(tasksRuntimeRequired('mediapipe_vision', target));
         }
         // Every task binds core's adapter; the face assets alias it too.
         for (final task in _faceTasks) {
@@ -144,8 +142,8 @@ void main(List<String> arguments) async {
         throw StateError(
           'official_ios_sdk: false selects a source-built runtime, which '
           "cannot share a process with the official iOS SDK "
-          'mediapipe_flutter_core builds. Also set hooks.user_defines.'
-          'mediapipe_flutter_core.tasks_runtime: false (text and audio are '
+          'mediapipe_core builds. Also set hooks.user_defines.'
+          'mediapipe_core.tasks_runtime: false (text and audio are '
           'then unavailable on iOS).',
         );
       }
@@ -164,16 +162,14 @@ void main(List<String> arguments) async {
       }
       final shared = core['tasks_runtime_library'];
       if (!coreRuntime || shared is! Map) {
-        throw StateError(
-          tasksRuntimeRequired('mediapipe_flutter_vision', target),
-        );
+        throw StateError(tasksRuntimeRequired('mediapipe_vision', target));
       }
       if (shared['name'] != wheel.libraryName ||
           shared['sha256'] != wheel.librarySha256) {
         throw StateError(
-          'mediapipe_flutter_core bundles $shared, not the '
+          'mediapipe_core bundles $shared, not the '
           '${wheel.libraryName} ${wheel.librarySha256} that '
-          'mediapipe_flutter_vision validated for $target.',
+          'mediapipe_vision validated for $target.',
         );
       }
       // The face assets alias core's copy by its file name;
@@ -218,7 +214,7 @@ void main(List<String> arguments) async {
     );
     if (published.isEmpty) {
       throw UnsupportedError(
-        'mediapipe_flutter_vision has no runtime for $target. Supported '
+        'mediapipe_vision has no runtime for $target. Supported '
         'targets: android/arm64, android/x64, ios/arm64, ios-simulator/arm64, '
         'macos/arm64, ${visionWheelReleases.keys.join(', ')} and browsers.',
       );
@@ -251,7 +247,7 @@ void main(List<String> arguments) async {
 bool? _optionalBool(BuildInput input, String key) {
   final value = input.userDefines[key];
   if (value != null && value is! bool) {
-    throw FormatException('mediapipe_flutter_vision.$key must be a boolean.');
+    throw FormatException('mediapipe_vision.$key must be a boolean.');
   }
   return value as bool?;
 }

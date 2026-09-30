@@ -4,8 +4,8 @@ import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_audio/mediapipe_flutter_audio.dart';
-import 'package:mediapipe_flutter_vision/capabilities.dart';
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+import 'package:mediapipe_vision/capabilities.dart';
 import 'package:record/record.dart';
 
 import 'catalog.dart';
@@ -59,7 +59,7 @@ class _AudioPageState extends State<AudioPage> {
   bool _busy = false;
   String? _error;
   AudioData? _audio;
-  List<AudioClassification>? _chunks;
+  List<AudioClassifierResult>? _chunks;
   double? _milliseconds;
 
   final _revision = ValueNotifier<int>(0);
@@ -71,7 +71,7 @@ class _AudioPageState extends State<AudioPage> {
   StreamSubscription<Uint8List>? _stream;
   final _pending = <double>[];
   bool _classifying = false;
-  final _heard = <AudioClassification>[];
+  final _heard = <AudioClassifierResult>[];
   static const _rate = 16000;
   static const _window = 15600;
 
@@ -412,7 +412,7 @@ class _AudioPageState extends State<AudioPage> {
               for (final chunk
                   in _microphone
                       ? _heard
-                      : _chunks ?? const <AudioClassification>[])
+                      : _chunks ?? const <AudioClassifierResult>[])
                 Card.outlined(
                   child: Padding(
                     padding: const EdgeInsets.all(12),

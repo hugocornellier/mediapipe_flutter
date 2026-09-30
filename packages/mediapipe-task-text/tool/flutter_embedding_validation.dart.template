@@ -4,8 +4,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'summarizer_validation.dart';
 import 'classic_text_validation.dart';
 

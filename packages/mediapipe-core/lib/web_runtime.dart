@@ -14,7 +14,7 @@ abstract final class MediaPipeWebRuntime {
   ///
   /// Point it at another npm CDN (such as `https://unpkg.com/`), an internal
   /// mirror, or a folder the app serves. `dart run
-  /// mediapipe_flutter_core:web_runtime web/mediapipe` fills that folder with
+  /// mediapipe_core:web_runtime web/mediapipe` fills that folder with
   /// the verified runtimes of the families the app uses; `mediapipe/` then
   /// names it, since relative URLs resolve against the page. Set it before
   /// creating the first task.

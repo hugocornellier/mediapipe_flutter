@@ -1,9 +1,11 @@
 import 'download_asset.dart';
+import '../mediapipe_exception.dart';
 
 /// A model could not be downloaded from any configured source.
-final class ModelDownloadException implements Exception {
+final class ModelDownloadException extends MediaPipeException {
   /// Preserves every attempted source and its failure.
-  const ModelDownloadException(this.failures, this.hint);
+  const ModelDownloadException(this.failures, this.hint)
+    : super('Model download failed.');
 
   /// One failure per attempted URL.
   final List<DownloadFailure> failures;

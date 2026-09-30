@@ -1,3 +1,5 @@
+import 'package:mediapipe_core/mediapipe_exception.dart';
+
 import '../../../capabilities.dart';
 import '../interface/text_summarizer_types.dart';
 import 'native_text_summarizer.dart';
@@ -5,7 +7,17 @@ import 'text_task_worker.dart';
 
 /// Official MediaPipe Summarizer on a persistent worker isolate.
 ///
-/// Enable `mediapipe_flutter_core.tasks_runtime: true` in app hook settings.
+/// Enable `mediapipe_core.tasks_runtime: true` in app hook settings.
+///
+/// ```dart
+/// final task = await TextSummarizer.create(
+///   TextSummarizerOptions(model: TextModels.summarizer),
+/// );
+/// final result = await task.summarize('Long text');
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class TextSummarizer {
   TextSummarizer._(this.delegate, this.mode, this._worker);
 
@@ -17,15 +29,19 @@ final class TextSummarizer {
   final TextTaskWorker<
     TextSummarizerResult,
     TextSummarizerUpdate,
-    TextSummarizerException
+    TextTaskException
   >
   _worker;
 
   /// Load the official model without blocking the calling isolate.
   static Future<TextSummarizer> create(TextSummarizerOptions options) async {
+    await options.prepareModel();
     final support = await queryTextTaskCapabilities(TextTask.summarizer);
     if (support.unavailableReasons[options.delegate] case final reason?) {
-      throw TextSummarizerException(reason);
+      throw RuntimeUnavailableException(
+        'TextSummarizer is unavailable on this platform.',
+        fix: reason,
+      );
     }
     return TextSummarizer._(
       options.delegate,
@@ -54,7 +70,5 @@ final class TextSummarizer {
   Future<void> dispose() => _worker.dispose();
 }
 
-TextSummarizerException _exception(Object error) =>
-    error is TextSummarizerException
-    ? error
-    : TextSummarizerException(error.toString());
+TextTaskException _exception(Object error) =>
+    error is TextTaskException ? error : TextTaskException(error.toString());

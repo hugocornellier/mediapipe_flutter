@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 /// The camera mirrors both preview and pixels natively. Scale once, with no
 /// extra mirroring, cropping, coordinate clipping, or landmark smoothing.

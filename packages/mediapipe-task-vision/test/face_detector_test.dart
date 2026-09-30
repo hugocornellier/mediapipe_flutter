@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/vision_fixture.dart';
@@ -110,7 +110,7 @@ void _testDelegate(VisionDelegate delegate) {
       await expectLater(
         detector.detectImage(VisionImage.fromFile('missing-image.jpg')),
         throwsA(
-          isA<FaceDetectorException>().having(
+          isA<VisionTaskException>().having(
             (e) => e.message,
             'diagnostic',
             isNotEmpty,
@@ -136,7 +136,7 @@ void _testDelegate(VisionDelegate delegate) {
       ]) {
         await expectLater(
           FaceDetector.create(options).timeout(const Duration(seconds: 10)),
-          throwsA(isA<FaceDetectorException>()),
+          throwsA(isA<VisionTaskException>()),
         );
       }
       final task = await FaceDetector.create(
@@ -237,7 +237,7 @@ void _testDelegate(VisionDelegate delegate) {
       FaceDetectorOptions(
         delegate: delegate,
         modelPath: _model,
-        runningMode: VisionRunningMode.video,
+        runningMode: RunningMode.video,
       ),
     );
     final frames = (reference['cases'] as List).cast<Map<String, dynamic>>();
@@ -269,7 +269,7 @@ void _testDelegate(VisionDelegate delegate) {
         FaceDetectorOptions(
           delegate: delegate,
           modelPath: _model,
-          runningMode: VisionRunningMode.video,
+          runningMode: RunningMode.video,
         ),
       );
       try {
@@ -301,7 +301,7 @@ void _testDelegate(VisionDelegate delegate) {
             VisionImage.fromFile('missing.jpg'),
             timestampMilliseconds: 11,
           ),
-          throwsA(isA<FaceDetectorException>()),
+          throwsA(isA<VisionTaskException>()),
         );
         compare(
           await video.detectForVideo(image, timestampMilliseconds: 12),

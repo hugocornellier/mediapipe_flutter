@@ -1,4 +1,4 @@
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'official_mask_references.dart';
 

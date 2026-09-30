@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_segmenter/editor_controller.dart';
 import 'package:mediapipe_segmenter/editor_geometry.dart';
 import 'package:mediapipe_segmenter/mask_overlay.dart';

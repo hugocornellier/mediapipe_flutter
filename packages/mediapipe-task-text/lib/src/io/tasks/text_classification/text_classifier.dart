@@ -1,7 +1,7 @@
-import 'package:mediapipe_flutter_core/io.dart';
-import 'package:mediapipe_flutter_text/interface.dart';
+import 'package:mediapipe_core/io.dart';
+import 'package:mediapipe_text/interface.dart';
 
-import '../../../../text_task_backend.dart';
+import '../../../text_task_backend.dart';
 import '../../../backend_text_task.dart';
 import '../../pending_text_task.dart';
 import 'text_classifier_options.dart';
@@ -14,6 +14,16 @@ import 'text_classifier_result.dart';
 ///
 /// Enable core.tasks_runtime in the app's hook settings. Await [dispose] to
 /// drain accepted requests, close native resources and wait for worker exit.
+///
+/// ```dart
+/// final task = await TextClassifier.create(
+///   TextClassifierOptions(model: TextModels.bertClassifier),
+/// );
+/// final result = await task.classify('Hello');
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 class TextClassifier extends BaseTextClassifier {
   /// Start loading immediately. Initialization failures reach [classify].
   TextClassifier(TextClassifierOptions options)
@@ -39,6 +49,7 @@ class TextClassifier extends BaseTextClassifier {
 
   /// Load off the calling isolate and report initialization errors now.
   static Future<TextClassifier> create(TextClassifierOptions options) async {
+    await options.prepareModel();
     final task = TextClassifier(options);
     await task._task.ready;
     return task;

@@ -17,7 +17,7 @@ Future<void> runLandmarkTasksSmoke() async {
     modelBytes: handModel.buffer.asUint8List(handModel.offsetInBytes,
       handModel.lengthInBytes),
     numHands: 2,
-    runningMode: VisionRunningMode.video,
+    runningMode: RunningMode.video,
   ));
   try {
     final requests = [for (var i = 0; i < 3; i++)

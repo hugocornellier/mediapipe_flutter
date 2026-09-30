@@ -1,5 +1,8 @@
 import 'embedding_gemma_types.dart' show TextDelegate;
 export 'embedding_gemma_types.dart' show TextDelegate;
+import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/platform_interface.dart';
+export 'text_task_exception.dart' show TextTaskException;
 
 /// Summarization modes passed directly to Google's task pipeline.
 enum TextSummarizerMode {
@@ -14,13 +17,18 @@ enum TextSummarizerMode {
 final class TextSummarizerOptions {
   /// Load a local `.litertlm` file; mode is fixed for this task's lifetime.
   TextSummarizerOptions({
-    required this.modelPath,
+    this.model,
+    String? modelPath,
     this.mode = TextSummarizerMode.keypoints,
     this.maxNumTokens,
     this.cacheDirectory,
     this.delegate = TextDelegate.cpu,
-  }) {
-    if (modelPath.isEmpty || modelPath.contains('\u0000')) {
+  }) : _modelPath = modelPath {
+    if ((model == null) == (modelPath == null)) {
+      throw ArgumentError('Supply exactly one of model and modelPath.');
+    }
+    if (modelPath != null &&
+        (modelPath.isEmpty || modelPath.contains('\u0000'))) {
       throw ArgumentError.value(
         modelPath,
         'modelPath',
@@ -45,8 +53,23 @@ final class TextSummarizerOptions {
     }
   }
 
+  /// Pinned official model, downloaded and verified when creating the task.
+  final DownloadAsset? model;
+
+  final String? _modelPath;
+  String? _resolvedPath;
+
+  /// Resolves a pinned model before this task is passed to the runtime.
+  Future<void> prepareModel() => _resolveModel();
+
+  Future<void> _resolveModel() async {
+    if (model case final selected?) {
+      _resolvedPath = (await resolvePinnedModel(selected)).path;
+    }
+  }
+
   /// Filesystem path, not a Flutter asset key.
-  final String modelPath;
+  String get modelPath => _resolvedPath ?? _modelPath!;
 
   /// Paragraph or key-points mode; no custom prompts are added by Dart.
   final TextSummarizerMode mode;
@@ -80,20 +103,4 @@ final class TextSummarizerUpdate {
 
   /// Whether Google has finished this request.
   final bool done;
-}
-
-/// Native initialization, inference, callback-copy or worker failure.
-final class TextSummarizerException implements Exception {
-  /// Preserve the native message and status when available.
-  const TextSummarizerException(this.message, {this.status});
-
-  /// Failure description.
-  final String message;
-
-  /// Native status, or null for a Dart/bridge failure.
-  final int? status;
-
-  @override
-  String toString() =>
-      'TextSummarizerException${status == null ? '' : ' ($status)'}: $message';
 }

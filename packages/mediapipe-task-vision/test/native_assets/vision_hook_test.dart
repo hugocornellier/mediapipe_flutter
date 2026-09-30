@@ -1,6 +1,6 @@
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
 import 'package:test/test.dart';
 
 import '../../hook/build.dart' as hook;
@@ -108,7 +108,7 @@ void main() {
   test('desktop face assets alias the copy core bundles', () async {
     // What core's hook publishes when it bundles a desktop wheel.
     Map<String, List<EncodedAsset>> core(Object value) => {
-      'mediapipe_flutter_core': [
+      'mediapipe_core': [
         EncodedAsset('hooks/metadata', {'key': 'tasks_runtime', 'value': true}),
         EncodedAsset('hooks/metadata', {
           'key': 'tasks_runtime_library',
@@ -136,8 +136,8 @@ void main() {
           // Pose binds core's asset directly; only the face pair has its own
           // asset IDs, and both name core's file.
           expect(output.assets.code.map((asset) => asset.id).toSet(), {
-            'package:mediapipe_flutter_vision/face_detector.dylib',
-            'package:mediapipe_flutter_vision/face_landmarker.dylib',
+            'package:mediapipe_vision/face_detector.dylib',
+            'package:mediapipe_vision/face_landmarker.dylib',
           });
           for (final asset in output.assets.code) {
             expect(asset.file, isNull);
@@ -252,7 +252,7 @@ void main() {
         'official_android_sdk': false,
       }),
       assets: {
-        'mediapipe_flutter_core': [
+        'mediapipe_core': [
           EncodedAsset('hooks/metadata', {
             'key': 'tasks_runtime',
             'value': true,

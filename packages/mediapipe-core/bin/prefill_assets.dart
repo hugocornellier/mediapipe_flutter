@@ -1,14 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_core/native_assets.dart';
 
 /// Consumes the reviewed source inventory from `tool/mirror_runtime_assets.py`.
 Future<void> main(List<String> args) async {
   if (args.length != 1) {
-    stderr.writeln(
-      'Usage: dart run mediapipe_flutter_core:prefill_assets <directory>',
-    );
+    stderr.writeln('Usage: dart run mediapipe_core:prefill_assets <directory>');
     exit(64);
   }
   final entries =

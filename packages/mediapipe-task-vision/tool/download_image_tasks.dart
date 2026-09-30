@@ -1,21 +1,14 @@
 import 'dart:io';
 
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 Future<void> main() async {
-  for (final (name, url, digest) in [
-    (
-      'efficientnet_lite0.tflite',
-      efficientNetLite0Url,
-      efficientNetLite0Sha256,
-    ),
-    ('mobilenet_v3_small.tflite', mobileNetV3SmallUrl, mobileNetV3SmallSha256),
+  for (final (name, model) in [
+    ('efficientnet_lite0.tflite', VisionModels.imageClassifier),
+    ('mobilenet_v3_small.tflite', VisionModels.imageEmbedder),
   ]) {
-    await downloadVerified(
-      DownloadAsset(url: url, sha256: digest),
-      File('models/$name'),
-    );
+    await downloadVerified(model, File('models/$name'));
     stdout.writeln('Verified model: models/$name');
   }
 }

@@ -1,7 +1,7 @@
 # Official EmbeddingGemma reference
 
 `official_reference.json` contains outputs from Google's unmodified MediaPipe
-1.0.0 macOS arm64 wheel (the engine mediapipe_flutter_core bundles on macOS),
+1.0.0 macOS arm64 wheel (the engine mediapipe_core bundles on macOS),
 CPU delegate, and the version 1 EmbeddingGemma 300M task. Moving from 1.0.1
 changed float values by at most 0.007, with the same ctypes ABI.
 The JSON records the exact native-library/model SHA-256 digests and ctypes ABI.

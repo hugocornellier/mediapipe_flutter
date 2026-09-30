@@ -1,10 +1,11 @@
 import 'dart:async';
+import '../capabilities/require_delegate.dart';
 import 'dart:io';
 import 'dart:isolate';
 import '../../capabilities.dart';
 
 import '../interface/object_detector_types.dart';
-import '../../vision_task_backend.dart' show objectDetectorBackendFactory;
+import '../vision_task_backend.dart' show objectDetectorBackendFactory;
 import '../sdk_vision_task.dart';
 import 'native_object_detector.dart';
 
@@ -13,6 +14,17 @@ import 'native_object_detector.dart';
 /// Supports CPU/Metal on macOS arm64. Both IMAGE and VIDEO modes are supported.
 /// Metal requires a float model; the pinned EfficientDet-Lite0 float32 model in
 /// `models.dart` is one. Await [dispose].
+///
+/// ```dart
+/// final task = await ObjectDetector.create(
+///   ObjectDetectorOptions(model: VisionModels.objectDetector),
+/// );
+/// final image = VisionImage.fromFile('photo.jpg');
+/// final result = await task.detectImage(image);
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class ObjectDetector {
   ObjectDetector._(this.runningMode, this.delegate, [this._sdk]) {
     _events.listen(_receive);
@@ -31,17 +43,18 @@ final class ObjectDetector {
   int _nextId = 0;
   bool _disposing = false;
   Future<void>? _disposeFuture;
-  ObjectDetectorException? _failure;
+  VisionTaskException? _failure;
   int? _lastTimestamp;
 
   /// The official running mode selected when this detector was created.
-  final VisionRunningMode runningMode;
+  final RunningMode runningMode;
 
   /// The backend requested at creation. Fixed for the lifetime of this task.
   final VisionDelegate delegate;
 
   /// Load an official model and initialize MediaPipe off the calling isolate.
   static Future<ObjectDetector> create(ObjectDetectorOptions options) async {
+    await options.prepareModel();
     if (Platform.isAndroid && objectDetectorBackendFactory != null) {
       return ObjectDetector._(
         options.runningMode,
@@ -57,11 +70,7 @@ final class ObjectDetector {
       );
     }
     final capabilities = await queryObjectDetectorCapabilities();
-    if (!capabilities.supportedDelegates.contains(options.delegate)) {
-      throw UnsupportedError(
-        capabilities.unavailableReasons[options.delegate]!,
-      );
-    }
+    requireVisionDelegate(capabilities, options.delegate);
     final detector = ObjectDetector._(options.runningMode, options.delegate);
     try {
       await Isolate.spawn(
@@ -91,14 +100,14 @@ final class ObjectDetector {
     if (_sdk case final sdk?) {
       return sdk.detectImage(image, rotationDegrees: rotationDegrees);
     }
-    _checkMode(VisionRunningMode.image);
+    _checkMode(RunningMode.image);
     _checkRotation(rotationDegrees);
     return (await _request((image, rotationDegrees, null)))!;
   }
 
   /// Process a video or camera frame on the inference worker.
   ///
-  /// Requires [VisionRunningMode.video]. Timestamps are nonnegative milliseconds
+  /// Requires [RunningMode.video]. Timestamps are nonnegative milliseconds
   /// and must strictly increase in submission order. A submitted timestamp is
   /// reserved even if that frame fails. Each call returns its input timestamp.
   /// For a live camera, await each call and skip frames while busy to bound delay.
@@ -114,7 +123,7 @@ final class ObjectDetector {
         rotationDegrees: rotationDegrees,
       );
     }
-    _checkMode(VisionRunningMode.video);
+    _checkMode(RunningMode.video);
     _checkRotation(rotationDegrees);
     // MediaPipe converts milliseconds to signed 64-bit microseconds internally.
     if (timestampMilliseconds < 0 ||
@@ -130,7 +139,7 @@ final class ObjectDetector {
     return (await _request((image, rotationDegrees, timestampMilliseconds)))!;
   }
 
-  void _checkMode(VisionRunningMode expected) {
+  void _checkMode(RunningMode expected) {
     if (_disposing) throw StateError('ObjectDetector has been disposed.');
     if (_failure case final failure?) throw failure;
     if (runningMode != expected) {
@@ -184,33 +193,27 @@ final class ObjectDetector {
       case SendPort port:
         _commands = port;
         _ready.complete();
-      case (
-        int id,
-        ObjectDetectorResult? result,
-        ObjectDetectorException? error,
-      ):
+      case (int id, ObjectDetectorResult? result, VisionTaskException? error):
         final completer = _pending.remove(id);
         if (error != null) {
           completer?.completeError(error);
         } else {
           completer?.complete(result);
         }
-      case ObjectDetectorException error:
+      case VisionTaskException error:
         _fail(error);
       case List<dynamic> error:
-        _fail(ObjectDetectorException('Worker failed: ${error.join('\n')}'));
+        _fail(VisionTaskException('Worker failed: ${error.join('\n')}'));
       case null:
         if (!_ready.isCompleted || _pending.isNotEmpty || !_disposing) {
-          _fail(
-            const ObjectDetectorException('Object Detector worker exited.'),
-          );
+          _fail(const VisionTaskException('Object Detector worker exited.'));
         }
         _events.close();
         _exited.complete();
     }
   }
 
-  void _fail(ObjectDetectorException error) {
+  void _fail(VisionTaskException error) {
     _failure ??= error;
     if (!_ready.isCompleted) _ready.completeError(error);
     for (final completer in _pending.values) {
@@ -230,7 +233,7 @@ Future<void> _runWorker((SendPort, ObjectDetectorOptions) initial) async {
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, (VisionImage, int, int?)?);
       ObjectDetectorResult? result;
-      ObjectDetectorException? failure;
+      VisionTaskException? failure;
       try {
         if (input == null) {
           native.close();
@@ -238,18 +241,18 @@ Future<void> _runWorker((SendPort, ObjectDetectorOptions) initial) async {
           result = native.detect(input.$1, input.$2, timestamp: input.$3);
         }
       } catch (error) {
-        failure = error is ObjectDetectorException
+        failure = error is VisionTaskException
             ? error
-            : ObjectDetectorException(error.toString());
+            : VisionTaskException(error.toString());
       }
       parent.send((id, result, failure));
       if (input == null) break;
     }
   } catch (error) {
     parent.send(
-      error is ObjectDetectorException
+      error is VisionTaskException
           ? error
-          : ObjectDetectorException(error.toString()),
+          : VisionTaskException(error.toString()),
     );
   } finally {
     try {

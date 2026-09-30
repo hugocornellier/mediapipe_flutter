@@ -2,9 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
-import 'package:mediapipe_flutter_vision/src/capabilities/official_runtime_io.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/models.dart';
+import 'package:mediapipe_vision/src/capabilities/official_runtime_io.dart';
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart';
@@ -54,7 +54,7 @@ void main() {
           ObjectDetectorOptions(modelPath: 'missing-model.tflite'),
         ),
         throwsA(
-          isA<ObjectDetectorException>().having(
+          isA<VisionTaskException>().having(
             (e) => e.message,
             'message',
             contains('missing-model.tflite'),
@@ -128,7 +128,7 @@ void _testDelegate(VisionDelegate delegate) {
 
   test('task exposes the selected delegate', () {
     expect(detector.delegate, delegate);
-    expect(detector.runningMode, VisionRunningMode.image);
+    expect(detector.runningMode, RunningMode.image);
   });
 
   test('queued requests complete before idempotent disposal', () async {
@@ -165,7 +165,7 @@ void _testDelegate(VisionDelegate delegate) {
   test('native input errors leave the detector usable', () async {
     await expectLater(
       detector.detectImage(VisionImage.fromFile('missing-image.jpg')),
-      throwsA(isA<ObjectDetectorException>()),
+      throwsA(isA<VisionTaskException>()),
     );
     _expectMatches(
       await detector.detectImage(fixtureImage(cases.first)),
@@ -185,7 +185,7 @@ void _testDelegate(VisionDelegate delegate) {
       ]) {
         await expectLater(
           ObjectDetector.create(options).timeout(const Duration(seconds: 10)),
-          throwsA(isA<ObjectDetectorException>()),
+          throwsA(isA<VisionTaskException>()),
         );
       }
       final task = await ObjectDetector.create(
@@ -212,7 +212,7 @@ void _testDelegate(VisionDelegate delegate) {
       ObjectDetectorOptions(
         delegate: delegate,
         modelPath: _model,
-        runningMode: VisionRunningMode.video,
+        runningMode: RunningMode.video,
         scoreThreshold: _scoreThreshold,
         maxResults: _maxResults,
       ),

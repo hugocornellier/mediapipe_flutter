@@ -6,7 +6,7 @@ Detector, Face Landmarker and Hand Landmarker on arm64 iOS. Both `VisionDelegate
 or newer is required. Face blendshapes still use XNNPACK, as configured by
 Google's face graph, even when landmark inference uses Metal.
 
-`mediapipe_flutter_core`'s hook downloads Google's unchanged Vision, Common,
+`mediapipe_core`'s hook downloads Google's unchanged Vision, Common,
 Task Graphs, Text and Audio archives, verifies their SHA-256 hashes, and links
 them with core's `native/ios/face_sdk_bridge.mm`, `text_sdk_bridge.mm` and
 `audio_sdk_bridge.mm`. Xcode compiles only that adapter, which maps the
@@ -28,13 +28,13 @@ tasks, and text or audio need no setting:
 ```yaml
 hooks:
   user_defines:
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [face_detector, face_landmarker, hand_landmarker]
 ```
 
 `official_ios_sdk: false` selects the source-built iOS face runtime (CPU only)
 instead. It cannot share a process with Google's SDK, so the hook then also
-requires `mediapipe_flutter_core.tasks_runtime: false`, and text and audio are
+requires `mediapipe_core.tasks_runtime: false`, and text and audio are
 unavailable on iOS.
 The adapter supports the Dart API's
 IMAGE and VIDEO modes. Device execution is validated; the hook also selects

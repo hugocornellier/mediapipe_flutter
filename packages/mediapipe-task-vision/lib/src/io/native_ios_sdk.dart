@@ -2,17 +2,15 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_core/capabilities.dart'
-    show runningInIosSimulator;
+import 'package:mediapipe_core/capabilities.dart' show runningInIosSimulator;
 
 import '../interface/face_detector_types.dart';
 
-const _landmarkerAsset =
-    'package:mediapipe_flutter_vision/face_landmarker.dylib';
-const _detectorAsset = 'package:mediapipe_flutter_vision/face_detector.dylib';
+const _landmarkerAsset = 'package:mediapipe_vision/face_landmarker.dylib';
+const _detectorAsset = 'package:mediapipe_vision/face_detector.dylib';
 
 // Core's adapter serves every task; the pool is task-independent.
-const _visionAsset = 'package:mediapipe_flutter_core/mediapipe.dylib';
+const _visionAsset = 'package:mediapipe_core/mediapipe.dylib';
 
 /// Benchmark overrides: 0 baseline, 1 reusable staging, 2 pool, 3 both.
 /// Pixel pooling improved image creation and 1080p throughput in device A/B runs.

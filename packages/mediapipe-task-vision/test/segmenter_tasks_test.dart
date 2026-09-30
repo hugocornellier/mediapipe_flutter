@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 import 'support/face_reference.dart';
 
@@ -297,8 +297,8 @@ Future<_Task> _create(
         modelPath: modelPath,
         modelBytes: modelBytes,
         runningMode: expected['timestamp_ms'] == null
-            ? VisionRunningMode.image
-            : VisionRunningMode.video,
+            ? RunningMode.image
+            : RunningMode.video,
         outputConfidenceMasks: confidence,
         outputCategoryMask: category,
         delegate: delegate,

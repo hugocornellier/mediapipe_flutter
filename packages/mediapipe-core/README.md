@@ -1,6 +1,6 @@
 # MediaPipe Core for Flutter
 
-`mediapipe_flutter_core` is part of the public
+`mediapipe_core` is part of the public
 [mediapipe_flutter](../../README.md) development fork. It owns everything the
 task families share, so each of vision, text and audio works alone and an app
 using several loads one copy of each shared piece. That includes Google's
@@ -20,7 +20,7 @@ Landmarker need the engine, so the app opts in:
 ```yaml
 hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
 ```
 
@@ -49,7 +49,7 @@ internet.
   ```yaml
   hooks:
     user_defines:
-      mediapipe_flutter_core:
+      mediapipe_core:
         asset_source: third_party/mediapipe-assets
   ```
 
@@ -76,7 +76,7 @@ serve it from an internal URL root.
 
 ## On-demand models
 
-`package:mediapipe_flutter_core/model_store.dart` exports `ModelStore` and
+`package:mediapipe_core/model_store.dart` exports `ModelStore` and
 `DownloadAsset`. A family model pin can be passed directly to `get` or
 `prefetch`; `clear` removes the store's entries. On native platforms `get`
 returns a `File` in application support, whose path can be given to the task
@@ -121,7 +121,7 @@ runtimes of the families your app uses into its `web/` folder, from the app
 root:
 
 ```sh
-dart run mediapipe_flutter_core:web_runtime web/mediapipe
+dart run mediapipe_core:web_runtime web/mediapipe
 ```
 
 The tool downloads each family's pinned npm archive, checks its integrity and
@@ -131,7 +131,7 @@ loading the bundle and WASM through Blob URLs. Then, before creating the
 first task:
 
 ```dart
-import 'package:mediapipe_flutter_core/web_runtime.dart';
+import 'package:mediapipe_core/web_runtime.dart';
 
 MediaPipeWebRuntime.baseUrl = 'mediapipe/';
 ```

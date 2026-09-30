@@ -5,8 +5,8 @@ import 'dart:ffi';
 
 import 'embedding_gemma_bindings.dart' show MpBaseOptions;
 
-const _runtime = 'package:mediapipe_flutter_core/mediapipe.dylib';
-const _bridge = 'package:mediapipe_flutter_text/text_stream_bridge.dylib';
+const _runtime = 'package:mediapipe_core/mediapipe.dylib';
+const _bridge = 'package:mediapipe_text/text_stream_bridge.dylib';
 
 final class MpTextSummarizerOptions extends Struct {
   external MpBaseOptions baseOptions;

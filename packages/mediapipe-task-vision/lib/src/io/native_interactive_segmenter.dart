@@ -2,7 +2,7 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_core/io.dart' show mpHostSystem;
+import 'package:mediapipe_core/io.dart' show mpHostSystem;
 
 import '../../third_party/mediapipe/interactive_segmenter_bindings.dart' as mp;
 import '../interface/interactive_segmenter_types.dart';
@@ -218,7 +218,7 @@ void _checked(int Function(Pointer<Pointer<Char>>) call) {
   try {
     final status = call(error);
     if (status != 0) {
-      throw InteractiveSegmenterException(
+      throw VisionTaskException(
         error.value == nullptr
             ? 'MediaPipe returned status $status.'
             : error.value.cast<Utf8>().toDartString(),

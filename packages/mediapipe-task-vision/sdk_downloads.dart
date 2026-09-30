@@ -1,9 +1,9 @@
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_vision/src/native_assets/wheel_library.dart';
 
-/// Every task name accepted by `hooks.user_defines.mediapipe_flutter_vision.tasks`.
+/// Every task name accepted by `hooks.user_defines.mediapipe_vision.tasks`.
 ///
-/// Every task runs on Google's engine, which mediapipe_flutter_core bundles,
+/// Every task runs on Google's engine, which mediapipe_core bundles,
 /// except where the face pair uses this package's source builds (macOS, and
 /// the iOS and Android opt-outs).
 const visionTasks = {
@@ -73,7 +73,7 @@ final class VisionRuntimeRelease {
 }
 
 /// Vision tasks validated on Google's official macOS engine, which
-/// mediapipe_flutter_core bundles (`tasks_runtime: true`). The engine exports
+/// mediapipe_core bundles (`tasks_runtime: true`). The engine exports
 /// every task API; only these have earned a macOS claim. Face Detector keeps
 /// its source-built library.
 const macosEngineTasks = {

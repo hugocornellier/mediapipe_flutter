@@ -1,8 +1,8 @@
-import 'package:mediapipe_flutter_audio/audio_task_backend.dart';
-import 'package:mediapipe_flutter_core/capabilities.dart'
+import 'package:mediapipe_audio/platform_interface.dart';
+import 'package:mediapipe_core/capabilities.dart'
     show tasksRuntimeTargets, tasksRuntimeVersionOn;
-import 'package:mediapipe_flutter_text/text_task_backend.dart';
-import 'package:mediapipe_flutter_vision/capabilities.dart';
+import 'package:mediapipe_text/platform_interface.dart';
+import 'package:mediapipe_vision/capabilities.dart';
 
 /// How a tile demonstrates its task.
 enum GalleryDemo {
@@ -292,7 +292,7 @@ TaskCapabilities<VisionDelegate> _cpuTask(
   gpuUnavailableReason: 'The official audio and text tasks run on CPU here.',
   runtimeVersion: tasksRuntimeVersionOn(platform),
   // Core's runtime serves desktop and iOS; a registered backend is Google's
-  // browser runtime or Android SDK: mediapipe_flutter_text/audio's web or
+  // browser runtime or Android SDK: mediapipe_text/audio's web or
   // Android plugin.
   targets: {
     ...tasksRuntimeTargets,

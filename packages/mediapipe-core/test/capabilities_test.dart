@@ -1,4 +1,4 @@
-import 'package:mediapipe_flutter_core/capabilities.dart';
+import 'package:mediapipe_core/capabilities.dart';
 import 'package:test/test.dart';
 
 enum _Delegate { cpu, gpu }

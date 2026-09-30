@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_text/models.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 Future<void> main(List<String> args) async {
   final target = File(
@@ -9,6 +9,6 @@ Future<void> main(List<String> args) async {
         ? 'models/summarization_quant_200m_2modes.litertlm'
         : args.single,
   );
-  await downloadVerified(summarizerModel, target);
+  await downloadVerified(TextModels.summarizer, target);
   stdout.writeln('Verified ${target.path}');
 }

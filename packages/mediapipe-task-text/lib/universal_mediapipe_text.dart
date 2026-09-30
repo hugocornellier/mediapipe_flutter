@@ -4,17 +4,18 @@
 
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
-import 'package:mediapipe_flutter_core/interface.dart';
-export 'package:mediapipe_flutter_core/interface.dart' show EmbeddingType;
-import 'package:mediapipe_flutter_text/interface.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/interface.dart';
+export 'package:mediapipe_core/interface.dart' show EmbeddingType;
+import 'package:mediapipe_text/interface.dart';
 
 /// {@macro TextClassifier}
 class TextClassifier extends BaseTextClassifier {
   /// {@macro TextClassifier}
   TextClassifier(TextClassifierOptions options) {
-    throw UnsupportedError(
-      'MediaPipe text tasks require dart:ffi or a browser.',
+    throw const RuntimeUnavailableException(
+      'Classic text task runtime unavailable.',
+      fix: 'Use a platform with dart:ffi or a browser plugin.',
     );
   }
 
@@ -85,8 +86,9 @@ class TextClassifierResult extends BaseTextClassifierResult {
 class TextEmbedder extends BaseTextEmbedder {
   /// {@macro TextEmbedder}
   TextEmbedder(TextEmbedderOptions options) {
-    throw UnsupportedError(
-      'MediaPipe text tasks require dart:ffi or a browser.',
+    throw const RuntimeUnavailableException(
+      'Classic text task runtime unavailable.',
+      fix: 'Use a platform with dart:ffi or a browser plugin.',
     );
   }
 
@@ -159,8 +161,9 @@ class TextEmbedderResult extends BaseEmbedderResult {
 class LanguageDetector extends BaseLanguageDetector {
   /// {@macro LanguageDetector}
   LanguageDetector(LanguageDetectorOptions options) {
-    throw UnsupportedError(
-      'MediaPipe text tasks require dart:ffi or a browser.',
+    throw const RuntimeUnavailableException(
+      'Classic text task runtime unavailable.',
+      fix: 'Use a platform with dart:ffi or a browser plugin.',
     );
   }
 

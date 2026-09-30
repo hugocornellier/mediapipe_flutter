@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/semantics.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:mediapipe_flutter_vision/capabilities.dart';
+import 'package:mediapipe_vision/capabilities.dart';
 
 import 'catalog.dart';
 import 'segment_page.dart';

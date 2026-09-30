@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'task_settings.dart';
 
@@ -17,7 +17,7 @@ abstract interface class LiveTask<T> {
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   });
 
   /// Processes a still image with a task opened in image mode.

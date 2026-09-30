@@ -1,0 +1,10 @@
+# Everything .gitignore excludes (pub reads this file instead of it).
+models/
+.dart_tool/
+build/
+/assets/runtime/
+
+# Maintainer-only: tests and their fixtures, reference generators,
+# validation evidence and benchmarks live in the repository, not the package.
+/tool/
+/test/

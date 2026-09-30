@@ -11,7 +11,7 @@ void main() {
       basePath: Uri.directory('.'),
     ),
   );
-  // What mediapipe_flutter_core's hook reports once it has built the adapter.
+  // What mediapipe_core's hook reports once it has built the adapter.
   final coreAdapter = [
     EncodedAsset('hooks/metadata', {'key': 'tasks_runtime', 'value': true}),
     EncodedAsset('hooks/metadata', {
@@ -70,7 +70,7 @@ void main() {
       userDefines: defines({
         'tasks': ['face_landmarker', 'face_detector', 'hand_landmarker'],
       }),
-      assets: {'mediapipe_flutter_core': coreAdapter},
+      assets: {'mediapipe_core': coreAdapter},
       check: (_, output) {
         final assets = output.assets.code;
         // Hand binds core's asset directly; the face pair's own asset IDs
@@ -118,7 +118,7 @@ void main() {
             'official_ios_sdk': false,
             'tasks': ['face_landmarker'],
           }),
-          assets: {'mediapipe_flutter_core': coreAdapter},
+          assets: {'mediapipe_core': coreAdapter},
           check: (_, _) => fail('Two MediaPipe images were allowed'),
         ),
         throwsA(isA<StateError>()),

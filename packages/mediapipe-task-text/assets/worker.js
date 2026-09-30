@@ -1,4 +1,4 @@
-import {loadVerifiedRuntime} from '../../mediapipe_flutter_core/assets/verified_runtime.js';
+import {loadVerifiedRuntime} from '../../mediapipe_core/assets/verified_runtime.js';
 
 const loadRuntime = baseUrl =>
   loadVerifiedRuntime(new URL('runtime.json', import.meta.url), baseUrl, 'Text');

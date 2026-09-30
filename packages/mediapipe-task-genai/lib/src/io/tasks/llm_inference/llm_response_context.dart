@@ -5,10 +5,10 @@
 import 'dart:ffi';
 
 import 'package:logging/logging.dart';
-import 'package:mediapipe_flutter_core/io.dart';
-import 'package:mediapipe_flutter_genai/interface.dart';
+import 'package:mediapipe_core/io.dart';
+import 'package:mediapipe_genai/interface.dart';
 
-import '../../third_party/mediapipe/generated/mediapipe_flutter_genai_bindings.dart'
+import '../../third_party/mediapipe/generated/mediapipe_genai_bindings.dart'
     as bindings;
 
 final _log = Logger('LlmResponseContext');

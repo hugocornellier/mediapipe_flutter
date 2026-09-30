@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-import 'package:mediapipe_flutter_vision/web.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import '../live/embedding_similarity.dart';
 import '../live/live_task.dart';
 import '../live/task_settings.dart';
@@ -8,22 +8,23 @@ import '../live/task_settings.dart';
 /// each demo supplies only its name and how its task is built.
 abstract base class _WebLiveTask<R>
     implements BrowserLiveTask<R>, BrowserOverlayLiveTask {
-  SdkVisionTask<R>? _task;
+  BrowserVisionTask<R>? _task;
 
   /// Creates a task in the requested running mode.
-  Future<SdkVisionTask<R>> create(
+  Future<Object> create(
     VisionDelegate delegate,
     Uint8List model,
-    VisionRunningMode mode,
+    RunningMode mode,
   );
 
   @override
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
-    _task = await create(delegate, modelBytes, mode);
+    // The primary package export selects the browser implementations on web.
+    _task = await create(delegate, modelBytes, mode) as BrowserVisionTask<R>;
   }
 
   @override
@@ -93,7 +94,7 @@ final class FaceLandmarkerLiveTask extends _WebLiveTask<FaceLandmarkerResult> {
   Future<FaceLandmarker> create(
     VisionDelegate delegate,
     Uint8List model,
-    VisionRunningMode mode,
+    RunningMode mode,
   ) => FaceLandmarker.create(
     FaceLandmarkerOptions(
       modelBytes: model,
@@ -120,7 +121,7 @@ final class HandLandmarkerLiveTask extends _WebLiveTask<HandLandmarkerResult> {
   Future<HandLandmarker> create(
     VisionDelegate delegate,
     Uint8List model,
-    VisionRunningMode mode,
+    RunningMode mode,
   ) => HandLandmarker.create(
     HandLandmarkerOptions(
       modelBytes: model,
@@ -146,7 +147,7 @@ final class PoseLandmarkerLiveTask extends _WebLiveTask<PoseLandmarkerResult> {
   Future<PoseLandmarker> create(
     VisionDelegate delegate,
     Uint8List model,
-    VisionRunningMode mode,
+    RunningMode mode,
   ) => PoseLandmarker.create(
     PoseLandmarkerOptions(
       modelBytes: model,
@@ -174,7 +175,7 @@ final class GestureRecognizerLiveTask
   Future<GestureRecognizer> create(
     VisionDelegate delegate,
     Uint8List model,
-    VisionRunningMode mode,
+    RunningMode mode,
   ) => GestureRecognizer.create(
     GestureRecognizerOptions(
       modelBytes: model,
@@ -206,7 +207,7 @@ final class HolisticLandmarkerLiveTask
   Future<HolisticLandmarker> create(
     VisionDelegate delegate,
     Uint8List model,
-    VisionRunningMode mode,
+    RunningMode mode,
   ) => HolisticLandmarker.create(
     HolisticLandmarkerOptions(
       modelBytes: model,
@@ -240,7 +241,7 @@ final class FaceDetectorLiveTask extends _WebLiveTask<FaceDetectorResult> {
   Future<FaceDetector> create(
     VisionDelegate delegate,
     Uint8List model,
-    VisionRunningMode mode,
+    RunningMode mode,
   ) => FaceDetector.create(
     FaceDetectorOptions(
       modelBytes: model,
@@ -264,7 +265,7 @@ final class ObjectDetectorLiveTask extends _WebLiveTask<ObjectDetectorResult> {
   Future<ObjectDetector> create(
     VisionDelegate delegate,
     Uint8List model,
-    VisionRunningMode mode,
+    RunningMode mode,
   ) => ObjectDetector.create(
     ObjectDetectorOptions(
       modelBytes: model,
@@ -289,7 +290,7 @@ final class ImageClassifierLiveTask
   Future<ImageClassifier> create(
     VisionDelegate delegate,
     Uint8List model,
-    VisionRunningMode mode,
+    RunningMode mode,
   ) => ImageClassifier.create(
     ImageClassifierOptions(
       modelBytes: model,
@@ -320,7 +321,7 @@ final class ImageEmbedderLiveTask
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _first = null;
     _task = await ImageEmbedder.create(
@@ -367,7 +368,7 @@ final class ImageEmbedderLiveTask
     int height,
     int timestamp,
   ) async => _compare(
-    await _task!.detectBrowserFrame(
+    await (_task! as BrowserVisionTask<ImageEmbedderResult>).detectBrowserFrame(
       frame,
       width: width,
       height: height,
@@ -399,7 +400,7 @@ final class ImageSegmenterLiveTask
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _task = await ImageSegmenter.create(
       ImageSegmenterOptions(
@@ -433,7 +434,7 @@ final class ImageSegmenterLiveTask
     int width,
     int height,
     int timestamp,
-  ) => _task!.detectBrowserFrame(
+  ) => (_task! as BrowserVisionTask<SegmentationResult>).detectBrowserFrame(
     frame,
     width: width,
     height: height,

@@ -123,7 +123,7 @@ def main():
             parser.error('--prefill requires at least one --target')
         args.prefill.mkdir(parents=True, exist_ok=True)
         subprocess.run(
-            ['dart', 'run', 'mediapipe_flutter_core:prefill_assets', str(args.prefill.resolve())],
+            ['dart', 'run', 'mediapipe_core:prefill_assets', str(args.prefill.resolve())],
             input=json.dumps(selected), text=True, check=True,
             cwd=PACKAGES / 'mediapipe-core',
         )

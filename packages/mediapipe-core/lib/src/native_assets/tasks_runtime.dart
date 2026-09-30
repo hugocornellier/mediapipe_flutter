@@ -12,7 +12,7 @@ import '../../native_assets.dart';
 /// second copy: two copies register MediaPipe's graphs twice and abort. The
 /// identifier is stable across platforms and versions; the bundled file name
 /// comes from each release.
-const tasksRuntimeAssetId = 'package:mediapipe_flutter_core/mediapipe.dylib';
+const tasksRuntimeAssetId = 'package:mediapipe_core/mediapipe.dylib';
 
 /// The asset name registered by the core build hook, without the package.
 const tasksRuntimeAssetName = 'mediapipe.dylib';
@@ -255,7 +255,7 @@ bool hasTasksRuntime(String target) =>
     tasksRuntimeReleases.containsKey(target);
 
 /// Whether core bundles Google's engine on [target] when the app leaves
-/// `mediapipe_flutter_core.tasks_runtime` unset: on iOS, Linux x64 and
+/// `mediapipe_core.tasks_runtime` unset: on iOS, Linux x64 and
 /// Windows x64, where every family's tasks run on it and the vision tasks
 /// would bundle the same library anyway. macOS opts in, because Google's
 /// library is 95 MB there and a face-only app keeps the vision package's
@@ -279,8 +279,8 @@ bool tasksRuntimeMissing(String target, {required bool enabled}) =>
 /// The build error a family reports when [tasksRuntimeMissing] holds.
 String tasksRuntimeRequired(String who, String target) =>
     "$who runs on $target through Google's MediaPipe engine, which "
-    'mediapipe_flutter_core bundles once for every task family. Remove '
-    "tasks_runtime: false from hooks.user_defines.mediapipe_flutter_core in "
+    'mediapipe_core bundles once for every task family. Remove '
+    "tasks_runtime: false from hooks.user_defines.mediapipe_core in "
     "the app's pubspec.yaml.";
 
 /// The release for [target], or an [UnsupportedError] naming the targets that

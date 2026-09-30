@@ -1,8 +1,8 @@
 import 'dart:ffi';
 import 'dart:io';
 
-/// Google's MediaPipe engine, which mediapipe_flutter_core bundles.
-const _engineAsset = 'package:mediapipe_flutter_core/mediapipe.dylib';
+/// Google's MediaPipe engine, which mediapipe_core bundles.
+const _engineAsset = 'package:mediapipe_core/mediapipe.dylib';
 
 // Google's library exports the public TensorFlow Lite version function, so
 // this harmless query confirms the engine is bundled and loads.
@@ -39,7 +39,7 @@ bool hasOfficialIosVisionRuntime() {
 
 @Native<Void Function()>(
   symbol: 'MpFaceDetectorClose',
-  assetId: 'package:mediapipe_flutter_vision/face_detector.dylib',
+  assetId: 'package:mediapipe_vision/face_detector.dylib',
 )
 external void _faceDetectorClose();
 

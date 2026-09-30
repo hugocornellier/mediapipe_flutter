@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_vision/face_landmarker_backend.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_tasks.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
@@ -28,7 +28,7 @@ const _switches = [
 
 // Face Landmarker through Google's official mobile SDKs: iOS through the
 // package's Objective-C adapter, Android through
-// mediapipe_flutter_vision. Runs on the iOS simulator and Android
+// mediapipe_vision. Runs on the iOS simulator and Android
 // emulator in CI (CPU), and on phones (CPU and GPU).
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -133,7 +133,7 @@ void main() {
               delegate: _delegates.last,
             ),
           ),
-          throwsA(isA<FaceLandmarkerException>()),
+          throwsA(isA<VisionTaskException>()),
         );
       });
     },
@@ -151,7 +151,7 @@ void main() {
           FaceLandmarkerOptions(
             modelPath: assets.path('face_landmarker.task'),
             delegate: delegate,
-            runningMode: VisionRunningMode.video,
+            runningMode: RunningMode.video,
           ),
         );
         try {

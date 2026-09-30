@@ -85,6 +85,7 @@ final class SegmentationResult {
 abstract base class SegmentationOutputOptions extends VisionModelOptions {
   /// At least one of the two mask outputs must be requested.
   SegmentationOutputOptions({
+    super.model,
     super.modelPath,
     super.modelBytes,
     super.runningMode,
@@ -110,6 +111,7 @@ abstract base class SegmentationOutputOptions extends VisionModelOptions {
 final class ImageSegmenterOptions extends SegmentationOutputOptions {
   /// Supply a compatible official model with segmentation metadata.
   ImageSegmenterOptions({
+    super.model,
     super.modelPath,
     super.modelBytes,
     super.runningMode,
@@ -142,6 +144,7 @@ final class InteractiveSegmenterLegacyOptions
     extends SegmentationOutputOptions {
   /// Supply the official MagicTouch model built for this API.
   InteractiveSegmenterLegacyOptions({
+    super.model,
     super.modelPath,
     super.modelBytes,
     super.delegate,

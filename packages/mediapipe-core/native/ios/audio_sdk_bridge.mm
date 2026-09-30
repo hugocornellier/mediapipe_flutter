@@ -1,6 +1,6 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache-2.0.
 // The 1.0.1 C API of Audio Classifier (audio clips), which
-// mediapipe_flutter_audio binds, over Google's prebuilt Objective-C Tasks SDK.
+// mediapipe_audio binds, over Google's prebuilt Objective-C Tasks SDK.
 // As for text, Google implements these classes in MediaPipeTasksCommon, which
 // this adapter already links. No inference code lives here.
 #import <MediaPipeTasksAudio/MediaPipeTasksAudio.h>

@@ -1,20 +1,33 @@
 import 'dart:math' as math;
 
-import '../../vision_task_backend.dart';
+import '../vision_task_backend.dart';
 import '../sdk_vision_task.dart';
 
 /// Official MediaPipe browser Image Embedder installed by the web adapter.
+///
+/// ```dart
+/// final task = await ImageEmbedder.create(
+///   ImageEmbedderOptions(model: VisionModels.imageEmbedder),
+/// );
+/// final image = VisionImage.fromFile('photo.jpg');
+/// final result = await task.embedImage(image);
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class ImageEmbedder extends SdkVisionTask<ImageEmbedderResult> {
   ImageEmbedder._(super.backend, super.runningMode, super.delegate)
     : super(name: 'ImageEmbedder');
 
   /// Creates a task through the registered official browser adapter.
-  static Future<ImageEmbedder> create(ImageEmbedderOptions options) async =>
-      ImageEmbedder._(
-        await requireBrowserFactory(imageEmbedderBackendFactory)(options),
-        options.runningMode,
-        options.delegate,
-      );
+  static Future<ImageEmbedder> create(ImageEmbedderOptions options) async {
+    await options.prepareModel();
+    return ImageEmbedder._(
+      await requireBrowserFactory(imageEmbedderBackendFactory)(options),
+      options.runningMode,
+      options.delegate,
+    );
+  }
 
   /// Embeds a still image or a normalized region, as on native platforms.
   Future<ImageEmbedderResult> embedImage(

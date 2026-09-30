@@ -61,16 +61,16 @@ const tasksRuntimeTargets = <String, String?>{
 String tasksRuntimeUnavailable(String task, String operatingSystem) =>
     operatingSystem == 'macos'
     ? "On macOS, $task runs on Google's MediaPipe engine, which "
-          'mediapipe_flutter_core bundles only when the app opts in, since it '
+          'mediapipe_core bundles only when the app opts in, since it '
           "is about 95 MB. Add this to the app's pubspec.yaml:\n"
           '  hooks:\n'
           '    user_defines:\n'
-          '      mediapipe_flutter_core:\n'
+          '      mediapipe_core:\n'
           '        tasks_runtime: true'
     : "$task runs on Google's MediaPipe engine, which "
-          'mediapipe_flutter_core bundles by default on $operatingSystem. '
+          'mediapipe_core bundles by default on $operatingSystem. '
           'Remove tasks_runtime: false from '
-          "hooks.user_defines.mediapipe_flutter_core in the app's pubspec.yaml.";
+          "hooks.user_defines.mediapipe_core in the app's pubspec.yaml.";
 
 /// The part of [tasksRuntimeTargets] whose engine also serves EmbeddingGemma,
 /// Proofreader, Summarizer and the stateful Interactive Segmenter: Google's

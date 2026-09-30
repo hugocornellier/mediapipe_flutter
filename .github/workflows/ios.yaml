@@ -117,7 +117,7 @@ jobs:
           dart tool/download_interactive_segmenter.dart
       - uses: actions/cache@v4
         with:
-          path: gallery/.dart_tool/hooks_runner/shared/mediapipe_flutter_core/build/official-ios-sdk/*/sdk.zip
+          path: gallery/.dart_tool/hooks_runner/shared/mediapipe_core/build/official-ios-sdk/*/sdk.zip
           key: official-ios-sdk-${{ hashFiles('packages/mediapipe-core/lib/src/native_assets/ios_sdk.dart') }}
       - name: Prepare the gallery with the official SDK tasks
         run: |

@@ -4,7 +4,7 @@ library;
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_core/model_store.dart';
+import 'package:mediapipe_core/model_store.dart';
 import 'package:test/test.dart';
 
 void main() {

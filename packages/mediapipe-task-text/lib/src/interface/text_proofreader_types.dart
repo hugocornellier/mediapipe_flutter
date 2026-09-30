@@ -1,16 +1,24 @@
 import 'embedding_gemma_types.dart' show TextDelegate;
 export 'embedding_gemma_types.dart' show TextDelegate;
+import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/platform_interface.dart';
+export 'text_task_exception.dart' show TextTaskException;
 
 /// Options passed to Google's official Proofreader pipeline.
 final class TextProofreaderOptions {
   /// Load a `.litertlm` file. Prefer a file path for this large model.
   TextProofreaderOptions({
-    required this.modelPath,
+    this.model,
+    String? modelPath,
     this.maxNumTokens,
     this.cacheDirectory,
     this.delegate = TextDelegate.cpu,
-  }) {
-    if (modelPath.isEmpty || modelPath.contains('\u0000')) {
+  }) : _modelPath = modelPath {
+    if ((model == null) == (modelPath == null)) {
+      throw ArgumentError('Supply exactly one of model and modelPath.');
+    }
+    if (modelPath != null &&
+        (modelPath.isEmpty || modelPath.contains('\u0000'))) {
       throw ArgumentError.value(
         modelPath,
         'modelPath',
@@ -35,8 +43,23 @@ final class TextProofreaderOptions {
     }
   }
 
+  /// Pinned official model, downloaded and verified when creating the task.
+  final DownloadAsset? model;
+
+  final String? _modelPath;
+  String? _resolvedPath;
+
+  /// Resolves a pinned model before this task is passed to the runtime.
+  Future<void> prepareModel() => _resolveModel();
+
+  Future<void> _resolveModel() async {
+    if (model case final selected?) {
+      _resolvedPath = (await resolvePinnedModel(selected)).path;
+    }
+  }
+
   /// Filesystem path to Google's model, not a Flutter asset key.
-  final String modelPath;
+  String get modelPath => _resolvedPath ?? _modelPath!;
 
   /// Input/output token budget. Null or zero selects Google's model default.
   final int? maxNumTokens;
@@ -104,20 +127,4 @@ final class TextProofreaderUpdate {
 
   /// Native correction segments, normally supplied by the final update.
   final List<ProofreadingCorrection> corrections;
-}
-
-/// Native inference, initialization, callback-copy or worker failure.
-final class TextProofreaderException implements Exception {
-  /// Preserve Google's message and status when available.
-  const TextProofreaderException(this.message, {this.status});
-
-  /// Description of the failure.
-  final String message;
-
-  /// Native status code, or null for a Dart/bridge failure.
-  final int? status;
-
-  @override
-  String toString() =>
-      'TextProofreaderException${status == null ? '' : ' ($status)'}: $message';
 }

@@ -26,8 +26,8 @@ void main() {
           // The face pair's C bindings stay unused process lookups; every
           // other task binds core's asset, which core leaves off on Android.
           expect(output.assets.code.map((asset) => asset.id).toSet(), {
-            'package:mediapipe_flutter_vision/face_detector.dylib',
-            'package:mediapipe_flutter_vision/face_landmarker.dylib',
+            'package:mediapipe_vision/face_detector.dylib',
+            'package:mediapipe_vision/face_landmarker.dylib',
           });
           for (final asset in output.assets.code) {
             expect(asset.file, isNull);

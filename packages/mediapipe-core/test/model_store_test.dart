@@ -3,9 +3,8 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_core/model_store.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart'
-    show downloadVerified;
+import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/native_assets.dart' show downloadVerified;
 import 'package:test/test.dart';
 
 void main() {

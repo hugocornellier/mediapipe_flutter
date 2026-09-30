@@ -4,8 +4,8 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/ios_sdk.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_core/src/native_assets/ios_sdk.dart';
+import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -24,10 +24,7 @@ void main() {
       targetArchitecture: Architecture.arm64,
       check: (_, output) {
         final asset = output.assets.code.single;
-        expect(
-          asset.id,
-          'package:mediapipe_flutter_core/$tasksRuntimeAssetName',
-        );
+        expect(asset.id, 'package:mediapipe_core/$tasksRuntimeAssetName');
         expect(asset.linkMode, isA<DynamicLoadingBundled>());
         expect(asset.file!.pathSegments.last, 'mediapipe_ios.dylib');
         expect(metadataOf(output)['ios_sdk_adapter'], tasksRuntimeIosAdapter);

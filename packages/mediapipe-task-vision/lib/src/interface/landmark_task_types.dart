@@ -38,6 +38,7 @@ final class VisionLandmark {
 abstract base class HandTrackingOptions extends VisionModelOptions {
   /// Defaults match the official Hand Landmarker and Gesture Recognizer.
   HandTrackingOptions({
+    super.model,
     super.modelPath,
     super.modelBytes,
     super.runningMode,
@@ -76,6 +77,7 @@ abstract base class HandTrackingOptions extends VisionModelOptions {
 final class HandLandmarkerOptions extends HandTrackingOptions {
   /// Supply a compatible task bundle and optional tracking thresholds.
   HandLandmarkerOptions({
+    super.model,
     super.modelPath,
     super.modelBytes,
     super.runningMode,
@@ -138,6 +140,7 @@ final class GestureClassifierOptions {
 final class GestureRecognizerOptions extends HandTrackingOptions {
   /// Supply a compatible task bundle with canned and optional custom gestures.
   GestureRecognizerOptions({
+    super.model,
     super.modelPath,
     super.modelBytes,
     super.runningMode,
@@ -164,6 +167,7 @@ final class GestureRecognizerOptions extends HandTrackingOptions {
 final class PoseLandmarkerOptions extends VisionModelOptions {
   /// Defaults match the official pose task.
   PoseLandmarkerOptions({
+    super.model,
     super.modelPath,
     super.modelBytes,
     super.runningMode,

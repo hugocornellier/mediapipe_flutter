@@ -53,8 +53,8 @@ void setVisionBaseOptions(
 }
 
 /// Convert the public running mode into the native task enum.
-mp.MpRunningMode nativeVisionRunningMode(VisionRunningMode mode) =>
-    mode == VisionRunningMode.video
+mp.MpRunningMode nativeRunningMode(RunningMode mode) =>
+    mode == RunningMode.video
     ? mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
     : mp.MpRunningMode.MP_RUNNING_MODE_IMAGE;
 

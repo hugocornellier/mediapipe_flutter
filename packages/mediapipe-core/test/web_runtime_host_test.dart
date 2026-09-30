@@ -5,7 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:mediapipe_flutter_core/src/web_runtime_host.dart';
+import 'package:mediapipe_core/src/web_runtime_host.dart';
 import 'package:test/test.dart';
 
 void main() {

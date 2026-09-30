@@ -63,7 +63,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../packages/mediapipe-task-vision
 dev_dependencies:
   crypto: ^3.0.6
@@ -76,9 +76,9 @@ hooks:
   user_defines:
     # The source-built face runtime cannot share a process with the adapter
     # over Google's iOS SDK that core builds by default (a no-op on Android).
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: false
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       # The source-built face runtime, not Google's mobile SDKs (the default).
       official_android_sdk: false
       official_ios_sdk: false

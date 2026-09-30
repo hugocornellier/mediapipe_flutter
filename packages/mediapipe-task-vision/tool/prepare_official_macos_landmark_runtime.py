@@ -1,6 +1,6 @@
 """Prepare Google's official MediaPipe 1.0.0 macOS arm64 engine.
 
-mediapipe_flutter_core bundles this library as the one MediaPipe engine every
+mediapipe_core bundles this library as the one MediaPipe engine every
 task family binds on macOS (its `tasksRuntimeReleases` row pins the archive).
 
 The runtime comes from the checksum-pinned wheel used by the independent CPU
@@ -184,7 +184,7 @@ an ad-hoc signature. `manifest.json` records each change and proves the code,
 data, sections and fixups are unchanged. The Flutter package pins the unsigned
 image, so the signature can be replaced without changing the pin.
 
-mediapipe_flutter_core bundles it on macOS arm64 when an app sets
+mediapipe_core bundles it on macOS arm64 when an app sets
 `tasks_runtime: true`; every task family runs on it.
 The archive includes Google's LICENSE and NOTICE from the wheel.
 

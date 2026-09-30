@@ -3,7 +3,7 @@ let HolisticLandmarker, ImageClassifier, ImageEmbedder, ImageSegmenter;
 let InteractiveSegmenter, InteractiveSegmenterLegacy, ObjectDetector, PoseLandmarker;
 let DrawingUtils;
 
-import {loadVerifiedRuntime} from '../../mediapipe_flutter_core/assets/verified_runtime.js';
+import {loadVerifiedRuntime} from '../../mediapipe_core/assets/verified_runtime.js';
 
 async function loadRuntime(baseUrl) {
   const {bundle, files} = await loadVerifiedRuntime(

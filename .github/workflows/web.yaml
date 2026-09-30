@@ -75,7 +75,7 @@ jobs:
           flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
           flutter build web --release --base-href /text-audio-probe/ --no-web-resources-cdn --output build/web-text-audio -t tool/web_text_audio_probe.dart
           # Core's self-host tool, for the self-hosted text and audio run.
-          dart run mediapipe_flutter_core:web_runtime build/web-text-audio/mediapipe
+          dart run mediapipe_core:web_runtime build/web-text-audio/mediapipe
           python3 -B tool/write_web_build_info.py
       # Each browser run is its own step so the coverage rows follow its outcome.
       - name: Start the gallery server

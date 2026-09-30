@@ -14,7 +14,7 @@ export 'src/web/interactive_segmenter.dart';
 export 'src/web/interactive_segmenter_legacy.dart';
 export 'src/web/object_detector.dart';
 export 'src/web/pose_landmarker.dart';
-export 'src/sdk_vision_task.dart' show SdkVisionTask;
+export 'src/interface/browser_vision_task.dart';
 export 'src/interface/landmark_task_types.dart';
 export 'src/interface/holistic_landmarker_types.dart';
 export 'src/interface/image_classifier_types.dart';

@@ -5,7 +5,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'catalog.dart';
 import 'gallery_content_surface.dart';
@@ -393,13 +393,13 @@ class _LivePageState extends State<LivePage> {
           return;
         }
         try {
-          await _task.open(delegate, model, mode: VisionRunningMode.image);
+          await _task.open(delegate, model, mode: RunningMode.image);
         } on Object {
           // GPU is only the default; a platform that refuses it gets CPU.
           if (delegate != VisionDelegate.gpu) rethrow;
           delegate = VisionDelegate.cpu;
           _controller.delegate = delegate;
-          await _task.open(delegate, model, mode: VisionRunningMode.image);
+          await _task.open(delegate, model, mode: RunningMode.image);
         }
         opened = true;
         if (!mounted ||

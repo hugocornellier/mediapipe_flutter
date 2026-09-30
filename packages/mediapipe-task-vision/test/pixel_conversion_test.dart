@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_vision/src/io/pixel_conversion.dart';
+import 'package:mediapipe_vision/src/io/pixel_conversion.dart';
 import 'package:test/test.dart';
 
 void main() {

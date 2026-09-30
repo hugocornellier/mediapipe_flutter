@@ -28,11 +28,11 @@ BLOCKED = ('bazel', 'bazelisk', 'cmake', 'ninja', 'python', 'python3')
 FAMILIES = {
     'vision': {
         'package': 'mediapipe-task-vision',
-        'import': 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart',
-        'models': """  await downloadVerified(DownloadAsset(url: blazeFaceShortRangeUrl, sha256: blazeFaceShortRangeSha256), File('../models/blaze_face_short_range.tflite'));
-  await downloadVerified(DownloadAsset(url: efficientDetLite0Url, sha256: efficientDetLite0Sha256), File('../models/efficientdet_lite0.tflite'));
+        'import': 'package:mediapipe_vision/mediapipe_vision.dart',
+        'models': """  await downloadVerified(VisionModels.faceDetector, File('../models/blaze_face_short_range.tflite'));
+  await downloadVerified(VisionModels.objectDetector, File('../models/efficientdet_lite0.tflite'));
 """,
-        'models_import': 'package:mediapipe_flutter_vision/models.dart',
+        'models_import': 'package:mediapipe_vision/mediapipe_vision.dart',
         'model_files': ['blaze_face_short_range.tflite', 'efficientdet_lite0.tflite'],
         'samples': ['portrait.jpg'],
         'test': """  testWidgets('vision: Face Detector and Object Detector', (tester) async {
@@ -62,10 +62,10 @@ FAMILIES = {
     },
     'text': {
         'package': 'mediapipe-task-text',
-        'import': 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart',
-        'models': """  await downloadVerified(bertClassifierModel, File('../models/bert_classifier.tflite'));
+        'import': 'package:mediapipe_text/mediapipe_text.dart',
+        'models': """  await downloadVerified(TextModels.bertClassifier, File('../models/bert_classifier.tflite'));
 """,
-        'models_import': 'package:mediapipe_flutter_text/models.dart',
+        'models_import': 'package:mediapipe_text/mediapipe_text.dart',
         'model_files': ['bert_classifier.tflite'],
         'samples': [],
         'test': """  testWidgets('text: Text Classifier', (tester) async {
@@ -86,10 +86,10 @@ FAMILIES = {
     },
     'audio': {
         'package': 'mediapipe-task-audio',
-        'import': 'package:mediapipe_flutter_audio/mediapipe_flutter_audio.dart',
-        'models': """  await downloadVerified(DownloadAsset(url: yamnetUrl, sha256: yamnetSha256), File('../models/yamnet.tflite'));
+        'import': 'package:mediapipe_audio/mediapipe_audio.dart',
+        'models': """  await downloadVerified(AudioModels.yamnet, File('../models/yamnet.tflite'));
 """,
-        'models_import': 'package:mediapipe_flutter_audio/models.dart',
+        'models_import': 'package:mediapipe_audio/mediapipe_audio.dart',
         'model_files': ['yamnet.tflite'],
         'samples': ['speech_16000_hz_mono.wav'],
         'test': """  testWidgets('audio: Audio Classifier', (tester) async {
@@ -131,7 +131,7 @@ WITHOUT_ENGINE = """  testWidgets('without the opt-in, engine tasks name it', (t
       } finally {
         await faces.dispose();
       }
-      final optIn = isA<UnsupportedError>().having((e) => e.message, 'message',
+      final optIn = isA<RuntimeUnavailableException>().having((e) => e.fix, 'fix',
           allOf(contains('On macOS'), contains('tasks_runtime: true')));
       await expectLater(ObjectDetector.create(ObjectDetectorOptions(
           modelBytes: await asset('efficientdet_lite0.tflite'))), throwsA(optIn));
@@ -150,9 +150,9 @@ def settings(families, platform, engine=True):
     to Google's 95 MB engine that text, audio and Object Detector run on."""
     lines = []
     if platform == 'macos' and engine:
-        lines += ['    mediapipe_flutter_core:', '      tasks_runtime: true']
+        lines += ['    mediapipe_core:', '      tasks_runtime: true']
     if 'vision' in families:
-        lines += ['    mediapipe_flutter_vision:', '      tasks: [face_detector, object_detector]']
+        lines += ['    mediapipe_vision:', '      tasks: [face_detector, object_detector]']
     return 'hooks:\n  user_defines:\n' + '\n'.join(lines) + '\n' if lines else ''
 
 
@@ -163,7 +163,7 @@ def download_models(root, env):
     (downloader / 'bin').mkdir(parents=True)
     (root / 'models').mkdir()
     dependencies = ''.join(
-        f"  mediapipe_flutter_{family}:\n    path: ../packages/{spec['package']}\n"
+        f"  mediapipe_{family}:\n    path: ../packages/{spec['package']}\n"
         for family, spec in FAMILIES.items())
     (downloader / 'pubspec.yaml').write_text(f"""name: downloader
 publish_to: none
@@ -172,15 +172,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_core:
+  mediapipe_core:
     path: ../packages/mediapipe-core
 {dependencies}hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
 """)
     (downloader / 'bin/download_models.dart').write_text(
-        "import 'dart:io';\nimport 'package:mediapipe_flutter_core/native_assets.dart';\n"
+        "import 'dart:io';\nimport 'package:mediapipe_core/native_assets.dart';\n"
         + ''.join(f"import '{spec['models_import']}';\n" for spec in FAMILIES.values())
         + 'Future<void> main() async {\n'
         + ''.join(spec['models'] for spec in FAMILIES.values()) + '}\n')
@@ -194,7 +194,7 @@ def create_app(root, name, families, platform, env, engine=True):
                     '--empty', '--no-pub', '--project-name', name, str(app)],
                    env=env, check=True, capture_output=True)
     dependencies = ''.join(
-        f"  mediapipe_flutter_{family}:\n    path: ../packages/{FAMILIES[family]['package']}\n"
+        f"  mediapipe_{family}:\n    path: ../packages/{FAMILIES[family]['package']}\n"
         for family in families)
     (app / 'pubspec.yaml').write_text(f"""name: {name}
 publish_to: none

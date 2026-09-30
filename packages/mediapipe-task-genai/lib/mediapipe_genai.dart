@@ -6,6 +6,6 @@
 /// audio-based tasks.
 library;
 
-export 'universal_mediapipe_flutter_genai.dart'
-    if (dart.library.html) 'src/web/mediapipe_flutter_genai.dart'
-    if (dart.library.io) 'src/io/mediapipe_flutter_genai.dart';
+export 'universal_mediapipe_genai.dart'
+    if (dart.library.html) 'src/web/mediapipe_genai.dart'
+    if (dart.library.io) 'src/io/mediapipe_genai.dart';

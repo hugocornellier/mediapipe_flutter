@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediapipe_face_camera/face_camera_controller.dart';
 import 'package:mediapipe_face_camera/main.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 const _description = CameraDescription(
   name: 'Fixture camera',

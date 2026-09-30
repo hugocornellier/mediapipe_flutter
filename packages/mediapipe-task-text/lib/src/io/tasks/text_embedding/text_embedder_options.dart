@@ -1,17 +1,40 @@
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_core/io.dart';
-import 'package:mediapipe_flutter_text/interface.dart';
+import 'package:mediapipe_core/io.dart';
+import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_text/interface.dart';
 
 import '../../classic_text_runtime.dart';
+import '../../../resolve_text_model.dart';
 
 /// Owned options for the official MediaPipe 1.0.1 TextEmbedder.
+// ignore: must_be_immutable
 class TextEmbedderOptions extends BaseTextEmbedderOptions {
   /// Supply a filesystem model path or model bytes and official task options.
   TextEmbedderOptions({
-    required BaseOptions baseOptions,
+    this.model,
+    BaseOptions? baseOptions,
     this.embedderOptions = const EmbedderOptions(),
-  }) : baseOptions = copyTextBaseOptions(baseOptions);
+  }) : _baseOptions = baseOptions == null
+           ? null
+           : copyTextBaseOptions(baseOptions) {
+    if ((model == null) == (baseOptions == null)) {
+      throw ArgumentError('Supply exactly one of model and baseOptions.');
+    }
+  }
+
+  /// Pinned official model, downloaded on task creation.
+  final DownloadAsset? model;
+  BaseOptions? _baseOptions;
+
+  /// Resolves a pinned model before creating a task.
+  Future<void> prepareModel() => _resolveModel();
+
+  Future<void> _resolveModel() async {
+    if (model case final selected?) {
+      _baseOptions = await resolveTextModel(selected);
+    }
+  }
 
   /// Load a filesystem path (not a Flutter asset key).
   factory TextEmbedderOptions.fromAssetPath(
@@ -32,7 +55,9 @@ class TextEmbedderOptions extends BaseTextEmbedderOptions {
   );
 
   @override
-  final BaseOptions baseOptions;
+  BaseOptions get baseOptions =>
+      _baseOptions ??
+      (throw StateError('Create the task before reading baseOptions.'));
 
   @override
   final EmbedderOptions embedderOptions;

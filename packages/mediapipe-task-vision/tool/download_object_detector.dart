@@ -1,15 +1,12 @@
 import 'dart:io';
 
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 Future<void> main(List<String> arguments) async {
   final destination = arguments.isEmpty
       ? 'models/efficientdet_lite0.tflite'
       : arguments.single;
-  await downloadVerified(
-    DownloadAsset(url: efficientDetLite0Url, sha256: efficientDetLite0Sha256),
-    File(destination),
-  );
+  await downloadVerified(VisionModels.objectDetector, File(destination));
   stdout.writeln('Verified model: $destination');
 }

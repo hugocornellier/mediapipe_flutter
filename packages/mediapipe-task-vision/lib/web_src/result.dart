@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_vision/interface.dart';
-import 'package:mediapipe_flutter_vision/vision_task_backend.dart';
+import 'package:mediapipe_vision/interface.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
 
 /// Copies Google's browser results into the platform-independent Dart types.
 ///

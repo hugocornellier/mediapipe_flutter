@@ -418,7 +418,7 @@ Pose and record the GPU value.
 **Status:** reported upstream as
 [google-ai-edge/mediapipe#6348](https://github.com/google-ai-edge/mediapipe/issues/6348)
 and [#6364](https://github.com/google-ai-edge/mediapipe/issues/6364).
-Worked around in `mediapipe_flutter_vision`.
+Worked around in `mediapipe_vision`.
 
 `tasks-core` 1.0.0's POM declares `protobuf-javalite` 4.26.1, but
 `HolisticLandmarkerOptions` calls `Any$Builder.build()` with full protobuf-java's
@@ -469,7 +469,7 @@ widths and heights are multiples of 4.
 ## UP-019 — Android Image Segmenter reports no labels
 
 **Status:** observed September 23 with Android tasks-vision 1.0.0. Worked
-around in `mediapipe_flutter_vision`.
+around in `mediapipe_vision`.
 
 `ImageSegmenter.getLabels()` returns an empty list for DeepLab-v3, whose
 metadata carries 21 labels (the C API and the iOS SDK report them). Google's

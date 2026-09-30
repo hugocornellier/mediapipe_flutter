@@ -5,6 +5,7 @@ export 'vision_task_types.dart';
 final class ImageEmbedderOptions extends VisionModelOptions {
   /// The official graph handles preprocessing, normalization and quantization.
   ImageEmbedderOptions({
+    super.model,
     super.modelPath,
     super.modelBytes,
     super.runningMode,

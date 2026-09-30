@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/live/live_registry.dart';
 
@@ -77,7 +77,7 @@ void main() {
           await task.open(
             delegate,
             model.buffer.asUint8List(model.offsetInBytes, model.lengthInBytes),
-            mode: VisionRunningMode.image,
+            mode: RunningMode.image,
           );
           final result = await task.detectImage(input);
           expect(result, isNotNull, reason: entry.title);

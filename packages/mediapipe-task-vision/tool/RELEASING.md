@@ -84,7 +84,7 @@ modern stateful C API is not available in the public source build. See
 
 ## Official macOS runtime
 
-Apps that set `mediapipe_flutter_core.tasks_runtime: true` on macOS get
+Apps that set `mediapipe_core.tasks_runtime: true` on macOS get
 Google's official 1.0.0 macOS arm64 wheel runtime, which core bundles once for
 every family (`tasksRuntimeReleases` pins the archive).
 `tool/prepare_official_macos_landmark_runtime.py` verifies the wheel, extracts

@@ -1,10 +1,15 @@
-name: mediapipe_flutter_core
-publish_to: none
-description: Shared logic and utilities required by other MediaPipe Task packages.
-version: 0.0.1+1
-
+name: mediapipe_core
+description: "Shared layer for the MediaPipe task packages: Google's engine on each platform, verified downloads, an on-demand model store and the browser runtime."
+version: 0.1.0
 repository: https://github.com/hugocornellier/mediapipe_flutter/tree/main/packages/mediapipe-core
 issue_tracker: https://github.com/hugocornellier/mediapipe_flutter/issues
+topics:
+  - mediapipe
+  - machine-learning
+  - ffi
+# Not published yet; `tool/publish_check.py` in mediapipe-core runs the
+# publish dry run on a copy without this line.
+publish_to: none
 
 platforms:
   android:

@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 
 import 'download_asset.dart';
 import 'model_download_exception.dart';
-import 'native_assets/native_library.dart' show downloadVerified;
+import 'verified_download.dart';
 import 'support_directory_stub.dart'
     if (dart.library.ui) 'support_directory_flutter.dart'
     as support;

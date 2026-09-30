@@ -65,7 +65,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../packages/mediapipe-task-vision
 dev_dependencies:
   integration_test:
@@ -77,9 +77,9 @@ flutter:
     - assets/
 hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [interactive_segmenter]
       prebuilt: true
 """)

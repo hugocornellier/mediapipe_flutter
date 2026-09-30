@@ -4,8 +4,8 @@ import 'package:embedding_gemma_demo/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_text/text_summarizer.dart';
-import 'package:mediapipe_flutter_text/embedding_gemma.dart';
+import 'package:mediapipe_text/text_summarizer.dart';
+import 'package:mediapipe_text/embedding_gemma.dart';
 
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   await tester.ensureVisible(finder);

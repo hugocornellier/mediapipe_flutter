@@ -10,7 +10,7 @@ Future<void> runImageTasksSmoke() async {
     modelBytes: classifierModel.buffer.asUint8List(classifierModel.offsetInBytes,
       classifierModel.lengthInBytes),
     maxResults: 3,
-    runningMode: VisionRunningMode.video,
+    runningMode: RunningMode.video,
   ));
   try {
     final requests = [for (var i = 0; i < 3; i++)
@@ -37,7 +37,7 @@ Future<void> runImageTasksSmoke() async {
       embedderModel.lengthInBytes),
     l2Normalize: true,
     quantize: true,
-    runningMode: VisionRunningMode.video,
+    runningMode: RunningMode.video,
   ));
   try {
     final requests = [for (var i = 0; i < 3; i++)

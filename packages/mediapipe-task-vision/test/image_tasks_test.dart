@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart';
@@ -56,7 +56,7 @@ void main() {
               ImageClassifierOptions(
                 modelPath: _classifierModel,
                 maxResults: 3,
-                runningMode: VisionRunningMode.video,
+                runningMode: RunningMode.video,
               ),
             );
             final requests = [
@@ -88,7 +88,7 @@ void main() {
             final task = await ImageEmbedder.create(
               ImageEmbedderOptions(
                 modelPath: _embedderModel,
-                runningMode: VisionRunningMode.video,
+                runningMode: RunningMode.video,
               ),
             );
             final requests = [
@@ -156,7 +156,7 @@ void main() {
           final task = await ImageEmbedder.create(
             ImageEmbedderOptions(
               modelPath: _embedderModel,
-              runningMode: VisionRunningMode.video,
+              runningMode: RunningMode.video,
             ),
           );
           try {

@@ -1,36 +1,24 @@
-import 'dart:typed_data';
+import 'vision_task_types.dart';
 
-import 'vision_types.dart';
+export 'vision_task_types.dart' show VisionTaskException;
 export 'vision_types.dart';
 
 /// Options for the official Object Detector.
-final class ObjectDetectorOptions {
+final class ObjectDetectorOptions extends VisionModelOptions {
   /// Supply exactly one model source. Defaults match the official Python API.
   ObjectDetectorOptions({
-    this.modelPath,
-    Uint8List? modelBytes,
-    this.runningMode = VisionRunningMode.image,
-    this.delegate = VisionDelegate.cpu,
+    super.model,
+    super.modelPath,
+    super.modelBytes,
+    super.runningMode,
+    super.delegate,
     this.displayNamesLocale,
     this.maxResults = -1,
     this.scoreThreshold = 0.0,
     List<String>? categoryAllowlist,
     List<String>? categoryDenylist,
-  }) : modelBytes = modelBytes == null
-           ? null
-           : Uint8List.fromList(modelBytes).asUnmodifiableView(),
-       categoryAllowlist = List.unmodifiable(categoryAllowlist ?? const []),
+  }) : categoryAllowlist = List.unmodifiable(categoryAllowlist ?? const []),
        categoryDenylist = List.unmodifiable(categoryDenylist ?? const []) {
-    if ((modelPath == null) == (modelBytes == null)) {
-      throw ArgumentError('Supply exactly one of modelPath and modelBytes.');
-    }
-    if (modelPath != null &&
-        (modelPath!.isEmpty || modelPath!.contains('\u0000'))) {
-      throw ArgumentError.value(modelPath, 'modelPath', 'Invalid path');
-    }
-    if (modelBytes != null && modelBytes.isEmpty) {
-      throw ArgumentError.value(modelBytes, 'modelBytes', 'Must not be empty');
-    }
     if (!scoreThreshold.isFinite) {
       throw ArgumentError.value(
         scoreThreshold,
@@ -58,18 +46,6 @@ final class ObjectDetectorOptions {
       }
     }
   }
-
-  /// Filesystem path to an official model, not a Flutter asset key.
-  final String? modelPath;
-
-  /// Owned, read-only copy of model bytes, useful with Flutter's rootBundle.
-  final Uint8List? modelBytes;
-
-  /// The task mode, fixed for the lifetime of this detector.
-  final VisionRunningMode runningMode;
-
-  /// Inference backend. Recreate the task to change it.
-  final VisionDelegate delegate;
 
   /// Locale for display names, as embedded in the model metadata.
   final String? displayNamesLocale;
@@ -175,19 +151,4 @@ final class ObjectDetectorResult {
 
   /// Input video timestamp, or null for an independent still image.
   final int? timestampMilliseconds;
-}
-
-/// Failure reported by MediaPipe or its worker isolate.
-final class ObjectDetectorException implements Exception {
-  /// Creates an error with an optional MediaPipe/Abseil status code.
-  const ObjectDetectorException(this.message, {this.statusCode});
-
-  /// Diagnostic text from the native API or worker.
-  final String message;
-
-  /// Native status code, or null for an isolate/runtime failure.
-  final int? statusCode;
-
-  @override
-  String toString() => 'ObjectDetectorException($statusCode): $message';
 }

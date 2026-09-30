@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 /// Replays a checked-in portrait through the public VIDEO API without a camera.
 /// Build with `dart build cli -t bin/benchmark_delegates.dart` and run from the
@@ -45,7 +45,7 @@ Future<void> main(List<String> arguments) async {
             : await FaceDetector.create(
                 FaceDetectorOptions(
                   modelPath: 'models/blaze_face_short_range.tflite',
-                  runningMode: VisionRunningMode.video,
+                  runningMode: RunningMode.video,
                   delegate: delegate,
                 ),
               );
@@ -54,7 +54,7 @@ Future<void> main(List<String> arguments) async {
             : await FaceLandmarker.create(
                 FaceLandmarkerOptions(
                   modelPath: 'models/face_landmarker.task',
-                  runningMode: VisionRunningMode.video,
+                  runningMode: RunningMode.video,
                   delegate: delegate,
                 ),
               );

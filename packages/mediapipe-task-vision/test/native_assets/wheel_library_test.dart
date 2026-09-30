@@ -4,8 +4,8 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_vision/src/native_assets/wheel_library.dart';
 import 'package:test/test.dart';
 
 void main() {

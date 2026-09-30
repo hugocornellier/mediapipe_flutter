@@ -1,26 +1,25 @@
 /// Extension point for platform SDK adapters. Applications use the task classes.
 library;
 
-import 'src/interface/face_detector_types.dart';
-import 'src/interface/holistic_landmarker_types.dart';
-import 'src/interface/image_classifier_types.dart';
-import 'src/interface/image_embedder_types.dart';
-import 'src/interface/interactive_segmenter_types.dart';
-import 'src/interface/object_detector_types.dart';
-import 'src/interface/segmenter_task_types.dart';
+import 'interface/face_detector_types.dart';
+import 'interface/holistic_landmarker_types.dart';
+import 'interface/image_classifier_types.dart';
+import 'interface/image_embedder_types.dart';
+import 'interface/interactive_segmenter_types.dart';
+import 'interface/object_detector_types.dart';
+import 'interface/segmenter_task_types.dart';
 
-export 'src/interface/face_detector_types.dart';
-export 'src/interface/holistic_landmarker_types.dart';
-export 'src/interface/image_classifier_types.dart';
-export 'src/interface/image_embedder_types.dart';
-export 'src/interface/interactive_segmenter_types.dart';
-export 'src/interface/object_detector_types.dart';
-export 'src/interface/segmenter_task_types.dart';
-export 'src/interface/landmark_codec.dart';
+export 'interface/face_detector_types.dart';
+export 'interface/holistic_landmarker_types.dart';
+export 'interface/image_classifier_types.dart';
+export 'interface/image_embedder_types.dart';
+export 'interface/interactive_segmenter_types.dart';
+export 'interface/object_detector_types.dart';
+export 'interface/segmenter_task_types.dart';
+export 'interface/landmark_codec.dart';
 // An adapter that can name the GPU sets this, so capabilities can exclude a
 // GPU family a task fails on.
-export 'package:mediapipe_flutter_core/capabilities.dart'
-    show taskPlatformGpuReader;
+export 'package:mediapipe_core/capabilities.dart' show taskPlatformGpuReader;
 
 /// A serialized, asynchronous adapter to one task of an official platform SDK.
 abstract interface class VisionTaskBackend<R> {

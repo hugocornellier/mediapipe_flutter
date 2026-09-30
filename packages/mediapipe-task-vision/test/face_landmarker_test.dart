@@ -3,8 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/vision_fixture.dart';
@@ -46,7 +46,7 @@ void main() {
           ),
         ),
         throwsA(
-          isA<FaceLandmarkerException>()
+          isA<VisionTaskException>()
               .having((error) => error.gpuUnavailable, 'gpuUnavailable', true)
               .having(
                 (error) => error.message,
@@ -91,9 +91,7 @@ void _testDelegate(VisionDelegate delegate) {
           FaceLandmarkerOptions(
             delegate: delegate,
             modelPath: _model,
-            runningMode: video
-                ? VisionRunningMode.video
-                : VisionRunningMode.image,
+            runningMode: video ? RunningMode.video : RunningMode.image,
             numFaces: sequence['num_faces'] as int,
             outputFaceBlendshapes: true,
             outputFacialTransformationMatrixes: true,
@@ -252,7 +250,7 @@ void _testDelegate(VisionDelegate delegate) {
         FaceLandmarkerOptions(
           delegate: delegate,
           modelPath: _model,
-          runningMode: VisionRunningMode.video,
+          runningMode: RunningMode.video,
         ),
       );
       try {
@@ -280,7 +278,7 @@ void _testDelegate(VisionDelegate delegate) {
             VisionImage.fromFile('missing.jpg'),
             timestampMilliseconds: 11,
           ),
-          throwsA(isA<FaceLandmarkerException>()),
+          throwsA(isA<VisionTaskException>()),
         );
         await expectLater(
           task.detectForVideo(_image(rgbFrame), timestampMilliseconds: 11),
@@ -308,7 +306,7 @@ void _testDelegate(VisionDelegate delegate) {
       ]) {
         await expectLater(
           FaceLandmarker.create(options).timeout(const Duration(seconds: 10)),
-          throwsA(isA<FaceLandmarkerException>()),
+          throwsA(isA<VisionTaskException>()),
         );
       }
       final task = await FaceLandmarker.create(

@@ -8,7 +8,7 @@
 
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_core/interface.dart';
+import 'package:mediapipe_core/interface.dart';
 
 /// {@macro ClassifierResult}
 class ClassifierResult extends BaseClassifierResult {

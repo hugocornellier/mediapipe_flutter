@@ -4,9 +4,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/classic_text_bindings.dart'
+import 'package:mediapipe_text/src/io/third_party/mediapipe/classic_text_bindings.dart'
     as mp;
-import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/embedding_gemma_bindings.dart'
+import 'package:mediapipe_text/src/io/third_party/mediapipe/embedding_gemma_bindings.dart'
     as embedding;
 import 'package:test/test.dart';
 

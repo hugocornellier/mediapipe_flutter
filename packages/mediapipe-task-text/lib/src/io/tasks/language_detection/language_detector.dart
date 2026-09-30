@@ -1,6 +1,6 @@
-import 'package:mediapipe_flutter_text/interface.dart';
+import 'package:mediapipe_text/interface.dart';
 
-import '../../../../text_task_backend.dart';
+import '../../../text_task_backend.dart';
 import '../../../backend_text_task.dart';
 import '../../pending_text_task.dart';
 import 'language_detector_options.dart';
@@ -13,6 +13,16 @@ import 'language_detector_result.dart';
 ///
 /// Enable core.tasks_runtime in the app's hook settings. Await [dispose] to
 /// drain accepted requests, close native resources and wait for worker exit.
+///
+/// ```dart
+/// final task = await LanguageDetector.create(
+///   LanguageDetectorOptions(model: TextModels.languageDetector),
+/// );
+/// final result = await task.detect('Bonjour');
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 class LanguageDetector extends BaseLanguageDetector {
   /// Start loading immediately. Initialization failures reach [detect].
   LanguageDetector(LanguageDetectorOptions options)
@@ -42,6 +52,7 @@ class LanguageDetector extends BaseLanguageDetector {
   static Future<LanguageDetector> create(
     LanguageDetectorOptions options,
   ) async {
+    await options.prepareModel();
     final task = LanguageDetector(options);
     await task._task.ready;
     return task;

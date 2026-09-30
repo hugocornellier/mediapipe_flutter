@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   file_selector: ^1.1.0
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ..
 
 dev_dependencies:
@@ -29,7 +29,7 @@ flutter:
 
 hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [interactive_segmenter]

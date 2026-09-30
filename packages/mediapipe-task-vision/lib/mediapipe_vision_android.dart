@@ -1,18 +1,18 @@
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/face_landmarker_backend.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'src/capabilities/official_runtime_io.dart'
     show hasSourceBuiltAndroidFaceRuntime;
 
-const _channel = MethodChannel('mediapipe_flutter_vision/android');
+const _channel = MethodChannel('mediapipe_vision/android');
 
 /// Masks travel apart from the method channel, whose reply is copied onto the
 /// Java heap: a frame's confidence masks can outgrow it.
 const _masks = BasicMessageChannel<ByteData>(
-  'mediapipe_flutter_vision/android/masks',
+  'mediapipe_vision/android/masks',
   BinaryCodec(),
 );
 
@@ -61,7 +61,7 @@ abstract final class MediaPipeVisionAndroid {
         'matrices': o.outputFacialTransformationMatrixes,
       },
       _face,
-      FaceLandmarkerException.new,
+      VisionTaskException.new,
     );
     handLandmarkerBackendFactory = (o) => AndroidVisionTask.create(
       {
@@ -127,7 +127,7 @@ abstract final class MediaPipeVisionAndroid {
         'suppressionThreshold': o.minSuppressionThreshold,
       },
       _faceDetections,
-      FaceDetectorException.new,
+      VisionTaskException.new,
     );
     objectDetectorBackendFactory = (o) => AndroidVisionTask.create(
       {
@@ -142,7 +142,7 @@ abstract final class MediaPipeVisionAndroid {
         ),
       },
       _objectDetections,
-      ObjectDetectorException.new,
+      VisionTaskException.new,
     );
     imageClassifierBackendFactory = (o) => AndroidVisionTask.create(
       {
@@ -173,16 +173,11 @@ abstract final class MediaPipeVisionAndroid {
       try {
         final id = await _channel.invokeMethod<int>('create', {
           'task': 'interactive_segmenter',
-          ..._base(
-            o.modelPath,
-            o.modelBytes,
-            VisionRunningMode.image,
-            o.delegate,
-          ),
+          ..._base(o.modelPath, o.modelBytes, RunningMode.image, o.delegate),
         });
         return AndroidInteractiveSegmenter._(id!);
       } on PlatformException catch (cause) {
-        throw InteractiveSegmenterException(cause.message ?? cause.code);
+        throw VisionTaskException(cause.message ?? cause.code);
       }
     };
     imageSegmenterBackendFactory = (o) => AndroidVisionTask.create(
@@ -357,7 +352,7 @@ abstract final class MediaPipeVisionAndroid {
   static Map<String, Object?> _base(
     String? modelPath,
     Uint8List? modelBytes,
-    VisionRunningMode mode,
+    RunningMode mode,
     VisionDelegate delegate,
   ) => {
     'modelPath': modelPath,
@@ -527,7 +522,7 @@ final class AndroidInteractiveSegmenter implements InteractiveSegmenterBackend {
     try {
       return await _channel.invokeMethod<T>(method, {'id': _id, ...arguments});
     } on PlatformException catch (cause) {
-      throw InteractiveSegmenterException(cause.message ?? cause.code);
+      throw VisionTaskException(cause.message ?? cause.code);
     }
   }
 

@@ -1,6 +1,6 @@
 // Pinned upstream 2024 runtimes. Update binaries and headers together.
 // SHA-256 values verified from the original Google-hosted artifacts.
-import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_core/native_assets.dart';
 
 const sdkDownloads = <String, Map<String, DownloadAsset>>{
   'android': {
