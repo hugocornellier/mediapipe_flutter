@@ -141,8 +141,8 @@ const taskSettings = <String, List<TaskSetting>>{
     SwitchSetting('outputPoseSegmentationMask', 'Output Segmentation Mask'),
   ],
   'object_detector': [
-    CountSetting('maxResults', 'Max Results', initial: 5, max: 25),
-    ShareSetting('scoreThreshold', 'Score Threshold', initial: 0.3),
+    CountSetting('maxResults', 'Max Results', initial: 3, max: 25),
+    ShareSetting('scoreThreshold', 'Score Threshold', initial: 0.5),
   ],
   // As Google's web demo: Category Mask colors every class with the legend's
   // colors, Confidence Mask shows how sure the model is of one chosen class.
