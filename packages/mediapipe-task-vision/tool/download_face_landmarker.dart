@@ -7,9 +7,9 @@ Future<void> main(List<String> arguments) async {
   final destination = arguments.isEmpty
       ? 'models/face_landmarker.task'
       : arguments.single;
-  await downloadVerified((
-    url: faceLandmarkerUrl,
-    sha256: faceLandmarkerSha256,
-  ), File(destination));
+  await downloadVerified(
+    DownloadAsset(url: faceLandmarkerUrl, sha256: faceLandmarkerSha256),
+    File(destination),
+  );
   stdout.writeln('Verified model: $destination');
 }

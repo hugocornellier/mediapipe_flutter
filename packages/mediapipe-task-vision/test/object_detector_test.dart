@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_flutter_vision/src/capabilities/official_runtime_io.dart';
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart';
@@ -18,16 +19,14 @@ void main() {
     group(
       delegate.name,
       () => _testDelegate(delegate),
-      // The pinned source build no longer aborts in XNNPACK's KleidiAI SME
-      // kernels, but its macOS CPU results still differ from Google's official
-      // 1.0.0 outputs beyond tolerance, while Metal matches them exactly.
-      // See upstream-issues.md UP-001/UP-004.
+      // Google's CPU output drifts between Apple CPUs, so macOS CPU compares
+      // with same-host outputs (tool/test_official_macos_landmark_runtime.py).
       skip:
           delegate == VisionDelegate.cpu &&
               Platform.isMacOS &&
               Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
                   '1'
-          ? 'macOS source-build CPU output is unvalidated; see UP-004'
+          ? 'macOS CPU compares with same-host official outputs'
           : delegate == VisionDelegate.gpu &&
                 !Platform.isMacOS &&
                 !(Platform.isLinux &&
@@ -45,27 +44,24 @@ void main() {
     );
   });
 
-  // Google's official macOS runtime serves CPU; the source runtime refuses it.
-  if (Platform.isMacOS &&
-      Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
-          '1') {
-    test(
-      'the unvalidated CPU path is rejected before native initialization',
-      () async {
-        await expectLater(
-          ObjectDetector.create(
-            ObjectDetectorOptions(modelPath: 'missing-model.tflite'),
+  // Core bundles Google's macOS engine for this package's tests, so the CPU
+  // path passes the capability gate and reaches Google's own model loader.
+  if (Platform.isMacOS) {
+    test("macOS CPU runs in Google's engine from core", () async {
+      expect(hasOfficialMacosLandmarkRuntime(), isTrue);
+      await expectLater(
+        ObjectDetector.create(
+          ObjectDetectorOptions(modelPath: 'missing-model.tflite'),
+        ),
+        throwsA(
+          isA<ObjectDetectorException>().having(
+            (e) => e.message,
+            'message',
+            contains('missing-model.tflite'),
           ),
-          throwsA(
-            isA<UnsupportedError>().having(
-              (e) => e.message,
-              'diagnostic',
-              contains('UP-004'),
-            ),
-          ),
-        );
-      },
-    );
+        ),
+      );
+    });
   }
 
   test('rejects a zero result limit', () {

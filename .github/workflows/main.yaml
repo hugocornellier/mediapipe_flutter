@@ -237,18 +237,20 @@ jobs:
         with:
           python-version: '3.12'
       - name: Prepare the official runtime and check the unsigned-image pin
-        # The prepared dylib is re-signed by whichever Xcode is present. The
-        # pin covers the unsigned image, so this must pass on every Xcode; the
-        # manifest records which one signed it.
+        # Rebuilds the published engine's payload from Google's wheel. The
+        # dylib is re-signed by whichever Xcode is present; the pin covers the
+        # unsigned image, so this must pass on every Xcode, and the manifest
+        # records which one signed it.
         run: |
           xcodebuild -version | head -1
           python3 -B packages/mediapipe-task-vision/tool/prepare_official_macos_landmark_runtime.py \
             | python3 -c "import json,sys; t=sys.stdin.read(); m=json.loads(t[t.index('{'):])['manifest']; print('signed', m['sha256'][:16], 'unsigned', m['unsigned_sha256'][:16], m['signing_toolchain'])"
 
   official-landmark-validation:
-    # Every task the opt-in official macOS runtime serves, against Google's
-    # 1.0.0 wheel on this runner: CPU goldens, and Metal references generated
-    # here for Face, Hand and Object Detector.
+    # Every vision task Google's macOS engine serves (core bundles it with
+    # tasks_runtime: true), against Google's 1.0.0 wheel on this runner: CPU
+    # goldens, and Metal references generated here for Face, Hand and Object
+    # Detector.
     name: Official macOS runtime / every served task against Google's wheel
     runs-on: macos-15
     timeout-minutes: 45
@@ -272,8 +274,7 @@ jobs:
           dart tool/download_image_tasks.dart
           dart tool/download_object_detector.dart
           dart tool/download_segmenter_tasks.dart
-      - name: Prepare the official runtime
-        run: python3 -B packages/mediapipe-task-vision/tool/prepare_official_macos_landmark_runtime.py
+      # Core's hook downloads Google's engine from its pinned release.
       - name: Compare every served task with Google's wheel
         id: official
         run: python3 -B packages/mediapipe-task-vision/tool/test_official_macos_landmark_runtime.py

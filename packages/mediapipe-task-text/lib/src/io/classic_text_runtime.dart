@@ -1,7 +1,10 @@
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_flutter_core/capabilities.dart'
+    show tasksRuntimeUnavailable;
 import 'package:mediapipe_flutter_core/io.dart';
 
 import '../interface/text_task_exception.dart';
@@ -10,7 +13,7 @@ import 'third_party/mediapipe/classic_text_bindings.dart' as mp;
 
 /// Where core's shared runtime serves these tasks: Google's macOS 1.0.1
 /// library, its Linux 1.0.1 and Windows 1.0.0 wheel libraries, and its iOS
-/// 1.0.1 SDK through the adapter mediapipe_flutter_vision builds.
+/// 1.0.1 SDK through the adapter mediapipe_flutter_core builds.
 const _runtimeAbis = {
   Abi.macosArm64,
   Abi.linuxX64,
@@ -42,11 +45,7 @@ void requireTextTasksRuntime() {
       throw missing;
     }
     throw UnsupportedError(
-      Abi.current() == Abi.iosArm64
-          ? 'On iOS, MediaPipe text tasks run in the official iOS SDK adapter '
-                'that mediapipe_flutter_vision builds: add that package and '
-                'mediapipe_flutter_core.tasks_runtime: true to the app pubspec.'
-          : 'Enable mediapipe_flutter_core.tasks_runtime: true in the app pubspec hooks.user_defines to use MediaPipe text tasks.',
+      tasksRuntimeUnavailable('this text task', Platform.operatingSystem),
     );
   }
 }

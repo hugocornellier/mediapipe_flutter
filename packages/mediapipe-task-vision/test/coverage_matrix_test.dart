@@ -65,6 +65,7 @@ final _claims =
       'interactive_segmenter': (p) =>
           interactiveSegmenterCapabilitiesForPlatform(
             p,
+            officialMacosRuntime: true,
             officialIosRuntime: true,
           ),
       'object_detector': (p) => objectDetectorCapabilitiesForPlatform(

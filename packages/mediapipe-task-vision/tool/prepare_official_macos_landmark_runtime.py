@@ -1,4 +1,7 @@
-"""Prepare Google's official MediaPipe 1.0.0 macOS arm64 landmark runtime.
+"""Prepare Google's official MediaPipe 1.0.0 macOS arm64 engine.
+
+mediapipe_flutter_core bundles this library as the one MediaPipe engine every
+task family binds on macOS (its `tasksRuntimeReleases` row pins the archive).
 
 The runtime comes from the checksum-pinned wheel used by the independent CPU
 and GPU reference generators.  This tool extracts only the native library and
@@ -141,6 +144,7 @@ def prepare(wheel, output):
         'signing_toolchain': toolchain,
         'files': {name: digest(data) for name, data in sorted(files.items())},
         'packaging': packaging,
+        # Kept as published: the archive must stay byte-for-byte reproducible.
         'scope': ('Official runtime for the macOS arm64 tasks selected with '
                   'official_macos_landmark_tasks: true.'),
     }
@@ -180,7 +184,8 @@ an ad-hoc signature. `manifest.json` records each change and proves the code,
 data, sections and fixups are unchanged. The Flutter package pins the unsigned
 image, so the signature can be replaced without changing the pin.
 
-Used on macOS arm64 by apps that set `official_macos_landmark_tasks: true`.
+mediapipe_flutter_core bundles it on macOS arm64 when an app sets
+`tasks_runtime: true`; every task family runs on it.
 The archive includes Google's LICENSE and NOTICE from the wheel.
 
 - Archive SHA-256: `{archive_sha}`

@@ -223,6 +223,14 @@ TaskCapabilities<VisionDelegate> _magicTouch(TaskPlatform platform) =>
       officialIosRuntime: true,
     );
 
+TaskCapabilities<VisionDelegate> _officialMacosMagicTouch(
+  TaskPlatform platform,
+) => interactiveSegmenterCapabilitiesForPlatform(
+  platform,
+  officialMacosRuntime: true,
+  officialIosRuntime: true,
+);
+
 TaskCapabilities<VisionDelegate> _legacySegmenter(TaskPlatform platform) =>
     interactiveSegmenterLegacyCapabilitiesForPlatform(
       platform,
@@ -499,6 +507,7 @@ final _catalog = <GalleryTask>[
     model: 'interactive_segmentation.task',
     sample: 'animals.jpg',
     capabilities: _magicTouch,
+    officialMacosCapabilities: _officialMacosMagicTouch,
   ),
   // The audio package's Audio Classifier, on the same shared runtime.
   GalleryTask(

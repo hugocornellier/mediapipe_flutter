@@ -1,1 +1,23 @@
-{"version":"1.0.1","integrity":"03cqJx+BZ+WpmuDqq+4Z8Bn7BdJyEPxU7Q1iuczjrh3YGiaAD2VMYf5JCLd+vQy7nNrlOOvUQlTnX0nYRpAUOA=="}
+{
+  "package": "@mediapipe/tasks-text",
+  "version": "1.0.1",
+  "integrity": "03cqJx+BZ+WpmuDqq+4Z8Bn7BdJyEPxU7Q1iuczjrh3YGiaAD2VMYf5JCLd+vQy7nNrlOOvUQlTnX0nYRpAUOA==",
+  "files": [
+    "text_bundle.mjs",
+    "wasm/text_wasm_internal.js",
+    "wasm/text_wasm_internal.wasm",
+    "wasm/text_wasm_nosimd_internal.js",
+    "wasm/text_wasm_nosimd_internal.wasm",
+    "wasm/text_wasm_module_internal.js",
+    "wasm/text_wasm_module_internal.wasm"
+  ],
+  "sha384": {
+    "text_bundle.mjs": "/AtdA3yxkMFtY9chK1qgYDjWu9jHHJKbz8bTInXFLsTMFdxUFzyaLEpIT+oAYYiB",
+    "wasm/text_wasm_internal.js": "ufUahXOTqSfTwsimBJXBfvn03dkwDplZ/lRw0RqBdENYJs8kydrAzaeZufmcBeMb",
+    "wasm/text_wasm_internal.wasm": "TPq4Wxxud5bVyGUUxDWqk5Rrdf0ufIHf2BOiFW/JPa9SzSEhpfenfyWtHRQLFbeU",
+    "wasm/text_wasm_nosimd_internal.js": "Z/CwuXupwBJIQ+z7puDhZAdF09OLf95mTkx8FoAeUP6rrOKp4AE/CBfkWNK3VLGS",
+    "wasm/text_wasm_nosimd_internal.wasm": "yIqJ3216yYdSuu+uPUmUj2hBAzk++tMdzDf9HdyH9LC0xUijR54546gYHVtrNiCv",
+    "wasm/text_wasm_module_internal.js": "xV4VVTnimvD4CB+wt6sFKI18Fi9IbB7saDJ1CQGJLhbjIUxJDFqrOPNhYiPTytfZ",
+    "wasm/text_wasm_module_internal.wasm": "eyRDWmPcWa2vfMI58KPvny6inb9hFEQG/3Gl6+Zx8k4SNTjpYmOgcJSvW5S3/48N"
+  }
+}

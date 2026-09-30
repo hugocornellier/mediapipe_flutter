@@ -19,8 +19,7 @@ wheel library) and **Windows x64 CPU** (its 1.0.0 wheel library): the same
 library the vision package bundles there, loaded once for both packages. Linux
 needs the system EGL and OpenGL ES libraries (`libegl1 libgles2` on Debian or
 Ubuntu) even for CPU. On **iOS 15+ (arm64 devices and simulator)** they run
-on Google's 1.0.1 iOS SDK, in the plugin `mediapipe_flutter_vision` builds, so
-the app needs that package as well. Browsers and Android run those three
+on Google's 1.0.1 iOS SDK, in the adapter `mediapipe_flutter_core` builds. Browsers and Android run those three
 through this package's integrated web and Android backends. Add only
 `mediapipe_flutter_text` to your app. The
 2024 text runtime has been retired; its unvalidated Android, iOS and Intel macOS
@@ -30,11 +29,11 @@ Every text consumer must enable `hooks.user_defines.mediapipe_flutter_core.tasks
 in its app pubspec, as shown below. Models remain separate optional downloads.
 
 Browser tasks load the pinned JavaScript/WASM runtime from jsDelivr by default.
-For self-hosting, run `python3 -B packages/mediapipe-task-text/tool/prepare_runtime.py`,
-copy `packages/mediapipe-task-text/assets/runtime/` to `web/mediapipe/text/`
-in your app, and set `TextWebRuntime.baseUrl = 'mediapipe/text/';` before the
-first task. Import `package:mediapipe_flutter_text/web_runtime.dart` for this
-browser setting.
+To self-host, run `dart run mediapipe_flutter_core:web_runtime web/mediapipe`
+from the app root and set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';` (from
+`package:mediapipe_flutter_text/web_runtime.dart`) before the first task. One
+setting covers every family; see
+[core's README](../mediapipe-core/README.md#web-runtime).
 
 ## Capabilities and settings
 

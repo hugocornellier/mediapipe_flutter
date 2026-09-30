@@ -106,8 +106,7 @@ test_vision:
 
 .PHONY: test_vision_web
 test_vision_web:
-	python3 -B gallery/tool/prepare.py --target web
-	cd gallery && flutter test --platform chrome test/vision_web --reporter expanded
+	cd packages/mediapipe-task-vision && flutter test --platform chrome test/web --reporter expanded
 
 test_vision_flutter:
 	cd packages/mediapipe-task-vision && python3 tool/test_flutter_macos.py

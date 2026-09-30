@@ -1,10 +1,7 @@
-async function loadRuntime(baseUrl) {
-  const response = await fetch(new URL('runtime.json', import.meta.url));
-  if (!response.ok) throw new Error('Unable to load MediaPipe runtime version');
-  const {version} = await response.json();
-  const base = baseUrl || `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@${version}/`;
-  return [await import(new URL('text_bundle.mjs', base).href), new URL('wasm', base).href];
-}
+import {loadVerifiedRuntime} from '../../mediapipe_flutter_core/assets/verified_runtime.js';
+
+const loadRuntime = baseUrl =>
+  loadVerifiedRuntime(new URL('runtime.json', import.meta.url), baseUrl, 'Text');
 
 // Google's class and the method that runs one text, per task.
 const taskSpecs = (TextClassifier, TextEmbedder, LanguageDetector) => ({
@@ -30,11 +27,10 @@ self.onmessage = ({data}) => {
 async function run(type, input) {
   if (type === 'create') {
     const {task: name, modelBytes, modelPath, delegate = 'CPU', runtimeBaseUrl, ...settings} = input;
-    const [{FilesetResolver, LanguageDetector, TextClassifier, TextEmbedder}, wasmUrl] =
+    const {bundle: {LanguageDetector, TextClassifier, TextEmbedder}, files} =
       await loadRuntime(runtimeBaseUrl);
     spec = taskSpecs(TextClassifier, TextEmbedder, LanguageDetector)[name];
     if (!spec) throw new Error('Unsupported MediaPipe text task: ' + name);
-    const files = await FilesetResolver.forTextTasks(wasmUrl, true);
     task = await spec.type.createFromOptions(files, {
       ...withoutNulls(settings),
       baseOptions: {delegate, ...(modelBytes ? {modelAssetBuffer: modelBytes} : {modelAssetPath: modelPath})},

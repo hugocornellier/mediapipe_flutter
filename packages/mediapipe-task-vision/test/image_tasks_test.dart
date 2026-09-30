@@ -198,14 +198,13 @@ void main() {
         },
       );
     },
-    // Google's official macOS runtime (tool/test_official_macos_landmark_runtime.py)
-    // is validated; the macOS source runtime is not.
+    // Google's CPU output drifts between Apple CPUs, so macOS compares with
+    // same-host outputs (tool/test_official_macos_landmark_runtime.py).
     skip:
         Platform.isMacOS &&
             Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
                 '1'
-        ? 'The macOS source runtime is not validated against the official '
-              'outputs; see upstream-issues.md UP-004.'
+        ? 'macOS compares with same-host official outputs.'
         : false,
   );
 
@@ -301,7 +300,7 @@ final _gpuSkip = Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] == null
     : Platform.isMacOS &&
           Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
               '1'
-    ? 'macOS GPU runs on the official runtime only.'
+    ? 'macOS GPU compares with same-host official outputs.'
     : Platform.isMacOS || Platform.isLinux
     ? null
     : 'Desktop GPU is validated on Linux and macOS.';

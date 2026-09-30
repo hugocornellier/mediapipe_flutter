@@ -65,8 +65,9 @@ dev_dependencies:
   test: ^1.31.0
 hooks:
   user_defines:
+    mediapipe_flutter_core:
+      tasks_runtime: true
     mediapipe_flutter_vision:
-      official_macos_landmark_tasks: true
       tasks: [face_detector, face_landmarker, gesture_recognizer, hand_landmarker,
               holistic_landmarker, image_classifier, image_embedder,
               image_segmenter, interactive_segmenter_legacy, object_detector,

@@ -8,7 +8,7 @@ import 'embedding_gemma_bindings.dart' show MpBaseOptions;
 import 'text_stream_bindings.dart';
 export 'text_stream_bindings.dart';
 
-const _runtime = 'package:mediapipe_flutter_core/tasks_1_0_1.dylib';
+const _runtime = 'package:mediapipe_flutter_core/mediapipe.dylib';
 const _bridge = 'package:mediapipe_flutter_text/text_stream_bridge.dylib';
 
 final class MpTextProofreaderOptions extends Struct {

@@ -33,7 +33,8 @@ const gallery = base + (base.includes('?') ? '&' : '?') + 'test-hooks';
 const apiBase = argumentsMap['api-url'] || 'http://localhost:8866/api-probe/';
 const textAudioBase = argumentsMap['text-audio-url'] || 'http://localhost:8866/text-audio-probe/';
 const evidence = path.join(repo, 'build/codex-tmp/web-browser-' + browserName +
-  (delegate === 'GPU' ? '-gpu' : '') + (taskName === 'face' ? '' : '-' + taskName));
+  (delegate === 'GPU' ? '-gpu' : '') + (taskName === 'face' ? '' : '-' + taskName) +
+  (argumentsMap.runtime ? '-self-hosted' : ''));
 fs.mkdirSync(evidence, {recursive: true});
 const report = {browser: browserName, delegate, suite, task: taskName, checks: [], physical_webcam_tested: false,
   software_webgl: browserName === 'chromium' && process.platform === 'linux'};
@@ -846,9 +847,45 @@ async function textAudioChecks() {
   const context = await browser.newContext(microphone ? {permissions: ['microphone']} : {});
   const page = await context.newPage();
   observe(page);
-  await page.goto(textAudioBase + (microphone ? '?mic=1' : ''));
+  // Where the package's workers load Google's runtimes from: jsDelivr, or with
+  // --runtime=<url> a root the probe's bundle serves (MediaPipeWebRuntime).
+  const runtimeRoot = new URL(argumentsMap.runtime || 'https://cdn.jsdelivr.net/npm/', textAudioBase).href;
+  const runtimeRequests = [];
+  const recordRuntime = request => {
+    if (/@mediapipe\/tasks-(text|audio)@/.test(request.url())) runtimeRequests.push(request.url());
+  };
+  context.on('request', recordRuntime);
+  const query = new URLSearchParams();
+  if (microphone) query.set('mic', '1');
+  if (argumentsMap.runtime) query.set('runtime', argumentsMap.runtime);
+  await page.goto(textAudioBase + (query.size ? '?' + query : ''));
   await wait(page, () => window.mediapipeTextAudioReport, null, 300000);
+  context.off('request', recordRuntime);
   const api = await page.evaluate(() => window.mediapipeTextAudioReport);
+  fs.writeFileSync(path.join(evidence, 'text-audio-runtime-requests.json'), JSON.stringify(runtimeRequests, null, 2));
+  for (const family of ['text', 'audio']) {
+    assert.ok(runtimeRequests.some(url => url.startsWith(runtimeRoot + `@mediapipe/tasks-${family}@`)),
+      `no ${family} runtime request under ${runtimeRoot}: ${runtimeRequests}`);
+  }
+  assert.deepEqual(runtimeRequests.filter(url => !url.startsWith(runtimeRoot)), [],
+    'runtime requests outside ' + runtimeRoot);
+  report.runtime_root = runtimeRoot;
+  report.checks.push('text-audio-runtime-from-configured-root');
+  assert.equal(api.model_cache, 'passed');
+  report.checks.push('web-model-cache-offline-hit');
+  if (argumentsMap.runtime && browserName === 'chromium') {
+    // The same pinned SHA-384 must reject a changed file from a self-hosted root.
+    const tampered = await context.newPage();
+    await tampered.route('**/text_bundle.mjs', route =>
+      route.fulfill({status: 200, contentType: 'text/javascript', body: 'tampered'}));
+    await tampered.goto(textAudioBase + '?runtime=' + encodeURIComponent(argumentsMap.runtime));
+    await wait(tampered, () => window.mediapipeTextAudioReport, null, 30000);
+    const failure = await tampered.evaluate(() => window.mediapipeTextAudioReport);
+    assert.equal(failure.status, 'failed');
+    assert.match(failure.error, /text_bundle\.mjs: SHA-384 mismatch/);
+    report.checks.push('tampered-self-hosted-runtime-rejected');
+    await tampered.close();
+  }
   fs.writeFileSync(path.join(evidence, 'text-audio-report.json'), JSON.stringify(api, null, 2));
   assert.equal(api.status, 'passed', JSON.stringify(api));
   const official = await page.evaluate(async () => {

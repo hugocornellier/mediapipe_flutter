@@ -12,7 +12,7 @@ import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 
-const _asset = 'package:mediapipe_flutter_vision/vision.dylib';
+const _asset = 'package:mediapipe_flutter_core/mediapipe.dylib';
 
 @Native<
   Int32 Function(

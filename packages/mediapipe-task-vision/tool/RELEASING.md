@@ -84,15 +84,15 @@ modern stateful C API is not available in the public source build. See
 
 ## Official macOS runtime
 
-Apps that set `official_macos_landmark_tasks: true` use Google's official 1.0.0
-macOS arm64 wheel runtime for the tasks in `officialMacosLandmarkRuntime`.
+Apps that set `mediapipe_flutter_core.tasks_runtime: true` on macOS get
+Google's official 1.0.0 macOS arm64 wheel runtime, which core bundles once for
+every family (`tasksRuntimeReleases` pins the archive).
 `tool/prepare_official_macos_landmark_runtime.py` verifies the wheel, extracts
 its library and notices, corrects `LC_ID_DYLIB`, shortens equivalent
 system-framework load paths to leave Flutter install-name capacity, re-signs,
-and proves the native payload stayed unchanged. A maintainer's prepared copy in
-the ignored package build directory takes precedence; everyone else downloads
-the `official-landmarks-v1.0.0` release archive, which
-`--release <dir>` writes deterministically. The hook pins the unsigned image,
+and proves the native payload stayed unchanged. Apps download the
+`official-landmarks-v1.0.0` release archive, which `--release <dir>` writes
+deterministically. The hook pins the unsigned image,
 so the archive's ad-hoc signature is not part of the pin.
 
 Before publishing a new archive, run

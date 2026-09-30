@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
+import 'package:mediapipe_flutter_core/native_assets.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
 import 'package:test/test.dart';
 
@@ -63,7 +64,7 @@ void _testLibrary(String libraryName) {
     String? expectedHash,
     VisionLibraryTarget target = VisionLibraryTarget.macosArm64,
   }) => downloadVisionLibrary(
-    asset: (
+    asset: DownloadAsset(
       url: 'http://127.0.0.1:$port/runtime.tar.gz',
       sha256: expectedHash ?? sha256.convert(response).toString(),
     ),
@@ -267,7 +268,10 @@ void _testLibrary(String libraryName) {
   });
 
   test('rejects incorrect archive checksum before unpacking', () async {
-    await expectLater(download(expectedHash: '0' * 64), throwsStateError);
+    await expectLater(
+      download(expectedHash: '0' * 64),
+      throwsA(isA<DownloadException>()),
+    );
     expect(
       await cache
           .list(recursive: true)
@@ -279,7 +283,7 @@ void _testLibrary(String libraryName) {
 
   test('HTTP errors leave no usable runtime', () async {
     status = 404;
-    await expectLater(download(), throwsA(isA<HttpException>()));
+    await expectLater(download(), throwsA(isA<DownloadException>()));
     expect(
       await cache.list(recursive: true).where((entry) => entry is File).isEmpty,
       isTrue,

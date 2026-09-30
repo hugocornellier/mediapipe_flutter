@@ -15,8 +15,7 @@ import 'package:mediapipe_flutter_text/text_task_backend.dart';
 
 /// Text Classifier, Text Embedder, Language Detector and Audio Classifier
 /// through Google's official mobile SDKs (the text and audio packages' Android
-/// plugins; on iOS the vision package's SDK adapter, which core's runtime
-/// resolves to), against Google's own 1.0.1 outputs for the same inputs (the
+/// plugins; on iOS the SDK adapter core's runtime builds), against Google's own 1.0.1 outputs for the same inputs (the
 /// packages' checked-in references, from the macOS wheel).
 /// Another runtime build on another CPU, so scores get a cross-runtime bound.
 /// Runs on the Android emulator and iOS simulator in CI, and on phones.

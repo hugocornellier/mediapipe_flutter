@@ -1,7 +1,7 @@
 # Modern macOS task validation and benchmarks
 
 This maintainer tool exercises the public Dart APIs for EmbeddingGemma,
-Proofreader, Summarizer and stateful MagicTouch using the pinned MediaPipe 1.0.1
+Proofreader, Summarizer and stateful MagicTouch using the pinned MediaPipe 1.0.0
 runtime. It builds a native AOT executable with `dart build cli`; no Bazel,
 CMake or custom inference implementation is involved.
 
@@ -60,7 +60,7 @@ from warmed inference. The report includes all samples, median and p95.
 ## Official reference provenance
 
 `fixtures/options-reference.json.gz` is lossless JSON generated from Google's
-unmodified Python 1.0.1 API and original macOS arm64 dylib. The generator verifies
+unmodified Python 1.0.0 API and original macOS arm64 dylib. The generator verifies
 the original library and all model hashes. It leaves the existing package
 fixtures unchanged. The segmentation input and mask come from the vision
 package's attributed official fixtures.
@@ -73,7 +73,7 @@ build/codex-tmp/mediapipe-reference/bin/python -B \
 ```
 
 Reference generation needs a Python environment with the official wheel's
-dependencies and an extracted, hash-verified 1.0.1 wheel. Normal validation uses
+dependencies and an extracted, hash-verified 1.0.0 wheel. Normal validation uses
 the saved references and has no MediaPipe Python dependency. The intentionally
 failed EmbeddingGemma graph is generated in a bounded child process: Google's
 Python finalizer can attempt to close the failed native handle again. The Dart

@@ -7,9 +7,12 @@ Future<void> main(List<String> arguments) async {
   final destination = arguments.isEmpty
       ? 'models/blaze_face_short_range.tflite'
       : arguments.single;
-  await downloadVerified((
-    url: blazeFaceShortRangeUrl,
-    sha256: blazeFaceShortRangeSha256,
-  ), File(destination));
+  await downloadVerified(
+    DownloadAsset(
+      url: blazeFaceShortRangeUrl,
+      sha256: blazeFaceShortRangeSha256,
+    ),
+    File(destination),
+  );
   stdout.writeln('Verified model: $destination');
 }

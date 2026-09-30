@@ -12,7 +12,9 @@ import time
 
 PACKAGE = Path(__file__).resolve().parents[1]
 MODEL_SHA256 = '8b2d4ef09236adb9ead3127325526ba1aa5a59feb7c5de2d3f5958f27479de59'
-LIBRARY_SHA256 = '9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a'
+sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
+from official_wheels import MACOS  # noqa: E402  the engine core bundles on macOS
+LIBRARY_SHA256 = MACOS['library_sha256']
 MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/text_summarizer/200m/1/summarization_quant_200m_2modes.litertlm'
 
 
@@ -26,7 +28,7 @@ def main():
     from mediapipe.tasks.python.text import text_summarizer as api
     from mediapipe.tasks.python.core.base_options_c import MpBaseOptionsC
     assert platform.system() == 'Darwin' and platform.machine() == 'arm64'
-    assert mp.__version__ == '1.0.1'
+    assert mp.__version__ == MACOS['version'], mp.__version__
     library = Path(mp.__file__).parent / 'tasks/c/libmediapipe.dylib'
     assert hashlib.sha256(library.read_bytes()).hexdigest() == LIBRARY_SHA256
     model = PACKAGE / 'models/summarization_quant_200m_2modes.litertlm'
@@ -49,7 +51,7 @@ def main():
         ('short', 'The library will close at six today for maintenance and reopen tomorrow morning.'),
         ('empty', ''),
     ]
-    report = {'runtime': 'mediapipe==1.0.1', 'delegate': 'CPU',
+    report = {'runtime': 'mediapipe==' + MACOS['version'], 'delegate': 'CPU',
               'library_sha256': LIBRARY_SHA256, 'model_sha256': MODEL_SHA256,
               'model_url': MODEL_URL, 'macos': platform.mac_ver()[0], 'cases': [], 'errors': []}
     for mode in api.Mode:

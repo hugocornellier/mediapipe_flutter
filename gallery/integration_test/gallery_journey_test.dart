@@ -258,10 +258,6 @@ void main() {
           expect(find.text('Speech'), findsWidgets);
           break;
         case GalleryDemo.segment:
-          await _until(
-            tester,
-            () => find.text('Include').evaluate().isNotEmpty,
-          );
           final canvas = find.byKey(const ValueKey('segment-canvas'));
           await _until(tester, () => canvas.evaluate().isNotEmpty);
           expect(

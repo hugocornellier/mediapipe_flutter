@@ -17,7 +17,10 @@ Future<void> main() async {
       holisticLandmarkerSha256,
     ),
   ]) {
-    await downloadVerified((url: url, sha256: digest), File('models/$name'));
+    await downloadVerified(
+      DownloadAsset(url: url, sha256: digest),
+      File('models/$name'),
+    );
     stdout.writeln('Verified model: models/$name');
   }
 }

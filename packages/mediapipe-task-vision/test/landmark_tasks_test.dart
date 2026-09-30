@@ -18,13 +18,13 @@ typedef _Task = (
   Future<void> Function(),
 );
 // These tasks are validated against the official wheel that ships the same
-// native library on Linux and Windows. macOS loads our source build, whose CPU
-// results still differ from the official outputs; see upstream-issues.md
-// UP-004. Creating a task there fails closed, so the comparisons cannot run.
+// native library on Linux and Windows. Google's macOS CPU output drifts
+// between Apple CPUs, so macOS compares with same-host outputs
+// (tool/test_official_macos_landmark_runtime.py).
 final _unvalidatedHost =
     Platform.isMacOS &&
         Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] != '1'
-    ? 'macOS source-build CPU output is unvalidated; see UP-004'
+    ? 'macOS compares with same-host official outputs'
     : null;
 final _selectedTasks =
     switch (Platform.environment['MEDIAPIPE_LANDMARK_TASKS']) {

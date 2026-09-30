@@ -5,15 +5,13 @@ import 'package:ffi/ffi.dart';
 import 'package:mediapipe_flutter_core/io.dart' show mpHostSystem;
 
 import '../../third_party/mediapipe/interactive_segmenter_bindings.dart' as mp;
-import '../../third_party/mediapipe/interactive_segmenter_wheel_bindings.dart'
-    as wheel;
 import '../interface/interactive_segmenter_types.dart';
 import '../interface/vision_types.dart';
 import 'native_desktop_runtime.dart';
 import 'pixel_conversion.dart';
 
 /// One Interactive Segmenter session, owned by its persistent worker isolate:
-/// Google's desktop 1.0.1 runtime, or its iOS SDK through the vision adapter.
+/// Google's desktop engine, or its iOS SDK through core's adapter.
 abstract interface class InteractiveSegmenterSession {
   /// Replace the image, resetting the stroke session.
   void setImage(VisionImage input);
@@ -24,103 +22,6 @@ abstract interface class InteractiveSegmenterSession {
   /// Release the task and its image exactly once.
   void close();
 }
-
-/// Google's stateful C API: core's shared 1.0.1 runtime on macOS, and on Linux
-/// the vision package's own 1.0.1 wheel library, which exports the same API.
-final class _Api {
-  const _Api({
-    required this.create,
-    required this.setImage,
-    required this.segment,
-    required this.close,
-    required this.imageFromFile,
-    required this.imageFromPixels,
-    required this.imageData,
-    required this.imageWidth,
-    required this.imageHeight,
-    required this.imageChannels,
-    required this.imageByteDepth,
-    required this.imageFree,
-    required this.errorFree,
-  });
-
-  final int Function(
-    Pointer<mp.MpInteractiveSegmenterOptions>,
-    Pointer<Pointer<Void>>,
-    Pointer<Pointer<Char>>,
-  )
-  create;
-  final int Function(Pointer<Void>, Pointer<Void>, Pointer<Pointer<Char>>)
-  setImage;
-  final int Function(
-    Pointer<Void>,
-    Pointer<mp.MpStrokes>,
-    Pointer<Pointer<Void>>,
-    Pointer<Pointer<Char>>,
-  )
-  segment;
-  final int Function(Pointer<Void>, Pointer<Pointer<Char>>) close;
-  final int Function(
-    Pointer<Char>,
-    Pointer<Pointer<Void>>,
-    Pointer<Pointer<Char>>,
-  )
-  imageFromFile;
-  final int Function(
-    int,
-    int,
-    int,
-    Pointer<Uint8>,
-    int,
-    Pointer<Pointer<Void>>,
-    Pointer<Pointer<Char>>,
-  )
-  imageFromPixels;
-  final int Function(
-    Pointer<Void>,
-    Pointer<Pointer<Float>>,
-    Pointer<Pointer<Char>>,
-  )
-  imageData;
-  final int Function(Pointer<Void>) imageWidth;
-  final int Function(Pointer<Void>) imageHeight;
-  final int Function(Pointer<Void>) imageChannels;
-  final int Function(Pointer<Void>) imageByteDepth;
-  final void Function(Pointer<Void>) imageFree;
-  final void Function(Pointer<Char>) errorFree;
-}
-
-final _api = Platform.isLinux
-    ? const _Api(
-        create: wheel.create,
-        setImage: wheel.setImage,
-        segment: wheel.segment,
-        close: wheel.close,
-        imageFromFile: wheel.imageFromFile,
-        imageFromPixels: wheel.imageFromPixels,
-        imageData: wheel.imageData,
-        imageWidth: wheel.imageWidth,
-        imageHeight: wheel.imageHeight,
-        imageChannels: wheel.imageChannels,
-        imageByteDepth: wheel.imageByteDepth,
-        imageFree: wheel.imageFree,
-        errorFree: wheel.errorFree,
-      )
-    : const _Api(
-        create: mp.create,
-        setImage: mp.setImage,
-        segment: mp.segment,
-        close: mp.close,
-        imageFromFile: mp.imageFromFile,
-        imageFromPixels: mp.imageFromPixels,
-        imageData: mp.imageData,
-        imageWidth: mp.imageWidth,
-        imageHeight: mp.imageHeight,
-        imageChannels: mp.imageChannels,
-        imageByteDepth: mp.imageByteDepth,
-        imageFree: mp.imageFree,
-        errorFree: mp.errorFree,
-      );
 
 /// Synchronous native owner; used only by its persistent worker isolate.
 final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
@@ -158,7 +59,7 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
           ..modelAssetBufferCount = bytes.length;
       }
       final output = arena<Pointer<Void>>();
-      _checked((error) => _api.create(native, output, error));
+      _checked((error) => mp.create(native, output, error));
       _task = output.value;
     });
   }
@@ -173,12 +74,12 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
     final next = _createImage(input);
     try {
       _hasImage = false;
-      _checked((error) => _api.setImage(_task, next, error));
+      _checked((error) => mp.setImage(_task, next, error));
     } catch (_) {
-      _api.imageFree(next);
+      mp.imageFree(next);
       rethrow;
     }
-    if (_image != nullptr) _api.imageFree(_image);
+    if (_image != nullptr) mp.imageFree(_image);
     _image = next;
     _hasImage = true;
   }
@@ -211,15 +112,15 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
       }
       final output = arena<Pointer<Void>>();
       try {
-        _checked((error) => _api.segment(_task, native, output, error));
+        _checked((error) => mp.segment(_task, native, output, error));
         final mask = output.value;
         if (mask == nullptr) throw StateError('MediaPipe returned no mask.');
-        final width = _api.imageWidth(mask);
-        final height = _api.imageHeight(mask);
+        final width = mp.imageWidth(mask);
+        final height = mp.imageHeight(mask);
         if (width <= 0 ||
             height <= 0 ||
-            _api.imageChannels(mask) != 1 ||
-            _api.imageByteDepth(mask) != 4) {
+            mp.imageChannels(mask) != 1 ||
+            mp.imageByteDepth(mask) != 4) {
           throw StateError(
             'MediaPipe returned an invalid float32 confidence mask.',
           );
@@ -227,7 +128,7 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
         final data = arena<Pointer<Float>>();
         // The official accessor realigns noncontiguous data, just as numpy_view
         // does. Do not assume ImageFrame row alignment or expose native pointers.
-        _checked((error) => _api.imageData(mask, data, error));
+        _checked((error) => mp.imageData(mask, data, error));
         if (data.value == nullptr) {
           throw StateError('MediaPipe returned no mask data.');
         }
@@ -242,7 +143,7 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
         _hasImage = false;
         rethrow;
       } finally {
-        if (output.value != nullptr) _api.imageFree(output.value);
+        if (output.value != nullptr) mp.imageFree(output.value);
       }
     });
   }
@@ -255,9 +156,9 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
     _task = nullptr;
     _hasImage = false;
     try {
-      _checked((error) => _api.close(task, error));
+      _checked((error) => mp.close(task, error));
     } finally {
-      if (_image != nullptr) _api.imageFree(_image);
+      if (_image != nullptr) mp.imageFree(_image);
       _image = nullptr;
     }
   }
@@ -268,7 +169,7 @@ Pointer<Void> _createImage(VisionImage input) => using((arena) {
   try {
     if (input.path case final path?) {
       final name = path.toNativeUtf8(allocator: arena).cast<Char>();
-      _checked((error) => _api.imageFromFile(name, output, error));
+      _checked((error) => mp.imageFromFile(name, output, error));
     } else {
       final width = input.width!;
       final height = input.height!;
@@ -294,7 +195,7 @@ Pointer<Void> _createImage(VisionImage input) => using((arena) {
         }
       }
       _checked(
-        (error) => _api.imageFromPixels(
+        (error) => mp.imageFromPixels(
           input.format == VisionPixelFormat.rgb ? 1 : 2,
           width,
           height,
@@ -307,7 +208,7 @@ Pointer<Void> _createImage(VisionImage input) => using((arena) {
     }
     return output.value;
   } catch (_) {
-    if (output.value != nullptr) _api.imageFree(output.value);
+    if (output.value != nullptr) mp.imageFree(output.value);
     rethrow;
   }
 });
@@ -325,7 +226,7 @@ void _checked(int Function(Pointer<Pointer<Char>>) call) {
       );
     }
   } finally {
-    if (error.value != nullptr) _api.errorFree(error.value);
+    if (error.value != nullptr) mp.errorFree(error.value);
     calloc.free(error);
   }
 }

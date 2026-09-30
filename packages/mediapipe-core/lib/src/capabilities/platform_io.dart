@@ -69,5 +69,22 @@ Future<TaskPlatform> _readPlatform() async {
     architecture: Abi.current().toString().split('_').last,
     version: version,
     gpu: gpu,
+    simulator: runningInIosSimulator,
   );
 }
+
+/// Whether this process runs in Apple's iOS Simulator. The simulator starts
+/// every app with its `SIMULATOR_*` environment; a device never sets it.
+bool get runningInIosSimulator => _iosSimulator;
+
+final bool _iosSimulator = Platform.isIOS && _hasEnvironment('SIMULATOR_UDID');
+
+/// Asks libc directly: Dart's `Platform.environment` is always empty on iOS.
+bool _hasEnvironment(String name) => using((arena) {
+  final getenv = DynamicLibrary.process()
+      .lookupFunction<
+        Pointer<Char> Function(Pointer<Char>),
+        Pointer<Char> Function(Pointer<Char>)
+      >('getenv');
+  return getenv(name.toNativeUtf8(allocator: arena).cast()) != nullptr;
+});

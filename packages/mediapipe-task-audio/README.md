@@ -12,15 +12,14 @@ bundles once and shares with the text tasks: **macOS arm64 CPU, macOS 14+**
 On Linux and Windows that runtime is the vision package's wheel library, loaded
 once for both packages; Linux needs the system EGL and OpenGL ES libraries
 (`libegl1 libgles2` on Debian or Ubuntu) even for CPU. On **iOS 15+** it runs on
-Google's 1.0.1 iOS SDK, in the plugin `mediapipe_flutter_vision` builds (the
-app needs that package as well). Browsers and Android use this package's
+Google's 1.0.1 iOS SDK, in the adapter `mediapipe_flutter_core` builds. Browsers and Android use this package's
 integrated backends. Add only `mediapipe_flutter_audio` for the audio task.
 Browser tasks load the pinned JavaScript/WASM runtime from jsDelivr by default.
-For self-hosting, run `python3 -B packages/mediapipe-task-audio/tool/prepare_runtime.py`,
-copy `packages/mediapipe-task-audio/assets/runtime/` to `web/mediapipe/audio/`
-in your app, and set `AudioWebRuntime.baseUrl = 'mediapipe/audio/';` before the
-first task. Import `package:mediapipe_flutter_audio/web_runtime.dart` for this
-browser setting.
+To self-host, run `dart run mediapipe_flutter_core:web_runtime web/mediapipe`
+from the app root and set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';` (from
+`package:mediapipe_flutter_audio/web_runtime.dart`) before the first task. One
+setting covers every family; see
+[core's README](../mediapipe-core/README.md#web-runtime).
 Query support before offering the task:
 
 ```dart

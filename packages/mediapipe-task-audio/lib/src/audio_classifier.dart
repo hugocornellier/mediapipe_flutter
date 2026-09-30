@@ -1,8 +1,11 @@
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_flutter_core/capabilities.dart'
+    show tasksRuntimeUnavailable;
 import 'package:mediapipe_flutter_core/io.dart'
     show missingLinuxGraphicsLibraries, mpHostSystem;
 
@@ -127,12 +130,7 @@ void _requireRuntime() {
       throw missing;
     }
     throw UnsupportedError(
-      Abi.current() == Abi.iosArm64
-          ? 'On iOS, the Audio Classifier runs in the official iOS SDK adapter '
-                'that mediapipe_flutter_vision builds: add that package and '
-                'mediapipe_flutter_core.tasks_runtime: true to the app pubspec.'
-          : 'Enable mediapipe_flutter_core.tasks_runtime: true in the app '
-                'pubspec hooks.user_defines to use the Audio Classifier.',
+      tasksRuntimeUnavailable('the Audio Classifier', Platform.operatingSystem),
     );
   }
 }

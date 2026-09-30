@@ -3,16 +3,16 @@ let HolisticLandmarker, ImageClassifier, ImageEmbedder, ImageSegmenter;
 let InteractiveSegmenter, InteractiveSegmenterLegacy, ObjectDetector, PoseLandmarker;
 let DrawingUtils;
 
+import {loadVerifiedRuntime} from '../../mediapipe_flutter_core/assets/verified_runtime.js';
+
 async function loadRuntime(baseUrl) {
-  const response = await fetch(new URL('runtime.json', import.meta.url));
-  if (!response.ok) throw new Error('Unable to load MediaPipe runtime version');
-  const {version} = await response.json();
-  const base = baseUrl || `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/`;
+  const {bundle, files} = await loadVerifiedRuntime(
+    new URL('runtime.json', import.meta.url), baseUrl, 'Vision');
   ({FilesetResolver, FaceDetector, FaceLandmarker, GestureRecognizer, HandLandmarker,
     HolisticLandmarker, ImageClassifier, ImageEmbedder, ImageSegmenter,
     InteractiveSegmenter, InteractiveSegmenterLegacy, ObjectDetector, PoseLandmarker,
-    DrawingUtils} = await import(new URL('vision_bundle.mjs', base).href));
-  return new URL('wasm', base).href;
+    DrawingUtils} = bundle);
+  return files;
 }
 
 let overlay;
@@ -203,8 +203,7 @@ async function run(type, input, timing) {
   }
   if (type === 'create') {
     const {modelBytes, modelPath, delegate, runtimeBaseUrl, task: name = 'face_landmarker', ...settings} = input;
-    const wasmUrl = await loadRuntime(runtimeBaseUrl);
-    const files = await FilesetResolver.forVisionTasks(wasmUrl, true);
+    const files = await loadRuntime(runtimeBaseUrl);
     const TASKS = buildTasks();
     spec = TASKS[name];
     if (!spec) throw new Error('Unsupported MediaPipe task: ' + name);

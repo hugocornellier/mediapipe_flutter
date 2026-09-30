@@ -1,21 +1,21 @@
 import 'package:mediapipe_flutter_core/native_assets.dart';
 
 /// Google's unmodified BERT sentiment classifier, float32, version 1.
-const DownloadAsset bertClassifierModel = (
+const DownloadAsset bertClassifierModel = DownloadAsset(
   url:
       'https://storage.googleapis.com/mediapipe-models/text_classifier/bert_classifier/float32/1/bert_classifier.tflite',
   sha256: '9b45012ab143d88d61e10ea501d6c8763f7202b86fa987711519d89bfa2a88b1',
 );
 
 /// Google's unmodified Universal Sentence Encoder, float32, version 1.
-const DownloadAsset universalSentenceEncoderModel = (
+const DownloadAsset universalSentenceEncoderModel = DownloadAsset(
   url:
       'https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/1/universal_sentence_encoder.tflite',
   sha256: '89ad3c74175dd8caa398cc22b657296d94302d20c525c12b58b29420f7249749',
 );
 
 /// Google's unmodified language detector, float32, version 1.
-const DownloadAsset languageDetectorModel = (
+const DownloadAsset languageDetectorModel = DownloadAsset(
   url:
       'https://storage.googleapis.com/mediapipe-models/language_detector/language_detector/float32/1/language_detector.tflite',
   sha256: '7db4f23dfe1ad8966b050b419a865da451143fd43eb6b606a256aadeeb1e5417',
@@ -23,7 +23,7 @@ const DownloadAsset languageDetectorModel = (
 
 /// Google's unmodified EmbeddingGemma 300M task, mixed int4/int8, version 1.
 /// Maximum sequence length: 512 tokens, including prompt and special tokens.
-const DownloadAsset embeddingGemmaModel = (
+const DownloadAsset embeddingGemmaModel = DownloadAsset(
   url:
       'https://storage.googleapis.com/mediapipe-models/text_embedder/'
       'embedding_gemma/int4int8/1/embedding_gemma.task',
@@ -31,7 +31,7 @@ const DownloadAsset embeddingGemmaModel = (
 );
 
 /// Google's unmodified Proofread 200M mixed int4/int8 model, version 1.
-const DownloadAsset proofreaderModel = (
+const DownloadAsset proofreaderModel = DownloadAsset(
   url:
       'https://storage.googleapis.com/mediapipe-models/text_proofreader/'
       '200m/1/proofread_quant_200m.litertlm',
@@ -40,7 +40,7 @@ const DownloadAsset proofreaderModel = (
 
 /// Google's unmodified Summarization 200M mixed int4/int8 model, version 1.
 /// Supports both TLDR and key-points modes through the official task API.
-const DownloadAsset summarizerModel = (
+const DownloadAsset summarizerModel = DownloadAsset(
   url:
       'https://storage.googleapis.com/mediapipe-models/text_summarizer/'
       '200m/1/summarization_quant_200m_2modes.litertlm',

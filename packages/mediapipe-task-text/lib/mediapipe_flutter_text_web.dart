@@ -47,11 +47,7 @@ final class _WorkerTextTask implements TextTaskBackend {
       'modelBytes': bytes == null ? null : Uint8List.fromList(bytes).toJS,
       // A model path is a URL here, resolved against the page.
       'modelPath': path == null ? null : Uri.base.resolve(path).toString(),
-      'runtimeBaseUrl': switch (TextWebRuntime.baseUrl) {
-        final String url =>
-          Uri.base.resolve(url.endsWith('/') ? url : '$url/').toString(),
-        null => null,
-      },
+      'runtimeBaseUrl': MediaPipeWebRuntime.resolve(Uri.base),
     }.jsify()!;
     return _WorkerTextTask._(await _create(input as JSObject).toDart);
   }

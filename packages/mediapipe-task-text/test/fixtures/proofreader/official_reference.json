@@ -1,10 +1,10 @@
 {
-  "runtime": "mediapipe==1.0.1",
+  "runtime": "mediapipe==1.0.0",
   "delegate": "CPU",
-  "library_sha256": "9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a",
+  "library_sha256": "aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f",
   "model_sha256": "2caa317d5a6f951af6e437edce3bb3a9fdedc85a7a8c2a8fcaec96318d7708cc",
   "model_url": "https://storage.googleapis.com/mediapipe-models/text_proofreader/200m/1/proofread_quant_200m.litertlm",
-  "macos": "26.4",
+  "macos": "27.0",
   "cases": [
     {
       "name": "grammar",
@@ -156,8 +156,8 @@
           ]
         }
       ],
-      "sync_ms": 43.191959033720195,
-      "stream_ms": 38.73475000727922
+      "sync_ms": 132.68237499869429,
+      "stream_ms": 37.373833009041846
     },
     {
       "name": "spelling",
@@ -294,8 +294,8 @@
           ]
         }
       ],
-      "sync_ms": 34.820541040971875,
-      "stream_ms": 33.9725409867242
+      "sync_ms": 32.72449999349192,
+      "stream_ms": 32.93904199381359
     },
     {
       "name": "unchanged",
@@ -368,8 +368,8 @@
           ]
         }
       ],
-      "sync_ms": 30.109542072750628,
-      "stream_ms": 31.43100009765476
+      "sync_ms": 28.55362501577474,
+      "stream_ms": 28.36637498694472
     },
     {
       "name": "punctuation",
@@ -585,8 +585,8 @@
           ]
         }
       ],
-      "sync_ms": 38.228334044106305,
-      "stream_ms": 38.020625011995435
+      "sync_ms": 36.632125003961846,
+      "stream_ms": 35.49529198789969
     },
     {
       "name": "unicode",
@@ -731,8 +731,8 @@
           ]
         }
       ],
-      "sync_ms": 59.96187496930361,
-      "stream_ms": 61.95937504526228
+      "sync_ms": 57.96916701365262,
+      "stream_ms": 59.35133300954476
     },
     {
       "name": "empty",
@@ -750,8 +750,8 @@
           "corrections": []
         }
       ],
-      "sync_ms": 0.08179200813174248,
-      "stream_ms": 0.03616698086261749
+      "sync_ms": 0.08854200132191181,
+      "stream_ms": 0.034165976103395224
     },
     {
       "name": "paragraph",
@@ -1134,8 +1134,8 @@
           ]
         }
       ],
-      "sync_ms": 144.28079093340784,
-      "stream_ms": 142.85708300303668
+      "sync_ms": 136.64833299117163,
+      "stream_ms": 137.07745799911208
     },
     {
       "name": "grammar-limit-64",
@@ -1287,8 +1287,8 @@
           ]
         }
       ],
-      "sync_ms": 43.345625046640635,
-      "stream_ms": 39.121042005717754
+      "sync_ms": 41.33591701975092,
+      "stream_ms": 37.82158298417926
     },
     {
       "name": "spelling-limit-64",
@@ -1425,8 +1425,8 @@
           ]
         }
       ],
-      "sync_ms": 35.06091597955674,
-      "stream_ms": 34.28612509742379
+      "sync_ms": 32.696832990041,
+      "stream_ms": 32.17887500068173
     }
   ],
   "abi": {

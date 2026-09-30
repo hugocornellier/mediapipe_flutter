@@ -55,19 +55,11 @@ Content Security Policy, see [Self-hosting the web runtime](#self-hosting-the-we
 
 ### Self-hosting the web runtime
 
-Run `python3 -B packages/mediapipe-task-vision/tool/prepare_runtime.py` from
-the checkout root. The tool verifies the pinned npm archive and writes the
-bundle and `wasm/` under `assets/runtime/`. Copy that directory to your app's
-`web/mediapipe/vision/`, then set the base URL before creating a task:
-
-```dart
-import 'package:mediapipe_flutter_vision/web_runtime.dart';
-
-VisionWebRuntime.baseUrl = 'mediapipe/vision/';
-```
-
-The app must serve the copied files with CORS and CSP rules appropriate to its
-origin.
+One setting in `mediapipe_flutter_core` covers every task family. From the app
+root, `dart run mediapipe_flutter_core:web_runtime web/mediapipe` writes the
+verified runtimes; then set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';`
+(from `package:mediapipe_flutter_vision/web_runtime.dart`) before creating a
+task. See [core's README](../mediapipe-core/README.md#web-runtime).
 
 ### Choose native tasks at build time
 
@@ -83,18 +75,13 @@ hooks:
 
 Task selection is a **build-time** choice: creating an omitted task will not
 make its native runtime appear later. On macOS Apple Silicon, tasks beyond the
-default face pair need `official_macos_landmark_tasks: true` in the same vision
-hook section. The
+default face pair run on Google's engine, which `mediapipe_flutter_core`
+bundles once for every family when the app sets
+`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true` (see
+[core's README](../mediapipe-core/README.md)). Other platforms need nothing
+more than the task list. The
 [support matrix](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
 shows which task selections and delegates each platform serves.
-
-The stateful `interactive_segmenter` additionally needs
-`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true` on macOS.
-If the app combines it with macOS official landmark tasks, set
-`mediapipe_flutter_core.use_macos_vision_runtime: true` as well, so the tasks
-share one MediaPipe runtime. See the
-[segmenter guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md)
-for the full configuration.
 
 ## Quick start: detect face landmarks
 

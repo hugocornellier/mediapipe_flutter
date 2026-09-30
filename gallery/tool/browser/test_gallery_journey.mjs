@@ -182,9 +182,10 @@ try {
         enter(`${id}:${delegate}:tap`);
         // Switching reopens the task, so the image is tapped again after it.
         if (delegates.length > 1) await delegateButton(delegate).click({timeout: 120000});
-        // The canvas takes real pointer events, not a semantics tap (which
-        // has no position), so click the middle of its labelled area.
-        const image = page.getByLabel('Segmentation image', {exact: true});
+        // Wait for the newly opened delegate's canvas before clicking. The
+        // old canvas can still be visible when the delegate click returns.
+        // Use real pointer events; a semantics tap has no position.
+        const image = page.locator(`[flt-semantics-identifier="segment-canvas-${delegate}"]`);
         await image.waitFor({timeout: 120000});
         const box = await image.boundingBox();
         await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);

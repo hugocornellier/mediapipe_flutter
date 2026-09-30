@@ -330,13 +330,7 @@ final class WebVisionTask<R>
                   ? null
                   : Uri.base.resolve(modelPath).toString(),
               'runningMode': runningMode.name.toUpperCase(),
-              'runtimeBaseUrl': switch (VisionWebRuntime.baseUrl) {
-                final String url =>
-                  Uri.base
-                      .resolve(url.endsWith('/') ? url : '$url/')
-                      .toString(),
-                null => null,
-              },
+              'runtimeBaseUrl': MediaPipeWebRuntime.resolve(Uri.base),
               ...settings,
             }.jsify()!
             as JSObject,

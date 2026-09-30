@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:mediapipe_flutter_vision/face_landmarker_backend.dart';
 import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
 
+import 'src/capabilities/official_runtime_io.dart'
+    show hasSourceBuiltAndroidFaceRuntime;
+
 const _channel = MethodChannel('mediapipe_flutter_vision/android');
 
 /// Masks travel apart from the method channel, whose reply is copied onto the
@@ -193,6 +196,12 @@ abstract final class MediaPipeVisionAndroid {
       _segmentation,
       VisionTaskException.new,
     );
+    // `official_android_sdk: false` bundles the source-built face runtime;
+    // the face tasks then call it through FFI rather than Google's SDK.
+    if (hasSourceBuiltAndroidFaceRuntime()) {
+      faceLandmarkerBackendFactory = null;
+      faceDetectorBackendFactory = null;
+    }
   }
 
   static SegmentationResult _segmentation(

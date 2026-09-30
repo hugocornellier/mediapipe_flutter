@@ -26,6 +26,7 @@ final class NativeFaceLandmarker {
         'adapter; this runtime supports CPU only.',
       );
     }
+    refuseIosSimulatorGpu(gpu: _gpu);
     loadOfficialDesktopRuntime();
     using((arena) {
       final native = arena<mp.MpFaceLandmarkerOptions>();

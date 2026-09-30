@@ -5,8 +5,15 @@ import 'package:test/test.dart';
 
 void main() {
   const downloads = <String, Map<String, DownloadAsset>>{
-    'android': {'arm64': (url: 'https://example.invalid/lib.so', sha256: '')},
-    'ios': {'arm64': (url: 'https://example.invalid/lib.dylib', sha256: '')},
+    'android': {
+      'arm64': DownloadAsset(url: 'https://example.invalid/lib.so', sha256: ''),
+    },
+    'ios': {
+      'arm64': DownloadAsset(
+        url: 'https://example.invalid/lib.dylib',
+        sha256: '',
+      ),
+    },
   };
 
   Future<void> hook(List<String> args) => build(args, (input, output) async {

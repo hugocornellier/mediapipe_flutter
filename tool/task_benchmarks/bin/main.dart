@@ -36,7 +36,8 @@ Future<void> main(List<String> args) async {
   cases = (golden['cases'] as List).cast<Json>();
   report.addAll({
     'started_utc': DateTime.now().toUtc().toIso8601String(),
-    'runtime': '1.0.1',
+    // Google's 1.0.0 macOS library, the engine mediapipe_flutter_core bundles.
+    'runtime': '1.0.0',
     'dart': Platform.version,
     'execution':
         Platform.executable.endsWith('dartaotruntime') ||
@@ -53,7 +54,7 @@ Future<void> main(List<String> args) async {
     'status': 'running',
   });
   try {
-    check(golden['runtime'] == '1.0.1', 'Wrong reference runtime');
+    check(golden['runtime'] == '1.0.0', 'Wrong reference runtime');
     for (final entry in (golden['models'] as Json).entries) {
       final actual = await sha256.bind(File(model(entry.key)).openRead()).first;
       check(actual.toString() == entry.value, 'Model hash: ${entry.key}');

@@ -1,12 +1,11 @@
 import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
 import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
 
 /// Every task name accepted by `hooks.user_defines.mediapipe_flutter_vision.tasks`.
 ///
-/// Tasks other than MagicTouch come from the pinned v1.0.0 source build;
-/// MagicTouch is served by core's shared official 1.0.1 runtime.
+/// Every task runs on Google's engine, which mediapipe_flutter_core bundles,
+/// except where the face pair uses this package's source builds (macOS, and
+/// the iOS and Android opt-outs).
 const visionTasks = {
   'face_detector',
   'face_landmarker',
@@ -21,9 +20,6 @@ const visionTasks = {
   'object_detector',
   'pose_landmarker',
 };
-
-/// The one task served by core's runtime instead of a vision release.
-const sharedRuntimeTask = 'interactive_segmenter';
 
 /// A pinned, immutable runtime covering [tasks] on one target.
 ///
@@ -40,7 +36,6 @@ final class VisionRuntimeRelease {
     required this.librarySha256,
     required this.assetName,
     required this.localBuildDirectory,
-    this.officialWheel,
   });
 
   /// Build target such as `macos/arm64`; see `buildTarget`.
@@ -66,11 +61,6 @@ final class VisionRuntimeRelease {
   final String libraryName;
 
   /// SHA-256 of the library, pinned independently of the downloaded manifest.
-  ///
-  /// For a release with [officialWheel] set, the library is re-signed locally
-  /// and this is the digest of its unsigned image (`unsignedMachOSha256`),
-  /// which does not change with the Xcode that signs it. Other releases pin
-  /// the whole file.
   final String librarySha256;
 
   /// Primary code asset name, without the package prefix. Combined runtimes
@@ -80,65 +70,25 @@ final class VisionRuntimeRelease {
   /// Package-relative directory where `tool/build_native.py` writes the same
   /// library, so maintainers can test a source build before publishing it.
   final String localBuildDirectory;
-
-  /// Exact official-wheel provenance, when this is not a source build.
-  final OfficialWheelProvenance? officialWheel;
 }
 
-/// Google's official 1.0.0 landmark runtime used only by explicit opt-in.
-///
-/// It stays separate from [visionRuntimeReleases], so package consumers keep
-/// using the existing source/published runtimes unless they explicitly select
-/// it. Only the tasks in [VisionRuntimeRelease.tasks] have earned a macOS
-/// validation claim, even though the monolith exports every task API.
-const officialMacosLandmarkRuntime = VisionRuntimeRelease(
-  target: 'macos/arm64',
-  release: 'official-landmarks-v1.0.0',
-  tasks: {
-    'face_landmarker',
-    'gesture_recognizer',
-    'hand_landmarker',
-    'holistic_landmarker',
-    'image_classifier',
-    'image_embedder',
-    'image_segmenter',
-    'interactive_segmenter_legacy',
-    'object_detector',
-    'pose_landmarker',
-  },
-  // Written by tool/prepare_official_macos_landmark_runtime.py --release.
-  archive: (
-    url:
-        'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
-        'download/official-landmarks-v1.0.0/'
-        'mediapipe-official-vision-1.0.0-macos-arm64.tar.gz',
-    sha256: 'f662a259669792872d54da3a4f0932e63d87f423473fc08acf7d8d0528d9fb8d',
-  ),
-  libraryName: 'libmediapipe.dylib',
-  // Unsigned-image digest; tool/prepare_official_macos_landmark_runtime.py
-  // pins the same value and records the signed digest in the manifest.
-  librarySha256:
-      'b4c9e10a77fabea6ecbd88f93686ee9414c01762531eb3d487240958b2327fdc',
-  assetName: 'official_landmarks.dylib',
-  localBuildDirectory: 'build/native/official-macos-landmarks/',
-  officialWheel: OfficialWheelProvenance(
-    version: '1.0.0',
-    wheel: (
-      url:
-          'https://files.pythonhosted.org/packages/42/d7/'
-          '3a5dfaa86128db110c62a4d0f0c948304817932c9dd3257313bbdf24f7d5/'
-          'mediapipe-1.0.0-py3-none-macosx_11_0_arm64.whl',
-      sha256:
-          '7ee4783be41b2de345e1eb71e2f7e7c159a50ed5c283e60ccb8f5a6027c70a82',
-    ),
-    libraryPath: 'mediapipe/tasks/c/libmediapipe.dylib',
-    librarySha256:
-        'aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f',
-    minimumOS: '14.0',
-    delegates: {'cpu', 'gpu'},
-    notices: _wheelNotices,
-  ),
-);
+/// Vision tasks validated on Google's official macOS engine, which
+/// mediapipe_flutter_core bundles (`tasks_runtime: true`). The engine exports
+/// every task API; only these have earned a macOS claim. Face Detector keeps
+/// its source-built library.
+const macosEngineTasks = {
+  'face_landmarker',
+  'gesture_recognizer',
+  'hand_landmarker',
+  'holistic_landmarker',
+  'image_classifier',
+  'image_embedder',
+  'image_segmenter',
+  'interactive_segmenter',
+  'interactive_segmenter_legacy',
+  'object_detector',
+  'pose_landmarker',
+};
 
 /// Published vision runtimes. Add a row per (release, target); the hook
 /// downloads each release that covers a selected task exactly once.
@@ -147,7 +97,7 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     target: 'macos/arm64',
     release: 'face-detector-v1.0.0-2',
     tasks: {'face_detector'},
-    archive: (
+    archive: DownloadAsset(
       url:
           'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
           'download/face-detector-v1.0.0-2/'
@@ -165,7 +115,7 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     target: 'macos/arm64',
     release: 'face-landmarker-v1.0.0-2',
     tasks: {'face_landmarker'},
-    archive: (
+    archive: DownloadAsset(
       url:
           'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
           'download/face-landmarker-v1.0.0-2/'
@@ -179,32 +129,6 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     assetName: 'face_landmarker.dylib',
     localBuildDirectory: 'build/native/face_landmarker/',
   ),
-  // The combined source build from `//mediapipe/tasks/c:libmediapipe`. It also
-  // exports the two face tasks, but they are deliberately left to the published
-  // rows above so existing consumers keep downloading exactly what they do
-  // today. Selecting a face task alongside one of these bundles both libraries;
-  // that ends when this release is published and supersedes them.
-  VisionRuntimeRelease(
-    target: 'macos/arm64',
-    release: 'vision-v1.0.0-1',
-    tasks: {
-      'gesture_recognizer',
-      'hand_landmarker',
-      'holistic_landmarker',
-      'image_classifier',
-      'image_embedder',
-      'image_segmenter',
-      'interactive_segmenter_legacy',
-      'object_detector',
-      'pose_landmarker',
-    },
-    archive: null,
-    libraryName: 'libmediapipe.dylib',
-    librarySha256:
-        '7133bfed77463171f1af4792d3cbcb8dbbb2bb6d5a37e7aa204be856292b649e',
-    assetName: 'vision.dylib',
-    localBuildDirectory: 'build/native/tasks/',
-  ),
   // Built with the device SDK, so it is a separate artifact from the simulator
   // slice above even though both are arm64. Face only: the landmark tasks stay
   // unvalidated here for the same reason as every other source build, and iOS
@@ -213,7 +137,7 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     target: 'ios/arm64',
     release: 'vision-ios-device-v1.0.0-1',
     tasks: {'face_detector', 'face_landmarker'},
-    archive: (
+    archive: DownloadAsset(
       url:
           'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
           'download/vision-ios-device-v1.0.0-1/'
@@ -231,7 +155,7 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     target: 'ios-simulator/arm64',
     release: 'vision-ios-v1.0.0-1',
     tasks: {'face_detector', 'face_landmarker'},
-    archive: (
+    archive: DownloadAsset(
       url:
           'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
           'download/vision-ios-v1.0.0-1/'
@@ -247,13 +171,15 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
   ),
 ];
 
-/// Official desktop runtimes. Coverage grows only after inference tests pass.
+/// Google's desktop wheels and the vision tasks validated on each. Core bundles
+/// the library (its `tasksWheelRuntimes` pins, which tests keep identical);
+/// coverage grows only after inference tests pass.
 const visionWheelReleases = <String, VisionWheelRelease>{
   'linux/x64': VisionWheelRelease(
     target: 'linux/x64',
     // 1.0.1 is the first Linux wheel built with GPU. Its C API matches 1.0.0.
     version: '1.0.1',
-    wheel: (
+    wheel: DownloadAsset(
       url:
           'https://files.pythonhosted.org/packages/2a/58/'
           'bdd5bada89d7a132375df05e962bf702c148b47043dca98d820d9395152b/'
@@ -283,7 +209,7 @@ const visionWheelReleases = <String, VisionWheelRelease>{
   'windows/x64': VisionWheelRelease(
     target: 'windows/x64',
     version: '1.0.0',
-    wheel: (
+    wheel: DownloadAsset(
       url:
           'https://files.pythonhosted.org/packages/68/53/'
           'ffb67e668f23130aff197ec49be912be910c128b60658000d8bf263207c9/'
@@ -333,8 +259,3 @@ DownloadAsset get faceLandmarkerArchive => visionRuntimeReleases[1].archive!;
 /// Kept for callers that pin the face landmarker library digest directly.
 String get faceLandmarkerLibrarySha256 =>
     visionRuntimeReleases[1].librarySha256;
-
-// Explicit opt-in only. Native bytes originate from Google's 1.0.1 wheel.
-/// The shared runtime archive MagicTouch is served from, for macOS arm64.
-DownloadAsset get interactiveSegmenterArchive =>
-    tasksRuntimeReleases['macos/arm64']!.archive;

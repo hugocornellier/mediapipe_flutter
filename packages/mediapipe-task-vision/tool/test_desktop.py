@@ -14,6 +14,8 @@ import urllib.request
 
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
+sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
+from consumer_packages import copy_package  # noqa: E402
 
 
 def digest(path):
@@ -123,14 +125,8 @@ def main():
 
     # Package copies exclude source builds, tools, caches and maintenance opt-ins.
     for name in ['mediapipe-core', 'mediapipe-task-vision']:
-        source = PACKAGE.parent / name
-        destination = root / 'packages' / name
-        destination.mkdir(parents=True)
-        shutil.copyfile(source / 'pubspec.yaml', destination / 'pubspec.yaml')
-        shutil.copytree(source / 'lib', destination / 'lib')
-        shutil.copytree(source / 'hook', destination / 'hook')
+        copy_package(PACKAGE.parent / name, root / 'packages' / name)
     vision = root / 'packages/mediapipe-task-vision'
-    shutil.copyfile(PACKAGE / 'sdk_downloads.dart', vision / 'sdk_downloads.dart')
     app = root / 'app'
     run(['flutter', 'create', '--empty', '--no-pub', '--platforms=' + target,
          '--project-name', 'mediapipe_desktop_smoke', app], REPO, root / 'create.log')

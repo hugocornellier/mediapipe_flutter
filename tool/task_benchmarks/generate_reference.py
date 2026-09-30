@@ -1,4 +1,4 @@
-"""Generate the option/long-input matrix using unmodified MediaPipe 1.0.1.
+"""Generate the option/long-input matrix using unmodified MediaPipe, the wheel core's macOS engine comes from.
 
 This is separate from the existing fixtures, which remain unchanged. The Dart
 runner checks these official outputs, including observed native errors. Timing
@@ -18,7 +18,10 @@ import threading
 ROOT = Path(__file__).resolve().parents[2]
 TEXT = ROOT / 'packages/mediapipe-task-text'
 sys.path.insert(0, str(TEXT / 'tool'))
-from probe_text_gpu import LIBRARY_SHA, MODELS
+from probe_text_gpu import MODELS
+sys.path.insert(0, str(ROOT / 'packages/mediapipe-core/tool'))
+from official_wheels import MACOS  # noqa: E402  the engine core bundles on macOS
+LIBRARY_SHA = MACOS['library_sha256']
 
 
 def main():
@@ -33,11 +36,11 @@ def main():
     from mediapipe.tasks.python.text import text_embedder as embedding
     from mediapipe.tasks.python.text import text_proofreader as proofreader
     from mediapipe.tasks.python.text import text_summarizer as summarizer
-    assert mp.__version__ == '1.0.1'
+    assert mp.__version__ == MACOS['version'], mp.__version__
     assert hashlib.sha256((Path(mp.__file__).parent / 'tasks/c/libmediapipe.dylib').read_bytes()).hexdigest() == LIBRARY_SHA
     for filename, digest in MODELS.values():
         assert hashlib.sha256((TEXT / 'models' / filename).read_bytes()).hexdigest() == digest
-    report = {'runtime': '1.0.1', 'library_sha256': LIBRARY_SHA,
+    report = {'runtime': MACOS['version'], 'library_sha256': LIBRARY_SHA,
               'models': {k: v[1] for k, v in MODELS.items()},
               'machine': platform.machine(), 'macos': platform.mac_ver()[0], 'cases': []}
 

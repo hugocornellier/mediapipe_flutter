@@ -47,6 +47,15 @@ jobs:
         run: |
           flutter pub get
           flutter analyze lib test
+          for attempt in 1 2; do
+            status=0
+            timeout 300 flutter test --platform chrome test/web || status=$?
+            if [ "$status" = 124 ] && [ "$attempt" = 1 ]; then
+              echo "flutter test --platform chrome hung; retrying"
+              continue
+            fi
+            exit "$status"
+          done
       - name: Analyze text and audio browser code
         run: |
           for family in text audio; do
@@ -58,17 +67,6 @@ jobs:
           flutter pub get
           flutter analyze lib tool/web_api_probe.dart tool/web_text_audio_probe.dart
           flutter test --platform chrome test/camera_geometry_test.dart test/camera_frame_test.dart test/camera_selection_test.dart
-          # The symlink runs the tests in the family package with this web
-          # gallery's published face-only host hook configuration.
-          for attempt in 1 2; do
-            status=0
-            timeout 300 flutter test --platform chrome test/vision_web || status=$?
-            if [ "$status" = 124 ] && [ "$attempt" = 1 ]; then
-              echo "flutter test --platform chrome hung; retrying"
-              continue
-            fi
-            exit "$status"
-          done
       - name: Build release gallery and API probe
         id: build
         working-directory: gallery
@@ -76,6 +74,8 @@ jobs:
           flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
           flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
           flutter build web --release --base-href /text-audio-probe/ --no-web-resources-cdn --output build/web-text-audio -t tool/web_text_audio_probe.dart
+          # Core's self-host tool, for the self-hosted text and audio run.
+          dart run mediapipe_flutter_core:web_runtime build/web-text-audio/mediapipe
           python3 -B tool/write_web_build_info.py
       # Each browser run is its own step so the coverage rows follow its outcome.
       - name: Start the gallery server
@@ -118,6 +118,10 @@ jobs:
         id: text_audio_chromium
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: node gallery/tool/browser/test_browser.mjs --suite=text-audio
+      - name: Text and audio in Chromium, self-hosted runtimes
+        id: text_audio_self_hosted
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: node gallery/tool/browser/test_browser.mjs --suite=text-audio --runtime=mediapipe/
       - name: Text and audio in Firefox
         id: text_audio_firefox
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

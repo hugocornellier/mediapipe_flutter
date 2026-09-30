@@ -26,7 +26,7 @@ dependencies:
   code_assets: ^1.2.1
   crypto: ^3.0.6
   ffi: ^2.1.4
-  hooks: '>=2.0.2 <2.1.0'
+  hooks: ^2.2.0
   mediapipe_flutter_core:
     path: ../mediapipe-core
   web: ^1.1.1

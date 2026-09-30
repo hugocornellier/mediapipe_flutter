@@ -13,6 +13,8 @@ import subprocess
 import tempfile
 
 from prepare_classic_text_reference import digest, reference_file
+from consumer_packages import copy_package
+from official_wheels import macos_engine
 
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
@@ -24,15 +26,7 @@ def main():
     root = Path(tempfile.mkdtemp(prefix='embedding-consumer-', dir=build))
     packages = root / 'packages'
     for name in ('mediapipe-core', 'mediapipe-task-text', 'mediapipe-task-vision'):
-        source, target = REPO / 'packages' / name, packages / name
-        target.mkdir(parents=True)
-        shutil.copyfile(source / 'pubspec.yaml', target / 'pubspec.yaml')
-        shutil.copytree(source / 'lib', target / 'lib')
-        shutil.copytree(source / 'hook', target / 'hook')
-        if (source / 'native').is_dir():
-            shutil.copytree(source / 'native', target / 'native')
-        if (source / 'sdk_downloads.dart').is_file():
-            shutil.copyfile(source / 'sdk_downloads.dart', target / 'sdk_downloads.dart')
+        copy_package(REPO / 'packages' / name, packages / name)
     guards = root / 'blocked-tools'
     guards.mkdir()
     blocked_log = root / 'blocked-tools.log'
@@ -100,9 +94,9 @@ Future<void> main() async {
   await downloadVerified(embeddingGemmaModel, File('assets/embedding_gemma.task'));
   await downloadVerified(proofreaderModel, File('assets/proofread_quant_200m.litertlm'));
   await downloadVerified(summarizerModel, File('assets/summarization_quant_200m_2modes.litertlm'));
-  await downloadVerified((url: interactiveSegmenterModelUrl, sha256: interactiveSegmenterModelSha256), File('assets/interactive_segmentation.task'));
-  await downloadVerified((url: blazeFaceShortRangeUrl, sha256: blazeFaceShortRangeSha256), File('assets/blaze_face_short_range.tflite'));
-  await downloadVerified((url: faceLandmarkerUrl, sha256: faceLandmarkerSha256), File('assets/face_landmarker.task'));
+  await downloadVerified(DownloadAsset(url: interactiveSegmenterModelUrl, sha256: interactiveSegmenterModelSha256), File('assets/interactive_segmentation.task'));
+  await downloadVerified(DownloadAsset(url: blazeFaceShortRangeUrl, sha256: blazeFaceShortRangeSha256), File('assets/blaze_face_short_range.tflite'));
+  await downloadVerified(DownloadAsset(url: faceLandmarkerUrl, sha256: faceLandmarkerSha256), File('assets/face_landmarker.task'));
 }
 ''')
     (app / 'lib/main.dart').write_text('''import 'dart:convert';
@@ -171,8 +165,9 @@ void main() {
         raise RuntimeError('Release app did not return a validation report.')
     report = json.loads(reports[0])
     frameworks = [path.name for path in (bundle / 'Contents/Frameworks').iterdir()]
-    if sum('interactive_segmenter' in name for name in frameworks) != 1:
-        raise RuntimeError(f'Shared runtime must be bundled exactly once: {frameworks}')
+    engine = macos_engine()
+    if frameworks.count(engine['framework']) != 1:
+        raise RuntimeError(f"Google's engine must be bundled exactly once: {frameworks}")
     if sum('mediapipe_text_stream' in name for name in frameworks) != 1:
         raise RuntimeError(f'Callback adapter must be bundled exactly once: {frameworks}')
     if any(name in ('libtext.framework', 'text.framework') for name in frameworks):
@@ -180,7 +175,7 @@ void main() {
     if blocked_log.exists() or any(packages.rglob('build/native')):
         raise RuntimeError('Native build tools were accessed by the fresh consumer.')
     manifests = [json.loads(p.read_text()) for p in (app / '.dart_tool').rglob('manifest.json')]
-    if not any(m.get('release') == 'interactive-segmenter-v1.0.1-1' for m in manifests):
+    if not any(m.get('sha256') == engine['library_sha256'] for m in manifests):
         raise RuntimeError('Missing verified public runtime provenance.')
     if 'Class MPPMetalSharedResources is implemented in both' in result.stderr:
         raise RuntimeError('Duplicate Objective-C runtime classes were loaded.')

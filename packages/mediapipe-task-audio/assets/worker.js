@@ -1,10 +1,7 @@
-async function loadRuntime(baseUrl) {
-  const response = await fetch(new URL('runtime.json', import.meta.url));
-  if (!response.ok) throw new Error('Unable to load MediaPipe runtime version');
-  const {version} = await response.json();
-  const base = baseUrl || `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-audio@${version}/`;
-  return [await import(new URL('audio_bundle.mjs', base).href), new URL('wasm', base).href];
-}
+import {loadVerifiedRuntime} from '../../mediapipe_flutter_core/assets/verified_runtime.js';
+
+const loadRuntime = baseUrl =>
+  loadVerifiedRuntime(new URL('runtime.json', import.meta.url), baseUrl, 'Audio');
 
 let task;
 let operations = Promise.resolve();
@@ -22,8 +19,7 @@ self.onmessage = ({data}) => {
 async function run(type, input) {
   if (type === 'create') {
     const {modelBytes, modelPath, delegate = 'CPU', runtimeBaseUrl, ...settings} = input;
-    const [{AudioClassifier, FilesetResolver}, wasmUrl] = await loadRuntime(runtimeBaseUrl);
-    const files = await FilesetResolver.forAudioTasks(wasmUrl, true);
+    const {bundle: {AudioClassifier}, files} = await loadRuntime(runtimeBaseUrl);
     task = await AudioClassifier.createFromOptions(files, {
       ...Object.fromEntries(Object.entries(settings).filter(([, value]) => value != null)),
       baseOptions: {delegate, ...(modelBytes ? {modelAssetBuffer: modelBytes} : {modelAssetPath: modelPath})},
