@@ -210,7 +210,12 @@ class _TextPageState extends State<TextPage> {
     try {
       final file = await openFile(
         acceptedTypeGroups: const [
-          XTypeGroup(label: 'MediaPipe models', extensions: ['tflite', 'task']),
+          XTypeGroup(
+            label: 'MediaPipe models',
+            extensions: ['tflite', 'task'],
+            // iOS filters by type, and models have none of their own.
+            uniformTypeIdentifiers: ['public.data'],
+          ),
         ],
       );
       if (file == null) return;

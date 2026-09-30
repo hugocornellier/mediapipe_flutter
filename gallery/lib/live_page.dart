@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -142,6 +143,10 @@ class _LivePageState extends State<LivePage> {
   int _speedFrames = 0;
   bool _showStats = false;
 
+  /// Bumped after every build. On phones Output and Stats open as dialogs,
+  /// routes of their own, and follow the page through this.
+  final _dialogRevision = ValueNotifier(0);
+
   /// Overlays draw connections and boxes without individual points.
   bool get _showConnections => !debugHideOverlay;
   static const _showPoints = false;
@@ -220,6 +225,7 @@ class _LivePageState extends State<LivePage> {
     _controller.dispose();
     _revision.dispose();
     _masks.dispose();
+    _dialogRevision.dispose();
     super.dispose();
   }
 
@@ -293,7 +299,12 @@ class _LivePageState extends State<LivePage> {
     try {
       final file = await openFile(
         acceptedTypeGroups: const [
-          XTypeGroup(label: 'MediaPipe models', extensions: ['tflite', 'task']),
+          XTypeGroup(
+            label: 'MediaPipe models',
+            extensions: ['tflite', 'task'],
+            // iOS filters by type, and models have none of their own.
+            uniformTypeIdentifiers: ['public.data'],
+          ),
         ],
       );
       if (file == null) return;
@@ -381,19 +392,36 @@ class _LivePageState extends State<LivePage> {
     }
   }
 
+  /// A phone picks from its photo library, as its own apps do; the web and
+  /// desktops open a file dialog.
+  Future<XFile?> _pickImage() {
+    final phone =
+        !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.android);
+    if (phone) {
+      // Without full metadata iOS shows its picker without asking for
+      // photo library access.
+      return ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        requestFullMetadata: false,
+      );
+    }
+    return openFile(
+      acceptedTypeGroups: const [
+        XTypeGroup(
+          label: 'Images',
+          extensions: ['jpg', 'jpeg', 'png', 'webp'],
+          uniformTypeIdentifiers: ['public.image'],
+        ),
+      ],
+    );
+  }
+
   Future<void> _chooseImage() async {
     final modeRevision = _modeRevision;
     try {
-      final file =
-          await (widget.stillImagePicker?.call() ??
-              openFile(
-                acceptedTypeGroups: const [
-                  XTypeGroup(
-                    label: 'Images',
-                    extensions: ['jpg', 'jpeg', 'png', 'webp'],
-                  ),
-                ],
-              ));
+      final file = await (widget.stillImagePicker?.call() ?? _pickImage());
       if (file == null) return;
       final bytes = await file.readAsBytes();
       final codec = await ui.instantiateImageCodec(bytes);
@@ -555,6 +583,9 @@ class _LivePageState extends State<LivePage> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _dialogRevision.value++;
+    });
     return TaskWorkspace(
       title: widget.task.title,
       onOpenMenu: widget.onOpenMenu,
@@ -590,13 +621,48 @@ class _LivePageState extends State<LivePage> {
         else
           ..._camera(_controller),
         ..._legend(),
-        const SizedBox(height: 22),
-        _outputCard(),
+        if (!_phone) ...[const SizedBox(height: 22), _outputCard()],
       ],
     );
   }
 
-  Widget _outputCard() {
+  /// Phones keep the screen for the feed: Output and Stats open as dialogs.
+  bool get _phone => MediaQuery.sizeOf(context).width < Sizes.compact;
+
+  /// The label size of the Output and Stats buttons on a phone.
+  static const _phoneButtonText = 12.0;
+
+  /// Opens a card over the page on a phone, rebuilt as the page changes.
+  Future<void> _showDialogCard(Widget Function(VoidCallback close) card) =>
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 48,
+          ),
+          child: SingleChildScrollView(
+            child: ValueListenableBuilder<int>(
+              valueListenable: _dialogRevision,
+              builder: (context, _, _) =>
+                  card(() => Navigator.of(dialogContext).pop()),
+            ),
+          ),
+        ),
+      );
+
+  Widget _outputButton() => OutlineButton(
+    key: ValueKey('$_id-output-button'),
+    icon: LucideIcons.listChecks,
+    label: 'Output',
+    tooltip: 'Show output',
+    fontSize: _phoneButtonText,
+    onPressed: () => _showDialogCard((close) => _outputCard(onClose: close)),
+  );
+
+  Widget _outputCard({VoidCallback? onClose}) {
     final result = _shownResult;
     final output = liveOutput(result);
     if (output == null) {
@@ -605,6 +671,7 @@ class _LivePageState extends State<LivePage> {
         empty: _mode == _VisionInputMode.image
             ? 'Choose an image to see what the task finds.'
             : 'Results appear once the camera runs.',
+        onClose: onClose,
       );
     }
     return OutputCard(
@@ -613,6 +680,7 @@ class _LivePageState extends State<LivePage> {
       count: output.count,
       items: output.items,
       empty: output.empty,
+      onClose: onClose,
     );
   }
 
@@ -683,6 +751,7 @@ class _LivePageState extends State<LivePage> {
         delegate: result != null && _imageMilliseconds != null
             ? (_imageDelegate == VisionDelegate.gpu ? 'GPU' : 'CPU')
             : null,
+        trailing: _phone ? _outputButton() : null,
       ),
       if (_imageError case final error?)
         Padding(
@@ -709,8 +778,32 @@ class _LivePageState extends State<LivePage> {
 
   List<Widget> _camera(LiveCameraController<Object?> controller) {
     final error = _error ?? controller.error;
+    final phone = _phone;
+    final stats = OutlineButton(
+      key: ValueKey('$_id-stats'),
+      icon: LucideIcons.chartLine,
+      label: 'Stats',
+      tooltip: phone || !_showStats ? 'Show stats' : 'Hide stats',
+      // On a phone Stats matches Output beside it.
+      bordered: phone || _showStats,
+      fontSize: phone ? _phoneButtonText : Sizes.md,
+      onPressed: phone
+          ? () => _showDialogCard(
+              (close) => StatsCard(
+                key: ValueKey('$_id-stats-card'),
+                history: _speed,
+                delegates: _delegates,
+                onClose: close,
+              ),
+            )
+          : () => setState(() => _showStats = !_showStats),
+    );
     return [
       FeedFrame(
+        // A phone shows the camera at its own upright shape, as tall as the
+        // screen allows, rather than a wide frame with bars beside it.
+        aspectRatio: phone ? controller.previewAspect ?? 3 / 4 : 16 / 9,
+        maxHeight: phone ? MediaQuery.sizeOf(context).height * .62 : null,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -751,14 +844,12 @@ class _LivePageState extends State<LivePage> {
               ]
             : const ['Stopped'],
         delegate: controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
-        trailing: OutlineButton(
-          key: ValueKey('$_id-stats'),
-          icon: LucideIcons.chartLine,
-          label: 'Stats',
-          tooltip: _showStats ? 'Hide stats' : 'Show stats',
-          bordered: _showStats,
-          onPressed: () => setState(() => _showStats = !_showStats),
-        ),
+        trailing: phone
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [_outputButton(), const SizedBox(width: 8), stats],
+              )
+            : stats,
       ),
       if (controller.notice case final notice?)
         Padding(
@@ -771,7 +862,7 @@ class _LivePageState extends State<LivePage> {
             ),
           ),
         ),
-      if (_showStats) ...[
+      if (_showStats && !phone) ...[
         const SizedBox(height: 10),
         StatsCard(
           key: ValueKey('$_id-stats-card'),

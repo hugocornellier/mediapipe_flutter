@@ -25,6 +25,7 @@ TEXT = REPO / 'packages/mediapipe-task-text'
 AUDIO = REPO / 'packages/mediapipe-task-audio'
 
 CAMERA_REASON = 'Show live face, hand and pose landmarks from your camera.'
+PHOTO_REASON = 'Choose a photo for the still image demos.'
 
 
 def set_plist_key(path, key, value):
@@ -323,10 +324,12 @@ dependencies:
   mediapipe_audio:
     path: ../packages/mediapipe-task-audio
   web: ^1.1.1
-  # Verifies downloaded models; picks a model file to upload; records the
-  # Audio Classifier demo's microphone.
+  # Verifies downloaded models; picks a model file to upload; picks a still
+  # image from a phone's photo library; records the Audio Classifier demo's
+  # microphone.
   crypto: ^3.0.6
   file_selector: ^1.0.3
+  image_picker: ^1.2.2
   record: ^7.1.1
   url_launcher: ^6.3.2
   # The gallery's icons, as its design uses (ISC).
@@ -393,6 +396,10 @@ def pin_architecture(target):
         # supports; flutter create defaults below it.
         set_plist_key(GALLERY / 'ios/Runner/Info.plist',
                       'NSCameraUsageDescription', CAMERA_REASON)
+        # The still image demos pick from the photo library. Without full
+        # metadata iOS never asks, but the key must still be declared.
+        set_plist_key(GALLERY / 'ios/Runner/Info.plist',
+                      'NSPhotoLibraryUsageDescription', PHOTO_REASON)
         project = GALLERY / 'ios/Runner.xcodeproj/project.pbxproj'
         if project.exists():
             settings = project.read_text()

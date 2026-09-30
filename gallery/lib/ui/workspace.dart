@@ -161,7 +161,9 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     final phone = width < Sizes.compact;
     final settings = widget.settings;
     final panel = !phone && settings != null;
-    final body = GalleryPageBody(children: widget.children);
+    // A task page on a phone starts close under its top bar, leaving the
+    // screen to the feed.
+    final body = GalleryPageBody(phoneTop: 14, children: widget.children);
     return Scaffold(
       backgroundColor: c.bg,
       body: Column(
@@ -235,12 +237,16 @@ class GalleryPageBody extends StatelessWidget {
     super.key,
     required this.children,
     this.maxWidth = Sizes.content,
+    this.phoneTop = 28,
   });
 
   final List<Widget> children;
 
   /// The widest the content grows, centred in wider windows.
   final double maxWidth;
+
+  /// The space above the content on a phone.
+  final double phoneTop;
 
   @override
   Widget build(BuildContext context) {
@@ -251,7 +257,7 @@ class GalleryPageBody extends StatelessWidget {
     final view = View.of(context);
     final tablet = view.physicalSize.width / view.devicePixelRatio < Sizes.wide;
     final padding = phone
-        ? const EdgeInsets.fromLTRB(16, 28, 16, 52)
+        ? EdgeInsets.fromLTRB(16, phoneTop, 16, 52)
         : EdgeInsets.fromLTRB(44, tablet ? 36 : 48, 44, 72);
     return SingleChildScrollView(
       child: Center(

@@ -11,12 +11,20 @@ import 'design.dart';
 /// The Stats card under a live feed: every frame's inference time since the
 /// camera started, a line per delegate, each shown or hidden by its checkbox.
 class StatsCard extends StatefulWidget {
-  const StatsCard({super.key, required this.history, required this.delegates});
+  const StatsCard({
+    super.key,
+    required this.history,
+    required this.delegates,
+    this.onClose,
+  });
 
   final SpeedHistory history;
 
   /// The delegates the page offers, in the order their entries appear.
   final List<VisionDelegate> delegates;
+
+  /// Closes the dialog that shows this card on phones.
+  final VoidCallback? onClose;
 
   @override
   State<StatsCard> createState() => _StatsCardState();
@@ -47,24 +55,40 @@ class _StatsCardState extends State<StatsCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 18,
-            runSpacing: 6,
+          Row(
             children: [
-              for (final delegate in widget.delegates)
-                SeriesToggle(
-                  key: ValueKey('stats-${delegate.name}'),
-                  label: delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
-                  color: colors[delegate]!,
-                  // One series needs no switch: the title names it.
-                  checked: widget.delegates.length > 1
-                      ? !_hidden.contains(delegate)
-                      : null,
-                  milliseconds: history.recent(delegate),
-                  onChanged: (on) => setState(
-                    () => on ? _hidden.remove(delegate) : _hidden.add(delegate),
-                  ),
+              Expanded(
+                child: Wrap(
+                  spacing: 18,
+                  runSpacing: 6,
+                  children: [
+                    for (final delegate in widget.delegates)
+                      SeriesToggle(
+                        key: ValueKey('stats-${delegate.name}'),
+                        label: delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+                        color: colors[delegate]!,
+                        // One series needs no switch: the title names it.
+                        checked: widget.delegates.length > 1
+                            ? !_hidden.contains(delegate)
+                            : null,
+                        milliseconds: history.recent(delegate),
+                        onChanged: (on) => setState(
+                          () => on
+                              ? _hidden.remove(delegate)
+                              : _hidden.add(delegate),
+                        ),
+                      ),
+                  ],
                 ),
+              ),
+              if (widget.onClose case final close?) ...[
+                const SizedBox(width: 10),
+                OutlineButton(
+                  icon: LucideIcons.x,
+                  tooltip: 'Close stats',
+                  onPressed: close,
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 14),

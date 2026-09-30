@@ -88,6 +88,7 @@ class OutlineButton extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.bordered = true,
+    this.fontSize = Sizes.md,
   });
 
   final IconData icon;
@@ -95,6 +96,7 @@ class OutlineButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback? onPressed;
   final bool bordered;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +126,7 @@ class OutlineButton extends StatelessWidget {
                     const SizedBox(width: 7),
                     Text(
                       label,
-                      style: TextStyle(color: c.muted, fontSize: Sizes.md),
+                      style: TextStyle(color: c.muted, fontSize: fontSize),
                     ),
                   ],
                 ],
@@ -415,6 +417,7 @@ class OutputCard extends StatelessWidget {
     this.items = const [],
     this.empty,
     this.child,
+    this.onClose,
   });
 
   final String title;
@@ -424,6 +427,9 @@ class OutputCard extends StatelessWidget {
   /// Shown when there are no [items] and no [child].
   final String? empty;
   final Widget? child;
+
+  /// Closes the dialog that shows this card on phones.
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -450,6 +456,14 @@ class OutputCard extends StatelessWidget {
                   count,
                   style: TextStyle(color: c.muted, fontSize: Sizes.sm),
                 ),
+              if (onClose case final close?) ...[
+                const SizedBox(width: 10),
+                OutlineButton(
+                  icon: LucideIcons.x,
+                  tooltip: 'Close output',
+                  onPressed: close,
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 22),
@@ -468,12 +482,22 @@ class OutputCard extends StatelessWidget {
   }
 }
 
-/// The dark 16:9 frame that holds a camera feed or an image.
+/// The dark frame, 16:9 unless told otherwise, that holds a camera feed or
+/// an image. The child fills it and centers its own picture.
 class FeedFrame extends StatelessWidget {
-  const FeedFrame({super.key, required this.child, this.aspectRatio = 16 / 9});
+  const FeedFrame({
+    super.key,
+    required this.child,
+    this.aspectRatio = 16 / 9,
+    this.maxHeight,
+  });
 
   final Widget child;
   final double aspectRatio;
+
+  /// The tallest the frame grows; a taller [aspectRatio] leaves bars beside
+  /// the picture instead.
+  final double? maxHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -488,7 +512,7 @@ class FeedFrame extends StatelessWidget {
         borderRadius: phone ? null : BorderRadius.circular(Sizes.radius),
       ),
       clipBehavior: Clip.antiAlias,
-      child: AspectRatio(aspectRatio: aspectRatio, child: child),
+      child: child,
     );
     // Phones run the feed edge to edge past the page's 16 px gutters, as the
     // design does. Every width keeps this wrapper, so crossing the phone
@@ -497,7 +521,7 @@ class FeedFrame extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth + (phone ? 32 : 0);
         return SizedBox(
-          height: width / aspectRatio,
+          height: math.min(width / aspectRatio, maxHeight ?? double.infinity),
           child: OverflowBox(minWidth: width, maxWidth: width, child: frame),
         );
       },

@@ -228,7 +228,11 @@ class _AudioPageState extends State<AudioPage> {
     try {
       final file = await openFile(
         acceptedTypeGroups: const [
-          XTypeGroup(label: 'WAV audio', extensions: ['wav']),
+          XTypeGroup(
+            label: 'WAV audio',
+            extensions: ['wav'],
+            uniformTypeIdentifiers: ['com.microsoft.waveform-audio'],
+          ),
         ],
       );
       if (file == null) return;
@@ -253,7 +257,12 @@ class _AudioPageState extends State<AudioPage> {
     try {
       final file = await openFile(
         acceptedTypeGroups: const [
-          XTypeGroup(label: 'MediaPipe models', extensions: ['tflite', 'task']),
+          XTypeGroup(
+            label: 'MediaPipe models',
+            extensions: ['tflite', 'task'],
+            // iOS filters by type, and models have none of their own.
+            uniformTypeIdentifiers: ['public.data'],
+          ),
         ],
       );
       if (file == null) return;
