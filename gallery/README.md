@@ -34,9 +34,20 @@ description, none of which `flutter create` provides. For macOS it also sets
 Google's 1.0.0 macOS engine, which core bundles once for the whole app, as it
 would for any app that opts in.
 
-For Android, `python3 gallery/tool/prepare.py --target android/arm64` selects
-Google's released vision SDK and its Flutter plugin. Face Landmarker and
-Hand Landmarker support CPU and GPU, with Android YUV camera conversion.
+For Android, a clean checkout needs only Dart, Flutter and the Android SDK:
+
+```sh
+dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/arm64
+cd gallery
+flutter run -d <device-id> --release
+```
+
+The Dart preparer downloads and verifies every required model, generates the
+gallery assets and configuration, and fails rather than building an incomplete
+APK. `flutter run` builds, installs and launches the release app on the
+connected phone; the APK remains at `gallery/build/app/outputs/flutter-apk/app-release.apk`.
+It selects Google's released vision SDK and its Flutter plugin. Face Landmarker
+and Hand Landmarker support CPU and GPU, with Android YUV camera conversion.
 Hand has run on an emulator's CPU only so far; see
 [its status](../packages/mediapipe-task-vision/tool/HAND_LANDMARKER_STATUS.md). A physical Pixel 7
 Test Lab run validates both delegates and front/back camera capture; see
