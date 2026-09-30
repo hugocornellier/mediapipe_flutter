@@ -1,7 +1,8 @@
-# MediaPipe Core for Flutter
+# mediapipe_core
 
-`mediapipe_core` is part of the public
-[mediapipe_flutter](../../README.md) development fork. It owns everything the
+The shared layer of the MediaPipe task packages (`mediapipe_vision`,
+`mediapipe_text`, `mediapipe_audio`); apps normally get it through them rather
+than depending on it directly. It owns everything the
 task families share, so each of vision, text and audio works alone and an app
 using several loads one copy of each shared piece. That includes Google's
 verified MediaPipe engine, which every family binds:
@@ -89,28 +90,20 @@ Core uses Flutter's `path_provider` for application support rather than
 asking every family to supply a directory, so the storage policy stays shared.
 
 ```dart
-final store = ModelStore();
-final model = await store.get(bertClassifierModel);
-await store.prefetch(bertClassifierModel);
+import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+
+Future<void> prepareModels() async {
+  final store = ModelStore();
+  await store.prefetch(TextModels.bertClassifier);
+  final file = await store.get(TextModels.bertClassifier); // native: a File
+  print(file.path);
+}
 ```
 
 The app needs Android's `INTERNET` permission for first use. A sandboxed
 macOS app needs `com.apple.security.network.client`. An already verified
 cache entry works without network access.
-
-A Flutter plugin to use the MediaPipe Core API, which enables multiple Mediapipe tasks.
-
-To learn more about MediaPipe, please visit the [MediaPipe website](https://developers.google.com/mediapipe)
-
-## Getting Started
-
-To get started with MediaPipe, please [see the documentation](https://developers.google.com/mediapipe/solutions/guide).
-
-<!-- ASPIRATIONAL
-## Usage
-
-To use this plugin, please visit the [Core Usage documentation](https://github.com/hugocornellier/mediapipe_flutter#Usage)
--->
 
 ## Web runtime
 
@@ -133,17 +126,19 @@ first task:
 ```dart
 import 'package:mediapipe_core/web_runtime.dart';
 
-MediaPipeWebRuntime.baseUrl = 'mediapipe/';
+void useSelfHostedRuntime() {
+  MediaPipeWebRuntime.baseUrl = 'mediapipe/';
+}
 ```
 
 `baseUrl` is an npm-style root, so another npm CDN such as
 `https://unpkg.com/` works as well. Each family's
-`package:mediapipe_flutter_<family>/web_runtime.dart` exports the same class.
+`package:mediapipe_<family>/web_runtime.dart` exports the same class.
 Serve the files with CORS and CSP rules appropriate to your origin.
 
 ## Issues and feedback
 
-Please file mediapipe_flutter specific issues, bugs, or feature requests in our [issue tracker](https://github.com/hugocornellier/mediapipe_flutter/issues/new).
+Please file issues, bugs, or feature requests in our [issue tracker](https://github.com/hugocornellier/mediapipe_flutter/issues/new).
 
 Issues that are specific to Flutter can be filed in the [Flutter issue tracker](https://github.com/flutter/flutter/issues/new).
 

@@ -37,6 +37,17 @@ class TextClassifier extends BaseTextClassifier {
 /// called. All values used by pkg:equatable are in fact immutable.
 // ignore: must_be_immutable
 class TextClassifierOptions extends BaseTextClassifierOptions {
+  /// Supply exactly one model source: a pinned official [model], downloaded
+  /// on task creation, or [baseOptions] holding your own.
+  TextClassifierOptions({
+    DownloadAsset? model,
+    BaseOptions? baseOptions,
+    ClassifierOptions classifierOptions = const ClassifierOptions(),
+  });
+
+  /// Pinned official model, downloaded on task creation.
+  DownloadAsset? get model => throw UnimplementedError();
+
   /// {@template TextClassifierOptions.fromAssetPath}
   /// Convenience constructor that looks for the model asset at the given file
   /// system location.
@@ -112,6 +123,17 @@ class TextEmbedder extends BaseTextEmbedder {
 /// called. All values used by pkg:equatable are in fact immutable.
 // ignore: must_be_immutable
 class TextEmbedderOptions extends BaseTextEmbedderOptions {
+  /// Supply exactly one model source: a pinned official [model], downloaded
+  /// on task creation, or [baseOptions] holding your own.
+  TextEmbedderOptions({
+    DownloadAsset? model,
+    BaseOptions? baseOptions,
+    EmbedderOptions embedderOptions = const EmbedderOptions(),
+  });
+
+  /// Pinned official model, downloaded on task creation.
+  DownloadAsset? get model => throw UnimplementedError();
+
   /// {@template TextEmbedderOptions.fromAssetPath}
   /// Convenience constructor that looks for the model asset at the given file
   /// system location.
@@ -182,6 +204,17 @@ class LanguageDetector extends BaseLanguageDetector {
 
 /// {@macro LanguageDetectorOptions}
 class LanguageDetectorOptions extends BaseLanguageDetectorOptions {
+  /// Supply exactly one model source: a pinned official [model], downloaded
+  /// on task creation, or [baseOptions] holding your own.
+  LanguageDetectorOptions({
+    DownloadAsset? model,
+    BaseOptions? baseOptions,
+    ClassifierOptions classifierOptions = const ClassifierOptions(),
+  });
+
+  /// Pinned official model, downloaded on task creation.
+  DownloadAsset? get model => throw UnimplementedError();
+
   /// {@template LanguageDetectorOptions.fromAssetPath}
   /// Convenience constructor that looks for the model asset at the given file
   /// system location.

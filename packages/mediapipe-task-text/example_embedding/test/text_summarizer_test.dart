@@ -7,6 +7,8 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:mediapipe_text/mediapipe_text.dart'
+    show RuntimeUnavailableException;
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_text/text_summarizer.dart';
 import 'package:mediapipe_text/src/io/third_party/mediapipe/summarizer_bindings.dart'
@@ -250,9 +252,9 @@ void main() {
         TextSummarizerOptions(modelPath: model, delegate: TextDelegate.gpu),
       ),
       throwsA(
-        isA<TextTaskException>().having(
-          (e) => e.message,
-          'message',
+        isA<RuntimeUnavailableException>().having(
+          (e) => e.fix,
+          'fix',
           contains('CPU'),
         ),
       ),

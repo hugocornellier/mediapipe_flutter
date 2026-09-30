@@ -89,6 +89,10 @@ uses a persistent worker with error propagation and draining disposal. The
 retired 2024 text binary pins, generated bindings and headers are removed;
 GenAI remains on its inherited runtime.
 
+macOS later moved to Google's 1.0.0 library, one engine for every family,
+because 1.0.1's detector graphs abort on some Macs (upstream-issues.md
+UP-007); the text references were regenerated from Google's 1.0.0 wheel.
+
 ## Modern Face Detector
 
 Vision now uses MediaPipe v1.0.0, commit

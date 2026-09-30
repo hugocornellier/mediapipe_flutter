@@ -129,17 +129,20 @@ class DownloadModelCommand extends Command with RepoFinderMixin {
     );
     ensureFolders(destinationFile);
     if (argResults!['model'] != null) {
-      await downloadVerified((
-        url: modelSource,
-        sha256: switch (model) {
-          Model.textclassification =>
-            '9b45012ab143d88d61e10ea501d6c8763f7202b86fa987711519d89bfa2a88b1',
-          Model.textembedding =>
-            '89ad3c74175dd8caa398cc22b657296d94302d20c525c12b58b29420f7249749',
-          Model.languagedetection =>
-            '7db4f23dfe1ad8966b050b419a865da451143fd43eb6b606a256aadeeb1e5417',
-        },
-      ), destinationFile);
+      await downloadVerified(
+        DownloadAsset(
+          url: modelSource,
+          sha256: switch (model) {
+            Model.textclassification =>
+              '9b45012ab143d88d61e10ea501d6c8763f7202b86fa987711519d89bfa2a88b1',
+            Model.textembedding =>
+              '89ad3c74175dd8caa398cc22b657296d94302d20c525c12b58b29420f7249749',
+            Model.languagedetection =>
+              '7db4f23dfe1ad8966b050b419a865da451143fd43eb6b606a256aadeeb1e5417',
+          },
+        ),
+        destinationFile,
+      );
     } else {
       await downloadModel(modelSource, destinationFile);
     }

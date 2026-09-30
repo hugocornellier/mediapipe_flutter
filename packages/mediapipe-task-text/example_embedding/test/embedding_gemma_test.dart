@@ -205,9 +205,9 @@ void main() {
         EmbeddingGemmaOptions(modelPath: model, delegate: TextDelegate.gpu),
       ),
       throwsA(
-        isA<TextTaskException>().having(
-          (e) => e.message,
-          'message',
+        isA<RuntimeUnavailableException>().having(
+          (e) => e.fix,
+          'fix',
           contains('CPU'),
         ),
       ),

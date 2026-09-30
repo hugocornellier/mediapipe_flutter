@@ -84,9 +84,9 @@ TaskCapabilities<TextDelegate> textTaskCapabilitiesForPlatform(
   gpu: TextDelegate.gpu,
   gpuUnavailableReason: switch (task) {
     TextTask.embeddingGemma =>
-      'The official MediaPipe 1.0.1 macOS EmbeddingGemma Metal interpreter '
-          'fails during creation. CPU is supported.',
-    TextTask.proofreader || TextTask.summarizer =>
-      'The official MediaPipe 1.0.1 task accepts only the CPU delegate.',
+      "Google's macOS EmbeddingGemma Metal interpreter fails during creation "
+          '(observed with MediaPipe 1.0.1). CPU is supported.',
+    TextTask.proofreader ||
+    TextTask.summarizer => "Google's task accepts only the CPU delegate.",
   },
 );

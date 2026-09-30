@@ -306,7 +306,7 @@ void _legacyTest() {
             InteractiveSegmenterLegacy.create(
               InteractiveSegmenterLegacyOptions(modelBytes: Uint8List(1)),
             ),
-            throwsUnsupportedError,
+            throwsA(isA<RuntimeUnavailableException>()),
           );
           _report('interactive_legacy', {'android': 'UP-020'});
           return;

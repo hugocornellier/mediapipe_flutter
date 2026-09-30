@@ -1,33 +1,23 @@
-# MediaPipe Audio for Flutter
+# mediapipe_audio
 
-`mediapipe_audio` runs Google's official MediaPipe **Audio Classifier**
-(for example YAMNet's 521 sound categories) from Dart and Flutter. It is part of
-the [mediapipe_flutter](../../README.md) fork and is not published to pub.dev.
+Google's MediaPipe **Audio Classifier** for Dart and Flutter, for example
+YAMNet's 521 sound categories, on Android, iOS, macOS, Linux, Windows and the
+web. Google's pinned YAMNet model downloads on first use.
+
+> **Not on pub.dev yet.** Depend on it by path from a checkout of
+> [the repository](https://github.com/hugocornellier/mediapipe_flutter) until
+> it is published.
 
 ## Platforms
 
-The task runs on Google's unmodified runtime, which `mediapipe_core`
-bundles once and shares with the text tasks: **macOS arm64 CPU, macOS 14+**
-(MediaPipe 1.0.1), **Linux x64 CPU** (1.0.1) and **Windows x64 CPU** (1.0.0).
-On Linux and Windows that runtime is the vision package's wheel library, loaded
-once for both packages; Linux needs the system EGL and OpenGL ES libraries
-(`libegl1 libgles2` on Debian or Ubuntu) even for CPU. On **iOS 15+** it runs on
-Google's 1.0.1 iOS SDK, in the adapter `mediapipe_core` builds. Browsers and Android use this package's
-integrated backends. Add only `mediapipe_audio` for the audio task.
-Browser tasks load the pinned JavaScript/WASM runtime from jsDelivr by default.
-To self-host, run `dart run mediapipe_core:web_runtime web/mediapipe`
-from the app root and set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';` (from
-`package:mediapipe_audio/web_runtime.dart`) before the first task. One
-setting covers every family; see
-[core's README](../mediapipe-core/README.md#web-runtime).
-Query support before offering the task:
+The task runs Google's runtime on each platform, on the CPU: the Android SDK
+(`tasks-audio` 1.0.0), an adapter over the 1.0.1 iOS SDK (iOS 15+), the
+official wheel libraries on Linux x64 (1.0.1) and Windows x64 (1.0.0),
+Google's 1.0.0 library on macOS 14+ arm64, and `@mediapipe/tasks-audio` 1.0.1
+in browsers. `mediapipe_core` bundles the native engine once per app, shared
+with vision and text.
 
-```dart
-final support = await queryAudioClassifierCapabilities();
-final available = support.supportedDelegates.contains(AudioDelegate.cpu);
-```
-
-Every consumer enables the shared runtime in its app pubspec:
+On macOS the engine is opt-in because it adds about 95 MB:
 
 ```yaml
 hooks:
@@ -36,36 +26,66 @@ hooks:
       tasks_runtime: true
 ```
 
+Other platforms need no setting. See
+[platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md)
+for permissions, Linux graphics libraries and self-hosting the browser
+runtime.
+
 ## Use
 
 ```dart
-final classifier = await AudioClassifier.create(
-  AudioClassifierOptions(modelPath: 'models/yamnet.tflite', maxResults: 3),
-);
-final clip = decodeWav(await File('clip.wav').readAsBytes());
-for (final chunk in await classifier.classify(clip)) {
-  print('${chunk.timestampMs} ms: ${chunk.categories.first.name}');
+import 'dart:io';
+
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+
+Future<void> classifyClip(String wavPath) async {
+  final classifier = await AudioClassifier.create(
+    AudioClassifierOptions(model: AudioModels.yamnet, maxResults: 3),
+  );
+  try {
+    final clip = decodeWav(await File(wavPath).readAsBytes());
+    for (final chunk in await classifier.classify(clip)) {
+      print('${chunk.timestampMs} ms: ${chunk.categories.first.name}');
+    }
+  } finally {
+    await classifier.dispose();
+  }
 }
-await classifier.dispose();
 ```
 
 `classify` returns one result per chunk the model reads (0.975 s for YAMNet),
-each with its start time. It runs on a background isolate; calls are served in
+each with its start time. It runs on a background isolate and serves calls in
 order. `AudioData` takes interleaved samples in -1 to 1 at any sample rate and
 channel count; Google's task resamples to the model's rate. `decodeWav` reads
 16-bit PCM and 32-bit float WAV files. Options mirror Google's: `maxResults`
-(-1 for all) and `scoreThreshold`.
+(-1 for all) and `scoreThreshold`. To use your own model, pass `modelPath` or
+`modelBytes` instead of `model`.
+
+Query support before offering the task:
+
+```dart
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+
+Future<bool> audioAvailable() async {
+  final support = await queryAudioClassifierCapabilities();
+  return support.supportedDelegates.contains(AudioDelegate.cpu);
+}
+```
+
+Failures are `MediaPipeException`s: `RuntimeUnavailableException` (with a
+`fix`), `ModelDownloadException`, and `AudioTaskException` for errors from
+Google's runtime. `dispose()` drains queued calls and is idempotent.
 
 ## Validation
 
-`dart run tool/download_model.dart` fetches YAMNet and checks its SHA-256. The
-tests compare every chunk of three official MediaPipe sample clips (speech at
-16 kHz and 48 kHz, and a clip YAMNet hears as animal and bird sounds) with Google's own Python output
-(`test/fixtures/official_reference.json`, from the macOS 1.0.1 wheel): same
-categories and timestamps, scores within 0.00001, including resampling from
-48 kHz. On Linux and Windows CI, `tool/prepare_audio_reference.py` regenerates
-that reference with Google's pinned wheel on the same runner, and
-`MEDIAPIPE_AUDIO_REFERENCE_DIR` points the tests at it
-(`tool/test_text_audio.py` at the repository root runs both packages this way). They also check model
-bytes, queued calls, the score threshold, error reporting, disposal and the C
-struct layouts against Google's ctypes definitions.
+The tests compare every chunk of three official MediaPipe sample clips (speech
+at 16 kHz and 48 kHz, and a clip YAMNet hears as animal and bird sounds) with
+Google's own Python output (`test/fixtures/official_reference.json`, from the
+macOS 1.0.1 wheel; the 1.0.0 engine on macOS matches it): same categories and
+timestamps, scores within 0.00001, including resampling from 48 kHz. On Linux
+and Windows CI, `tool/prepare_audio_reference.py` regenerates that reference
+with Google's pinned wheel on the same runner (`tool/test_text_audio.py` at the
+repository root runs both packages this way). The tests also check queued
+calls, the score threshold, error reporting, disposal and the C struct layouts
+against Google's ctypes definitions. Browser CI compares the Dart API with
+Google's JavaScript on the same page and classifies microphone input.

@@ -168,7 +168,8 @@ def _pinned_model(task):
                     'text_classifier': 'bertClassifierModel',
                     'text_embedder': 'universalSentenceEncoderModel'}[task]
         source = (TEXT / 'lib/models.dart').read_text()
-        row = re.search(r'const DownloadAsset ' + constant + r' = \((.*?)\);', source, re.S).group(1)
+        row = re.search(r'const DownloadAsset ' + constant + r' = DownloadAsset\((.*?)\);',
+                        source, re.S).group(1)
         url = re.search(r'url:(.*?),\s*sha256', row, re.S).group(1)
         sha = re.search(r"sha256:\s*'([0-9a-f]{64})'", row).group(1)
     return ''.join(re.findall(r"'([^']*)'", url)), sha

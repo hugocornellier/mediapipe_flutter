@@ -29,15 +29,10 @@ cd gallery && flutter run -d macos --release
 `prepare.py --target <platform>` prepares a different target, for example
 `ios-simulator/arm64` or `android/arm64`. It also pins the macOS build to arm64,
 excludes the x86_64 simulator slice, and adds the camera entitlement and usage
-description, none of which `flutter create` provides. For macOS it also
-verifies Google's pinned 1.0.0 wheel, prepares its official runtime, and opts
-Face Landmarker, Hand Landmarker and Pose Landmarker into it. The ordinary package runtime
-rows remain unchanged.
-The macOS gallery also maps its stateful Interactive Segmenter, classic text,
-and audio bindings to that same official 1.0.0 image. Two independent MediaPipe
-wheel libraries in one app register the same graphs and abort when the second
-loads. Other consumers keep the core package's default 1.0.1 runtime unless
-they explicitly select this gallery-style mapping.
+description, none of which `flutter create` provides. For macOS it also sets
+`mediapipe_core.tasks_runtime: true`, so vision, text and audio all run on
+Google's 1.0.0 macOS engine, which core bundles once for the whole app, as it
+would for any app that opts in.
 
 For Android, `python3 gallery/tool/prepare.py --target android/arm64` selects
 Google's released vision SDK and its Flutter plugin. Face Landmarker and
