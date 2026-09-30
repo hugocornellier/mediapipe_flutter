@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 import 'support/face_reference.dart';
 
@@ -19,13 +19,13 @@ typedef _Task = (
 );
 
 // Both tasks are validated against the official wheel that ships the same
-// native library on Linux and Windows, and on Google's official macOS runtime
-// (tool/test_official_macos_landmark_runtime.py). The macOS source build's CPU
-// results are not validated; see upstream-issues.md UP-004.
+// native library on Linux and Windows, and on Google's macOS engine against
+// same-host outputs (tool/test_official_macos_landmark_runtime.py), since its
+// CPU output drifts between Apple CPUs.
 final _unvalidatedHost =
     Platform.isMacOS &&
         Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] != '1'
-    ? 'macOS source-build CPU output is unvalidated; see UP-004'
+    ? 'macOS compares with same-host official outputs'
     : null;
 
 void main() {
@@ -297,8 +297,8 @@ Future<_Task> _create(
         modelPath: modelPath,
         modelBytes: modelBytes,
         runningMode: expected['timestamp_ms'] == null
-            ? VisionRunningMode.image
-            : VisionRunningMode.video,
+            ? RunningMode.image
+            : RunningMode.video,
         outputConfidenceMasks: confidence,
         outputCategoryMask: category,
         delegate: delegate,

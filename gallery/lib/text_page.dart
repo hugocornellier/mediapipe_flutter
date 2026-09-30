@@ -3,10 +3,8 @@ import 'dart:async';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart'
-    show ClassifierOptions, EmbedderOptions;
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
-import 'package:mediapipe_flutter_vision/capabilities.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_vision/capabilities.dart';
 
 import 'catalog.dart';
 import 'gallery_content_surface.dart';

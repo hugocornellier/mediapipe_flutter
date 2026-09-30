@@ -6,17 +6,14 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_audio/audio_task_backend.dart';
-import 'package:mediapipe_flutter_audio/mediapipe_flutter_audio.dart';
-import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart'
-    show ClassifierOptions, EmbedderOptions;
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
-import 'package:mediapipe_flutter_text/text_task_backend.dart';
+import 'package:mediapipe_audio/platform_interface.dart';
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_text/platform_interface.dart';
 
 /// Text Classifier, Text Embedder, Language Detector and Audio Classifier
 /// through Google's official mobile SDKs (the text and audio packages' Android
-/// plugins; on iOS the vision package's SDK adapter, which core's runtime
-/// resolves to), against Google's own 1.0.1 outputs for the same inputs (the
+/// plugins; on iOS the SDK adapter core's runtime builds), against Google's own 1.0.1 outputs for the same inputs (the
 /// packages' checked-in references, from the macOS wheel).
 /// Another runtime build on another CPU, so scores get a cross-runtime bound.
 /// Runs on the Android emulator and iOS simulator in CI, and on phones.
@@ -285,7 +282,7 @@ void main() {
         AudioClassifier.create(
           AudioClassifierOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
         ),
-        throwsA(isA<AudioClassifierException>()),
+        throwsA(isA<MediaPipeException>()),
       );
     });
   }, skip: !(Platform.isAndroid || Platform.isIOS));

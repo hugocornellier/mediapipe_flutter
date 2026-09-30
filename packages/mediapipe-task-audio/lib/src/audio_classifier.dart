@@ -1,12 +1,15 @@
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_core/io.dart'
+import 'package:mediapipe_core/mediapipe_exception.dart';
+import 'package:mediapipe_core/capabilities.dart' show tasksRuntimeUnavailable;
+import 'package:mediapipe_core/io.dart'
     show missingLinuxGraphicsLibraries, mpHostSystem;
 
-import '../audio_task_backend.dart';
+import 'audio_task_backend.dart';
 import 'audio_classifier_backend.dart';
 import 'audio_types.dart';
 
@@ -18,6 +21,16 @@ import 'third_party/mediapipe/audio_classifier_bindings.dart' as mp;
 /// isolate. Where a platform plugin installs Google's mobile SDK
 /// (audio_task_backend.dart), the task runs there instead. Await [dispose]
 /// when finished.
+///
+/// ```dart
+/// final task = await AudioClassifier.create(
+///   AudioClassifierOptions(model: AudioModels.yamnet),
+/// );
+/// final result = await task.classify(audio);
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class AudioClassifier {
   AudioClassifier._(this._task, this._model) : _backend = null;
 
@@ -36,6 +49,7 @@ final class AudioClassifier {
 
   /// Creates the task on the calling isolate.
   static Future<AudioClassifier> create(AudioClassifierOptions options) async {
+    options = await options.resolveModel();
     if (audioTaskBackendFactory != null) {
       return AudioClassifier._onBackend(
         await BackendAudioClassifier.create(options),
@@ -43,7 +57,10 @@ final class AudioClassifier {
     }
     final support = await queryAudioClassifierCapabilities();
     if (support.unavailableReasons[AudioDelegate.cpu] case final reason?) {
-      throw AudioClassifierException(reason);
+      throw RuntimeUnavailableException(
+        'Audio Classifier is unavailable on this platform.',
+        fix: reason,
+      );
     }
     _requireRuntime();
     Pointer<Uint8>? model;
@@ -77,15 +94,18 @@ final class AudioClassifier {
         return output.value.address;
       });
       return AudioClassifier._(task, model);
-    } catch (_) {
+    } catch (error) {
       if (model != null) malloc.free(model);
+      if (error is MediaPipeException) {
+        throw AudioTaskException(error.message, cause: error);
+      }
       rethrow;
     }
   }
 
   /// Classifies [audio], one result per chunk the model reads (0.975 s for
   /// YAMNet), in order.
-  Future<List<AudioClassification>> classify(AudioData audio) {
+  Future<List<AudioClassifierResult>> classify(AudioData audio) {
     if (_backend case final backend?) return backend.classify(audio);
     if (_disposing != null) {
       return Future.error(StateError('AudioClassifier has been disposed.'));
@@ -126,18 +146,17 @@ void _requireRuntime() {
     if (missingLinuxGraphicsLibraries('$error') case final missing?) {
       throw missing;
     }
-    throw UnsupportedError(
-      Abi.current() == Abi.iosArm64
-          ? 'On iOS, the Audio Classifier runs in the official iOS SDK adapter '
-                'that mediapipe_flutter_vision builds: add that package and '
-                'mediapipe_flutter_core.tasks_runtime: true to the app pubspec.'
-          : 'Enable mediapipe_flutter_core.tasks_runtime: true in the app '
-                'pubspec hooks.user_defines to use the Audio Classifier.',
+    throw RuntimeUnavailableException(
+      'Audio Classifier runtime unavailable.',
+      fix: tasksRuntimeUnavailable(
+        'the Audio Classifier',
+        Platform.operatingSystem,
+      ),
     );
   }
 }
 
-List<AudioClassification> _classify(
+List<AudioClassifierResult> _classify(
   int task,
   Float32List samples,
   double sampleRate,
@@ -165,8 +184,8 @@ List<AudioClassification> _classify(
   }
 });
 
-AudioClassification _chunk(mp.MpClassificationResult result) {
-  final categories = <AudioCategory>[];
+AudioClassifierResult _chunk(mp.MpClassificationResult result) {
+  final categories = <AudioClassifierCategory>[];
   if (result.classificationsCount > 0) {
     final head = result.classifications[0];
     for (var i = 0; i < head.categoriesCount; i++) {
@@ -195,5 +214,5 @@ void _checked(int Function(Pointer<Pointer<Char>> error) call) =>
           ? 'MediaPipe status $status'
           : error.value.cast<Utf8>().toDartString();
       if (error.value != nullptr) mp.errorFree(error.value);
-      throw AudioClassifierException(message);
+      throw AudioTaskException(message);
     });

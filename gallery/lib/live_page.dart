@@ -5,7 +5,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'catalog.dart';
 import 'gallery_content_surface.dart';
@@ -393,13 +393,13 @@ class _LivePageState extends State<LivePage> {
           return;
         }
         try {
-          await _task.open(delegate, model, mode: VisionRunningMode.image);
+          await _task.open(delegate, model, mode: RunningMode.image);
         } on Object {
           // GPU is only the default; a platform that refuses it gets CPU.
           if (delegate != VisionDelegate.gpu) rethrow;
           delegate = VisionDelegate.cpu;
           _controller.delegate = delegate;
-          await _task.open(delegate, model, mode: VisionRunningMode.image);
+          await _task.open(delegate, model, mode: RunningMode.image);
         }
         opened = true;
         if (!mounted ||
@@ -484,6 +484,9 @@ class _LivePageState extends State<LivePage> {
     final busy = controller.changing;
     // Wide layouts keep settings beside the preview; compact ones use a drawer.
     final wide = MediaQuery.sizeOf(context).width >= 900;
+    // Phones cannot fit the centered header beside the actions, so the title
+    // takes the toolbar's own slot and truncates instead of being overdrawn.
+    final compact = MediaQuery.sizeOf(context).width < 600;
     return GallerySettingsScaffold(
       scaffoldKey: _scaffoldKey,
       framed: widget.framed,
@@ -498,20 +501,17 @@ class _LivePageState extends State<LivePage> {
                 tooltip: 'Open navigation',
                 onPressed: widget.onOpenMenu,
               ),
-        flexibleSpace: GalleryTaskHeader(taskTitle: widget.task.title),
+        title: compact
+            ? Text(
+                widget.task.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            : null,
+        flexibleSpace: compact
+            ? null
+            : GalleryTaskHeader(taskTitle: widget.task.title),
         actions: [
-          if (_mode == _VisionInputMode.camera && controller.canSwitchCamera)
-            IconButton(
-              icon: Icon(
-                defaultTargetPlatform == TargetPlatform.iOS
-                    ? Icons.flip_camera_ios
-                    : Icons.flip_camera_android,
-              ),
-              tooltip: controller.isFrontCamera
-                  ? 'Switch to back camera'
-                  : 'Switch to front camera',
-              onPressed: busy ? null : _flipCamera,
-            ),
           if (!wide)
             IconButton(
               icon: const Icon(Icons.tune),
@@ -524,27 +524,34 @@ class _LivePageState extends State<LivePage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('MODE', style: GalleryTheme.label(Theme.of(context))),
-                  const SizedBox(width: 8),
+                  if (!compact) ...[
+                    Text('MODE', style: GalleryTheme.label(theme)),
+                    const SizedBox(width: 8),
+                  ],
                   DropdownButtonHideUnderline(
-                    child: DropdownButton<_VisionInputMode>(
-                      key: ValueKey(
-                        '${widget.task.runtimeId.replaceAll('_', '-')}-mode',
+                    child: Semantics(
+                      identifier:
+                          '${widget.task.runtimeId.replaceAll('_', '-')}-mode',
+                      child: DropdownButton<_VisionInputMode>(
+                        key: ValueKey(
+                          '${widget.task.runtimeId.replaceAll('_', '-')}-mode',
+                        ),
+                        style: compact ? theme.textTheme.bodyMedium : null,
+                        value: _mode,
+                        items: const [
+                          DropdownMenuItem(
+                            value: _VisionInputMode.camera,
+                            child: Text('Camera'),
+                          ),
+                          DropdownMenuItem(
+                            value: _VisionInputMode.image,
+                            child: Text('Still image'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) unawaited(_setMode(value));
+                        },
                       ),
-                      value: _mode,
-                      items: const [
-                        DropdownMenuItem(
-                          value: _VisionInputMode.camera,
-                          child: Text('Camera'),
-                        ),
-                        DropdownMenuItem(
-                          value: _VisionInputMode.image,
-                          child: Text('Still image'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) unawaited(_setMode(value));
-                      },
                     ),
                   ),
                 ],
@@ -693,6 +700,29 @@ class _LivePageState extends State<LivePage> {
               _showConnections,
               _showPoints,
             ),
+            foreground: controller.canSwitchCamera
+                ? Align(
+                    alignment: Alignment.bottomRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: IconButton.filled(
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black54,
+                          foregroundColor: GalleryTheme.white,
+                        ),
+                        icon: Icon(
+                          defaultTargetPlatform == TargetPlatform.iOS
+                              ? Icons.flip_camera_ios
+                              : Icons.flip_camera_android,
+                        ),
+                        tooltip: controller.isFrontCamera
+                            ? 'Switch to back camera'
+                            : 'Switch to front camera',
+                        onPressed: busy ? null : _flipCamera,
+                      ),
+                    ),
+                  )
+                : null,
             placeholder: switch (_error ?? controller.error) {
               final String error => Text(
                 error,

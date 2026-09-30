@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import '../interface/face_detector_types.dart';
-import '../../vision_task_backend.dart' show faceDetectorBackendFactory;
+import '../vision_task_backend.dart' show faceDetectorBackendFactory;
 import '../sdk_vision_task.dart';
 import 'native_face_detector.dart';
 
@@ -12,6 +12,17 @@ import 'native_face_detector.dart';
 /// Supports CPU/Metal on macOS and with the official iOS SDK adapter.
 /// Source-built iOS runtimes support CPU only.
 /// Both targets support IMAGE/VIDEO modes. Await [dispose].
+///
+/// ```dart
+/// final task = await FaceDetector.create(
+///   FaceDetectorOptions(model: VisionModels.faceDetector),
+/// );
+/// final image = VisionImage.fromFile('photo.jpg');
+/// final result = await task.detectImage(image);
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class FaceDetector {
   FaceDetector._(this.runningMode, this.delegate, [this._sdk]) {
     _events.listen(_receive);
@@ -30,17 +41,18 @@ final class FaceDetector {
   int _nextId = 0;
   bool _disposing = false;
   Future<void>? _disposeFuture;
-  FaceDetectorException? _failure;
+  VisionTaskException? _failure;
   int? _lastTimestamp;
 
   /// The official running mode selected when this detector was created.
-  final VisionRunningMode runningMode;
+  final RunningMode runningMode;
 
   /// The backend requested at creation. Fixed for the lifetime of this task.
   final VisionDelegate delegate;
 
   /// Load an official model and initialize MediaPipe off the calling isolate.
   static Future<FaceDetector> create(FaceDetectorOptions options) async {
+    await options.prepareModel();
     if (Platform.isAndroid && faceDetectorBackendFactory != null) {
       return FaceDetector._(
         options.runningMode,
@@ -84,14 +96,14 @@ final class FaceDetector {
     if (_sdk case final sdk?) {
       return sdk.detectImage(image, rotationDegrees: rotationDegrees);
     }
-    _checkMode(VisionRunningMode.image);
+    _checkMode(RunningMode.image);
     _checkRotation(rotationDegrees);
     return (await _request((image, rotationDegrees, null)))!;
   }
 
   /// Process a video or camera frame on the inference worker.
   ///
-  /// Requires [VisionRunningMode.video]. Timestamps are nonnegative milliseconds
+  /// Requires [RunningMode.video]. Timestamps are nonnegative milliseconds
   /// and must strictly increase in submission order. A submitted timestamp is
   /// reserved even if that frame fails. Each call returns its input timestamp.
   /// For a live camera, await each call and skip frames while busy to bound delay.
@@ -107,7 +119,7 @@ final class FaceDetector {
         rotationDegrees: rotationDegrees,
       );
     }
-    _checkMode(VisionRunningMode.video);
+    _checkMode(RunningMode.video);
     _checkRotation(rotationDegrees);
     // MediaPipe converts milliseconds to signed 64-bit microseconds internally.
     if (timestampMilliseconds < 0 ||
@@ -123,7 +135,7 @@ final class FaceDetector {
     return (await _request((image, rotationDegrees, timestampMilliseconds)))!;
   }
 
-  void _checkMode(VisionRunningMode expected) {
+  void _checkMode(RunningMode expected) {
     if (_disposing) throw StateError('FaceDetector has been disposed.');
     if (_failure case final failure?) throw failure;
     if (runningMode != expected) {
@@ -177,27 +189,27 @@ final class FaceDetector {
       case SendPort port:
         _commands = port;
         _ready.complete();
-      case (int id, FaceDetectorResult? result, FaceDetectorException? error):
+      case (int id, FaceDetectorResult? result, VisionTaskException? error):
         final completer = _pending.remove(id);
         if (error != null) {
           completer?.completeError(error);
         } else {
           completer?.complete(result);
         }
-      case FaceDetectorException error:
+      case VisionTaskException error:
         _fail(error);
       case List<dynamic> error:
-        _fail(FaceDetectorException('Worker failed: ${error.join('\n')}'));
+        _fail(VisionTaskException('Worker failed: ${error.join('\n')}'));
       case null:
         if (!_ready.isCompleted || _pending.isNotEmpty || !_disposing) {
-          _fail(const FaceDetectorException('Face Detector worker exited.'));
+          _fail(const VisionTaskException('Face Detector worker exited.'));
         }
         _events.close();
         _exited.complete();
     }
   }
 
-  void _fail(FaceDetectorException error) {
+  void _fail(VisionTaskException error) {
     _failure ??= error;
     if (!_ready.isCompleted) _ready.completeError(error);
     for (final completer in _pending.values) {
@@ -217,7 +229,7 @@ Future<void> _runWorker((SendPort, FaceDetectorOptions) initial) async {
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, (VisionImage, int, int?)?);
       FaceDetectorResult? result;
-      FaceDetectorException? failure;
+      VisionTaskException? failure;
       try {
         if (input == null) {
           native.close();
@@ -225,18 +237,18 @@ Future<void> _runWorker((SendPort, FaceDetectorOptions) initial) async {
           result = native.detect(input.$1, input.$2, timestamp: input.$3);
         }
       } catch (error) {
-        failure = error is FaceDetectorException
+        failure = error is VisionTaskException
             ? error
-            : FaceDetectorException(error.toString());
+            : VisionTaskException(error.toString());
       }
       parent.send((id, result, failure));
       if (input == null) break;
     }
   } catch (error) {
     parent.send(
-      error is FaceDetectorException
+      error is VisionTaskException
           ? error
-          : FaceDetectorException(error.toString()),
+          : VisionTaskException(error.toString()),
     );
   } finally {
     try {

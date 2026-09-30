@@ -1,5 +1,9 @@
 import 'dart:typed_data';
 
+import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/mediapipe_exception.dart';
+import 'package:mediapipe_core/platform_interface.dart';
+
 import 'vision_types.dart';
 export 'vision_types.dart';
 
@@ -7,18 +11,27 @@ export 'vision_types.dart';
 abstract base class VisionModelOptions {
   /// Supply exactly one filesystem path or owned model buffer.
   VisionModelOptions({
-    this.modelPath,
+    this.model,
+    String? modelPath,
     Uint8List? modelBytes,
-    this.runningMode = VisionRunningMode.image,
+    this.runningMode = RunningMode.image,
     this.delegate = VisionDelegate.cpu,
-  }) : modelBytes = modelBytes == null
+  }) : _modelPath = modelPath,
+       _modelBytes = modelBytes == null
            ? null
            : Uint8List.fromList(modelBytes).asUnmodifiableView() {
-    if ((modelPath == null) == (modelBytes == null)) {
-      throw ArgumentError('Supply exactly one of modelPath and modelBytes.');
+    if ([
+          model,
+          modelPath,
+          modelBytes,
+        ].where((source) => source != null).length !=
+        1) {
+      throw ArgumentError(
+        'Supply exactly one of model, modelPath and modelBytes.',
+      );
     }
     if (modelPath != null &&
-        (modelPath!.isEmpty || modelPath!.contains('\u0000'))) {
+        (modelPath.isEmpty || modelPath.contains('\u0000'))) {
       throw ArgumentError.value(modelPath, 'modelPath', 'Invalid path');
     }
     if (modelBytes != null &&
@@ -31,14 +44,35 @@ abstract base class VisionModelOptions {
     }
   }
 
+  /// Pinned official model, downloaded and verified on first task creation.
+  final DownloadAsset? model;
+
+  final String? _modelPath;
+  final Uint8List? _modelBytes;
+  ModelSource? _resolvedModel;
+
+  /// Resolves a pinned model before handing these options to a runtime.
+  Future<void> prepareModel() => _resolveModel();
+
+  Future<void> _resolveModel() async {
+    if (runningMode == RunningMode.liveStream) {
+      throw UnsupportedError(
+        'Live stream mode is not implemented by this runtime.',
+      );
+    }
+    if (model case final selected?) {
+      _resolvedModel = await resolvePinnedModel(selected);
+    }
+  }
+
   /// Filesystem path to a model, rather than a Flutter asset key.
-  final String? modelPath;
+  String? get modelPath => _resolvedModel?.path ?? _modelPath;
 
   /// Owned, read-only model bytes.
-  final Uint8List? modelBytes;
+  Uint8List? get modelBytes => _resolvedModel?.bytes ?? _modelBytes;
 
   /// Still-image or timestamped-video processing.
-  final VisionRunningMode runningMode;
+  final RunningMode runningMode;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
@@ -150,16 +184,13 @@ final class VisionEmbedding {
 }
 
 /// Native or worker failure for a combined-runtime vision task.
-class VisionTaskException implements Exception {
+final class VisionTaskException extends MediaPipeException {
   /// Preserve diagnostic text and an optional native status code.
   const VisionTaskException(
-    this.message, {
+    super.message, {
     this.statusCode,
     this.gpuUnavailable = false,
   });
-
-  /// Native API or worker diagnostic.
-  final String message;
 
   /// MediaPipe/Abseil status code, if this was a native error.
   final int? statusCode;

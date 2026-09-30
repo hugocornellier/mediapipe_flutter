@@ -1,11 +1,12 @@
 import 'dart:ffi';
+import '../capabilities/require_delegate.dart';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../../vision_task_backend.dart';
+import '../vision_task_backend.dart';
 import '../sdk_vision_task.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_ios_sdk.dart';
@@ -16,8 +17,19 @@ import 'vision_task_worker.dart';
 /// Official Image Segmenter with owned masks and serialized inference.
 ///
 /// On Android, a registered official SDK adapter
-/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// (`mediapipe_vision`) runs the task; elsewhere Google's
 /// native runtime runs it on a worker isolate.
+///
+/// ```dart
+/// final task = await ImageSegmenter.create(
+///   ImageSegmenterOptions(model: VisionModels.imageSegmenter),
+/// );
+/// final image = VisionImage.fromFile('photo.jpg');
+/// final result = await task.segmentImage(image);
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class ImageSegmenter {
   ImageSegmenter._(this._worker, this._sdk, this.delegate);
   final VisionTaskWorker<SegmentationResult>? _worker;
@@ -27,11 +39,11 @@ final class ImageSegmenter {
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  VisionRunningMode get runningMode =>
-      _sdk?.runningMode ?? _worker!.runningMode;
+  RunningMode get runningMode => _sdk?.runningMode ?? _worker!.runningMode;
 
   /// Load a segmentation model and open its graph off the calling isolate.
   static Future<ImageSegmenter> create(ImageSegmenterOptions options) async {
+    await options.prepareModel();
     if (Platform.isAndroid && imageSegmenterBackendFactory != null) {
       return ImageSegmenter._(
         null,
@@ -47,11 +59,7 @@ final class ImageSegmenter {
       );
     }
     final capabilities = await queryImageSegmenterCapabilities();
-    if (!capabilities.supportedDelegates.contains(options.delegate)) {
-      throw UnsupportedError(
-        capabilities.unavailableReasons[options.delegate]!,
-      );
-    }
+    requireVisionDelegate(capabilities, options.delegate);
     return ImageSegmenter._(
       await VisionTaskWorker.create(
         options,
@@ -113,7 +121,7 @@ final class _NativeImageSegmenter
         officialGpu: true,
       );
       native.ref
-        ..running_mode = nativeVisionRunningMode(options.runningMode)
+        ..running_mode = nativeRunningMode(options.runningMode)
         ..output_confidence_masks = options.outputConfidenceMasks
         ..output_category_mask = options.outputCategoryMask;
       // MpImageSegmenterCreate dereferences this pointer unconditionally and

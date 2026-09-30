@@ -1,6 +1,6 @@
 import 'dart:ffi';
 
-import 'package:mediapipe_flutter_text/interface.dart';
+import 'package:mediapipe_text/interface.dart';
 
 import '../../classic_text_runtime.dart';
 import '../../third_party/mediapipe/classic_text_bindings.dart' as mp;

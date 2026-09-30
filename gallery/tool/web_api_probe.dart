@@ -1,7 +1,7 @@
 import 'dart:js_interop';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:web/web.dart' as web;
 
 @JS('mediapipeApiTestReport')
@@ -175,7 +175,7 @@ Future<Map<String, Object?>> checkApi() async {
     FaceLandmarkerOptions(
       delegate: delegate,
       modelBytes: options.modelBytes,
-      runningMode: VisionRunningMode.video,
+      runningMode: RunningMode.video,
     ),
   );
   try {
@@ -201,7 +201,7 @@ Future<Map<String, Object?>> checkApi() async {
         VisionImage.fromFile('missing.jpg'),
         timestampMilliseconds: 4,
       ),
-      FaceLandmarkerException,
+      VisionTaskException,
     );
     await rejects(
       () => video.detectForVideo(image, timestampMilliseconds: 4),
@@ -221,7 +221,7 @@ Future<Map<String, Object?>> checkApi() async {
     () => FaceLandmarker.create(
       FaceLandmarkerOptions(modelBytes: Uint8List.fromList([1])),
     ),
-    FaceLandmarkerException,
+    VisionTaskException,
   );
   checks.add('invalid-model-explicit-error');
   final hand = await checkHandApi(delegate, checks);
@@ -284,7 +284,7 @@ Future<Map<String, Object?>> checkHandApi(
       delegate: delegate,
       modelBytes: model,
       numHands: 2,
-      runningMode: VisionRunningMode.video,
+      runningMode: RunningMode.video,
     ),
   );
   try {
@@ -447,7 +447,7 @@ Future<Map<String, Object?>> checkLandmarkTasksApi(
     PoseLandmarkerOptions(
       delegate: delegate,
       modelBytes: await model('pose_landmarker_lite.task'),
-      runningMode: VisionRunningMode.video,
+      runningMode: RunningMode.video,
     ),
   );
   try {

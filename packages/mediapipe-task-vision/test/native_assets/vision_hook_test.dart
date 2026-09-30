@@ -1,8 +1,6 @@
-import 'dart:io';
-
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
 import 'package:test/test.dart';
 
 import '../../hook/build.dart' as hook;
@@ -24,18 +22,20 @@ void main() {
     ),
   );
 
-  test('release rows cover published targets with distinct assets', () {
+  test('release rows are the source-built face runtimes', () {
+    // Google's engine is core's; this package only builds the face pair.
     final assets = visionRuntimeReleases.map(
       (release) => (release.target, release.assetName),
     );
     expect(assets.toSet().length, assets.length);
     for (final release in visionRuntimeReleases) {
       expect(release.tasks, isNotEmpty);
-      expect(release.tasks.every(visionTasks.contains), isTrue);
-      expect(release.tasks, isNot(contains(sharedRuntimeTask)));
+      expect(
+        release.tasks.difference({'face_detector', 'face_landmarker'}),
+        isEmpty,
+      );
       expect(release.localBuildDirectory, endsWith('/'));
     }
-    expect(visionTasks, contains(sharedRuntimeTask));
   });
 
   test('targets without any runtime name the published ones', () {
@@ -67,7 +67,7 @@ void main() {
     // without adding the task to tool/test_desktop.py would claim coverage
     // nothing proves. Linux's 1.0.1 wheel also serves the stateful Interactive
     // Segmenter (test_desktop.py --interactive-segmenter); Windows' does not
-    // export it, and core's shared runtime serves it on macOS.
+    // export it.
     const validated = {
       'face_detector',
       'face_landmarker',
@@ -83,37 +83,10 @@ void main() {
     };
     expect(visionWheelReleases['linux/x64']!.tasks, {
       ...validated,
-      sharedRuntimeTask,
+      'interactive_segmenter',
     });
     expect(visionWheelReleases['windows/x64']!.tasks, validated);
-    expect(visionTasks.difference(validated), {sharedRuntimeTask});
-  });
-
-  test('web adapter gallery does not bundle a host runtime', () async {
-    for (final (os, architecture) in [
-      (OS.macOS, Architecture.arm64),
-      (OS.linux, Architecture.x64),
-    ]) {
-      await testCodeBuildHook(
-        mainMethod: hook.main,
-        targetOS: os,
-        targetArchitecture: architecture,
-        userDefines: defines({
-          'web_adapter_only': true,
-          'tasks': ['face_landmarker', 'hand_landmarker'],
-        }),
-        check: (_, output) {
-          expect(output.assets.code.map((asset) => asset.id).toSet(), {
-            'package:mediapipe_flutter_vision/face_landmarker.dylib',
-            'package:mediapipe_flutter_vision/vision.dylib',
-          });
-          for (final asset in output.assets.code) {
-            expect(asset.file, isNull);
-            expect(asset.linkMode, isA<LookupInProcess>());
-          }
-        },
-      );
-    }
+    expect(visionTasks.difference(validated), {'interactive_segmenter'});
   });
 
   test('desktop rows pin the library core bundles for text and audio', () {
@@ -132,10 +105,11 @@ void main() {
     }
   });
 
-  test('desktop tasks resolve to the copy core bundles', () async {
-    // What core's hook publishes when tasks_runtime bundles a desktop wheel.
+  test('desktop face assets alias the copy core bundles', () async {
+    // What core's hook publishes when it bundles a desktop wheel.
     Map<String, List<EncodedAsset>> core(Object value) => {
-      'mediapipe_flutter_core': [
+      'mediapipe_core': [
+        EncodedAsset('hooks/metadata', {'key': 'tasks_runtime', 'value': true}),
         EncodedAsset('hooks/metadata', {
           'key': 'tasks_runtime_library',
           'value': value,
@@ -159,9 +133,11 @@ void main() {
           'sha256': release.librarySha256,
         }),
         check: (_, output) {
+          // Pose binds core's asset directly; only the face pair has its own
+          // asset IDs, and both name core's file.
           expect(output.assets.code.map((asset) => asset.id).toSet(), {
-            'package:mediapipe_flutter_vision/vision.dylib',
-            'package:mediapipe_flutter_vision/face_landmarker.dylib',
+            'package:mediapipe_vision/face_detector.dylib',
+            'package:mediapipe_vision/face_landmarker.dylib',
           });
           for (final asset in output.assets.code) {
             expect(asset.file, isNull);
@@ -189,43 +165,15 @@ void main() {
         ),
         failsWith<StateError>(contains(release.librarySha256)),
       );
-    }
-  });
-
-  test('an unpublished release is served only from a local build', () {
-    final unpublished = visionRuntimeReleases.where(
-      (release) => release.archive == null,
-    );
-    expect(unpublished, isNotEmpty, reason: 'No unpublished row to exercise');
-    for (final release in unpublished) {
-      // Build each row on its own target. The two iOS slices are separate
-      // artifacts built with different SDKs, so asking for the wrong one here
-      // silently exercises a different row than the one under test.
-      final simulator = release.target.startsWith('ios-simulator');
-      final device = release.target == 'ios/arm64';
-      // `prebuilt: true` forces the download path, which an unpublished row
-      // cannot satisfy. This keeps the test independent of whether the
-      // maintainer running it happens to have a local source build.
-      expect(
+      // The engine is on by default here; turning it off leaves no runtime.
+      await expectLater(
         testCodeBuildHook(
           mainMethod: hook.main,
-          targetOS: simulator || device ? OS.iOS : OS.macOS,
-          targetArchitecture: Architecture.arm64,
-          targetIOSSdk: device ? IOSSdk.iPhoneOS : IOSSdk.iPhoneSimulator,
-          userDefines: defines({
-            'official_ios_sdk': false,
-            'tasks': [release.tasks.first],
-            'prebuilt': true,
-          }),
-          check: (_, _) => fail('Unpublished release unexpectedly downloaded'),
+          targetOS: os,
+          targetArchitecture: Architecture.x64,
+          check: (_, _) => fail('Vision built without an engine'),
         ),
-        failsWith<StateError>(
-          allOf(
-            contains(release.release),
-            contains('not published yet'),
-            contains(release.tasks.first),
-          ),
-        ),
+        failsWith<StateError>(contains('Remove tasks_runtime: false')),
       );
     }
   });
@@ -240,134 +188,80 @@ void main() {
     }
   });
 
-  test('official gallery landmark runtime pins wheel and prepared bytes', () {
-    final release = officialMacosLandmarkRuntime;
-    expect(release.target, 'macos/arm64');
-    expect(release.tasks, {
-      'face_landmarker',
-      'gesture_recognizer',
-      'hand_landmarker',
-      'holistic_landmarker',
-      'image_classifier',
-      'image_embedder',
-      'image_segmenter',
-      'interactive_segmenter_legacy',
-      'object_detector',
-      'pose_landmarker',
-    });
-    expect(release.archive, isNull);
-    expect(release.libraryName, 'libmediapipe.dylib');
-    expect(release.librarySha256, matches(RegExp(r'^[a-f0-9]{64}$')));
-    expect(release.officialWheel, isNotNull);
-    expect(
-      release.officialWheel!.wheel.sha256,
-      matches(RegExp(r'^[a-f0-9]{64}$')),
-    );
-    expect(
-      release.officialWheel!.librarySha256,
-      matches(RegExp(r'^[a-f0-9]{64}$')),
-    );
-    expect(release.officialWheel!.delegates, {'cpu', 'gpu'});
-  });
+  test(
+    "every task but Face Detector is validated on Google's macOS engine",
+    () {
+      expect(macosEngineTasks, visionTasks.difference({'face_detector'}));
+    },
+  );
 
-  test('official gallery landmark runtime requires its task and target', () {
+  test('official_macos_landmark_tasks was removed, with the replacement', () {
     expect(
       testCodeBuildHook(
         mainMethod: hook.main,
         targetOS: OS.macOS,
         targetArchitecture: Architecture.arm64,
         userDefines: defines({
-          'tasks': ['face_detector'],
+          'tasks': ['hand_landmarker'],
           'official_macos_landmark_tasks': true,
         }),
-        check: (_, _) => fail('Official runtime accepted without its task'),
+        check: (_, _) => fail('A removed setting was accepted'),
       ),
-      failsWith<StateError>(contains('requires at least one')),
-    );
-    expect(
-      testCodeBuildHook(
-        mainMethod: hook.main,
-        targetOS: OS.linux,
-        targetArchitecture: Architecture.x64,
-        userDefines: defines({
-          'tasks': ['face_landmarker'],
-          'official_macos_landmark_tasks': true,
-        }),
-        check: (_, _) => fail('Official macOS runtime accepted on Linux'),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          allOf(contains('was removed'), contains('tasks_runtime: true')),
+        ),
       ),
-      failsWith<UnsupportedError>(contains('macos/arm64')),
     );
   });
 
-  test(
-    'official macOS runtime is bundled once when face shares it',
-    () async {
-      // Google's monolith shares its graph registry between loaded images, so
-      // a second copy for the face asset would abort on registration.
-      await testCodeBuildHook(
-        mainMethod: hook.main,
-        targetOS: OS.macOS,
-        targetArchitecture: Architecture.arm64,
-        userDefines: defines({
-          'tasks': ['face_landmarker', 'hand_landmarker'],
-          'official_macos_landmark_tasks': true,
-        }),
-        check: (_, output) {
-          final assets = output.assets.code.toList();
-          expect(assets.map((asset) => asset.id), [
-            'package:mediapipe_flutter_vision/vision.dylib',
-          ]);
-          expect(assets.single.linkMode, isA<DynamicLoadingBundled>());
-        },
-      );
-    },
-    skip:
-        File(
-          '${officialMacosLandmarkRuntime.localBuildDirectory}'
-          '${officialMacosLandmarkRuntime.libraryName}',
-        ).existsSync()
-        ? false
-        : 'Run tool/prepare_official_macos_landmark_runtime.py first.',
-  );
+  test("without core's opt-in, macOS leaves the engine tasks out", () async {
+    // Not a build error: `dart run` builds an iOS or Android app's hooks for
+    // a Mac host too. Creating such a task names the opt-in instead.
+    await testCodeBuildHook(
+      mainMethod: hook.main,
+      targetOS: OS.macOS,
+      targetArchitecture: Architecture.arm64,
+      userDefines: defines({
+        'tasks': [
+          'hand_landmarker',
+          'object_detector',
+          'interactive_segmenter',
+        ],
+      }),
+      check: (_, output) => expect(output.assets.code, isEmpty),
+    );
+  });
 
-  test(
-    'core shared runtime makes face-only macOS use the vision image',
-    () async {
-      await testCodeBuildHook(
-        mainMethod: hook.main,
-        targetOS: OS.macOS,
-        targetArchitecture: Architecture.arm64,
-        userDefines: defines({
-          'tasks': ['face_landmarker'],
-          'official_macos_landmark_tasks': true,
-        }),
-        assets: {
-          'mediapipe_flutter_core': [
-            EncodedAsset('hooks/metadata', {
-              'key': 'tasks_runtime',
-              'value': true,
-            }),
-            EncodedAsset('hooks/metadata', {
-              'key': 'use_macos_vision_runtime',
-              'value': true,
-            }),
-          ],
-        },
-        check: (_, output) {
-          expect(output.assets.code.map((asset) => asset.id), [
-            'package:mediapipe_flutter_vision/vision.dylib',
-          ]);
-        },
-      );
-    },
-    skip:
-        File(
-          '${officialMacosLandmarkRuntime.localBuildDirectory}'
-          '${officialMacosLandmarkRuntime.libraryName}',
-        ).existsSync()
-        ? false
-        : 'Run tool/prepare_official_macos_landmark_runtime.py first.',
-  );
+  test("with core's engine, macOS vision adds no second copy", () async {
+    // Hand, the segmenter and Face Landmarker all call core's one asset, and
+    // settings for other platforms are ignored here.
+    await testCodeBuildHook(
+      mainMethod: hook.main,
+      targetOS: OS.macOS,
+      targetArchitecture: Architecture.arm64,
+      userDefines: defines({
+        'tasks': [
+          'face_landmarker',
+          'hand_landmarker',
+          'interactive_segmenter',
+        ],
+        'official_ios_sdk': true,
+        'official_android_sdk': false,
+      }),
+      assets: {
+        'mediapipe_core': [
+          EncodedAsset('hooks/metadata', {
+            'key': 'tasks_runtime',
+            'value': true,
+          }),
+        ],
+      },
+      check: (_, output) => expect(output.assets.code, isEmpty),
+    );
+  });
 
   test('simulator rejects tasks whose exports lack validated inference', () {
     expect(
@@ -384,32 +278,6 @@ void main() {
             fail('Unvalidated simulator task unexpectedly accepted'),
       ),
       failsWith<UnsupportedError>(contains('object_detector')),
-    );
-  });
-
-  test('iOS text and audio need the SDK adapter the default builds', () {
-    // Core's tasks_runtime resolves to that adapter on iOS; the source-built
-    // face runtime has no text or audio tasks to offer it.
-    expect(
-      testCodeBuildHook(
-        mainMethod: hook.main,
-        targetOS: OS.iOS,
-        targetArchitecture: Architecture.arm64,
-        userDefines: defines({
-          'official_ios_sdk': false,
-          'tasks': ['face_landmarker'],
-        }),
-        assets: {
-          'mediapipe_flutter_core': [
-            EncodedAsset('hooks/metadata', {
-              'key': 'tasks_runtime',
-              'value': true,
-            }),
-          ],
-        },
-        check: (_, _) => fail('Text and audio were left without a runtime'),
-      ),
-      failsWith<StateError>(contains('official iOS SDK adapter')),
     );
   });
 
@@ -465,21 +333,6 @@ void main() {
           allOf(contains('pose_landmarker'), contains('interactive_segmenter')),
         ),
       ),
-    );
-  });
-
-  test('MagicTouch requires the shared runtime opt-in', () {
-    expect(
-      testCodeBuildHook(
-        mainMethod: hook.main,
-        targetOS: OS.macOS,
-        targetArchitecture: Architecture.arm64,
-        userDefines: defines({
-          'tasks': ['interactive_segmenter'],
-        }),
-        check: (_, _) => fail('Segmenter bundled without the core runtime'),
-      ),
-      failsWith<StateError>(contains('tasks_runtime: true')),
     );
   });
 }

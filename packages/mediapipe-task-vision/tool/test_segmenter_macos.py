@@ -12,27 +12,27 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 
 from test_flutter_macos import PACKAGE
 from test_prebuilt_macos import release_server
 
-TAG = "interactive-segmenter-v1.0.1-1"
-NAME = "mediapipe-interactive-segmenter-1.0.1-macos-arm64.tar.gz"
+sys.path.insert(0, str(PACKAGE.parent / "mediapipe-core/tool"))
+from consumer_packages import copy_package  # noqa: E402
+from official_wheels import macos_engine  # noqa: E402
+
+# Google's macOS engine, which core bundles for MagicTouch and every family.
+ENGINE = macos_engine()
+TAG = ENGINE["release"]
+NAME = ENGINE["archive_name"]
 
 
 def verify(root, local_urls=None):
     packages = root / "packages"
     for name in ("mediapipe-core", "mediapipe-task-vision"):
-        source = PACKAGE.parent / name
-        target = packages / name
-        target.mkdir(parents=True)
-        shutil.copyfile(source / "pubspec.yaml", target / "pubspec.yaml")
-        shutil.copytree(source / "lib", target / "lib")
-        if (source / "hook").is_dir():
-            shutil.copytree(source / "hook", target / "hook")
+        copy_package(PACKAGE.parent / name, packages / name)
     vision = packages / PACKAGE.name
-    shutil.copyfile(PACKAGE / "sdk_downloads.dart", vision / "sdk_downloads.dart")
     if local_urls:
         pins = packages / "mediapipe-core/lib/src/native_assets/tasks_runtime.dart"
         def replace_url(match):
@@ -65,7 +65,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../packages/mediapipe-task-vision
 dev_dependencies:
   integration_test:
@@ -77,9 +77,9 @@ flutter:
     - assets/
 hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [interactive_segmenter]
       prebuilt: true
 """)
@@ -152,11 +152,13 @@ void main() {
     if len(reports) != 1:
         raise RuntimeError("Release app did not produce its validation report")
     report = json.loads(reports[0])
-    manifests = list((app / ".dart_tool").rglob("manifest.json"))
-    releases = {json.loads(path.read_text()).get("release") for path in manifests}
-    if TAG not in releases or any(
+    manifests = [json.loads(path.read_text())
+                 for path in (app / ".dart_tool").rglob("manifest.json")]
+    releases = {manifest.get("release") for manifest in manifests}
+    if not any(manifest.get("sha256") == ENGINE["library_sha256"]
+               for manifest in manifests) or any(
             value and value.startswith("face-") for value in releases):
-        raise RuntimeError(f"Unexpected downloaded tasks: {releases}")
+        raise RuntimeError(f"Unexpected downloaded runtimes: {releases}")
     framework_names = [path.name for path in (bundle / "Contents/Frameworks").iterdir()]
     if any("face_detector" in name or "face_landmarker" in name
            for name in framework_names):

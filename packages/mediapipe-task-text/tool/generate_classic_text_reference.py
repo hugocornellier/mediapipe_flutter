@@ -1,4 +1,4 @@
-"""Capture BERT, USE and language outputs from Google's pinned 1.0.1 runtime."""
+"""Capture BERT, USE and language outputs from Google's runtime pinned for this host."""
 import argparse
 import ctypes
 import dataclasses
@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'mediapipe-core/too
 from official_wheels import MACOS, host_runtime  # noqa: E402
 
 PACKAGE = Path(__file__).resolve().parents[1]
-# The checked-in baseline's library: Google's macOS arm64 1.0.1 build.
+# The checked-in baseline's library: Google's macOS arm64 build core bundles.
 LIBRARY_SHA256 = MACOS['library_sha256']
 MODELS = {
     'classifier': ('bert_classifier.tflite', '9b45012ab143d88d61e10ea501d6c8763f7202b86fa987711519d89bfa2a88b1'),

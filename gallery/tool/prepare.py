@@ -46,23 +46,27 @@ def set_plist_key(path, key, value):
 
 # The hook hard-codes this set for Android; see hook/build.dart _bundleAndroid.
 ANDROID_TASKS = {'face_detector', 'face_landmarker'}
+WEB_HOST_TEST_TASKS = {'face_detector', 'face_landmarker'}
 
-# Tasks the mediapipe_flutter_vision_android plugin runs through Google's
+# Tasks the mediapipe_vision plugin runs through Google's
 # official SDK; see hook/build.dart officialAndroidTasks.
 OFFICIAL_ANDROID_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
                           'hand_landmarker', 'holistic_landmarker', 'image_classifier',
                           'image_embedder', 'image_segmenter', 'interactive_segmenter',
                           'object_detector', 'pose_landmarker'}
 
-# Tasks validated on Google's official macOS runtime; see the vision package's
-# sdk_downloads.dart officialMacosLandmarkRuntime.
+# Tasks validated on Google's macOS engine, which core bundles with
+# tasks_runtime: true; see the vision package's sdk_downloads.dart
+# macosEngineTasks. Face Landmarker needs the engine only when it is there
+# anyway; alone it keeps its small source build.
 OFFICIAL_MACOS_TASKS = {'face_landmarker', 'gesture_recognizer', 'hand_landmarker',
                         'holistic_landmarker', 'image_classifier', 'image_embedder',
-                        'image_segmenter', 'interactive_segmenter_legacy',
-                        'object_detector', 'pose_landmarker'}
+                        'image_segmenter', 'interactive_segmenter',
+                        'interactive_segmenter_legacy', 'object_detector',
+                        'pose_landmarker'}
 
 # Tasks our adapter serves over Google's official iOS SDK; see
-# lib/src/native_assets/ios_sdk.dart officialIosTasks.
+# mediapipe-core's lib/src/native_assets/ios_sdk.dart officialIosTasks.
 OFFICIAL_IOS_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
                       'hand_landmarker', 'holistic_landmarker', 'image_classifier',
                       'image_embedder', 'image_segmenter', 'interactive_segmenter',
@@ -76,18 +80,6 @@ WEB_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
              'interactive_segmenter_legacy', 'object_detector',
              'pose_landmarker', 'audio_classifier', 'language_detector',
              'text_classifier', 'text_embedder'}
-
-# The stateful MagicTouch runtime lives in mediapipe-core's tasks runtime on
-# macOS arm64 (Linux's vision wheel exports it itself), and the hook wants it
-# opted into through a separate user define.
-SHARED_RUNTIME_TASK = 'interactive_segmenter'
-SHARED_RUNTIME_TARGETS = {'macos/arm64'}
-# Core's tasks runtime serves the text and audio tasks on these targets. On
-# Linux and Windows it is Google's wheel library, which the vision tasks then
-# share instead of bundling a second copy; on iOS it is the vision package's
-# official SDK adapter.
-TEXT_AUDIO_TARGETS = {'macos/arm64', 'linux/x64', 'windows/x64', 'ios/arm64',
-                      'ios-simulator/arm64'}
 
 # The text package's three classic tasks, on the same shared runtime, with the
 # models its example downloads and verifies (make models_text). They are not
@@ -176,7 +168,8 @@ def _pinned_model(task):
                     'text_classifier': 'bertClassifierModel',
                     'text_embedder': 'universalSentenceEncoderModel'}[task]
         source = (TEXT / 'lib/models.dart').read_text()
-        row = re.search(r'const DownloadAsset ' + constant + r' = \((.*?)\);', source, re.S).group(1)
+        row = re.search(r'const DownloadAsset ' + constant + r' = DownloadAsset\((.*?)\);',
+                        source, re.S).group(1)
         url = re.search(r'url:(.*?),\s*sha256', row, re.S).group(1)
         sha = re.search(r"sha256:\s*'([0-9a-f]{64})'", row).group(1)
     return ''.join(re.findall(r"'([^']*)'", url)), sha
@@ -215,12 +208,9 @@ def available_tasks(target):
         return set()
     tasks = set()
     if target == 'macos/arm64':
-        # Google's official wheel serves these without a maintainer build;
-        # prepare() fetches that runtime whenever one of them is bundled.
-        tasks |= OFFICIAL_MACOS_TASKS
-    if target in SHARED_RUNTIME_TARGETS:
-        tasks.add(SHARED_RUNTIME_TASK)
-        tasks |= set(TEXT_TASKS) | set(AUDIO_TASKS)
+        # Google's engine serves these, text and audio included; core's hook
+        # downloads it.
+        tasks |= OFFICIAL_MACOS_TASKS | NON_VISION_TASKS
     for block in _blocks(source, 'const visionRuntimeReleases'):
         if not re.search(r"target: '" + re.escape(target) + r"'", block):
             continue
@@ -238,7 +228,7 @@ def available_tasks(target):
 
 def prepare(target, selected):
     if target == 'web':
-        subprocess.run([sys.executable, '-B', str(REPO / 'packages/mediapipe-task-vision-web/tool/prepare_model.py')], check=True)
+        subprocess.run([sys.executable, '-B', str(REPO / 'packages/mediapipe-task-vision/tool/prepare_web_model.py')], check=True)
     assets = GALLERY / 'assets/models'
     if assets.exists():
         shutil.rmtree(assets)
@@ -264,12 +254,6 @@ def prepare(target, selected):
             continue
         shutil.copyfile(source, assets / name)
         bundled[task] = name
-    if (target == 'macos/arm64'
-            and OFFICIAL_MACOS_TASKS & bundled.keys()):
-        subprocess.run([
-            sys.executable, '-B',
-            str(VISION / 'tool/prepare_official_macos_landmark_runtime.py'),
-        ], cwd=VISION, check=True)
     samples = GALLERY / 'assets/samples'
     if samples.exists():
         shutil.rmtree(samples)
@@ -280,20 +264,20 @@ def prepare(target, selected):
     for name in audio_samples:
         shutil.copyfile(AUDIO / 'test/fixtures' / name, samples / name)
 
-    official_landmarks = (target == 'macos/arm64'
-                          and OFFICIAL_MACOS_TASKS & bundled.keys())
+    # On macOS, Google's engine is opt-in (95 MB); anything but the face pair
+    # needs it, and Face Landmarker then runs on it too.
+    macos_engine = (target == 'macos/arm64' and bool(
+        (OFFICIAL_MACOS_TASKS - {'face_landmarker'} | NON_VISION_TASKS)
+        & bundled.keys()))
     official_android = (target.startswith('android') and bundled
                         and set(bundled) - NON_VISION_TASKS <= OFFICIAL_ANDROID_TASKS)
-    if target == 'web':
-        for runtime in ('vision', 'text', 'audio'):
-            subprocess.run([sys.executable, '-B', str(REPO / f'packages/mediapipe-task-{runtime}-web/tool/prepare_runtime.py')], check=True)
     manifest = {
         'target': target,
         'tasks': sorted(bundled),
         'models': bundled,
         'samples': sorted([*SAMPLES.values(), *audio_samples]),
         'official_macos_landmark_tasks': sorted(
-            OFFICIAL_MACOS_TASKS & bundled.keys()) if official_landmarks else [],
+            OFFICIAL_MACOS_TASKS & bundled.keys()) if macos_engine else [],
         'official_ios_sdk': '1.0.1' if target.startswith('ios') else None,
         'official_android_sdk': '1.0.0' if official_android else None,
         'official_web_sdk': '1.0.1' if target == 'web' else None,
@@ -309,51 +293,14 @@ def prepare(target, selected):
     camera = ('  camera: ^0.12.1\n  camera_desktop: ^1.2.2'
               if target in ('macos/arm64', 'linux/x64', 'windows/x64')
               else '  camera: ^0.12.1' if target == 'web' or target.startswith(('ios', 'android')) else '')
-    android_plugin = ('''  mediapipe_flutter_vision_android:
-    path: ../packages/mediapipe-task-vision-android
-''' if official_android else '')
-    if target.startswith('android'):
-        if set(TEXT_TASKS) & bundled.keys():
-            android_plugin += '''  mediapipe_flutter_text_android:
-    path: ../packages/mediapipe-task-text-android
-'''
-        if set(AUDIO_TASKS) & bundled.keys():
-            android_plugin += '''  mediapipe_flutter_audio_android:
-    path: ../packages/mediapipe-task-audio-android
-'''
-    web_plugin = ('''  mediapipe_flutter_vision_web:
-    path: ../packages/mediapipe-task-vision-web
-  mediapipe_flutter_text_web:
-    path: ../packages/mediapipe-task-text-web
-  mediapipe_flutter_audio_web:
-    path: ../packages/mediapipe-task-audio-web
-''' if target == 'web' else '')
-    # Core's shared runtime is opted into explicitly. On macOS the gallery
-    # resolves it to the official vision image so opening a stateful segmenter,
-    # text, or audio tile cannot load a second MediaPipe graph registry.
-    macos_shared_runtime = ('      use_macos_vision_runtime: true\n'
-                            if official_landmarks else '')
-    core = ('    mediapipe_flutter_core:\n      tasks_runtime: true\n'
-            + macos_shared_runtime
-            if (({SHARED_RUNTIME_TASK} & bundled.keys()
-                 and target in SHARED_RUNTIME_TARGETS)
-                or (NON_VISION_TASKS & bundled.keys()
-                    and target in TEXT_AUDIO_TARGETS))
-            else '')
-    # On the web, Google's JavaScript runs the stateful task. Host-side builds
-    # such as `flutter test --platform chrome` still run the native hook, which
-    # must not be asked for a runtime this app never loads.
-    native_tasks = sorted(set(bundled) - NON_VISION_TASKS
-                          - ({SHARED_RUNTIME_TASK} if target == 'web' else set()))
-    official_landmarks_define = (
-        '      official_macos_landmark_tasks: true\n'
-        if official_landmarks else '')
-    official_ios_define = ('      official_ios_sdk: true\n'
-                           if target.startswith('ios') else '')
-    official_android_define = ('      official_android_sdk: true\n'
-                               if official_android else '')
-    web_adapter_define = ('      web_adapter_only: true\n'
-                          if target == 'web' else '')
+    # The one setting an app writes besides `tasks`, and only for macOS: every
+    # other target picks its runtime by default, which this proves.
+    core = ('    mediapipe_core:\n      tasks_runtime: true\n'
+            if macos_engine else '')
+    # Chrome tests also run the host native hook. Its published face pair is
+    # sufficient there; browser tasks use the JavaScript runtime instead.
+    native_tasks = sorted((set(bundled) & WEB_HOST_TEST_TASKS) if target == 'web'
+                          else (set(bundled) - NON_VISION_TASKS))
     (GALLERY / 'pubspec.yaml').write_text(f'''# Generated by tool/prepare.py for {target}. Do not edit by hand:
 # the task list is per-target and the build hook rejects unavailable tasks.
 name: mediapipe_gallery
@@ -367,13 +314,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../packages/mediapipe-task-vision
-  mediapipe_flutter_core:
+  mediapipe_core:
     path: ../packages/mediapipe-core
-  mediapipe_flutter_text:
+  mediapipe_text:
     path: ../packages/mediapipe-task-text
-  mediapipe_flutter_audio:
+  mediapipe_audio:
     path: ../packages/mediapipe-task-audio
   web: ^1.1.1
   # Verifies downloaded models; picks a model file to upload; records the
@@ -381,7 +328,7 @@ dependencies:
   crypto: ^3.0.6
   file_selector: ^1.0.3
   record: ^7.1.1
-{android_plugin}{web_plugin}{camera}
+{camera}
 
 dev_dependencies:
   camera_platform_interface: ^2.13.1
@@ -393,8 +340,8 @@ dev_dependencies:
 
 hooks:
   user_defines:
-{core}    mediapipe_flutter_vision:
-{official_landmarks_define}{official_ios_define}{official_android_define}{web_adapter_define}      tasks: [{', '.join(native_tasks)}]
+{core}    mediapipe_vision:
+      tasks: [{', '.join(native_tasks)}]
 
 flutter:
   uses-material-design: true

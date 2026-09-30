@@ -10,7 +10,7 @@ import 'support/classic_text_validation.dart';
 
 void main() {
   test(
-    'all three tasks match official 1.0.1 outputs from paths and bytes',
+    'all three tasks match the pinned official outputs from paths and bytes',
     () async {
       final report = await validateClassicText({
         'classifier': 'example/assets/bert_classifier.tflite',

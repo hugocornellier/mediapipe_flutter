@@ -1,12 +1,18 @@
 import 'dart:typed_data';
 
 /// Supported modes of the official MediaPipe task.
-enum VisionRunningMode {
+enum RunningMode {
   /// Independent still images.
   image,
 
   /// Frames with monotonically increasing timestamps.
   video,
+
+  /// Reserved for asynchronous frames and callbacks.
+  ///
+  /// Task creation throws [UnsupportedError] until the selected runtime
+  /// implements live stream delivery.
+  liveStream,
 }
 
 /// The inference backend requested for a task, fixed until it is disposed.

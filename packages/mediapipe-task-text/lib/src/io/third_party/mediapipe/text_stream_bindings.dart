@@ -2,7 +2,7 @@
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
 
-const _bridge = 'package:mediapipe_flutter_text/text_stream_bridge.dylib';
+const _bridge = 'package:mediapipe_text/text_stream_bridge.dylib';
 
 final class MpCorrection extends Struct {
   @Int32()

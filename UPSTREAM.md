@@ -24,6 +24,16 @@ identities, documentation, and local dependencies follow the renamed packages.
 Native MediaPipe symbols, SDK download URLs, and upstream license notices retain
 their original identity. Existing package versions are preserved at this stage.
 
+## Google's names restored
+
+On 2026-09-30 the packages took Google's names again (`mediapipe_core`,
+`mediapipe_vision`, `mediapipe_text`, `mediapipe_genai`, plus the new
+`mediapipe_audio`), since this code is meant to replace Google's packages, and
+moved to version 0.1.0. Directory names (`packages/mediapipe-core`,
+`packages/mediapipe-task-*`) are unchanged. The `mediapipe_flutter_native`
+release host keeps its name, and validation evidence keeps the names it was
+recorded with.
+
 The root marker used by the build tooling is `.mediapipe_flutter-root`.
 
 ## Tracking upstream
@@ -78,6 +88,10 @@ model files and native pipelines are unchanged. Dart owns returned values and
 uses a persistent worker with error propagation and draining disposal. The
 retired 2024 text binary pins, generated bindings and headers are removed;
 GenAI remains on its inherited runtime.
+
+macOS later moved to Google's 1.0.0 library, one engine for every family,
+because 1.0.1's detector graphs abort on some Macs (upstream-issues.md
+UP-007); the text references were regenerated from Google's 1.0.0 wheel.
 
 ## Modern Face Detector
 

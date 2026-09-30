@@ -46,7 +46,7 @@ final class VisionTaskWorker<R> {
   int? _lastTimestamp;
 
   /// Mode selected at initialization.
-  final VisionRunningMode runningMode;
+  final RunningMode runningMode;
 
   /// Construct the native owner from a top-level factory on a new isolate.
   static Future<VisionTaskWorker<R>> create<R, O extends VisionModelOptions>(
@@ -79,7 +79,7 @@ final class VisionTaskWorker<R> {
     VisionRegionOfInterest? region, {
     SegmentationPoint? keypoint,
   }) async {
-    _check(VisionRunningMode.image, rotation);
+    _check(RunningMode.image, rotation);
     return (await _request((image, rotation, null, region, keypoint)))!;
   }
 
@@ -90,7 +90,7 @@ final class VisionTaskWorker<R> {
     int timestamp,
     VisionRegionOfInterest? region,
   ) async {
-    _check(VisionRunningMode.video, rotation);
+    _check(RunningMode.video, rotation);
     if (timestamp < 0 ||
         timestamp > 0x7fffffffffffffff ~/ 1000 ||
         (_lastTimestamp != null && timestamp <= _lastTimestamp!)) {
@@ -104,7 +104,7 @@ final class VisionTaskWorker<R> {
     return (await _request((image, rotation, timestamp, region, null)))!;
   }
 
-  void _check(VisionRunningMode expected, int rotation) {
+  void _check(RunningMode expected, int rotation) {
     if (_disposing) throw StateError('Vision task has been disposed.');
     if (_failure case final error?) throw error;
     if (runningMode != expected) {

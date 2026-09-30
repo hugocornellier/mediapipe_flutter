@@ -8,7 +8,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_face_camera/face_camera_controller.dart';
 import 'package:mediapipe_face_camera/face_overlay.dart';
 
@@ -120,7 +120,7 @@ Future<void> main() async {
             bundle.offsetInBytes,
             bundle.lengthInBytes,
           ),
-          runningMode: VisionRunningMode.video,
+          runningMode: RunningMode.video,
           outputFaceBlendshapes: true,
           outputFacialTransformationMatrixes: true,
         ),

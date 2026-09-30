@@ -1,8 +1,8 @@
-import 'package:mediapipe_flutter_core/interface.dart';
-import 'package:mediapipe_flutter_core/io.dart';
-import 'package:mediapipe_flutter_text/interface.dart';
+import 'package:mediapipe_core/interface.dart';
+import 'package:mediapipe_core/io.dart';
+import 'package:mediapipe_text/interface.dart';
 
-import '../../../../text_task_backend.dart';
+import '../../../text_task_backend.dart';
 import '../../../backend_text_task.dart';
 import '../../pending_text_task.dart';
 import 'text_embedder_options.dart';
@@ -15,6 +15,16 @@ import 'text_embedder_result.dart';
 ///
 /// Enable core.tasks_runtime in the app's hook settings. Await [dispose] to
 /// drain accepted requests, close native resources and wait for worker exit.
+///
+/// ```dart
+/// final task = await TextEmbedder.create(
+///   TextEmbedderOptions(model: TextModels.universalSentenceEncoder),
+/// );
+/// final result = await task.embed('Hello');
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 class TextEmbedder extends BaseTextEmbedder {
   /// Start loading immediately. Initialization failures reach [embed].
   TextEmbedder(TextEmbedderOptions options)
@@ -40,6 +50,7 @@ class TextEmbedder extends BaseTextEmbedder {
 
   /// Load off the calling isolate and report initialization errors now.
   static Future<TextEmbedder> create(TextEmbedderOptions options) async {
+    await options.prepareModel();
     final task = TextEmbedder(options);
     await task._task.ready;
     return task;

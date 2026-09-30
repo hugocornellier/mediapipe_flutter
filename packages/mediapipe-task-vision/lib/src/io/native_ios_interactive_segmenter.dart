@@ -12,7 +12,7 @@ import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 
-const _asset = 'package:mediapipe_flutter_vision/vision.dylib';
+const _asset = 'package:mediapipe_core/mediapipe.dylib';
 
 @Native<
   Int32 Function(
@@ -64,7 +64,7 @@ final class IosInteractiveSegmenter implements InteractiveSegmenterSession {
   /// Create the SDK task; CPU only, as the task's other runtimes.
   IosInteractiveSegmenter(InteractiveSegmenterOptions options) {
     if (options.delegate != VisionDelegate.cpu) {
-      throw const InteractiveSegmenterException(
+      throw const VisionTaskException(
         'Interactive Segmenter supports CPU only.',
       );
     }
@@ -171,10 +171,7 @@ void _checkedStatus(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
   try {
     checkVisionCall(call);
   } on VisionTaskException catch (error) {
-    throw InteractiveSegmenterException(
-      error.message,
-      statusCode: error.statusCode,
-    );
+    throw VisionTaskException(error.message, statusCode: error.statusCode);
   }
 }
 

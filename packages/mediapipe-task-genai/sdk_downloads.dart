@@ -1,10 +1,10 @@
 // Pinned upstream 2024 runtimes. Update binaries and headers together.
 // SHA-256 values verified from the original Google-hosted artifacts.
-import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_core/native_assets.dart';
 
 const sdkDownloads = <String, Map<String, DownloadAsset>>{
   'android': {
-    'arm64': (
+    'arm64': DownloadAsset(
       url:
           'https://storage.googleapis.com/mediapipe-nightly-public/prod/mediapipe/gcp_ubuntu_flutter/release/40/20240419-150307/android_arm64/libllm_inference_engine.so',
       sha256:
@@ -12,7 +12,7 @@ const sdkDownloads = <String, Map<String, DownloadAsset>>{
     ),
   },
   'macos': {
-    'arm64': (
+    'arm64': DownloadAsset(
       url:
           'https://storage.googleapis.com/mediapipe-nightly-public/prod/mediapipe/macos_flutter/release/61/20240508-094837/darwin_arm64/libllm_inference_engine.dylib',
       sha256:
@@ -20,7 +20,7 @@ const sdkDownloads = <String, Map<String, DownloadAsset>>{
     ),
   },
   'ios': {
-    'arm64': (
+    'arm64': DownloadAsset(
       url:
           'https://storage.googleapis.com/mediapipe-nightly-public/prod/mediapipe/macos_flutter/release/61/20240508-094837/ios_arm64/libllm_inference_engine.dylib',
       sha256:

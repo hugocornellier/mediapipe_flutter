@@ -3,10 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_text/embedding_gemma.dart';
-import 'package:mediapipe_flutter_text/text_proofreader.dart';
-import 'package:mediapipe_flutter_text/text_summarizer.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 typedef Json = Map<String, dynamic>;
 late Directory repo;
@@ -36,7 +34,8 @@ Future<void> main(List<String> args) async {
   cases = (golden['cases'] as List).cast<Json>();
   report.addAll({
     'started_utc': DateTime.now().toUtc().toIso8601String(),
-    'runtime': '1.0.1',
+    // Google's 1.0.0 macOS library, the engine mediapipe_core bundles.
+    'runtime': '1.0.0',
     'dart': Platform.version,
     'execution':
         Platform.executable.endsWith('dartaotruntime') ||
@@ -53,7 +52,7 @@ Future<void> main(List<String> args) async {
     'status': 'running',
   });
   try {
-    check(golden['runtime'] == '1.0.1', 'Wrong reference runtime');
+    check(golden['runtime'] == '1.0.0', 'Wrong reference runtime');
     for (final entry in (golden['models'] as Json).entries) {
       final actual = await sha256.bind(File(model(entry.key)).openRead()).first;
       check(actual.toString() == entry.value, 'Model hash: ${entry.key}');
@@ -136,9 +135,9 @@ void compare(Object? actual, Object? expected, String label) {
 }
 
 final class Loaded {
-  Loaded(this.run, this.close);
+  Loaded(this.run, this.dispose);
   final Future<Object?> Function(Json entry, bool streaming) run;
-  final Future<void> Function() close;
+  final Future<void> Function() dispose;
 }
 
 Future<Loaded> load(Json entry, {String? cache}) async {
@@ -275,9 +274,7 @@ Future<void> validateOptions() async {
           actual = await task.run(entry, streaming);
         } catch (failure) {
           error = switch (failure) {
-            EmbeddingGemmaException e => e.message,
-            TextProofreaderException e => e.message,
-            TextSummarizerException e => e.message,
+            TextTaskException e => e.message,
             _ => throw failure,
           };
         }
@@ -314,11 +311,11 @@ Future<void> validateOptions() async {
       result['passed'] = true;
     } finally {
       try {
-        await task.close();
-      } on EmbeddingGemmaException catch (error) {
+        await task.dispose();
+      } on TextTaskException catch (error) {
         check(
           entry['name'] == 'over-capacity',
-          'Unexpected close error: $error',
+          'Unexpected dispose error: $error',
         );
         result['native_close_error'] = error.message;
       }
@@ -511,7 +508,7 @@ Future<void> benchmark(int iterations, int reloads) async {
     metrics['segmenter']['reset_and_first_segment'] = stats(resets);
   } finally {
     for (final task in loaded.values) {
-      await task.close();
+      await task.dispose();
     }
     await segmenter?.dispose();
   }
@@ -545,7 +542,7 @@ Future<void> benchmark(int iterations, int reloads) async {
                 '$kind reload $i',
               );
             } finally {
-              await task.close();
+              await task.dispose();
             }
           }
         }),
@@ -583,7 +580,7 @@ Future<void> validateCaches() async {
             '$kind cache pass $i',
           );
         } finally {
-          await task.close();
+          await task.dispose();
         }
       });
       final files = <Json>[];

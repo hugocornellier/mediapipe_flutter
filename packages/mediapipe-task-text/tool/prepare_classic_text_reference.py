@@ -83,7 +83,7 @@ def differences(baseline, current):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--python', type=Path, help='Existing official 1.0.1 environment')
+    parser.add_argument('--python', type=Path, help="Existing environment holding this host's official wheel")
     parser.add_argument('--python-package-root', type=Path, help='Extracted official wheel')
     parser.add_argument('--output-dir', type=Path, default=REPO / 'build/classic-text-reference')
     args = parser.parse_args()

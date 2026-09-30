@@ -7,7 +7,7 @@
 import 'dart:ffi';
 
 /// Core's shared official 1.0.1 runtime, which exports the audio C API.
-const _asset = 'package:mediapipe_flutter_core/tasks_1_0_1.dylib';
+const _asset = 'package:mediapipe_core/mediapipe.dylib';
 
 final class MpBaseOptions extends Struct {
   external Pointer<Char> modelAssetBuffer;

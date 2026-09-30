@@ -1,10 +1,11 @@
 import 'dart:ffi';
+import '../capabilities/require_delegate.dart';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../../vision_task_backend.dart';
+import '../vision_task_backend.dart';
 import '../sdk_vision_task.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_ios_sdk.dart';
@@ -15,8 +16,19 @@ import 'vision_task_worker.dart';
 /// Official Holistic Landmarker with serialized, owned image/video results.
 ///
 /// On Android, a registered official SDK adapter
-/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// (`mediapipe_vision`) runs the task; elsewhere Google's
 /// native runtime runs it on a worker isolate.
+///
+/// ```dart
+/// final task = await HolisticLandmarker.create(
+///   HolisticLandmarkerOptions(model: VisionModels.holisticLandmarker),
+/// );
+/// final image = VisionImage.fromFile('photo.jpg');
+/// final result = await task.detectImage(image);
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class HolisticLandmarker {
   HolisticLandmarker._(this._worker, this._sdk, this.delegate);
   final VisionTaskWorker<HolisticLandmarkerResult>? _worker;
@@ -26,13 +38,13 @@ final class HolisticLandmarker {
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  VisionRunningMode get runningMode =>
-      _sdk?.runningMode ?? _worker!.runningMode;
+  RunningMode get runningMode => _sdk?.runningMode ?? _worker!.runningMode;
 
   /// Load a compatible task bundle on a worker isolate.
   static Future<HolisticLandmarker> create(
     HolisticLandmarkerOptions options,
   ) async {
+    await options.prepareModel();
     if (Platform.isAndroid && holisticLandmarkerBackendFactory != null) {
       return HolisticLandmarker._(
         null,
@@ -48,11 +60,7 @@ final class HolisticLandmarker {
       );
     }
     final capabilities = await queryHolisticLandmarkerCapabilities();
-    if (!capabilities.supportedDelegates.contains(options.delegate)) {
-      throw UnsupportedError(
-        capabilities.unavailableReasons[options.delegate]!,
-      );
-    }
+    requireVisionDelegate(capabilities, options.delegate);
     return HolisticLandmarker._(
       await VisionTaskWorker.create(
         options,
@@ -111,7 +119,7 @@ final class _NativeHolisticLandmarker
         officialGpu: true,
       );
       native.ref
-        ..running_mode = nativeVisionRunningMode(options.runningMode)
+        ..running_mode = nativeRunningMode(options.runningMode)
         ..min_face_detection_confidence = options.minFaceDetectionConfidence
         ..min_face_suppression_threshold = options.minFaceSuppressionThreshold
         ..min_face_presence_confidence = options.minFacePresenceConfidence

@@ -1,5 +1,5 @@
 import 'package:flutter/painting.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 Rect containedImageRect(Size image, Size viewport) {
   final fitted = applyBoxFit(BoxFit.contain, image, viewport);

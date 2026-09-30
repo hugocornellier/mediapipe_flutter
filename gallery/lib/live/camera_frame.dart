@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 /// Copies camera pixels without rotating or resizing the sensor image.
 VisionImage visionImageFromCamera(CameraImage image) {

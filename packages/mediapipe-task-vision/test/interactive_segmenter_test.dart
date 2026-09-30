@@ -6,9 +6,9 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
-import 'package:mediapipe_flutter_vision/third_party/mediapipe/interactive_segmenter_bindings.dart'
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/models.dart';
+import 'package:mediapipe_vision/third_party/mediapipe/interactive_segmenter_bindings.dart'
     as abi;
 import 'package:test/test.dart';
 
@@ -178,13 +178,13 @@ void main() {
       final history = strokes(entry);
       await expectLater(
         task.segment(history),
-        throwsA(isA<InteractiveSegmenterException>()),
+        throwsA(isA<VisionTaskException>()),
       );
       await task.setImage(input('rgb'));
       await expectLater(task.segment([]), throwsArgumentError);
       await expectLater(
         task.setImage(VisionImage.fromFile('missing-segmenter-image.png')),
-        throwsA(isA<InteractiveSegmenterException>()),
+        throwsA(isA<VisionTaskException>()),
       );
       compare(await task.segment(history), entry);
       // Snapshot lists when submitted; mutations cannot change queued native work.
@@ -265,7 +265,7 @@ void main() {
           ),
         ),
         throwsA(
-          isA<InteractiveSegmenterException>().having(
+          isA<VisionTaskException>().having(
             (e) => e.message,
             'message',
             contains('CPU only'),
@@ -278,7 +278,7 @@ void main() {
             modelBytes: Uint8List.fromList([1, 2, 3]),
           ),
         ),
-        throwsA(isA<InteractiveSegmenterException>()),
+        throwsA(isA<VisionTaskException>()),
       );
       final task = await InteractiveSegmenter.create(
         InteractiveSegmenterOptions(modelPath: model),

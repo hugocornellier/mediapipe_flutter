@@ -9,7 +9,7 @@ to occasional crashes. If the example app freezes up on you, kill it and restart
 
 ## Running the sample
 
-As described in `package:mediapipe_flutter_genai`'s own README, it is the developer's job
+As described in `package:mediapipe_genai`'s own README, it is the developer's job
 to self-host individual inference models and then download them onto a user's
 device at runtime. To do this, your application code must know where to find said
 models. For production applications, likely only one or two models will be

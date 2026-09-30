@@ -1,15 +1,16 @@
-/// Failure in a MediaPipe TextClassifier, TextEmbedder or LanguageDetector.
-final class TextTaskException implements Exception {
-  /// Google's error message and optional C API status.
-  const TextTaskException(this.message, {this.status});
+import 'package:mediapipe_core/mediapipe_exception.dart';
 
-  /// Native or worker error description.
-  final String message;
+/// Failure in a MediaPipe text task: the classic classifier, embedder and
+/// language detector, EmbeddingGemma, Proofreader and Summarizer.
+final class TextTaskException extends MediaPipeException {
+  /// Google's error message and optional native status code.
+  const TextTaskException(super.message, {this.statusCode});
 
-  /// Native status, when available.
-  final int? status;
+  /// MediaPipe/Abseil status code, when the failure came from native code.
+  final int? statusCode;
 
   @override
   String toString() =>
-      'TextTaskException${status == null ? '' : ' ($status)'}: $message';
+      'TextTaskException${statusCode == null ? '' : ' ($statusCode)'}: '
+      '$message';
 }

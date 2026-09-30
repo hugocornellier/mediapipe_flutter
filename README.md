@@ -6,40 +6,35 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0 license"></a>
 </p>
 
-Run Google's MediaPipe Tasks from Dart and Flutter: detect faces and objects,
-track landmarks, classify images and audio, embed text, and more. The vision
-package exposes one Dart API for still images and video frames, with official
-MediaPipe runtimes selected for each supported platform.
+Google's MediaPipe Tasks for Dart and Flutter on Android, iOS, macOS, Linux,
+Windows and the web: detect faces and objects, track face, hand and pose
+landmarks, recognize gestures, classify and embed images, text and audio,
+segment images, and more. Every task runs Google's official MediaPipe
+runtime for its platform, and Google's pinned models download on first use.
 
-**[Try the live gallery](https://hugocornellier.github.io/mediapipe_flutter/)** ·
-**[Vision package guide](packages/mediapipe-task-vision/README.md)** ·
-**[Task and platform support](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)**
+**[Try the live gallery](https://hugocornellier.github.io/mediapipe_flutter/)**
 
-> **Publication status:** These packages are not on pub.dev yet; their
-> manifests currently set `publish_to: none`. This guide is written for app
-> developers, and the local checkout instructions below work today. Do not use
-> a `flutter pub add mediapipe_flutter_*` command until the packages are
-> published.
+> **Not on pub.dev yet.** The packages set `publish_to: none` until they are
+> published; for now, depend on them by path from a checkout (below).
 
-## Packages
+## Which package do I need?
 
 | Package | Use it for | Guide |
 | --- | --- | --- |
-| `mediapipe_flutter_vision` | Face, hand, pose, gesture and holistic landmarks; detection, classification, embedding and segmentation | [Vision](packages/mediapipe-task-vision/README.md) |
-| `mediapipe_flutter_text` | Language detection, text classification and embedding, plus supported modern text tasks | [Text](packages/mediapipe-task-text/README.md) |
-| `mediapipe_flutter_audio` | Audio classification | [Audio](packages/mediapipe-task-audio/README.md) |
+| `mediapipe_vision` | Face and object detection; face, hand, pose and holistic landmarks; gestures; image classification, embeddings and segmentation | [Vision](packages/mediapipe-task-vision/README.md) |
+| `mediapipe_text` | Text classification and embeddings, language detection, and on macOS EmbeddingGemma, proofreading and summarization | [Text](packages/mediapipe-task-text/README.md) |
+| `mediapipe_audio` | Audio classification | [Audio](packages/mediapipe-task-audio/README.md) |
 
-`mediapipe_flutter_core` supplies shared types and native runtimes where tasks
-need them. Web and Android vision use companion adapter packages; the
-[Vision installation guide](packages/mediapipe-task-vision/README.md#installation)
-shows when to add them. The GenAI package remains experimental and is not part
-of this getting-started path.
+Add only the families you use. Each one depends on `mediapipe_core`, which
+bundles Google's MediaPipe engine once per app however many families use it,
+and holds the shared model store and browser runtime settings
+([core guide](packages/mediapipe-core/README.md)). `mediapipe_genai` (LLM
+inference) is a separate, experimental package.
 
-## Quick start: Face Landmarker
+## Quick start
 
-Use Flutter **3.47.5 stable** for the version exercised in CI. The packages
-require Dart 3.12 or newer. For now, clone the repository beside your app and
-add the vision package by path:
+Use Flutter 3.47.5 stable, the version CI tests (Dart 3.12 or newer). Clone
+the repository beside your app and add a family by path:
 
 ```sh
 git clone https://github.com/hugocornellier/mediapipe_flutter.git
@@ -50,33 +45,21 @@ git clone https://github.com/hugocornellier/mediapipe_flutter.git
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../mediapipe_flutter/packages/mediapipe-task-vision
-
-flutter:
-  assets:
-    - assets/models/face_landmarker.task
 ```
 
-Download the [official Face Landmarker model](https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task)
-to `assets/models/face_landmarker.task`. Models are supplied by your app;
-native runtime downloads do not include them.
+Then create a task with one of Google's pinned models. It is downloaded,
+verified against its SHA-256 and cached the first time:
 
 ```dart
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 Future<int> countFaces(Uint8List rgba, int width, int height) async {
-  final model = await rootBundle.load('assets/models/face_landmarker.task');
   final landmarker = await FaceLandmarker.create(
-    FaceLandmarkerOptions(
-      modelBytes: model.buffer.asUint8List(
-        model.offsetInBytes,
-        model.lengthInBytes,
-      ),
-    ),
+    FaceLandmarkerOptions(model: VisionModels.faceLandmarker),
   );
   try {
     final result = await landmarker.detectImage(
@@ -94,60 +77,46 @@ Future<int> countFaces(Uint8List rgba, int width, int height) async {
 }
 ```
 
-Pass decoded RGBA bytes to this function. For camera frames, convert the
-camera's pixel format first and use `VisionRunningMode.video` with increasing
-timestamps. The [Vision guide](packages/mediapipe-task-vision/README.md#video-and-live-cameras)
-shows the video call and platform setup.
+A few platforms need a setting before the first download: Android the
+`INTERNET` permission, a sandboxed macOS app the network client entitlement,
+and macOS apps using text, audio or most vision tasks
+`tasks_runtime: true`. See [platform setup](doc/platform_setup.md). Your own
+models work too: pass `modelPath` or `modelBytes` instead of `model`.
 
-The gallery lets you switch between **Camera** and **Still image** on Face
-Detector, Face Landmarker, Hand Landmarker, Gesture Recognizer, Holistic
-Landmarker, Pose Landmarker, Object Detector, Image Classifier, Image Embedder
-and Image Segmenter. In still image mode, choose a JPG, PNG or WebP file and
-the same settings and delegate apply to that image. Interactive Segmenter is
-an image editor and has no camera mode.
+## Where it runs
 
-## What runs where?
+| Family | Android | iOS | macOS arm64 | Linux x64 | Windows x64 | Web |
+| --- | --- | --- | --- | --- | --- | --- |
+| Vision | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Text (classify, embed, detect language) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Text (EmbeddingGemma, proofread, summarize) | | | ✓ | | | |
+| Audio | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-| Platform | Vision runtime | Delegates |
-| --- | --- | --- |
-| Web | Official MediaPipe Tasks Vision JavaScript/WASM adapter | CPU/WASM, WebGL 2 |
-| iOS | Official MediaPipe iOS SDK | CPU, Metal where supported |
-| Android | Official MediaPipe Android SDK adapter | CPU, GPU on supported devices |
-| macOS Apple Silicon | Official MediaPipe native runtime | CPU, Metal where supported |
-| Linux x64 | Official MediaPipe wheel runtime | CPU, OpenGL ES for supported tasks |
-| Windows x64 | Official MediaPipe wheel runtime | CPU |
+CPU works everywhere a family is listed; GPU (Metal, OpenGL ES, WebGL or
+Android GPU) depends on the task. Every cell is tested in CI on hosted
+runners, the Android emulator, the iOS Simulator and Chromium, Firefox and
+WebKit. The [vision status table](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
+lists each task, delegate, known upstream limit and physical-device result.
+Ask at run time with the `queryXxxCapabilities()` functions: they report the
+supported delegates and why any other is unavailable.
 
-Availability varies by task. The [support matrix](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
-names every task, delegate and known upstream limit. CPU is the default;
-requesting GPU never silently switches to CPU if initialization fails.
+## More
 
-## Models, builds and examples
-
-- **Models are separate from runtimes.** Bundle the model as a Flutter asset or
-  download it in your app. Flutter asset keys belong in `modelBytes` after
-  `rootBundle.load`; `modelPath` is a native file path or a browser URL.
-- **Native runtimes are selected at build time.** The build hooks download and
-  verify the native libraries for supported targets. Select the tasks your app
-  uses under `hooks.user_defines.mediapipe_flutter_vision.tasks` to avoid
-  bundling unused runtimes.
-- **Web and Android require adapters.** Add their companion packages when
-  targeting those platforms. A checkout also needs the verified web runtime
-  prepared before a web build. See [Installation](packages/mediapipe-task-vision/README.md#installation).
-- **Live capture is app code.** The package processes images and video frames;
-  use a Flutter camera plugin to capture frames. The
-  [gallery](gallery/README.md) demonstrates camera lifecycle, overlays and
-  delegate switching.
-
-For a complete Flutter app, clone this repository and follow the
-[gallery setup](gallery/README.md). The [Face Landmarker example](packages/mediapipe-task-vision/example/README.md)
-is a smaller native camera app. The gallery is also
-[deployed on GitHub Pages](https://hugocornellier.github.io/mediapipe_flutter/).
+- [Platform setup](doc/platform_setup.md): permissions, entitlements, minimum
+  OS versions, offline builds and browser hosting.
+- [Privacy and licenses](doc/privacy_and_licenses.md): what is downloaded, from
+  where, and under which license.
+- [Migration](MIGRATION.md) from `mediapipe_flutter_*` and from Google's
+  `mediapipe_text` 0.0.1.
+- [Gallery](gallery/README.md): the full demo app, also
+  [live on GitHub Pages](https://hugocornellier.github.io/mediapipe_flutter/).
+- [Contributing](CONTRIBUTING.md), including how to add a task.
 
 ## Origin and license
 
-This is an independent development fork of
+An independent continuation of
 [google/flutter-mediapipe](https://github.com/google/flutter-mediapipe),
 maintained by [Hugo Cornellier](https://github.com/hugocornellier); it is not
-an official Google package. MediaPipe runtime and model provenance is recorded
-in [UPSTREAM.md](UPSTREAM.md) and the package guides. Source is licensed under
-[Apache-2.0](LICENSE), with upstream notices retained.
+an official Google package. Source is licensed under [Apache-2.0](LICENSE),
+with upstream notices retained; [UPSTREAM.md](UPSTREAM.md) records the
+provenance.

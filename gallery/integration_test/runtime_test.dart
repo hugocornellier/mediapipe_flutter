@@ -1,9 +1,9 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_audio/mediapipe_flutter_audio.dart';
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/live/live_registry.dart';
 import 'package:mediapipe_gallery/main.dart';

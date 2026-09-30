@@ -1,10 +1,11 @@
 import 'dart:ffi';
+import '../capabilities/require_delegate.dart';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../../vision_task_backend.dart';
+import '../vision_task_backend.dart';
 import '../sdk_vision_task.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_ios_sdk.dart';
@@ -15,8 +16,19 @@ import 'vision_task_worker.dart';
 /// Official PoseLandmarker, with owned results and serialized image/video inference.
 ///
 /// On Android, a registered official SDK adapter
-/// (`mediapipe_flutter_vision_android`) runs the task; elsewhere Google's
+/// (`mediapipe_vision`) runs the task; elsewhere Google's
 /// native runtime runs it on a worker isolate.
+///
+/// ```dart
+/// final task = await PoseLandmarker.create(
+///   PoseLandmarkerOptions(model: VisionModels.poseLandmarker),
+/// );
+/// final image = VisionImage.fromFile('photo.jpg');
+/// final result = await task.detectImage(image);
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class PoseLandmarker {
   PoseLandmarker._(this._worker, this._sdk, this.delegate);
   final VisionTaskWorker<PoseLandmarkerResult>? _worker;
@@ -26,11 +38,11 @@ final class PoseLandmarker {
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  VisionRunningMode get runningMode =>
-      _sdk?.runningMode ?? _worker!.runningMode;
+  RunningMode get runningMode => _sdk?.runningMode ?? _worker!.runningMode;
 
   /// Load a compatible task bundle on a worker isolate.
   static Future<PoseLandmarker> create(PoseLandmarkerOptions options) async {
+    await options.prepareModel();
     if (Platform.isAndroid && poseLandmarkerBackendFactory != null) {
       return PoseLandmarker._(
         null,
@@ -46,11 +58,7 @@ final class PoseLandmarker {
       );
     }
     final capabilities = await queryPoseLandmarkerCapabilities();
-    if (!capabilities.supportedDelegates.contains(options.delegate)) {
-      throw UnsupportedError(
-        capabilities.unavailableReasons[options.delegate]!,
-      );
-    }
+    requireVisionDelegate(capabilities, options.delegate);
     if ((Platform.isMacOS || Platform.isLinux) &&
         options.delegate == VisionDelegate.gpu &&
         options.outputSegmentationMasks) {
@@ -126,7 +134,7 @@ final class _NativePoseLandmarker
         options,
         officialGpu: true,
       );
-      native.ref.running_mode = nativeVisionRunningMode(options.runningMode);
+      native.ref.running_mode = nativeRunningMode(options.runningMode);
       native.ref
         ..num_poses = options.numPoses
         ..min_pose_detection_confidence = options.minPoseDetectionConfidence

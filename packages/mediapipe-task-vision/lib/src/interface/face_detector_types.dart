@@ -1,31 +1,20 @@
-import 'dart:typed_data';
+import 'vision_task_types.dart';
 
-import 'vision_types.dart';
+export 'vision_task_types.dart' show VisionTaskException;
 export 'vision_types.dart';
 
 /// Options for the official Face Detector.
-final class FaceDetectorOptions {
+final class FaceDetectorOptions extends VisionModelOptions {
   /// Supply exactly one model source. Thresholds match the official Python API.
   FaceDetectorOptions({
-    this.modelPath,
-    Uint8List? modelBytes,
-    this.runningMode = VisionRunningMode.image,
-    this.delegate = VisionDelegate.cpu,
+    super.model,
+    super.modelPath,
+    super.modelBytes,
+    super.runningMode,
+    super.delegate,
     this.minDetectionConfidence = 0.5,
     this.minSuppressionThreshold = 0.3,
-  }) : modelBytes = modelBytes == null
-           ? null
-           : Uint8List.fromList(modelBytes).asUnmodifiableView() {
-    if ((modelPath == null) == (modelBytes == null)) {
-      throw ArgumentError('Supply exactly one of modelPath and modelBytes.');
-    }
-    if (modelPath != null &&
-        (modelPath!.isEmpty || modelPath!.contains('\u0000'))) {
-      throw ArgumentError.value(modelPath, 'modelPath', 'Invalid path');
-    }
-    if (modelBytes != null && modelBytes.isEmpty) {
-      throw ArgumentError.value(modelBytes, 'modelBytes', 'Must not be empty');
-    }
+  }) {
     for (final entry in {
       'minDetectionConfidence': minDetectionConfidence,
       'minSuppressionThreshold': minSuppressionThreshold,
@@ -35,18 +24,6 @@ final class FaceDetectorOptions {
       }
     }
   }
-
-  /// Filesystem path to an official model, not a Flutter asset key.
-  final String? modelPath;
-
-  /// Owned, read-only copy of model bytes, useful with Flutter's rootBundle.
-  final Uint8List? modelBytes;
-
-  /// The task mode, fixed for the lifetime of this detector.
-  final VisionRunningMode runningMode;
-
-  /// Inference backend. Recreate the task to change it.
-  final VisionDelegate delegate;
 
   /// Minimum score for a detection to be returned.
   final double minDetectionConfidence;
@@ -171,28 +148,4 @@ final class FaceDetectorResult {
 
   /// Input video timestamp, or null for an independent still image.
   final int? timestampMilliseconds;
-}
-
-/// Failure reported by MediaPipe or its worker isolate.
-final class FaceDetectorException implements Exception {
-  /// Creates an error with an optional MediaPipe/Abseil status code.
-  const FaceDetectorException(
-    this.message, {
-    this.statusCode,
-    this.gpuUnavailable = false,
-  });
-
-  /// Diagnostic text from the native API or worker.
-  final String message;
-
-  /// Native status code, or null for an isolate/runtime failure.
-  final int? statusCode;
-
-  /// True when MediaPipe refused [VisionDelegate.gpu] on this machine, for
-  /// example on Linux without EGL or with only a software renderer such as
-  /// llvmpipe. The package never retries on CPU; create a CPU task instead.
-  final bool gpuUnavailable;
-
-  @override
-  String toString() => 'FaceDetectorException($statusCode): $message';
 }

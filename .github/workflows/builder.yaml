@@ -15,16 +15,20 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: dart-lang/setup-dart@v1
+      # Core is a Flutter package (path_provider for the model store), so
+      # it needs Flutter's SDK; the maintainer tools use the Dart it ships.
+      - uses: subosito/flutter-action@v2
         with:
-          sdk: '3.13.4'
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
       - name: Test shared types and download integrity
         working-directory: packages/mediapipe-core
         run: |
-          dart pub get
-          dart analyze --fatal-infos
+          flutter pub get
+          flutter analyze --fatal-infos
           dart format --output=none --set-exit-if-changed .
-          dart test --reporter expanded
+          flutter test --reporter expanded
       - name: Check maintainer tools
         working-directory: tool/builder
         run: |

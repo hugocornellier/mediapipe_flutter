@@ -7,7 +7,7 @@ import 'dart:ffi';
 import 'embedding_gemma_bindings.dart' show MpBaseOptions;
 export 'embedding_gemma_bindings.dart' show MpBaseOptions, errorFree;
 
-const _asset = 'package:mediapipe_flutter_core/tasks_1_0_1.dylib';
+const _asset = 'package:mediapipe_core/mediapipe.dylib';
 
 final class MpClassifierOptions extends Struct {
   external Pointer<Char> displayNamesLocale;

@@ -1,6 +1,6 @@
 # MediaPipe GenAI for Flutter
 
-`mediapipe_flutter_genai` is the legacy LLM wrapper in the private
+`mediapipe_genai` is the legacy LLM wrapper in the private
 [mediapipe_flutter](../../README.md) fork. It is not published to pub.dev.
 
 Build tooling and dependencies have been updated for Flutter 3.47.5 stable /
@@ -42,7 +42,7 @@ CPU vs GPU variants and be sure to invoke the appropriate options constructor.
 Inference example:
 
 ```dart
-import 'package:mediapipe_flutter_genai/mediapipe_flutter_genai.dart';
+import 'package:mediapipe_genai/mediapipe_genai.dart';
 
 // Location where you downloaded the file at runtime, or
 // placed the model yourself in advance (using `adb push`

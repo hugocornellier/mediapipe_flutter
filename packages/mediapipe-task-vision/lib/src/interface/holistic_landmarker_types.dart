@@ -5,6 +5,7 @@ export 'landmark_task_types.dart';
 final class HolisticLandmarkerOptions extends VisionModelOptions {
   /// Defaults match the official task; optional outputs own their buffers.
   HolisticLandmarkerOptions({
+    super.model,
     super.modelPath,
     super.modelBytes,
     super.runningMode,

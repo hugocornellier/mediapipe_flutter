@@ -1,10 +1,5 @@
-import 'dart:io';
-import 'dart:typed_data';
-
-import 'package:archive/archive.dart';
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/ios_sdk.dart';
 import 'package:test/test.dart';
 
 import '../../hook/build.dart' as hook;
@@ -16,11 +11,19 @@ void main() {
       basePath: Uri.directory('.'),
     ),
   );
+  // What mediapipe_core's hook reports once it has built the adapter.
+  final coreAdapter = [
+    EncodedAsset('hooks/metadata', {'key': 'tasks_runtime', 'value': true}),
+    EncodedAsset('hooks/metadata', {
+      'key': 'ios_sdk_adapter',
+      'value': '@rpath/mediapipe_ios.framework/mediapipe_ios',
+    }),
+  ];
 
   test('official SDK rejects unsupported targets before downloading', () async {
     // Google's iOS SDK serves every vision task, so only targets are refused.
+    // (On other platforms the iOS setting is ignored.)
     for (final (os, architecture, tasks) in [
-      (OS.macOS, Architecture.arm64, ['face_landmarker']),
       (OS.iOS, Architecture.x64, ['face_landmarker']),
       (OS.iOS, Architecture.x64, ['face_landmarker', 'interactive_segmenter']),
     ]) {
@@ -42,6 +45,7 @@ void main() {
     () async {
       for (final options in [
         {'official_ios_sdk': 'yes'},
+        // Removed: macOS tasks now run on core's engine.
         {'official_ios_sdk': true, 'official_macos_landmark_tasks': true},
       ]) {
         await expectLater(
@@ -58,45 +62,27 @@ void main() {
     },
   );
 
-  test('every binding ID loads one physical iOS framework', () async {
+  test('every binding ID resolves to core\'s one adapter image', () async {
     await testCodeBuildHook(
-      mainMethod: (arguments) async {
-        await build(arguments, (input, output) async {
-          final library = File.fromUri(
-            input.outputDirectory.resolve('mediapipe_ios.dylib'),
-          );
-          await library.writeAsBytes([]);
-          addOfficialIosSdkAssets(
-            input,
-            output,
-            library: library,
-            tasks: {'face_landmarker', 'face_detector', 'hand_landmarker'},
-          );
-        });
-      },
+      mainMethod: hook.main,
       targetOS: OS.iOS,
       targetArchitecture: Architecture.arm64,
+      userDefines: defines({
+        'tasks': ['face_landmarker', 'face_detector', 'hand_landmarker'],
+      }),
+      assets: {'mediapipe_core': coreAdapter},
       check: (_, output) {
         final assets = output.assets.code;
-        // The shared bindings and capability probes resolve vision.dylib.
+        // Hand binds core's asset directly; the face pair's own asset IDs
+        // alias the same image.
         expect(assets.map((asset) => asset.id.split('/').last).toSet(), {
           'face_landmarker.dylib',
           'face_detector.dylib',
-          'hand_landmarker.dylib',
-          'vision.dylib',
         });
-        expect(
-          assets.where((asset) => asset.linkMode is DynamicLoadingBundled),
-          hasLength(1),
-        );
-        final aliases = assets.where(
-          (asset) => asset.linkMode is DynamicLoadingSystem,
-        );
-        expect(aliases, hasLength(3));
-        for (final alias in aliases) {
-          expect(alias.file, isNull);
+        for (final asset in assets) {
+          expect(asset.file, isNull);
           expect(
-            (alias.linkMode as DynamicLoadingSystem).uri.path,
+            (asset.linkMode as DynamicLoadingSystem).uri.path,
             '@rpath/mediapipe_ios.framework/mediapipe_ios',
           );
         }
@@ -104,46 +90,39 @@ void main() {
     );
   });
 
-  test('SDK extraction selects one slice and refuses traversal', () async {
-    final temporary = await Directory.systemTemp.createTemp('ios-sdk-test-');
-    addTearDown(() => temporary.delete(recursive: true));
-    final zip = File('${temporary.path}/sdk.zip');
-    final archive = Archive()
-      ..add(
-        ArchiveFile(
-          'SDK.xcframework/ios-arm64/library.a',
-          1,
-          Uint8List.fromList([1]),
-        ),
-      )
-      ..add(
-        ArchiveFile(
-          'SDK.xcframework/ios-arm64_x86_64-simulator/library.a',
-          1,
-          Uint8List.fromList([2]),
-        ),
-      );
-    await zip.writeAsBytes(ZipEncoder().encode(archive));
-    final destination = Directory('${temporary.path}/extracted');
-    await extractOfficialIosSdkSlice(zip, destination, slice: 'ios-arm64');
-    expect(
-      await File(
-        '${destination.path}/SDK.xcframework/ios-arm64/library.a',
-      ).readAsBytes(),
-      [1],
-    );
-    expect(
-      await Directory(
-        '${destination.path}/SDK.xcframework/ios-arm64_x86_64-simulator',
-      ).exists(),
-      isFalse,
-    );
-    archive.add(ArchiveFile('../escape', 1, Uint8List.fromList([3])));
-    await zip.writeAsBytes(ZipEncoder().encode(archive));
+  test('the official SDK needs core\'s adapter', () async {
     await expectLater(
-      extractOfficialIosSdkSlice(zip, destination, slice: 'ios-arm64'),
-      throwsA(isA<FormatException>()),
+      testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.iOS,
+        targetArchitecture: Architecture.arm64,
+        userDefines: defines({
+          'tasks': ['face_landmarker'],
+        }),
+        check: (_, _) => fail('Built without core\'s adapter'),
+      ),
+      throwsA(isA<StateError>()),
     );
-    expect(await File('${temporary.path}/escape').exists(), isFalse);
   });
+
+  test(
+    'a source-built opt-out refuses to share a process with the SDK',
+    () async {
+      await expectLater(
+        testCodeBuildHook(
+          mainMethod: hook.main,
+          targetOS: OS.iOS,
+          targetArchitecture: Architecture.arm64,
+          targetIOSSdk: IOSSdk.iPhoneSimulator,
+          userDefines: defines({
+            'official_ios_sdk': false,
+            'tasks': ['face_landmarker'],
+          }),
+          assets: {'mediapipe_core': coreAdapter},
+          check: (_, _) => fail('Two MediaPipe images were allowed'),
+        ),
+        throwsA(isA<StateError>()),
+      );
+    },
+  );
 }

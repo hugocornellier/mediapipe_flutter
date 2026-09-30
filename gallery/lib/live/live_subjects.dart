@@ -1,4 +1,4 @@
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 /// A landmark in coordinates normalized to the analysed frame.
 typedef LivePoint = ({double x, double y});

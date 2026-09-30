@@ -5,17 +5,17 @@ import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import '../../native_assets.dart';
 
-/// One native asset shared by modern text tasks and stateful MagicTouch.
+/// Google's MediaPipe engine, the one native asset every task family binds.
 ///
-/// The identifier is stable across platforms; the bundled file name comes from
-/// each release's [TasksRuntimeRelease.libraryName].
-const tasksRuntimeAssetId = 'package:mediapipe_flutter_core/tasks_1_0_1.dylib';
+/// Core bundles it once per app (Google's official library on desktop, an
+/// adapter over Google's SDK on iOS), so vision, text and audio never load a
+/// second copy: two copies register MediaPipe's graphs twice and abort. The
+/// identifier is stable across platforms and versions; the bundled file name
+/// comes from each release.
+const tasksRuntimeAssetId = 'package:mediapipe_core/mediapipe.dylib';
 
 /// The asset name registered by the core build hook, without the package.
-const tasksRuntimeAssetName = 'tasks_1_0_1.dylib';
-
-/// Upstream version every release in [tasksRuntimeReleases] is repackaged from.
-const tasksRuntimeVersion = '1.0.1';
+const tasksRuntimeAssetName = 'mediapipe.dylib';
 
 /// Loader-metadata adjustments recorded by the packaging tool. Code and data
 /// bytes are verified unchanged; only load commands and signing differ.
@@ -35,6 +35,7 @@ final class TasksRuntimeRelease {
   const TasksRuntimeRelease({
     required this.target,
     required this.release,
+    required this.version,
     required this.archive,
     required this.libraryName,
     required this.librarySha256,
@@ -53,6 +54,9 @@ final class TasksRuntimeRelease {
 
   /// Release tag in the public native runtime repository.
   final String release;
+
+  /// Google's MediaPipe version the library was taken from, e.g. `1.0.0`.
+  final String version;
 
   /// The archive holding the library, its notices and `manifest.json`.
   final DownloadAsset archive;
@@ -101,6 +105,7 @@ final class TasksRuntimeRelease {
   TasksRuntimeRelease withArchive(DownloadAsset archive) => TasksRuntimeRelease(
     target: target,
     release: release,
+    version: version,
     archive: archive,
     libraryName: libraryName,
     librarySha256: librarySha256,
@@ -115,43 +120,46 @@ final class TasksRuntimeRelease {
   );
 }
 
-/// Google's complete 1.0.1 task runtime, repackaged per build target.
+/// Google's official macOS library, repackaged per build target.
 ///
 /// Each row is immutable: a rebuild gets a new release tag and new digests.
-/// The macOS filename retains its historical segmenter name to preserve the
-/// published bytes.
+/// macOS runs Google's 1.0.0 library: the vision tasks are validated against
+/// it, and 1.0.1's detector graphs abort opening a CPU graph on some Macs
+/// (upstream-issues.md UP-007). Text, audio and the stateful Interactive
+/// Segmenter run on the same image, so an app loads one MediaPipe.
 const tasksRuntimeReleases = <String, TasksRuntimeRelease>{
   'macos/arm64': TasksRuntimeRelease(
     target: 'macos/arm64',
-    release: 'interactive-segmenter-v1.0.1-1',
-    archive: (
+    release: 'official-landmarks-v1.0.0',
+    version: '1.0.0',
+    archive: DownloadAsset(
       url:
           'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
-          'download/interactive-segmenter-v1.0.1-1/'
-          'mediapipe-interactive-segmenter-1.0.1-macos-arm64.tar.gz',
+          'download/official-landmarks-v1.0.0/'
+          'mediapipe-official-vision-1.0.0-macos-arm64.tar.gz',
       sha256:
-          '8bec2f56b2f6bf2fa0b31dacc0c84110c24174467d2ab131935c85c89a0e5b14',
+          'f662a259669792872d54da3a4f0932e63d87f423473fc08acf7d8d0528d9fb8d',
     ),
-    libraryName: 'libinteractive_segmenter.dylib',
+    libraryName: 'libmediapipe.dylib',
     librarySha256:
-        '31acd66d5fba204bce929ccdf7a57894a3a6afdf57d3d95b062bcf6c40178db4',
-    bytes: 100946816,
+        '06b71d3f0a90180e6ae9e24872a473f5e5b8a97ec9d970555d975c41b5fb8a38',
+    bytes: 99219248,
     minimumOs: '14.0',
-    delegates: ['cpu'],
+    delegates: ['cpu', 'gpu'],
     wheelSha256:
-        '0a9fb67957f7d28e84f485e9c6716a43367b3f6f07170f31c3f72cac1addd031',
+        '7ee4783be41b2de345e1eb71e2f7e7c159a50ed5c283e60ccb8f5a6027c70a82',
     upstreamLibrary: 'mediapipe/tasks/c/libmediapipe.dylib',
     upstreamLibrarySha256:
-        '9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a',
+        'aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f',
     notices: {
       'LICENSE':
           '8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8',
       'NOTICE':
-          'e8e3eddc5c36d7413635455933650d7423b937185180e393f9a006bee60162e7',
+          'd3b4a80a24a01fd445d4b70a610fd836ec3547c3a62eb835a1041956c38d9f56',
     },
     packaging: (
       unchangedPayloadSha256:
-          'abd869fade4cb65a9964d8fdba2b8df982c3cac3f8e2e15bfccdc6fd5fa85550',
+          '21c7861e9a190cdc2af40e4be3b0379d1de6af0dd17c3f5e9065e700a8de1c71',
       sectionLayoutUnchanged: true,
     ),
   ),
@@ -160,17 +168,15 @@ const tasksRuntimeReleases = <String, TasksRuntimeRelease>{
 /// Google's desktop C API libraries, bundled unmodified from the official
 /// wheels, which export the text and audio tasks beside the vision ones.
 ///
-/// These are the vision package's desktop pins, and its tests keep the two
-/// identical: two copies of Google's library in one process register its
-/// graphs twice and abort, so an app using both packages bundles this one and
-/// the vision hook maps its own assets onto it. Windows stays on the 1.0.0
-/// wheel the vision package validated; its text and audio C API and Python
-/// declarations are the same as 1.0.1's.
+/// Every family binds this one copy: two copies of Google's library in one
+/// process register its graphs twice and abort. Windows stays on the 1.0.0
+/// wheel the vision tasks were validated on; its text and audio C API and
+/// Python declarations are the same as 1.0.1's.
 const tasksWheelRuntimes = <String, OfficialWheelLibrary>{
   'linux/x64': OfficialWheelLibrary(
     target: 'linux/x64',
     version: '1.0.1',
-    wheel: (
+    wheel: DownloadAsset(
       url:
           'https://files.pythonhosted.org/packages/2a/58/'
           'bdd5bada89d7a132375df05e962bf702c148b47043dca98d820d9395152b/'
@@ -191,7 +197,7 @@ const tasksWheelRuntimes = <String, OfficialWheelLibrary>{
   'windows/x64': OfficialWheelLibrary(
     target: 'windows/x64',
     version: '1.0.0',
-    wheel: (
+    wheel: DownloadAsset(
       url:
           'https://files.pythonhosted.org/packages/68/53/'
           'ffb67e668f23130aff197ec49be912be910c128b60658000d8bf263207c9/'
@@ -219,7 +225,7 @@ const tasksWheelRuntimes = <String, OfficialWheelLibrary>{
 ) {
   if (tasksRuntimeReleases[target] case final release?) {
     return (
-      version: tasksRuntimeVersion,
+      version: release.version,
       librarySha256: release.upstreamLibrarySha256,
       wheelSha256: release.wheelSha256,
     );
@@ -234,13 +240,48 @@ const tasksWheelRuntimes = <String, OfficialWheelLibrary>{
   return null;
 }
 
-/// iOS targets where the text and audio tasks run in the official iOS SDK
-/// adapter that mediapipe_flutter_vision builds: Google implements every task
-/// in one MediaPipeTasksCommon, which an app must hold once.
+/// iOS targets where every task runs in the official iOS SDK adapter core
+/// builds: Google implements every task in one MediaPipeTasksCommon, which an
+/// app must hold once.
 const tasksRuntimeIosTargets = {'ios/arm64', 'ios-simulator/arm64'};
 
 /// The adapter framework's install name, which core's asset resolves to.
 const tasksRuntimeIosAdapter = '@rpath/mediapipe_ios.framework/mediapipe_ios';
+
+/// Whether core has Google's engine for [target] at all.
+bool hasTasksRuntime(String target) =>
+    tasksRuntimeIosTargets.contains(target) ||
+    tasksWheelRuntimes.containsKey(target) ||
+    tasksRuntimeReleases.containsKey(target);
+
+/// Whether core bundles Google's engine on [target] when the app leaves
+/// `mediapipe_core.tasks_runtime` unset: on iOS, Linux x64 and
+/// Windows x64, where every family's tasks run on it and the vision tasks
+/// would bundle the same library anyway. macOS opts in, because Google's
+/// library is 95 MB there and a face-only app keeps the vision package's
+/// small source-built face runtimes.
+bool tasksRuntimeEnabledByDefault(String target) =>
+    tasksRuntimeIosTargets.contains(target) ||
+    tasksWheelRuntimes.containsKey(target);
+
+/// Whether a family that needs Google's engine on [target] fails the build
+/// when [enabled] (core's `tasks_runtime` metadata) is false: only where the
+/// engine is on by default and the app turned it off.
+///
+/// Where it is opt-in (macOS) the family builds without its engine tasks
+/// instead, and creating one throws [tasksRuntimeUnavailable]'s message. `dart
+/// run` builds an app's hooks for the host with the app's settings, so an iOS
+/// or Android app developed on a Mac must not need the macOS opt-in to run a
+/// script.
+bool tasksRuntimeMissing(String target, {required bool enabled}) =>
+    !enabled && tasksRuntimeEnabledByDefault(target);
+
+/// The build error a family reports when [tasksRuntimeMissing] holds.
+String tasksRuntimeRequired(String who, String target) =>
+    "$who runs on $target through Google's MediaPipe engine, which "
+    'mediapipe_core bundles once for every task family. Remove '
+    "tasks_runtime: false from hooks.user_defines.mediapipe_core in "
+    "the app's pubspec.yaml.";
 
 /// The release for [target], or an [UnsupportedError] naming the targets that
 /// have one. Targets served from a wheel ([tasksWheelRuntimes]) have none.
@@ -248,8 +289,8 @@ TasksRuntimeRelease requireTasksRuntimeRelease(String target) {
   final release = tasksRuntimeReleases[target];
   if (release == null) {
     throw UnsupportedError(
-      'The shared MediaPipe $tasksRuntimeVersion runtime has no release for '
-      '$target. Available targets: '
+      "Google's MediaPipe engine has no release for $target. Available "
+      'targets: '
       '${[...tasksRuntimeReleases.keys, ...tasksWheelRuntimes.keys].join(', ')}.',
     );
   }
@@ -266,11 +307,14 @@ Future<File> validateTasksRuntime(
   );
   if (manifest is! Map<String, dynamic> ||
       manifest['origin'] != 'official-pypi-wheel' ||
-      manifest['upstream_version'] != tasksRuntimeVersion ||
+      manifest['upstream_version'] != release.version ||
       manifest['upstream_sha256'] != release.wheelSha256 ||
       manifest['upstream_library'] != release.upstreamLibrary ||
       manifest['upstream_library_sha256'] != release.upstreamLibrarySha256 ||
-      manifest['release'] != release.release ||
+      // Archives packaged before the field existed omit it; the pinned
+      // archive digest already fixes every byte of the manifest.
+      (manifest.containsKey('release') &&
+          manifest['release'] != release.release) ||
       manifest['platform'] != release.platform ||
       manifest['architecture'] != release.architecture ||
       manifest['minimum_os'] != release.minimumOs ||
@@ -317,9 +361,12 @@ bool _sameList(List actual, List<String> expected) =>
 
 /// Downloads, verifies and extracts [release] into [cache], reusing a valid
 /// extraction and repairing a damaged one from the verified archive.
+///
+/// [source] replaces the archive's URLs, as [downloadVerified] describes.
 Future<File> downloadTasksRuntime({
   required TasksRuntimeRelease release,
   required Directory cache,
+  String? source,
 }) async {
   final asset = release.archive;
   if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(asset.sha256)) {
@@ -327,7 +374,7 @@ Future<File> downloadTasksRuntime({
   }
   final directory = Directory.fromUri(cache.uri.resolve('${asset.sha256}/'));
   final compressed = File.fromUri(directory.uri.resolve('runtime.tar.gz'));
-  await downloadVerified(asset, compressed);
+  await downloadVerified(asset, compressed, source: source);
   try {
     return await validateTasksRuntime(directory, release: release);
   } on FileSystemException {

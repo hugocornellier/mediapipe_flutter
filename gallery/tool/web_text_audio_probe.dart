@@ -3,15 +3,20 @@
 // number here with Google's JavaScript run on the same page, runtime and
 // inputs. With ?mic=1 it also classifies two seconds of microphone input,
 // which the test feeds from a speech clip through Chrome's fake capture.
+// With ?runtime=<url> it loads Google's runtimes from there instead of
+// jsDelivr, as an app self-hosting them does.
 import 'dart:async';
+import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_audio/mediapipe_flutter_audio.dart';
-import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_text/web_runtime.dart';
 import 'package:record/record.dart';
 
 @JS('mediapipeTextAudioReport')
@@ -38,6 +43,9 @@ const clips = ['speech_16000_hz_mono.wav', 'speech_48000_hz_mono.wav'];
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (Uri.base.queryParameters['runtime'] case final String runtime) {
+    MediaPipeWebRuntime.baseUrl = runtime;
+  }
   runApp(
     const MaterialApp(
       home: Scaffold(body: Center(child: Text('Checking text and audio'))),
@@ -49,6 +57,7 @@ Future<void> main() async {
     report['embedder'] = await _embedder();
     report['language'] = await _language();
     report['audio'] = await _audio();
+    report['model_cache'] = await _modelCache();
     if (Uri.base.queryParameters['mic'] == '1') {
       report['microphone'] = await _microphone();
     }
@@ -59,6 +68,31 @@ Future<void> main() async {
       ..['error'] = '$error\n$stack';
   }
   _report = report.jsify();
+}
+
+Future<String> _modelCache() async {
+  final bytes = utf8.encode('verified web model');
+  final digest = sha256.convert(bytes).toString();
+  final store = ModelStore();
+  await store.clear();
+  final online = DownloadAsset(
+    url: 'data:application/octet-stream;base64,${base64.encode(bytes)}',
+    sha256: digest,
+  );
+  _require(
+    (await store.get(online)).toString() == bytes.toString(),
+    'The model store did not return verified bytes.',
+  );
+  final offline = DownloadAsset(
+    url: 'https://invalid.example/model',
+    sha256: digest,
+  );
+  _require(
+    (await store.get(offline)).toString() == bytes.toString(),
+    'The model store did not reuse its verified browser cache.',
+  );
+  await store.clear();
+  return 'passed';
 }
 
 void _require(bool condition, String message) {
@@ -184,7 +218,7 @@ Future<Object?> _language() async {
   }
 }
 
-List<Object?> _chunks(List<AudioClassification> result) => [
+List<Object?> _chunks(List<AudioClassifierResult> result) => [
   for (final chunk in result)
     [
       chunk.timestampMs,
@@ -215,7 +249,7 @@ Future<Object?> _audio() async {
       AudioData(samples: Float32List(16000), sampleRate: 16000),
     ),
   );
-  await _rejects<AudioClassifierException>(
+  await _rejects<MediaPipeException>(
     () => AudioClassifier.create(
       AudioClassifierOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
     ),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_vision/capabilities.dart';
+import 'package:mediapipe_vision/capabilities.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/live/face_overlay.dart';
 import 'package:mediapipe_gallery/live_page.dart';
@@ -40,7 +40,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('MODE'), findsOneWidget);
+    expect(find.byKey(const ValueKey('face-landmarker-mode')), findsOneWidget);
     expect(find.text('Still image'), findsOneWidget);
     expect(find.text('Choose image'), findsOneWidget);
 

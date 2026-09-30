@@ -6,6 +6,7 @@ final class TaskPlatform {
     required this.architecture,
     this.version,
     this.gpu,
+    this.simulator = false,
   });
 
   /// Dart operating system name, or `web` outside native platforms.
@@ -22,6 +23,10 @@ final class TaskPlatform {
   /// A task that fails on one GPU family can then declare it unsupported.
   final String? gpu;
 
+  /// Whether this process runs in Apple's iOS Simulator rather than on a
+  /// device. The target is still `ios/arm64`, but a GPU path can differ.
+  final bool simulator;
+
   /// `operatingSystem/architecture`, the key used by runtime target tables.
   String get target => '$operatingSystem/$architecture';
 }
@@ -36,8 +41,9 @@ Future<String?> Function()? taskPlatformGpuReader;
 /// A null version means any version of that operating system is accepted.
 typedef RuntimeTargets = Map<String, String?>;
 
-/// Process targets core's shared runtime (`tasks_runtime: true`) serves the
-/// Audio Classifier and the text classifier, embedder and language detector on.
+/// Process targets where core bundles Google's MediaPipe engine, which serves
+/// the Audio Classifier and the text classifier, embedder and language
+/// detector (on macOS once the app sets `tasks_runtime: true`).
 ///
 /// This mirrors the build-time release tables in core's hook code; the two are
 /// kept in step so that a platform is never reported supported without a
@@ -46,21 +52,38 @@ const tasksRuntimeTargets = <String, String?>{
   'macos/arm64': '14.0',
   'linux/x64': null,
   'windows/x64': null,
-  // Through the official iOS SDK adapter of mediapipe_flutter_vision.
+  // Through the adapter over Google's iOS SDK that core builds.
   'ios/arm64': '15.0',
 };
 
-/// The part of [tasksRuntimeTargets] whose runtime also serves EmbeddingGemma,
+/// Why [task] cannot run in this process on [operatingSystem]
+/// ([TaskPlatform.operatingSystem]): core did not bundle Google's engine.
+String tasksRuntimeUnavailable(String task, String operatingSystem) =>
+    operatingSystem == 'macos'
+    ? "On macOS, $task runs on Google's MediaPipe engine, which "
+          'mediapipe_core bundles only when the app opts in, since it '
+          "is about 95 MB. Add this to the app's pubspec.yaml:\n"
+          '  hooks:\n'
+          '    user_defines:\n'
+          '      mediapipe_core:\n'
+          '        tasks_runtime: true'
+    : "$task runs on Google's MediaPipe engine, which "
+          'mediapipe_core bundles by default on $operatingSystem. '
+          'Remove tasks_runtime: false from '
+          "hooks.user_defines.mediapipe_core in the app's pubspec.yaml.";
+
+/// The part of [tasksRuntimeTargets] whose engine also serves EmbeddingGemma,
 /// Proofreader, Summarizer and the stateful Interactive Segmenter: Google's
-/// macOS 1.0.1 library. Those tasks are validated there only.
+/// macOS library. Those tasks are validated there only.
 const macosTasksRuntimeTargets = <String, String?>{'macos/arm64': '14.0'};
 
-/// The official MediaPipe release that serves core's text and audio tasks on
-/// [platform]: Google's Android SDKs and the pinned Windows wheel are 1.0.0,
-/// its other runtimes (iOS included) 1.0.1.
+/// The official MediaPipe release behind core's engine on [platform]:
+/// Google's Android SDKs, the pinned Windows wheel and the macOS library are
+/// 1.0.0 (1.0.1's macOS detector graphs abort on some Macs), its other
+/// runtimes (iOS included) 1.0.1.
 String tasksRuntimeVersionOn(TaskPlatform platform) =>
     switch (platform.operatingSystem) {
-      'android' || 'windows' => '1.0.0',
+      'android' || 'windows' || 'macos' => '1.0.0',
       _ => '1.0.1',
     };
 

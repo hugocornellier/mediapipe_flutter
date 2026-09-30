@@ -44,7 +44,7 @@ final class NativeEmbeddingGemma {
   }
 
   Pointer<Void> _task = nullptr;
-  EmbeddingGemmaException? _failure;
+  TextTaskException? _failure;
 
   /// Run official tokenization, formatting, inference and postprocessing.
   TextEmbeddingResult embed(String text, TextFormatContext? context) {
@@ -78,7 +78,7 @@ final class NativeEmbeddingGemma {
               _copy(result.embeddings[i]),
           ],
         );
-      } on EmbeddingGemmaException catch (error) {
+      } on TextTaskException catch (error) {
         // Graph failures (including the official token limit) persist upstream.
         // Retain the error rather than submitting more work to a failed graph.
         _failure = error;
@@ -123,11 +123,11 @@ void _checked(int Function(Pointer<Pointer<Char>>) action) => using((arena) {
   try {
     final status = action(error);
     if (status != 0) {
-      throw EmbeddingGemmaException(
+      throw TextTaskException(
         error.value == nullptr
             ? 'MediaPipe operation failed.'
             : error.value.cast<Utf8>().toDartString(),
-        status: status,
+        statusCode: status,
       );
     }
   } finally {

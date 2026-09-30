@@ -1,8 +1,19 @@
-import '../../vision_task_backend.dart';
+import '../vision_task_backend.dart';
 import '../sdk_vision_task.dart';
 
 /// Google's stateful MagicTouch Interactive Segmenter on the official browser
 /// runtime, installed by the web adapter: an image, then stroke histories.
+///
+/// ```dart
+/// final task = await InteractiveSegmenter.create(
+///   InteractiveSegmenterOptions(model: VisionModels.interactiveSegmenter),
+/// );
+/// final image = VisionImage.fromFile('photo.jpg');
+/// await task.setImage(image);
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class InteractiveSegmenter {
   InteractiveSegmenter._(this._backend, this.delegate);
   final InteractiveSegmenterBackend _backend;
@@ -15,6 +26,7 @@ final class InteractiveSegmenter {
   static Future<InteractiveSegmenter> create(
     InteractiveSegmenterOptions options,
   ) async {
+    await options.prepareModel();
     // CPU or WebGL 2; the worker reports a browser without worker WebGL 2.
     return InteractiveSegmenter._(
       await requireBrowserFactory(interactiveSegmenterBackendFactory)(options),

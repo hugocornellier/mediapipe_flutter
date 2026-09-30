@@ -14,7 +14,11 @@ import tarfile
 
 from build_native import PACKAGE, REVISION, OPENCV_REVISION
 
-TAG = 'vision-ios-v1.0.0-1'
+# One release per slice, matching the rows pinned in `sdk_downloads.dart`.
+TAGS = {
+    'iphonesimulator': 'vision-ios-v1.0.0-1',
+    'iphoneos': 'vision-ios-device-v1.0.0-1',
+}
 LIBRARY = 'libmediapipe.dylib'
 
 
@@ -50,7 +54,7 @@ def prepare(directory, output, sdk, validation=None):
     else:
         manifest['validated_tasks'] = []
         manifest['validation'] = 'Build checks only; physical-device inference has not been validated.'
-    manifest['release'] = TAG
+    manifest['release'] = TAGS[sdk]
     manifest['opencv_configuration'] = [
         flag for flag in manifest['opencv_configuration']
         if not flag.startswith('-DCMAKE_INSTALL_PREFIX=')]
@@ -83,33 +87,47 @@ def prepare(directory, output, sdk, validation=None):
             'validated_tasks': manifest['validated_tasks']}
 
 
+NOTES = {
+    'iphonesimulator': '''MediaPipe v1.0.0 CPU development runtime for the iOS arm64 simulator.
+
+This slice has passed Flutter Face Detector and Face Landmarker IMAGE/VIDEO
+reference comparisons, error recovery, pixel formats and queued disposal. Only
+these two tasks are declared supported on the simulator.
+''',
+    'iphoneos': '''MediaPipe v1.0.0 CPU development runtime for iOS arm64 devices.
+
+This slice is build-checked only. Physical iPhone inference, GPU, camera use and
+device performance have not been validated. The Flutter package does not
+declare physical-device support from these build checks.
+''',
+}
+SHARED_NOTES = '''
+Built from pinned upstream MediaPipe and OpenCV sources, with compiler flags
+and hashes recorded in the manifest. Other task entry points are exported but
+export checks alone do not establish inference support. The archive includes
+all required licenses and notices; models are separate. Google's official iOS
+SDK is the package default; this runtime is used only with
+`official_ios_sdk: false`.
+'''
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--simulator-report', required=True, type=Path)
-    parser.add_argument('--output', type=Path, default=PACKAGE / 'build/releases' / TAG)
+    parser.add_argument('--output', type=Path, default=PACKAGE / 'build/releases',
+                        help='Parent directory; each release is written to <output>/<tag>')
     args = parser.parse_args()
-    receipts = [prepare(PACKAGE / 'build/native/ios-simulator/arm64', args.output,
-                        'iphonesimulator', args.simulator_report),
-                prepare(PACKAGE / 'build/native/ios/arm64', args.output, 'iphoneos')]
-    (args.output / 'SHA256SUMS').write_text(''.join(
-        f"{row['sha256']}  {row['archive']}\n" for row in receipts))
-    (args.output / 'release.json').write_text(json.dumps(receipts, indent=2) + '\n')
-    (args.output / 'RELEASE_NOTES.md').write_text('''Combined MediaPipe v1.0.0 CPU development runtimes for iOS arm64.
-
-The simulator slice has passed Flutter Face Detector and Face Landmarker
-IMAGE/VIDEO reference comparisons, error recovery, pixel formats and queued
-disposal. Only these two tasks are declared supported on the simulator.
-
-The device slice is build-checked only. Physical iPhone inference, GPU,
-camera use and device performance have not been validated. The Flutter package
-does not declare physical-device support from these build checks.
-
-Both slices are built from pinned upstream MediaPipe and OpenCV sources,
-with compiler flags and hashes recorded in each manifest. Other task entry
-points are exported but export checks alone do not establish inference support.
-The archives include all required licenses and notices; models are separate.
-''')
-    print(json.dumps({'tag': TAG, 'output': str(args.output), 'artifacts': receipts}, indent=2))
+    receipts = []
+    for sdk, directory, report in [
+            ('iphonesimulator', 'ios-simulator/arm64', args.simulator_report),
+            ('iphoneos', 'ios/arm64', None)]:
+        output = args.output / TAGS[sdk]
+        receipt = prepare(PACKAGE / 'build/native' / directory, output, sdk, report)
+        (output / 'SHA256SUMS').write_text(f"{receipt['sha256']}  {receipt['archive']}\n")
+        (output / 'release.json').write_text(json.dumps(receipt, indent=2) + '\n')
+        (output / 'RELEASE_NOTES.md').write_text(NOTES[sdk] + SHARED_NOTES)
+        receipts.append({'tag': TAGS[sdk], 'output': str(output), **receipt})
+    print(json.dumps(receipts, indent=2))
 
 
 if __name__ == '__main__':

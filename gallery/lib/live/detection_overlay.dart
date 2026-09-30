@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import '../gallery_theme.dart';
 import 'camera_geometry.dart';

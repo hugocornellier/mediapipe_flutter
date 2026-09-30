@@ -7,8 +7,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
-import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/embedding_gemma_bindings.dart'
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_text/src/io/third_party/mediapipe/embedding_gemma_bindings.dart'
     as mp;
 import 'package:test/test.dart';
 
@@ -192,22 +192,22 @@ void main() {
   test('creation errors propagate instead of hanging the worker', () async {
     await expectLater(
       EmbeddingGemma.create(EmbeddingGemmaOptions(modelPath: '$model.missing')),
-      throwsA(isA<EmbeddingGemmaException>()),
+      throwsA(isA<TextTaskException>()),
     );
     await expectLater(
       EmbeddingGemma.create(
         EmbeddingGemmaOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
       ),
-      throwsA(isA<EmbeddingGemmaException>()),
+      throwsA(isA<TextTaskException>()),
     );
     await expectLater(
       EmbeddingGemma.create(
         EmbeddingGemmaOptions(modelPath: model, delegate: TextDelegate.gpu),
       ),
       throwsA(
-        isA<EmbeddingGemmaException>().having(
-          (e) => e.message,
-          'message',
+        isA<RuntimeUnavailableException>().having(
+          (e) => e.fix,
+          'fix',
           contains('CPU'),
         ),
       ),
@@ -279,7 +279,7 @@ void main() {
           ),
         ),
         throwsA(
-          isA<EmbeddingGemmaException>().having(
+          isA<TextTaskException>().having(
             (e) => e.message,
             'message',
             contains('too long'),
@@ -288,11 +288,11 @@ void main() {
       );
       await expectLater(
         task.embed('The graph has already failed.'),
-        throwsA(isA<EmbeddingGemmaException>()),
+        throwsA(isA<TextTaskException>()),
       );
       final closing = task.dispose();
       expect(identical(closing, task.dispose()), isTrue);
-      await expectLater(closing, throwsA(isA<EmbeddingGemmaException>()));
+      await expectLater(closing, throwsA(isA<TextTaskException>()));
       await expectLater(task.embed('closed'), throwsStateError);
     },
     timeout: const Timeout(Duration(seconds: 20)),

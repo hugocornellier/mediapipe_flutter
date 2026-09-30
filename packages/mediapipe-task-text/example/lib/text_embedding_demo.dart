@@ -8,8 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:example/keyboard_hider.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart';
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 import 'enumerate.dart';
 

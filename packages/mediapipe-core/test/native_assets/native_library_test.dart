@@ -4,14 +4,14 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
+import 'package:mediapipe_core/native_assets.dart';
 import 'package:test/test.dart';
 
 void main() {
   late Directory directory;
   late File destination;
   final bytes = utf8.encode('verified native library');
-  final asset = (
+  final asset = DownloadAsset(
     url: 'https://example.invalid/runtime.dylib',
     sha256: sha256.convert(bytes).toString(),
   );
@@ -61,7 +61,7 @@ void main() {
       addTearDown(client.close);
       await expectLater(
         downloadVerified(asset, destination, client: client),
-        throwsA(isA<StateError>()),
+        throwsA(isA<DownloadException>()),
       );
       expect(await destination.readAsString(), 'previous download');
       expect(await directory.list().length, 1);
@@ -73,7 +73,7 @@ void main() {
     addTearDown(client.close);
     await expectLater(
       downloadVerified(asset, destination, client: client),
-      throwsA(isA<HttpException>()),
+      throwsA(isA<DownloadException>()),
     );
     expect(await directory.list().isEmpty, isTrue);
   });

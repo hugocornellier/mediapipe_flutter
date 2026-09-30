@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_audio/mediapipe_flutter_audio.dart';
+import 'package:mediapipe_audio/mediapipe_audio.dart';
 
 // The Audio Classifier demo's task, from the gallery's bundled YAMNet and
 // sample clip, in the same app as the vision and text runtimes: core's shared

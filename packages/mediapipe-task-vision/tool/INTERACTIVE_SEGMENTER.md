@@ -18,9 +18,9 @@ Opt in from the consuming app's `pubspec.yaml`:
 ```yaml
 hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [interactive_segmenter]
 ```
 

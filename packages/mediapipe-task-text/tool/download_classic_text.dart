@@ -1,13 +1,13 @@
 import 'dart:io';
 
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_text/models.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 Future<void> main() async {
   for (final model in [
-    bertClassifierModel,
-    universalSentenceEncoderModel,
-    languageDetectorModel,
+    TextModels.bertClassifier,
+    TextModels.universalSentenceEncoder,
+    TextModels.languageDetector,
   ]) {
     final target = File(
       'example/assets/${Uri.parse(model.url).pathSegments.last}',

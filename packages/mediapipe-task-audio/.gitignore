@@ -1,3 +1,4 @@
 models/
 .dart_tool/
 build/
+/assets/runtime/

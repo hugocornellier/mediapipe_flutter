@@ -3,8 +3,7 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
-import '../../third_party/mediapipe/mediapipe_flutter_vision_bindings.dart'
-    as mp;
+import '../../third_party/mediapipe/mediapipe_vision_bindings.dart' as mp;
 import '../interface/face_detector_types.dart';
 import 'pixel_conversion.dart';
 import 'native_ios_sdk.dart';
@@ -22,6 +21,7 @@ final class NativeFaceDetector {
         'adapter; this runtime supports CPU only.',
       );
     }
+    refuseIosSimulatorGpu(gpu: _gpu);
     loadOfficialDesktopRuntime();
     using((arena) {
       final native = arena<mp.MpFaceDetectorOptions>();
@@ -52,7 +52,7 @@ final class NativeFaceDetector {
         base.model_asset_buffer_count = bytes.length;
       }
       native.ref
-        ..running_mode = options.runningMode == VisionRunningMode.video
+        ..running_mode = options.runningMode == RunningMode.video
             ? mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
             : mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
         ..min_detection_confidence = options.minDetectionConfidence
@@ -60,11 +60,11 @@ final class NativeFaceDetector {
       final output = arena<mp.MpFaceDetectorPtr>();
       try {
         _checked((error) => mp.MpFaceDetectorCreate(native, output, error));
-      } on FaceDetectorException catch (error) {
+      } on VisionTaskException catch (error) {
         // Google's runtime reports every GPU refusal (no EGL display, a
         // software renderer) as its missing GPU service.
         if (!_gpu || !error.message.contains('kGpuService')) rethrow;
-        throw FaceDetectorException(
+        throw VisionTaskException(
           error.message,
           statusCode: error.statusCode,
           gpuUnavailable: true,
@@ -205,7 +205,7 @@ void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
   try {
     final status = call(error);
     if (status != mp.MpStatus.kMpOk) {
-      throw FaceDetectorException(
+      throw VisionTaskException(
         _string(error.value) ?? 'MediaPipe returned ${status.name}',
         statusCode: status.value,
       );

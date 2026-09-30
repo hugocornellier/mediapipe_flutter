@@ -1,3 +1,80 @@
+import 'package:mediapipe_core/model_store.dart';
+
+/// Verified official models accepted by vision task options.
+abstract final class VisionModels {
+  /// Face Detector, short range.
+  static const faceDetector = DownloadAsset(
+    url: blazeFaceShortRangeUrl,
+    sha256: blazeFaceShortRangeSha256,
+  );
+
+  /// Face Landmarker, float16.
+  static const faceLandmarker = DownloadAsset(
+    url: faceLandmarkerUrl,
+    sha256: faceLandmarkerSha256,
+  );
+
+  /// Object Detector, EfficientDet Lite0.
+  static const objectDetector = DownloadAsset(
+    url: efficientDetLite0Url,
+    sha256: efficientDetLite0Sha256,
+  );
+
+  /// Image Classifier, EfficientNet Lite0.
+  static const imageClassifier = DownloadAsset(
+    url: efficientNetLite0Url,
+    sha256: efficientNetLite0Sha256,
+  );
+
+  /// Image Embedder, MobileNet V3 Small.
+  static const imageEmbedder = DownloadAsset(
+    url: mobileNetV3SmallUrl,
+    sha256: mobileNetV3SmallSha256,
+  );
+
+  /// Image Segmenter, DeepLab V3.
+  static const imageSegmenter = DownloadAsset(
+    url: deepLabV3Url,
+    sha256: deepLabV3Sha256,
+  );
+
+  /// Interactive Segmenter, MagicTouch task bundle.
+  static const interactiveSegmenter = DownloadAsset(
+    url: interactiveSegmenterModelUrl,
+    sha256: interactiveSegmenterModelSha256,
+  );
+
+  /// Legacy Interactive Segmenter, MagicTouch float32.
+  static const interactiveSegmenterLegacy = DownloadAsset(
+    url: magicTouchUrl,
+    sha256: magicTouchSha256,
+  );
+
+  /// Hand Landmarker, float16.
+  static const handLandmarker = DownloadAsset(
+    url: handLandmarkerUrl,
+    sha256: handLandmarkerSha256,
+  );
+
+  /// Gesture Recognizer, float16.
+  static const gestureRecognizer = DownloadAsset(
+    url: gestureRecognizerUrl,
+    sha256: gestureRecognizerSha256,
+  );
+
+  /// Pose Landmarker Lite, float16.
+  static const poseLandmarker = DownloadAsset(
+    url: poseLandmarkerLiteUrl,
+    sha256: poseLandmarkerLiteSha256,
+  );
+
+  /// Holistic Landmarker, float16.
+  static const holisticLandmarker = DownloadAsset(
+    url: holisticLandmarkerUrl,
+    sha256: holisticLandmarkerSha256,
+  );
+}
+
 /// Versioned official DeepLab-v3 float32 image segmentation model.
 const deepLabV3Url =
     'https://storage.googleapis.com/mediapipe-models/'
@@ -109,3 +186,49 @@ const interactiveSegmenterModelUrl =
 /// SHA-256 of [interactiveSegmenterModelUrl].
 const interactiveSegmenterModelSha256 =
     '38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03';
+
+/// Pinned model records for the shared on-demand store.
+const visionModels = <String, DownloadAsset>{
+  'deep_lab_v3': DownloadAsset(url: deepLabV3Url, sha256: deepLabV3Sha256),
+  'magic_touch': DownloadAsset(url: magicTouchUrl, sha256: magicTouchSha256),
+  'hand_landmarker': DownloadAsset(
+    url: handLandmarkerUrl,
+    sha256: handLandmarkerSha256,
+  ),
+  'gesture_recognizer': DownloadAsset(
+    url: gestureRecognizerUrl,
+    sha256: gestureRecognizerSha256,
+  ),
+  'pose_landmarker_lite': DownloadAsset(
+    url: poseLandmarkerLiteUrl,
+    sha256: poseLandmarkerLiteSha256,
+  ),
+  'holistic_landmarker': DownloadAsset(
+    url: holisticLandmarkerUrl,
+    sha256: holisticLandmarkerSha256,
+  ),
+  'blaze_face_short_range': DownloadAsset(
+    url: blazeFaceShortRangeUrl,
+    sha256: blazeFaceShortRangeSha256,
+  ),
+  'face_landmarker': DownloadAsset(
+    url: faceLandmarkerUrl,
+    sha256: faceLandmarkerSha256,
+  ),
+  'efficientdet_lite0': DownloadAsset(
+    url: efficientDetLite0Url,
+    sha256: efficientDetLite0Sha256,
+  ),
+  'efficientnet_lite0': DownloadAsset(
+    url: efficientNetLite0Url,
+    sha256: efficientNetLite0Sha256,
+  ),
+  'mobilenet_v3_small': DownloadAsset(
+    url: mobileNetV3SmallUrl,
+    sha256: mobileNetV3SmallSha256,
+  ),
+  'interactive_segmenter': DownloadAsset(
+    url: interactiveSegmenterModelUrl,
+    sha256: interactiveSegmenterModelSha256,
+  ),
+};

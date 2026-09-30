@@ -6,12 +6,12 @@ import '../capabilities/official_runtime_io.dart';
 
 /// Face Landmarker's C API, from whichever asset serves it.
 ///
-/// Google's macOS monolith registers its graphs in a registry that dyld shares
+/// Google's macOS engine registers its graphs in a registry that dyld shares
 /// between loaded images, so a process may load it only once: a second copy
-/// aborts on its first duplicate graph registration. When an app selects the
-/// monolith for Face Landmarker and for a task on the shared vision asset
-/// (Hand, Pose), the build hook bundles it once, as that shared asset, and Face
-/// Landmarker calls the same C functions through it.
+/// aborts on its first duplicate graph registration. When core bundles that
+/// engine for the other tasks, the build hook bundles no Face Landmarker
+/// library of its own, and Face Landmarker calls the same C functions through
+/// core's asset.
 final class FaceLandmarkerApi {
   const FaceLandmarkerApi._({
     required this.create,
@@ -110,7 +110,7 @@ final class FaceLandmarkerApi {
     errorFree: mp.MpErrorFree,
   );
 
-  /// The same functions on the shared vision asset.
+  /// The same functions on core's engine asset.
   static const _shared = FaceLandmarkerApi._(
     create: _sharedCreate,
     imageFromFile: _sharedImageFromFile,
@@ -125,8 +125,8 @@ final class FaceLandmarkerApi {
     errorFree: _sharedErrorFree,
   );
 
-  /// The API this process uses: Face Landmarker's own asset, or on macOS the
-  /// shared asset when the build bundled Google's monolith there instead.
+  /// The API this process uses: Face Landmarker's own asset, or on macOS
+  /// core's engine when the build bundled that instead.
   static final FaceLandmarkerApi current =
       Platform.isMacOS && !_ownAssetLoads() && hasOfficialMacosLandmarkRuntime()
       ? _shared
@@ -145,7 +145,7 @@ final class FaceLandmarkerApi {
   }
 }
 
-const _vision = 'package:mediapipe_flutter_vision/vision.dylib';
+const _engine = 'package:mediapipe_core/mediapipe.dylib';
 
 @Native<
   UnsignedInt Function(
@@ -153,7 +153,7 @@ const _vision = 'package:mediapipe_flutter_vision/vision.dylib';
     Pointer<mp.MpFaceLandmarkerPtr>,
     Pointer<Pointer<Char>>,
   )
->(symbol: 'MpFaceLandmarkerCreate', assetId: _vision)
+>(symbol: 'MpFaceLandmarkerCreate', assetId: _engine)
 external int _create(
   Pointer<mp.MpFaceLandmarkerOptions> options,
   Pointer<mp.MpFaceLandmarkerPtr> landmarker,
@@ -172,7 +172,7 @@ mp.MpStatus _sharedCreate(
     Pointer<mp.MpImagePtr>,
     Pointer<Pointer<Char>>,
   )
->(symbol: 'MpImageCreateFromFile', assetId: _vision)
+>(symbol: 'MpImageCreateFromFile', assetId: _engine)
 external int _imageFromFile(
   Pointer<Char> fileName,
   Pointer<mp.MpImagePtr> out,
@@ -195,7 +195,7 @@ mp.MpStatus _sharedImageFromFile(
     Pointer<mp.MpImagePtr>,
     Pointer<Pointer<Char>>,
   )
->(symbol: 'MpImageCreateFromUint8Data', assetId: _vision)
+>(symbol: 'MpImageCreateFromUint8Data', assetId: _engine)
 external int _imageFromData(
   int format,
   int width,
@@ -226,7 +226,7 @@ mp.MpStatus _sharedImageFromData(
     Pointer<mp.MpFaceLandmarkerResult>,
     Pointer<Pointer<Char>>,
   )
->(symbol: 'MpFaceLandmarkerDetectImage', assetId: _vision)
+>(symbol: 'MpFaceLandmarkerDetectImage', assetId: _engine)
 external int _detectImage(
   mp.MpFaceLandmarkerPtr landmarker,
   mp.MpImagePtr image,
@@ -254,7 +254,7 @@ mp.MpStatus _sharedDetectImage(
     Pointer<mp.MpFaceLandmarkerResult>,
     Pointer<Pointer<Char>>,
   )
->(symbol: 'MpFaceLandmarkerDetectForVideo', assetId: _vision)
+>(symbol: 'MpFaceLandmarkerDetectForVideo', assetId: _engine)
 external int _detectForVideo(
   mp.MpFaceLandmarkerPtr landmarker,
   mp.MpImagePtr image,
@@ -277,28 +277,28 @@ mp.MpStatus _sharedDetectForVideo(
 
 @Native<Int Function(mp.MpImagePtr)>(
   symbol: 'MpImageGetWidth',
-  assetId: _vision,
+  assetId: _engine,
 )
 external int _sharedImageWidth(mp.MpImagePtr image);
 
 @Native<Int Function(mp.MpImagePtr)>(
   symbol: 'MpImageGetHeight',
-  assetId: _vision,
+  assetId: _engine,
 )
 external int _sharedImageHeight(mp.MpImagePtr image);
 
 @Native<Void Function(Pointer<mp.MpFaceLandmarkerResult>)>(
   symbol: 'MpFaceLandmarkerCloseResult',
-  assetId: _vision,
+  assetId: _engine,
 )
 external void _sharedCloseResult(Pointer<mp.MpFaceLandmarkerResult> result);
 
-@Native<Void Function(mp.MpImagePtr)>(symbol: 'MpImageFree', assetId: _vision)
+@Native<Void Function(mp.MpImagePtr)>(symbol: 'MpImageFree', assetId: _engine)
 external void _sharedImageFree(mp.MpImagePtr image);
 
 @Native<UnsignedInt Function(mp.MpFaceLandmarkerPtr, Pointer<Pointer<Char>>)>(
   symbol: 'MpFaceLandmarkerClose',
-  assetId: _vision,
+  assetId: _engine,
 )
 external int _close(
   mp.MpFaceLandmarkerPtr landmarker,
@@ -310,5 +310,5 @@ mp.MpStatus _sharedClose(
   Pointer<Pointer<Char>> error,
 ) => mp.MpStatus.fromValue(_close(landmarker, error));
 
-@Native<Void Function(Pointer<Char>)>(symbol: 'MpErrorFree', assetId: _vision)
+@Native<Void Function(Pointer<Char>)>(symbol: 'MpErrorFree', assetId: _engine)
 external void _sharedErrorFree(Pointer<Char> error);

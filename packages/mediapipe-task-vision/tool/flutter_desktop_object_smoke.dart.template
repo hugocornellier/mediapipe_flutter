@@ -6,7 +6,7 @@ Future<void> runObjectDetectorSmoke() async {
     modelBytes: model.buffer.asUint8List(model.offsetInBytes, model.lengthInBytes),
     scoreThreshold: 0.3,
     maxResults: 5,
-    runningMode: VisionRunningMode.video,
+    runningMode: RunningMode.video,
   ));
   try {
     final image = VisionImage.fromPixels(

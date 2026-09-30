@@ -12,7 +12,7 @@ dependencies:
   http: ^1.6.0
   io: ^1.0.4
   logging: ^1.3.0
-  mediapipe_flutter_core:
+  mediapipe_core:
     path: ../../packages/mediapipe-core
   path: ^1.9.1
   process: ^5.0.0

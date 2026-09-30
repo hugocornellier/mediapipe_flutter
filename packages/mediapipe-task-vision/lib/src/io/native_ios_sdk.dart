@@ -2,15 +2,15 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_core/capabilities.dart' show runningInIosSimulator;
 
 import '../interface/face_detector_types.dart';
 
-const _landmarkerAsset =
-    'package:mediapipe_flutter_vision/face_landmarker.dylib';
-const _detectorAsset = 'package:mediapipe_flutter_vision/face_detector.dylib';
+const _landmarkerAsset = 'package:mediapipe_vision/face_landmarker.dylib';
+const _detectorAsset = 'package:mediapipe_vision/face_detector.dylib';
 
-// Present for every task the adapter serves; the pool is task-independent.
-const _visionAsset = 'package:mediapipe_flutter_vision/vision.dylib';
+// Core's adapter serves every task; the pool is task-independent.
+const _visionAsset = 'package:mediapipe_core/mediapipe.dylib';
 
 /// Benchmark overrides: 0 baseline, 1 reusable staging, 2 pool, 3 both.
 /// Pixel pooling improved image creation and 1080p throughput in device A/B runs.
@@ -34,6 +34,18 @@ bool hasOfficialIosFaceRuntime({bool detector = false}) {
         10001;
   } on ArgumentError {
     return false;
+  }
+}
+
+/// Refuses the GPU on the iOS Simulator, where Google's SDK would abort the
+/// app on the first GPU image; the capability tables withdraw it there too.
+void refuseIosSimulatorGpu({required bool gpu}) {
+  if (gpu && runningInIosSimulator) {
+    throw UnsupportedError(
+      "Google's iOS SDK aborts the app on the iOS Simulator's GPU (Metal) "
+      'path; use the CPU delegate on the simulator. iPhones and iPads run the '
+      'GPU. See upstream-issues.md UP-031.',
+    );
   }
 }
 

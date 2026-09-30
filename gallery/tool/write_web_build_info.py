@@ -11,7 +11,7 @@ source = os.environ.get('GITHUB_SHA') or subprocess.check_output(
     ['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip()
 if not re.fullmatch('[0-9a-f]{40}', source):
     raise ValueError('Expected a complete source commit hash')
-runtime = json.loads((repo / 'packages/mediapipe-task-vision-web/assets/runtime/provenance.json').read_text())
+runtime = json.loads((repo / 'packages/mediapipe-task-vision/assets/runtime.json').read_text())
 model = repo / 'gallery/assets/models/face_landmarker.task'
 info = {
     'source_commit': source,

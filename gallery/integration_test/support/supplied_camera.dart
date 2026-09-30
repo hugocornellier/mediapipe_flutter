@@ -5,11 +5,48 @@ import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_subjects.dart';
 
 import 'live_subject.dart';
+
+/// Selects [delegate] on the page's CPU/GPU control once the page has
+/// started, before any frames arrive. The gallery opens on GPU wherever it is
+/// offered (or on CPU after a visible GPU refusal), so tests that start from
+/// one delegate choose it rather than rely on the default.
+Future<void> selectDelegate(
+  WidgetTester tester,
+  LiveCameraController<Object?> controller,
+  VisionDelegate delegate, {
+  Duration timeout = const Duration(minutes: 3),
+}) async {
+  Future<void> settle() async {
+    final deadline = DateTime.now().add(timeout);
+    while ((controller.changing || !controller.running) &&
+        controller.error == null &&
+        DateTime.now().isBefore(deadline)) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump(const Duration(milliseconds: 33));
+    }
+    expect(controller.error, isNull);
+    expect(controller.running, isTrue);
+  }
+
+  await settle();
+  if (controller.delegate == delegate) return;
+  await tester.tap(
+    find.descendant(
+      of: find.byType(SegmentedButton<VisionDelegate>),
+      matching: find.text(delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'),
+    ),
+  );
+  await tester.pump();
+  await settle();
+  expect(controller.delegate, delegate);
+}
 
 /// Pumps until [controller] has processed 12 frames of a fresh task, then
 /// checks the last result is one [LiveSubject.selected] subject with its

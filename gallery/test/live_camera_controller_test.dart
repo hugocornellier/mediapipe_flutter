@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 
 import 'support/scripted_camera.dart';
@@ -239,7 +239,7 @@ void main() {
 
   test('an inference failure stops capture and reports the message', () async {
     await started();
-    task.failure = const FaceLandmarkerException('graph aborted');
+    task.failure = const VisionTaskException('graph aborted');
     camera.emit();
     await settle();
     await settle();
@@ -255,7 +255,7 @@ void main() {
   test('a refused GPU falls back to CPU with a visible notice', () async {
     task.openFailure = (
       VisionDelegate.gpu,
-      const FaceLandmarkerException(
+      const VisionTaskException(
         'Service "kGpuService" ... GPU emulation detected',
         gpuUnavailable: true,
       ),
@@ -304,7 +304,7 @@ void main() {
   test('other GPU failures are errors, never a silent fallback', () async {
     task.openFailure = (
       VisionDelegate.gpu,
-      const FaceLandmarkerException('model is corrupt'),
+      const VisionTaskException('model is corrupt'),
     );
     await controller.findCameras();
     await controller.start(

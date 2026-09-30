@@ -1,4 +1,4 @@
-import 'package:mediapipe_flutter_text/capabilities.dart';
+import 'package:mediapipe_text/capabilities.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -48,12 +48,18 @@ base class OfficialWheelLibrary {
 
 /// Extracts only the native library and pinned notices; Python is not required.
 /// A cached library is reused only after checking every packaged file.
+///
+/// [source] replaces the wheel's URLs, as [downloadVerified] describes.
 Future<File> downloadOfficialWheelLibrary(
   OfficialWheelLibrary release,
-  Directory cache,
-) async {
+  Directory cache, {
+  String? source,
+}) async {
+  // A short name: Windows limits folders to 248 characters, and an app's
+  // shared hook output already sits deep in .dart_tool. The manifest below
+  // still records and checks the full digest.
   final directory = Directory.fromUri(
-    cache.uri.resolve('${release.wheel.sha256}/'),
+    cache.uri.resolve('${release.wheel.sha256.substring(0, 16)}/'),
   );
   final expected = {
     release.libraryName: release.librarySha256,
@@ -81,7 +87,7 @@ Future<File> downloadOfficialWheelLibrary(
 
   await directory.create(recursive: true);
   final wheel = File.fromUri(directory.uri.resolve('runtime.whl'));
-  await downloadVerified(release.wheel, wheel);
+  await downloadVerified(release.wheel, wheel, source: source);
   final archive = ZipDecoder().decodeBytes(await wheel.readAsBytes());
   final extracted = <String, List<int>>{};
   final paths = {

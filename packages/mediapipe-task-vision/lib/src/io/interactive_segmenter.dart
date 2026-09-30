@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import '../../../capabilities.dart';
-import '../../vision_task_backend.dart';
+import '../vision_task_backend.dart';
 import 'native_interactive_segmenter.dart';
 import 'native_ios_interactive_segmenter.dart';
 
@@ -12,6 +12,17 @@ import 'native_ios_interactive_segmenter.dart';
 /// Select the interactive_segmenter task in build-hook configuration. Supports
 /// CPU on macOS arm64 (macOS 14+) and through Google's iOS and Android SDKs.
 /// Await [dispose] when finished.
+///
+/// ```dart
+/// final task = await InteractiveSegmenter.create(
+///   InteractiveSegmenterOptions(model: VisionModels.interactiveSegmenter),
+/// );
+/// final image = VisionImage.fromFile('photo.jpg');
+/// await task.setImage(image);
+/// await task.dispose();
+/// ```
+/// Inference futures cannot cancel native work; `Future.timeout` only limits
+/// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class InteractiveSegmenter {
   InteractiveSegmenter._(this.delegate, [this._backend]) {
     if (_backend == null) {
@@ -24,7 +35,7 @@ final class InteractiveSegmenter {
   /// Requested inference backend, fixed at creation.
   final VisionDelegate delegate;
 
-  /// Google's Android SDK, through `mediapipe_flutter_vision_android`.
+  /// Google's Android SDK, through `mediapipe_vision`.
   final InteractiveSegmenterBackend? _backend;
   final _events = ReceivePort();
   final _ready = Completer<void>();
@@ -34,12 +45,13 @@ final class InteractiveSegmenter {
   int _nextId = 0;
   bool _disposing = false;
   Future<void>? _disposeFuture;
-  InteractiveSegmenterException? _failure;
+  VisionTaskException? _failure;
 
   /// Load the official task bundle off the calling isolate.
   static Future<InteractiveSegmenter> create(
     InteractiveSegmenterOptions options,
   ) async {
+    await options.prepareModel();
     if (Platform.isAndroid && interactiveSegmenterBackendFactory != null) {
       // Google's Java task takes either delegate; GPU is not yet declared
       // supported (see the capability query) until physical devices pass.
@@ -50,7 +62,7 @@ final class InteractiveSegmenter {
     }
     final support = await queryInteractiveSegmenterCapabilities();
     if (support.unavailableReasons[options.delegate] case final reason?) {
-      throw InteractiveSegmenterException(reason);
+      throw VisionTaskException(reason);
     }
     final task = InteractiveSegmenter._(options.delegate);
     try {
@@ -127,29 +139,21 @@ final class InteractiveSegmenter {
       case SendPort port:
         _commands = port;
         _ready.complete();
-      case (
-        int id,
-        SegmentationMask? result,
-        InteractiveSegmenterException? error,
-      ):
+      case (int id, SegmentationMask? result, VisionTaskException? error):
         final completer = _pending.remove(id);
         if (error != null) {
           completer?.completeError(error);
         } else {
           completer?.complete(result);
         }
-      case InteractiveSegmenterException error:
+      case VisionTaskException error:
         _fail(error);
       case List<dynamic> error:
-        _fail(
-          InteractiveSegmenterException('Worker failed: ${error.join('\n')}'),
-        );
+        _fail(VisionTaskException('Worker failed: ${error.join('\n')}'));
       case null:
         if (!_ready.isCompleted || _pending.isNotEmpty || !_disposing) {
           _fail(
-            const InteractiveSegmenterException(
-              'Interactive Segmenter worker exited.',
-            ),
+            const VisionTaskException('Interactive Segmenter worker exited.'),
           );
         }
         _events.close();
@@ -157,7 +161,7 @@ final class InteractiveSegmenter {
     }
   }
 
-  void _fail(InteractiveSegmenterException error) {
+  void _fail(VisionTaskException error) {
     _failure ??= error;
     if (!_ready.isCompleted) _ready.completeError(error);
     for (final completer in _pending.values) {
@@ -179,7 +183,7 @@ Future<void> _runWorker((SendPort, InteractiveSegmenterOptions) initial) async {
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, Object?);
       SegmentationMask? result;
-      InteractiveSegmenterException? failure;
+      VisionTaskException? failure;
       try {
         switch (input) {
           case null:
@@ -192,18 +196,18 @@ Future<void> _runWorker((SendPort, InteractiveSegmenterOptions) initial) async {
             throw StateError('Unknown segmenter command.');
         }
       } catch (error) {
-        failure = error is InteractiveSegmenterException
+        failure = error is VisionTaskException
             ? error
-            : InteractiveSegmenterException(error.toString());
+            : VisionTaskException(error.toString());
       }
       parent.send((id, result, failure));
       if (input == null) break;
     }
   } catch (error) {
     parent.send(
-      error is InteractiveSegmenterException
+      error is VisionTaskException
           ? error
-          : InteractiveSegmenterException(error.toString()),
+          : VisionTaskException(error.toString()),
     );
   } finally {
     try {

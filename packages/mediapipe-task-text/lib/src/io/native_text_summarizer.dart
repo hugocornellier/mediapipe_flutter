@@ -86,7 +86,7 @@ final class NativeTextSummarizer
           done: terminal,
         ),
         emit: emit,
-        exception: TextSummarizerException.new,
+        exception: TextTaskException.new,
       );
 
   @override
@@ -103,9 +103,9 @@ void _checked(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
   try {
     final status = call(error);
     if (status != 0) {
-      throw TextSummarizerException(
+      throw TextTaskException(
         nativeTextString(error.value) ?? 'MediaPipe operation failed.',
-        status: status,
+        statusCode: status,
       );
     }
   } finally {

@@ -23,9 +23,11 @@ void main() {
         targetArchitecture: Architecture.arm64,
         userDefines: _defines({'official_android_sdk': true, 'tasks': tasks}),
         check: (_, output) {
+          // The face pair's C bindings stay unused process lookups; every
+          // other task binds core's asset, which core leaves off on Android.
           expect(output.assets.code.map((asset) => asset.id).toSet(), {
-            for (final task in [...tasks, 'vision'])
-              'package:mediapipe_flutter_vision/$task.dylib',
+            'package:mediapipe_vision/face_detector.dylib',
+            'package:mediapipe_vision/face_landmarker.dylib',
           });
           for (final asset in output.assets.code) {
             expect(asset.file, isNull);
@@ -35,54 +37,38 @@ void main() {
       );
     }
   });
-  test(
-    'Android SDK refuses wrong targets, mixed tasks and mixed SDKs',
-    () async {
-      for (final (os, defines) in [
-        (
-          OS.macOS,
-          {
-            'official_android_sdk': true,
-            'tasks': ['face_landmarker'],
-          },
-        ),
-        (
-          OS.android,
-          {
-            'official_android_sdk': true,
-            'tasks': ['interactive_segmenter_legacy', 'face_landmarker'],
-          },
-        ),
-        (
-          OS.android,
-          {
-            'official_android_sdk': true,
-            'tasks': ['face_landmarker'],
-            'official_ios_sdk': true,
-          },
-        ),
-        (
-          OS.android,
-          {
-            'official_android_sdk': true,
-            'tasks': ['face_landmarker'],
-            'official_macos_landmark_tasks': true,
-          },
-        ),
-      ]) {
-        await expectLater(
-          testCodeBuildHook(
-            mainMethod: hook.main,
-            targetOS: os,
-            targetArchitecture: Architecture.arm64,
-            userDefines: _defines(defines),
-            check: (_, _) => fail('Invalid selection succeeded'),
-          ),
-          throwsA(isA<UnsupportedError>()),
-        );
-      }
-    },
-  );
+  test('Android SDK refuses the task it does not serve', () async {
+    await expectLater(
+      testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.android,
+        targetArchitecture: Architecture.arm64,
+        userDefines: _defines({
+          'official_android_sdk': true,
+          'tasks': ['interactive_segmenter_legacy', 'face_landmarker'],
+        }),
+        check: (_, _) => fail('Invalid selection succeeded'),
+      ),
+      throwsA(isA<UnsupportedError>()),
+    );
+  });
+  test('settings for other platforms are ignored on Android', () async {
+    // An app's user_defines cover all of its targets.
+    await testCodeBuildHook(
+      mainMethod: hook.main,
+      targetOS: OS.android,
+      targetArchitecture: Architecture.arm64,
+      userDefines: _defines({
+        'tasks': ['face_landmarker', 'hand_landmarker'],
+        'official_ios_sdk': false,
+      }),
+      check: (_, output) {
+        for (final asset in output.assets.code) {
+          expect(asset.linkMode, isA<LookupInProcess>());
+        }
+      },
+    );
+  });
   test('Android uses the SDK unless the source runtime is chosen', () async {
     await testCodeBuildHook(
       mainMethod: hook.main,

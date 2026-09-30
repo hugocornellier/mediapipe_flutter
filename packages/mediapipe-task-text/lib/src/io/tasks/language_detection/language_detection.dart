@@ -3,6 +3,5 @@
 // found in the LICENSE file.
 
 export 'language_detector_result.dart';
-export 'language_detector_executor.dart';
 export 'language_detector_options.dart';
 export 'language_detector.dart';

@@ -1,6 +1,6 @@
 """Capture EmbeddingGemma outputs from Google's unmodified macOS Python API.
 
-Use a verified, extracted mediapipe 1.0.1 wheel via --python-package-root.
+Use a verified, extracted mediapipe wheel core's macOS engine comes from via --python-package-root.
 This does not modify the separate MediaPipe 1.0.0 face reference environment.
 """
 import argparse
@@ -15,7 +15,9 @@ import time
 
 PACKAGE = Path(__file__).resolve().parents[1]
 MODEL_SHA256 = '913b7a1edc7c7c3d1da3979ec1d0648ed9e0a370f181bb59ab177ca4b97707ad'
-LIBRARY_SHA256 = '9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a'
+sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
+from official_wheels import MACOS  # noqa: E402  the engine core bundles on macOS
+LIBRARY_SHA256 = MACOS['library_sha256']
 
 
 def main():
@@ -34,7 +36,7 @@ def main():
     from mediapipe.tasks.python.components.containers.embedding_result_c import (
         MpEmbeddingC, MpEmbeddingResultC)
 
-    assert mp.__version__ == '1.0.1', mp.__version__
+    assert mp.__version__ == MACOS['version'], mp.__version__
     assert platform.system() == 'Darwin' and platform.machine() == 'arm64'
     library = Path(mp.__file__).parent / 'tasks/c/libmediapipe.dylib'
     assert hashlib.sha256(library.read_bytes()).hexdigest() == LIBRARY_SHA256
@@ -57,7 +59,7 @@ def main():
         ('empty', '', None),
         ('long', 'A cat sleeps peacefully. ' * 80, ('SEMANTIC_SIMILARITY', None, 'QUERY')),
     ]
-    report = {'runtime': 'mediapipe==1.0.1', 'delegate': 'CPU',
+    report = {'runtime': 'mediapipe==' + MACOS['version'], 'delegate': 'CPU',
               'library_sha256': LIBRARY_SHA256, 'model_sha256': MODEL_SHA256,
               'model_url': 'https://storage.googleapis.com/mediapipe-models/text_embedder/embedding_gemma/int4int8/1/embedding_gemma.task',
               'machine': platform.machine(), 'macos': platform.mac_ver()[0], 'cases': []}

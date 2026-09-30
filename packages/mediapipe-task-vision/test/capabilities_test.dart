@@ -1,5 +1,5 @@
-import 'package:mediapipe_flutter_vision/capabilities.dart';
-import 'package:mediapipe_flutter_vision/vision_task_backend.dart';
+import 'package:mediapipe_vision/capabilities.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -41,7 +41,10 @@ void main() {
       ),
     );
     expect(mac.isSupported, isFalse);
-    expect(mac.unavailableReasons[VisionDelegate.cpu], contains('UP-004'));
+    expect(
+      mac.unavailableReasons[VisionDelegate.cpu],
+      contains('tasks_runtime: true'),
+    );
     expect(mac.runtimeVersion, '1.0.0');
   });
 
@@ -118,29 +121,48 @@ void main() {
   });
 
   test('MagicTouch reports its own GPU shader blocker', () {
+    const mac = TaskPlatform(
+      operatingSystem: 'macos',
+      architecture: 'arm64',
+      version: '14.0',
+    );
     final result = interactiveSegmenterCapabilitiesForPlatform(
-      const TaskPlatform(
-        operatingSystem: 'macos',
-        architecture: 'arm64',
-        version: '14.0',
-      ),
+      mac,
+      officialMacosRuntime: true,
     );
     expect(result.supportedDelegates, {VisionDelegate.cpu});
     expect(result.unavailableReasons[VisionDelegate.gpu], contains('GLSL 330'));
+    expect(result.runtimeVersion, '1.0.0');
+    // Without Google's engine the reason names the one setting.
+    final off = interactiveSegmenterCapabilitiesForPlatform(mac);
+    expect(off.isSupported, isFalse);
+    expect(
+      off.unavailableReasons[VisionDelegate.cpu],
+      contains('tasks_runtime: true'),
+    );
   });
 
-  test('Object Detector reports Metal only, with the CPU gap explained', () {
-    final result = objectDetectorCapabilitiesForPlatform(
-      const TaskPlatform(
-        operatingSystem: 'macos',
-        architecture: 'arm64',
-        version: '14.0',
-      ),
+  test("Object Detector runs CPU and Metal on Google's macOS engine", () {
+    const mac = TaskPlatform(
+      operatingSystem: 'macos',
+      architecture: 'arm64',
+      version: '14.0',
     );
-    expect(result.supportedDelegates, {VisionDelegate.gpu});
-    expect(result.isSupported, isTrue);
-    expect(result.unavailableReasons[VisionDelegate.cpu], contains('UP-004'));
+    final result = objectDetectorCapabilitiesForPlatform(
+      mac,
+      officialMacosRuntime: true,
+    );
+    expect(result.supportedDelegates, {VisionDelegate.cpu, VisionDelegate.gpu});
     expect(result.runtimeVersion, '1.0.0');
+    final off = objectDetectorCapabilitiesForPlatform(mac);
+    expect(off.isSupported, isFalse);
+    for (final delegate in VisionDelegate.values) {
+      expect(
+        off.unavailableReasons[delegate],
+        contains('tasks_runtime: true'),
+        reason: delegate.name,
+      );
+    }
   });
 
   test('Face Landmarker offers GPU on Linux x64, not Windows', () {
@@ -198,7 +220,7 @@ void main() {
     expect(windows.unavailableReasons[VisionDelegate.gpu], contains('Linux'));
     expect(
       windows.supportedTargets.keys,
-      containsAll(['linux/x64', 'windows/x64', 'macos/arm64']),
+      containsAll(['linux/x64', 'windows/x64']),
     );
   });
 
@@ -311,4 +333,68 @@ void main() {
       );
     },
   );
+
+  test('the iOS Simulator offers the CPU only (UP-031)', () {
+    // Google's iOS SDK aborts the app on the simulator's Metal path, so every
+    // task that runs GPU on an iPhone offers only the CPU there.
+    const device = TaskPlatform(
+      operatingSystem: 'ios',
+      architecture: 'arm64',
+      version: '26.4',
+    );
+    const simulator = TaskPlatform(
+      operatingSystem: 'ios',
+      architecture: 'arm64',
+      version: '26.4',
+      simulator: true,
+    );
+    final tables =
+        <String, TaskCapabilities<VisionDelegate> Function(TaskPlatform)>{
+          'face landmarker': faceLandmarkerCapabilitiesForPlatform,
+          'face detector': faceDetectorCapabilitiesForPlatform,
+          'hand landmarker': (platform) =>
+              handLandmarkerCapabilitiesForPlatform(
+                platform,
+                officialIosRuntime: true,
+              ),
+          'pose landmarker': (platform) =>
+              poseLandmarkerCapabilitiesForPlatform(
+                platform,
+                officialIosRuntime: true,
+              ),
+          'image segmenter': (platform) =>
+              imageSegmenterCapabilitiesForPlatform(
+                platform,
+                officialIosRuntime: true,
+              ),
+          'object detector': (platform) =>
+              objectDetectorCapabilitiesForPlatform(
+                platform,
+                officialIosRuntime: true,
+              ),
+        };
+    for (final MapEntry(key: task, value: table) in tables.entries) {
+      expect(table(device).supportedDelegates, {
+        VisionDelegate.cpu,
+        VisionDelegate.gpu,
+      }, reason: task);
+      final capabilities = table(simulator);
+      expect(capabilities.supportedDelegates, {
+        VisionDelegate.cpu,
+      }, reason: task);
+      expect(
+        capabilities.unavailableReasons[VisionDelegate.gpu],
+        contains('UP-031'),
+        reason: task,
+      );
+    }
+    // Without Google's SDK the simulator has no runtime, and says so rather
+    // than blaming the GPU.
+    expect(
+      handLandmarkerCapabilitiesForPlatform(
+        simulator,
+      ).unavailableReasons[VisionDelegate.gpu],
+      isNot(contains('UP-031')),
+    );
+  });
 }

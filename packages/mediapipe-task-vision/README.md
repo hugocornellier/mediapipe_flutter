@@ -1,4 +1,4 @@
-# mediapipe_flutter_vision
+# mediapipe_vision
 
 MediaPipe vision tasks for Dart and Flutter. Use one Dart API to detect faces
 and objects, track face/hand/pose landmarks, recognize gestures, classify or
@@ -9,7 +9,7 @@ MediaPipe task runtimes on supported platforms.
 **[See every task and platform](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)** ·
 **[Browse the Flutter example](https://github.com/hugocornellier/mediapipe_flutter/tree/main/packages/mediapipe-task-vision/example)**
 
-> **Not published yet:** This package and its adapters currently have
+> **Not published yet:** This package currently has
 > `publish_to: none`. The checkout instructions below work now. Once the
 > packages are published to pub.dev, apps can replace the path dependencies
 > with published versions; there is no published version to install today.
@@ -44,49 +44,22 @@ Add the vision package to your app's `pubspec.yaml`:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../mediapipe_flutter/packages/mediapipe-task-vision
 ```
 
-For **Android**, also add the adapter to the same `dependencies:` section:
+The package registers its Android and web backends automatically. The official
+iOS SDK is the default on iOS devices and arm64 simulators. Browser builds load
+the pinned JavaScript/WASM runtime from jsDelivr. For offline use or a strict
+Content Security Policy, see [Self-hosting the web runtime](#self-hosting-the-web-runtime).
 
-```yaml
-  mediapipe_flutter_vision_android:
-    path: ../mediapipe_flutter/packages/mediapipe-task-vision-android
-```
+### Self-hosting the web runtime
 
-It registers the official Android SDK adapter; the vision package alone does
-not register it.
-The official iOS SDK is the default on iOS devices and arm64 simulators and
-needs no extra Flutter adapter dependency.
-
-For **web**, add this adapter to `dependencies:`:
-
-```yaml
-  mediapipe_flutter_vision_web:
-    path: ../mediapipe_flutter/packages/mediapipe-task-vision-web
-```
-
-From the checkout root, prepare its checksum-verified JavaScript/WASM runtime
-before building:
-
-```sh
-python3 -B packages/mediapipe-task-vision-web/tool/prepare_runtime.py
-```
-
-For a web build, add this section to your app's `pubspec.yaml`:
-
-```yaml
-hooks:
-  user_defines:
-    mediapipe_flutter_vision:
-      web_adapter_only: true
-```
-
-This prevents a host native build hook from downloading an unused desktop
-runtime. Remove that setting for native builds. The
-[gallery preparation script](https://github.com/hugocornellier/mediapipe_flutter/blob/main/gallery/tool/prepare.py)
-generates the right adapter dependencies and hook settings for each target.
+One setting in `mediapipe_core` covers every task family. From the app
+root, `dart run mediapipe_core:web_runtime web/mediapipe` writes the
+verified runtimes; then set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';`
+(from `package:mediapipe_vision/web_runtime.dart`) before creating a
+task. See [core's README](../mediapipe-core/README.md#web-runtime).
 
 ### Choose native tasks at build time
 
@@ -96,57 +69,37 @@ bundle only the tasks you use, add a task list to your app's `pubspec.yaml`:
 ```yaml
 hooks:
   user_defines:
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [face_landmarker]
 ```
 
 Task selection is a **build-time** choice: creating an omitted task will not
 make its native runtime appear later. On macOS Apple Silicon, tasks beyond the
-default face pair need `official_macos_landmark_tasks: true` in the same vision
-hook section. The
+default face pair run on Google's engine, which `mediapipe_core`
+bundles once for every family when the app sets
+`hooks.user_defines.mediapipe_core.tasks_runtime: true` (see
+[core's README](../mediapipe-core/README.md)). Other platforms need nothing
+more than the task list. The
 [support matrix](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
 shows which task selections and delegates each platform serves.
 
-The stateful `interactive_segmenter` additionally needs
-`hooks.user_defines.mediapipe_flutter_core.tasks_runtime: true` on macOS.
-If the app combines it with macOS official landmark tasks, set
-`mediapipe_flutter_core.use_macos_vision_runtime: true` as well, so the tasks
-share one MediaPipe runtime. See the
-[segmenter guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md)
-for the full configuration.
-
 ## Quick start: detect face landmarks
 
-Download Google's
-[Face Landmarker task bundle](https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task)
-to `assets/models/face_landmarker.task`, then declare it as a Flutter asset:
-
-```yaml
-flutter:
-  assets:
-    - assets/models/face_landmarker.task
-```
-
-Load the model bytes and pass a decoded RGBA image to the task:
+Pass one of Google's pinned models as `model:`. It is downloaded the first
+time, checked against its SHA-256 and cached for later runs, including
+offline. Android release builds and sandboxed macOS apps need network
+permission for that download; see
+[platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md).
 
 ```dart
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 Future<void> detectFaces(Uint8List rgba, int width, int height) async {
-  final asset = await rootBundle.load('assets/models/face_landmarker.task');
   final task = await FaceLandmarker.create(
-    FaceLandmarkerOptions(
-      modelBytes: asset.buffer.asUint8List(
-        asset.offsetInBytes,
-        asset.lengthInBytes,
-      ),
-      numFaces: 1,
-    ),
+    FaceLandmarkerOptions(model: VisionModels.faceLandmarker, numFaces: 1),
   );
-
   try {
     final result = await task.detectImage(
       VisionImage.fromPixels(
@@ -174,16 +127,47 @@ file. On web, `fromFile` takes a browser-accessible URL. A Flutter asset key
 is **not** a native file path or browser URL: use `rootBundle.load` for model
 assets, as above.
 
-Models are not downloaded by the native runtime hook. You choose which
-official model file to bundle or download in your app; the repository's
-[model manifest](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/lib/models.dart)
-lists the versioned models and SHA-256 values used by the gallery.
+### Models
+
+`VisionModels` names Google's official model for every task
+(`VisionModels.faceDetector`, `.handLandmarker`, `.objectDetector` and so on).
+To use your own model instead, pass exactly one of `modelPath` (a native file
+path, or a URL in browsers) or `modelBytes`, for example from a Flutter asset:
+
+```dart
+import 'package:flutter/services.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<FaceLandmarker> createFromAsset() async {
+  final asset = await rootBundle.load('assets/models/face_landmarker.task');
+  return FaceLandmarker.create(
+    FaceLandmarkerOptions(
+      modelBytes: asset.buffer.asUint8List(
+        asset.offsetInBytes,
+        asset.lengthInBytes,
+      ),
+    ),
+  );
+}
+```
+
+To download ahead of time (on an onboarding screen, say), call
+`ModelStore().prefetch(VisionModels.faceLandmarker)` from `mediapipe_core`.
+
+### Errors
+
+Failures are `MediaPipeException`s: `RuntimeUnavailableException` when the
+platform or build settings cannot run the task (its `fix` says what to
+change), `ModelDownloadException` when a model cannot be fetched, and
+`VisionTaskException` when Google's runtime rejects a call, with its native
+`statusCode` and `gpuUnavailable` when a GPU request was refused. Invalid
+options throw `ArgumentError`, and using a disposed task `StateError`.
 
 ### Still images in other vision tasks
 
-Create each task with `VisionRunningMode.image` (the default), then call its
+Create each task with `RunningMode.image` (the default), then call its
 image method. For camera or video frames, create it with
-`VisionRunningMode.video` and call the corresponding video method with a
+`RunningMode.video` and call the corresponding video method with a
 strictly increasing timestamp. The gallery exposes a **Camera / Still image**
 selector for all ten tasks below on supported platforms.
 
@@ -214,8 +198,8 @@ millisecond timestamps**:
 ```dart
 final task = await FaceLandmarker.create(
   FaceLandmarkerOptions(
-    modelBytes: modelBytes,
-    runningMode: VisionRunningMode.video,
+    model: VisionModels.faceLandmarker,
+    runningMode: RunningMode.video,
   ),
 );
 try {
@@ -234,8 +218,10 @@ try {
 }
 ```
 
-Here `modelBytes`, `frameRgba`, `frameWidth`, `frameHeight` and
-`elapsedMilliseconds` come from your model loader and camera pipeline.
+Here `frameRgba`, `frameWidth`, `frameHeight` and `elapsedMilliseconds`
+come from your camera pipeline. `RunningMode.liveStream` is reserved for
+callback-based delivery; creating a task with it currently throws
+`UnsupportedError`.
 Keep a task alive across frames; do not recreate it for each image. Await
 inference and skip incoming frames while busy to bound camera delay. The
 package does not open a camera or draw an overlay for your app. The
@@ -250,7 +236,7 @@ creating the task:
 ```dart
 final task = await FaceLandmarker.create(
   FaceLandmarkerOptions(
-    modelBytes: modelBytes,
+    model: VisionModels.faceLandmarker,
     delegate: VisionDelegate.gpu,
   ),
 );
@@ -268,7 +254,7 @@ before offering a GPU toggle.
 | --- | --- | --- |
 | Web | WASM | WebGL 2 in a worker, when supported |
 | iOS | Official SDK | Metal for supported tasks |
-| Android | Official SDK adapter | Supported Android GPUs; arm64 devices |
+| Android | Official SDK | Supported Android GPUs; arm64 devices |
 | macOS Apple Silicon | Official native runtime | Metal for supported tasks |
 | Linux x64 | Official wheel runtime | OpenGL ES for supported tasks; EGL and a GPU driver required |
 | Windows x64 | Official wheel runtime | Not available |
@@ -283,9 +269,8 @@ before depending on a particular combination.
 
 Native build hooks download pinned libraries and verify their digests. You do
 not need to build MediaPipe or copy native libraries into a normal consuming
-app. The first build needs network access for its selected runtime. The web
-adapter instead bundles Google's verified JavaScript/WASM distribution after
-the preparation step above. Models remain separate on every platform.
+app. The first build needs network access for its selected runtime. Browser
+tasks load the pinned JavaScript/WASM distribution from jsDelivr by default.
 
 - [Live gallery](https://hugocornellier.github.io/mediapipe_flutter/) — try
   vision, audio and text tasks in a browser.

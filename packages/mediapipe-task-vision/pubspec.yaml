@@ -1,12 +1,21 @@
-name: mediapipe_flutter_vision
-description: Official MediaPipe face tasks for macOS arm64 and CPU inference on arm64 iOS simulators.
-version: 0.0.1
-repository: https://github.com/hugocornellier/mediapipe_flutter
+name: mediapipe_vision
+description: "Google's MediaPipe vision tasks for Flutter: face, hand, pose and holistic landmarks, gestures, object detection, classification, embeddings and segmentation."
+version: 0.1.0
+repository: https://github.com/hugocornellier/mediapipe_flutter/tree/main/packages/mediapipe-task-vision
 issue_tracker: https://github.com/hugocornellier/mediapipe_flutter/issues
+topics:
+  - mediapipe
+  - machine-learning
+  - computer-vision
+  - face-detection
+  - pose-estimation
+# Not published yet; `tool/publish_check.py` in mediapipe-core runs the
+# publish dry run on a copy without this line.
 publish_to: none
 
 environment:
   sdk: ^3.12.0
+  flutter: '>=3.47.0'
 
 platforms:
   macos:
@@ -17,25 +26,51 @@ platforms:
   web:
 
 dependencies:
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   archive: ^4.2.0
   code_assets: ^1.2.1
   crypto: ^3.0.6
   ffi: ^2.1.4
-  hooks: '>=2.0.2 <2.1.0'
-  mediapipe_flutter_core:
+  hooks: ^2.2.0
+  mediapipe_core:
     path: ../mediapipe-core
+  web: ^1.1.1
 
 dev_dependencies:
   ffigen: ^21.0.0
+  flutter_test:
+    sdk: flutter
   lints: ^6.1.0
   test: ^1.31.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: dev.mediapipe.flutter.vision
+        pluginClass: MediaPipeVisionPlugin
+        dartPluginClass: MediaPipeVisionAndroid
+        dartFileName: mediapipe_vision_android.dart
+      web:
+        pluginClass: MediaPipeVisionWeb
+        fileName: mediapipe_vision_web.dart
+  assets:
+    - path: assets/bridge.js
+      platforms: [web]
+    - path: assets/worker.js
+      platforms: [web]
+    - path: assets/runtime.json
+      platforms: [web]
 
 # Package-maintainer tests exercise coexistence of all three runtimes.
 # Consumer apps choose their own tasks; the hook's default remains face-only.
 hooks:
   user_defines:
-    mediapipe_flutter_core:
+    mediapipe_core:
       tasks_runtime: true
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks:
         [face_detector, face_landmarker, interactive_segmenter, object_detector]

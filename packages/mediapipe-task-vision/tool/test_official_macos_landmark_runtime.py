@@ -58,15 +58,16 @@ publish_to: none
 environment:
   sdk: ^3.12.0
 dependencies:
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: {PACKAGE}
 dev_dependencies:
   crypto: ^3.0.6
   test: ^1.31.0
 hooks:
   user_defines:
-    mediapipe_flutter_vision:
-      official_macos_landmark_tasks: true
+    mediapipe_core:
+      tasks_runtime: true
+    mediapipe_vision:
       tasks: [face_detector, face_landmarker, gesture_recognizer, hand_landmarker,
               holistic_landmarker, image_classifier, image_embedder,
               image_segmenter, interactive_segmenter_legacy, object_detector,

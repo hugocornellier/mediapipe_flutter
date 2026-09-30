@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 /// Owns camera capture and the official VIDEO-mode Face Landmarker for this demo.
 class FaceCameraController extends ChangeNotifier {
@@ -69,7 +69,7 @@ class FaceCameraController extends ChangeNotifier {
               data.offsetInBytes,
               data.lengthInBytes,
             ),
-            runningMode: VisionRunningMode.video,
+            runningMode: RunningMode.video,
           ),
         );
         if (_closed || generation != _generation) {

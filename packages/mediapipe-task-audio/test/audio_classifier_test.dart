@@ -4,11 +4,11 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart'
+import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart'
     show tasksRuntimeWheel;
-import 'package:mediapipe_flutter_audio/mediapipe_flutter_audio.dart';
-import 'package:mediapipe_flutter_audio/models.dart';
-import 'package:mediapipe_flutter_audio/src/third_party/mediapipe/audio_classifier_bindings.dart'
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+import 'package:mediapipe_audio/models.dart';
+import 'package:mediapipe_audio/src/third_party/mediapipe/audio_classifier_bindings.dart'
     as abi;
 import 'package:test/test.dart';
 
@@ -146,7 +146,7 @@ void main() {
       AudioClassifier.create(
         AudioClassifierOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
       ),
-      throwsA(isA<AudioClassifierException>()),
+      throwsA(isA<MediaPipeException>()),
     );
     final task = await AudioClassifier.create(
       AudioClassifierOptions(modelPath: _model),

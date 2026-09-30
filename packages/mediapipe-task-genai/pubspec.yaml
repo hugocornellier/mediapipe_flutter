@@ -1,4 +1,4 @@
-name: mediapipe_flutter_genai
+name: mediapipe_genai
 publish_to: none
 description: An implementation of MediaPipe generative AI-based Tasks.
 version: 0.0.1
@@ -23,12 +23,10 @@ dependencies:
   ffi: ^2.1.4
   http: ^1.6.0
   logging: ^1.3.0
-  mediapipe_flutter_core:
+  mediapipe_core:
     path: ../mediapipe-core
   code_assets: ^1.2.1
-  # Validated range. hooks 2.1+ needs meta 1.18, which Flutter 3.47 provides;
-  # moving up is a separate, tested upgrade.
-  hooks: '>=2.0.2 <2.1.0'
+  hooks: ^2.2.0
   path: ^1.8.3
 
 dev_dependencies:

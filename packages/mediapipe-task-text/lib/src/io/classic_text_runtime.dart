@@ -1,8 +1,11 @@
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_core/io.dart';
+import 'package:mediapipe_core/capabilities.dart' show tasksRuntimeUnavailable;
+import 'package:mediapipe_core/io.dart';
+import 'package:mediapipe_core/mediapipe_exception.dart';
 
 import '../interface/text_task_exception.dart';
 import 'text_task_worker.dart';
@@ -10,7 +13,7 @@ import 'third_party/mediapipe/classic_text_bindings.dart' as mp;
 
 /// Where core's shared runtime serves these tasks: Google's macOS 1.0.1
 /// library, its Linux 1.0.1 and Windows 1.0.0 wheel libraries, and its iOS
-/// 1.0.1 SDK through the adapter mediapipe_flutter_vision builds.
+/// 1.0.1 SDK through the adapter mediapipe_core builds.
 const _runtimeAbis = {
   Abi.macosArm64,
   Abi.linuxX64,
@@ -21,10 +24,11 @@ const _runtimeAbis = {
 /// Validate availability before starting a worker or resolving inference calls.
 void requireTextTasksRuntime() {
   if (!_runtimeAbis.contains(Abi.current())) {
-    throw UnsupportedError(
-      'MediaPipe text tasks run on macOS arm64, Linux x64, Windows x64 and '
-      'iOS arm64 CPU here, and in browsers and on Android through their '
-      'platform plugins.',
+    throw const RuntimeUnavailableException(
+      'Classic text runtime unavailable on this platform.',
+      fix:
+          'Use macOS arm64, Linux x64, Windows x64 or iOS arm64, or install '
+          'the browser or Android platform plugin.',
     );
   }
   try {
@@ -41,12 +45,9 @@ void requireTextTasksRuntime() {
     if (missingLinuxGraphicsLibraries('$error') case final missing?) {
       throw missing;
     }
-    throw UnsupportedError(
-      Abi.current() == Abi.iosArm64
-          ? 'On iOS, MediaPipe text tasks run in the official iOS SDK adapter '
-                'that mediapipe_flutter_vision builds: add that package and '
-                'mediapipe_flutter_core.tasks_runtime: true to the app pubspec.'
-          : 'Enable mediapipe_flutter_core.tasks_runtime: true in the app pubspec hooks.user_defines to use MediaPipe text tasks.',
+    throw RuntimeUnavailableException(
+      'Classic text runtime unavailable.',
+      fix: tasksRuntimeUnavailable('this text task', Platform.operatingSystem),
     );
   }
 }
@@ -172,7 +173,7 @@ void checkTextStatus(int Function(Pointer<Pointer<Char>>) call) =>
         if (status != 0) {
           throw TextTaskException(
             textTaskString(error.value) ?? 'MediaPipe operation failed.',
-            status: status,
+            statusCode: status,
           );
         }
       } finally {

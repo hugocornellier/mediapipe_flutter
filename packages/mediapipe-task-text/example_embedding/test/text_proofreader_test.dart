@@ -7,9 +7,11 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:mediapipe_text/mediapipe_text.dart'
+    show RuntimeUnavailableException;
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_flutter_text/text_proofreader.dart';
-import 'package:mediapipe_flutter_text/src/io/third_party/mediapipe/proofreader_bindings.dart'
+import 'package:mediapipe_text/text_proofreader.dart';
+import 'package:mediapipe_text/src/io/third_party/mediapipe/proofreader_bindings.dart'
     as mp;
 import 'package:test/test.dart';
 
@@ -227,16 +229,16 @@ void main() {
       TextProofreader.create(
         TextProofreaderOptions(modelPath: '$model.missing'),
       ),
-      throwsA(isA<TextProofreaderException>()),
+      throwsA(isA<TextTaskException>()),
     );
     await expectLater(
       TextProofreader.create(
         TextProofreaderOptions(modelPath: model, delegate: TextDelegate.gpu),
       ),
       throwsA(
-        isA<TextProofreaderException>().having(
-          (e) => e.message,
-          'message',
+        isA<RuntimeUnavailableException>().having(
+          (e) => e.fix,
+          'fix',
           contains('CPU'),
         ),
       ),

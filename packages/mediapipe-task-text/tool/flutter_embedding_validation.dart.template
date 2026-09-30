@@ -4,8 +4,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_text/mediapipe_flutter_text.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'summarizer_validation.dart';
 import 'classic_text_validation.dart';
 
@@ -148,7 +148,7 @@ Future<Map<String, Object>> validateEmbedding() async {
   }
   timings.sort();
   return {
-    'runtime': 'mediapipe==1.0.1', 'delegate': 'cpu',
+    'runtime': 'mediapipe==1.0.0', 'delegate': 'cpu',
     'proofreader': proofreading,
     'summarizer': summarization,
     'classic_text': classic, 'coexisting_tasks': 9,

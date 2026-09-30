@@ -155,14 +155,14 @@ publish_to: none
 environment:
   sdk: ^3.12.0
 dependencies:
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: {PACKAGE}
 dev_dependencies:
   crypto: ^3.0.6
   test: ^1.31.0
 hooks:
   user_defines:
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [{", ".join(tasks)}]
 """)
     return destination, ["test/" + name for name in tests]

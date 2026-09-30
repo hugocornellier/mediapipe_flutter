@@ -1,6 +1,6 @@
 # BERT, USE and language detection demo
 
-Runs the official MediaPipe 1.0.1 pipelines on macOS 14+ arm64 CPU. From the
+Runs Google's official MediaPipe pipelines on macOS 14+ arm64 CPU. From the
 repository root, run `make models_text example_text`. The app bundles only the
 three version-1 models selected in its pubspec and enables core's shared runtime.
 

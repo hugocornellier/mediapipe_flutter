@@ -94,7 +94,7 @@ final class NativeTextProofreader
           ),
         ),
         emit: emit,
-        exception: TextProofreaderException.new,
+        exception: TextTaskException.new,
       );
 
   /// Close after all native requests have completed.
@@ -131,9 +131,9 @@ void _checked(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
   try {
     final status = call(error);
     if (status != 0) {
-      throw TextProofreaderException(
+      throw TextTaskException(
         _string(error.value) ?? 'MediaPipe operation failed.',
-        status: status,
+        statusCode: status,
       );
     }
   } finally {

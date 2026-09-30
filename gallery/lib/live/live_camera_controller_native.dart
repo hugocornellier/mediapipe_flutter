@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'camera_geometry.dart';
 import 'camera_frame.dart';
@@ -557,8 +557,6 @@ class LiveCameraController<T> extends ChangeNotifier {
 }
 
 bool _refusedGpu(Object error) => switch (error) {
-  FaceLandmarkerException(:final gpuUnavailable) => gpuUnavailable,
-  FaceDetectorException(:final gpuUnavailable) => gpuUnavailable,
   VisionTaskException(:final gpuUnavailable) => gpuUnavailable,
   _ => false,
 };

@@ -1,7 +1,7 @@
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/live_page.dart';
 
@@ -45,11 +45,15 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('MODE'), findsOneWidget);
+    // A phone drops the label and lays the title out beside the actions,
+    // so the two never overdraw each other.
+    expect(find.text('MODE'), findsNothing);
     expect(find.text('Camera'), findsOneWidget);
+    final mode = find.byKey(const ValueKey('face-landmarker-mode'));
+    expect(tester.getTopRight(mode).dx, greaterThan(300));
     expect(
-      tester.getTopRight(find.byKey(const ValueKey('face-landmarker-mode'))).dx,
-      greaterThan(300),
+      tester.getTopRight(find.text(task.title)).dx,
+      lessThanOrEqualTo(tester.getTopLeft(mode).dx),
     );
     expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const ValueKey('face-landmarker-mode')));

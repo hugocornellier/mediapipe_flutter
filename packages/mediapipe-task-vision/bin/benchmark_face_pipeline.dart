@@ -5,9 +5,9 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/src/io/native_face_landmarker.dart';
-import 'package:mediapipe_flutter_vision/src/io/native_frame_timings.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/src/io/native_face_landmarker.dart';
+import 'package:mediapipe_vision/src/io/native_frame_timings.dart';
 
 // Run the AOT bundle from the package root. Output contains raw samples and
 // provenance; a separate summary is convenient to review without decompressing.
@@ -135,7 +135,7 @@ final class _Input {
 FaceLandmarkerOptions _options(VisionDelegate delegate) =>
     FaceLandmarkerOptions(
       modelPath: _model,
-      runningMode: VisionRunningMode.video,
+      runningMode: RunningMode.video,
       delegate: delegate,
     );
 

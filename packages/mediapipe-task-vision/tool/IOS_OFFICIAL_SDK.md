@@ -6,37 +6,37 @@ Detector, Face Landmarker and Hand Landmarker on arm64 iOS. Both `VisionDelegate
 or newer is required. Face blendshapes still use XNNPACK, as configured by
 Google's face graph, even when landmark inference uses Metal.
 
-The native-assets hook downloads Google's unchanged Vision, Common, Task
-Graphs, Text and Audio archives, verifies their SHA-256 hashes, and links them
-with `native/ios/face_sdk_bridge.mm`, `text_sdk_bridge.mm` and
+`mediapipe_core`'s hook downloads Google's unchanged Vision, Common,
+Task Graphs, Text and Audio archives, verifies their SHA-256 hashes, and links
+them with core's `native/ios/face_sdk_bridge.mm`, `text_sdk_bridge.mm` and
 `audio_sdk_bridge.mm`. Xcode compiles only that adapter, which maps the
 existing Dart FFI calls to Google's public Objective-C API. Google implements
 every task's classes in MediaPipeTasksCommon (the Text and Audio frameworks
-carry headers only), so the one adapter also runs the text and audio tasks:
-on iOS, `mediapipe_flutter_core.tasks_runtime: true` resolves core's runtime
-asset to this framework. It does not
-compile MediaPipe, TensorFlow Lite, calculators or inference code from source.
-The archive URLs and hashes are pinned in `lib/src/native_assets/ios_sdk.dart`
-from [Google's Swift package](https://github.com/google-ai-edge/mediapipe/blob/master/Package.swift).
+carry headers only), so the one adapter runs the vision, text and audio tasks,
+and each family works on iOS without the others. It does not compile
+MediaPipe, TensorFlow Lite, calculators or inference code from source. The
+archive URLs and hashes are pinned in core's
+`lib/src/native_assets/ios_sdk.dart` from
+[Google's Swift package](https://github.com/google-ai-edge/mediapipe/blob/master/Package.swift).
 The graph archive is approximately 1.4 GB; subsequent builds reuse the verified
 download. Only the requested device or simulator slice is extracted.
 
 The adapter is the default on iOS devices and the arm64 simulator. For a
-consuming app, set its iOS deployment target to 15.0 and list its tasks:
+consuming app, set its iOS deployment target to 15.0; a vision app lists its
+tasks, and text or audio need no setting:
 
 ```yaml
 hooks:
   user_defines:
-    mediapipe_flutter_core:
-      tasks_runtime: true # only for the text and audio tasks
-    mediapipe_flutter_vision:
+    mediapipe_vision:
       tasks: [face_detector, face_landmarker, hand_landmarker]
 ```
 
 `official_ios_sdk: false` selects the source-built iOS face runtime (CPU only)
-instead; it has no text or audio tasks, so the hook then refuses
-`mediapipe_flutter_core.tasks_runtime: true` on iOS. Text and audio on iOS
-therefore need `mediapipe_flutter_vision` in the app. The adapter supports the Dart API's
+instead. It cannot share a process with Google's SDK, so the hook then also
+requires `mediapipe_core.tasks_runtime: false`, and text and audio are
+unavailable on iOS.
+The adapter supports the Dart API's
 IMAGE and VIDEO modes. Device execution is validated; the hook also selects
 the arm64 simulator slice, but simulator GPU execution has not been validated.
 

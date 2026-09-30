@@ -3,7 +3,8 @@ include: ../analysis_options.yaml
 analyzer:
   exclude:
     - "build/**"
-    - "**/mediapipe_flutter_vision_bindings.dart"
+    - "**/mediapipe_vision_bindings.dart"
     # Retained benchmark evidence: source snapshots and an overlay app that
     # only compile inside the trees they were captured from.
     - "tool/benchmarks/**"
+    - android/**

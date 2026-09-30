@@ -4,7 +4,8 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_vision/src/native_assets/wheel_library.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -46,7 +47,7 @@ void main() {
         release = VisionWheelRelease(
           target: target,
           version: version,
-          wheel: (
+          wheel: DownloadAsset(
             url: 'http://127.0.0.1:${server.port}/runtime.whl',
             sha256: wheelHash ?? sha256.convert(response).toString(),
           ),
@@ -134,7 +135,7 @@ void main() {
           pin(wheelHash: '0' * 64);
           await expectLater(
             downloadVisionWheel(release, cache),
-            throwsStateError,
+            throwsA(isA<DownloadException>()),
           );
           expect(
             await cache

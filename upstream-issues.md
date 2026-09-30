@@ -418,7 +418,7 @@ Pose and record the GPU value.
 **Status:** reported upstream as
 [google-ai-edge/mediapipe#6348](https://github.com/google-ai-edge/mediapipe/issues/6348)
 and [#6364](https://github.com/google-ai-edge/mediapipe/issues/6364).
-Worked around in `mediapipe_flutter_vision_android`.
+Worked around in `mediapipe_vision`.
 
 `tasks-core` 1.0.0's POM declares `protobuf-javalite` 4.26.1, but
 `HolisticLandmarkerOptions` calls `Any$Builder.build()` with full protobuf-java's
@@ -469,7 +469,7 @@ widths and heights are multiples of 4.
 ## UP-019 — Android Image Segmenter reports no labels
 
 **Status:** observed September 23 with Android tasks-vision 1.0.0. Worked
-around in `mediapipe_flutter_vision_android`.
+around in `mediapipe_vision`.
 
 `ImageSegmenter.getLabels()` returns an empty list for DeepLab-v3, whose
 metadata carries 21 labels (the C API and the iOS SDK report them). Google's
@@ -661,6 +661,25 @@ each mask as a 4-channel 8-bit image (`numpy_view()` gives values 0 to 255,
 with the confidence in the red channel), where its CPU path returns one
 float32 confidence per pixel (VEC32F1). Image Segmenter's GPU masks on the
 same runtime stay float32.
+
+## UP-031: iOS SDK GPU tasks abort on the iOS Simulator
+
+**Status:** observed September 23 (Hand Landmarker) and September 29 (Face
+Landmarker, a gallery still image) with Google's 1.0.1 iOS XCFrameworks on an
+iOS 26.4 simulator on Apple silicon, locally and on hosted macos runners.
+Worked around by refusing the delegate on the simulator, since the abort
+happens inside Google's native code, which the package cannot catch.
+
+A GPU task aborts the app (SIGABRT) the first time it processes an image: a
+failed absl check in `-[DrishtiMetalHelper copyCVMetalTextureWithGpuBuffer:plane:]`,
+called from `ImageToTensorMetalConverter::Convert`. That preprocessing is
+shared by every vision task. The CPU delegate works on the simulator, and the
+GPU delegate passes every SDK suite on a physical iPhone 15 Pro.
+
+`TaskPlatform.simulator` is true in a simulator process (the simulator sets
+`SIMULATOR_UDID` in every app's environment). There the vision capability
+queries offer the CPU only, with this issue as the GPU reason, and every task
+refuses a GPU `create` with an error instead of the app aborting.
 
 ## Integration pitfalls resolved in this repo
 

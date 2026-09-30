@@ -26,6 +26,7 @@ final class NativeFaceLandmarker {
         'adapter; this runtime supports CPU only.',
       );
     }
+    refuseIosSimulatorGpu(gpu: _gpu);
     loadOfficialDesktopRuntime();
     using((arena) {
       final native = arena<mp.MpFaceLandmarkerOptions>();
@@ -56,7 +57,7 @@ final class NativeFaceLandmarker {
         base.model_asset_buffer_count = bytes.length;
       }
       native.ref
-        ..running_mode = options.runningMode == VisionRunningMode.video
+        ..running_mode = options.runningMode == RunningMode.video
             ? mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
             : mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
         ..num_faces = options.numFaces
@@ -69,11 +70,11 @@ final class NativeFaceLandmarker {
       final output = arena<mp.MpFaceLandmarkerPtr>();
       try {
         _checked((error) => _api.create(native, output, error));
-      } on FaceLandmarkerException catch (error) {
+      } on VisionTaskException catch (error) {
         // Google's runtime reports every GPU refusal (no EGL display, a
         // software renderer) as its missing GPU service.
         if (!_gpu || !error.message.contains('kGpuService')) rethrow;
-        throw FaceLandmarkerException(
+        throw VisionTaskException(
           error.message,
           statusCode: error.statusCode,
           gpuUnavailable: true,
@@ -251,7 +252,7 @@ void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
   try {
     final status = call(error);
     if (status != mp.MpStatus.kMpOk) {
-      throw FaceLandmarkerException(
+      throw VisionTaskException(
         _string(error.value) ?? 'MediaPipe returned ${status.name}',
         statusCode: status.value,
       );

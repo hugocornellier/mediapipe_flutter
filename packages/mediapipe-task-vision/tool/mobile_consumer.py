@@ -5,7 +5,7 @@ import re
 import shutil
 
 from build_native import PACKAGE, REPO
-from test_desktop import run
+from test_desktop import copy_package, run
 
 
 def reference_deltas(log, tasks):
@@ -25,14 +25,8 @@ def reference_deltas(log, tasks):
 def prepare_app(root, platform, selected, suites, models, *, prebuilt=False,
                 references=None):
     for name in ['mediapipe-core', 'mediapipe-task-vision']:
-        source = PACKAGE.parent / name
-        destination = root / 'packages' / name
-        destination.mkdir(parents=True)
-        shutil.copyfile(source / 'pubspec.yaml', destination / 'pubspec.yaml')
-        for folder in ['lib', 'hook']:
-            shutil.copytree(source / folder, destination / folder)
+        copy_package(PACKAGE.parent / name, root / 'packages' / name)
     vision = root / 'packages/mediapipe-task-vision'
-    shutil.copyfile(PACKAGE / 'sdk_downloads.dart', vision / 'sdk_downloads.dart')
     app = root / 'app'
     run(['flutter', 'create', '--empty', '--no-pub', '--platforms=' + platform,
          '--project-name', 'mediapipe_' + platform + '_smoke', app], REPO, root / 'create.log')
@@ -69,7 +63,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_flutter_vision:
+  mediapipe_vision:
     path: ../packages/mediapipe-task-vision
 dev_dependencies:
   crypto: ^3.0.6
@@ -80,7 +74,11 @@ dev_dependencies:
     sdk: flutter
 hooks:
   user_defines:
-    mediapipe_flutter_vision:
+    # The source-built face runtime cannot share a process with the adapter
+    # over Google's iOS SDK that core builds by default (a no-op on Android).
+    mediapipe_core:
+      tasks_runtime: false
+    mediapipe_vision:
       # The source-built face runtime, not Google's mobile SDKs (the default).
       official_android_sdk: false
       official_ios_sdk: false

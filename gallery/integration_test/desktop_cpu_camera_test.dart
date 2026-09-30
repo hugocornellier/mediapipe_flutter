@@ -4,7 +4,7 @@ import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/live/live_subjects.dart';
@@ -49,8 +49,8 @@ void main() {
         await tester.pumpWidget(const GalleryApp());
         final tileTitle = await scrollToGalleryTile(tester, subject.tile);
         expect(tileTitle, findsOneWidget);
-        // Linux offers GPU for face and hand; this test stays on the CPU
-        // default. Windows has no GPU path.
+        // Linux offers GPU for face and hand, and the page opens on it; this
+        // test selects CPU. Windows has no GPU path.
         final gpuOffered = Platform.isLinux ? findsOneWidget : findsNothing;
         final tile = find.ancestor(of: tileTitle, matching: find.byType(Card));
         expect(
@@ -74,6 +74,7 @@ void main() {
             );
           }
         });
+        await selectDelegate(tester, live, VisionDelegate.cpu);
         camera.deliverFrames = true;
         await waitForFrames(tester, live);
         await tester.pump();

@@ -1,8 +1,8 @@
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_core/capabilities.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_core/capabilities.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
 import 'package:test/test.dart';
 
 import '../../hook/build.dart' as hook;
@@ -102,7 +102,9 @@ void main() {
     expect(macosTasksRuntimeTargets.keys, tasksRuntimeReleases.keys);
   });
 
-  test('the hook rejects targets without a release before downloading', () {
+  test('tasks_runtime: true is harmless where core has no engine', () async {
+    // An app's user_defines cover every target it builds, so the macOS opt-in
+    // must not break its Android build or an unsupported desktop.
     final defines = PackageUserDefines(
       workspacePubspec: PackageUserDefinesSource(
         defines: {'tasks_runtime': true},
@@ -114,27 +116,59 @@ void main() {
       (OS.windows, Architecture.arm64),
       (OS.macOS, Architecture.x64),
       (OS.android, Architecture.arm64),
+      (OS.android, Architecture.x64),
     ]) {
-      expect(
-        testCodeBuildHook(
-          mainMethod: hook.main,
-          targetOS: os,
-          targetArchitecture: architecture,
-          userDefines: defines,
-          check: (_, _) => fail('Unsupported build unexpectedly succeeded'),
-        ),
-        throwsA(
-          isA<UnsupportedError>().having(
-            (error) => error.message,
-            'message',
-            contains('$os/$architecture'),
-          ),
-        ),
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: os,
+        targetArchitecture: architecture,
+        userDefines: defines,
+        check: (_, output) {
+          expect(output.assets.code, isEmpty, reason: '$os/$architecture');
+          expect(metadataOf(output)['tasks_runtime'], isFalse);
+        },
       );
     }
   });
 
-  test("iOS resolves to the vision package's SDK adapter", () async {
+  test('the engine is on by default except on macOS, where it is 95 MB', () {
+    for (final target in [
+      'ios/arm64',
+      'ios-simulator/arm64',
+      'linux/x64',
+      'windows/x64',
+    ]) {
+      expect(hasTasksRuntime(target), isTrue, reason: target);
+      expect(tasksRuntimeEnabledByDefault(target), isTrue, reason: target);
+    }
+    expect(hasTasksRuntime('macos/arm64'), isTrue);
+    expect(tasksRuntimeEnabledByDefault('macos/arm64'), isFalse);
+    for (final target in ['android/arm64', 'linux/arm64', 'macos/x64']) {
+      expect(hasTasksRuntime(target), isFalse, reason: target);
+      expect(tasksRuntimeEnabledByDefault(target), isFalse, reason: target);
+    }
+    // Only turning a default-on engine off fails the build; macOS's opt-in
+    // is reported when a task is created, so host `dart run` keeps working.
+    expect(tasksRuntimeMissing('linux/x64', enabled: false), isTrue);
+    expect(tasksRuntimeMissing('ios/arm64', enabled: false), isTrue);
+    expect(tasksRuntimeMissing('linux/x64', enabled: true), isFalse);
+    expect(tasksRuntimeMissing('macos/arm64', enabled: false), isFalse);
+    expect(tasksRuntimeMissing('android/arm64', enabled: false), isFalse);
+    expect(
+      tasksRuntimeRequired('mediapipe_text', 'linux/x64'),
+      contains('Remove tasks_runtime: false'),
+    );
+    expect(
+      tasksRuntimeUnavailable('the Audio Classifier', 'macos'),
+      allOf(contains('On macOS'), contains('tasks_runtime: true')),
+    );
+    expect(
+      tasksRuntimeUnavailable('the Audio Classifier', 'linux'),
+      contains('Remove tasks_runtime: false'),
+    );
+  });
+
+  test('iOS tasks_runtime: false leaves no shared runtime', () async {
     for (final sdk in [IOSSdk.iPhoneOS, IOSSdk.iPhoneSimulator]) {
       await testCodeBuildHook(
         mainMethod: hook.main,
@@ -143,30 +177,21 @@ void main() {
         targetIOSSdk: sdk,
         userDefines: PackageUserDefines(
           workspacePubspec: PackageUserDefinesSource(
-            defines: {'tasks_runtime': true},
+            defines: {'tasks_runtime': false},
             basePath: Uri.directory('.'),
           ),
         ),
         check: (_, output) {
-          final asset = output.assets.code.single;
-          expect(asset.file, isNull);
-          expect(
-            asset.linkMode,
-            isA<DynamicLoadingSystem>().having(
-              (mode) => mode.uri.path,
-              'path',
-              tasksRuntimeIosAdapter,
-            ),
-          );
+          expect(output.assets.code, isEmpty);
+          expect(metadataOf(output)['ios_sdk_adapter'], isNull);
         },
       );
     }
   });
 
-  test(
-    'macOS can resolve core tasks through the gallery vision image',
-    () async {
-      await testCodeBuildHook(
+  test('use_macos_vision_runtime was removed, with the replacement', () {
+    expect(
+      testCodeBuildHook(
         mainMethod: hook.main,
         targetOS: OS.macOS,
         targetArchitecture: Architecture.arm64,
@@ -176,28 +201,34 @@ void main() {
             basePath: Uri.directory('.'),
           ),
         ),
-        check: (_, output) {
-          final asset = output.assets.code.single;
-          expect(asset.file, isNull);
-          expect(
-            asset.linkMode,
-            isA<DynamicLoadingSystem>().having(
-              (mode) => mode.uri.path,
-              'path',
-              '@rpath/vision.framework/vision',
-            ),
-          );
-        },
-      );
-    },
-  );
+        check: (_, _) => fail('A removed setting was accepted'),
+      ),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          allOf(contains('was removed'), contains('tasks_runtime: true')),
+        ),
+      ),
+    );
+  });
 
-  test('the hook stays inert without the opt-in on any target', () async {
+  test('macOS stays inert until the app opts in', () async {
     await testCodeBuildHook(
       mainMethod: hook.main,
-      targetOS: OS.linux,
-      targetArchitecture: Architecture.x64,
-      check: (_, output) => expect(output.assets.code, isEmpty),
+      targetOS: OS.macOS,
+      targetArchitecture: Architecture.arm64,
+      check: (_, output) {
+        expect(output.assets.code, isEmpty);
+        expect(metadataOf(output)['tasks_runtime'], isFalse);
+      },
     );
   });
 }
+
+/// The metadata a hook reported, by key.
+Map<String, Object?> metadataOf(BuildOutput output) => {
+  for (final asset in output.assets.encodedAssetsForBuild)
+    if (asset.type == 'hooks/metadata')
+      asset.encoding['key'] as String: asset.encoding['value'],
+};

@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_flutter_core/native_assets.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/android_library.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/ios_sdk.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/vision_library.dart';
-import 'package:mediapipe_flutter_vision/src/native_assets/wheel_library.dart';
+import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_core/src/native_assets/ios_sdk.dart';
+import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_vision/src/native_assets/android_library.dart';
+import 'package:mediapipe_vision/src/native_assets/vision_library.dart';
 
 import '../sdk_downloads.dart';
 
@@ -26,6 +26,18 @@ const officialAndroidTasks = {
   'pose_landmarker',
 };
 
+/// The two tasks whose bindings name their own assets. Every other task binds
+/// Google's engine through the one asset mediapipe_core bundles.
+const _faceTasks = {'face_detector', 'face_landmarker'};
+
+/// Bundles what the selected vision tasks need beyond core's engine.
+///
+/// Google's MediaPipe engine is mediapipe_core's: vision, text and
+/// audio all bind its one asset, so an app loads one copy. This hook adds only
+/// the face runtimes the package builds from source (small macOS libraries,
+/// and the iOS and Android opt-outs) and maps the face assets elsewhere.
+/// Settings that name one platform are ignored on the others, since an app's
+/// `user_defines` cover all of its targets.
 void main(List<String> arguments) async {
   await build(arguments, (input, output) async {
     if (!input.config.buildCodeAssets) return;
@@ -36,19 +48,13 @@ void main(List<String> arguments) async {
     // independently of Runner's deployment target, so it cannot validate the
     // app's minimum OS.
     // Our arm64 simulator binaries require iOS 14; see tool/IOS_SIMULATOR.md.
-    final usePrebuilt = input.userDefines['prebuilt'];
-    if (usePrebuilt != null && usePrebuilt is! bool) {
+    _optionalBool(input, 'prebuilt');
+    if (input.userDefines['official_macos_landmark_tasks'] != null) {
       throw const FormatException(
-        'mediapipe_flutter_vision.prebuilt must be a boolean.',
-      );
-    }
-    final useOfficialMacosLandmarks =
-        input.userDefines['official_macos_landmark_tasks'];
-    if (useOfficialMacosLandmarks != null &&
-        useOfficialMacosLandmarks is! bool) {
-      throw const FormatException(
-        'mediapipe_flutter_vision.official_macos_landmark_tasks must be a '
-        'boolean.',
+        'mediapipe_vision.official_macos_landmark_tasks was removed: '
+        "on macOS every task except the two face tasks runs on Google's "
+        'engine, which mediapipe_core bundles. Delete the key and set '
+        'hooks.user_defines.mediapipe_core.tasks_runtime: true.',
       );
     }
     final selection =
@@ -57,227 +63,160 @@ void main(List<String> arguments) async {
         selection.isEmpty ||
         selection.any((task) => !visionTasks.contains(task))) {
       throw FormatException(
-        'mediapipe_flutter_vision.tasks must be a nonempty list of '
+        'mediapipe_vision.tasks must be a nonempty list of '
         '${visionTasks.join(', ')}.',
       );
     }
     output.dependencies.add(input.packageRoot.resolve('sdk_downloads.dart'));
-    final tasks = selection.cast<String>().toSet();
-    final webAdapterOnly = input.userDefines['web_adapter_only'] ?? false;
-    if (webAdapterOnly is! bool) {
-      throw const FormatException('web_adapter_only must be a boolean.');
-    }
-    if (webAdapterOnly) {
-      // Flutter's Chrome test runner also builds host native assets. The web
-      // gallery uses the JavaScript adapter, so these bindings are never called
-      // there and must not download an unrelated host runtime.
-      for (final name in {..._assetNames(tasks), 'vision.dylib'}) {
-        output.assets.code.add(
-          CodeAsset(
-            package: input.packageName,
-            name: name,
-            linkMode: LookupInProcess(),
-          ),
-        );
-      }
-      return;
-    }
-    final officialIosSdk = input.userDefines['official_ios_sdk'];
-    if (officialIosSdk != null && officialIosSdk is! bool) {
-      throw const FormatException('official_ios_sdk must be a boolean.');
-    }
-    final officialAndroidSdk = input.userDefines['official_android_sdk'];
-    if (officialAndroidSdk != null && officialAndroidSdk is! bool) {
-      throw const FormatException('official_android_sdk must be a boolean.');
-    }
-    // Google's SDK is the default on the Android targets it is validated on
-    // (arm64 phones, the x86_64 emulator): the mediapipe_flutter_vision_android
-    // plugin serves every task there. `official_android_sdk: false` selects
-    // the source-built face runtime instead.
-    final useAndroidSdk =
-        officialAndroidSdk as bool? ??
-        ((target == 'android/arm64' || target == 'android/x64') &&
-            officialIosSdk != true &&
-            useOfficialMacosLandmarks != true);
-    if (useAndroidSdk) {
-      if (!target.startsWith('android/') ||
-          tasks.isEmpty ||
-          !officialAndroidTasks.containsAll(tasks) ||
-          officialIosSdk == true ||
-          useOfficialMacosLandmarks == true) {
-        throw UnsupportedError(
-          'official_android_sdk requires Android, only '
-          '${officialAndroidTasks.join(' and ')}, and the '
-          'mediapipe_flutter_vision_android Flutter plugin.',
-        );
-      }
-      // The Flutter plugin owns Google's Java/JNI SDK. These unused C bindings
-      // remain lazy process lookups rather than bundling a second graph registry.
-      for (final name in {...tasks.map((t) => '$t.dylib'), 'vision.dylib'}) {
-        output.assets.code.add(
-          CodeAsset(
-            package: input.packageName,
-            name: name,
-            linkMode: LookupInProcess(),
-          ),
-        );
-      }
-      output.metadata['official_android_sdk'] = '1.0.0';
-      return;
-    }
-    // Google's SDK is also the default on iOS devices and the arm64 simulator:
-    // its adapter serves every vision task there, and the text and audio
-    // tasks core's tasks_runtime asks for. `official_ios_sdk: false` selects
-    // the source-built face runtime instead.
-    final isIos = target == 'ios/arm64' || target == 'ios-simulator/arm64';
-    final useIosSdk =
-        officialIosSdk as bool? ?? (isIos && useOfficialMacosLandmarks != true);
-    if (useIosSdk) {
-      if (useOfficialMacosLandmarks == true) {
-        throw StateError('Select only one official platform SDK.');
-      }
-      await buildOfficialIosSdk(input, output, tasks: tasks);
-      return;
-    }
-    if (isIos &&
-        input.metadata['mediapipe_flutter_core']['tasks_runtime'] == true) {
-      throw StateError(
-        'On iOS, the text and audio tasks of mediapipe_flutter_core.tasks_runtime '
-        'run in the official iOS SDK adapter, which official_ios_sdk: false '
-        'turns off.',
-      );
-    }
-    // Linux's official wheel library exports the stateful API itself, so the
-    // task binds the vision asset there and needs no shared runtime.
-    final wheelServesSharedTask =
-        visionWheelReleases[target]?.tasks.contains(sharedRuntimeTask) ?? false;
-    if (!wheelServesSharedTask && tasks.remove(sharedRuntimeTask)) {
-      if (input.metadata['mediapipe_flutter_core']['tasks_runtime'] != true) {
-        throw StateError(
-          'Interactive Segmenter requires hooks.user_defines.'
-          'mediapipe_flutter_core.tasks_runtime: true in the app pubspec. '
-          'This bundles the shared modern runtime once for vision and text.',
-        );
-      }
-      // Core's hook rejects targets its runtime table has no release for.
-    }
-    if (input.metadata['mediapipe_flutter_core']['use_macos_vision_runtime'] ==
-        true) {
-      if (target != 'macos/arm64' ||
-          useOfficialMacosLandmarks != true ||
-          tasks.intersection(officialMacosLandmarkRuntime.tasks).isEmpty) {
-        throw StateError(
-          'core.use_macos_vision_runtime requires the official macOS vision '
-          'runtime with at least one selected official task.',
-        );
-      }
-    }
-    if (useOfficialMacosLandmarks == true) {
-      if (target != officialMacosLandmarkRuntime.target) {
-        throw UnsupportedError(
-          'The official macOS landmark runtime only supports '
-          '${officialMacosLandmarkRuntime.target}, not $target.',
-        );
-      }
-      final validated = tasks.intersection(officialMacosLandmarkRuntime.tasks);
-      if (validated.isEmpty) {
-        throw StateError(
-          'official_macos_landmark_tasks requires at least one of '
-          '${officialMacosLandmarkRuntime.tasks.join(', ')} in tasks.',
-        );
-      }
-      tasks.removeAll(validated);
-      // All non-face task bindings share one `vision.dylib` asset ID. Once the
-      // official monolith owns that ID for Hand or Pose, it must also serve any
-      // other selected task using the ID; registering the source monolith too
-      // would produce a duplicate native asset. These extra tasks remain
-      // unvalidated and are deliberately absent from the release's task set.
-      final aliases = _assetNames(validated);
-      final sharingSelectedAlias = {
-        for (final task in tasks)
-          if (_assetNames({task}).any(aliases.contains)) task,
-      };
-      tasks.removeAll(sharingSelectedAlias);
-      await _bundleRelease(
-        input,
-        output,
-        release: officialMacosLandmarkRuntime,
-        target: target,
-        tasks: {...validated, ...sharingSelectedAlias},
-        oneImage: true,
-      );
-      output.metadata['official_macos_landmark_tasks'] = validated.toList()
-        ..sort();
-    }
+    var tasks = selection.cast<String>().toSet();
+    final officialIosSdk = _optionalBool(input, 'official_ios_sdk');
+    final officialAndroidSdk = _optionalBool(input, 'official_android_sdk');
+    final core = input.metadata['mediapipe_core'];
+    final coreRuntime = core['tasks_runtime'] == true;
+
     if (target == 'android/arm64' || target == 'android/x64') {
-      if (tasks.isNotEmpty) {
-        await _bundleAndroid(input, output, target: target, tasks: tasks);
-      }
-      return;
-    }
-    final wheelRelease = visionWheelReleases[target];
-    if (wheelRelease != null && tasks.isNotEmpty) {
-      final missing = tasks.difference(wheelRelease.tasks);
-      if (missing.isNotEmpty) {
-        throw UnsupportedError(
-          'No validated $target runtime covers ${missing.join(', ')}. '
-          'Available tasks: ${wheelRelease.tasks.join(', ')}.',
-        );
-      }
-      // With the text or audio tasks enabled, core bundles this same library
-      // for them. A second copy would register every graph twice and abort,
-      // so the vision assets then resolve to core's copy by its file name;
-      // loadOfficialDesktopRuntime() loads that copy first.
-      final shared =
-          input.metadata['mediapipe_flutter_core']['tasks_runtime_library'];
-      if (shared != null) {
-        if (shared is! Map ||
-            shared['name'] != wheelRelease.libraryName ||
-            shared['sha256'] != wheelRelease.librarySha256) {
-          throw StateError(
-            'mediapipe_flutter_core bundles $shared for text and audio, not '
-            'the ${wheelRelease.libraryName} ${wheelRelease.librarySha256} '
-            'that mediapipe_flutter_vision pins for $target.',
+      // Google's SDK is the default on the Android targets it is validated on
+      // (arm64 phones, the x86_64 emulator): the mediapipe_vision
+      // plugin serves every task there. `official_android_sdk: false`
+      // selects the source-built face runtime instead.
+      if (officialAndroidSdk ?? true) {
+        final missing = tasks.difference(officialAndroidTasks);
+        if (missing.isNotEmpty) {
+          throw UnsupportedError(
+            "Google's Android SDK, which the mediapipe_vision plugin "
+            'runs, serves ${officialAndroidTasks.join(', ')}; not '
+            '${missing.join(', ')}.',
           );
         }
-        for (final assetName in {'vision.dylib', ..._assetNames(tasks)}) {
+        // The plugin owns Google's Java/JNI SDK. The face tasks' C bindings
+        // remain unused process lookups rather than a second graph registry.
+        for (final task in _faceTasks) {
           output.assets.code.add(
             CodeAsset(
               package: input.packageName,
-              name: assetName,
-              linkMode: DynamicLoadingSystem(
-                Uri.file(wheelRelease.libraryName),
-              ),
+              name: '$task.dylib',
+              linkMode: LookupInProcess(),
             ),
           );
         }
+        output.metadata['official_android_sdk'] = '1.0.0';
         return;
       }
-      final library = await downloadVisionWheel(
-        wheelRelease,
-        Directory.fromUri(input.outputDirectoryShared.resolve('$target/')),
-      );
-      // Bundle Google's monolith once. Loading renamed copies for face and
-      // other vision tasks registers the same graphs twice and aborts.
-      _addAsset(input, output, library: library, assetName: 'vision.dylib');
-      for (final assetName in _assetNames(tasks).difference({'vision.dylib'})) {
+      await _bundleAndroid(input, output, target: target, tasks: tasks);
+      return;
+    }
+
+    final isIos = target == 'ios/arm64' || target == 'ios-simulator/arm64';
+    if (isIos) {
+      // Google's SDK is the default on iOS devices and the arm64 simulator,
+      // through the adapter core builds for every family.
+      // `official_ios_sdk: false` selects the source-built face runtime.
+      final adapter = core['ios_sdk_adapter'];
+      if (officialIosSdk ?? true) {
+        final missing = tasks.difference(officialIosTasks);
+        if (missing.isNotEmpty) {
+          throw UnsupportedError(
+            "Google's iOS SDK serves ${officialIosTasks.join(', ')}; "
+            'requested ${missing.join(', ')}.',
+          );
+        }
+        if (adapter is! String) {
+          throw StateError(tasksRuntimeRequired('mediapipe_vision', target));
+        }
+        // Every task binds core's adapter; the face assets alias it too.
+        for (final task in _faceTasks) {
+          output.assets.code.add(
+            CodeAsset(
+              package: input.packageName,
+              name: '$task.dylib',
+              linkMode: DynamicLoadingSystem(Uri(path: adapter)),
+            ),
+          );
+        }
+        output.metadata['official_ios_sdk'] = '1.0.1';
+        return;
+      }
+      if (adapter != null) {
+        // A source-built runtime next to Google's SDK registers the same
+        // graphs twice once both load.
+        throw StateError(
+          'official_ios_sdk: false selects a source-built runtime, which '
+          "cannot share a process with the official iOS SDK "
+          'mediapipe_core builds. Also set hooks.user_defines.'
+          'mediapipe_core.tasks_runtime: false (text and audio are '
+          'then unavailable on iOS).',
+        );
+      }
+    }
+
+    final wheel = visionWheelReleases[target];
+    if (wheel != null) {
+      // Linux x64 and Windows x64: every task runs in Google's wheel library,
+      // which core bundles for every family.
+      final missing = tasks.difference(wheel.tasks);
+      if (missing.isNotEmpty) {
+        throw UnsupportedError(
+          'No validated $target runtime covers ${missing.join(', ')}. '
+          'Available tasks: ${wheel.tasks.join(', ')}.',
+        );
+      }
+      final shared = core['tasks_runtime_library'];
+      if (!coreRuntime || shared is! Map) {
+        throw StateError(tasksRuntimeRequired('mediapipe_vision', target));
+      }
+      if (shared['name'] != wheel.libraryName ||
+          shared['sha256'] != wheel.librarySha256) {
+        throw StateError(
+          'mediapipe_core bundles $shared, not the '
+          '${wheel.libraryName} ${wheel.librarySha256} that '
+          'mediapipe_vision validated for $target.',
+        );
+      }
+      // The face assets alias core's copy by its file name;
+      // loadOfficialDesktopRuntime() loads that copy first.
+      for (final task in _faceTasks) {
         output.assets.code.add(
           CodeAsset(
             package: input.packageName,
-            name: assetName,
-            linkMode: DynamicLoadingSystem(Uri.file(wheelRelease.libraryName)),
+            name: '$task.dylib',
+            linkMode: DynamicLoadingSystem(Uri.file(wheel.libraryName)),
           ),
         );
       }
       return;
     }
+
+    if (target == 'macos/arm64') {
+      // Every task except the face pair runs in Google's engine, which core
+      // bundles when the app opts in. Face Landmarker calls through it then
+      // too (lib/src/io/face_landmarker_api.dart); otherwise it, and Face
+      // Detector always, use the small source-built face libraries.
+      final onEngine = tasks.difference({
+        'face_detector',
+        if (!coreRuntime) 'face_landmarker',
+      });
+      final unvalidated = onEngine.difference(macosEngineTasks);
+      if (unvalidated.isNotEmpty) {
+        throw UnsupportedError(
+          "Google's macOS engine is not validated for "
+          '${unvalidated.join(', ')}. Validated: '
+          '${macosEngineTasks.join(', ')}.',
+        );
+      }
+      // Without the opt-in they are left out, and creating one names the fix
+      // (tasksRuntimeMissing explains why this is not a build error).
+      tasks = tasks.difference(onEngine);
+      if (tasks.isEmpty) return;
+    }
+
     final published = visionRuntimeReleases.where(
       (release) => release.target == target,
     );
-    if (published.isEmpty && tasks.isNotEmpty) {
+    if (published.isEmpty) {
       throw UnsupportedError(
-        'mediapipe_flutter_vision has no runtime for $target. Published '
-        'targets: ${{...visionRuntimeReleases.map((r) => r.target), ...visionWheelReleases.keys}.join(', ')}.',
+        'mediapipe_vision has no runtime for $target. Supported '
+        'targets: android/arm64, android/x64, ios/arm64, ios-simulator/arm64, '
+        'macos/arm64, ${visionWheelReleases.keys.join(', ')} and browsers.',
       );
     }
     final missing = tasks.where(
@@ -304,6 +243,15 @@ void main(List<String> arguments) async {
   });
 }
 
+/// A boolean user define, or null when the app leaves it unset.
+bool? _optionalBool(BuildInput input, String key) {
+  final value = input.userDefines[key];
+  if (value != null && value is! bool) {
+    throw FormatException('mediapipe_vision.$key must be a boolean.');
+  }
+  return value as bool?;
+}
+
 /// Bundles a published release, or a maintainer's local source build of the
 /// same task when one exists and `prebuilt: true` was not requested.
 Future<void> _bundleRelease(
@@ -312,7 +260,6 @@ Future<void> _bundleRelease(
   required VisionRuntimeRelease release,
   required String target,
   required Set<String> tasks,
-  bool oneImage = false,
 }) async {
   final local = Directory.fromUri(
     input.packageRoot.resolve(release.localBuildDirectory),
@@ -322,27 +269,15 @@ Future<void> _bundleRelease(
     local.uri.resolve(release.libraryName),
   ).exists();
   final File library;
-  if (hasLocalBuild &&
-      (release.officialWheel != null ||
-          input.userDefines['prebuilt'] != true)) {
+  if (hasLocalBuild && input.userDefines['prebuilt'] != true) {
     // Maintainers can continue testing builds made by tool/build_native.py.
     // A normal dependency installation has no package-local build directory.
     library = await validateVisionLibrary(
       local,
-      expectedSha256: release.officialWheel == null
-          ? null
-          : release.librarySha256,
       libraryName: release.libraryName,
       target: visionLibraryTarget(target),
-      officialWheel: release.officialWheel,
     );
   } else if (archive == null) {
-    if (release.officialWheel != null) {
-      throw StateError(
-        'The ${release.release} runtime must be prepared locally. Run python3 '
-        'tool/prepare_official_macos_landmark_runtime.py in the vision package.',
-      );
-    }
     throw StateError(
       'The ${release.release} runtime is not published yet, so it can only be '
       'served from a local source build. Run python3 tool/build_native.py in '
@@ -356,29 +291,12 @@ Future<void> _bundleRelease(
       libraryName: release.libraryName,
       cache: Directory.fromUri(input.outputDirectoryShared.resolve('$target/')),
       target: visionLibraryTarget(target),
-      officialWheel: release.officialWheel,
+      // Core's offline or mirror setting, forwarded as its hook metadata.
+      source: hookAssetSource(input),
     );
   }
-  await _bundleAliases(
-    input,
-    output,
-    library: library,
-    tasks: tasks,
-    oneImage: oneImage,
-  );
+  await _bundleAliases(input, output, library: library, tasks: tasks);
 }
-
-/// Asset IDs are compile-time constants in the generated bindings: each face
-/// binding set names its own library and every other task shares vision.dylib.
-/// Dart also rejects duplicate physical filenames across asset IDs, so one
-/// runtime serving several IDs is copied once per name.
-Set<String> _assetNames(Set<String> tasks) => {
-  for (final task in tasks)
-    if (task == 'face_detector' || task == 'face_landmarker')
-      '$task.dylib'
-    else
-      'vision.dylib',
-};
 
 Future<void> _bundleAndroid(
   BuildInput input,
@@ -426,30 +344,22 @@ Future<void> _bundleAndroid(
   }
 }
 
-/// With [oneImage], a runtime that serves the shared vision asset is bundled
-/// once, as that asset only. Google's macOS monolith registers its graphs in a
-/// registry that dyld shares between loaded images, so a second copy for the
-/// face asset aborts on its first duplicate registration; Face Landmarker then
-/// calls the same functions through the shared asset
-/// (lib/src/io/face_landmarker_api.dart).
+/// Bundles a face runtime under each selected face task's asset. Asset IDs
+/// are compile-time constants in the generated bindings, one per face task,
+/// and Dart rejects duplicate physical filenames across asset IDs, so a
+/// runtime serving both is copied once per name. The source builds hide
+/// their symbols, so the copies coexist in one process.
 Future<void> _bundleAliases(
   BuildInput input,
   BuildOutputBuilder output, {
   required File library,
   required Set<String> tasks,
   String suffix = 'dylib',
-  bool oneImage = false,
 }) async {
   final digest = (await sha256.bind(library.openRead()).first).toString();
-  var names = _assetNames(tasks);
-  if (oneImage &&
-      (names.contains('vision.dylib') ||
-          input.metadata['mediapipe_flutter_core']['use_macos_vision_runtime'] ==
-              true)) {
-    names = {'vision.dylib'};
-  }
-  for (final assetName in names) {
-    final stem = assetName.substring(0, assetName.length - '.dylib'.length);
+  for (final task in tasks) {
+    final assetName = '$task.dylib';
+    final stem = task;
     final bundled = File.fromUri(
       library.parent.uri.resolve('lib$stem.$suffix'),
     );

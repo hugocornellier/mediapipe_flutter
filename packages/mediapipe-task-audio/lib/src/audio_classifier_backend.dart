@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
-import '../audio_task_backend.dart';
+import 'package:mediapipe_core/mediapipe_exception.dart';
+
+import 'audio_task_backend.dart';
 import 'audio_types.dart';
 
 /// Audio Classifier on a platform plugin's backend (audio_task_backend.dart):
@@ -18,10 +20,9 @@ final class BackendAudioClassifier {
   ) async {
     final factory = audioTaskBackendFactory;
     if (factory == null) {
-      throw UnsupportedError(
-        'Audio Classifier here runs through a platform plugin that is '
-        'missing: add mediapipe_flutter_audio_web for browsers, or '
-        'mediapipe_flutter_audio_android for Android.',
+      throw const RuntimeUnavailableException(
+        'Audio Classifier platform plugin did not register.',
+        fix: 'Install mediapipe_audio for this platform.',
       );
     }
     try {
@@ -36,14 +37,14 @@ final class BackendAudioClassifier {
         }),
       );
     } catch (error) {
-      throw AudioClassifierException('$error');
+      throw AudioTaskException('$error', cause: error);
     }
   }
 
   /// Classifies [audio], one result per chunk the model reads (0.975 s for
   /// YAMNet), in order. Google's browser and mobile tasks read one channel,
   /// so several channels are averaged first.
-  Future<List<AudioClassification>> classify(AudioData audio) {
+  Future<List<AudioClassifierResult>> classify(AudioData audio) {
     if (_disposing != null) {
       return Future.error(StateError('AudioClassifier has been disposed.'));
     }
@@ -55,7 +56,7 @@ final class BackendAudioClassifier {
             _chunk(chunk! as Map),
         ];
       } catch (error) {
-        throw AudioClassifierException('$error');
+        throw MediaPipeException('$error', cause: error);
       }
     });
     _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
@@ -80,7 +81,7 @@ Float32List _mono(AudioData audio) {
   return mono;
 }
 
-AudioClassification _chunk(Map chunk) {
+AudioClassifierResult _chunk(Map chunk) {
   final heads = chunk['classifications'] as List? ?? const [];
   return (
     timestampMs: (chunk['timestampMs'] as num?)?.toInt() ?? 0,

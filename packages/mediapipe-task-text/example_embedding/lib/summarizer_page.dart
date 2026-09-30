@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:mediapipe_flutter_text/text_summarizer.dart';
+import 'package:mediapipe_text/text_summarizer.dart';
 
 import 'token_budget_field.dart';
 import 'task_support.dart';

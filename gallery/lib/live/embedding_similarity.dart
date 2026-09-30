@@ -1,4 +1,4 @@
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 /// Image Embedder output, optionally compared with the first camera frame.
 final class EmbeddingSimilarity {

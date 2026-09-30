@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/live/live_subjects.dart';
 
 /// The live demo a camera test drives, and what it should find.

@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
-import 'package:mediapipe_flutter_vision/models.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart';
@@ -56,7 +56,7 @@ void main() {
               ImageClassifierOptions(
                 modelPath: _classifierModel,
                 maxResults: 3,
-                runningMode: VisionRunningMode.video,
+                runningMode: RunningMode.video,
               ),
             );
             final requests = [
@@ -88,7 +88,7 @@ void main() {
             final task = await ImageEmbedder.create(
               ImageEmbedderOptions(
                 modelPath: _embedderModel,
-                runningMode: VisionRunningMode.video,
+                runningMode: RunningMode.video,
               ),
             );
             final requests = [
@@ -156,7 +156,7 @@ void main() {
           final task = await ImageEmbedder.create(
             ImageEmbedderOptions(
               modelPath: _embedderModel,
-              runningMode: VisionRunningMode.video,
+              runningMode: RunningMode.video,
             ),
           );
           try {
@@ -198,14 +198,13 @@ void main() {
         },
       );
     },
-    // Google's official macOS runtime (tool/test_official_macos_landmark_runtime.py)
-    // is validated; the macOS source runtime is not.
+    // Google's CPU output drifts between Apple CPUs, so macOS compares with
+    // same-host outputs (tool/test_official_macos_landmark_runtime.py).
     skip:
         Platform.isMacOS &&
             Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
                 '1'
-        ? 'The macOS source runtime is not validated against the official '
-              'outputs; see upstream-issues.md UP-004.'
+        ? 'macOS compares with same-host official outputs.'
         : false,
   );
 
@@ -301,7 +300,7 @@ final _gpuSkip = Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] == null
     : Platform.isMacOS &&
           Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
               '1'
-    ? 'macOS GPU runs on the official runtime only.'
+    ? 'macOS GPU compares with same-host official outputs.'
     : Platform.isMacOS || Platform.isLinux
     ? null
     : 'Desktop GPU is validated on Linux and macOS.';

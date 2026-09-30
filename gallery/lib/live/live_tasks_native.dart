@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'embedding_similarity.dart';
 import 'live_camera_controller.dart';
@@ -21,7 +21,7 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _task = await FaceLandmarker.create(
       FaceLandmarkerOptions(
@@ -74,7 +74,7 @@ final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _task = await HandLandmarker.create(
       HandLandmarkerOptions(
@@ -128,7 +128,7 @@ final class GestureRecognizerLiveTask
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _task = await GestureRecognizer.create(
       GestureRecognizerOptions(
@@ -186,7 +186,7 @@ final class HolisticLandmarkerLiveTask
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _task = await HolisticLandmarker.create(
       HolisticLandmarkerOptions(
@@ -251,7 +251,7 @@ final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _task = await PoseLandmarker.create(
       PoseLandmarkerOptions(
@@ -305,7 +305,7 @@ final class FaceDetectorLiveTask implements LiveTask<FaceDetectorResult> {
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _task = await FaceDetector.create(
       FaceDetectorOptions(
@@ -354,7 +354,7 @@ final class ObjectDetectorLiveTask implements LiveTask<ObjectDetectorResult> {
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _task = await ObjectDetector.create(
       ObjectDetectorOptions(
@@ -403,7 +403,7 @@ final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _task = await ImageClassifier.create(
       ImageClassifierOptions(
@@ -458,7 +458,7 @@ final class ImageEmbedderLiveTask
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _first = null;
     _task = await ImageEmbedder.create(
@@ -519,7 +519,7 @@ final class ImageSegmenterLiveTask implements LiveTask<SegmentationResult> {
   Future<void> open(
     VisionDelegate delegate,
     Uint8List modelBytes, {
-    VisionRunningMode mode = VisionRunningMode.video,
+    RunningMode mode = RunningMode.video,
   }) async {
     _task = await ImageSegmenter.create(
       ImageSegmenterOptions(

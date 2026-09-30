@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 abstract interface class SegmentationBackend {
   Future<void> setImage(VisionImage image);
@@ -59,10 +60,41 @@ class EditorController extends ChangeNotifier {
             (_activeBrush != SegmentationBrushMode.lasso || points.length >= 3))
       SegmentationStroke(
         brushMode: _activeBrush,
-        points: points,
+        points: _brushPoints(_activeBrush, points),
         isCompleted: false,
       ),
   ]);
+
+  /// Google's sample drops strokes shorter than this (normalized length).
+  static const minimumStrokeLength = 0.05;
+
+  /// A tap or short brush stroke as a small ring around its points. The GPU
+  /// graph draws strokes as line segments, so a single point draws nothing
+  /// and the segmenter falls back to its default subject; CPU marks it anyway.
+  static List<SegmentationPoint> _brushPoints(
+    SegmentationBrushMode brush,
+    List<SegmentationPoint> points,
+  ) {
+    if (brush == SegmentationBrushMode.lasso) return points;
+    var length = 0.0;
+    for (var i = 1; i < points.length; i++) {
+      length += math.sqrt(
+        math.pow(points[i].x - points[i - 1].x, 2) +
+            math.pow(points[i].y - points[i - 1].y, 2),
+      );
+    }
+    if (length >= minimumStrokeLength) return points;
+    final x = points.map((p) => p.x).reduce((a, b) => a + b) / points.length;
+    final y = points.map((p) => p.y).reduce((a, b) => a + b) / points.length;
+    const radius = 0.01;
+    return [
+      for (var i = 0; i <= 12; i++)
+        SegmentationPoint(
+          x: (x + radius * math.cos(i * math.pi / 6)).clamp(0.0, 1.0),
+          y: (y + radius * math.sin(i * math.pi / 6)).clamp(0.0, 1.0),
+        ),
+    ];
+  }
 
   Future<void> loadImage(VisionImage image) {
     if (_closed) return Future.value();
@@ -113,10 +145,9 @@ class EditorController extends ChangeNotifier {
       _completed.add(
         SegmentationStroke(
           brushMode: _activeBrush,
-          points: [
-            ...points,
-            if (_activeBrush == SegmentationBrushMode.lasso) points.first,
-          ],
+          points: _activeBrush == SegmentationBrushMode.lasso
+              ? [...points, points.first]
+              : _brushPoints(_activeBrush, points),
         ),
       );
     }

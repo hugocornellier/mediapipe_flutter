@@ -5,7 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_flutter_vision/mediapipe_flutter_vision.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -51,7 +51,7 @@ void main() {
     final task = await FaceDetector.create(
       FaceDetectorOptions(
         modelBytes: fixtures.detectorModel,
-        runningMode: VisionRunningMode.video,
+        runningMode: RunningMode.video,
       ),
     );
     try {
@@ -71,9 +71,9 @@ void main() {
   });
 
   for (final configuration in [
-    (VisionRunningMode.image, 2),
-    (VisionRunningMode.video, 1),
-    (VisionRunningMode.video, 2),
+    (RunningMode.image, 2),
+    (RunningMode.video, 1),
+    (RunningMode.video, 2),
   ]) {
     testWidgets(
       'CPU ${configuration.$1.name} Face Landmarker matches official reference with ${configuration.$2} faces',
@@ -101,7 +101,7 @@ void main() {
           for (final frame
               in (sequence['frames'] as List).cast<Map<String, dynamic>>()) {
             final image = await fixtures.image(frame);
-            final result = configuration.$1 == VisionRunningMode.video
+            final result = configuration.$1 == RunningMode.video
                 ? await task.detectForVideo(
                     image,
                     timestampMilliseconds: frame['timestamp_ms'] as int,
@@ -198,7 +198,7 @@ void main() {
         ),
       ),
       throwsA(
-        isA<FaceDetectorException>().having(
+        isA<VisionTaskException>().having(
           (e) => e.message,
           'message',
           contains('CPU only'),
@@ -213,7 +213,7 @@ void main() {
         ),
       ),
       throwsA(
-        isA<FaceLandmarkerException>().having(
+        isA<VisionTaskException>().having(
           (e) => e.message,
           'message',
           contains('CPU only'),
@@ -239,7 +239,7 @@ void main() {
       final task = await FaceLandmarker.create(
         FaceLandmarkerOptions(
           modelBytes: fixtures.landmarkerModel,
-          runningMode: VisionRunningMode.video,
+          runningMode: RunningMode.video,
         ),
       );
       try {
@@ -252,7 +252,7 @@ void main() {
             VisionImage.fromFile('${fixtures.directory.path}/missing.jpg'),
             timestampMilliseconds: 0,
           ),
-          throwsA(isA<FaceLandmarkerException>()),
+          throwsA(isA<VisionTaskException>()),
         );
         final frames = [
           for (var i = 1; i <= 6; i++)
