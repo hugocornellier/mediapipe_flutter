@@ -1,4 +1,4 @@
-# Official web FaceLandmarker validation — 2026-09-18
+# Official web FaceLandmarker validation, 2026-09-18
 
 [Passing hosted workflow](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/35393300772)
 for implementation `b3d7c6cbe3000f56fd0fde7a1b35caa68aae6c8e`.

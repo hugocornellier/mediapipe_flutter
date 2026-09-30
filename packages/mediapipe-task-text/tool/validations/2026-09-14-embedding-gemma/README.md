@@ -1,4 +1,4 @@
-# macOS CPU validation — 2026-09-14
+# macOS CPU validation, 2026-09-14
 
 `report.json` was produced by `tool/test_embedding_macos.py` on the maintainer's
 Apple M4 Max, macOS 26.4, Flutter 3.44.8 / Dart 3.12.2. This is a functional

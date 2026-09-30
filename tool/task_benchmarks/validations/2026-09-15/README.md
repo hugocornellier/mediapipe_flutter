@@ -1,4 +1,4 @@
-# Modern macOS task audit — 2026-09-15
+# Modern macOS task audit, 2026-09-15
 
 Validated on Apple M4 Max with 48 GiB RAM,
 macOS 26.4, using an AOT native-assets consumer and

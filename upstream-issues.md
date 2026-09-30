@@ -18,7 +18,7 @@ are relocated before running real inference.
 uses pinned official MediaPipe 1.0.0 wheels. Work after that commit is experimental
 until the same jobs pass on it.
 
-## UP-001 — KleidiAI SME wrappers can execute non-streaming SVE on Apple M4
+## UP-001: KleidiAI SME wrappers can execute non-streaming SVE on Apple M4
 
 **Status:** crash reproduced; isolated compiler-flag workaround verified and
 committed in `tool/build_native.py`, with the rebuilt runtime's digest pinned in
@@ -83,7 +83,7 @@ For an isolated native executable, provide that filename as a copy of the
 candidate and set `DYLD_LIBRARY_PATH` to its directory. This loader detail is
 separate from the illegal instruction.
 
-## UP-002 — XNNPACK's explicit disable branches select the enabled configuration
+## UP-002: XNNPACK's explicit disable branches select the enabled configuration
 
 **Status:** confirmed by inspection of the dependency used by the pinned build.
 
@@ -107,7 +107,7 @@ See also the earlier investigation in
 `packages/mediapipe-task-vision/tool/OBJECT_DETECTOR.md`; its statement that no
 compiler workaround has been found is now superseded by UP-001.
 
-## UP-003 — MediaPipe 1.0.0 float mask accessor aborts for padded rows
+## UP-003: MediaPipe 1.0.0 float mask accessor aborts for padded rows
 
 **Status:** reproduced through the official 1.0.0 Mac Python API. The scalar
 fallback is implemented in both the reference generator and the Dart mask helper,
@@ -144,7 +144,7 @@ The generator now includes the fallback, so its later failure is UP-006. To
 reproduce this accessor abort specifically, replace the fallback with
 `mask.numpy_view().copy()` in an isolated copy of the generator.
 
-## UP-004 — Mac source CPU outputs differ from the same-version official wheel
+## UP-004: Mac source CPU outputs differ from the same-version official wheel
 
 **Status:** unresolved compatibility finding, **not yet proven to be an upstream
 bug**. Do not silently relax tolerances or regenerate goldens through our own
@@ -207,7 +207,7 @@ into the header's order before creating tasks, and asserts the ctypes still use
 the old order so a fixed wheel fails loudly. Its non-default case (hand 0.99)
 now drops both hands, as the option promises.
 
-## UP-006 — Holistic mask smoothing retains dimensions across IMAGE requests
+## UP-006: Holistic mask smoothing retains dimensions across IMAGE requests
 
 **Status:** reproduced in official MediaPipe 1.0.0 Mac Python API. Unresolved
 upstream; worked around in the reference generator and in how the tests use the
@@ -232,7 +232,7 @@ file, written from incorrectly packed raw fixtures, is gone. A caller that reuse
 one Holistic task with masks enabled across differently sized images still hits
 this; VIDEO mask processing needs a documented size policy.
 
-## UP-009 — Image Segmenter creation crashes on a null display-names locale
+## UP-009: Image Segmenter creation crashes on a null display-names locale
 
 **Status:** reproduced through this repository's Dart bindings against the pinned
 1.0.0 runtime. Worked around locally; not reported upstream.
@@ -255,7 +255,7 @@ Google's own Image Segmenter bindings never exercise the null case because
 empty one when the caller requests no locale. Review this field for each new
 task rather than assuming null is accepted.
 
-## UP-010 — Segmentation tasks reject a region of interest
+## UP-010: Segmentation tasks reject a region of interest
 
 **Status:** confirmed through the official 1.0.0 Python API; expected behavior
 rather than a defect, recorded because the C API accepts the argument.
@@ -270,7 +270,7 @@ ValueError: This task doesn't support region-of-interest.
 Rotation is accepted. The Dart wrappers therefore expose `rotationDegrees` only,
 instead of offering a parameter the task rejects at run time.
 
-## UP-007 — Official 1.0.1 Mac detector graphs can abort opening a CPU graph
+## UP-007: Official 1.0.1 Mac detector graphs can abort opening a CPU graph
 
 **Status:** external upstream report, checked 2026-09-16; not reproduced anew in
 this session. [MediaPipe issue #6356](https://github.com/google-ai-edge/mediapipe/issues/6356)
@@ -286,7 +286,7 @@ This is why the desktop vision baseline pins working 1.0.0 wheels rather than
 automatically upgrading everything to 1.0.1. Modern stateful Interactive Segmenter
 and modern text tasks have their own runtime requirements.
 
-## UP-008 — Stateful Interactive Segmenter GPU stroke shader fails on macOS
+## UP-008: Stateful Interactive Segmenter GPU stroke shader fails on macOS
 
 **Status:** prior repository validation, documented for official 1.0.0 and 1.0.1
 Mac runtimes; not newly rerun during the desktop work.
@@ -300,7 +300,7 @@ Evidence and prior validation artifacts are documented in
 `packages/mediapipe-task-vision/tool/validations/2026-09-12-interactive-segmenter/`.
 Morning commit `72711df` corrected attribution to a single runtime version.
 
-## UP-011 — Combined iOS simulator CPU runtime has reference differences beyond face tasks
+## UP-011: Combined iOS simulator CPU runtime has reference differences beyond face tasks
 
 **Status:** measured compatibility finding on 2026-09-16; not established as an
 upstream bug. Face Detector and Face Landmarker remain validated. Other source
@@ -344,7 +344,7 @@ string naming OpenCV 4.13.0, whereas the local builders pin OpenCV 4.12.0. That
 embedded string also describes a Linux x64 build, so it is not sufficient evidence
 of the Mac binary's actual build configuration or of a cause for these differences.
 
-## UP-012 — Android combined runtime needs C API export isolation
+## UP-012: Android combined runtime needs C API export isolation
 
 Observed September 16 with pinned MediaPipe v1.0.0, NDK 28.2.13676358,
 OpenCV 4.12.0's Android SDK, and an arm64 Android 16 emulator using 16 KB pages.
@@ -377,7 +377,7 @@ These probes check loading, ABI and result counts, not Flutter packaging,
 numerical reference parity or physical-device performance. Android package
 support remains undeclared. This issue has not been filed upstream.
 
-## UP-013 — Holistic IMAGE results depend on earlier IMAGE calls
+## UP-013: Holistic IMAGE results depend on earlier IMAGE calls
 
 **Status:** reproduced September 23 in Google's official 1.0.0 macOS Python
 wheel and the iOS 1.0.1 SDK. Unresolved upstream; the tests work around it.
@@ -388,7 +388,7 @@ apart on the iOS simulator. A fresh task's first call is exactly repeatable.
 IMAGE mode should not carry state between calls. `sdk_landmark_tasks_test.dart`
 and the web API probe compare only fresh tasks' first results for Holistic.
 
-## UP-014 — iOS Holistic rejects rotated images
+## UP-014: iOS Holistic rejects rotated images
 
 **Status:** observed September 23 with Google's 1.0.1 iOS XCFrameworks.
 Worked around in the iOS adapter.
@@ -400,7 +400,7 @@ tasks and unlike Holistic on every other platform. The adapter
 back into the caller's frame. On an iPhone 15 Pro the result is 0.008 (CPU) and
 0.010 (Metal) from Google's rotated desktop reference.
 
-## UP-015 — Pose GPU treats rotated input differently from Pose CPU
+## UP-015: Pose GPU treats rotated input differently from Pose CPU
 
 **Status:** reproduced September 23 in Google's official 1.0.0 macOS wheel and
 on an iPhone 15 Pro with the 1.0.1 iOS SDK. Unresolved upstream; recorded, not
@@ -413,7 +413,7 @@ not a plain rotation of the upright result. Hand, Gesture and Holistic show
 neither effect. The SDK tests require the rotated reference on the CPU only for
 Pose and record the GPU value.
 
-## UP-016 — Android 1.0.0 declares protobuf-javalite but needs protobuf-java
+## UP-016: Android 1.0.0 declares protobuf-javalite but needs protobuf-java
 
 **Status:** reported upstream as
 [google-ai-edge/mediapipe#6348](https://github.com/google-ai-edge/mediapipe/issues/6348)
@@ -426,7 +426,7 @@ signature, so Holistic creation fails with `NoSuchMethodError`. No other task
 makes that call. The plugin excludes javalite and depends on `protobuf-java`
 4.26.1; Face, Hand, Pose, Gesture and Holistic all pass on the emulator with it.
 
-## UP-017 — Image Segmenter stretches the upright mask over a rotated input
+## UP-017: Image Segmenter stretches the upright mask over a rotated input
 
 **Status:** reproduced September 23 in Google's official 1.0.0 macOS Python
 wheel and the iOS 1.0.1 SDK. Unresolved upstream; the package returns what
@@ -443,7 +443,7 @@ do Interactive Segmenter Legacy's (97% of pixels at 90° and 270°).
 `sdk_segmenter_test.dart` checks rotated inputs against the resized upright
 mask, and the desktop fixture records the same bytes as Google's wheel.
 
-## UP-018 — Mobile SDKs mishandle padded rows in CPU pose masks
+## UP-018: Mobile SDKs mishandle padded rows in CPU pose masks
 
 **Status:** observed September 23 with Google's 1.0.1 iOS XCFrameworks on the
 simulator (CPU) and Android tasks-vision 1.0.0 on the emulator (CPU). Worked
@@ -466,7 +466,7 @@ for the 667-wide case. Holistic's masks take another path and are unaffected
 on Android. Camera frames are rarely affected on either platform, since their
 widths and heights are multiples of 4.
 
-## UP-019 — Android Image Segmenter reports no labels
+## UP-019: Android Image Segmenter reports no labels
 
 **Status:** observed September 23 with Android tasks-vision 1.0.0. Worked
 around in `mediapipe_vision`.
@@ -479,7 +479,7 @@ graph config, which `Graph.getCalculatorGraphConfig()` parses with
 holding the labels is never read. The plugin parses those options again with
 the extension registered and gets all 21 labels in mask order.
 
-## UP-020 — Android Interactive Segmenter Legacy ignores the region of interest
+## UP-020: Android Interactive Segmenter Legacy ignores the region of interest
 
 **Status:** observed September 23 with Android tasks-vision 1.0.0 on the
 emulator (CPU). Unresolved upstream; the Android adapter does not serve the
@@ -494,7 +494,7 @@ instead of this plugin's protobuf-java (UP-016). On Android,
 `InteractiveSegmenterLegacy.create` throws UnsupportedError rather than
 return wrong masks.
 
-## UP-021 — Browser Interactive Segmenter Legacy drops a model buffer
+## UP-021: Browser Interactive Segmenter Legacy drops a model buffer
 
 **Status:** observed September 23 with Google's tasks-vision 1.0.1 web bundle in
 Chrome. Worked around in the browser worker.

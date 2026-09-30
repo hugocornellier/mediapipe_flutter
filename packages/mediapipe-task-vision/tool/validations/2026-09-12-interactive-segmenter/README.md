@@ -1,4 +1,4 @@
-# MagicTouch macOS validation — 2026-09-12
+# MagicTouch macOS validation, 2026-09-12
 
 Apple M4 Max, 16 CPU cores, macOS 26.4 (25E246), Flutter 3.44.8 / Dart 3.12.2.
 Implementation commit: `5bc34f0`; subsequent changes are documentation, saved

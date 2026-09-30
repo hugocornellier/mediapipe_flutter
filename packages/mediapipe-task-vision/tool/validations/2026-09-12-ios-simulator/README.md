@@ -1,4 +1,4 @@
-# iOS simulator CPU validation — 2026-09-12
+# iOS simulator CPU validation, 2026-09-12
 
 The official Face Detector and Face Landmarker ran successfully inside Flutter
 on an **iPhone 17 Pro simulator, iOS 26.4**, hosted on an Apple M4 Max Mac.
