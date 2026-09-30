@@ -3,7 +3,6 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import '../gallery_theme.dart';
 import 'camera_geometry.dart';
-import 'embedding_similarity.dart';
 
 /// One labelled box in the analysed frame's pixels, with optional keypoints
 /// normalized to that frame.
@@ -160,18 +159,6 @@ DetectionOverlay? detectionOverlayFor(
       classes: [
         for (final c in classifications.firstOrNull?.categories ?? const [])
           '${c.displayName ?? c.categoryName ?? '?'} ${score(c.score)}',
-      ],
-    ),
-    EmbeddingSimilarity(:final similarity, :final result) => DetectionOverlay(
-      const [],
-      frameSize: const Size(1, 1),
-      transform: transform,
-      showBoxes: boxes,
-      showPoints: points,
-      classes: [
-        if (similarity != null)
-          'Similarity to the first frame: ${similarity.toStringAsFixed(3)}',
-        '${result.embeddings.first.floatEmbedding?.length ?? result.embeddings.first.quantizedEmbedding?.length ?? 0} values',
       ],
     ),
     _ => null,

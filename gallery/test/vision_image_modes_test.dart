@@ -21,7 +21,6 @@ void main() {
     'hand_landmarker',
     'holistic_landmarker',
     'image_classifier',
-    'image_embedder',
     'image_segmenter',
     'object_detector',
     'pose_landmarker',
@@ -56,29 +55,21 @@ void main() {
       );
       await tester.pump();
 
-      final mode = find.byKey(
-        ValueKey('${task.runtimeId.replaceAll('_', '-')}-mode'),
-      );
-      expect(mode, findsOneWidget);
+      final id = task.runtimeId.replaceAll('_', '-');
+      expect(find.byKey(ValueKey('$id-mode')), findsOneWidget);
       expect(find.text('Choose image'), findsOneWidget);
       expect(find.text('Choose an image to analyze.'), findsOneWidget);
 
-      await tester.tap(mode);
-      await tester.pumpAndSettle();
       if (kIsWeb) {
         // Browser widget tests have no webcam permission or media stream.
         expect(find.text('Camera'), findsOneWidget);
-        await tester.tap(find.text('Still image').last);
-        await tester.pumpAndSettle();
         return;
       }
-      await tester.tap(find.text('Camera').last);
+      await tester.tap(find.byKey(ValueKey('$id-mode-camera')));
       await tester.pumpAndSettle();
       expect(find.text('Choose image'), findsNothing);
 
-      await tester.tap(mode);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Still image').last);
+      await tester.tap(find.byKey(ValueKey('$id-mode-image')));
       await tester.pumpAndSettle();
       expect(find.text('Choose image'), findsOneWidget);
       expect(tester.takeException(), isNull);

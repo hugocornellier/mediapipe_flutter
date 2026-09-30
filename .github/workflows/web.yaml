@@ -89,6 +89,8 @@ jobs:
           exit 1
       - name: Face Landmarker still image in Chromium
         run: node gallery/tool/browser/test_still_image.mjs
+      - name: Image Segmenter masks, legend and output types in Chromium
+        run: node gallery/tool/browser/test_segmenter_display.mjs
       - name: Chromium CPU runtime, API and face webcam
         id: chromium_cpu
         env:

@@ -57,6 +57,14 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// Size of the last frame as the camera delivered it, before rotation.
   Size? frameSize;
 
+  /// The preview's width over its height, upright as the camera view lays it
+  /// out, or null before the camera starts.
+  double? get previewAspect {
+    final value = camera?.value;
+    if (value == null || !value.isInitialized) return null;
+    return previewAspectRatio(value.aspectRatio, value.deviceOrientation);
+  }
+
   /// Clockwise rotation applied to the last frame to stand it upright.
   int frameRotationDegrees = 0;
 

@@ -16,6 +16,9 @@ enum GalleryDemo {
   /// Interactive segmentation on a bundled image.
   segment,
 
+  /// Two still images compared by their embeddings.
+  embed,
+
   /// A text task on typed input.
   text,
 
@@ -392,17 +395,6 @@ final _catalog = <GalleryTask>[
     officialMacosCapabilities: _officialMacosClassifier,
   ),
   GalleryTask(
-    id: 'image_embedder_live',
-    runtimeId: 'image_embedder',
-    demo: GalleryDemo.live,
-    title: 'Image Embedder',
-    summary: 'Feature vectors from an image or live frame comparisons.',
-    model: 'mobilenet_v3_small.tflite',
-    sample: 'portrait.jpg',
-    capabilities: _embedder,
-    officialMacosCapabilities: _officialMacosEmbedder,
-  ),
-  GalleryTask(
     id: 'object_detector',
     title: 'Object Detector',
     summary: 'Labelled boxes over everyday objects.',
@@ -420,12 +412,14 @@ final _catalog = <GalleryTask>[
     capabilities: _classifier,
     officialMacosCapabilities: _officialMacosClassifier,
   ),
+  // Still images only, as Google's Image Embedding demo compares them.
   GalleryTask(
     id: 'image_embedder',
+    demo: GalleryDemo.embed,
     title: 'Image Embedder',
-    summary: 'Feature vectors and cosine similarity.',
+    summary: 'Two images as vectors, compared by similarity.',
     model: 'mobilenet_v3_small.tflite',
-    sample: 'portrait.jpg',
+    sample: 'dog.jpg',
     capabilities: _embedder,
     officialMacosCapabilities: _officialMacosEmbedder,
   ),

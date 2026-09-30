@@ -15,17 +15,17 @@ void main() {
             children: [
               const Text('Face Landmarker'),
               Expanded(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: Card(
-                        child: TextButton(
-                          onPressed: () => tapped = true,
-                          child: const Text('Face Landmarker'),
-                        ),
+                child: SingleChildScrollView(
+                  key: const ValueKey('gallery-home'),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 1200),
+                      TextButton(
+                        onPressed: () => tapped = true,
+                        child: const Text('Face Landmarker'),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],

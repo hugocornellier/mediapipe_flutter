@@ -4,32 +4,27 @@ import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 import 'package:mediapipe_vision/capabilities.dart';
 import 'package:record/record.dart';
 
 import 'catalog.dart';
-import 'gallery_content_surface.dart';
-import 'gallery_task_header.dart';
-import 'gallery_settings_scaffold.dart';
 import 'live/task_models.dart';
 import 'live/task_settings.dart';
 import 'live/task_settings_panel.dart';
+import 'ui/components.dart';
+import 'ui/design.dart';
+import 'ui/workspace.dart';
 
 /// Audio Classifier on a clip, laid out as the other demos are: the clip and
 /// its results beside the same settings panel, with MediaPipe Studio's
 /// settings and model selection.
 class AudioPage extends StatefulWidget {
-  const AudioPage({
-    super.key,
-    required this.task,
-    this.onOpenMenu,
-    this.framed = false,
-  });
+  const AudioPage({super.key, required this.task, this.onOpenMenu});
 
   final GalleryTask task;
   final VoidCallback? onOpenMenu;
-  final bool framed;
 
   @override
   State<AudioPage> createState() => _AudioPageState();
@@ -43,7 +38,6 @@ const _clips = <String, String>{
 };
 
 class _AudioPageState extends State<AudioPage> {
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
   late final TaskSettingValues _values = TaskSettingValues('audio_classifier');
   late final List<TaskSetting> _settings =
       taskSettings['audio_classifier'] ?? const [];
@@ -234,7 +228,11 @@ class _AudioPageState extends State<AudioPage> {
     try {
       final file = await openFile(
         acceptedTypeGroups: const [
-          XTypeGroup(label: 'WAV audio', extensions: ['wav']),
+          XTypeGroup(
+            label: 'WAV audio',
+            extensions: ['wav'],
+            uniformTypeIdentifiers: ['com.microsoft.waveform-audio'],
+          ),
         ],
       );
       if (file == null) return;
@@ -259,7 +257,12 @@ class _AudioPageState extends State<AudioPage> {
     try {
       final file = await openFile(
         acceptedTypeGroups: const [
-          XTypeGroup(label: 'MediaPipe models', extensions: ['tflite', 'task']),
+          XTypeGroup(
+            label: 'MediaPipe models',
+            extensions: ['tflite', 'task'],
+            // iOS filters by type, and models have none of their own.
+            uniformTypeIdentifiers: ['public.data'],
+          ),
         ],
       );
       if (file == null) return;
@@ -291,170 +294,177 @@ class _AudioPageState extends State<AudioPage> {
       modelStatus: _modelStatus,
       onModel: _chooseModel,
       onUpload: _uploadModel,
+      bundledModel: 'yamnet.tflite',
     ),
   );
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final wide = MediaQuery.sizeOf(context).width >= 900;
+    final c = GalleryColors.of(context);
     final audio = _audio;
-    return GallerySettingsScaffold(
-      scaffoldKey: _scaffoldKey,
-      framed: widget.framed,
-      wide: wide,
-      appBar: AppBar(
-        primary: !wide,
-        automaticallyImplyLeading: false,
-        leading: widget.onOpenMenu == null
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.menu),
-                tooltip: 'Open navigation',
-                onPressed: widget.onOpenMenu,
+    final muted = TextStyle(color: c.muted, fontSize: Sizes.xs);
+    final chunks = _microphone
+        ? _heard
+        : _chunks ?? const <AudioClassifierResult>[];
+    return TaskWorkspace(
+      title: widget.task.title,
+      onOpenMenu: widget.onOpenMenu,
+      settings: _panel(),
+      children: [
+        TaskToolbar(
+          task: widget.task,
+          leading: Segmented<bool>(
+            key: const ValueKey('audio-source'),
+            segments: const [
+              (
+                value: false,
+                label: 'Clips',
+                icon: LucideIcons.fileAudio,
+                key: ValueKey('audio-source-clips'),
               ),
-        flexibleSpace: GalleryTaskHeader(taskTitle: widget.task.title),
-        actions: [
-          if (!wide)
-            IconButton(
-              icon: const Icon(Icons.tune),
-              tooltip: 'Settings',
-              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-            ),
-        ],
-      ),
-      content: GalleryContentSurface(
-        framed: widget.framed,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(
-                  value: false,
-                  icon: Icon(Icons.audio_file),
-                  label: Text('Clips'),
-                ),
-                ButtonSegment(
-                  value: true,
-                  icon: Icon(Icons.mic),
-                  label: Text('Microphone'),
-                ),
-              ],
-              selected: {_microphone},
-              onSelectionChanged: _busy
-                  ? null
-                  : (selection) => _setMicrophone(selection.first),
-            ),
-            const SizedBox(height: 16),
-            if (_microphone)
-              Text(
-                _stream == null
-                    ? 'Starting the microphone…'
-                    : 'Listening: each 0.975 s window is classified as it '
-                          'arrives, newest first.',
-                style: theme.textTheme.bodySmall,
-              )
-            else ...[
-              Text('Audio clip', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final MapEntry(key: file, value: label)
-                      in _clips.entries)
-                    ChoiceChip(
-                      label: Text(label),
-                      selected: _uploadedClip == null && _clip == file,
-                      onSelected: _busy
-                          ? null
-                          : (_) {
-                              setState(() {
-                                _clip = file;
-                                _uploadedClip = null;
-                              });
-                              unawaited(_run());
-                            },
+              (
+                value: true,
+                label: 'Microphone',
+                icon: LucideIcons.mic,
+                key: ValueKey('audio-source-microphone'),
+              ),
+            ],
+            selected: _microphone,
+            onChanged: _busy ? null : (on) => unawaited(_setMicrophone(on)),
+          ),
+        ),
+        SurfaceCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Eyebrow(_microphone ? 'Microphone' : 'Audio clip'),
+              const SizedBox(height: 14),
+              if (_microphone)
+                Row(
+                  children: [
+                    if (_stream != null) ...[
+                      const StatusDot(),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: Text(
+                        _stream == null
+                            ? 'Starting the microphone…'
+                            : 'Listening: each 0.975 s window is classified '
+                                  'as it arrives, newest first.',
+                        style: TextStyle(color: c.soft, fontSize: Sizes.sm),
+                      ),
                     ),
-                  ChoiceChip(
-                    avatar: const Icon(Icons.upload, size: 18),
-                    label: Text(_uploadedClip?.name ?? 'Upload WAV'),
-                    selected: _uploadedClip != null,
-                    onSelected: _busy ? null : (_) => _uploadClip(),
-                  ),
-                ],
-              ),
-              if (audio != null && !_microphone)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
+                  ],
+                )
+              else ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final MapEntry(key: file, value: label)
+                        in _clips.entries)
+                      Segmented<bool>(
+                        segments: [
+                          (value: true, label: label, icon: null, key: null),
+                        ],
+                        selected: _uploadedClip == null && _clip == file,
+                        onChanged: _busy
+                            ? null
+                            : (_) {
+                                setState(() {
+                                  _clip = file;
+                                  _uploadedClip = null;
+                                });
+                                unawaited(_run());
+                              },
+                      ),
+                    Segmented<bool>(
+                      segments: [
+                        (
+                          value: true,
+                          label: _uploadedClip?.name ?? 'Upload WAV',
+                          icon: LucideIcons.upload,
+                          key: null,
+                        ),
+                      ],
+                      selected: _uploadedClip != null,
+                      onChanged: _busy ? null : (_) => _uploadClip(),
+                    ),
+                  ],
+                ),
+                if (audio != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
                     '${(audio.samples.length / audio.channels / audio.sampleRate).toStringAsFixed(2)} s · '
                     '${audio.sampleRate.round()} Hz · '
                     '${audio.channels} channel${audio.channels == 1 ? '' : 's'}',
-                    style: theme.textTheme.bodySmall,
+                    style: muted,
                   ),
-                ),
+                ],
+              ],
             ],
-            const SizedBox(height: 20),
-            if (_busy) const LinearProgressIndicator(),
-            if (_error case final error?)
-              Text(error, style: TextStyle(color: theme.colorScheme.error))
-            else ...[
-              if (_milliseconds case final ms?)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    'Done in ${ms.toStringAsFixed(1)} ms',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
-              for (final chunk
-                  in _microphone
-                      ? _heard
-                      : _chunks ?? const <AudioClassifierResult>[])
-                Card.outlined(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+          ),
+        ),
+        FeedStatus(
+          parts: [
+            if (_busy) 'Classifying…',
+            if (!_busy && _milliseconds != null)
+              'Done in ${_milliseconds!.toStringAsFixed(1)} ms',
+          ],
+          delegate: 'CPU',
+        ),
+        const SizedBox(height: 11),
+        if (_error case final error?)
+          OutputCard(
+            title: 'Error',
+            child: Text(
+              error,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: Sizes.sm,
+              ),
+            ),
+          )
+        else
+          OutputCard(
+            title: _microphone ? 'Heard' : 'Sounds over time',
+            count: chunks.isEmpty
+                ? null
+                : '${chunks.length} window${chunks.length == 1 ? '' : 's'}',
+            empty: _microphone
+                ? 'Waiting for the first window.'
+                : 'Choose a clip to classify it.',
+            child: chunks.isEmpty
+                ? null
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final (i, chunk) in chunks.indexed) ...[
+                        if (i > 0) const SizedBox(height: 22),
                         Text(
                           '${(chunk.timestampMs / 1000).toStringAsFixed(2)} s',
-                          style: theme.textTheme.labelLarge,
+                          style: eyebrowStyle(context),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 12),
                         if (chunk.categories.isEmpty)
                           Text(
                             'Nothing above the score threshold.',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        for (final category in chunk.categories)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(child: Text(category.name ?? '')),
-                                    Text(category.score.toStringAsFixed(3)),
-                                  ],
-                                ),
-                                const SizedBox(height: 3),
-                                LinearProgressIndicator(value: category.score),
-                              ],
-                            ),
-                          ),
+                            style: muted,
+                          )
+                        else
+                          ScoreBars([
+                            for (final category in chunk.categories)
+                              (
+                                name: category.name ?? '',
+                                value: category.score,
+                              ),
+                          ]),
                       ],
-                    ),
+                    ],
                   ),
-                ),
-            ],
-          ],
-        ),
-      ),
-      settings: _panel(),
+          ),
+      ],
     );
   }
 }

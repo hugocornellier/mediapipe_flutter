@@ -25,6 +25,7 @@ TEXT = REPO / 'packages/mediapipe-task-text'
 AUDIO = REPO / 'packages/mediapipe-task-audio'
 
 CAMERA_REASON = 'Show live face, hand and pose landmarks from your camera.'
+PHOTO_REASON = 'Choose a photo for the still image demos.'
 
 
 def set_plist_key(path, key, value):
@@ -106,6 +107,9 @@ SAMPLES = {
     'landmark_tasks/thumb_up.jpg': 'thumb_up.jpg',
     'interactive_segmentation/cats_and_dogs.jpg': 'animals.jpg',
 }
+# The photos Google's Image Embedding demo compares, which the gallery keeps
+# with their provenance in samples/README.md.
+EMBEDDER_SAMPLES = ['dog.jpg', 'cat.png', 'elephant.png']
 
 MODELS = {
     'face_detector': ('blazeFaceShortRange', 'blaze_face_short_range.tflite'),
@@ -263,6 +267,10 @@ def prepare(target, selected):
     audio_samples = AUDIO_SAMPLES if 'audio_classifier' in bundled else []
     for name in audio_samples:
         shutil.copyfile(AUDIO / 'test/fixtures' / name, samples / name)
+    embedder_samples = EMBEDDER_SAMPLES if 'image_embedder' in bundled else []
+    for name in embedder_samples:
+        shutil.copyfile(GALLERY / 'samples' / name, samples / name)
+    sample_names = sorted([*SAMPLES.values(), *audio_samples, *embedder_samples])
 
     # On macOS, Google's engine is opt-in (95 MB); anything but the face pair
     # needs it, and Face Landmarker then runs on it too.
@@ -275,7 +283,7 @@ def prepare(target, selected):
         'target': target,
         'tasks': sorted(bundled),
         'models': bundled,
-        'samples': sorted([*SAMPLES.values(), *audio_samples]),
+        'samples': sample_names,
         'official_macos_landmark_tasks': sorted(
             OFFICIAL_MACOS_TASKS & bundled.keys()) if macos_engine else [],
         'official_ios_sdk': '1.0.1' if target.startswith('ios') else None,
@@ -286,8 +294,7 @@ def prepare(target, selected):
 
     entries = '\n'.join(
         [f'    - assets/models/{name}' for name in sorted(bundled.values())]
-        + [f'    - assets/samples/{name}'
-           for name in sorted([*SAMPLES.values(), *audio_samples])])
+        + [f'    - assets/samples/{name}' for name in sample_names])
     # camera_desktop supplies native desktop preview and raw image streaming;
     # camera itself supplies the mobile implementations.
     camera = ('  camera: ^0.12.1\n  camera_desktop: ^1.2.2'
@@ -323,11 +330,16 @@ dependencies:
   mediapipe_audio:
     path: ../packages/mediapipe-task-audio
   web: ^1.1.1
-  # Verifies downloaded models; picks a model file to upload; records the
-  # Audio Classifier demo's microphone.
+  # Verifies downloaded models; picks a model file to upload; picks a still
+  # image from a phone's photo library; records the Audio Classifier demo's
+  # microphone.
   crypto: ^3.0.6
   file_selector: ^1.0.3
+  image_picker: ^1.2.2
   record: ^7.1.1
+  url_launcher: ^6.3.2
+  # The gallery's icons, as its design uses (ISC).
+  lucide_icons_flutter: ^3.1.20
 {camera}
 
 dev_dependencies:
@@ -345,6 +357,16 @@ hooks:
 
 flutter:
   uses-material-design: true
+  # Arimo (OFL, fonts/OFL.txt) has Arial's metrics, the design's typeface,
+  # and renders the same on every platform including the web.
+  fonts:
+    - family: Arimo
+      fonts:
+        - asset: fonts/Arimo-400.ttf
+        - asset: fonts/Arimo-600.ttf
+          weight: 600
+        - asset: fonts/Arimo-700.ttf
+          weight: 700
   assets:
     - assets/manifest.json
 {entries}
@@ -380,6 +402,10 @@ def pin_architecture(target):
         # supports; flutter create defaults below it.
         set_plist_key(GALLERY / 'ios/Runner/Info.plist',
                       'NSCameraUsageDescription', CAMERA_REASON)
+        # The still image demos pick from the photo library. Without full
+        # metadata iOS never asks, but the key must still be declared.
+        set_plist_key(GALLERY / 'ios/Runner/Info.plist',
+                      'NSPhotoLibraryUsageDescription', PHOTO_REASON)
         project = GALLERY / 'ios/Runner.xcodeproj/project.pbxproj'
         if project.exists():
             settings = project.read_text()

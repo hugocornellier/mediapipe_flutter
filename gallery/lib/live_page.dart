@@ -1,25 +1,28 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'catalog.dart';
-import 'gallery_content_surface.dart';
-import 'gallery_task_header.dart';
-import 'gallery_theme.dart';
-import 'gallery_settings_scaffold.dart';
 import 'live/live_camera_controller.dart';
 import 'live/camera_geometry.dart';
-import 'live/embedding_similarity.dart';
 import 'live/live_camera_view.dart';
 import 'live/live_registry.dart';
+import 'live/mask_overlay.dart';
+import 'live/overlay_visibility.dart';
+import 'live/speed_history.dart';
+import 'live/still_image.dart';
 import 'live/task_models.dart';
 import 'live/task_settings.dart';
+import 'live/live_output.dart';
 import 'live/task_settings_panel.dart';
+import 'ui/components.dart';
+import 'ui/design.dart';
+import 'ui/speed_chart.dart';
+import 'ui/workspace.dart';
 
 /// One live camera demo, whichever task the tile names.
 ///
@@ -35,7 +38,6 @@ class LivePage extends StatefulWidget {
     this.initialStillImage = false,
     this.stillImagePicker,
     this.onOpenMenu,
-    this.framed = false,
   });
 
   final GalleryTask task;
@@ -44,14 +46,12 @@ class LivePage extends StatefulWidget {
   final bool initialStillImage;
   final Future<XFile?> Function()? stillImagePicker;
   final VoidCallback? onOpenMenu;
-  final bool framed;
 
   @override
   State<LivePage> createState() => _LivePageState();
 }
 
 class _LivePageState extends State<LivePage> {
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
   late final LiveDemo _demo = liveDemoFor(widget.task.id)!;
   late final LiveTask<Object?> _task = _demo.task();
   late final LiveCameraController<Object?> _controller =
@@ -72,7 +72,57 @@ class _LivePageState extends State<LivePage> {
   void setState(VoidCallback fn) {
     super.setState(fn);
     _revision.value++;
+    _refreshMask();
   }
+
+  /// Image Segmenter draws its mask as Google's demo does, with a legend,
+  /// rather than with the connections other tasks draw.
+  bool get _segmenter => widget.task.runtimeId == 'image_segmenter';
+  final _masks = SegmentationMaskImages();
+
+  /// The result on screen: the still image's, or the camera's newest.
+  Object? get _shownResult =>
+      _mode == _VisionInputMode.image ? _imageResult : _controller.result;
+
+  List<String> get _labels => switch (_shownResult) {
+    SegmentationResult(:final labels) => labels,
+    _ => const [],
+  };
+
+  bool get _confidenceMasks =>
+      _segmenter && _task.settings.choice('outputConfidenceMasks') == 1;
+
+  /// Builds the mask image for the result on screen in the chosen style.
+  void _refreshMask() {
+    if (!_segmenter) return;
+    _masks.show(
+      _shownResult is SegmentationResult
+          ? _shownResult! as SegmentationResult
+          : null,
+      (
+        confidence: _confidenceMasks,
+        selectedClass: _task.settings.choice('confidenceClass'),
+      ),
+    );
+  }
+
+  CustomPainter _overlay(Object? result, PreviewTransform transform) =>
+      _segmenter
+      ? MaskOverlay(
+          _masks,
+          transform: transform,
+          opacity: _task.settings.share('opacity'),
+        )
+      : _demo.overlay(result, transform, _showConnections, _showPoints);
+
+  /// Google's color legend under the view, while classes are colored.
+  List<Widget> _legend() => [
+    if (_segmenter && !_confidenceMasks && _labels.isNotEmpty)
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: SegmenterLegend(_labels),
+      ),
+  ];
 
   late final List<VisionDelegate> _delegates =
       widget.task
@@ -83,8 +133,20 @@ class _LivePageState extends State<LivePage> {
 
   String? _error;
   bool _autoStarted = false;
-  bool _showConnections = true;
-  bool _showPoints = false;
+
+  /// Each frame's inference time since the page opened, for the Stats chart.
+  final _speed = SpeedHistory();
+  final _speedClock = Stopwatch()..start();
+  int _speedFrames = 0;
+  bool _showStats = false;
+
+  /// Bumped after every build. On phones Output and Stats open as dialogs,
+  /// routes of their own, and follow the page through this.
+  final _dialogRevision = ValueNotifier(0);
+
+  /// Overlays draw connections and boxes without individual points.
+  bool get _showConnections => !debugHideOverlay;
+  static const _showPoints = false;
   late _VisionInputMode _mode = widget.initialStillImage && _hasImageMode
       ? _VisionInputMode.image
       : _VisionInputMode.camera;
@@ -113,6 +175,18 @@ class _LivePageState extends State<LivePage> {
   }
 
   void _onControllerChanged() {
+    final frames = _controller.processedFrames;
+    if (frames != _speedFrames) {
+      _speedFrames = frames;
+      // One notification per processed frame; a restart counts from zero.
+      if (frames > 0 && _controller.running) {
+        _speed.add(
+          _controller.delegate,
+          _controller.inferenceMilliseconds,
+          _speedClock.elapsed,
+        );
+      }
+    }
     if (mounted) setState(() {});
   }
 
@@ -147,6 +221,8 @@ class _LivePageState extends State<LivePage> {
     _controller.close();
     _controller.dispose();
     _revision.dispose();
+    _masks.dispose();
+    _dialogRevision.dispose();
     super.dispose();
   }
 
@@ -169,9 +245,13 @@ class _LivePageState extends State<LivePage> {
   }
 
   /// Rebuilds a running task with the changed value, as a delegate change
-  /// does; a stopped one picks it up when it starts.
+  /// does; a stopped one picks it up when it starts. A display setting only
+  /// redraws.
   void _setSetting(String key, Object value) {
     setState(() => _task.settings[key] = value);
+    if (_settings.any((setting) => setting.key == key && setting.display)) {
+      return;
+    }
     _restartCurrentMode();
   }
 
@@ -216,7 +296,12 @@ class _LivePageState extends State<LivePage> {
     try {
       final file = await openFile(
         acceptedTypeGroups: const [
-          XTypeGroup(label: 'MediaPipe models', extensions: ['tflite', 'task']),
+          XTypeGroup(
+            label: 'MediaPipe models',
+            extensions: ['tflite', 'task'],
+            // iOS filters by type, and models have none of their own.
+            uniformTypeIdentifiers: ['public.data'],
+          ),
         ],
       );
       if (file == null) return;
@@ -250,14 +335,11 @@ class _LivePageState extends State<LivePage> {
       modelStatus: _modelStatus,
       onModel: _chooseModel,
       onUpload: _upload,
-      connections: _showConnections,
-      points: _showPoints,
-      onConnections: (value) => setState(() => _showConnections = value),
-      onPoints: (value) => setState(() => _showPoints = value),
+      bundledModel: widget.task.model,
+      standardModel: standardModelNames[widget.task.runtimeId] ?? 'Standard',
+      labels: _labels,
     ),
   );
-
-  void _openSettings() => _scaffoldKey.currentState?.openEndDrawer();
 
   Future<void> _flipCamera() async {
     try {
@@ -310,56 +392,24 @@ class _LivePageState extends State<LivePage> {
   Future<void> _chooseImage() async {
     final modeRevision = _modeRevision;
     try {
-      final file =
-          await (widget.stillImagePicker?.call() ??
-              openFile(
-                acceptedTypeGroups: const [
-                  XTypeGroup(
-                    label: 'Images',
-                    extensions: ['jpg', 'jpeg', 'png', 'webp'],
-                  ),
-                ],
-              ));
+      final file = await (widget.stillImagePicker?.call() ?? pickStillImage());
       if (file == null) return;
       final bytes = await file.readAsBytes();
-      final codec = await ui.instantiateImageCodec(bytes);
-      try {
-        final frame = await codec.getNextFrame();
-        final image = frame.image;
-        try {
-          final rgba = await image.toByteData(
-            format: ui.ImageByteFormat.rawRgba,
-          );
-          if (rgba == null) throw StateError('Could not decode this image.');
-          final input = VisionImage.fromPixels(
-            pixels: rgba.buffer.asUint8List(
-              rgba.offsetInBytes,
-              rgba.lengthInBytes,
-            ),
-            width: image.width,
-            height: image.height,
-            format: VisionPixelFormat.rgba,
-          );
-          if (!mounted ||
-              _mode != _VisionInputMode.image ||
-              modeRevision != _modeRevision) {
-            return;
-          }
-          setState(() {
-            _imageBytes = bytes;
-            _imageInput = input;
-            _imageSize = Size(image.width.toDouble(), image.height.toDouble());
-            _imageName = file.name;
-            _imageResult = null;
-            _imageError = null;
-          });
-          unawaited(_detectImage());
-        } finally {
-          image.dispose();
-        }
-      } finally {
-        codec.dispose();
+      final still = await decodeStillImage(bytes);
+      if (!mounted ||
+          _mode != _VisionInputMode.image ||
+          modeRevision != _modeRevision) {
+        return;
       }
+      setState(() {
+        _imageBytes = bytes;
+        _imageInput = still.input;
+        _imageSize = still.size;
+        _imageName = file.name;
+        _imageResult = null;
+        _imageError = null;
+      });
+      unawaited(_detectImage());
     } on Object catch (error) {
       if (mounted &&
           _mode == _VisionInputMode.image &&
@@ -468,8 +518,6 @@ class _LivePageState extends State<LivePage> {
       '${detections.length} ${detections.length == 1 ? 'object' : 'objects'} detected',
     ImageClassifierResult(:final classifications) =>
       '${classifications.firstOrNull?.categories.length ?? 0} classes returned',
-    EmbeddingSimilarity(:final result) =>
-      '${result.embeddings.length} embeddings generated',
     SegmentationResult(:final categoryMask) =>
       categoryMask == null
           ? 'No category mask returned'
@@ -477,321 +525,299 @@ class _LivePageState extends State<LivePage> {
     _ => 'Analysis complete',
   };
 
+  String get _id => widget.task.runtimeId.replaceAll('_', '-');
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final controller = _controller;
-    final busy = controller.changing;
-    // Wide layouts keep settings beside the preview; compact ones use a drawer.
-    final wide = MediaQuery.sizeOf(context).width >= 900;
-    // Phones cannot fit the centered header beside the actions, so the title
-    // takes the toolbar's own slot and truncates instead of being overdrawn.
-    final compact = MediaQuery.sizeOf(context).width < 600;
-    return GallerySettingsScaffold(
-      scaffoldKey: _scaffoldKey,
-      framed: widget.framed,
-      wide: wide,
-      appBar: AppBar(
-        primary: !wide,
-        automaticallyImplyLeading: false,
-        leading: widget.onOpenMenu == null
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.menu),
-                tooltip: 'Open navigation',
-                onPressed: widget.onOpenMenu,
-              ),
-        title: compact
-            ? Text(
-                widget.task.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              )
-            : null,
-        flexibleSpace: compact
-            ? null
-            : GalleryTaskHeader(taskTitle: widget.task.title),
-        actions: [
-          if (!wide)
-            IconButton(
-              icon: const Icon(Icons.tune),
-              tooltip: 'Settings',
-              onPressed: _openSettings,
-            ),
-          if (_hasImageMode)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!compact) ...[
-                    Text('MODE', style: GalleryTheme.label(theme)),
-                    const SizedBox(width: 8),
-                  ],
-                  DropdownButtonHideUnderline(
-                    child: Semantics(
-                      identifier:
-                          '${widget.task.runtimeId.replaceAll('_', '-')}-mode',
-                      child: DropdownButton<_VisionInputMode>(
-                        key: ValueKey(
-                          '${widget.task.runtimeId.replaceAll('_', '-')}-mode',
-                        ),
-                        style: compact ? theme.textTheme.bodyMedium : null,
-                        value: _mode,
-                        items: const [
-                          DropdownMenuItem(
-                            value: _VisionInputMode.camera,
-                            child: Text('Camera'),
-                          ),
-                          DropdownMenuItem(
-                            value: _VisionInputMode.image,
-                            child: Text('Still image'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) unawaited(_setMode(value));
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-      content: GalleryContentSurface(
-        framed: widget.framed,
-        child: _mode == _VisionInputMode.image
-            ? _stillImage(theme, wide)
-            : _camera(theme, controller, busy, wide),
-      ),
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _dialogRevision.value++;
+    });
+    return TaskWorkspace(
+      title: widget.task.title,
+      onOpenMenu: widget.onOpenMenu,
       settings: _panel(),
+      children: [
+        TaskToolbar(
+          task: widget.task,
+          leading: _hasImageMode
+              ? Segmented<_VisionInputMode>(
+                  semanticsIdentifier: '$_id-mode',
+                  key: ValueKey('$_id-mode'),
+                  segments: [
+                    (
+                      value: _VisionInputMode.camera,
+                      label: 'Camera',
+                      icon: LucideIcons.video,
+                      key: ValueKey('$_id-mode-camera'),
+                    ),
+                    (
+                      value: _VisionInputMode.image,
+                      label: 'Still image',
+                      icon: LucideIcons.upload,
+                      key: ValueKey('$_id-mode-image'),
+                    ),
+                  ],
+                  selected: _mode,
+                  onChanged: (mode) => unawaited(_setMode(mode)),
+                )
+              : null,
+        ),
+        if (_mode == _VisionInputMode.image)
+          ..._stillImage()
+        else
+          ..._camera(_controller),
+        ..._legend(),
+        if (!_phone) ...[const SizedBox(height: 22), _outputCard()],
+      ],
     );
   }
 
-  Widget _stillImage(ThemeData theme, bool wide) => Column(
-    children: [
-      Expanded(
-        child: Container(
-          color: GalleryTheme.preview,
-          width: double.infinity,
-          child: _imageBytes == null || _imageSize == null
-              ? Center(
-                  child: Text(
-                    _imageError ?? 'Choose an image to analyze.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: GalleryTheme.white),
-                  ),
-                )
-              : Center(
-                  child: AspectRatio(
-                    aspectRatio: _imageSize!.width / _imageSize!.height,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.memory(_imageBytes!, fit: BoxFit.fill),
-                        LayoutBuilder(
-                          builder: (context, constraints) => CustomPaint(
-                            key: ValueKey(
-                              '${widget.task.runtimeId.replaceAll('_', '-')}-still-overlay',
-                            ),
-                            painter: _demo.overlay(
-                              _imageResult,
-                              PreviewTransform.fit(
-                                frameSize: _imageSize!,
-                                rotationDegrees: 0,
-                                viewSize: constraints.biggest,
-                                mirror: false,
-                              ),
-                              _showConnections,
-                              _showPoints,
-                            ),
-                          ),
-                        ),
-                        if (_imageBusy)
-                          const Center(child: CircularProgressIndicator()),
-                      ],
-                    ),
-                  ),
-                ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            if (_imageError != null && _imageBytes != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  _imageError!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            if (_imageName != null)
-              Text(_imageName!, maxLines: 1, overflow: TextOverflow.ellipsis),
-            if (_imageResult != null) Text(_imageSummary(_imageResult!)),
-            // Which delegate produced this result, so switching shows a change.
-            if (_imageResult != null && _imageMilliseconds != null)
-              Text(
-                'Inference ${_imageMilliseconds!.toStringAsFixed(1)} ms on '
-                '${_imageDelegate == VisionDelegate.gpu ? 'GPU' : 'CPU'}',
-                style: theme.textTheme.bodySmall,
-              ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                FilledButton.icon(
-                  onPressed: _chooseImage,
-                  icon: const Icon(Icons.add_photo_alternate_outlined),
-                  label: Text(
-                    _imageBytes == null ? 'Choose image' : 'Change image',
-                  ),
-                ),
-                if (!wide && _delegates.length > 1)
-                  SegmentedButton<VisionDelegate>(
-                    segments: [
-                      for (final delegate in _delegates)
-                        ButtonSegment(
-                          value: delegate,
-                          label: Text(
-                            delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
-                          ),
-                        ),
-                    ],
-                    selected: {_controller.delegate},
-                    onSelectionChanged: _imageBusy
-                        ? null
-                        : (selection) => _setDelegate(selection.first),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
+  /// Phones keep the screen for the feed: Output and Stats open as dialogs.
+  bool get _phone => MediaQuery.sizeOf(context).width < Sizes.compact;
 
-  Widget _camera(
-    ThemeData theme,
-    LiveCameraController<Object?> controller,
-    bool busy,
-    bool wide,
-  ) => Column(
-    children: [
-      Expanded(
-        child: Container(
-          color: GalleryTheme.preview,
-          width: double.infinity,
-          child: LiveCameraView(
-            controller: controller,
-            showConnections: _showConnections,
-            showPoints: _showPoints,
-            painter: (transform) => _demo.overlay(
-              controller.result,
-              transform,
-              _showConnections,
-              _showPoints,
+  /// The label size of the Output and Stats buttons on a phone.
+  static const _phoneButtonText = 12.0;
+
+  /// Opens a card over the page on a phone, rebuilt as the page changes.
+  Future<void> _showDialogCard(Widget Function(VoidCallback close) card) =>
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 48,
+          ),
+          child: SingleChildScrollView(
+            child: ValueListenableBuilder<int>(
+              valueListenable: _dialogRevision,
+              builder: (context, _, _) =>
+                  card(() => Navigator.of(dialogContext).pop()),
             ),
-            foreground: controller.canSwitchCamera
-                ? Align(
-                    alignment: Alignment.bottomRight,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: IconButton.filled(
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.black54,
-                          foregroundColor: GalleryTheme.white,
-                        ),
-                        icon: Icon(
-                          defaultTargetPlatform == TargetPlatform.iOS
-                              ? Icons.flip_camera_ios
-                              : Icons.flip_camera_android,
-                        ),
-                        tooltip: controller.isFrontCamera
-                            ? 'Switch to back camera'
-                            : 'Switch to front camera',
-                        onPressed: busy ? null : _flipCamera,
-                      ),
-                    ),
-                  )
-                : null,
-            placeholder: switch (_error ?? controller.error) {
-              final String error => Text(
-                error,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: GalleryTheme.white),
-              ),
-              null => const CircularProgressIndicator(),
-            },
           ),
         ),
-      ),
-      Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      );
+
+  Widget _outputButton() => OutlineButton(
+    key: ValueKey('$_id-output-button'),
+    icon: LucideIcons.listChecks,
+    label: 'Output',
+    tooltip: 'Show output',
+    fontSize: _phoneButtonText,
+    onPressed: () => _showDialogCard((close) => _outputCard(onClose: close)),
+  );
+
+  Widget _outputCard({VoidCallback? onClose}) {
+    final result = _shownResult;
+    final output = liveOutput(result);
+    if (output == null) {
+      return OutputCard(
+        title: 'Results',
+        empty: _mode == _VisionInputMode.image
+            ? 'Choose an image to see what the task finds.'
+            : 'Results appear once the camera runs.',
+        onClose: onClose,
+      );
+    }
+    return OutputCard(
+      key: ValueKey('$_id-output'),
+      title: output.title,
+      count: output.count,
+      items: output.items,
+      empty: output.empty,
+      onClose: onClose,
+    );
+  }
+
+  List<Widget> _stillImage() {
+    final bytes = _imageBytes;
+    final size = _imageSize;
+    if (bytes == null || size == null) {
+      return [
+        StillCard(
+          onChoose: _chooseImage,
+          message: _imageError,
+          error: _imageError != null,
+        ),
+      ];
+    }
+    final result = _imageResult;
+    return [
+      FeedFrame(
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            if (controller.notice case final notice?)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  notice,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            if (controller.running)
-              Text(
-                '${controller.recentFramesPerSecond.toStringAsFixed(1)} fps  ·  '
-                '${controller.recentFrameMilliseconds.toStringAsFixed(1)} ms '
-                'per frame over the last ${controller.recentFrames} '
-                '${controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'} '
-                'frames\n'
-                'inference ${controller.recentInferenceMilliseconds.toStringAsFixed(1)} ms  ·  '
-                'convert ${controller.recentConversionMilliseconds.toStringAsFixed(2)} ms  ·  '
-                '${controller.skippedFrames} skipped',
-                style: theme.textTheme.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                if (!wide && _delegates.length > 1)
-                  SegmentedButton<VisionDelegate>(
-                    segments: [
-                      for (final delegate in _delegates)
-                        ButtonSegment(
-                          value: delegate,
-                          label: Text(
-                            delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+            Center(
+              child: AspectRatio(
+                aspectRatio: size.width / size.height,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.memory(bytes, fit: BoxFit.fill),
+                    LayoutBuilder(
+                      builder: (context, constraints) => CustomPaint(
+                        key: ValueKey('$_id-still-overlay'),
+                        painter: _overlay(
+                          result,
+                          PreviewTransform.fit(
+                            frameSize: size,
+                            rotationDegrees: 0,
+                            viewSize: constraints.biggest,
+                            mirror: false,
                           ),
                         ),
-                    ],
-                    selected: {controller.delegate},
-                    onSelectionChanged: busy
-                        ? null
-                        : (selection) => _setDelegate(selection.first),
-                  ),
-              ],
+                      ),
+                    ),
+                    if (_imageBusy)
+                      const Center(child: CircularProgressIndicator()),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              left: 14,
+              bottom: 14,
+              child: FeedButton(
+                icon: LucideIcons.imageUp,
+                tooltip: 'Change image',
+                onPressed: _chooseImage,
+              ),
             ),
           ],
         ),
       ),
-    ],
-  );
+      FeedStatus(
+        parts: [
+          ?_imageName,
+          if (result != null) _imageSummary(result),
+          if (result != null && _imageMilliseconds != null)
+            'Inference ${_imageMilliseconds!.toStringAsFixed(1)} ms',
+        ],
+        delegate: result != null && _imageMilliseconds != null
+            ? (_imageDelegate == VisionDelegate.gpu ? 'GPU' : 'CPU')
+            : null,
+        trailing: _phone ? _outputButton() : null,
+      ),
+      if (_imageError case final error?)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            error,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+              fontSize: Sizes.sm,
+            ),
+          ),
+        ),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlineButton(
+          icon: LucideIcons.upload,
+          label: 'Change image',
+          tooltip: 'Choose another image',
+          onPressed: _chooseImage,
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _camera(LiveCameraController<Object?> controller) {
+    final error = _error ?? controller.error;
+    final phone = _phone;
+    final stats = OutlineButton(
+      key: ValueKey('$_id-stats'),
+      icon: LucideIcons.chartLine,
+      label: 'Stats',
+      tooltip: phone || !_showStats ? 'Show stats' : 'Hide stats',
+      // On a phone Stats matches Output beside it.
+      bordered: phone || _showStats,
+      fontSize: phone ? _phoneButtonText : Sizes.md,
+      onPressed: phone
+          ? () => _showDialogCard(
+              (close) => StatsCard(
+                key: ValueKey('$_id-stats-card'),
+                history: _speed,
+                delegates: _delegates,
+                onClose: close,
+              ),
+            )
+          : () => setState(() => _showStats = !_showStats),
+    );
+    return [
+      FeedFrame(
+        // A phone shows the camera at its own upright shape, as tall as the
+        // screen allows, rather than a wide frame with bars beside it.
+        aspectRatio: phone ? controller.previewAspect ?? 3 / 4 : 16 / 9,
+        maxHeight: phone ? MediaQuery.sizeOf(context).height * .62 : null,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            LiveCameraView(
+              controller: controller,
+              showConnections: _showConnections,
+              showPoints: _showPoints,
+              painter: (transform) => _overlay(controller.result, transform),
+              placeholder: switch (error) {
+                final String error => Text(
+                  error,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Color(0xFFF0F3F2)),
+                ),
+                null => const CircularProgressIndicator(),
+              },
+            ),
+            if (controller.canSwitchCamera)
+              Positioned(
+                left: 14,
+                bottom: 14,
+                child: FeedButton(
+                  icon: LucideIcons.switchCamera,
+                  tooltip: controller.isFrontCamera
+                      ? 'Switch to back camera'
+                      : 'Switch to front camera',
+                  onPressed: controller.changing ? null : _flipCamera,
+                ),
+              ),
+          ],
+        ),
+      ),
+      FeedStatus(
+        parts: controller.running
+            ? [
+                '${controller.recentFramesPerSecond.toStringAsFixed(1)} fps',
+                '${controller.recentInferenceMilliseconds.toStringAsFixed(0)} ms',
+              ]
+            : const ['Stopped'],
+        delegate: controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+        trailing: phone
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [_outputButton(), const SizedBox(width: 8), stats],
+              )
+            : stats,
+      ),
+      if (controller.notice case final notice?)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            notice,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+              fontSize: Sizes.xs,
+            ),
+          ),
+        ),
+      if (_showStats && !phone) ...[
+        const SizedBox(height: 10),
+        StatsCard(
+          key: ValueKey('$_id-stats-card'),
+          history: _speed,
+          delegates: _delegates,
+        ),
+      ],
+    ];
+  }
 }
 
 enum _VisionInputMode { camera, image }

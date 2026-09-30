@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
-import 'embedding_similarity.dart';
 import 'live_camera_controller.dart';
 import 'task_settings.dart';
 
@@ -34,6 +33,8 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
         ),
         minFacePresenceConfidence: settings.share('minFacePresenceConfidence'),
         minTrackingConfidence: settings.share('minTrackingConfidence'),
+        // Scored in the Output card, as Google's demo lists them.
+        outputFaceBlendshapes: true,
       ),
     );
   }
@@ -439,73 +440,8 @@ final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
   }
 }
 
-/// Image Embedder, reporting each frame's similarity to the first one.
-final class ImageEmbedderLiveTask
-    implements LiveTask<EmbeddingSimilarity>, StatefulLiveTask {
-  @override
-  final settings = TaskSettingValues('image_embedder');
-
-  ImageEmbedder? _task;
-  VisionEmbedding? _first;
-
-  @override
-  void forgetFrames() => _first = null;
-
-  @override
-  String get name => 'Image Embedder';
-
-  @override
-  Future<void> open(
-    VisionDelegate delegate,
-    Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
-  }) async {
-    _first = null;
-    _task = await ImageEmbedder.create(
-      ImageEmbedderOptions(
-        delegate: delegate,
-        modelBytes: modelBytes,
-        runningMode: mode,
-        l2Normalize: settings.on('l2Normalize'),
-        quantize: settings.on('quantize'),
-      ),
-    );
-  }
-
-  @override
-  Future<EmbeddingSimilarity> detectImage(VisionImage image) async {
-    final result = await _task!.embedImage(image);
-    return EmbeddingSimilarity(result, null);
-  }
-
-  @override
-  Future<EmbeddingSimilarity> detect(
-    VisionImage frame,
-    int timestamp, {
-    required int rotationDegrees,
-  }) async {
-    final result = await _task!.embedForVideo(
-      frame,
-      timestampMilliseconds: timestamp,
-      rotationDegrees: rotationDegrees,
-    );
-    final embedding = result.embeddings.first;
-    final first = _first ??= embedding;
-    return EmbeddingSimilarity(
-      result,
-      ImageEmbedder.cosineSimilarity(first, embedding),
-    );
-  }
-
-  @override
-  Future<void> close() async {
-    final task = _task;
-    _task = null;
-    await task?.dispose();
-  }
-}
-
-/// Image Segmenter, returning only the category mask the overlay draws.
+/// Image Segmenter, returning the category mask and, for Output Type
+/// Confidence Mask, the confidence masks.
 final class ImageSegmenterLiveTask implements LiveTask<SegmentationResult> {
   @override
   final settings = TaskSettingValues('image_segmenter');
@@ -526,7 +462,7 @@ final class ImageSegmenterLiveTask implements LiveTask<SegmentationResult> {
         delegate: delegate,
         modelBytes: modelBytes,
         runningMode: mode,
-        outputConfidenceMasks: false,
+        outputConfidenceMasks: settings.choice('outputConfidenceMasks') == 1,
         outputCategoryMask: true,
       ),
     );

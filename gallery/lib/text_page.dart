@@ -3,31 +3,26 @@ import 'dart:async';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:mediapipe_vision/capabilities.dart';
 
 import 'catalog.dart';
-import 'gallery_content_surface.dart';
-import 'gallery_task_header.dart';
-import 'gallery_settings_scaffold.dart';
 import 'live/task_models.dart';
 import 'live/task_settings.dart';
 import 'live/task_settings_panel.dart';
+import 'ui/components.dart';
+import 'ui/design.dart';
+import 'ui/workspace.dart';
 
 /// A text task on typed input, laid out as the live demos are: the input and
 /// its results beside the same settings panel, with MediaPipe Studio's
 /// settings and model selection.
 class TextPage extends StatefulWidget {
-  const TextPage({
-    super.key,
-    required this.task,
-    this.onOpenMenu,
-    this.framed = false,
-  });
+  const TextPage({super.key, required this.task, this.onOpenMenu});
 
   final GalleryTask task;
   final VoidCallback? onOpenMenu;
-  final bool framed;
 
   @override
   State<TextPage> createState() => _TextPageState();
@@ -37,7 +32,6 @@ class TextPage extends StatefulWidget {
 typedef _Row = ({String label, double score});
 
 class _TextPageState extends State<TextPage> {
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
   late final String _id = widget.task.runtimeId;
   late final TaskSettingValues _values = TaskSettingValues(_id);
   late final List<TaskSetting> _settings = taskSettings[_id] ?? const [];
@@ -216,7 +210,12 @@ class _TextPageState extends State<TextPage> {
     try {
       final file = await openFile(
         acceptedTypeGroups: const [
-          XTypeGroup(label: 'MediaPipe models', extensions: ['tflite', 'task']),
+          XTypeGroup(
+            label: 'MediaPipe models',
+            extensions: ['tflite', 'task'],
+            // iOS filters by type, and models have none of their own.
+            uniformTypeIdentifiers: ['public.data'],
+          ),
         ],
       );
       if (file == null) return;
@@ -250,113 +249,97 @@ class _TextPageState extends State<TextPage> {
       modelStatus: _modelStatus,
       onModel: _chooseModel,
       onUpload: _upload,
+      bundledModel: widget.task.model,
     ),
   );
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final wide = MediaQuery.sizeOf(context).width >= 900;
-    return GallerySettingsScaffold(
-      scaffoldKey: _scaffoldKey,
-      framed: widget.framed,
-      wide: wide,
-      appBar: AppBar(
-        primary: !wide,
-        automaticallyImplyLeading: false,
-        leading: widget.onOpenMenu == null
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.menu),
-                tooltip: 'Open navigation',
-                onPressed: widget.onOpenMenu,
-              ),
-        flexibleSpace: GalleryTaskHeader(taskTitle: widget.task.title),
-        actions: [
-          if (!wide)
-            IconButton(
-              icon: const Icon(Icons.tune),
-              tooltip: 'Settings',
-              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-            ),
-        ],
-      ),
-      content: GalleryContentSurface(
-        framed: widget.framed,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            TextField(
-              controller: _first,
-              minLines: 3,
-              maxLines: 6,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                labelText: _embedder ? 'First text' : 'Text',
-              ),
-            ),
-            if (_embedder) ...[
-              const SizedBox(height: 12),
-              TextField(
-                controller: _second,
-                minLines: 3,
-                maxLines: 6,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Second text',
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: FilledButton.icon(
-                onPressed: _busy ? null : _run,
-                icon: const Icon(Icons.play_arrow),
-                label: Text(_embedder ? 'Compare' : 'Run'),
-              ),
-            ),
-            const SizedBox(height: 20),
-            if (_busy) const LinearProgressIndicator(),
-            if (_error case final error?)
-              Text(error, style: TextStyle(color: theme.colorScheme.error))
-            else ...[
-              if (_milliseconds case final ms?)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    'Done in ${ms.toStringAsFixed(1)} ms',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
-              if (_embedder && _similarity != null)
-                Text(
-                  'Cosine similarity: ${_similarity!.toStringAsFixed(4)}',
-                  style: theme.textTheme.titleMedium,
-                ),
-              if (!_embedder)
-                for (final row in _rows ?? const <_Row>[])
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(child: Text(row.label)),
-                            Text(row.score.toStringAsFixed(3)),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        LinearProgressIndicator(value: row.score),
-                      ],
-                    ),
-                  ),
-            ],
-          ],
-        ),
-      ),
+    final c = GalleryColors.of(context);
+    Widget field(TextEditingController controller, String label) => TextField(
+      controller: controller,
+      minLines: 3,
+      maxLines: 6,
+      style: TextStyle(color: c.text, fontSize: Sizes.md, height: 1.45),
+      decoration: InputDecoration(labelText: label),
+    );
+    return TaskWorkspace(
+      title: widget.task.title,
+      onOpenMenu: widget.onOpenMenu,
       settings: _panel(),
+      children: [
+        TaskToolbar(task: widget.task),
+        SurfaceCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Eyebrow('Input'),
+              const SizedBox(height: 14),
+              field(_first, _embedder ? 'First text' : 'Text'),
+              if (_embedder) ...[
+                const SizedBox(height: 12),
+                field(_second, 'Second text'),
+              ],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  PrimaryButton(
+                    icon: LucideIcons.play,
+                    label: _embedder ? 'Compare' : 'Run',
+                    onPressed: _busy ? null : _run,
+                  ),
+                  const SizedBox(width: 16),
+                  if (_busy)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else if (_milliseconds case final ms?)
+                    Text(
+                      'Done in ${ms.toStringAsFixed(1)} ms',
+                      style: TextStyle(color: c.muted, fontSize: Sizes.xs),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 22),
+        if (_error case final error?)
+          OutputCard(
+            title: 'Error',
+            child: Text(
+              error,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: Sizes.sm,
+              ),
+            ),
+          )
+        else if (_embedder)
+          OutputCard(
+            title: 'Similarity',
+            count: 'cosine',
+            items: [
+              if (_similarity case final similarity?)
+                (name: 'Cosine similarity', value: similarity),
+            ],
+            empty: 'Compare two texts to see how alike they are.',
+          )
+        else
+          OutputCard(
+            title: _id == 'language_detector' ? 'Languages' : 'Categories',
+            count: _rows == null
+                ? null
+                : '${_rows!.length} result${_rows!.length == 1 ? '' : 's'}',
+            items: [
+              for (final row in _rows ?? const <_Row>[])
+                (name: row.label, value: row.score),
+            ],
+            empty: 'Run the task to see its results.',
+          ),
+      ],
     );
   }
 }

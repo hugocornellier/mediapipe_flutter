@@ -272,11 +272,11 @@ not need to build MediaPipe or copy native libraries into a normal consuming
 app. The first build needs network access for its selected runtime. Browser
 tasks load the pinned JavaScript/WASM distribution from jsDelivr by default.
 
-- [Live gallery](https://hugocornellier.github.io/mediapipe_flutter/) — try
+- [Live gallery](https://hugocornellier.github.io/mediapipe_flutter/): try
   vision, audio and text tasks in a browser.
-- [Gallery setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/gallery/README.md) — run the full Flutter application on a target device.
-- [Face camera example](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/example/README.md) — smaller native app with CPU/GPU switching.
-- [Platform status and known upstream limits](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md) — exact task availability.
+- [Gallery setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/gallery/README.md): run the full Flutter application on a target device.
+- [Face camera example](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/example/README.md): smaller native app with CPU/GPU switching.
+- [Platform status and known upstream limits](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md): exact task availability.
 
 If a Linux container cannot load EGL or OpenGL ES even for CPU inference,
 install `libegl1` and `libgles2`. Windows builds use CPU; Google's Windows

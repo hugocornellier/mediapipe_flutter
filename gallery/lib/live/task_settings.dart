@@ -2,13 +2,18 @@
 /// same task. Each key is the option's name in the task's Dart options class,
 /// and each default is the value the gallery used before settings existed.
 sealed class TaskSetting {
-  const TaskSetting(this.key, this.label);
+  const TaskSetting(this.key, this.label, {this.display = false});
 
-  /// The options field this setting sets.
+  /// The options field this setting sets, or a name of the gallery's own
+  /// for a [display] setting.
   final String key;
 
   /// The label Studio uses for it.
   final String label;
+
+  /// Whether the setting only changes how results are drawn, so changing it
+  /// redraws the overlay without rebuilding the task.
+  final bool display;
 
   Object get initial;
 }
@@ -31,7 +36,12 @@ final class CountSetting extends TaskSetting {
 
 /// A value between 0 and 1, such as a confidence or a score threshold.
 final class ShareSetting extends TaskSetting {
-  const ShareSetting(super.key, super.label, {this.initial = 0.5});
+  const ShareSetting(
+    super.key,
+    super.label, {
+    this.initial = 0.5,
+    super.display,
+  });
 
   @override
   final double initial;
@@ -43,6 +53,39 @@ final class SwitchSetting extends TaskSetting {
 
   @override
   final bool initial;
+}
+
+/// One of a fixed list of [options], stored as the chosen index, such as
+/// Image Segmenter's Output Type.
+final class ChoiceSetting extends TaskSetting {
+  const ChoiceSetting(
+    super.key,
+    super.label, {
+    required this.options,
+    this.initial = 0,
+  });
+
+  final List<String> options;
+
+  @override
+  final int initial;
+}
+
+/// One of the running model's labels, stored as its index, shown only while
+/// the setting [whenKey] has the value [whenValue]. Always a display setting.
+final class LabelSetting extends TaskSetting {
+  const LabelSetting(
+    super.key,
+    super.label, {
+    required this.whenKey,
+    required this.whenValue,
+  }) : super(display: true);
+
+  final String whenKey;
+  final Object whenValue;
+
+  @override
+  int get initial => 0;
 }
 
 const _handSettings = [
@@ -98,8 +141,31 @@ const taskSettings = <String, List<TaskSetting>>{
     SwitchSetting('outputPoseSegmentationMask', 'Output Segmentation Mask'),
   ],
   'object_detector': [
-    CountSetting('maxResults', 'Max Results', initial: 5, max: 25),
-    ShareSetting('scoreThreshold', 'Score Threshold', initial: 0.3),
+    CountSetting('maxResults', 'Max Results', initial: 3, max: 25),
+    ShareSetting('scoreThreshold', 'Score Threshold', initial: 0.5),
+  ],
+  // As Google's web demo: Category Mask colors every class with the legend's
+  // colors, Confidence Mask shows how sure the model is of one chosen class.
+  'image_segmenter': [
+    ChoiceSetting(
+      'outputConfidenceMasks',
+      'Output Type',
+      options: ['Category Mask', 'Confidence Mask'],
+    ),
+    LabelSetting(
+      'confidenceClass',
+      'Select Class',
+      whenKey: 'outputConfidenceMasks',
+      whenValue: 1,
+    ),
+    ShareSetting('opacity', 'Opacity', display: true),
+  ],
+  // The share of confidence a pixel needs to be drawn as selected.
+  'interactive_segmenter': [
+    ShareSetting('threshold', 'Threshold', display: true),
+  ],
+  'interactive_segmenter_legacy': [
+    ShareSetting('threshold', 'Threshold', display: true),
   ],
   'image_classifier': [
     CountSetting('maxResults', 'Max Results', initial: 3),
@@ -140,6 +206,7 @@ final class TaskSettingValues {
   int count(String key) => _values[key]! as int;
   double share(String key) => _values[key]! as double;
   bool on(String key) => _values[key]! as bool;
+  int choice(String key) => _values[key]! as int;
 
   Object operator [](String key) => _values[key]!;
   void operator []=(String key, Object value) => _values[key] = value;

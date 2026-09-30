@@ -1,4 +1,4 @@
-# Face Landmarker 1.0.1 compatibility check — 2026-09-14
+# Face Landmarker 1.0.1 compatibility check, 2026-09-14
 
 The runtime upgrade is blocked by an upstream macOS CPU crash. The package
 continues using the unmodified 1.0.0 runtime and the latest official model bundle.

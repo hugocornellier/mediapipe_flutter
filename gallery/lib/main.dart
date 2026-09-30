@@ -1,18 +1,19 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/semantics.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_vision/capabilities.dart';
 
 import 'catalog.dart';
+import 'embed_page.dart';
 import 'segment_page.dart';
 import 'text_page.dart';
 import 'audio_page.dart';
 import 'live_page.dart';
-import 'gallery_content_surface.dart';
-import 'gallery_theme.dart';
+import 'ui/components.dart';
+import 'ui/design.dart';
+import 'ui/workspace.dart';
 import 'gallery_assets_io.dart'
     if (dart.library.js_interop) 'web/gallery_assets.dart';
 export 'gallery_assets_io.dart'
@@ -20,28 +21,37 @@ export 'gallery_assets_io.dart'
 
 SemanticsHandle? _webSemantics;
 
-const _sidebarWidth = 288.0;
+/// The gallery's task order within each category; other tasks follow by title.
+const _taskOrder = [
+  'face_detector',
+  'face_landmarker',
+  'hand_landmarker',
+  'gesture_recognizer',
+  'pose_landmarker',
+  'holistic_landmarker',
+  'object_detector',
+  'image_classifier',
+  'image_embedder',
+  'image_segmenter',
+  'interactive_segmenter',
+  'interactive_segmenter_legacy',
+  'audio_classifier',
+  'language_detector',
+  'text_classifier',
+  'text_embedder',
+];
 
-// Keep page navigation close to an immediate web page change on every target.
-const _pageFade = _QuickFadePageTransitionsBuilder();
-final _pageTransitions = PageTransitionsTheme(
-  builders: {for (final platform in TargetPlatform.values) platform: _pageFade},
-);
+int compareTasks(
+  ({String runtimeId, String title}) a,
+  ({String runtimeId, String title}) b,
+) {
+  int rank(String id) {
+    final index = _taskOrder.indexOf(id);
+    return index < 0 ? _taskOrder.length : index;
+  }
 
-class _QuickFadePageTransitionsBuilder extends PageTransitionsBuilder {
-  const _QuickFadePageTransitionsBuilder();
-
-  @override
-  Duration get transitionDuration => const Duration(milliseconds: 90);
-
-  @override
-  Widget buildTransitions<T>(
-    PageRoute<T> route,
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-    Widget child,
-  ) => FadeTransition(opacity: animation, child: child);
+  final byRank = rank(a.runtimeId).compareTo(rank(b.runtimeId));
+  return byRank != 0 ? byRank : a.title.compareTo(b.title);
 }
 
 Future<void> main() async {
@@ -58,14 +68,10 @@ class GalleryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'MediaPipe Gallery',
+    title: 'MediaPipe Flutter Gallery',
     debugShowCheckedModeBanner: false,
-    theme: GalleryTheme.data(
-      Brightness.light,
-    ).copyWith(pageTransitionsTheme: _pageTransitions),
-    darkTheme: GalleryTheme.data(
-      Brightness.dark,
-    ).copyWith(pageTransitionsTheme: _pageTransitions),
+    theme: galleryTheme(Brightness.light),
+    themeMode: ThemeMode.light,
     home: HomePage(stillImagePicker: stillImagePicker),
   );
 }
@@ -125,7 +131,8 @@ class _HomePageState extends State<HomePage> {
   );
 }
 
-/// Keeps navigation in view on wide screens and in a modal drawer on phones.
+/// The sidebar stays in view on wide windows and opens as a drawer below
+/// the design's 1200 px breakpoint.
 class _GalleryShell extends StatefulWidget {
   const _GalleryShell({
     required this.assets,
@@ -166,7 +173,6 @@ class _GalleryShellState extends State<_GalleryShell> {
         tasks: widget.tasks,
         onTaskSelected: _select,
         onOpenMenu: openMenu,
-        framed: wide,
       );
     }
     return switch (task.demo) {
@@ -176,25 +182,22 @@ class _GalleryShellState extends State<_GalleryShell> {
         platform: widget.platform,
         officialMacosLandmarkTasks: widget.assets.officialMacosLandmarkTasks,
         onOpenMenu: openMenu,
-        framed: wide,
       ),
       GalleryDemo.segment => SegmentPage(
         task: task,
         assets: widget.assets,
         platform: widget.platform,
         onOpenMenu: openMenu,
-        framed: wide,
       ),
-      GalleryDemo.text => TextPage(
+      GalleryDemo.embed => EmbedPage(
         task: task,
+        imagePicker: widget.stillImagePicker,
+        platform: widget.platform,
+        officialMacosLandmarkTasks: widget.assets.officialMacosLandmarkTasks,
         onOpenMenu: openMenu,
-        framed: wide,
       ),
-      GalleryDemo.audio => AudioPage(
-        task: task,
-        onOpenMenu: openMenu,
-        framed: wide,
-      ),
+      GalleryDemo.text => TextPage(task: task, onOpenMenu: openMenu),
+      GalleryDemo.audio => AudioPage(task: task, onOpenMenu: openMenu),
       GalleryDemo.none => throw StateError('${task.id} has no demo'),
     };
   }
@@ -202,13 +205,14 @@ class _GalleryShellState extends State<_GalleryShell> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final wide = constraints.maxWidth >= 900;
+      final wide = constraints.maxWidth >= Sizes.wide;
       final sidebar = _NavigationSidebar(
         tasks: widget.tasks,
         selectedTask: _selectedTask,
         onSelect: _select,
+        onClose: wide ? null : () => _scaffoldKey.currentState?.closeDrawer(),
       );
-      final contentWidth = constraints.maxWidth - (wide ? _sidebarWidth : 0);
+      final contentWidth = constraints.maxWidth - (wide ? Sizes.sidebar : 0);
       final content = MediaQuery(
         data: MediaQuery.of(
           context,
@@ -225,30 +229,14 @@ class _GalleryShellState extends State<_GalleryShell> {
           ),
         ),
       );
-      final theme = Theme.of(context);
-      final page = Theme(
-        data: wide
-            ? theme.copyWith(
-                appBarTheme: theme.appBarTheme.copyWith(
-                  backgroundColor: theme.colorScheme.surfaceContainerLow,
-                  surfaceTintColor: Colors.transparent,
-                  scrolledUnderElevation: 0,
-                  elevation: 0,
-                ),
-              )
-            : theme,
-        child: content,
-      );
       return Scaffold(
         key: _scaffoldKey,
-        drawer: wide
-            ? null
-            : Drawer(shape: const RoundedRectangleBorder(), child: sidebar),
-        drawerScrimColor: GalleryTheme.preview.withValues(alpha: 0.54),
+        backgroundColor: GalleryColors.of(context).bg,
+        drawer: wide ? null : Drawer(child: sidebar),
         body: Row(
           children: [
-            if (wide) SizedBox(width: _sidebarWidth, child: sidebar),
-            Expanded(key: const ValueKey('gallery-content'), child: page),
+            if (wide) SizedBox(width: Sizes.sidebar, child: sidebar),
+            Expanded(key: const ValueKey('gallery-content'), child: content),
           ],
         ),
       );
@@ -261,61 +249,130 @@ class _NavigationSidebar extends StatelessWidget {
     required this.tasks,
     required this.selectedTask,
     required this.onSelect,
+    this.onClose,
   });
 
   final List<GalleryTask> tasks;
   final GalleryTask? selectedTask;
   final ValueChanged<GalleryTask?> onSelect;
 
+  /// Closes the drawer; null while the sidebar stays in view.
+  final VoidCallback? onClose;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final sorted = [...tasks]..sort((a, b) => a.title.compareTo(b.title));
+    final c = GalleryColors.of(context);
+    final sorted = [...tasks]
+      ..sort(
+        (a, b) => compareTasks(
+          (runtimeId: a.runtimeId, title: a.title),
+          (runtimeId: b.runtimeId, title: b.title),
+        ),
+      );
     return Material(
-      color: theme.colorScheme.surfaceContainerLow,
+      color: c.surface,
       child: DecoratedBox(
         position: DecorationPosition.foreground,
         decoration: BoxDecoration(
-          border: Border(
-            right: BorderSide(color: theme.colorScheme.outlineVariant),
-          ),
+          border: Border(right: BorderSide(color: c.line)),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  key: const ValueKey('gallery-sidebar'),
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-                  children: [
-                    _item(
-                      context,
-                      'Home',
-                      selectedTask == null,
-                      () => onSelect(null),
-                    ),
-                    for (final category in GalleryCategory.values)
-                      if (sorted.any((task) => task.category == category)) ...[
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 28, 12, 8),
-                          child: Text(
-                            category.title.toUpperCase(),
-                            style: GalleryTheme.label(theme),
-                          ),
-                        ),
-                        for (final task in sorted)
-                          if (task.category == category)
-                            _item(
-                              context,
-                              task.title,
-                              selectedTask?.id == task.id,
-                              () => onSelect(task),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 22, 14, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // The design's header is 36 px with 24 of it below the
+                // brand, so the brand sits centred on the top 12.
+                SizedBox(
+                  height: 12,
+                  child: OverflowBox(
+                    maxHeight: 36,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 23,
+                            height: 23,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: c.teal,
+                              borderRadius: BorderRadius.circular(6),
                             ),
-                      ],
-                  ],
+                            child: Text(
+                              'M',
+                              style: TextStyle(
+                                color: c.onTeal,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'MediaPipe Flutter Gallery',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: c.text,
+                                fontWeight: FontWeight.w600,
+                                fontSize: Sizes.md,
+                                letterSpacing: Sizes.md * -0.02,
+                              ),
+                            ),
+                          ),
+                          if (onClose != null)
+                            OutlineButton(
+                              icon: LucideIcons.x,
+                              tooltip: 'Close navigation',
+                              onPressed: onClose,
+                              bordered: false,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 24),
+                Expanded(
+                  child: ListView(
+                    key: const ValueKey('gallery-sidebar'),
+                    padding: const EdgeInsets.only(top: 10, bottom: 24),
+                    children: [
+                      _item(
+                        context,
+                        'Home',
+                        selectedTask == null,
+                        () => onSelect(null),
+                      ),
+                      for (final category in GalleryCategory.values)
+                        if (sorted.any(
+                          (task) => task.category == category,
+                        )) ...[
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 22, 12, 6),
+                            child: Text(
+                              category.title,
+                              style: eyebrowStyle(context),
+                            ),
+                          ),
+                          for (final task in sorted)
+                            if (task.category == category)
+                              _item(
+                                context,
+                                task.title,
+                                selectedTask?.id == task.id,
+                                () => onSelect(task),
+                                experimental: task.isExperimental,
+                              ),
+                        ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -326,30 +383,57 @@ class _NavigationSidebar extends StatelessWidget {
     BuildContext context,
     String title,
     bool selected,
-    VoidCallback onTap,
-  ) {
-    final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    VoidCallback onTap, {
+    bool experimental = false,
+  }) {
+    final c = GalleryColors.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.only(bottom: 2),
       child: Semantics(
+        container: true,
         link: true,
         label: title,
         selected: selected,
         onTap: onTap,
         child: ExcludeSemantics(
-          child: ListTile(
-            title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          child: _HoverFill(
             selected: selected,
-            selectedColor: dark ? GalleryTheme.white : scheme.onPrimary,
-            selectedTileColor: dark
-                ? GalleryTheme.darkNavSelected
-                : scheme.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            dense: true,
             onTap: onTap,
+            builder: (hovered) => Container(
+              height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: selected || hovered ? c.surface2 : null,
+                borderRadius: BorderRadius.circular(Sizes.radiusSmall),
+                border: selected
+                    ? Border(left: BorderSide(color: c.teal, width: 2))
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: selected || hovered ? c.text : c.muted,
+                        fontSize: Sizes.sm,
+                      ),
+                    ),
+                  ),
+                  if (experimental)
+                    Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: c.teal,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -357,17 +441,45 @@ class _NavigationSidebar extends StatelessWidget {
   }
 }
 
-/// Wider windows keep the catalog at a readable width, centred.
-const _maxContentWidth = 1200.0;
+/// Tracks the pointer over a tappable area, for the design's hover states.
+class _HoverFill extends StatefulWidget {
+  const _HoverFill({
+    required this.builder,
+    required this.onTap,
+    this.selected = false,
+  });
 
-class _Gallery extends StatefulWidget {
+  final Widget Function(bool hovered) builder;
+  final VoidCallback? onTap;
+  final bool selected;
+
+  @override
+  State<_HoverFill> createState() => _HoverFillState();
+}
+
+class _HoverFillState extends State<_HoverFill> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) => MouseRegion(
+    cursor: widget.onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
+    onEnter: (_) => setState(() => _hovered = true),
+    onExit: (_) => setState(() => _hovered = false),
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
+      child: widget.builder(_hovered),
+    ),
+  );
+}
+
+class _Gallery extends StatelessWidget {
   const _Gallery({
     required this.assets,
     required this.platform,
     required this.tasks,
     required this.onTaskSelected,
     required this.onOpenMenu,
-    required this.framed,
   });
 
   final GalleryAssets assets;
@@ -375,501 +487,264 @@ class _Gallery extends StatefulWidget {
   final List<GalleryTask> tasks;
   final ValueChanged<GalleryTask> onTaskSelected;
   final VoidCallback? onOpenMenu;
-  final bool framed;
 
-  @override
-  State<_Gallery> createState() => _GalleryState();
-}
+  bool _gpu(GalleryTask task) => task
+      .capabilitiesFor(platform, assets.officialMacosLandmarkTasks)
+      .supportedDelegates
+      .contains(VisionDelegate.gpu);
 
-class _GalleryState extends State<_Gallery> {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final platform = widget.platform;
+    final c = GalleryColors.of(context);
     final width = MediaQuery.sizeOf(context).width;
-    final inset = math.max(16.0, (width - _maxContentWidth) / 2);
-    // Phones get one compact row per task; wider windows a grid of cards.
-    final compact = width < 600;
-    // Tasks this build can run, by section and name; a planned card stands
-    // in for each Studio task it cannot.
-    final sorted = [...widget.tasks]
-      ..sort((a, b) => a.title.compareTo(b.title));
-    final validated = [
-      for (final task in sorted)
-        if (!task.isExperimental) task,
-    ];
-    final experimental = [
-      for (final task in sorted)
-        if (task.isExperimental) task,
-    ];
-    List<GalleryTask> within(List<GalleryTask> list, GalleryCategory c) => [
-      for (final task in list)
-        if (task.category == c) task,
-    ];
-    List<PlannedTask> plannedIn(GalleryCategory c) => [
+    final phone = width < Sizes.compact;
+    final sorted = [...tasks]
+      ..sort(
+        (a, b) => compareTasks(
+          (runtimeId: a.runtimeId, title: a.title),
+          (runtimeId: b.runtimeId, title: b.title),
+        ),
+      );
+    List<PlannedTask> plannedIn(GalleryCategory category) => [
       for (final task in plannedTasks)
-        if (task.category == c && !sorted.any((t) => t.title == task.title))
+        if (task.category == category &&
+            !sorted.any((t) => t.title == task.title))
           task,
     ];
-    final withGpu = sorted
-        .where(
-          (task) => task
-              .capabilitiesFor(
-                platform,
-                widget.assets.officialMacosLandmarkTasks,
-              )
-              .supportedDelegates
-              .contains(VisionDelegate.gpu),
-        )
-        .length;
-    final shown = [
+    final sections = [
       for (final category in GalleryCategory.values)
-        if (within(sorted, category).isNotEmpty ||
+        if (sorted.any((task) => task.category == category) ||
             plannedIn(category).isNotEmpty)
           category,
     ];
     return Scaffold(
-      backgroundColor: widget.framed
-          ? theme.colorScheme.surfaceContainerLow
-          : null,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: widget.onOpenMenu == null
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.menu),
-                tooltip: 'Open navigation',
-                onPressed: widget.onOpenMenu,
-              ),
-        flexibleSpace: Align(
-          alignment: Alignment.bottomCenter,
-          child: SizedBox(
-            height: kToolbarHeight,
-            child: Transform.translate(
-              offset: Offset(widget.framed ? -_sidebarWidth / 2 : 0, 0),
-              child: Center(
-                child: Text(
-                  'MediaPipe Gallery',
-                  style: theme.textTheme.titleLarge,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: GalleryContentSurface(
-        framed: widget.framed,
-        child: CustomScrollView(
-          slivers: [
-            if (compact)
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(inset, 4, inset, 0),
-                sliver: SliverToBoxAdapter(
-                  child: _Intro(
-                    platform: platform,
-                    validated: validated.length,
-                    withGpu: withGpu,
-                  ),
-                ),
-              ),
-            for (final category in shown) ...[
-              _header(theme, category, inset),
-              if (within(validated, category).isNotEmpty)
-                _grid(within(validated, category), inset, compact),
-              if (within(experimental, category).isNotEmpty) ...[
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(inset, 4, inset, 12),
-                  sliver: SliverToBoxAdapter(
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.science_outlined,
-                          size: 16,
-                          color: theme.colorScheme.tertiary,
+      backgroundColor: c.bg,
+      body: Column(
+        children: [
+          if (onOpenMenu != null)
+            TopBar(title: 'MediaPipe Flutter Gallery', onOpenMenu: onOpenMenu),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  // The home page has no settings column, so its cards use
+                  // the whole width.
+                  child: GalleryPageBody(
+                    key: const ValueKey('gallery-home'),
+                    maxWidth: double.infinity,
+                    children: [
+                      PageHeading(title: 'MediaPipe Flutter Gallery'),
+                      SizedBox(height: phone ? 32 : 44),
+                      if (sorted.every(
+                        (t) => t.category != GalleryCategory.vision,
+                      ))
+                        const _Message(
+                          icon: Icons.inbox_outlined,
+                          text:
+                              'No task has a validated runtime on this platform yet.',
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Experimental: these run real inference but are not '
-                            "validated against Google's outputs on this platform.",
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
+                      for (final (i, category) in sections.indexed) ...[
+                        if (i > 0) const SizedBox(height: 40),
+                        _SectionHeading(title: category.title),
+                        _Grid(
+                          phone: phone,
+                          children: [
+                            for (final task in sorted)
+                              if (task.category == category)
+                                _TaskCard(
+                                  key: ValueKey('gallery-card-${task.title}'),
+                                  title: task.title,
+                                  summary: task.summary,
+                                  experimental: task.experimentalReason,
+                                  gpu: _gpu(task),
+                                  onTap: () => onTaskSelected(task),
+                                ),
+                            for (final task in plannedIn(category))
+                              _TaskCard(
+                                title: task.title,
+                                summary: task.reason,
+                                gpu: false,
+                                onTap: null,
+                              ),
+                          ],
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
-                _grid(within(experimental, category), inset, compact),
               ],
-              if (plannedIn(category) case final planned
-                  when planned.isNotEmpty)
-                _plannedGrid(planned, inset, compact),
-            ],
-            if (within(sorted, GalleryCategory.vision).isEmpty)
-              const SliverToBoxAdapter(
-                child: _Message(
-                  icon: Icons.inbox_outlined,
-                  text: 'No task has a validated runtime on this platform yet.',
-                ),
-              ),
-            const SliverToBoxAdapter(child: SizedBox(height: 32)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _header(ThemeData theme, GalleryCategory category, double inset) =>
-      SliverPadding(
-        padding: EdgeInsets.fromLTRB(inset, 32, inset, 14),
-        sliver: SliverToBoxAdapter(
-          child: Text(
-            category.title,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
             ),
           ),
-        ),
-      );
-
-  SliverGridDelegate _layout(bool compact) =>
-      SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: compact ? 640 : 380,
-        mainAxisExtent: compact ? 92 : 120,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: compact ? 10 : 16,
-      );
-
-  Widget _plannedGrid(List<PlannedTask> entries, double inset, bool compact) =>
-      SliverPadding(
-        padding: EdgeInsets.fromLTRB(inset, 0, inset, 16),
-        sliver: SliverGrid.builder(
-          gridDelegate: _layout(compact),
-          itemCount: entries.length,
-          itemBuilder: (context, index) =>
-              _PlannedCard(task: entries[index], compact: compact),
-        ),
-      );
-
-  Widget _grid(List<GalleryTask> entries, double inset, bool compact) =>
-      SliverPadding(
-        padding: EdgeInsets.fromLTRB(inset, 0, inset, 16),
-        sliver: SliverGrid.builder(
-          gridDelegate: _layout(compact),
-          itemCount: entries.length,
-          itemBuilder: (context, index) => _TaskCard(
-            task: entries[index],
-            platform: widget.platform,
-            assets: widget.assets,
-            compact: compact,
-            onSelected: widget.onTaskSelected,
-          ),
-        ),
-      );
-}
-
-/// The platform the catalog was validated on, and what it adds up to.
-class _Intro extends StatelessWidget {
-  const _Intro({
-    required this.platform,
-    required this.validated,
-    required this.withGpu,
-  });
-
-  final TaskPlatform platform;
-  final int validated;
-  final int withGpu;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final os = switch (platform.operatingSystem) {
-      'macos' => 'macOS',
-      'ios' => 'iOS',
-      'android' => 'Android',
-      'linux' => 'Linux',
-      'windows' => 'Windows',
-      'web' => 'Web',
-      final other => other,
-    };
-    final device = switch (platform.operatingSystem) {
-      'web' => Icons.language,
-      'ios' => Icons.phone_iphone,
-      'android' => Icons.phone_android,
-      'windows' => Icons.desktop_windows_outlined,
-      _ => Icons.laptop_mac,
-    };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Google's official MediaPipe tasks, running on this device.",
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 14),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _Pill(
-              icon: device,
-              label: platform.architecture == 'unknown'
-                  ? os
-                  : '$os · ${platform.architecture}',
-            ),
-            _Pill(
-              icon: Icons.verified_outlined,
-              label: '$validated task${validated == 1 ? '' : 's'} validated',
-            ),
-            if (withGpu > 0)
-              _Pill(icon: Icons.bolt, label: '$withGpu with GPU'),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 6),
-          Text(label, style: theme.textTheme.labelLarge),
         ],
       ),
     );
   }
 }
 
-/// CPU or GPU, as a small pill; GPU uses the shared gallery accent.
-class _DelegateBadge extends StatelessWidget {
-  const _DelegateBadge({required this.gpu});
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.title});
 
-  final bool gpu;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = GalleryColors.of(context);
     return Container(
-      margin: const EdgeInsetsDirectional.only(start: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: gpu
-            ? GalleryTheme.accent
-            : theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(999),
+        border: Border(bottom: BorderSide(color: c.line)),
       ),
       child: Text(
-        gpu ? 'GPU' : 'CPU',
-        style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
-          color: gpu ? GalleryTheme.white : theme.colorScheme.onSurfaceVariant,
-        ),
+        title,
+        style: TextStyle(color: c.text, fontSize: Sizes.lg),
       ),
     );
   }
 }
 
-class _TaskCard extends StatefulWidget {
-  const _TaskCard({
-    required this.task,
-    required this.platform,
-    required this.assets,
-    required this.compact,
-    required this.onSelected,
-  });
+/// Two columns of cards, one on phones, each row as tall as its tallest.
+class _Grid extends StatelessWidget {
+  const _Grid({required this.phone, required this.children});
 
-  final GalleryTask task;
-  final TaskPlatform platform;
-  final GalleryAssets assets;
-  final bool compact;
-  final ValueChanged<GalleryTask> onSelected;
-
-  @override
-  State<_TaskCard> createState() => _TaskCardState();
-}
-
-class _TaskCardState extends State<_TaskCard> {
-  bool _hovered = false;
+  final bool phone;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final task = widget.task;
-    final delegates = task
-        .capabilitiesFor(
-          widget.platform,
-          widget.assets.officialMacosLandmarkTasks,
-        )
-        .supportedDelegates;
-    final badges = [
-      if (task.experimentalReason case final reason?)
-        Tooltip(
-          message: reason,
-          child: Text(
-            'Exp',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.tertiary,
+    if (phone) {
+      return Column(
+        children: [
+          for (final (i, child) in children.indexed) ...[
+            if (i > 0) const SizedBox(height: 10),
+            child,
+          ],
+        ],
+      );
+    }
+    return Column(
+      children: [
+        for (var i = 0; i < children.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: 10),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: children[i]),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: i + 1 < children.length
+                      ? children[i + 1]
+                      : const SizedBox.shrink(),
+                ),
+              ],
             ),
           ),
-        ),
-      // Every task runs on the CPU; a phone row names only the GPU.
-      for (final delegate in delegates)
-        if (!widget.compact || delegate == VisionDelegate.gpu)
-          _DelegateBadge(gpu: delegate == VisionDelegate.gpu),
-    ];
-    final title = Text(
-      task.title,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-    );
-    final summary = Text(
-      task.summary,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-        height: 1.35,
-      ),
-    );
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: Card(
-        margin: EdgeInsets.zero,
-        elevation: 0,
-        color: theme.colorScheme.surfaceContainerLow,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: _hovered
-                ? theme.colorScheme.primary.withValues(alpha: 0.6)
-                : theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
-          ),
-        ),
-        child: InkWell(
-          onTap: () => widget.onSelected(task),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            // The badges follow the text in both layouts, so a screen reader
-            // announces the title first.
-            child: widget.compact
-                ? Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [title, const SizedBox(height: 2), summary],
-                        ),
-                      ),
-                      ...badges,
-                    ],
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      title,
-                      const SizedBox(height: 4),
-                      summary,
-                      const Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: badges,
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ),
+        ],
+      ],
     );
   }
 }
 
-/// A task the gallery lists but cannot run yet, with the reason why.
-class _PlannedCard extends StatelessWidget {
-  const _PlannedCard({required this.task, required this.compact});
+class _TaskCard extends StatelessWidget {
+  const _TaskCard({
+    super.key,
+    required this.title,
+    required this.summary,
+    required this.gpu,
+    required this.onTap,
+    this.experimental,
+  });
 
-  final PlannedTask task;
-  final bool compact;
+  final String title;
+  final String summary;
+  final bool gpu;
+
+  /// Null for a task this build does not bundle.
+  final VoidCallback? onTap;
+
+  /// Why the task is experimental, or null.
+  final String? experimental;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final title = Text(
-      task.title,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.titleMedium?.copyWith(color: muted),
-    );
-    final reason = Text(
-      task.reason,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.labelSmall?.copyWith(color: muted),
-    );
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
+    final c = GalleryColors.of(context);
+    final phone = MediaQuery.sizeOf(context).width < Sizes.compact;
+    final card = _HoverFill(
+      onTap: onTap,
+      builder: (hovered) => AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        transform: Matrix4.translationValues(0, hovered ? -1 : 0, 0),
+        constraints: BoxConstraints(minHeight: phone ? 104 : 116),
         padding: const EdgeInsets.all(16),
-        child: compact
-            ? Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [title, const SizedBox(height: 4), reason],
-                    ),
-                  ),
-                ],
-              )
-            : Column(
+        decoration: BoxDecoration(
+          color: c.surface,
+          border: Border.all(color: hovered ? c.hoverLine : c.line),
+          borderRadius: BorderRadius.circular(Sizes.radius),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  title,
-                  const SizedBox(height: 4),
-                  Text(
-                    task.summary,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: c.text,
+                          fontSize: Sizes.md,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (experimental case final reason?)
+                        Tooltip(
+                          message: reason,
+                          child: const Tag('Experimental', accent: true),
+                        ),
+                    ],
                   ),
-                  const Spacer(),
-                  reason,
+                  const SizedBox(height: 6),
+                  Text(
+                    summary,
+                    style: TextStyle(
+                      color: c.muted,
+                      fontSize: Sizes.sm,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Tag('CPU'),
+                      if (gpu) ...[
+                        const SizedBox(width: 5),
+                        const Tag('GPU', accent: true),
+                      ],
+                    ],
+                  ),
                 ],
               ),
+            ),
+          ],
+        ),
       ),
+    );
+    // The card reads as one button, title first.
+    return Semantics(
+      button: onTap != null,
+      enabled: onTap != null,
+      label: '$title. $summary',
+      onTap: onTap,
+      excludeSemantics: true,
+      child: onTap == null ? Opacity(opacity: 0.4, child: card) : card,
     );
   }
 }

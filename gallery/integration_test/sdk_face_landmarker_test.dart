@@ -14,6 +14,7 @@ import 'package:mediapipe_gallery/live/live_tasks.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/main.dart';
 
+import 'support/delegate_control.dart';
 import 'support/gallery_tiles.dart';
 
 /// `skip` on emulators: SwiftShader GL accepts a GPU task, then TFLite's GL
@@ -321,19 +322,14 @@ void main() {
     await tester.pump();
     expect(controller.error, isNull);
     if (controller.delegate != VisionDelegate.cpu) {
-      await tester.tap(find.text('CPU'));
-      await tester.pump();
+      await tapDelegate(tester, VisionDelegate.cpu);
     }
     await tester.runAsync(() => waitFor(VisionDelegate.cpu));
     await tester.pump();
     // With SDK_GPU=skip (emulators) the demo may offer no GPU, and none is
-    // switched to below.
-    if (_gpu != 'skip') expect(find.text('GPU'), findsOneWidget);
+    // switched to below. Elsewhere tapDelegate fails if GPU is not offered.
     for (final delegate in _switches.skip(1)) {
-      await tester.tap(
-        find.text(delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'),
-      );
-      await tester.pump();
+      await tapDelegate(tester, delegate);
       await tester.runAsync(() => waitFor(delegate));
       await tester.pump();
     }

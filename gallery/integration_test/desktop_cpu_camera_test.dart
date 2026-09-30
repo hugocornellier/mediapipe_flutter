@@ -9,6 +9,7 @@ import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/live/live_subjects.dart';
 import 'package:mediapipe_gallery/main.dart';
+import 'package:mediapipe_gallery/ui/components.dart';
 
 import 'support/live_subject.dart';
 import 'support/gallery_tiles.dart';
@@ -52,7 +53,7 @@ void main() {
         // Linux offers GPU for face and hand, and the page opens on it; this
         // test selects CPU. Windows has no GPU path.
         final gpuOffered = Platform.isLinux ? findsOneWidget : findsNothing;
-        final tile = find.ancestor(of: tileTitle, matching: find.byType(Card));
+        final tile = find.byKey(ValueKey('gallery-card-${subject.tile}'));
         expect(
           find.descendant(of: tile, matching: find.text('GPU')),
           gpuOffered,
@@ -78,8 +79,7 @@ void main() {
         camera.deliverFrames = true;
         await waitForFrames(tester, live);
         await tester.pump();
-        expect(find.text('GPU'), gpuOffered);
-        expect(find.byType(SegmentedButton<VisionDelegate>), gpuOffered);
+        expect(find.byKey(const ValueKey('delegate-gpu')), gpuOffered);
         expect(live.delegate, VisionDelegate.cpu);
         expect(live.frameRotationDegrees, 0);
 
@@ -101,7 +101,7 @@ void main() {
         expect(live.description!.name, 'supplied-bgra');
         expect(camera.disposed, 1);
 
-        expect(find.byType(FilledButton), findsNothing);
+        expect(find.byType(StillCard), findsNothing);
         await tester.runAsync(live.stop);
         await tester.runAsync(() async {
           while (live.changing) {

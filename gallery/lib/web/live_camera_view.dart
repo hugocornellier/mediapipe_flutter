@@ -5,6 +5,7 @@ import 'package:web/web.dart' as web;
 import '../live/camera_geometry.dart';
 import '../live/live_subjects.dart';
 import 'live_camera_controller.dart';
+import 'overlay_toggle.dart';
 import 'test_hooks.dart';
 
 /// Preview and Flutter landmarks use identical intrinsic dimensions and mirroring.
@@ -28,6 +29,7 @@ class LiveCameraView extends StatelessWidget {
   final Widget? foreground;
   @override
   Widget build(BuildContext context) {
+    installOverlayToggle();
     final frame = controller.frameSize;
     // Keep the video attached while a running task changes delegate/device.
     // Removing its platform view during stream replacement can prevent Chrome

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
+
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import '../live/embedding_similarity.dart';
+
 import '../live/live_task.dart';
 import '../live/task_settings.dart';
 
@@ -104,6 +105,8 @@ final class FaceLandmarkerLiveTask extends _WebLiveTask<FaceLandmarkerResult> {
       minFaceDetectionConfidence: settings.share('minFaceDetectionConfidence'),
       minFacePresenceConfidence: settings.share('minFacePresenceConfidence'),
       minTrackingConfidence: settings.share('minTrackingConfidence'),
+      // Scored in the Output card, as Google's demo lists them.
+      outputFaceBlendshapes: true,
     ),
   );
 }
@@ -302,90 +305,8 @@ final class ImageClassifierLiveTask
   );
 }
 
-/// Browser Image Embedder, reporting each frame's similarity to the first.
-final class ImageEmbedderLiveTask
-    implements BrowserLiveTask<EmbeddingSimilarity>, StatefulLiveTask {
-  @override
-  final settings = TaskSettingValues('image_embedder');
-
-  ImageEmbedder? _task;
-  VisionEmbedding? _first;
-
-  @override
-  void forgetFrames() => _first = null;
-
-  @override
-  String get name => 'Image Embedder';
-
-  @override
-  Future<void> open(
-    VisionDelegate delegate,
-    Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
-  }) async {
-    _first = null;
-    _task = await ImageEmbedder.create(
-      ImageEmbedderOptions(
-        modelBytes: modelBytes,
-        runningMode: mode,
-        delegate: delegate,
-        l2Normalize: settings.on('l2Normalize'),
-        quantize: settings.on('quantize'),
-      ),
-    );
-  }
-
-  @override
-  Future<EmbeddingSimilarity> detectImage(VisionImage image) async =>
-      EmbeddingSimilarity(await _task!.embedImage(image), null);
-
-  EmbeddingSimilarity _compare(ImageEmbedderResult result) {
-    final embedding = result.embeddings.first;
-    final first = _first ??= embedding;
-    return EmbeddingSimilarity(
-      result,
-      ImageEmbedder.cosineSimilarity(first, embedding),
-    );
-  }
-
-  @override
-  Future<EmbeddingSimilarity> detect(
-    VisionImage frame,
-    int timestamp, {
-    required int rotationDegrees,
-  }) async => _compare(
-    await _task!.embedForVideo(
-      frame,
-      timestampMilliseconds: timestamp,
-      rotationDegrees: rotationDegrees,
-    ),
-  );
-
-  @override
-  Future<EmbeddingSimilarity> detectBrowserFrame(
-    Object frame,
-    int width,
-    int height,
-    int timestamp,
-  ) async => _compare(
-    await (_task! as BrowserVisionTask<ImageEmbedderResult>).detectBrowserFrame(
-      frame,
-      width: width,
-      height: height,
-      timestampMilliseconds: timestamp,
-    ),
-  );
-
-  @override
-  Future<void> close() async {
-    final task = _task;
-    _task = null;
-    await task?.dispose();
-  }
-}
-
-/// Browser Image Segmenter, returning only the category mask the overlay
-/// draws.
+/// Browser Image Segmenter, returning the category mask and, for Output
+/// Type Confidence Mask, the confidence masks.
 final class ImageSegmenterLiveTask
     implements BrowserLiveTask<SegmentationResult> {
   @override
@@ -407,7 +328,7 @@ final class ImageSegmenterLiveTask
         modelBytes: modelBytes,
         runningMode: mode,
         delegate: delegate,
-        outputConfidenceMasks: false,
+        outputConfidenceMasks: settings.choice('outputConfidenceMasks') == 1,
         outputCategoryMask: true,
       ),
     );

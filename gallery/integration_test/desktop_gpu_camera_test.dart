@@ -10,6 +10,7 @@ import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/live/live_subjects.dart';
 import 'package:mediapipe_gallery/main.dart';
 
+import 'support/delegate_control.dart';
 import 'support/live_subject.dart';
 import 'support/gallery_tiles.dart';
 import 'support/supplied_camera.dart';
@@ -56,8 +57,7 @@ void main() {
         await waitForFrames(tester, live);
         expect(live.delegate, VisionDelegate.cpu);
 
-        await tester.tap(find.text('GPU'));
-        await tester.pump();
+        await tapDelegate(tester, VisionDelegate.gpu);
         // A software renderer takes about 15 s for the first GPU frame.
         await waitForFrames(tester, live, timeout: const Duration(minutes: 3));
         await tester.pump();

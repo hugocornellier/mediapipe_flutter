@@ -1,5 +1,5 @@
 {
-    "name": "MediaPipe Gallery",
+    "name": "MediaPipe Flutter Gallery",
     "short_name": "MediaPipe",
     "start_url": ".",
     "display": "standalone",

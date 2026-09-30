@@ -7,7 +7,6 @@ import 'face_overlay.dart';
 import 'landmark_overlay.dart';
 import 'live_camera_controller.dart';
 import 'live_tasks.dart';
-import 'mask_overlay.dart';
 import 'live_registry_additions_web.dart'
     if (dart.library.io) 'live_registry_additions_native.dart';
 
@@ -51,15 +50,15 @@ CustomPainter _faceOverlay(
   showPoints: points,
 );
 
-// Segmenters draw their mask; detectors and classifiers draw boxes and labels;
-// every other task draws its landmarks. The edges switch shows or hides boxes.
+// Detectors and classifiers draw boxes and labels; every other task draws its
+// landmarks. The edges switch shows or hides boxes. The Image Segmenter's mask
+// is drawn by the page, which builds its image as results arrive.
 CustomPainter _landmarkOverlay(
   Object? result,
   PreviewTransform transform,
   bool edges,
   bool points,
 ) =>
-    maskOverlayFor(result, transform) ??
     detectionOverlayFor(result, transform, boxes: edges, points: points) ??
     LandmarkOverlay(
       figuresFor(result),

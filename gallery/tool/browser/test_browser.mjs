@@ -132,11 +132,16 @@ async function alignmentCheck(page) {
     videoTransform: video.style.transform,
     dpr: window.devicePixelRatio,
   }));
-  // The settings panel's Connections switch; Flutter's web semantics may
-  // expose a switch as either role.
-  const connections = page.getByRole('switch', {name: 'Connections'})
-    .or(page.getByRole('checkbox', {name: 'Connections'}));
-  await connections.click();
+  // The gallery has no overlay switch; `?test-hooks` installs this one.
+  const showOverlay = show => page.evaluate(hide => window.__hideOverlay(hide), !show);
+  const processed = () => Number(document.querySelector('video')?.getAttribute('data-processed-frames'));
+  const hiddenAt = await page.evaluate(processed);
+  await showOverlay(false);
+  // The page reads the switch when the next result rebuilds it, and a worker
+  // overlay receives it with the following frame's input, so the third frame
+  // is the first drawn without the overlay.
+  await wait(page, since => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= since + 3,
+    hiddenAt);
   // Keep the pointer, and any tooltip it raises, away from the preview.
   await page.mouse.move(1, page.viewportSize().height - 1);
   try {
@@ -204,7 +209,7 @@ async function alignmentCheck(page) {
       return measurement;
     }
   } finally {
-    await connections.click();
+    await showOverlay(true);
   }
 }
 
@@ -982,9 +987,8 @@ async function textAudioChecks() {
   await page.goto(gallery);
   await page.getByRole('button', {name: /Text Embedder/}).click();
   await page.getByRole('button', {name: 'Compare', exact: true}).click();
-  await wait(page, () => document.body.innerText.includes('Cosine similarity:'), null, 60000);
-  const galleryText = await page.locator('body').innerText();
-  assert.match(galleryText, /Cosine similarity: -?\d+\.\d+/);
+  // The Output card lists the score as "Cosine similarity 0.1234".
+  await wait(page, () => /Cosine similarity -?\d+\.\d+/.test(document.body.innerText), null, 60000);
   report.checks.push('gallery-text-embedder-compare');
 }
 

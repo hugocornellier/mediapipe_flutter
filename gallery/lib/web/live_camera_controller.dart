@@ -86,6 +86,15 @@ class LiveCameraController<T> extends ChangeNotifier {
   List<CameraDescription> cameras = const [];
   CameraDescription? description;
   Size? frameSize;
+
+  /// The preview's width over its height, as the camera view lays it out,
+  /// or null before the first frame.
+  double? get previewAspect {
+    final size = frameSize;
+    if (size == null || size.height == 0) return null;
+    return size.width / size.height;
+  }
+
   int frameRotationDegrees = 0;
   DeviceOrientation deviceOrientation = DeviceOrientation.landscapeLeft;
   VisionDelegate delegate = VisionDelegate.cpu;

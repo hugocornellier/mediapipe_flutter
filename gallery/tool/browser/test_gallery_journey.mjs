@@ -20,17 +20,17 @@ const cases = {
   hand_landmarker: {title: 'Hand Landmarker', sample: 'hands.jpg', result: /[1-9]\d* hands? detected/},
   holistic_landmarker: {title: 'Holistic Landmarker', sample: 'pose.jpg', result: /Body landmarks detected/},
   image_classifier: {title: 'Image Classifier', sample: 'portrait.jpg', result: /[1-9]\d* classes returned/},
-  image_embedder: {title: 'Image Embedder', sample: 'portrait.jpg', result: /[1-9]\d* embeddings generated/},
+  image_embedder: {title: 'Image Embedder', embed: true},
   image_segmenter: {title: 'Image Segmenter', sample: 'portrait.jpg', result: /Segmentation complete/},
   object_detector: {title: 'Object Detector', sample: 'group.jpeg', result: /[1-9]\d* objects? detected/},
   pose_landmarker: {title: 'Pose Landmarker', sample: 'pose.jpg', result: /[1-9]\d* poses? detected/},
   interactive_segmenter: {title: 'Interactive Segmenter', segment: true},
   audio_classifier: {title: 'Audio Classifier', audio: true},
-  // A category row is a progress bar labelled "<category> <score>"; the
-  // sample's own category must score at least 0.5, not merely be listed.
+  // A category row reads "<category> <score>"; the sample's own category
+  // must score at least 0.5, not merely be listed.
   language_detector: {title: 'Language Detector', text: true, row: /^fr (0\.[5-9]|1\.0)/},
   text_classifier: {title: 'Text Classifier', text: true, row: /^positive (0\.[5-9]|1\.0)/},
-  text_embedder: {title: 'Text Embedder', text: true, result: /Cosine similarity: -?\d+\.\d+/},
+  text_embedder: {title: 'Text Embedder', text: true, result: /^Cosine similarity -?\d+\.\d+$/},
 };
 
 // The delegates each page must offer and run come from the coverage matrix the
@@ -116,12 +116,13 @@ try {
     .filter({hasText: new RegExp(`^${title}$`)});
   // A segment of a CPU/GPU control; clicking waits until the page enables it.
   const delegateButton = delegate => page.getByRole('button', {name: delegate.toUpperCase(), exact: true});
-  // The live page's stats line counts recent frames on the running delegate.
+  // The status line under a running feed reads "20.1 fps · 5 ms · GPU", with a
+  // frame rate above zero once frames arrive on that delegate.
   const liveFrames = delegate =>
-    page.getByText(new RegExp(`over the last [1-9]\\d* ${delegate.toUpperCase()} frames`));
-  // A still image result names the delegate that produced it.
+    page.getByText(new RegExp(`^(?!0\\.0 fps)\\d+\\.\\d fps · \\d+ ms · ${delegate.toUpperCase()}$`));
+  // A still image's status line names the delegate that produced it.
   const stillRan = delegate =>
-    page.getByText(new RegExp(`^Inference \\d+\\.\\d ms on ${delegate.toUpperCase()}$`));
+    page.getByText(new RegExp(`Inference \\d+\\.\\d ms · ${delegate.toUpperCase()}$`));
   await page.goto(base);
   await sidebarItem('Home').waitFor({timeout: 120000});
 
@@ -143,8 +144,7 @@ try {
       }
       await page.screenshot({path: path.join(evidence, `${id}-live.png`)});
       enter(`${id}:mode`);
-      await page.getByRole('button', {name: 'Camera', exact: true}).click();
-      await page.getByRole('menuitem', {name: 'Still image', exact: true}).click();
+      await page.getByRole('button', {name: 'Still image', exact: true}).click();
       const choose = page.getByRole('button', {name: 'Choose image'});
       await choose.waitFor();
       const chooserPromise = page.waitForEvent('filechooser');
@@ -160,19 +160,48 @@ try {
         await page.getByText(spec.result).waitFor();
         report.checks.push(`${id}:${delegate}:still`);
       }
-      assert.equal(await page.getByText(spec.sample, {exact: true}).count(), 1);
+      // The status line opens with the chosen file's name.
+      assert.equal(await page.getByText(new RegExp(`^${spec.sample.replace('.', '\\.')} · `)).count(), 1);
       await page.screenshot({path: path.join(evidence, `${id}-still.png`)});
+    } else if (spec.embed) {
+      // The page opens comparing Dog with Cat; each delegate compares them
+      // again, and the status line names the delegate that did.
+      const delegates = delegatesFor(id);
+      assert.ok(delegates.length > 0, `${id} has no required web delegate`);
+      const similarity = /^Cosine similarity -?\d\.\d{4}$/;
+      for (const delegate of delegates) {
+        enter(`${id}:${delegate}:compare`);
+        if (delegates.length > 1) await delegateButton(delegate).click({timeout: 120000});
+        await stillRan(delegate).waitFor({timeout: 120000});
+        await page.getByText(similarity).waitFor();
+        report.checks.push(`${id}:${delegate}:compare`);
+      }
+      // The same sample on both sides is identical.
+      enter(`${id}:same`);
+      await page.locator('[flt-semantics-identifier="image-embedder-2-samples"]')
+        .getByRole('button', {name: 'Dog', exact: true}).click();
+      await page.getByText(/^Cosine similarity 1\.0000$/).waitFor({timeout: 120000});
+      // An upload replaces the first image.
+      enter(`${id}:upload`);
+      const chooserPromise = page.waitForEvent('filechooser');
+      await page.locator('[flt-semantics-identifier="image-embedder-1-upload"]')
+        .getByRole('button').click();
+      const chooser = await chooserPromise;
+      await chooser.setFiles(path.join(repo, 'gallery/assets/samples/portrait.jpg'));
+      await page.getByText(/^Cosine similarity (?!1\.0000$)-?\d\.\d{4}$/).waitFor({timeout: 120000});
+      report.checks.push(`${id}:upload`);
+      await page.screenshot({path: path.join(evidence, `${id}.png`)});
     } else if (spec.text) {
       enter(`${id}:run`);
       await page.getByRole('button', {name: id === 'text_embedder' ? 'Compare' : 'Run', exact: true}).click();
-      await (spec.row ? page.getByRole('progressbar', {name: spec.row}) : page.getByText(spec.result))
+      await page.getByText(spec.row || spec.result)
         .waitFor({timeout: 120000});
       await page.getByText(/Done in \d+\.\d ms/).waitFor();
       report.checks.push(`${id}:cpu:run`);
     } else if (spec.audio) {
       enter(`${id}:run`);
-      // Each timestamped row is one group labelled with its top categories.
-      await page.getByRole('group', {name: /^0\.00 s Speech \d\.\d{3}/}).waitFor({timeout: 120000});
+      // The first window of the speech clip is heard as speech.
+      await page.getByText(/^Speech \d\.\d{2}$/).first().waitFor({timeout: 120000});
       await page.getByText(/Done in \d+\.\d ms/).waitFor();
       report.checks.push(`${id}:cpu:run`);
     } else if (spec.segment) {
@@ -190,7 +219,7 @@ try {
         const box = await image.boundingBox();
         await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
         await page.getByText(new RegExp(
-          `\\d+\\.\\d ms on ${delegate.toUpperCase()}\\s+·\\s+\\d+ requests, \\d+ coalesced`,
+          `\\d+\\.\\d ms · \\d+ requests · \\d+ coalesced · ${delegate.toUpperCase()}$`,
         )).waitFor({timeout: 120000});
         report.checks.push(`${id}:${delegate}:tap`);
       }
