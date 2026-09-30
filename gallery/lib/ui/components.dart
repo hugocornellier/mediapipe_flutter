@@ -505,100 +505,119 @@ class FeedFrame extends StatelessWidget {
   }
 }
 
-/// A translucent square button over the feed.
+/// A translucent button over the feed: square with an icon, or with a
+/// [label] beside it. A [selected] button shows what it opens is showing.
 class FeedButton extends StatelessWidget {
   const FeedButton({
     super.key,
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.label,
+    this.selected = false,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
+  final String? label;
+  final bool selected;
 
   @override
-  Widget build(BuildContext context) => Tooltip(
-    message: tooltip,
-    child: Material(
-      color: const Color(0xCC101314),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(Sizes.radiusSmall),
-        side: const BorderSide(color: Color(0x33FFFFFF)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onPressed,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(
-            icon,
-            size: 16,
-            color: onPressed == null
-                ? const Color(0x66F0F3F2)
-                : const Color(0xFFF0F3F2),
+  Widget build(BuildContext context) {
+    final color = onPressed == null
+        ? const Color(0x66F0F3F2)
+        : const Color(0xFFF0F3F2);
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        selected: selected,
+        child: Material(
+          color: selected ? const Color(0xF0101314) : const Color(0xCC101314),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Sizes.radiusSmall),
+            side: BorderSide(
+              color: selected
+                  ? const Color(0x8CFFFFFF)
+                  : const Color(0x33FFFFFF),
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onPressed,
+            child: Padding(
+              padding: label == null
+                  ? const EdgeInsets.all(8)
+                  : const EdgeInsets.fromLTRB(9, 8, 11, 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 16, color: color),
+                  if (label case final label?) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: Sizes.sm,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
-
-/// The feed's LIVE badge.
-class LiveBadge extends StatelessWidget {
-  const LiveBadge({super.key});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-    decoration: BoxDecoration(
-      color: const Color(0xCC101314),
-      border: Border.all(color: const Color(0x33FFFFFF)),
-      borderRadius: BorderRadius.circular(99),
-    ),
-    child: const Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        StatusDot(color: Color(0xFF8CD0D6)),
-        SizedBox(width: 6),
-        Text('LIVE', style: TextStyle(color: Color(0xFFF0F3F2), fontSize: 10)),
-      ],
-    ),
-  );
+    );
+  }
 }
 
 /// The line under the feed: frame rate, inference time and delegate.
 class FeedStatus extends StatelessWidget {
-  const FeedStatus({super.key, required this.parts, this.delegate});
+  const FeedStatus({
+    super.key,
+    required this.parts,
+    this.delegate,
+    this.trailing,
+  });
 
   final List<String> parts;
   final String? delegate;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final c = GalleryColors.of(context);
     final style = TextStyle(color: c.muted, fontSize: Sizes.xs);
     // Read as one line, "20.1 fps · 5 ms · GPU".
-    return Semantics(
-      container: true,
-      label: [...parts, ?delegate].join(' · '),
-      excludeSemantics: true,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 11),
-        child: Wrap(
-          spacing: 16,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            for (final part in parts) Text(part, style: style),
-            if (delegate case final delegate?) ...[
-              Text(delegate, style: style.copyWith(color: c.teal)),
-              const StatusDot(),
-            ],
-          ],
+    return Row(
+      children: [
+        Expanded(
+          child: Semantics(
+            container: true,
+            label: [...parts, ?delegate].join(' · '),
+            excludeSemantics: true,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 11),
+              child: Wrap(
+                spacing: 16,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  for (final part in parts) Text(part, style: style),
+                  if (delegate case final delegate?) ...[
+                    Text(delegate, style: style.copyWith(color: c.teal)),
+                    const StatusDot(),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ),
-      ),
+        ?trailing,
+      ],
     );
   }
 }

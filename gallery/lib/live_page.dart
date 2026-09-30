@@ -16,12 +16,14 @@ import 'live/live_camera_view.dart';
 import 'live/live_registry.dart';
 import 'live/mask_overlay.dart';
 import 'live/overlay_visibility.dart';
+import 'live/speed_history.dart';
 import 'live/task_models.dart';
 import 'live/task_settings.dart';
 import 'live/live_output.dart';
 import 'live/task_settings_panel.dart';
 import 'ui/components.dart';
 import 'ui/design.dart';
+import 'ui/speed_chart.dart';
 import 'ui/workspace.dart';
 
 /// One live camera demo, whichever task the tile names.
@@ -134,6 +136,12 @@ class _LivePageState extends State<LivePage> {
   String? _error;
   bool _autoStarted = false;
 
+  /// Each frame's inference time since the page opened, for the Stats chart.
+  final _speed = SpeedHistory();
+  final _speedClock = Stopwatch()..start();
+  int _speedFrames = 0;
+  bool _showStats = false;
+
   /// Overlays draw connections and boxes without individual points.
   bool get _showConnections => !debugHideOverlay;
   static const _showPoints = false;
@@ -165,6 +173,18 @@ class _LivePageState extends State<LivePage> {
   }
 
   void _onControllerChanged() {
+    final frames = _controller.processedFrames;
+    if (frames != _speedFrames) {
+      _speedFrames = frames;
+      // One notification per processed frame; a restart counts from zero.
+      if (frames > 0 && _controller.running) {
+        _speed.add(
+          _controller.delegate,
+          _controller.inferenceMilliseconds,
+          _speedClock.elapsed,
+        );
+      }
+    }
     if (mounted) setState(() {});
   }
 
@@ -533,68 +553,38 @@ class _LivePageState extends State<LivePage> {
 
   String get _id => widget.task.runtimeId.replaceAll('_', '-');
 
-  /// Whether the user paused the camera, as opposed to it still starting.
-  bool _paused = false;
-
-  Future<void> _resume() async {
-    setState(() => _paused = false);
-    await _start();
-  }
-
-  Future<void> _pause() async {
-    setState(() => _paused = true);
-    try {
-      await _controller.stop();
-    } on Object catch (error) {
-      if (mounted) setState(() => _error = '$error');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final phone = MediaQuery.sizeOf(context).width < Sizes.compact;
     return TaskWorkspace(
       title: widget.task.title,
       onOpenMenu: widget.onOpenMenu,
       settings: _panel(),
       children: [
-        PageHeading(
-          eyebrow: '${widget.task.category.title} / Live demo',
-          title: widget.task.title,
-          summary: widget.task.summary,
-          trailing: phone
-              ? null
-              : OutlineButton(
-                  icon: LucideIcons.circleHelp,
-                  label: 'Help',
-                  tooltip: 'Help',
-                  onPressed: () => showTaskHelp(context, widget.task),
-                ),
+        TaskToolbar(
+          task: widget.task,
+          leading: _hasImageMode
+              ? Segmented<_VisionInputMode>(
+                  semanticsIdentifier: '$_id-mode',
+                  key: ValueKey('$_id-mode'),
+                  segments: [
+                    (
+                      value: _VisionInputMode.camera,
+                      label: 'Camera',
+                      icon: LucideIcons.video,
+                      key: ValueKey('$_id-mode-camera'),
+                    ),
+                    (
+                      value: _VisionInputMode.image,
+                      label: 'Still image',
+                      icon: LucideIcons.upload,
+                      key: ValueKey('$_id-mode-image'),
+                    ),
+                  ],
+                  selected: _mode,
+                  onChanged: (mode) => unawaited(_setMode(mode)),
+                )
+              : null,
         ),
-        SizedBox(height: phone ? 24 : 32),
-        if (_hasImageMode) ...[
-          Segmented<_VisionInputMode>(
-            semanticsIdentifier: '$_id-mode',
-            key: ValueKey('$_id-mode'),
-            segments: [
-              (
-                value: _VisionInputMode.camera,
-                label: 'Camera',
-                icon: LucideIcons.video,
-                key: ValueKey('$_id-mode-camera'),
-              ),
-              (
-                value: _VisionInputMode.image,
-                label: 'Still image',
-                icon: LucideIcons.upload,
-                key: ValueKey('$_id-mode-image'),
-              ),
-            ],
-            selected: _mode,
-            onChanged: (mode) => unawaited(_setMode(mode)),
-          ),
-          const SizedBox(height: 16),
-        ],
         if (_mode == _VisionInputMode.image)
           ..._stillImage()
         else
@@ -735,47 +725,21 @@ class _LivePageState extends State<LivePage> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Color(0xFFF0F3F2)),
                 ),
-                null when _paused => const Text(
-                  'Camera paused',
-                  style: TextStyle(color: Color(0xFF8D9897)),
-                ),
                 null => const CircularProgressIndicator(),
               },
             ),
-            Positioned(
-              left: 14,
-              bottom: 14,
-              child: Row(
-                children: [
-                  if (controller.canSwitchCamera) ...[
-                    FeedButton(
-                      icon: LucideIcons.rotateCcw,
-                      tooltip: controller.isFrontCamera
-                          ? 'Switch to back camera'
-                          : 'Switch to front camera',
-                      onPressed: controller.changing ? null : _flipCamera,
-                    ),
-                    const SizedBox(width: 7),
-                  ],
-                  FeedButton(
-                    icon: controller.running
-                        ? LucideIcons.pause
-                        : LucideIcons.play,
-                    tooltip: controller.running
-                        ? 'Pause camera'
-                        : 'Resume camera',
-                    onPressed:
-                        controller.changing || controller.description == null
-                        ? null
-                        : controller.running
-                        ? _pause
-                        : _resume,
-                  ),
-                ],
+            if (controller.canSwitchCamera)
+              Positioned(
+                left: 14,
+                bottom: 14,
+                child: FeedButton(
+                  icon: LucideIcons.rotateCcw,
+                  tooltip: controller.isFrontCamera
+                      ? 'Switch to back camera'
+                      : 'Switch to front camera',
+                  onPressed: controller.changing ? null : _flipCamera,
+                ),
               ),
-            ),
-            if (controller.running)
-              const Positioned(top: 14, right: 14, child: LiveBadge()),
           ],
         ),
       ),
@@ -787,6 +751,14 @@ class _LivePageState extends State<LivePage> {
               ]
             : const ['Stopped'],
         delegate: controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+        trailing: OutlineButton(
+          key: ValueKey('$_id-stats'),
+          icon: LucideIcons.chartLine,
+          label: 'Stats',
+          tooltip: _showStats ? 'Hide stats' : 'Show stats',
+          bordered: _showStats,
+          onPressed: () => setState(() => _showStats = !_showStats),
+        ),
       ),
       if (controller.notice case final notice?)
         Padding(
@@ -799,6 +771,14 @@ class _LivePageState extends State<LivePage> {
             ),
           ),
         ),
+      if (_showStats) ...[
+        const SizedBox(height: 10),
+        StatsCard(
+          key: ValueKey('$_id-stats-card'),
+          history: _speed,
+          delegates: _delegates,
+        ),
+      ],
     ];
   }
 }

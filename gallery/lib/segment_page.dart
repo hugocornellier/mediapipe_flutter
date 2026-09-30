@@ -311,7 +311,6 @@ class _SegmentPageState extends State<SegmentPage> {
   @override
   Widget build(BuildContext context) {
     final c = GalleryColors.of(context);
-    final phone = MediaQuery.sizeOf(context).width < Sizes.compact;
     final editor = _editor;
     final error = _error ?? editor?.error;
     return TaskWorkspace(
@@ -323,20 +322,7 @@ class _SegmentPageState extends State<SegmentPage> {
         builder: (context, _) => _panel(),
       ),
       children: [
-        PageHeading(
-          eyebrow: '${widget.task.category.title} / Live demo',
-          title: widget.task.title,
-          summary: widget.task.summary,
-          trailing: phone
-              ? null
-              : OutlineButton(
-                  icon: LucideIcons.circleHelp,
-                  label: 'Help',
-                  tooltip: 'Help',
-                  onPressed: () => showTaskHelp(context, widget.task),
-                ),
-        ),
-        SizedBox(height: phone ? 24 : 32),
+        TaskToolbar(task: widget.task),
         FeedFrame(
           child: Stack(
             fit: StackFit.expand,

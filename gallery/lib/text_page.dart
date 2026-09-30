@@ -251,7 +251,6 @@ class _TextPageState extends State<TextPage> {
   @override
   Widget build(BuildContext context) {
     final c = GalleryColors.of(context);
-    final phone = MediaQuery.sizeOf(context).width < Sizes.compact;
     Widget field(TextEditingController controller, String label) => TextField(
       controller: controller,
       minLines: 3,
@@ -264,20 +263,7 @@ class _TextPageState extends State<TextPage> {
       onOpenMenu: widget.onOpenMenu,
       settings: _panel(),
       children: [
-        PageHeading(
-          eyebrow: '${widget.task.category.title} / Live demo',
-          title: widget.task.title,
-          summary: widget.task.summary,
-          trailing: phone
-              ? null
-              : OutlineButton(
-                  icon: LucideIcons.circleHelp,
-                  label: 'Help',
-                  tooltip: 'Help',
-                  onPressed: () => showTaskHelp(context, widget.task),
-                ),
-        ),
-        SizedBox(height: phone ? 24 : 32),
+        TaskToolbar(task: widget.task),
         SurfaceCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

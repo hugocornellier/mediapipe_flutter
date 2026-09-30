@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// The gallery design's tokens: its colors, radii and type sizes. Dark is the
-/// design's own palette; light mirrors it for the sidebar's theme switch.
+/// The gallery design's tokens: its colors, radii and type sizes.
 @immutable
 final class GalleryColors extends ThemeExtension<GalleryColors> {
   const GalleryColors({
@@ -19,6 +18,8 @@ final class GalleryColors extends ThemeExtension<GalleryColors> {
     required this.onTeal,
     required this.switchOff,
     required this.knobOff,
+    required this.seriesCpu,
+    required this.seriesGpu,
   });
 
   final Color bg;
@@ -44,6 +45,12 @@ final class GalleryColors extends ThemeExtension<GalleryColors> {
   final Color switchOff;
   final Color knobOff;
 
+  /// Chart lines for the two delegates. The brand teal reads gray in a
+  /// line, so the GPU series is a stronger step of its hue; the pair passes
+  /// the color-vision checks against each theme's card.
+  final Color seriesCpu;
+  final Color seriesGpu;
+
   static const dark = GalleryColors(
     bg: Color(0xFF101314),
     surface: Color(0xFF171A1B),
@@ -59,6 +66,8 @@ final class GalleryColors extends ThemeExtension<GalleryColors> {
     onTeal: Color(0xFF0B2022),
     switchOff: Color(0xFF3B4243),
     knobOff: Color(0xFF9DA6A5),
+    seriesCpu: Color(0xFFD95926),
+    seriesGpu: Color(0xFF1FA7B5),
   );
 
   static const light = GalleryColors(
@@ -76,6 +85,8 @@ final class GalleryColors extends ThemeExtension<GalleryColors> {
     onTeal: Color(0xFFFFFFFF),
     switchOff: Color(0xFFCBD3D3),
     knobOff: Color(0xFFFFFFFF),
+    seriesCpu: Color(0xFFEB6834),
+    seriesGpu: Color(0xFF008E9C),
   );
 
   /// The theme's palette, or the one for its brightness under a theme
@@ -245,16 +256,4 @@ ThemeData galleryTheme(Brightness brightness) {
       },
     ),
   );
-}
-
-/// The app-wide theme choice the sidebar's switch changes.
-class GalleryThemeMode extends InheritedNotifier<ValueNotifier<ThemeMode>> {
-  const GalleryThemeMode({
-    super.key,
-    required ValueNotifier<ThemeMode> super.notifier,
-    required super.child,
-  });
-
-  static ValueNotifier<ThemeMode>? maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<GalleryThemeMode>()?.notifier;
 }

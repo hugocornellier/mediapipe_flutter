@@ -45,15 +45,14 @@ void main() {
     );
     await tester.pump();
 
-    // A phone keeps the title in the top bar and the Camera / Still image
-    // switch in full under the heading, as the design lays them out.
+    // A phone keeps the Camera / Still image switch below Info.
     final mode = find.byKey(const ValueKey('face-landmarker-mode'));
     expect(mode, findsOneWidget);
     expect(find.text('Camera'), findsOneWidget);
     expect(find.text('Still image'), findsOneWidget);
     expect(
       tester.getTopLeft(mode).dy,
-      greaterThan(tester.getBottomLeft(find.text(task.summary)).dy),
+      greaterThan(tester.getBottomLeft(find.byTooltip('About this task')).dy),
     );
     expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const ValueKey('face-landmarker-mode-image')));

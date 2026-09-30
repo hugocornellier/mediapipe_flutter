@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/link.dart';
 
 import '../catalog.dart';
 import 'components.dart';
@@ -124,7 +126,7 @@ class SettingsColumn extends StatelessWidget {
 /// A task page: its heading and body scroll in the middle, centred at the
 /// design's width, with settings beside them or, on phones, in a bottom
 /// sheet the top bar opens.
-class TaskWorkspace extends StatelessWidget {
+class TaskWorkspace extends StatefulWidget {
   const TaskWorkspace({
     super.key,
     required this.title,
@@ -143,23 +145,50 @@ class TaskWorkspace extends StatelessWidget {
   final List<Widget> children;
 
   @override
+  State<TaskWorkspace> createState() => _TaskWorkspaceState();
+}
+
+class _TaskWorkspaceState extends State<TaskWorkspace> {
+  /// The settings an open phone sheet shows. The sheet is a route of its own,
+  /// so it follows the page through this rather than keeping the settings it
+  /// opened with.
+  late final _sheetSettings = ValueNotifier<Widget?>(widget.settings);
+
+  @override
+  void didUpdateWidget(TaskWorkspace oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // After the frame: the sheet is outside this subtree, so it cannot be
+    // rebuilt while this one builds.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _sheetSettings.value = widget.settings;
+    });
+  }
+
+  @override
+  void dispose() {
+    _sheetSettings.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = GalleryColors.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final phone = width < Sizes.compact;
+    final settings = widget.settings;
     final panel = !phone && settings != null;
-    final body = GalleryPageBody(children: children);
+    final body = GalleryPageBody(children: widget.children);
     return Scaffold(
       backgroundColor: c.bg,
       body: Column(
         children: [
-          if (onOpenMenu != null || phone)
+          if (widget.onOpenMenu != null || phone)
             Builder(
               builder: (context) => TopBar(
-                title: title,
-                onOpenMenu: onOpenMenu,
+                title: widget.title,
+                onOpenMenu: widget.onOpenMenu,
                 onOpenSettings: phone && settings != null
-                    ? () => showSettingsSheet(context, settings!)
+                    ? () => showSettingsSheet(context, _sheetSettings)
                     : null,
               ),
             ),
@@ -182,7 +211,7 @@ class TaskWorkspace extends StatelessWidget {
                       left: false,
                       child: Material(
                         type: MaterialType.transparency,
-                        child: SettingsColumn(child: settings!),
+                        child: SettingsColumn(child: settings),
                       ),
                     ),
                   ),
@@ -195,20 +224,26 @@ class TaskWorkspace extends StatelessWidget {
   }
 }
 
-/// Opens [settings] as the design's phone bottom sheet.
-Future<void> showSettingsSheet(BuildContext context, Widget settings) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.82,
-      ),
-      builder: (context) => SettingsColumn(
-        onClose: () => Navigator.of(context).pop(),
-        child: settings,
-      ),
-    );
+/// Opens [settings] as the design's phone bottom sheet, rebuilt whenever
+/// they change.
+Future<void> showSettingsSheet(
+  BuildContext context,
+  ValueListenable<Widget?> settings,
+) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
+  constraints: BoxConstraints(
+    maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+  ),
+  builder: (context) => ValueListenableBuilder<Widget?>(
+    valueListenable: settings,
+    builder: (context, settings, _) => SettingsColumn(
+      onClose: () => Navigator.of(context).pop(),
+      child: settings ?? const SizedBox.shrink(),
+    ),
+  ),
+);
 
 /// A page's scrolling body at the design's width and padding.
 class GalleryPageBody extends StatelessWidget {
@@ -251,9 +286,57 @@ class GalleryPageBody extends StatelessWidget {
   }
 }
 
-/// The Help button's dialog: what the task does, the model it runs, and
+/// The row atop a task page: the page's own switch, if it has one, and Info.
+class TaskToolbar extends StatelessWidget {
+  const TaskToolbar({super.key, required this.task, this.leading});
+
+  final GalleryTask task;
+  final Widget? leading;
+
+  @override
+  Widget build(BuildContext context) {
+    final phone = MediaQuery.sizeOf(context).width < Sizes.compact;
+    final lead = leading;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final info = OutlineButton(
+            icon: LucideIcons.info,
+            label: phone ? null : 'Info',
+            tooltip: 'About this task',
+            onPressed: () => showTaskInfo(context, task),
+          );
+          if (lead != null && constraints.maxWidth < 450) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(alignment: Alignment.centerRight, child: info),
+                const SizedBox(height: 10),
+                lead,
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: lead ?? const SizedBox.shrink(),
+                ),
+              ),
+              info,
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// The Info button's dialog: what the task does, the model it runs, and
 /// Google's guide to it.
-Future<void> showTaskHelp(BuildContext context, GalleryTask task) {
+Future<void> showTaskInfo(BuildContext context, GalleryTask task) {
   final c = GalleryColors.of(context);
   final family = task.category.title.toLowerCase();
   final id = task.runtimeId == 'interactive_segmenter_legacy'
@@ -282,9 +365,20 @@ Future<void> showTaskHelp(BuildContext context, GalleryTask task) {
             const SizedBox(height: 18),
             const Eyebrow('Guide'),
             const SizedBox(height: 6),
-            SelectableText(
-              guide,
-              style: TextStyle(color: c.teal, fontSize: Sizes.sm),
+            Link(
+              uri: Uri.parse(guide),
+              target: LinkTarget.blank,
+              builder: (context, openLink) => InkWell(
+                onTap: openLink,
+                child: Text(
+                  guide,
+                  style: TextStyle(
+                    color: c.teal,
+                    fontSize: Sizes.sm,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 18),
             Text(

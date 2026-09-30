@@ -12,7 +12,6 @@ import 'audio_page.dart';
 import 'live_page.dart';
 import 'ui/components.dart';
 import 'ui/design.dart';
-import 'ui/task_icons.dart';
 import 'ui/workspace.dart';
 import 'gallery_assets_io.dart'
     if (dart.library.js_interop) 'web/gallery_assets.dart';
@@ -21,45 +20,58 @@ export 'gallery_assets_io.dart'
 
 SemanticsHandle? _webSemantics;
 
+/// The gallery's task order within each category; other tasks follow by title.
+const _taskOrder = [
+  'face_detector',
+  'face_landmarker',
+  'hand_landmarker',
+  'gesture_recognizer',
+  'pose_landmarker',
+  'holistic_landmarker',
+  'object_detector',
+  'image_classifier',
+  'image_embedder',
+  'image_segmenter',
+  'interactive_segmenter',
+  'interactive_segmenter_legacy',
+  'audio_classifier',
+  'language_detector',
+  'text_classifier',
+  'text_embedder',
+];
+
+int compareTasks(
+  ({String runtimeId, String title}) a,
+  ({String runtimeId, String title}) b,
+) {
+  int rank(String id) {
+    final index = _taskOrder.indexOf(id);
+    return index < 0 ? _taskOrder.length : index;
+  }
+
+  final byRank = rank(a.runtimeId).compareTo(rank(b.runtimeId));
+  return byRank != 0 ? byRank : a.title.compareTo(b.title);
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (kIsWeb) _webSemantics ??= WidgetsBinding.instance.ensureSemantics();
   runApp(const GalleryApp());
 }
 
-class GalleryApp extends StatefulWidget {
+class GalleryApp extends StatelessWidget {
   const GalleryApp({super.key, this.stillImagePicker});
 
   /// Lets device tests choose a fixture through the real gallery controls.
   final Future<XFile?> Function()? stillImagePicker;
 
   @override
-  State<GalleryApp> createState() => _GalleryAppState();
-}
-
-class _GalleryAppState extends State<GalleryApp> {
-  /// Dark, as the design is drawn; the sidebar's switch changes it.
-  final _mode = ValueNotifier(ThemeMode.dark);
-
-  @override
-  void dispose() {
-    _mode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => ValueListenableBuilder(
-    valueListenable: _mode,
-    builder: (context, mode, _) => MaterialApp(
-      title: 'MediaPipe Flutter Gallery',
-      debugShowCheckedModeBanner: false,
-      theme: galleryTheme(Brightness.light),
-      darkTheme: galleryTheme(Brightness.dark),
-      themeMode: mode,
-      builder: (context, child) =>
-          GalleryThemeMode(notifier: _mode, child: child!),
-      home: HomePage(stillImagePicker: widget.stillImagePicker),
-    ),
+  Widget build(BuildContext context) => MaterialApp(
+    title: 'MediaPipe Flutter Gallery',
+    debugShowCheckedModeBanner: false,
+    theme: galleryTheme(Brightness.light),
+    themeMode: ThemeMode.light,
+    home: HomePage(stillImagePicker: stillImagePicker),
   );
 }
 
@@ -249,8 +261,6 @@ class _NavigationSidebar extends StatelessWidget {
           (runtimeId: b.runtimeId, title: b.title),
         ),
       );
-    final themeMode = GalleryThemeMode.maybeOf(context);
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Material(
       color: c.surface,
       child: DecoratedBox(
@@ -325,7 +335,6 @@ class _NavigationSidebar extends StatelessWidget {
                     children: [
                       _item(
                         context,
-                        LucideIcons.sparkles,
                         'Home',
                         selectedTask == null,
                         () => onSelect(null),
@@ -345,7 +354,6 @@ class _NavigationSidebar extends StatelessWidget {
                             if (task.category == category)
                               _item(
                                 context,
-                                taskIcon(task.runtimeId),
                                 task.title,
                                 selectedTask?.id == task.id,
                                 () => onSelect(task),
@@ -355,49 +363,6 @@ class _NavigationSidebar extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (themeMode != null)
-                  Semantics(
-                    toggled: dark,
-                    label: 'Dark theme',
-                    onTap: () => themeMode.value = dark
-                        ? ThemeMode.light
-                        : ThemeMode.dark,
-                    excludeSemantics: true,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(Sizes.radiusSmall),
-                      onTap: () => themeMode.value = dark
-                          ? ThemeMode.light
-                          : ThemeMode.dark,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            Icon(
-                              dark ? LucideIcons.moon : LucideIcons.sun,
-                              size: 15,
-                              color: c.muted,
-                            ),
-                            const SizedBox(width: 9),
-                            Expanded(
-                              child: Text(
-                                'Dark theme',
-                                style: TextStyle(
-                                  color: c.muted,
-                                  fontSize: Sizes.md,
-                                ),
-                              ),
-                            ),
-                            DesignSwitch(
-                              value: dark,
-                              onChanged: (on) => themeMode.value = on
-                                  ? ThemeMode.dark
-                                  : ThemeMode.light,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -408,7 +373,6 @@ class _NavigationSidebar extends StatelessWidget {
 
   Widget _item(
     BuildContext context,
-    IconData icon,
     String title,
     bool selected,
     VoidCallback onTap, {
@@ -439,12 +403,6 @@ class _NavigationSidebar extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    icon,
-                    size: 15,
-                    color: selected || hovered ? c.text : c.muted,
-                  ),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       title,

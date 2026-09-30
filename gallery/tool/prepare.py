@@ -328,6 +328,7 @@ dependencies:
   crypto: ^3.0.6
   file_selector: ^1.0.3
   record: ^7.1.1
+  url_launcher: ^6.3.2
   # The gallery's icons, as its design uses (ISC).
   lucide_icons_flutter: ^3.1.20
 {camera}

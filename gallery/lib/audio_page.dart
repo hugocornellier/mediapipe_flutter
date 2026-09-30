@@ -292,7 +292,6 @@ class _AudioPageState extends State<AudioPage> {
   @override
   Widget build(BuildContext context) {
     final c = GalleryColors.of(context);
-    final phone = MediaQuery.sizeOf(context).width < Sizes.compact;
     final audio = _audio;
     final muted = TextStyle(color: c.muted, fontSize: Sizes.xs);
     final chunks = _microphone
@@ -303,40 +302,28 @@ class _AudioPageState extends State<AudioPage> {
       onOpenMenu: widget.onOpenMenu,
       settings: _panel(),
       children: [
-        PageHeading(
-          eyebrow: '${widget.task.category.title} / Live demo',
-          title: widget.task.title,
-          summary: widget.task.summary,
-          trailing: phone
-              ? null
-              : OutlineButton(
-                  icon: LucideIcons.circleHelp,
-                  label: 'Help',
-                  tooltip: 'Help',
-                  onPressed: () => showTaskHelp(context, widget.task),
-                ),
+        TaskToolbar(
+          task: widget.task,
+          leading: Segmented<bool>(
+            key: const ValueKey('audio-source'),
+            segments: const [
+              (
+                value: false,
+                label: 'Clips',
+                icon: LucideIcons.fileAudio,
+                key: ValueKey('audio-source-clips'),
+              ),
+              (
+                value: true,
+                label: 'Microphone',
+                icon: LucideIcons.mic,
+                key: ValueKey('audio-source-microphone'),
+              ),
+            ],
+            selected: _microphone,
+            onChanged: _busy ? null : (on) => unawaited(_setMicrophone(on)),
+          ),
         ),
-        SizedBox(height: phone ? 24 : 32),
-        Segmented<bool>(
-          key: const ValueKey('audio-source'),
-          segments: const [
-            (
-              value: false,
-              label: 'Clips',
-              icon: LucideIcons.fileAudio,
-              key: ValueKey('audio-source-clips'),
-            ),
-            (
-              value: true,
-              label: 'Microphone',
-              icon: LucideIcons.mic,
-              key: ValueKey('audio-source-microphone'),
-            ),
-          ],
-          selected: _microphone,
-          onChanged: _busy ? null : (on) => unawaited(_setMicrophone(on)),
-        ),
-        const SizedBox(height: 16),
         SurfaceCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -44,7 +44,9 @@ Future<void> tapDelegate(WidgetTester tester, VisionDelegate delegate) async {
   await tester.tap(segment);
   await tester.pump();
   if (sheet) {
-    await tester.tap(find.byTooltip('Close settings'));
+    // A long sheet scrolls its Close button out of the list to reach the
+    // control, so its route is closed directly.
+    Navigator.of(tester.element(segment)).pop();
     await _settle(tester);
   }
 }

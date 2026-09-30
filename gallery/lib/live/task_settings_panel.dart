@@ -163,29 +163,6 @@ class _TaskSettingsPanelState extends State<TaskSettingsPanel> {
                   ? widget.onDelegate
                   : null,
             ),
-            const SizedBox(height: 12),
-            if (widget.delegates.length < 2)
-              Text(
-                '${widget.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'} '
-                'only on this platform',
-                style: muted.copyWith(fontSize: Sizes.xs),
-              )
-            else if (widget.delegate == VisionDelegate.gpu)
-              Row(
-                children: [
-                  const StatusDot(),
-                  const SizedBox(width: 7),
-                  Text(
-                    'GPU accelerated',
-                    style: TextStyle(color: c.teal, fontSize: Sizes.xs),
-                  ),
-                ],
-              )
-            else
-              Text(
-                'Running on the CPU',
-                style: muted.copyWith(fontSize: Sizes.xs),
-              ),
           ],
         ),
         if (shownSettings.isNotEmpty)
