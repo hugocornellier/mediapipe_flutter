@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
-import 'embedding_similarity.dart';
 import 'live_camera_controller.dart';
 import 'task_settings.dart';
 
@@ -432,72 +431,6 @@ final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
-
-  @override
-  Future<void> close() async {
-    final task = _task;
-    _task = null;
-    await task?.dispose();
-  }
-}
-
-/// Image Embedder, reporting each frame's similarity to the first one.
-final class ImageEmbedderLiveTask
-    implements LiveTask<EmbeddingSimilarity>, StatefulLiveTask {
-  @override
-  final settings = TaskSettingValues('image_embedder');
-
-  ImageEmbedder? _task;
-  VisionEmbedding? _first;
-
-  @override
-  void forgetFrames() => _first = null;
-
-  @override
-  String get name => 'Image Embedder';
-
-  @override
-  Future<void> open(
-    VisionDelegate delegate,
-    Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
-  }) async {
-    _first = null;
-    _task = await ImageEmbedder.create(
-      ImageEmbedderOptions(
-        delegate: delegate,
-        modelBytes: modelBytes,
-        runningMode: mode,
-        l2Normalize: settings.on('l2Normalize'),
-        quantize: settings.on('quantize'),
-      ),
-    );
-  }
-
-  @override
-  Future<EmbeddingSimilarity> detectImage(VisionImage image) async {
-    final result = await _task!.embedImage(image);
-    return EmbeddingSimilarity(result, null);
-  }
-
-  @override
-  Future<EmbeddingSimilarity> detect(
-    VisionImage frame,
-    int timestamp, {
-    required int rotationDegrees,
-  }) async {
-    final result = await _task!.embedForVideo(
-      frame,
-      timestampMilliseconds: timestamp,
-      rotationDegrees: rotationDegrees,
-    );
-    final embedding = result.embeddings.first;
-    final first = _first ??= embedding;
-    return EmbeddingSimilarity(
-      result,
-      ImageEmbedder.cosineSimilarity(first, embedding),
-    );
-  }
 
   @override
   Future<void> close() async {

@@ -107,6 +107,9 @@ SAMPLES = {
     'landmark_tasks/thumb_up.jpg': 'thumb_up.jpg',
     'interactive_segmentation/cats_and_dogs.jpg': 'animals.jpg',
 }
+# The photos Google's Image Embedding demo compares, which the gallery keeps
+# with their provenance in samples/README.md.
+EMBEDDER_SAMPLES = ['dog.jpg', 'cat.png', 'elephant.png']
 
 MODELS = {
     'face_detector': ('blazeFaceShortRange', 'blaze_face_short_range.tflite'),
@@ -264,6 +267,10 @@ def prepare(target, selected):
     audio_samples = AUDIO_SAMPLES if 'audio_classifier' in bundled else []
     for name in audio_samples:
         shutil.copyfile(AUDIO / 'test/fixtures' / name, samples / name)
+    embedder_samples = EMBEDDER_SAMPLES if 'image_embedder' in bundled else []
+    for name in embedder_samples:
+        shutil.copyfile(GALLERY / 'samples' / name, samples / name)
+    sample_names = sorted([*SAMPLES.values(), *audio_samples, *embedder_samples])
 
     # On macOS, Google's engine is opt-in (95 MB); anything but the face pair
     # needs it, and Face Landmarker then runs on it too.
@@ -276,7 +283,7 @@ def prepare(target, selected):
         'target': target,
         'tasks': sorted(bundled),
         'models': bundled,
-        'samples': sorted([*SAMPLES.values(), *audio_samples]),
+        'samples': sample_names,
         'official_macos_landmark_tasks': sorted(
             OFFICIAL_MACOS_TASKS & bundled.keys()) if macos_engine else [],
         'official_ios_sdk': '1.0.1' if target.startswith('ios') else None,
@@ -287,8 +294,7 @@ def prepare(target, selected):
 
     entries = '\n'.join(
         [f'    - assets/models/{name}' for name in sorted(bundled.values())]
-        + [f'    - assets/samples/{name}'
-           for name in sorted([*SAMPLES.values(), *audio_samples])])
+        + [f'    - assets/samples/{name}' for name in sample_names])
     # camera_desktop supplies native desktop preview and raw image streaming;
     # camera itself supplies the mobile implementations.
     camera = ('  camera: ^0.12.1\n  camera_desktop: ^1.2.2'

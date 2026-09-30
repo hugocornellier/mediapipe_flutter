@@ -20,7 +20,7 @@ const cases = {
   hand_landmarker: {title: 'Hand Landmarker', sample: 'hands.jpg', result: /[1-9]\d* hands? detected/},
   holistic_landmarker: {title: 'Holistic Landmarker', sample: 'pose.jpg', result: /Body landmarks detected/},
   image_classifier: {title: 'Image Classifier', sample: 'portrait.jpg', result: /[1-9]\d* classes returned/},
-  image_embedder: {title: 'Image Embedder', sample: 'portrait.jpg', result: /[1-9]\d* embeddings generated/},
+  image_embedder: {title: 'Image Embedder', embed: true},
   image_segmenter: {title: 'Image Segmenter', sample: 'portrait.jpg', result: /Segmentation complete/},
   object_detector: {title: 'Object Detector', sample: 'group.jpeg', result: /[1-9]\d* objects? detected/},
   pose_landmarker: {title: 'Pose Landmarker', sample: 'pose.jpg', result: /[1-9]\d* poses? detected/},
@@ -163,6 +163,34 @@ try {
       // The status line opens with the chosen file's name.
       assert.equal(await page.getByText(new RegExp(`^${spec.sample.replace('.', '\\.')} · `)).count(), 1);
       await page.screenshot({path: path.join(evidence, `${id}-still.png`)});
+    } else if (spec.embed) {
+      // The page opens comparing Dog with Cat; each delegate compares them
+      // again, and the status line names the delegate that did.
+      const delegates = delegatesFor(id);
+      assert.ok(delegates.length > 0, `${id} has no required web delegate`);
+      const similarity = /^Cosine similarity -?\d\.\d{4}$/;
+      for (const delegate of delegates) {
+        enter(`${id}:${delegate}:compare`);
+        if (delegates.length > 1) await delegateButton(delegate).click({timeout: 120000});
+        await stillRan(delegate).waitFor({timeout: 120000});
+        await page.getByText(similarity).waitFor();
+        report.checks.push(`${id}:${delegate}:compare`);
+      }
+      // The same sample on both sides is identical.
+      enter(`${id}:same`);
+      await page.locator('[flt-semantics-identifier="image-embedder-2-samples"]')
+        .getByRole('button', {name: 'Dog', exact: true}).click();
+      await page.getByText(/^Cosine similarity 1\.0000$/).waitFor({timeout: 120000});
+      // An upload replaces the first image.
+      enter(`${id}:upload`);
+      const chooserPromise = page.waitForEvent('filechooser');
+      await page.locator('[flt-semantics-identifier="image-embedder-1-upload"]')
+        .getByRole('button').click();
+      const chooser = await chooserPromise;
+      await chooser.setFiles(path.join(repo, 'gallery/assets/samples/portrait.jpg'));
+      await page.getByText(/^Cosine similarity (?!1\.0000$)-?\d\.\d{4}$/).waitFor({timeout: 120000});
+      report.checks.push(`${id}:upload`);
+      await page.screenshot({path: path.join(evidence, `${id}.png`)});
     } else if (spec.text) {
       enter(`${id}:run`);
       await page.getByRole('button', {name: id === 'text_embedder' ? 'Compare' : 'Run', exact: true}).click();

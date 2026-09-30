@@ -22,7 +22,10 @@ final class TaskModel {
 
 /// The bundled model's name where Google's demo names it, keyed by the
 /// catalog's runtime id; other tasks call theirs "Standard".
-const standardModelNames = <String, String>{'image_segmenter': 'DeepLab V3'};
+const standardModelNames = <String, String>{
+  'image_embedder': 'MobileNet-V3 (Small)',
+  'image_segmenter': 'DeepLab V3',
+};
 
 /// Alternatives to each task's bundled model, keyed by the catalog's runtime
 /// id. Every one runs through Google's own task API for that task.

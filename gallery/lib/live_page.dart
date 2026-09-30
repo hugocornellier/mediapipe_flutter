@@ -1,9 +1,6 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -12,12 +9,12 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'catalog.dart';
 import 'live/live_camera_controller.dart';
 import 'live/camera_geometry.dart';
-import 'live/embedding_similarity.dart';
 import 'live/live_camera_view.dart';
 import 'live/live_registry.dart';
 import 'live/mask_overlay.dart';
 import 'live/overlay_visibility.dart';
 import 'live/speed_history.dart';
+import 'live/still_image.dart';
 import 'live/task_models.dart';
 import 'live/task_settings.dart';
 import 'live/live_output.dart';
@@ -392,76 +389,27 @@ class _LivePageState extends State<LivePage> {
     }
   }
 
-  /// A phone picks from its photo library, as its own apps do; the web and
-  /// desktops open a file dialog.
-  Future<XFile?> _pickImage() {
-    final phone =
-        !kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.iOS ||
-            defaultTargetPlatform == TargetPlatform.android);
-    if (phone) {
-      // Without full metadata iOS shows its picker without asking for
-      // photo library access.
-      return ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        requestFullMetadata: false,
-      );
-    }
-    return openFile(
-      acceptedTypeGroups: const [
-        XTypeGroup(
-          label: 'Images',
-          extensions: ['jpg', 'jpeg', 'png', 'webp'],
-          uniformTypeIdentifiers: ['public.image'],
-        ),
-      ],
-    );
-  }
-
   Future<void> _chooseImage() async {
     final modeRevision = _modeRevision;
     try {
-      final file = await (widget.stillImagePicker?.call() ?? _pickImage());
+      final file = await (widget.stillImagePicker?.call() ?? pickStillImage());
       if (file == null) return;
       final bytes = await file.readAsBytes();
-      final codec = await ui.instantiateImageCodec(bytes);
-      try {
-        final frame = await codec.getNextFrame();
-        final image = frame.image;
-        try {
-          final rgba = await image.toByteData(
-            format: ui.ImageByteFormat.rawRgba,
-          );
-          if (rgba == null) throw StateError('Could not decode this image.');
-          final input = VisionImage.fromPixels(
-            pixels: rgba.buffer.asUint8List(
-              rgba.offsetInBytes,
-              rgba.lengthInBytes,
-            ),
-            width: image.width,
-            height: image.height,
-            format: VisionPixelFormat.rgba,
-          );
-          if (!mounted ||
-              _mode != _VisionInputMode.image ||
-              modeRevision != _modeRevision) {
-            return;
-          }
-          setState(() {
-            _imageBytes = bytes;
-            _imageInput = input;
-            _imageSize = Size(image.width.toDouble(), image.height.toDouble());
-            _imageName = file.name;
-            _imageResult = null;
-            _imageError = null;
-          });
-          unawaited(_detectImage());
-        } finally {
-          image.dispose();
-        }
-      } finally {
-        codec.dispose();
+      final still = await decodeStillImage(bytes);
+      if (!mounted ||
+          _mode != _VisionInputMode.image ||
+          modeRevision != _modeRevision) {
+        return;
       }
+      setState(() {
+        _imageBytes = bytes;
+        _imageInput = still.input;
+        _imageSize = still.size;
+        _imageName = file.name;
+        _imageResult = null;
+        _imageError = null;
+      });
+      unawaited(_detectImage());
     } on Object catch (error) {
       if (mounted &&
           _mode == _VisionInputMode.image &&
@@ -570,8 +518,6 @@ class _LivePageState extends State<LivePage> {
       '${detections.length} ${detections.length == 1 ? 'object' : 'objects'} detected',
     ImageClassifierResult(:final classifications) =>
       '${classifications.firstOrNull?.categories.length ?? 0} classes returned',
-    EmbeddingSimilarity(:final result) =>
-      '${result.embeddings.length} embeddings generated',
     SegmentationResult(:final categoryMask) =>
       categoryMask == null
           ? 'No category mask returned'

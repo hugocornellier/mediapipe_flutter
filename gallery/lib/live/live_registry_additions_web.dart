@@ -19,6 +19,5 @@ Map<String, LiveDemo> additionalLiveDemos(dynamic painter) => {
     task: ImageClassifierLiveTask.new,
     overlay: painter,
   ),
-  'image_embedder_live': (task: ImageEmbedderLiveTask.new, overlay: painter),
   'image_segmenter_live': (task: ImageSegmenterLiveTask.new, overlay: painter),
 };

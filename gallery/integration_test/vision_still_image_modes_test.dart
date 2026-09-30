@@ -21,7 +21,6 @@ void main() {
         'hand_landmarker',
         'holistic_landmarker',
         'image_classifier',
-        'image_embedder',
         'image_segmenter',
         'object_detector',
         'pose_landmarker',

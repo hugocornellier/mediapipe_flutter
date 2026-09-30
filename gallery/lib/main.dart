@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_vision/capabilities.dart';
 
 import 'catalog.dart';
+import 'embed_page.dart';
 import 'segment_page.dart';
 import 'text_page.dart';
 import 'audio_page.dart';
@@ -186,6 +187,13 @@ class _GalleryShellState extends State<_GalleryShell> {
         task: task,
         assets: widget.assets,
         platform: widget.platform,
+        onOpenMenu: openMenu,
+      ),
+      GalleryDemo.embed => EmbedPage(
+        task: task,
+        imagePicker: widget.stillImagePicker,
+        platform: widget.platform,
+        officialMacosLandmarkTasks: widget.assets.officialMacosLandmarkTasks,
         onOpenMenu: openMenu,
       ),
       GalleryDemo.text => TextPage(task: task, onOpenMenu: openMenu),

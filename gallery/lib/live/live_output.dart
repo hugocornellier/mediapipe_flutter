@@ -1,7 +1,6 @@
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import '../ui/components.dart';
-import 'embedding_similarity.dart';
 
 /// What a vision result shows in the Output card: a title, a count beside
 /// it, and scores as bars.
@@ -177,16 +176,6 @@ LiveOutput? liveOutput(Object? result) => switch (result) {
         ),
     ],
     empty: 'No class above the score threshold.',
-  ),
-  EmbeddingSimilarity(:final result, :final similarity) => (
-    title: 'Similarity to the first frame',
-    count:
-        '${result.embeddings.firstOrNull?.floatEmbedding?.length ?? result.embeddings.firstOrNull?.quantizedEmbedding?.length ?? 0} dimensions',
-    items: [
-      if (similarity case final similarity?)
-        (name: 'Cosine similarity', value: similarity),
-    ],
-    empty: 'An image embeds without a comparison.',
   ),
   SegmentationResult(:final categoryMask?, :final labels) => (
     title: 'Coverage',

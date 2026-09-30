@@ -8,6 +8,7 @@ import 'package:mediapipe_vision/capabilities.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/audio_page.dart';
 import 'package:mediapipe_gallery/catalog.dart';
+import 'package:mediapipe_gallery/embed_page.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/live_page.dart';
 import 'package:mediapipe_gallery/main.dart';
@@ -26,8 +27,8 @@ const _gpuSkipTasks = String.fromEnvironment('SDK_GPU_SKIP_TASKS');
 
 /// Runs every page exposed by this build through the same shell and sidebar a
 /// user opens: each camera page live on every delegate it offers, switched
-/// while running, then a still image on each; the segmenter, text and audio
-/// pages on theirs. The picker supplies bundled image bytes without a device
+/// while running, then a still image on each; Image Embedder's two images,
+/// and the segmenter, text and audio pages on theirs. The picker supplies bundled image bytes without a device
 /// file dialog; decoding, task creation, inference and rendering stay real.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -131,6 +132,8 @@ void main() {
             .byType(
               task.demo == GalleryDemo.live
                   ? LivePage
+                  : task.demo == GalleryDemo.embed
+                  ? EmbedPage
                   : task.demo == GalleryDemo.segment
                   ? SegmentPage
                   : task.demo == GalleryDemo.text
@@ -224,6 +227,62 @@ void main() {
             isNotEmpty,
             reason: '${task.id} ran no still image',
           );
+          break;
+        case GalleryDemo.embed:
+          // The page opens comparing Dog with Cat; each delegate compares
+          // them again.
+          final choices = offered(task).length > 1;
+          String? similarity;
+          for (final delegate in delegatesFor(task)) {
+            if (choices) await tapDelegate(tester, delegate);
+            final optional =
+                delegate == VisionDelegate.gpu && _gpu == 'optional';
+            similarity = await _compared(tester, delegate, optional: optional);
+            if (similarity == null) {
+              gpuRefused = true;
+              _note(
+                '${task.id}: GPU refused, CPU from here: ${_screen(tester)}',
+              );
+              await tapDelegate(tester, VisionDelegate.cpu);
+              similarity = await _compared(
+                tester,
+                VisionDelegate.cpu,
+                optional: false,
+              );
+              break;
+            }
+            checks.add('${task.id}:${delegate.name}:compare');
+          }
+          expect(similarity, isNot('1.0000'), reason: 'Dog and Cat differ');
+          // The same sample twice is identical.
+          final dog = find.byKey(const ValueKey('image-embedder-2-dog'));
+          await tester.ensureVisible(dog);
+          await tester.tap(dog);
+          await _until(tester, () => _similarity(tester) == '1.0000');
+          // An upload replaces the first image, through the page's picker.
+          final data = await tester.runAsync(
+            () => rootBundle.load('assets/samples/portrait.jpg'),
+          );
+          imageBytes = Uint8List.fromList(
+            data!.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+          );
+          imageName = 'portrait.jpg';
+          final upload = find.byKey(const ValueKey('image-embedder-1-upload'));
+          await tester.ensureVisible(upload);
+          await tester.tap(upload);
+          await _until(
+            tester,
+            () => tester
+                .widgetList<Image>(
+                  find.byKey(const ValueKey('image-embedder-1-image')),
+                )
+                .any((image) => image.semanticLabel == 'Image 1: uploaded'),
+          );
+          await _until(
+            tester,
+            () => !(_similarity(tester) ?? '1.0000').startsWith('1.0000'),
+          );
+          checks.add('${task.id}:upload');
           break;
         case GalleryDemo.text:
           checks.add('${task.id}:cpu:run');
@@ -320,7 +379,6 @@ final _stillResults = <String, RegExp>{
   'hand_landmarker': RegExp(r'^[1-9]\d* hands? detected$'),
   'holistic_landmarker': RegExp(r'^Body landmarks detected$'),
   'image_classifier': RegExp(r'^[1-9]\d* classes returned$'),
-  'image_embedder': RegExp(r'^[1-9]\d* embeddings generated$'),
   'image_segmenter': RegExp(r'^Segmentation complete$'),
   'object_detector': RegExp(r'^[1-9]\d* objects? detected$'),
   'pose_landmarker': RegExp(r'^[1-9]\d* poses? detected$'),
@@ -441,6 +499,62 @@ Future<bool> _stillRan(
   }
   if (optional) return false;
   fail('No $label still image result matching $expected: ${_screen(tester)}');
+}
+
+/// The cosine similarity Image Embedder shows, once it has one.
+String? _similarity(WidgetTester tester) {
+  final card = find.byKey(const ValueKey('image-embedder-similarity'));
+  if (card.evaluate().isEmpty) return null;
+  final value = RegExp(r'^-?\d\.\d{4}$');
+  for (final text in tester.widgetList<Text>(
+    find.descendant(of: card, matching: find.byType(Text)),
+  )) {
+    if (value.hasMatch(text.data ?? '')) return text.data;
+  }
+  return null;
+}
+
+/// Waits for Image Embedder to compare its images on [delegate] and returns
+/// the similarity. An [optional] delegate that gives none within a minute
+/// returns null.
+Future<String?> _compared(
+  WidgetTester tester,
+  VisionDelegate delegate, {
+  required bool optional,
+}) async {
+  final label = delegate == VisionDelegate.gpu ? 'GPU' : 'CPU';
+  final ran = RegExp(r'^Inference \d+\.\d ms$');
+  final error = find.byKey(const ValueKey('image-embedder-error'));
+  final deadline = DateTime.now().add(Duration(seconds: optional ? 60 : 120));
+  while (DateTime.now().isBefore(deadline)) {
+    await tester.pump();
+    final page = find.byType(EmbedPage);
+    final busy =
+        page.evaluate().isNotEmpty &&
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('image-embedder-similarity')),
+              matching: find.byType(AnimatedOpacity),
+            )
+            .evaluate()
+            .any((element) => (element.widget as AnimatedOpacity).opacity < 1);
+    if (!busy &&
+        _status(tester).any(
+          (status) =>
+              status.delegate == label && status.parts.any(ran.hasMatch),
+        )) {
+      if (_similarity(tester) case final similarity?) return similarity;
+    }
+    if (error.evaluate().isNotEmpty) {
+      if (optional) return null;
+      fail('$label comparison failed: ${_screen(tester)}');
+    }
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 250)),
+    );
+  }
+  if (optional) return null;
+  fail('No $label comparison: ${_screen(tester)}');
 }
 
 /// The error a still image page shows in the theme's error colour, if any.
