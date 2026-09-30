@@ -63,7 +63,8 @@ final class SpeedHistory {
     if (seconds > _durationSeconds) _durationSeconds = seconds;
     final chart = _chartSeries[delegate] ??= [];
     final bucket = (seconds / _chartInterval).floor();
-    if (continuous && chart.isNotEmpty &&
+    if (continuous &&
+        chart.isNotEmpty &&
         (chart.last.seconds / _chartInterval).floor() == bucket) {
       final count = _chartCount[delegate]!;
       chart[chart.length - 1] = (
