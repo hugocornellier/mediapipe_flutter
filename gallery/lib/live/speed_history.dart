@@ -16,7 +16,6 @@ final class SpeedHistory {
   final _chartCount = <VisionDelegate, int>{};
   VisionDelegate? _last;
   Duration? _lastAt;
-  double _peakMilliseconds = 0;
   double _durationSeconds = 0;
 
   /// The chart averages within fixed quarter-second intervals. Once the
@@ -34,9 +33,18 @@ final class SpeedHistory {
   List<SpeedSample> chartSamples(VisionDelegate delegate) =>
       _chartSeries[delegate] ?? const [];
 
-  /// The axes use all recorded delegates, even when one line is hidden.
-  double get peakMilliseconds => _peakMilliseconds;
   double get durationSeconds => _durationSeconds;
+
+  /// The highest value actually drawn for [delegates].
+  double chartPeak(Iterable<VisionDelegate> delegates) {
+    var peak = 0.0;
+    for (final delegate in delegates) {
+      for (final sample in chartSamples(delegate)) {
+        if (sample.milliseconds > peak) peak = sample.milliseconds;
+      }
+    }
+    return peak;
+  }
 
   /// Samples recorded on every delegate, for repainting when it changes.
   int get length => _series.values.fold(0, (sum, list) => sum + list.length);
@@ -59,7 +67,6 @@ final class SpeedHistory {
       seconds: seconds,
       milliseconds: milliseconds,
     ));
-    if (milliseconds > _peakMilliseconds) _peakMilliseconds = milliseconds;
     if (seconds > _durationSeconds) _durationSeconds = seconds;
     final chart = _chartSeries[delegate] ??= [];
     final bucket = (seconds / _chartInterval).floor();
