@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart';
@@ -34,10 +35,30 @@ Future<XFile?> pickStillImage() {
 /// An encoded image decoded for a vision task: its RGBA pixels and size.
 typedef StillImage = ({VisionImage input, ui.Size size});
 
-/// Decodes [bytes] as the platform's image codec does for display, so the
-/// task sees the pixels the page shows.
+/// The longest side a still image is decoded at. A phone photo decoded in
+/// full is 50 to 200 MB of RGBA, copied again on its way into Android's Java
+/// heap, which ran the app out of memory; the models see far fewer pixels.
+const stillImageMaxSide = 2048;
+
+/// Opens [bytes] scaled down, if need be, to [maxSide] on its longer side.
+Future<ui.Codec> decodeScaledDown(Uint8List bytes, int maxSide) async =>
+    ui.instantiateImageCodecWithSize(
+      await ui.ImmutableBuffer.fromUint8List(bytes),
+      getTargetSize: (width, height) {
+        final longer = math.max(width, height);
+        if (longer <= maxSide) return const ui.TargetImageSize();
+        final scale = maxSide / longer;
+        return ui.TargetImageSize(
+          width: math.max(1, (width * scale).round()),
+          height: math.max(1, (height * scale).round()),
+        );
+      },
+    );
+
+/// Decodes [bytes] as the platform's image codec does for display, no larger
+/// than [stillImageMaxSide], so the task sees the pixels the page shows.
 Future<StillImage> decodeStillImage(Uint8List bytes) async {
-  final codec = await ui.instantiateImageCodec(bytes);
+  final codec = await decodeScaledDown(bytes, stillImageMaxSide);
   try {
     final frame = await codec.getNextFrame();
     final image = frame.image;

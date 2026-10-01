@@ -3,125 +3,9 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:crypto/crypto.dart';
+import 'package:gallery_builder/models.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
-
-final class Model {
-  const Model(this.fileName, this.url, this.sha256);
-
-  final String fileName;
-  final String url;
-  final String sha256;
-}
-
-const _models = <String, Model>{
-  'audio_classifier': Model(
-    'yamnet.tflite',
-    'https://storage.googleapis.com/mediapipe-models/audio_classifier/yamnet/float32/1/yamnet.tflite',
-    '4d8b4a53282dc83ef04e3e7dbc4fbc98082e34e44ed798e16c3a0cdd4c584faf',
-  ),
-  'face_detector': Model(
-    'blaze_face_short_range.tflite',
-    'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',
-    'b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f',
-  ),
-  'face_landmarker': Model(
-    'face_landmarker.task',
-    'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-    '64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff',
-  ),
-  'gesture_recognizer': Model(
-    'gesture_recognizer.task',
-    'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task',
-    '97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482',
-  ),
-  'hand_landmarker': Model(
-    'hand_landmarker.task',
-    'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-    'fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1',
-  ),
-  'holistic_landmarker': Model(
-    'holistic_landmarker.task',
-    'https://storage.googleapis.com/mediapipe-models/holistic_landmarker/holistic_landmarker/float16/1/holistic_landmarker.task',
-    'e2dab61191e2dcd0a15f943d8e3ed1dce13c82dfa597b9dd39f562975a50c3f8',
-  ),
-  'image_classifier': Model(
-    'efficientnet_lite0.tflite',
-    'https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite',
-    '6c7ab0a6e5dcbf38a8c33b960996a55a3b4300b36a018c4545801de3a3c8bde0',
-  ),
-  'image_embedder': Model(
-    'mobilenet_v3_small.tflite',
-    'https://storage.googleapis.com/mediapipe-models/image_embedder/mobilenet_v3_small/float32/1/mobilenet_v3_small.tflite',
-    'bbbb4c51a55a53905af1daec995ca1aae355046f8839bb8c9f5ce9271394bc40',
-  ),
-  'image_segmenter': Model(
-    'deeplab_v3.tflite',
-    'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite',
-    'ff36e24d40547fe9e645e2f4e8745d1876d6e38b332d39a82f0bf0f5d1d561b3',
-  ),
-  'interactive_segmenter': Model(
-    'interactive_segmentation.task',
-    'https://storage.googleapis.com/mediapipe-models/interactive_segmenter_v2/magic_touch/int8/1/interactive_segmentation.task',
-    '38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03',
-  ),
-  'language_detector': Model(
-    'language_detector.tflite',
-    'https://storage.googleapis.com/mediapipe-models/language_detector/language_detector/float32/1/language_detector.tflite',
-    '7db4f23dfe1ad8966b050b419a865da451143fd43eb6b606a256aadeeb1e5417',
-  ),
-  'object_detector': Model(
-    'efficientdet_lite0.tflite',
-    'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float32/1/efficientdet_lite0.tflite',
-    '40338edf5ec70d43e318b0a716a84d4564cd1802759a7a07170c7e43796dbf58',
-  ),
-  'pose_landmarker': Model(
-    'pose_landmarker_lite.task',
-    'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
-    '59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a',
-  ),
-  'text_classifier': Model(
-    'bert_classifier.tflite',
-    'https://storage.googleapis.com/mediapipe-models/text_classifier/bert_classifier/float32/1/bert_classifier.tflite',
-    '9b45012ab143d88d61e10ea501d6c8763f7202b86fa987711519d89bfa2a88b1',
-  ),
-  'text_embedder': Model(
-    'universal_sentence_encoder.tflite',
-    'https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/1/universal_sentence_encoder.tflite',
-    '89ad3c74175dd8caa398cc22b657296d94302d20c525c12b58b29420f7249749',
-  ),
-};
-
-const _nonVisionTasks = {
-  'audio_classifier',
-  'language_detector',
-  'text_classifier',
-  'text_embedder',
-};
-
-const _samples = <String, String>{
-  'packages/mediapipe-task-vision/test/fixtures/face_detection/landmark-ex1.jpg':
-      'portrait.jpg',
-  'packages/mediapipe-task-vision/test/fixtures/face_detection/group-shot-bounding-box-ex1.jpeg':
-      'group.jpeg',
-  'packages/mediapipe-task-vision/test/fixtures/landmark_tasks/right_hands.jpg':
-      'hands.jpg',
-  'packages/mediapipe-task-vision/test/fixtures/landmark_tasks/pose.jpg':
-      'pose.jpg',
-  'packages/mediapipe-task-vision/test/fixtures/landmark_tasks/thumb_up.jpg':
-      'thumb_up.jpg',
-  'packages/mediapipe-task-vision/test/fixtures/interactive_segmentation/cats_and_dogs.jpg':
-      'animals.jpg',
-  'packages/mediapipe-task-audio/test/fixtures/speech_16000_hz_mono.wav':
-      'speech_16000_hz_mono.wav',
-  'packages/mediapipe-task-audio/test/fixtures/speech_48000_hz_mono.wav':
-      'speech_48000_hz_mono.wav',
-  'packages/mediapipe-task-audio/test/fixtures/two_heads_16000_hz_mono.wav':
-      'two_heads_16000_hz_mono.wav',
-  'gallery/samples/dog.jpg': 'dog.jpg',
-  'gallery/samples/cat.png': 'cat.png',
-  'gallery/samples/elephant.png': 'elephant.png',
-};
 
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
@@ -147,9 +31,9 @@ Future<void> main(List<String> arguments) async {
   }
   final requested = options.option('tasks');
   final tasks = requested == null
-      ? _models.keys.toSet()
+      ? models.keys.toSet()
       : requested.split(',').map((task) => task.trim()).toSet();
-  final unknown = tasks.difference(_models.keys.toSet());
+  final unknown = tasks.difference(models.keys.toSet());
   if (unknown.isNotEmpty) {
     stderr.writeln(
       'Unavailable tasks for $target: ${unknown.toList()..sort()}',
@@ -158,21 +42,30 @@ Future<void> main(List<String> arguments) async {
     return;
   }
 
-  final repo = p.normalize(
-    p.join(p.dirname(Platform.script.toFilePath()), '../../..'),
-  );
+  try {
+    await _prepare(target, tasks.toList()..sort());
+  } on Object catch (error) {
+    // Nothing needs cleaning up: a rerun keeps the models already verified
+    // and fetches the rest.
+    stderr.writeln('\nPreparation failed: $error');
+    stderr.writeln('Nothing was built. Check the network and run it again.');
+    exitCode = 1;
+  }
+}
+
+Future<void> _prepare(String target, List<String> tasks) async {
+  final repo = _repositoryRoot();
   final gallery = p.join(repo, 'gallery');
   final modelsDirectory = Directory(p.join(gallery, 'assets/models'));
   final samplesDirectory = Directory(p.join(gallery, 'assets/samples'));
-  await _replaceDirectory(modelsDirectory);
-  await _replaceDirectory(samplesDirectory);
+  await modelsDirectory.create(recursive: true);
 
   final client = http.Client();
   try {
-    for (final task in tasks.toList()..sort()) {
-      final model = _models[task]!;
+    for (final task in tasks) {
+      final model = models[task]!;
       stdout.writeln('Preparing $task (${model.fileName})...');
-      await _downloadVerified(
+      await _prepareModel(
         model,
         File(p.join(modelsDirectory.path, model.fileName)),
         client,
@@ -181,14 +74,22 @@ Future<void> main(List<String> arguments) async {
   } finally {
     client.close();
   }
+  // Models another target or an earlier task list left behind.
+  final bundled = {for (final task in tasks) models[task]!.fileName};
+  await for (final entity in modelsDirectory.list()) {
+    if (entity is File && !bundled.contains(p.basename(entity.path))) {
+      await entity.delete();
+    }
+  }
 
+  await _replaceDirectory(samplesDirectory);
   final sampleNames = <String>[];
-  for (final entry in _samples.entries) {
+  for (final entry in samples.entries) {
     if (!tasks.contains('audio_classifier') && entry.value.endsWith('.wav')) {
       continue;
     }
     if (!tasks.contains('image_embedder') &&
-        const {'dog.jpg', 'cat.png', 'elephant.png'}.contains(entry.value)) {
+        embedderSamples.contains(entry.value)) {
       continue;
     }
     final source = File(p.join(repo, entry.key));
@@ -200,13 +101,12 @@ Future<void> main(List<String> arguments) async {
   }
   sampleNames.sort();
 
-  final sortedTasks = tasks.toList()..sort();
   final modelNames = <String, String>{
-    for (final task in sortedTasks) task: _models[task]!.fileName,
+    for (final task in tasks) task: models[task]!.fileName,
   };
   final manifest = <String, Object?>{
     'target': target,
-    'tasks': sortedTasks,
+    'tasks': tasks,
     'models': modelNames,
     'samples': sampleNames,
     'official_macos_landmark_tasks': <String>[],
@@ -219,17 +119,75 @@ Future<void> main(List<String> arguments) async {
   ).writeAsString('${const JsonEncoder.withIndent('  ').convert(manifest)}\n');
   await File(
     p.join(gallery, 'pubspec.yaml'),
-  ).writeAsString(_pubspec(target, sortedTasks, modelNames, sampleNames));
+  ).writeAsString(_pubspec(target, tasks, modelNames, sampleNames));
 
-  stdout.writeln('$target: ${sortedTasks.length} task(s) bundled');
-  for (final task in sortedTasks) {
+  stdout.writeln('$target: ${tasks.length} task(s) bundled');
+  for (final task in tasks) {
     stdout.writeln('  + $task');
   }
+  stdout.writeln(
+    '\nNext: cd gallery, then flutter run -d <device-id> --release',
+  );
+}
+
+/// The checkout this script belongs to, found by the marker file at its
+/// root, so the script works from any directory.
+String _repositoryRoot() {
+  final script = Platform.script;
+  final starts = [
+    if (script.scheme == 'file') p.dirname(script.toFilePath()),
+    Directory.current.path,
+  ];
+  for (final start in starts) {
+    var directory = p.normalize(p.absolute(start));
+    while (true) {
+      if (File(p.join(directory, '.mediapipe_flutter-root')).existsSync()) {
+        return directory;
+      }
+      final parent = p.dirname(directory);
+      if (parent == directory) break;
+      directory = parent;
+    }
+  }
+  throw StateError(
+    'Run this from a mediapipe_flutter checkout; '
+    'no .mediapipe_flutter-root above ${starts.join(' or ')}.',
+  );
 }
 
 Future<void> _replaceDirectory(Directory directory) async {
   if (await directory.exists()) await directory.delete(recursive: true);
   await directory.create(recursive: true);
+}
+
+Future<String> _sha256(File file) async =>
+    (await sha256.bind(file.openRead()).first).toString();
+
+/// Keeps a model already verified by an earlier run, and otherwise downloads
+/// it, retrying twice: a phone build should not fail on one dropped
+/// connection.
+Future<void> _prepareModel(
+  Model model,
+  File destination,
+  http.Client client,
+) async {
+  if (await destination.exists() &&
+      await _sha256(destination) == model.sha256) {
+    stdout.writeln('  already downloaded and verified');
+    return;
+  }
+  for (var attempt = 1; ; attempt++) {
+    try {
+      await _downloadVerified(model, destination, client);
+      return;
+    } on Object catch (error) {
+      if (attempt == 3) {
+        throw StateError('${model.fileName}: $error');
+      }
+      stderr.writeln('  attempt $attempt failed ($error); retrying');
+      await Future<void>.delayed(Duration(seconds: 2 * attempt));
+    }
+  }
 }
 
 Future<void> _downloadVerified(
@@ -265,7 +223,7 @@ Future<void> _downloadVerified(
         await sink.close();
       }
     }
-    final actual = (await sha256.bind(temporary.openRead()).first).toString();
+    final actual = await _sha256(temporary);
     if (actual != model.sha256) {
       throw StateError(
         'SHA-256 mismatch for ${model.fileName}: expected ${model.sha256}, got $actual',
@@ -288,7 +246,7 @@ String _pubspec(
     for (final name in assets) '    - assets/models/$name',
     for (final name in samples) '    - assets/samples/$name',
   ].join('\n');
-  final nativeTasks = tasks.where((task) => !_nonVisionTasks.contains(task));
+  final nativeTasks = tasks.where((task) => !nonVisionTasks.contains(task));
   return '''# Generated by tool/gallery_builder for $target. Do not edit by hand:
 # the task list is per-target and the build hook rejects unavailable tasks.
 name: mediapipe_gallery

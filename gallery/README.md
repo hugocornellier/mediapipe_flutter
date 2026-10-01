@@ -27,7 +27,7 @@ cd gallery && flutter run -d macos --release
 ```
 
 `prepare.py --target <platform>` prepares a different target, for example
-`ios-simulator/arm64` or `android/arm64`. It also pins the macOS build to arm64,
+`ios-simulator/arm64` (Android has its own Dart preparer, below). It also pins the macOS build to arm64,
 excludes the x86_64 simulator slice, and adds the camera entitlement and usage
 description, none of which `flutter create` provides. For macOS it also sets
 `mediapipe_core.tasks_runtime: true`, so vision, text and audio all run on
