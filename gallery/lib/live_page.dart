@@ -797,14 +797,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
       bordered: phone || _showStats,
       fontSize: phone ? _phoneButtonText : Sizes.md,
       onPressed: phone
-          ? () => _showDialogCard(
-              (close) => StatsCard(
-                key: ValueKey('$_id-stats-card'),
-                history: _speed,
-                delegates: _delegates,
-                onClose: close,
-              ),
-            )
+          ? () => _showDialogCard((close) => _statsCard(onClose: close))
           : () => setState(() => _showStats = !_showStats),
     );
     return [
@@ -905,16 +898,21 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
             ),
           ),
         ),
-      if (_showStats && !phone) ...[
-        const SizedBox(height: 10),
-        StatsCard(
-          key: ValueKey('$_id-stats-card'),
-          history: _speed,
-          delegates: _delegates,
-        ),
-      ],
+      if (_showStats && !phone) ...[const SizedBox(height: 10), _statsCard()],
     ];
   }
+
+  /// Stats switches the task's delegate as the settings do, so its other
+  /// line can join the chart, and clears the chart.
+  Widget _statsCard({VoidCallback? onClose}) => StatsCard(
+    key: ValueKey('$_id-stats-card'),
+    history: _speed,
+    delegates: _delegates,
+    delegate: _controller.delegate,
+    onSwitchDelegate: _controller.changing ? null : _setDelegate,
+    onReset: () => setState(_speed.clear),
+    onClose: onClose,
+  );
 }
 
 enum _VisionInputMode { camera, image }

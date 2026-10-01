@@ -10,11 +10,16 @@ import 'design.dart';
 
 /// The Stats card under a live feed: every frame's inference time since the
 /// camera started, a line per delegate, each shown or hidden by its checkbox.
+/// It can also switch the task to the other delegate, to add its line, and
+/// clear the chart.
 class StatsCard extends StatefulWidget {
   const StatsCard({
     super.key,
     required this.history,
     required this.delegates,
+    this.delegate,
+    this.onSwitchDelegate,
+    this.onReset,
     this.onClose,
   });
 
@@ -22,6 +27,17 @@ class StatsCard extends StatefulWidget {
 
   /// The delegates the page offers, in the order their entries appear.
   final List<VisionDelegate> delegates;
+
+  /// The delegate the task runs on. With two [delegates], the card offers
+  /// to switch to the other one.
+  final VisionDelegate? delegate;
+
+  /// Switches the task to the delegate it is given; null disables the switch,
+  /// as while the task restarts.
+  final ValueChanged<VisionDelegate>? onSwitchDelegate;
+
+  /// Clears the chart; null hides the button.
+  final VoidCallback? onReset;
 
   /// Closes the dialog that shows this card on phones.
   final VoidCallback? onClose;
@@ -51,6 +67,9 @@ class _StatsCardState extends State<StatsCard> {
       for (final delegate in widget.delegates)
         if (!_hidden.contains(delegate)) delegate,
     ];
+    final other = widget.delegates.length == 2 && widget.delegate != null
+        ? widget.delegates.firstWhere((d) => d != widget.delegate)
+        : null;
     return SurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,7 +84,7 @@ class _StatsCardState extends State<StatsCard> {
                     for (final delegate in widget.delegates)
                       SeriesToggle(
                         key: ValueKey('stats-${delegate.name}'),
-                        label: delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+                        label: _name(delegate),
                         color: colors[delegate]!,
                         // One series needs no switch: the title names it.
                         checked: widget.delegates.length > 1
@@ -130,11 +149,50 @@ class _StatsCardState extends State<StatsCard> {
                   ),
           ),
           const SizedBox(height: 4),
-          Text('Seconds on each delegate', style: muted),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              Text('Seconds on each delegate', style: muted),
+              // A narrow phone dialog stacks the buttons.
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (widget.onReset case final reset?)
+                    OutlineButton(
+                      key: const ValueKey('stats-reset'),
+                      icon: LucideIcons.rotateCcw,
+                      label: 'Reset',
+                      tooltip: 'Clear the chart',
+                      fontSize: Sizes.sm,
+                      onPressed: reset,
+                    ),
+                  if (other != null)
+                    OutlineButton(
+                      key: const ValueKey('stats-switch'),
+                      icon: LucideIcons.arrowLeftRight,
+                      label: 'Switch to ${_name(other)}',
+                      tooltip: 'Run the task on ${_name(other)}',
+                      fontSize: Sizes.sm,
+                      onPressed: switch (widget.onSwitchDelegate) {
+                        final onSwitch? => () => onSwitch(other),
+                        null => null,
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
+
+  static String _name(VisionDelegate delegate) =>
+      delegate == VisionDelegate.gpu ? 'GPU' : 'CPU';
 }
 
 /// A legend entry: a checkbox in the series color when [checked] is not null,

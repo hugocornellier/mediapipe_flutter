@@ -88,6 +88,17 @@ final class SpeedHistory {
     _lastAt = at;
   }
 
+  /// Forgets every frame, so each delegate's line starts again from zero.
+  void clear() {
+    _series.clear();
+    _chartSeries.clear();
+    _running.clear();
+    _chartCount.clear();
+    _last = null;
+    _lastAt = null;
+    _durationSeconds = 0;
+  }
+
   /// The mean inference time of [delegate]'s last [frames] frames, or null
   /// before its first.
   double? recent(VisionDelegate delegate, {int frames = 30}) {
