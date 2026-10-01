@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/semantics.dart';
@@ -14,6 +16,8 @@ import 'live_page.dart';
 import 'ui/components.dart';
 import 'ui/design.dart';
 import 'ui/workspace.dart';
+import 'web/model_cache.dart';
+import 'web/test_hooks.dart';
 import 'gallery_assets_io.dart'
     if (dart.library.js_interop) 'web/gallery_assets.dart';
 export 'gallery_assets_io.dart'
@@ -56,7 +60,17 @@ int compareTasks(
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (kIsWeb) _webSemantics ??= WidgetsBinding.instance.ensureSemantics();
+  // Flutter keeps a DOM element per semantics node and moves them on every
+  // scroll frame, which a phone's browser feels; a screen reader there can
+  // still turn them on with Flutter's own accessibility button. Desktop
+  // browsers keep them, as does `?test-hooks`: the browser tests find
+  // controls by role.
+  final phone =
+      defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.android;
+  if (kIsWeb && (!phone || testHooks)) {
+    _webSemantics ??= WidgetsBinding.instance.ensureSemantics();
+  }
   runApp(const GalleryApp());
 }
 
@@ -152,20 +166,58 @@ class _GalleryShell extends StatefulWidget {
 
 class _GalleryShellState extends State<_GalleryShell> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _navigationOpen = ValueNotifier(false);
   GalleryTask? _selectedTask;
+  Timer? _prefetch;
+
+  @override
+  void dispose() {
+    _prefetch?.cancel();
+    _navigationOpen.dispose();
+    super.dispose();
+  }
 
   void _select(GalleryTask? task) {
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       _scaffoldKey.currentState?.closeDrawer();
     }
     if (_selectedTask?.id != task?.id) setState(() => _selectedTask = task);
+    if (kIsWeb && task != null) _prefetchNeighbours(task);
+  }
+
+  /// Most visitors step through the sidebar in order, so once a camera task
+  /// has had time to load its own model, the web gallery fetches the models
+  /// of the camera tasks either side of it.
+  void _prefetchNeighbours(GalleryTask task) {
+    _prefetch?.cancel();
+    final live =
+        [
+          for (final t in widget.tasks)
+            if (t.demo == GalleryDemo.live) t,
+        ]..sort(
+          (a, b) => compareTasks(
+            (runtimeId: a.runtimeId, title: a.title),
+            (runtimeId: b.runtimeId, title: b.title),
+          ),
+        );
+    final index = live.indexWhere((t) => t.id == task.id);
+    if (index < 0) return;
+    _prefetch = Timer(const Duration(seconds: 2), () {
+      WebModelCache.prefetch([
+        for (final i in [index + 1, index - 1])
+          if (i >= 0 && i < live.length) 'assets/models/${live[i].model}',
+      ]);
+    });
   }
 
   Widget _page(bool wide) {
     final task = _selectedTask;
     final openMenu = wide
         ? null
-        : () => _scaffoldKey.currentState?.openDrawer();
+        : () {
+            _navigationOpen.value = true;
+            _scaffoldKey.currentState?.openDrawer();
+          };
     if (task == null) {
       return _Gallery(
         assets: widget.assets,
@@ -178,6 +230,7 @@ class _GalleryShellState extends State<_GalleryShell> {
     return switch (task.demo) {
       GalleryDemo.live => LivePage(
         task: task,
+        navigationOpen: _navigationOpen,
         stillImagePicker: widget.stillImagePicker,
         platform: widget.platform,
         officialMacosLandmarkTasks: widget.assets.officialMacosLandmarkTasks,
@@ -233,6 +286,7 @@ class _GalleryShellState extends State<_GalleryShell> {
         key: _scaffoldKey,
         backgroundColor: GalleryColors.of(context).bg,
         drawer: wide ? null : Drawer(child: sidebar),
+        onDrawerChanged: (open) => _navigationOpen.value = open,
         body: Row(
           children: [
             if (wide) SizedBox(width: Sizes.sidebar, child: sidebar),

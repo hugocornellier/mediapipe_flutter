@@ -85,4 +85,24 @@ void main() {
     expect(history.chartSamples(VisionDelegate.cpu).first, before);
     expect(history.chartSamples(VisionDelegate.cpu).length, 2);
   });
+
+  test('clear forgets every frame, and each line starts again from zero', () {
+    final history = SpeedHistory()
+      ..add(VisionDelegate.gpu, 5, _ms(0))
+      ..add(VisionDelegate.gpu, 6, _ms(100))
+      ..add(VisionDelegate.cpu, 9, _ms(1000));
+    history.clear();
+    expect(history.length, 0);
+    expect(history.durationSeconds, 0);
+    expect(history.recent(VisionDelegate.gpu), isNull);
+    expect(history.chartSamples(VisionDelegate.cpu), isEmpty);
+    expect(history.chartPeak(VisionDelegate.values), 0);
+
+    // Even a frame right after the last one starts a fresh line.
+    history
+      ..add(VisionDelegate.cpu, 8, _ms(1100))
+      ..add(VisionDelegate.cpu, 8, _ms(1200));
+    expect(_seconds(history, VisionDelegate.cpu), [0, closeTo(.1, 1e-9)]);
+    expect(history[VisionDelegate.gpu], isEmpty);
+  });
 }

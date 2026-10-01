@@ -77,7 +77,7 @@ flutter test -d <iphone-id> integration_test/sdk_hand_landmarker_test.dart \
 (see `gallery/tool/ANDROID_FACE_TESTLAB.md` for the Test Lab route):
 
 ```sh
-python3 -B gallery/tool/prepare.py --target android/arm64 --tasks hand_landmarker
+dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/arm64 --tasks hand_landmarker
 cd gallery && flutter pub get
 flutter test -d <device-id> integration_test/sdk_hand_landmarker_test.dart \
   --dart-define=SDK_GPU=required --reporter expanded

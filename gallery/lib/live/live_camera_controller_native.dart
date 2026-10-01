@@ -12,6 +12,7 @@ import 'camera_frame.dart';
 import 'camera_selection.dart';
 import 'frame_timings.dart';
 import 'live_task.dart';
+import 'still_image.dart';
 
 /// Owns camera capture and one official VIDEO-mode task.
 ///
@@ -42,6 +43,8 @@ class LiveCameraController<T> extends ChangeNotifier {
   CameraController? get camera => _camera;
   bool running = false;
   bool changing = false;
+  bool get initializing => false;
+  void setProcessingPaused(bool paused) {}
   String? error;
 
   /// Set when MediaPipe refused the GPU and capture fell back to CPU.
@@ -387,8 +390,11 @@ class LiveCameraController<T> extends ChangeNotifier {
   Future<int> _warmUp(String? sample) async {
     if (sample == null) return -1;
     final data = await rootBundle.load(sample);
-    final codec = await ui.instantiateImageCodec(
+    // Object Detector's sample is 4K: in full, its pixels and the blank frame
+    // after them took some 130 MB of Android's Java heap and could exhaust it.
+    final codec = await decodeScaledDown(
       data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+      1280,
     );
     final image = (await codec.getNextFrame()).image;
     try {

@@ -35,39 +35,53 @@ class LiveCameraView extends StatelessWidget {
     // Removing its platform view during stream replacement can prevent Chrome
     // from delivering requestVideoFrameCallback on the restarted stream.
     if (frame == null) return Center(child: placeholder);
+    // While a drawer or sheet covers the feed, Flutter draws the paused frame
+    // and the platform views stay mounted but out of the scene, so the page
+    // renders as one canvas; see LiveCameraController.previewHidden.
+    final hidden = controller.previewHidden;
+    final paused = controller.pausedFrame;
     return Center(
       child: AspectRatio(
         aspectRatio: frame.width / frame.height,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            HtmlElementView.fromTagName(
-              tagName: 'div',
-              onElementCreated: (element) {
-                // The video is owned by the controller and reused across restarts.
-                final container = element as web.HTMLElement;
-                container.style
-                  ..width = '100%'
-                  ..height = '100%'
-                  ..position = 'relative'
-                  ..pointerEvents = 'none';
-                controller.video.style
-                  ..position = 'absolute'
-                  ..left = '0'
-                  ..top = '0';
-                container.append(controller.video);
-                if (controller.useCanvasPreview) {
-                  controller.previewCanvas.style
-                    ..position = 'absolute'
-                    ..left = '0'
-                    ..top = '0'
+            Offstage(
+              offstage: hidden,
+              child: HtmlElementView.fromTagName(
+                tagName: 'div',
+                onElementCreated: (element) {
+                  // The video is owned by the controller and reused across restarts.
+                  final container = element as web.HTMLElement;
+                  container.style
                     ..width = '100%'
                     ..height = '100%'
+                    ..position = 'relative'
                     ..pointerEvents = 'none';
-                  container.append(controller.previewCanvas);
-                }
-              },
+                  controller.video.style
+                    ..position = 'absolute'
+                    ..left = '0'
+                    ..top = '0';
+                  container.append(controller.video);
+                  if (controller.useCanvasPreview) {
+                    controller.previewCanvas.style
+                      ..position = 'absolute'
+                      ..left = '0'
+                      ..top = '0'
+                      ..width = '100%'
+                      ..height = '100%'
+                      ..pointerEvents = 'none';
+                    container.append(controller.previewCanvas);
+                  }
+                },
+              ),
             ),
+            // Stays after the platform view, so that view keeps its element.
+            if (hidden && paused != null)
+              Transform.flip(
+                flipX: controller.isFrontCamera,
+                child: RawImage(image: paused, fit: BoxFit.fill),
+              ),
             LayoutBuilder(
               builder: (context, constraints) {
                 final transform = PreviewTransform.fit(
@@ -83,17 +97,28 @@ class LiveCameraView extends StatelessWidget {
                 );
                 if (testHooks) _publishProbes(context, transform);
                 if (controller.workerOverlayCanvas case final canvas?) {
-                  return HtmlElementView.fromTagName(
-                    key: ValueKey(canvas),
-                    tagName: 'div',
-                    onElementCreated: (element) {
-                      final container = element as web.HTMLElement;
-                      container.style
-                        ..width = '100%'
-                        ..height = '100%'
-                        ..pointerEvents = 'none';
-                      container.append(canvas);
-                    },
+                  final overlay = hidden ? painter(transform) : null;
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Offstage(
+                        offstage: hidden,
+                        child: HtmlElementView.fromTagName(
+                          key: ValueKey(canvas),
+                          tagName: 'div',
+                          onElementCreated: (element) {
+                            final container = element as web.HTMLElement;
+                            container.style
+                              ..width = '100%'
+                              ..height = '100%'
+                              ..pointerEvents = 'none';
+                            container.append(canvas);
+                          },
+                        ),
+                      ),
+                      // The worker's drawing is out of the scene with it.
+                      if (overlay != null) CustomPaint(painter: overlay),
+                    ],
                   );
                 }
                 final overlay = painter(transform);

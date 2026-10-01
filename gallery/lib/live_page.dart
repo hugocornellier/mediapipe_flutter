@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -35,6 +36,7 @@ class LivePage extends StatefulWidget {
     required this.task,
     required this.platform,
     required this.officialMacosLandmarkTasks,
+    this.navigationOpen,
     this.initialStillImage = false,
     this.stillImagePicker,
     this.onOpenMenu,
@@ -43,6 +45,7 @@ class LivePage extends StatefulWidget {
   final GalleryTask task;
   final TaskPlatform platform;
   final Set<String> officialMacosLandmarkTasks;
+  final ValueListenable<bool>? navigationOpen;
   final bool initialStillImage;
   final Future<XFile?> Function()? stillImagePicker;
   final VoidCallback? onOpenMenu;
@@ -51,7 +54,7 @@ class LivePage extends StatefulWidget {
   State<LivePage> createState() => _LivePageState();
 }
 
-class _LivePageState extends State<LivePage> {
+class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
   late final LiveDemo _demo = liveDemoFor(widget.task.id)!;
   late final LiveTask<Object?> _task = _demo.task();
   late final LiveCameraController<Object?> _controller =
@@ -71,9 +74,20 @@ class _LivePageState extends State<LivePage> {
   @override
   void setState(VoidCallback fn) {
     super.setState(fn);
-    _revision.value++;
+    if (!_frameRebuild) _revision.value++;
     _refreshMask();
   }
+
+  /// Set while a camera frame rebuilds the page. The settings panel shows
+  /// nothing a frame changes, so it and an open sheet are left alone.
+  bool _frameRebuild = false;
+
+  /// What the panel shows of the controller: whether a restart is under way,
+  /// the delegate and a segmenter's labels.
+  (bool, VisionDelegate, int)? _panelState;
+
+  /// Whether the phone's settings sheet is open over the feed.
+  bool _settingsOpen = false;
 
   /// Image Segmenter draws its mask as Google's demo does, with a legend,
   /// rather than with the connections other tasks draw.
@@ -171,8 +185,38 @@ class _LivePageState extends State<LivePage> {
     super.initState();
     _controller.delegate = preferredDelegate(_delegates);
     _controller.addListener(_onControllerChanged);
+    widget.navigationOpen?.addListener(_onCoverChanged);
+    _onCoverChanged();
+    WidgetsBinding.instance.addObserver(this);
     if (_mode == _VisionInputMode.camera) _findCameras();
   }
+
+  /// Whether Android sent the app to the background with the camera running,
+  /// so that it starts again when the app returns.
+  bool _stoppedInBackground = false;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // On Android a camera frame that reaches Flutter after the activity is
+    // destroyed crashes the app ("FlutterJNI is not attached to native"), as
+    // backing out of a running demo did on a Pixel 8a. Flutter's camera plugin
+    // leaves lifecycle to the app, so the camera stops as soon as the app
+    // leaves the foreground. Not while the permission prompt is up: the camera
+    // opens last in a start, so it is not running yet then.
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    if (state == AppLifecycleState.inactive && _controller.running) {
+      _stoppedInBackground = true;
+      unawaited(_controller.stop());
+    } else if (state == AppLifecycleState.resumed && _stoppedInBackground) {
+      _stoppedInBackground = false;
+      unawaited(_start());
+    }
+  }
+
+  /// The navigation drawer or the settings sheet over the feed pauses it.
+  void _onCoverChanged() => _controller.setProcessingPaused(
+    (widget.navigationOpen?.value ?? false) || _settingsOpen,
+  );
 
   void _onControllerChanged() {
     final frames = _controller.processedFrames;
@@ -187,7 +231,16 @@ class _LivePageState extends State<LivePage> {
         );
       }
     }
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    final panel = (
+      _controller.changing,
+      _controller.delegate,
+      Object.hashAll(_labels),
+    );
+    _frameRebuild = panel == _panelState;
+    _panelState = panel;
+    setState(() {});
+    _frameRebuild = false;
   }
 
   Future<void> _findCameras() async {
@@ -218,6 +271,8 @@ class _LivePageState extends State<LivePage> {
     _imageRevision++;
     _modeRevision++;
     _controller.removeListener(_onControllerChanged);
+    widget.navigationOpen?.removeListener(_onCoverChanged);
+    WidgetsBinding.instance.removeObserver(this);
     _controller.close();
     _controller.dispose();
     _revision.dispose();
@@ -319,8 +374,12 @@ class _LivePageState extends State<LivePage> {
     }
   }
 
+  /// One instance for the page's life: it rebuilds itself on [_revision], and
+  /// the phone's sheet, which shows it, then has no new widget to rebuild on.
+  late final Widget _settingsPanel = _panel();
+
   Widget _panel() => ListenableBuilder(
-    listenable: Listenable.merge([_controller, _revision]),
+    listenable: _revision,
     builder: (context, _) => TaskSettingsPanel(
       settings: _settings,
       values: _task.settings,
@@ -535,7 +594,11 @@ class _LivePageState extends State<LivePage> {
     return TaskWorkspace(
       title: widget.task.title,
       onOpenMenu: widget.onOpenMenu,
-      settings: _panel(),
+      settings: _settingsPanel,
+      onSettingsSheet: (open) {
+        _settingsOpen = open;
+        if (mounted) _onCoverChanged();
+      },
       children: [
         TaskToolbar(
           task: widget.task,
@@ -734,14 +797,7 @@ class _LivePageState extends State<LivePage> {
       bordered: phone || _showStats,
       fontSize: phone ? _phoneButtonText : Sizes.md,
       onPressed: phone
-          ? () => _showDialogCard(
-              (close) => StatsCard(
-                key: ValueKey('$_id-stats-card'),
-                history: _speed,
-                delegates: _delegates,
-                onClose: close,
-              ),
-            )
+          ? () => _showDialogCard((close) => _statsCard(onClose: close))
           : () => setState(() => _showStats = !_showStats),
     );
     return [
@@ -767,6 +823,40 @@ class _LivePageState extends State<LivePage> {
                 null => const CircularProgressIndicator(),
               },
             ),
+            if (controller.initializing &&
+                controller.frameSize != null &&
+                error == null)
+              Center(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: const Color(0xDD101715),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Model initializing...',
+                            style: TextStyle(color: Color(0xFFF0F3F2)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (controller.canSwitchCamera)
               Positioned(
                 left: 14,
@@ -788,7 +878,7 @@ class _LivePageState extends State<LivePage> {
                 '${controller.recentFramesPerSecond.toStringAsFixed(1)} fps',
                 '${controller.recentInferenceMilliseconds.toStringAsFixed(0)} ms',
               ]
-            : const ['Stopped'],
+            : [controller.initializing ? 'Model initializing...' : 'Stopped'],
         delegate: controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
         trailing: phone
             ? Row(
@@ -808,16 +898,21 @@ class _LivePageState extends State<LivePage> {
             ),
           ),
         ),
-      if (_showStats && !phone) ...[
-        const SizedBox(height: 10),
-        StatsCard(
-          key: ValueKey('$_id-stats-card'),
-          history: _speed,
-          delegates: _delegates,
-        ),
-      ],
+      if (_showStats && !phone) ...[const SizedBox(height: 10), _statsCard()],
     ];
   }
+
+  /// Stats switches the task's delegate as the settings do, so its other
+  /// line can join the chart, and clears the chart.
+  Widget _statsCard({VoidCallback? onClose}) => StatsCard(
+    key: ValueKey('$_id-stats-card'),
+    history: _speed,
+    delegates: _delegates,
+    delegate: _controller.delegate,
+    onSwitchDelegate: _controller.changing ? null : _setDelegate,
+    onReset: () => setState(_speed.clear),
+    onClose: onClose,
+  );
 }
 
 enum _VisionInputMode { camera, image }

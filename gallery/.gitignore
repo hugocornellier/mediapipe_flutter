@@ -1,4 +1,5 @@
-# Everything below is written by tool/prepare.py for one build target. The
+# Everything below is written by tool/prepare.py (or, for Android,
+# tool/gallery_builder) for one build target. The
 # task list, the bundled models and the asset manifest all differ per platform,
 # so committing them would pin the repository to whichever machine ran last.
 /pubspec.yaml

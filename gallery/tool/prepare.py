@@ -45,16 +45,12 @@ def set_plist_key(path, key, value):
     path.write_bytes(plistlib.dumps(plist))
     return True
 
-# The hook hard-codes this set for Android; see hook/build.dart _bundleAndroid.
-ANDROID_TASKS = {'face_detector', 'face_landmarker'}
 WEB_HOST_TEST_TASKS = {'face_detector', 'face_landmarker'}
 
-# Tasks the mediapipe_vision plugin runs through Google's
-# official SDK; see hook/build.dart officialAndroidTasks.
-OFFICIAL_ANDROID_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
-                          'hand_landmarker', 'holistic_landmarker', 'image_classifier',
-                          'image_embedder', 'image_segmenter', 'interactive_segmenter',
-                          'object_detector', 'pose_landmarker'}
+# Android is prepared by tool/gallery_builder, in Dart, so a clean checkout
+# builds the phone app with no Python installed.
+ANDROID_COMMAND = ('dart run tool/gallery_builder/bin/prepare_gallery.dart '
+                   '--target android/arm64')
 
 # Tasks validated on Google's macOS engine, which core bundles with
 # tasks_runtime: true; see the vision package's sdk_downloads.dart
@@ -202,9 +198,6 @@ def available_tasks(target):
         # Google's public SDK supplies these tasks without a maintainer build;
         # its adapter serves text and audio through core's runtime too.
         return set(OFFICIAL_IOS_TASKS) | NON_VISION_TASKS
-    if target.startswith('android'):
-        # Text and audio run through their packages' Android SDK plugins.
-        return ANDROID_TASKS | OFFICIAL_ANDROID_TASKS | NON_VISION_TASKS
     if target in ('linux/x64', 'windows/x64'):
         for block in _blocks(source, 'const visionWheelReleases'):
             if re.search(r"target: '" + re.escape(target) + r"'", block):
@@ -277,8 +270,6 @@ def prepare(target, selected):
     macos_engine = (target == 'macos/arm64' and bool(
         (OFFICIAL_MACOS_TASKS - {'face_landmarker'} | NON_VISION_TASKS)
         & bundled.keys()))
-    official_android = (target.startswith('android') and bundled
-                        and set(bundled) - NON_VISION_TASKS <= OFFICIAL_ANDROID_TASKS)
     manifest = {
         'target': target,
         'tasks': sorted(bundled),
@@ -287,7 +278,7 @@ def prepare(target, selected):
         'official_macos_landmark_tasks': sorted(
             OFFICIAL_MACOS_TASKS & bundled.keys()) if macos_engine else [],
         'official_ios_sdk': '1.0.1' if target.startswith('ios') else None,
-        'official_android_sdk': '1.0.0' if official_android else None,
+        'official_android_sdk': None,
         'official_web_sdk': '1.0.1' if target == 'web' else None,
     }
     (GALLERY / 'assets/manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
@@ -299,7 +290,7 @@ def prepare(target, selected):
     # camera itself supplies the mobile implementations.
     camera = ('  camera: ^0.12.1\n  camera_desktop: ^1.2.2'
               if target in ('macos/arm64', 'linux/x64', 'windows/x64')
-              else '  camera: ^0.12.1' if target == 'web' or target.startswith(('ios', 'android')) else '')
+              else '  camera: ^0.12.1' if target == 'web' or target.startswith('ios') else '')
     # The one setting an app writes besides `tasks`, and only for macOS: every
     # other target picks its runtime by default, which this proves.
     core = ('    mediapipe_core:\n      tasks_runtime: true\n'
@@ -434,21 +425,15 @@ def main():
     target = args.target or host_target()
     if target is None:
         raise SystemExit('No MediaPipe runtime target matches this host.')
+    if target.startswith('android'):
+        raise SystemExit(f'Android is prepared in Dart; from the repository root run\n'
+                         f'  {ANDROID_COMMAND}')
     selected = available_tasks(target)
-    if target.startswith('android') and not args.tasks:
-        # The public SDKs need no maintainer C++ build; vision supplies CPU/GPU.
-        selected = set(OFFICIAL_ANDROID_TASKS) | NON_VISION_TASKS
     if args.tasks:
         requested = set(args.tasks.split(','))
         if not requested <= selected:
             raise SystemExit(f'Unavailable tasks for {target}: {requested - selected}')
         selected = requested
-    if (target.startswith('android') and selected - ANDROID_TASKS - NON_VISION_TASKS
-            and not selected - NON_VISION_TASKS <= OFFICIAL_ANDROID_TASKS):
-        # One app uses either the official plugin or the source-built runtime.
-        raise SystemExit('On Android, tasks beyond the source-built face tasks '
-                         'run only through the official SDK plugin, which serves '
-                         f'{sorted(OFFICIAL_ANDROID_TASKS)} only.')
     if not selected:
         raise SystemExit(f'No vision runtime is available for {target}.')
     manifest, missing = prepare(target, selected)

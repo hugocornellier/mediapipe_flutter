@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
+import 'dart:ui_web' as ui_web;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -13,6 +15,7 @@ import '../live/camera_selection.dart';
 import '../live/frame_timings.dart';
 import '../live/live_subjects.dart';
 import '../live/live_task.dart';
+import 'model_cache.dart';
 import 'pipeline_trace.dart';
 import 'test_hooks.dart';
 
@@ -63,6 +66,9 @@ class LiveCameraController<T> extends ChangeNotifier {
   Future<void>? _closing;
   final _clock = Stopwatch();
   bool _closed = false;
+  bool _processingPaused = false;
+  int _pauses = 0;
+  bool _capturingPausedFrame = false;
   bool _opened = false;
   int _generation = 0;
   int? _callback;
@@ -78,7 +84,19 @@ class LiveCameraController<T> extends ChangeNotifier {
   Future<Uint8List> Function()? modelLoader;
   bool running = false;
   bool changing = false;
+  bool initializing = false;
   String? error;
+
+  /// The frame on screen when processing paused, which the view draws with
+  /// Flutter while [previewHidden]; null if it could not be captured.
+  ui.Image? pausedFrame;
+
+  /// Whether the view leaves its platform views out of the scene: while
+  /// processing is paused, once the paused frame is captured (or failed).
+  /// Safari gives every Flutter layer drawn over a platform view a canvas of
+  /// its own, a full-screen WebGL surface redrawn each frame, so a drawer
+  /// scrolled over the feed paid for two; without them the page is one.
+  bool get previewHidden => _processingPaused && !_capturingPausedFrame;
 
   /// Why the demo moved from GPU to CPU, when the browser refused the GPU.
   String? notice;
@@ -107,6 +125,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   double conversionMilliseconds = 0;
   double frameMilliseconds = 0;
   double _totalInference = 0, _totalConversion = 0, _totalFrame = 0;
+  int _lastUiUpdateMilliseconds = 0;
   final _recent = RecentFrameTimings();
   bool get isFrontCamera =>
       description?.lensDirection == CameraLensDirection.front;
@@ -156,6 +175,70 @@ class LiveCameraController<T> extends ChangeNotifier {
 
   void _changed() {
     if (!_closed) notifyListeners();
+  }
+
+  /// A drawer or sheet covers the feed. Pause playback, capture and inference
+  /// while it is open so camera work cannot delay scrolling, and let the view
+  /// show the paused frame in place of the camera's platform views.
+  void setProcessingPaused(bool paused) {
+    if (_processingPaused == paused) return;
+    _processingPaused = paused;
+    final pause = ++_pauses;
+    _disposePausedFrame();
+    if (paused) {
+      _pending = null;
+      _cancelCallback();
+      video.pause();
+      unawaited(_capturePausedFrame(pause));
+    } else {
+      _capturingPausedFrame = false;
+      // Resume playback even while a task is still opening: it starts on the
+      // frames of a playing video, and a paused one would never deliver any.
+      if (_stream != null) unawaited(_resumeProcessing());
+    }
+    _changed();
+  }
+
+  Future<void> _capturePausedFrame(int pause) async {
+    _capturingPausedFrame = true;
+    ui.Image? image;
+    try {
+      if (video.readyState >= 2 && frameSize != null) {
+        final bitmap = await web.window.createImageBitmap(video).toDart;
+        image = await ui_web.createImageFromImageBitmap(bitmap);
+      }
+    } catch (_) {
+      // The view shows the feed's background instead.
+    }
+    if (pause != _pauses || _closed) {
+      image?.dispose();
+      return;
+    }
+    pausedFrame = image;
+    _capturingPausedFrame = false;
+    _changed();
+  }
+
+  void _disposePausedFrame() {
+    pausedFrame?.dispose();
+    pausedFrame = null;
+  }
+
+  Future<void> _resumeProcessing() async {
+    try {
+      await video.play().toDart;
+      if (_processingPaused) {
+        video.pause();
+      } else if (!_closed && running) {
+        _schedule(_generation);
+      }
+    } catch (failure) {
+      if (!_closed && !_processingPaused && running) {
+        error = _message(failure);
+        running = false;
+        _changed();
+      }
+    }
   }
 
   Future<void> _enqueue(Future<void> Function() action) {
@@ -240,6 +323,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     final generation = ++_generation;
     running = false;
     changing = true;
+    initializing = false;
     error = null;
     _cancelCallback();
     _changed();
@@ -269,8 +353,8 @@ class LiveCameraController<T> extends ChangeNotifier {
     });
   }
 
-  /// [warmUpSample] is an image asset the task runs on before the camera
-  /// starts; see [_warmUp].
+  /// [warmUpSample] is an image asset the task runs on before processing
+  /// camera frames; see [_warmUp].
   Future<void> start({
     CameraDescription? description,
     VisionDelegate? delegate,
@@ -289,6 +373,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     final generation = ++_generation;
     running = false;
     changing = true;
+    initializing = true;
     error = null;
     if (chosen == VisionDelegate.gpu) notice = null;
     result = null;
@@ -301,27 +386,40 @@ class LiveCameraController<T> extends ChangeNotifier {
       } else {
         await _release(preservePreview: true);
       }
+      // The iOS canvas still contains the last processed frame. Show the live
+      // video beneath it until the replacement task draws its first frame.
+      previewCanvas.style.visibility = 'hidden';
       if (_closed || generation != _generation) return;
       var taskReady = false;
       var fallBack = false;
+      var cameraFailure = false;
+      Future<void>? opening;
       try {
         if (!web.window.isSecureContext) {
           throw StateError('Camera access requires HTTPS or localhost.');
         }
         this.delegate = chosen;
-        final loader = modelLoader;
-        final Uint8List bytes;
-        if (loader != null) {
-          bytes = await loader();
-        } else {
-          final model = await rootBundle.load(asset);
-          bytes = model.buffer.asUint8List(
-            model.offsetInBytes,
-            model.lengthInBytes,
-          );
+        // Load the model and open the task while the camera starts: on a phone
+        // each takes seconds and neither needs the other. Every path below
+        // awaits it, so a task that opens late is still released.
+        opening = _openTask(chosen, asset)..ignore();
+        try {
+          if (keepCamera) {
+            // A rebuild of the platform view can pause the existing video even
+            // though its camera track remains live.
+            await video.play().toDart;
+            if (_processingPaused) video.pause();
+          } else {
+            // Show the camera while the worker warms up. Frame processing still
+            // starts only after warm-up has cleared the sample's tracking state.
+            await _openCamera(selected, generation);
+            _changed();
+          }
+        } catch (_) {
+          cameraFailure = true;
+          rethrow;
         }
-        await task.open(chosen, bytes);
-        _opened = true;
+        await opening;
         if (_closed || generation != _generation) {
           await _release();
           return;
@@ -330,18 +428,6 @@ class LiveCameraController<T> extends ChangeNotifier {
             ? -1
             : await _warmUp(sample);
         taskReady = true;
-        if (_closed || generation != _generation) {
-          await _release();
-          return;
-        }
-        if (keepCamera) {
-          // A rebuild of the platform view can pause the existing video even
-          // though its camera track remains live. Resume it before requesting
-          // the next frame after a delegate or settings change.
-          await video.play().toDart;
-        } else {
-          await _openCamera(selected, generation);
-        }
         if (_closed || generation != _generation) {
           await _release();
           return;
@@ -368,21 +454,34 @@ class LiveCameraController<T> extends ChangeNotifier {
         running = true;
         _schedule(generation);
       } catch (failure) {
+        try {
+          await opening;
+        } catch (_) {
+          // The failure reported below is the one that stopped the start.
+        }
         if (generation == _generation) {
           // A browser without WebGL2 (or one that loses the context) fails
           // while the GPU task opens or warms up; the demo then uses CPU,
           // visibly, as the native demo does.
-          if (chosen == VisionDelegate.gpu && !taskReady) {
+          if (chosen == VisionDelegate.gpu && !taskReady && !cameraFailure) {
             notice = 'GPU unavailable, using CPU. ${_message(failure)}';
             fallBack = true;
           } else {
             error = _message(failure);
           }
         }
-        await _release();
+        // The CPU retry keeps the camera, which is usually open by now: stopping
+        // it would unmount the preview while the stream restarts, and Chrome then
+        // delivers no frames to the new stream (see LiveCameraView.build).
+        if (fallBack) {
+          await _releaseTask();
+        } else {
+          await _release();
+        }
       } finally {
         if (generation == _generation) {
           changing = false;
+          initializing = false;
           _changed();
         }
       }
@@ -390,6 +489,15 @@ class LiveCameraController<T> extends ChangeNotifier {
         unawaited(start(delegate: VisionDelegate.cpu));
       }
     });
+  }
+
+  Future<void> _openTask(VisionDelegate chosen, String asset) async {
+    final loader = modelLoader;
+    final bytes = loader != null
+        ? await loader()
+        : await WebModelCache.load(asset);
+    await task.open(chosen, bytes);
+    _opened = true;
   }
 
   Future<void> _openCamera(CameraDescription selected, int generation) async {
@@ -435,6 +543,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     video.style.transform = isFrontCamera ? 'scaleX(-1)' : '';
     previewCanvas.style.transform = video.style.transform;
     frameSize = Size(video.videoWidth.toDouble(), video.videoHeight.toDouble());
+    if (_processingPaused) video.pause();
   }
 
   void _resetTimings() {
@@ -444,6 +553,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     _totalConversion = 0;
     _totalFrame = 0;
     _recent.clear();
+    _lastUiUpdateMilliseconds = 0;
     _pending = null;
     _lastVideoTime = -1;
     _clock
@@ -454,6 +564,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   void _schedule(int generation) {
     if (_closed ||
         !running ||
+        _processingPaused ||
         generation != _generation ||
         _callback != null ||
         web.document.visibilityState == 'hidden') {
@@ -493,7 +604,9 @@ class LiveCameraController<T> extends ChangeNotifier {
   }
 
   void _onFrame(int generation, double arrived, double? captured) {
-    if (_closed || !running || generation != _generation) return;
+    if (_closed || !running || _processingPaused || generation != _generation) {
+      return;
+    }
     _schedule(generation);
     if (video.currentTime == _lastVideoTime) return;
     _lastVideoTime = video.currentTime;
@@ -537,6 +650,7 @@ class LiveCameraController<T> extends ChangeNotifier {
           }
           (previewCanvas.getContext('2d') as web.CanvasRenderingContext2D)
               .drawImage(bitmap, 0, 0);
+          previewCanvas.style.visibility = 'visible';
         }
         conversion.stop();
         trace?.bitmap = PipelineTrace.now();
@@ -595,7 +709,17 @@ class LiveCameraController<T> extends ChangeNotifier {
           frame: frameMilliseconds,
           finishedMicroseconds: _clock.elapsedMicroseconds,
         );
-        _changed();
+        // The worker paints landmark overlays at camera rate. Rebuilding the
+        // Flutter page at that same rate competes with touch scrolling on
+        // mobile Safari; its readouts need only a few updates per second.
+        final elapsed = _clock.elapsedMilliseconds;
+        if (PipelineTrace.enabled ||
+            workerOverlayCanvas == null ||
+            processedFrames == 1 ||
+            elapsed - _lastUiUpdateMilliseconds >= 100) {
+          _lastUiUpdateMilliseconds = elapsed;
+          _changed();
+        }
         if (trace != null) {
           trace.handled = PipelineTrace.now();
           trace.faces = detected is FaceLandmarkerResult
@@ -634,7 +758,11 @@ class LiveCameraController<T> extends ChangeNotifier {
         _frame = null;
         final next = _pending;
         _pending = null;
-        if (next != null && running && !_closed && generation == _generation) {
+        if (next != null &&
+            running &&
+            !_processingPaused &&
+            !_closed &&
+            generation == _generation) {
           _begin(generation, next.arrived, next.captured);
         }
       }
@@ -656,9 +784,29 @@ class LiveCameraController<T> extends ChangeNotifier {
       data.offsetInBytes,
       data.lengthInBytes,
     );
-    final image = await web.window
+    var image = await web.window
         .createImageBitmap(web.Blob(<web.BlobPart>[bytes.toJS].toJS))
         .toDart;
+    // Object Detector's sample is 4K. A first inference needs no more than a
+    // camera frame, and the blank frame after it is as large as the sample.
+    final longer = math.max(image.width, image.height);
+    if (longer > 1280) {
+      final full = image;
+      try {
+        image = await web.window
+            .createImageBitmap(
+              full,
+              web.ImageBitmapOptions(
+                resizeWidth: (full.width * 1280 / longer).round(),
+                resizeHeight: (full.height * 1280 / longer).round(),
+                resizeQuality: 'medium',
+              ),
+            )
+            .toDart;
+      } finally {
+        full.close();
+      }
+    }
     final width = image.width, height = image.height;
     try {
       await browserTask.detectBrowserFrame(image, width, height, 0);
@@ -719,6 +867,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     final generation = ++_generation;
     running = false;
     changing = true;
+    initializing = false;
     _cancelCallback();
     _changed();
     return _enqueue(() async {
@@ -737,7 +886,9 @@ class LiveCameraController<T> extends ChangeNotifier {
     if (_closing != null) return _closing!;
     _closed = true;
     ++_generation;
+    ++_pauses;
     running = false;
+    _disposePausedFrame();
     _cancelCallback();
     web.document.removeEventListener('visibilitychange', _visibility);
     return _closing = _enqueue(_release);

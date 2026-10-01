@@ -106,30 +106,39 @@ class OutlineButton extends StatelessWidget {
       child: Semantics(
         container: true,
         button: true,
+        // Without a handler the button is disabled, as Stats' switch is while
+        // the task restarts.
+        enabled: onPressed == null ? false : null,
         label: label == null ? tooltip : null,
-        child: Material(
-          color: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(Sizes.radiusSmall),
-            side: bordered ? BorderSide(color: c.line) : BorderSide.none,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onPressed,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 15, color: c.muted),
-                  if (label case final label?) ...[
-                    const SizedBox(width: 7),
-                    Text(
-                      label,
-                      style: TextStyle(color: c.muted, fontSize: fontSize),
-                    ),
+        child: Opacity(
+          opacity: onPressed == null ? .45 : 1,
+          child: Material(
+            color: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Sizes.radiusSmall),
+              side: bordered ? BorderSide(color: c.line) : BorderSide.none,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onPressed,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 15, color: c.muted),
+                    if (label case final label?) ...[
+                      const SizedBox(width: 7),
+                      Text(
+                        label,
+                        style: TextStyle(color: c.muted, fontSize: fontSize),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

@@ -76,4 +76,32 @@ void main() {
     expect(find.byType(Dialog), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  for (final (name, size) in [
+    ('wide window', const Size(1280, 900)),
+    ('phone dialog', const Size(390, 844)),
+  ]) {
+    testWidgets('Stats switches the task to the other delegate ($name)', (
+      tester,
+    ) async {
+      await _pumpLivePage(tester, size);
+      await tester.tap(find.byTooltip('Show stats'));
+      await tester.pumpAndSettle();
+
+      String label() => tester
+          .widget<OutlineButton>(find.byKey(const ValueKey('stats-switch')))
+          .label!;
+      final first = label();
+      expect(first, anyOf('Switch to CPU', 'Switch to GPU'));
+      await tester.tap(find.text(first));
+      await tester.pumpAndSettle();
+      // The page now runs the other delegate, so the card offers the first.
+      expect(
+        label(),
+        first == 'Switch to CPU' ? 'Switch to GPU' : 'Switch to CPU',
+      );
+      expect(find.byTooltip('Clear the chart'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

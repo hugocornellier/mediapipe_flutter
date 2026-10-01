@@ -5,6 +5,17 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      deploy_only:
+        description: Build and deploy Pages without browser tests
+        required: false
+        type: boolean
+        default: false
+      source_ref:
+        description: Git ref to build for a deploy-only run
+        required: false
+        type: string
+        default: main
 
 permissions:
   contents: read
@@ -15,6 +26,7 @@ concurrency:
 
 jobs:
   browser:
+    if: ${{ !inputs.deploy_only }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -183,6 +195,7 @@ jobs:
   # OffscreenCanvas no WebGL context, and Google's vision tasks need one even
   # on CPU; its text and audio tasks run in Linux WebKit above.
   webkit:
+    if: ${{ !inputs.deploy_only }}
     runs-on: macos-15
     timeout-minutes: 60
     steps:
@@ -334,3 +347,43 @@ jobs:
         with:
           name: web-pages-evidence
           path: build/codex-tmp/web-browser-*/
+
+  deploy-only:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_only }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_ref }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build release gallery
+        run: |
+          python3 -B gallery/tool/prepare.py --target web
+          cd gallery
+          flutter pub get
+          flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+          env -u GITHUB_SHA python3 -B tool/write_web_build_info.py
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: gallery/build/web
+      - id: deployment
+        uses: actions/deploy-pages@v5
