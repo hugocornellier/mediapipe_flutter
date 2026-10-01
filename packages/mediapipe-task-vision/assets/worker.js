@@ -5,14 +5,32 @@ let DrawingUtils;
 
 import {loadVerifiedRuntime} from '../../mediapipe_core/assets/verified_runtime.js';
 
-async function loadRuntime(baseUrl) {
-  const {bundle, files} = await loadVerifiedRuntime(
-    new URL('runtime.json', import.meta.url), baseUrl, 'Vision');
-  ({FilesetResolver, FaceDetector, FaceLandmarker, GestureRecognizer, HandLandmarker,
-    HolisticLandmarker, ImageClassifier, ImageEmbedder, ImageSegmenter,
-    InteractiveSegmenter, InteractiveSegmenterLegacy, ObjectDetector, PoseLandmarker,
-    DrawingUtils} = bundle);
-  return files;
+// The runtime this worker loaded, once: a spare worker loads it before any
+// task is asked of it (see 'preload' and the bridge's prepareSpare).
+let runtime;
+function loadRuntime(baseUrl) {
+  if (runtime?.baseUrl !== baseUrl) {
+    const load = (async () => {
+      const {bundle, files, wasmBytes} = await loadVerifiedRuntime(
+        new URL('runtime.json', import.meta.url), baseUrl, 'Vision');
+      ({FilesetResolver, FaceDetector, FaceLandmarker, GestureRecognizer, HandLandmarker,
+        HolisticLandmarker, ImageClassifier, ImageEmbedder, ImageSegmenter,
+        InteractiveSegmenter, InteractiveSegmenterLegacy, ObjectDetector, PoseLandmarker,
+        DrawingUtils} = bundle);
+      // Compiling Google's WASM here, rather than inside createFromOptions,
+      // lets a spare worker do it before the page asks for a task. A browser
+      // that refuses leaves the loader to compile it as before.
+      let module = null;
+      try {
+        if (wasmBytes) module = await WebAssembly.compile(wasmBytes);
+      } catch (_) {}
+      return {files, module};
+    })();
+    runtime = {baseUrl, load};
+    // A failed load (offline, say) is retried by the next request.
+    load.catch(() => { if (runtime?.load === load) runtime = undefined; });
+  }
+  return runtime.load;
 }
 
 let overlay;
@@ -201,9 +219,13 @@ async function run(type, input, timing) {
     drawing = new DrawingUtils(context);
     return null;
   }
+  if (type === 'preload') {
+    await loadRuntime(input.runtimeBaseUrl);
+    return null;
+  }
   if (type === 'create') {
     const {modelBytes, modelPath, delegate, runtimeBaseUrl, task: name = 'face_landmarker', ...settings} = input;
-    const files = await loadRuntime(runtimeBaseUrl);
+    const {files, module} = await loadRuntime(runtimeBaseUrl);
     const TASKS = buildTasks();
     spec = TASKS[name];
     if (!spec) throw new Error('Unsupported MediaPipe task: ' + name);
@@ -221,6 +243,15 @@ async function run(type, input, timing) {
       throw new Error('GPU ' + spec.name + ' requires WebGL 2 in a browser worker. Select CPU or enable browser hardware acceleration.');
     }
     const url = modelBytes && spec.modelAsUrl ? URL.createObjectURL(new Blob([modelBytes])) : null;
+    // Google's loader instantiates the precompiled module through this hook
+    // instead of fetching and compiling the WASM again, and clears it after.
+    // Synchronous, so a failure rejects createFromOptions.
+    if (module) {
+      self.Module = {
+        instantiateWasm: (imports, receive) =>
+          receive(new WebAssembly.Instance(module, imports), module),
+      };
+    }
     try {
       task = await spec.type.createFromOptions(files, {
         ...settings,
@@ -232,6 +263,7 @@ async function run(type, input, timing) {
         },
       });
     } finally {
+      self.Module = undefined;
       if (url) URL.revokeObjectURL(url);
     }
     labels = spec.labels ? task.getLabels() : undefined;

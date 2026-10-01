@@ -42,6 +42,8 @@ class LiveCameraController<T> extends ChangeNotifier {
   CameraController? get camera => _camera;
   bool running = false;
   bool changing = false;
+  bool get initializing => false;
+  void setProcessingPaused(bool paused) {}
   String? error;
 
   /// Set when MediaPipe refused the GPU and capture fell back to CPU.

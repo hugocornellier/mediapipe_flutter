@@ -555,6 +555,13 @@ async function installCaptureObservations(page, emulateMobileFacing = false) {
     const NativeWorker = window.Worker;
     window.Worker = class extends NativeWorker {
       constructor(...args) {super(...args); window.testWorkers.push(this);}
+      // The bridge preloads a spare worker for the next task; its create
+      // message makes it that task's worker.
+      postMessage(message, ...rest) {
+        if (message?.type === 'preload') this.testSpare = true;
+        if (message?.type === 'create') this.testSpare = false;
+        return super.postMessage(message, ...rest);
+      }
     };
     const getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     navigator.mediaDevices.getUserMedia = async constraints => {
@@ -804,7 +811,9 @@ async function cameraChecks() {
   await wait(multiplePage, () => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= 3);
   await multiplePage.waitForFunction(() => {
     if (mediapipeVision.stats().pendingRequests === 0) return false;
-    window.testWorkers.at(-1).dispatchEvent(new ErrorEvent('error', {message: 'Injected worker failure'}));
+    // The task's worker, not a spare the bridge may have spawned since.
+    window.testWorkers.filter(worker => !worker.testSpare).at(-1)
+      .dispatchEvent(new ErrorEvent('error', {message: 'Injected worker failure'}));
     return true;
   }, null, {polling: 1});
   await multiplePage.getByText(/Injected worker failure/).waitFor();

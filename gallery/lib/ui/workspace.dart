@@ -117,9 +117,13 @@ class TaskWorkspace extends StatefulWidget {
     required this.onOpenMenu,
     required this.settings,
     required this.children,
+    this.onSettingsSheet,
   });
 
   final String title;
+
+  /// Told when the phone's settings sheet opens and closes.
+  final ValueChanged<bool>? onSettingsSheet;
 
   /// Opens the sidebar; null while it is in view.
   final VoidCallback? onOpenMenu;
@@ -154,6 +158,15 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
     super.dispose();
   }
 
+  Future<void> _openSettings(BuildContext context) async {
+    widget.onSettingsSheet?.call(true);
+    try {
+      await showSettingsSheet(context, _sheetSettings);
+    } finally {
+      if (mounted) widget.onSettingsSheet?.call(false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = GalleryColors.of(context);
@@ -174,7 +187,7 @@ class _TaskWorkspaceState extends State<TaskWorkspace> {
                 title: widget.title,
                 onOpenMenu: widget.onOpenMenu,
                 onOpenSettings: phone && settings != null
-                    ? () => showSettingsSheet(context, _sheetSettings)
+                    ? () => _openSettings(context)
                     : null,
               ),
             ),

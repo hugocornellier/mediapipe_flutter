@@ -40,8 +40,8 @@ abstract interface class LiveTask<T> {
 
 /// A task that learns from the frames it sees, such as a reference that later
 /// frames are compared with. The controller warms each task up on a sample
-/// before the camera starts, then calls [forgetFrames] so the camera's first
-/// frame finds the task as freshly opened.
+/// before processing camera frames, then calls [forgetFrames] so the camera's
+/// first frame finds the task as freshly opened.
 abstract interface class StatefulLiveTask {
   void forgetFrames();
 }

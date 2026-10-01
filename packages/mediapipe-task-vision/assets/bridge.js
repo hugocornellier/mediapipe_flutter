@@ -5,6 +5,40 @@
   let next = 0;
   let totalCreated = 0;
   let totalClosed = 0;
+  // Once a page has closed a task it is switching between them, so one spare
+  // worker loads, verifies and compiles Google's runtime ahead of the next:
+  // that task then only instantiates it. Nothing is spared for a page that
+  // keeps its one task.
+  let spare;
+  let switching = false;
+  let spareTimer;
+  function spawn() {
+    return new Worker(new URL('worker.js', base), {type: 'module'});
+  }
+  function prepareSpare(runtimeBaseUrl, delay) {
+    clearTimeout(spareTimer);
+    spareTimer = setTimeout(() => {
+      if (spare || !runtimeBaseUrl) return;
+      const worker = spawn();
+      // A spare that fails is dropped rather than handed to the next task,
+      // whose create would otherwise wait on a dead worker until it timed out.
+      worker.onerror = event => {
+        event.preventDefault();
+        if (spare?.worker !== worker) return;
+        spare = undefined;
+        worker.terminate();
+      };
+      worker.postMessage({id: -1, type: 'preload', input: {runtimeBaseUrl}});
+      spare = {worker, runtimeBaseUrl};
+    }, delay);
+  }
+  function takeWorker(runtimeBaseUrl) {
+    const ready = spare;
+    spare = undefined;
+    if (ready?.runtimeBaseUrl === runtimeBaseUrl) return ready.worker;
+    ready?.worker.terminate();
+    return spawn();
+  }
   function fail(state, error) {
     if (state.dead) return;
     state.dead = true;
@@ -43,9 +77,10 @@
   }
   globalThis.mediapipeVision = {
     async create(options) {
-      const worker = new Worker(new URL('worker.js', base), {type: 'module'});
+      const worker = takeWorker(options.runtimeBaseUrl);
       const id = next++;
-      const state = {id, worker, pending: new Map(), next: 0, dead: false,
+      const state = {id, worker, runtimeBaseUrl: options.runtimeBaseUrl,
+        pending: new Map(), next: 0, dead: false,
         overlayActive: false, overlayOptions: {connections: true, points: false}};
       workers.set(id, state);
       totalCreated++;
@@ -69,6 +104,8 @@
       worker.onmessageerror = () => fail(state, new Error('Invalid MediaPipe worker response'));
       try {
         await request(state, 'create', options);
+        // After this task's warm-up rather than during it.
+        if (switching) prepareSpare(options.runtimeBaseUrl, 3000);
         return id;
       } catch (error) {
         fail(state, error);
@@ -101,12 +138,15 @@
     async close(id) {
       const state = workers.get(id);
       if (!state) return;
+      // The next task is likely on its way: start loading it a runtime now.
+      switching = true;
+      prepareSpare(state.runtimeBaseUrl, 0);
       try { await request(state, 'close'); }
       finally { fail(state, new Error('MediaPipe task is closed')); }
     },
     // Read-only diagnostics used by release-browser tests.
     stats() {
-      return {activeWorkers: workers.size, totalCreated, totalClosed,
+      return {activeWorkers: workers.size, spareWorkers: spare ? 1 : 0, totalCreated, totalClosed,
         activeOverlays: [...workers.values()].filter(s => s.overlayActive).length,
         pendingRequests: [...workers.values()].reduce((n, s) => n + s.pending.size, 0)};
     },
