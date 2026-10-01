@@ -29,22 +29,17 @@ import java.util.concurrent.Executors;
  * of Google's JavaScript API, which the Dart package decodes on every platform.
  */
 public final class MediaPipeAudioPlugin implements FlutterPlugin, MethodChannel.MethodCallHandler {
-  /** One official task and the model buffer it reads. Only the worker touches it. */
-  private static final class Task {
-    final AudioClassifier classifier;
-    final ByteBuffer model;
-
-    Task(AudioClassifier classifier, ByteBuffer model) {
-      this.classifier = classifier;
-      this.model = model;
-    }
-  }
-
   private MethodChannel channel;
   private Context context;
   private ExecutorService worker;
   private final Handler main = new Handler(Looper.getMainLooper());
-  private final Map<Integer, Task> tasks = new HashMap<>();
+  // Only the worker touches these.
+  private final Map<Integer, AudioClassifier> tasks = new HashMap<>();
+  // Google's native task reads a direct model buffer in place, without a copy,
+  // so each one is held here until its task is closed. A field that is only
+  // written would not hold it: R8 removes such fields from release builds, the
+  // buffer is collected, and inference reads freed memory.
+  private final Map<Integer, ByteBuffer> modelBuffers = new HashMap<>();
   private int nextId;
 
   @Override public void onAttachedToEngine(FlutterPluginBinding binding) {
@@ -57,8 +52,9 @@ public final class MediaPipeAudioPlugin implements FlutterPlugin, MethodChannel.
   @Override public void onDetachedFromEngine(FlutterPluginBinding binding) {
     channel.setMethodCallHandler(null);
     worker.execute(() -> {
-      for (Task task : tasks.values()) task.classifier.close();
+      for (AudioClassifier classifier : tasks.values()) classifier.close();
       tasks.clear();
+      modelBuffers.clear();
     });
     worker.shutdown();
   }
@@ -75,8 +71,13 @@ public final class MediaPipeAudioPlugin implements FlutterPlugin, MethodChannel.
           case "create": value = create(call); break;
           case "run": value = classify(call); break;
           default: {
-            Task task = tasks.remove(((Number) call.argument("id")).intValue());
-            if (task != null) task.classifier.close();
+            int id = ((Number) call.argument("id")).intValue();
+            AudioClassifier classifier = tasks.remove(id);
+            try {
+              if (classifier != null) classifier.close();
+            } finally {
+              modelBuffers.remove(id);
+            }
             value = null;
           }
         }
@@ -108,21 +109,22 @@ public final class MediaPipeAudioPlugin implements FlutterPlugin, MethodChannel.
       options.setScoreThreshold(((Number) call.argument("scoreThreshold")).floatValue());
     }
     int id = nextId++;
-    tasks.put(id, new Task(AudioClassifier.createFromOptions(context, options.build()), model));
+    tasks.put(id, AudioClassifier.createFromOptions(context, options.build()));
+    if (model != null) modelBuffers.put(id, model);
     return id;
   }
 
   /** Classifies one mono clip; one result per chunk the model reads, in order. */
   private List<Object> classify(MethodCall call) {
-    Task task = tasks.get(((Number) call.argument("id")).intValue());
-    if (task == null) throw new IllegalStateException("MediaPipe audio task is closed");
+    AudioClassifier classifier = tasks.get(((Number) call.argument("id")).intValue());
+    if (classifier == null) throw new IllegalStateException("MediaPipe audio task is closed");
     float[] samples = call.argument("samples");
     float rate = ((Number) call.argument("sampleRate")).floatValue();
     AudioData audio = AudioData.create(
         AudioDataFormat.builder().setNumOfChannels(1).setSampleRate(rate).build(), samples.length);
     audio.load(samples);
     List<Object> chunks = new ArrayList<>();
-    for (ClassificationResult chunk : task.classifier.classify(audio).classificationResults()) {
+    for (ClassificationResult chunk : classifier.classify(audio).classificationResults()) {
       List<Object> heads = new ArrayList<>();
       for (Classifications head : chunk.classifications()) {
         List<Object> categories = new ArrayList<>();

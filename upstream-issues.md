@@ -718,6 +718,37 @@ before reopening. `test/face_detector_gpu_memory_test.dart` runs 2,000 camera
 frames on the GPU with the engine loaded too, and fails if memory grows past
 the budget or a result is lost across a reopen.
 
+## UP-033: Android tasks read a model buffer they do not keep
+
+**Status:** observed October 1 with Google's tasks-audio and tasks-text 1.0.0
+Android libraries, on a tester's phone and an arm64 API 31 emulator, in release
+builds only. Google's documentation does not state the rule; the defect that
+shipped was in this repo's plugins, and is fixed there. No upstream issue filed.
+
+`BaseOptions.Builder.setModelAssetBuffer` accepts only a direct `ByteBuffer` or
+a `MappedByteBuffer`: `build()` rejects a heap buffer, the kind
+`BaseOptionsUtils` would copy. For a direct buffer it gives native code the
+buffer's address (`FilePointerMeta`) and copies nothing, and no Google object
+keeps a reference to the buffer. TFLite's constant tensors then point into
+memory the caller must keep alive as long as the task, which the Javadoc does
+not mention. TFLite's own Java `Interpreter` keeps its model buffer referenced
+for this reason, and MediaPipe's C API copies the bytes.
+
+The audio and text plugins held the buffer in a field nothing read. R8 removes
+such fields from release builds, so once a garbage collection freed the buffer,
+inference read freed memory. Audio Classifier failed with
+`rfft2d.cc:454 output_shape.Dims(num_dims_output - 2) != fft_length_data[0] (1 != 0)`
+and `interpreter_->Invoke() == kTfLiteOk (1 vs. 0)`, then "Graph has errors"
+on every later call. Text Classifier scored a sentence it rates 1.00 positive
+at 0.50/0.50, with no error. Debug builds keep the field and never showed it.
+Forcing one collection (`kill -10` on the app's process, as root) reproduced
+both.
+
+Each plugin now keeps its buffers in a map until the task closes, as the vision
+plugin already did. On the same emulator the release gallery then kept its
+scores through 3 forced collections in Clips mode and 3 for Text Classifier,
+and ran a minute of microphone input through 6 more without an error.
+
 ## Integration pitfalls resolved in this repo
 
 These are recorded for continuity, not classified as confirmed MediaPipe defects.
