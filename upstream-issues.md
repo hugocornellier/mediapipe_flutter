@@ -1,6 +1,6 @@
 # Upstream issues and runtime compatibility findings
 
-Last updated: 2026-09-16. These are local observations unless explicitly marked
+Last updated: 2026-10-01. These are local observations unless explicitly marked
 as an external report. No new upstream issues have been filed from this session.
 An exported symbol alone does not establish a working task or platform.
 
@@ -680,6 +680,43 @@ GPU delegate passes every SDK suite on a physical iPhone 15 Pro.
 `SIMULATOR_UDID` in every app's environment). There the vision capability
 queries offer the CPU only, with this issue as the GPU reason, and every task
 refuses a GPU `create` with an error instead of the app aborting.
+
+## UP-032: macOS GPU tasks keep every frame until they close
+
+**Status:** observed October 1 with Google's official 1.0.0 macOS engine and
+the source-built 1.0.0 Face Detector, on an M4 Max (macOS 27), through the
+package and through a plain C harness. The code is unchanged on MediaPipe's
+master. Worked around in the package by reopening the task. Issue
+[#5510](https://github.com/google-ai-edge/mediapipe/issues/5510) has an
+[M1 Mac report of the same abort](https://github.com/google-ai-edge/mediapipe/issues/5510#issuecomment-2417746088)
+"after running for a while", and Python users report the same growth on
+macOS: [#5652](https://github.com/google-ai-edge/mediapipe/issues/5652) and
+[#5626](https://github.com/google-ai-edge/mediapipe/issues/5626).
+
+On the GPU delegate, `ImageCloneCalculator` converts each CPU input image for
+the GPU. `CreateCVPixelBufferForImageFrame` (`mediapipe/objc/util.cc`) copies
+it into a new 32BGRA pixel buffer, from no pool, and
+`GpuBufferStorageCvPixelBuffer::GetTexture` wraps that buffer in a texture from
+the OpenGL context's `CVOpenGLTextureCache`. On macOS (`gl_context_nsgl.cc`)
+the cache is flushed only in `DestroyContext`, so it keeps every frame's buffer
+until the task closes: 1.2 MB a frame from a 640x480 camera for Face Detector,
+Pose Landmarker, Image Classifier and Object Detector, and 2.4 MB for Hand
+Landmarker. The CPU delegate stays flat. A camera demo fills memory at its
+frame rate until `CVPixelBufferCreate` fails with `kCVReturnAllocationFailed`,
+and MediaPipe's check aborts the app (`gpu_buffer_storage_cv_pixel_buffer.cc`:
+`Error creating pixel buffer: -6662`). The gallery's Face Detector closed this
+way after nine minutes on the camera.
+
+Closing the task releases every buffer. On macOS GPU, each vision worker counts
+the bytes it sends to the GPU and, after 1 GiB (about 30 seconds of a 640x480
+camera at 30 fps), closes its native task and opens an identical one
+(`lib/src/io/gpu_frame_budget.dart`). On an M4 Max reopening takes about 20 ms
+for Face Detector and 250 to 800 ms for the engine's tasks, so one frame in
+each interval waits that long, and a video task resumes tracking from a new
+detection. Hand Landmarker keeps two buffers a frame, so it holds up to 2 GiB
+before reopening. `test/face_detector_gpu_memory_test.dart` runs 2,000 camera
+frames on the GPU with the engine loaded too, and fails if memory grows past
+the budget or a result is lost across a reopen.
 
 ## Integration pitfalls resolved in this repo
 

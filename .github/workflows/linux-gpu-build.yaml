@@ -37,7 +37,7 @@ jobs:
             packages/mediapipe-task-vision/tool
             packages/mediapipe-task-vision/test/fixtures/face_detection
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -58,7 +58,7 @@ jobs:
           test -z "$(git status --porcelain)"
           cat .bazelversion
 
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         with:
           path: ~/.cache/mediapipe-disk-cache
           key: linux-gpu-${{ env.MEDIAPIPE_REVISION }}-${{ github.run_id }}
@@ -84,7 +84,7 @@ jobs:
           # Tracked files only: Bazel writes MODULE.bazel.lock, which upstream does not ignore.
           test -z "$(git status --porcelain --untracked-files=no)" || { git status --short; echo "::error::upstream source changed"; exit 1; }
 
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: always() && steps.build.conclusion != 'skipped'
         with:
           path: ~/.cache/mediapipe-disk-cache

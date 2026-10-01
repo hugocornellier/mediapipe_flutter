@@ -22,18 +22,20 @@ Future<void> main(List<String> arguments) async {
   }
 
   final target = options.option('target')!;
-  if (target != 'android/arm64' && target != 'android/x64') {
+  final available = targetTasks[target];
+  if (available == null) {
     stderr.writeln(
-      'This Dart preparer currently supports android/arm64 and android/x64.',
+      'This Dart preparer supports ${targetTasks.keys.join(', ')}; prepare '
+      'other targets with python3.12 -B gallery/tool/prepare.py.',
     );
     exitCode = 64;
     return;
   }
   final requested = options.option('tasks');
   final tasks = requested == null
-      ? models.keys.toSet()
+      ? available
       : requested.split(',').map((task) => task.trim()).toSet();
-  final unknown = tasks.difference(models.keys.toSet());
+  final unknown = tasks.difference(available);
   if (unknown.isNotEmpty) {
     stderr.writeln(
       'Unavailable tasks for $target: ${unknown.toList()..sort()}',
@@ -104,29 +106,34 @@ Future<void> _prepare(String target, List<String> tasks) async {
   final modelNames = <String, String>{
     for (final task in tasks) task: models[task]!.fileName,
   };
+  final macos = target.startsWith('macos/');
+  final macosEngine = macos && needsMacosEngine(tasks);
   final manifest = <String, Object?>{
     'target': target,
     'tasks': tasks,
     'models': modelNames,
     'samples': sampleNames,
-    'official_macos_landmark_tasks': <String>[],
+    'official_macos_landmark_tasks': [
+      if (macosEngine) ...tasks.where(macosEngineTasks.contains),
+    ],
     'official_ios_sdk': null,
-    'official_android_sdk': '1.0.0',
+    'official_android_sdk': macos ? null : '1.0.0',
     'official_web_sdk': null,
   };
   await File(
     p.join(gallery, 'assets/manifest.json'),
   ).writeAsString('${const JsonEncoder.withIndent('  ').convert(manifest)}\n');
-  await File(
-    p.join(gallery, 'pubspec.yaml'),
-  ).writeAsString(_pubspec(target, tasks, modelNames, sampleNames));
+  await File(p.join(gallery, 'pubspec.yaml')).writeAsString(
+    _pubspec(target, tasks, modelNames, sampleNames, macosEngine: macosEngine),
+  );
 
   stdout.writeln('$target: ${tasks.length} task(s) bundled');
   for (final task in tasks) {
     stdout.writeln('  + $task');
   }
   stdout.writeln(
-    '\nNext: cd gallery, then flutter run -d <device-id> --release',
+    '\nNext: cd gallery, then flutter run -d '
+    '${macos ? 'macos' : '<device-id>'} --release',
   );
 }
 
@@ -239,9 +246,20 @@ String _pubspec(
   String target,
   List<String> tasks,
   Map<String, String> models,
-  List<String> samples,
-) {
+  List<String> samples, {
+  required bool macosEngine,
+}) {
   final assets = <String>{...models.values}.toList()..sort();
+  // camera_desktop supplies macOS preview and raw image streaming; camera
+  // itself supplies Android's.
+  final camera = target.startsWith('macos/')
+      ? '  camera: ^0.12.1\n  camera_desktop: ^1.2.2'
+      : '  camera: ^0.12.1';
+  // The one setting an app writes besides `tasks`: Google's macOS engine is
+  // opt-in, and every other target picks its runtime by default.
+  final core = macosEngine
+      ? '    mediapipe_core:\n      tasks_runtime: true\n'
+      : '';
   final entries = [
     for (final name in assets) '    - assets/models/$name',
     for (final name in samples) '    - assets/samples/$name',
@@ -275,7 +293,7 @@ dependencies:
   record: ^7.1.1
   url_launcher: ^6.3.2
   lucide_icons_flutter: ^3.1.20
-  camera: ^0.12.1
+$camera
 
 dev_dependencies:
   camera_platform_interface: ^2.13.1
@@ -287,7 +305,7 @@ dev_dependencies:
 
 hooks:
   user_defines:
-    mediapipe_vision:
+$core    mediapipe_vision:
       tasks: [${nativeTasks.join(', ')}]
 
 flutter:

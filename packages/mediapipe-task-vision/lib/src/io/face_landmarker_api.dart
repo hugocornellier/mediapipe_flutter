@@ -14,6 +14,7 @@ import '../capabilities/official_runtime_io.dart';
 /// core's asset.
 final class FaceLandmarkerApi {
   const FaceLandmarkerApi._({
+    required this.usesEngine,
     required this.create,
     required this.imageFromFile,
     required this.imageFromData,
@@ -26,6 +27,10 @@ final class FaceLandmarkerApi {
     required this.close,
     required this.errorFree,
   });
+
+  /// Whether these functions are core's engine's rather than Face
+  /// Landmarker's own asset's.
+  final bool usesEngine;
 
   /// `MpFaceLandmarkerCreate`.
   final mp.MpStatus Function(
@@ -97,6 +102,7 @@ final class FaceLandmarkerApi {
 
   /// The generated bindings, on Face Landmarker's own asset.
   static const _own = FaceLandmarkerApi._(
+    usesEngine: false,
     create: mp.MpFaceLandmarkerCreate,
     imageFromFile: mp.MpImageCreateFromFile,
     imageFromData: mp.MpImageCreateFromUint8Data,
@@ -112,6 +118,7 @@ final class FaceLandmarkerApi {
 
   /// The same functions on core's engine asset.
   static const _shared = FaceLandmarkerApi._(
+    usesEngine: true,
     create: _sharedCreate,
     imageFromFile: _sharedImageFromFile,
     imageFromData: _sharedImageFromData,
@@ -125,24 +132,16 @@ final class FaceLandmarkerApi {
     errorFree: _sharedErrorFree,
   );
 
-  /// The API this process uses: Face Landmarker's own asset, or on macOS
-  /// core's engine when the build bundled that instead.
+  /// The API this process uses: on macOS core's engine whenever the build
+  /// bundled it, otherwise Face Landmarker's own asset.
+  ///
+  /// The build bundles exactly one of them (hook/build.dart leaves the own
+  /// asset out when the engine is on), so this follows the build rather than
+  /// probing the own asset. A probe misleads: Dart resolves a missing asset's
+  /// symbols from whatever the process has loaded, and Face Detector's macOS
+  /// library exports MpErrorFree and the MpImage functions as well.
   static final FaceLandmarkerApi current =
-      Platform.isMacOS && !_ownAssetLoads() && hasOfficialMacosLandmarkRuntime()
-      ? _shared
-      : _own;
-
-  // Loading the own asset is the next step anyway when it is bundled.
-  static bool _ownAssetLoads() {
-    try {
-      return Native.addressOf<NativeFunction<Void Function(Pointer<Char>)>>(
-            mp.MpErrorFree,
-          ) !=
-          nullptr;
-    } on ArgumentError {
-      return false;
-    }
-  }
+      Platform.isMacOS && hasOfficialMacosLandmarkRuntime() ? _shared : _own;
 }
 
 const _engine = 'package:mediapipe_core/mediapipe.dylib';

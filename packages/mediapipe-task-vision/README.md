@@ -190,6 +190,344 @@ has a camera mode. Choose an image in the gallery's still image mode for the
 ten camera-capable tasks; the Interactive Segmenter page starts with its bundled
 sample image.
 
+## Samples for every task
+
+Each sample is a complete function that takes a `VisionImage` (built from
+pixels as in the quick start, or with `VisionImage.fromFile`), runs one
+task with Google's pinned model and disposes it. In an app, create a task
+once and reuse it for every image or frame.
+
+[Face Detector](#face-detector) ·
+[Face Landmarker](#face-landmarker) ·
+[Hand Landmarker](#hand-landmarker) ·
+[Gesture Recognizer](#gesture-recognizer) ·
+[Pose Landmarker](#pose-landmarker) ·
+[Holistic Landmarker](#holistic-landmarker) ·
+[Object Detector](#object-detector) ·
+[Image Classifier](#image-classifier) ·
+[Image Embedder](#image-embedder) ·
+[Image Segmenter](#image-segmenter) ·
+[Interactive Segmenter](#interactive-segmenter) ·
+[Interactive Segmenter Legacy](#interactive-segmenter-legacy)
+
+### Face Detector
+
+A box in pixels and six keypoints (eyes, ears, nose, mouth) per face.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<void> findFaces(VisionImage image) async {
+  final detector = await FaceDetector.create(
+    FaceDetectorOptions(model: VisionModels.faceDetector),
+  );
+  try {
+    final result = await detector.detectImage(image);
+    for (final face in result.detections) {
+      final box = face.boundingBox;
+      print('Face at ${box.left},${box.top}, ${box.width}x${box.height} px');
+      print('Confidence ${face.categories.first.score.toStringAsFixed(2)}');
+    }
+  } finally {
+    await detector.dispose();
+  }
+}
+```
+
+### Face Landmarker
+
+478 landmarks per face (see the quick start), and optionally 52 blendshape
+scores that describe the expression.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<void> readExpression(VisionImage image) async {
+  final landmarker = await FaceLandmarker.create(
+    FaceLandmarkerOptions(
+      model: VisionModels.faceLandmarker,
+      outputFaceBlendshapes: true,
+    ),
+  );
+  try {
+    final result = await landmarker.detectImage(image);
+    if (result.faceBlendshapes.isEmpty) return;
+    final strongest = [...result.faceBlendshapes.first]
+      ..sort((a, b) => b.score.compareTo(a.score));
+    for (final shape in strongest.take(3)) {
+      print('${shape.categoryName}: ${shape.score.toStringAsFixed(2)}');
+    }
+  } finally {
+    await landmarker.dispose();
+  }
+}
+```
+
+### Hand Landmarker
+
+21 landmarks per hand, normalized to the image, with which hand it is.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<void> findHands(VisionImage image) async {
+  final landmarker = await HandLandmarker.create(
+    HandLandmarkerOptions(model: VisionModels.handLandmarker, numHands: 2),
+  );
+  try {
+    final result = await landmarker.detectImage(image);
+    for (var i = 0; i < result.handLandmarks.length; i++) {
+      final side = result.handedness[i].first.categoryName;
+      final wrist = result.handLandmarks[i].first;
+      print('$side hand, wrist at ${wrist.x}, ${wrist.y}');
+    }
+  } finally {
+    await landmarker.dispose();
+  }
+}
+```
+
+### Gesture Recognizer
+
+Google's canned gestures (`Thumb_Up`, `Victory`, `Open_Palm` and more) for
+each hand, with the same hand landmarks as Hand Landmarker.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<void> recognizeGestures(VisionImage image) async {
+  final recognizer = await GestureRecognizer.create(
+    GestureRecognizerOptions(model: VisionModels.gestureRecognizer),
+  );
+  try {
+    final result = await recognizer.recognizeImage(image);
+    for (final gestures in result.gestures) {
+      final top = gestures.first;
+      print('${top.categoryName} (${top.score.toStringAsFixed(2)})');
+    }
+  } finally {
+    await recognizer.dispose();
+  }
+}
+```
+
+### Pose Landmarker
+
+33 body landmarks per pose, plus world coordinates in meters. Set
+`outputSegmentationMasks: true` for a mask of each person.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<void> findPoses(VisionImage image) async {
+  final landmarker = await PoseLandmarker.create(
+    PoseLandmarkerOptions(model: VisionModels.poseLandmarker),
+  );
+  try {
+    final result = await landmarker.detectImage(image);
+    for (final pose in result.poseLandmarks) {
+      final nose = pose.first;
+      print('Nose at ${nose.x}, ${nose.y}, visibility ${nose.visibility}');
+    }
+  } finally {
+    await landmarker.dispose();
+  }
+}
+```
+
+### Holistic Landmarker
+
+Face, pose and both hands from one task and one pass over the image.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<void> trackPerson(VisionImage image) async {
+  final landmarker = await HolisticLandmarker.create(
+    HolisticLandmarkerOptions(model: VisionModels.holisticLandmarker),
+  );
+  try {
+    final result = await landmarker.detectImage(image);
+    print('Face: ${result.faceLandmarks.length} landmarks');
+    print('Pose: ${result.poseLandmarks.length} landmarks');
+    print('Left hand: ${result.leftHandLandmarks.length} landmarks');
+    print('Right hand: ${result.rightHandLandmarks.length} landmarks');
+  } finally {
+    await landmarker.dispose();
+  }
+}
+```
+
+### Object Detector
+
+Labeled boxes in pixels from EfficientDet-Lite0. `maxResults` and
+`scoreThreshold` trim the list; `categoryAllowlist` keeps only the labels
+you name.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<void> detectObjects(VisionImage image) async {
+  final detector = await ObjectDetector.create(
+    ObjectDetectorOptions(
+      model: VisionModels.objectDetector,
+      maxResults: 5,
+      scoreThreshold: 0.4,
+    ),
+  );
+  try {
+    final result = await detector.detectImage(image);
+    for (final detection in result.detections) {
+      final label = detection.categories.first;
+      final box = detection.boundingBox;
+      print('${label.categoryName} at ${box.left},${box.top}');
+    }
+  } finally {
+    await detector.dispose();
+  }
+}
+```
+
+### Image Classifier
+
+The most likely categories for the whole image, from EfficientNet-Lite0.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<void> classifyPhoto(VisionImage image) async {
+  final classifier = await ImageClassifier.create(
+    ImageClassifierOptions(model: VisionModels.imageClassifier, maxResults: 3),
+  );
+  try {
+    final result = await classifier.classifyImage(image);
+    for (final category in result.classifications.first.categories) {
+      print('${category.categoryName}: ${category.score.toStringAsFixed(2)}');
+    }
+  } finally {
+    await classifier.dispose();
+  }
+}
+```
+
+### Image Embedder
+
+A feature vector per image. Compare two with cosine similarity: values near
+1 mean similar content.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<double> compareImages(VisionImage first, VisionImage second) async {
+  final embedder = await ImageEmbedder.create(
+    ImageEmbedderOptions(model: VisionModels.imageEmbedder, l2Normalize: true),
+  );
+  try {
+    final a = await embedder.embedImage(first);
+    final b = await embedder.embedImage(second);
+    return ImageEmbedder.cosineSimilarity(
+      a.embeddings.first,
+      b.embeddings.first,
+    );
+  } finally {
+    await embedder.dispose();
+  }
+}
+```
+
+### Image Segmenter
+
+A category for every pixel (DeepLab v3 knows 21, such as person, cat and
+car), or one confidence mask per category.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<void> segmentScene(VisionImage image) async {
+  final segmenter = await ImageSegmenter.create(
+    ImageSegmenterOptions(
+      model: VisionModels.imageSegmenter,
+      outputCategoryMask: true,
+      outputConfidenceMasks: false,
+    ),
+  );
+  try {
+    final result = await segmenter.segmentImage(image);
+    final mask = result.categoryMask!;
+    final center =
+        mask.categories[mask.height ~/ 2 * mask.width + mask.width ~/ 2];
+    // Google's Android SDK reports no labels (upstream-issues.md UP-019).
+    final label = center < result.labels.length
+        ? result.labels[center]
+        : 'category $center';
+    print('The center pixel is $label');
+  } finally {
+    await segmenter.dispose();
+  }
+}
+```
+
+### Interactive Segmenter
+
+Select an object with strokes, in coordinates normalized to the image. The
+task keeps the image, so each call passes the full stroke history; send a
+shorter history to undo. Not available on Windows.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<SegmentationMask> selectObject(VisionImage image) async {
+  final segmenter = await InteractiveSegmenter.create(
+    InteractiveSegmenterOptions(model: VisionModels.interactiveSegmenter),
+  );
+  try {
+    await segmenter.setImage(image);
+    return await segmenter.segment([
+      SegmentationStroke(
+        brushMode: SegmentationBrushMode.positive,
+        points: [
+          SegmentationPoint(x: 0.45, y: 0.5),
+          SegmentationPoint(x: 0.55, y: 0.5),
+        ],
+      ),
+    ]);
+  } finally {
+    await segmenter.dispose();
+  }
+}
+```
+
+The mask holds one confidence per pixel, indexed `y * width + x`, and stays
+valid after the task is disposed.
+
+### Interactive Segmenter Legacy
+
+Select the object under a single point. Not available on Android.
+
+```dart
+import 'package:mediapipe_vision/mediapipe_vision.dart';
+
+Future<void> selectAtCenter(VisionImage image) async {
+  final segmenter = await InteractiveSegmenterLegacy.create(
+    InteractiveSegmenterLegacyOptions(
+      model: VisionModels.interactiveSegmenterLegacy,
+    ),
+  );
+  try {
+    final result = await segmenter.segmentImage(
+      image,
+      keypoint: SegmentationPoint(x: 0.5, y: 0.5),
+    );
+    final mask = result.confidenceMasks!.last;
+    final center =
+        mask.confidence[mask.height ~/ 2 * mask.width + mask.width ~/ 2];
+    print('Confidence at the point: ${center.toStringAsFixed(2)}');
+  } finally {
+    await segmenter.dispose();
+  }
+}
+```
+
 ## Video and live cameras
 
 Create the task in video mode, then submit frames with **strictly increasing

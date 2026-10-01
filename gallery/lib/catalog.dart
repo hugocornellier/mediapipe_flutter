@@ -129,7 +129,7 @@ final class GalleryTask {
 
   bool get isExperimental => experimentalReason != null;
 
-  /// Model asset name, matching `tool/prepare.py`.
+  /// Model asset name, as the gallery's preparer bundles it.
   final String model;
 
   /// Sample input shipped for the demo.
@@ -515,7 +515,7 @@ final _catalog = <GalleryTask>[
     capabilities: _audio,
   ),
   // The text package's classic tasks, on the shared runtime: macOS
-  // arm64 CPU, where prepare.py bundles their models.
+  // arm64 CPU, where the gallery bundles their models.
   GalleryTask(
     id: 'language_detector',
     category: GalleryCategory.text,

@@ -7,6 +7,7 @@ import '../../capabilities.dart';
 import '../interface/object_detector_types.dart';
 import '../vision_task_backend.dart' show objectDetectorBackendFactory;
 import '../sdk_vision_task.dart';
+import 'gpu_frame_budget.dart';
 import 'native_object_detector.dart';
 
 /// Official MediaPipe Object Detector, with inference serialized on a worker isolate.
@@ -226,9 +227,10 @@ final class ObjectDetector {
 Future<void> _runWorker((SendPort, ObjectDetectorOptions) initial) async {
   final (parent, options) = initial;
   final commands = ReceivePort();
+  final budget = GpuFrameBudget(options);
   NativeObjectDetector? native;
   try {
-    native = NativeObjectDetector(options);
+    var task = native = NativeObjectDetector(options);
     parent.send(commands.sendPort);
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, (VisionImage, int, int?)?);
@@ -236,9 +238,9 @@ Future<void> _runWorker((SendPort, ObjectDetectorOptions) initial) async {
       VisionTaskException? failure;
       try {
         if (input == null) {
-          native.close();
+          task.close();
         } else {
-          result = native.detect(input.$1, input.$2, timestamp: input.$3);
+          result = task.detect(input.$1, input.$2, timestamp: input.$3);
         }
       } catch (error) {
         failure = error is VisionTaskException
@@ -247,6 +249,10 @@ Future<void> _runWorker((SendPort, ObjectDetectorOptions) initial) async {
       }
       parent.send((id, result, failure));
       if (input == null) break;
+      if (budget.spend(input.$1)) {
+        task.close();
+        task = native = NativeObjectDetector(options);
+      }
     }
   } catch (error) {
     parent.send(

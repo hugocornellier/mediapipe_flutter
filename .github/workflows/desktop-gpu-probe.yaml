@@ -56,7 +56,7 @@ jobs:
         with:
           sparse-checkout: packages/mediapipe-task-vision/test/fixtures/face_detection
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 

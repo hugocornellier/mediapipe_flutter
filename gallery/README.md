@@ -14,25 +14,26 @@ Allow camera
 access on HTTPS or localhost. See [web tests and deployment](tool/WEB_FACE.md).
 
 The pubspec and assets are generated, because the task list is per target and
-the build hook rejects a task it has no runtime for. Download the models once,
-then prepare and run:
+the build hook rejects a task it has no runtime for. On a Mac with Apple
+Silicon, a clean checkout needs only Flutter and Xcode:
 
 ```sh
-cd packages/mediapipe-task-vision
-dart tool/download_model.dart
-dart tool/download_face_landmarker.dart
-cd ../..
-python3 -B gallery/tool/prepare.py
-cd gallery && flutter run -d macos --release
+dart run tool/gallery_builder/bin/prepare_gallery.dart --target macos/arm64
+cd gallery
+flutter run -d macos --release
 ```
 
-`prepare.py --target <platform>` prepares a different target, for example
-`ios-simulator/arm64` (Android has its own Dart preparer, below). It also pins the macOS build to arm64,
-excludes the x86_64 simulator slice, and adds the camera entitlement and usage
-description, none of which `flutter create` provides. For macOS it also sets
+The Dart preparer downloads and verifies every model the target needs, and
+fails rather than build an incomplete app. For macOS it also sets
 `mediapipe_core.tasks_runtime: true`, so vision, text and audio all run on
 Google's 1.0.0 macOS engine, which core bundles once for the whole app, as it
-would for any app that opts in.
+would for any app that opts in. The checked-in macOS project already pins the
+build to arm64 and declares the camera entitlement and usage description.
+
+`python3.12 -B gallery/tool/prepare.py --target <platform>` prepares iOS,
+Linux, Windows and the web, for example `ios-simulator/arm64`. For iOS it
+also excludes the x86_64 simulator slice and adds the camera and photo usage
+descriptions, none of which `flutter create` provides.
 
 For Android, a clean checkout needs only Dart, Flutter and the Android SDK:
 
@@ -68,9 +69,10 @@ Linux builds need `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev` and
 
 Three gates, in order:
 
-1. **Bundled**: `tool/prepare.py` reads `sdk_downloads.dart` and selects the
-   tasks whose runtime this target can actually obtain. Unpublished runtimes
-   count only when a maintainer build is present in the package.
+1. **Bundled**: the preparer selects the tasks whose runtime this target can
+   actually obtain. `tool/prepare.py` reads them from `sdk_downloads.dart`;
+   `tool/gallery_builder` lists Android's and macOS's, and its tests check the
+   macOS list against `sdk_downloads.dart`.
 2. **Validated**: `lib/catalog.dart` asks the package's own capability query.
    Nothing restates support by hand, so a task validated on a new platform
    appears here with no code change.

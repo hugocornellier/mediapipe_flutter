@@ -95,7 +95,7 @@ records capture and face frames but cannot screenshot the preview texture on
 macOS, so alignment stays a visual check. The soak has not been retained yet:
 
 ```sh
-python3 -B gallery/tool/prepare.py --target macos/arm64 --tasks face_landmarker
+dart run tool/gallery_builder/bin/prepare_gallery.dart --target macos/arm64 --tasks face_landmarker
 cd gallery && MEDIAPIPE_CAMERA_REPORT=$PWD/../build/codex-tmp/macos-real-camera/report.json \
   flutter test -d macos integration_test/real_camera_test.dart --reporter expanded
 cd ../packages/mediapipe-task-vision && python3 -B tool/test_camera_soak.py

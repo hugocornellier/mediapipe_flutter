@@ -1,10 +1,11 @@
 """Generate the gallery's pubspec and assets for one build target.
 
-The build hook refuses a task it has no runtime for, so the task list cannot be
-written by hand: it differs per platform, and for unpublished runtimes it also
-depends on whether a maintainer source build is present. Deriving it here from
-`sdk_downloads.dart` keeps the gallery buildable everywhere and keeps the tile
-grid honest, because the app only ships tasks whose runtime really exists.
+Android and macOS are prepared by tool/gallery_builder, in Dart; this prepares
+iOS, Linux, Windows and the web. The build hook refuses a task it has no
+runtime for, so the task list cannot be written by hand: it differs per
+platform. Deriving it here from `sdk_downloads.dart` keeps the gallery
+buildable everywhere and keeps the tile grid honest, because the app only
+ships tasks whose runtime really exists.
 """
 import argparse
 import hashlib
@@ -47,20 +48,9 @@ def set_plist_key(path, key, value):
 
 WEB_HOST_TEST_TASKS = {'face_detector', 'face_landmarker'}
 
-# Android is prepared by tool/gallery_builder, in Dart, so a clean checkout
-# builds the phone app with no Python installed.
-ANDROID_COMMAND = ('dart run tool/gallery_builder/bin/prepare_gallery.dart '
-                   '--target android/arm64')
-
-# Tasks validated on Google's macOS engine, which core bundles with
-# tasks_runtime: true; see the vision package's sdk_downloads.dart
-# macosEngineTasks. Face Landmarker needs the engine only when it is there
-# anyway; alone it keeps its small source build.
-OFFICIAL_MACOS_TASKS = {'face_landmarker', 'gesture_recognizer', 'hand_landmarker',
-                        'holistic_landmarker', 'image_classifier', 'image_embedder',
-                        'image_segmenter', 'interactive_segmenter',
-                        'interactive_segmenter_legacy', 'object_detector',
-                        'pose_landmarker'}
+# Android and macOS are prepared by tool/gallery_builder, in Dart, so a clean
+# checkout builds them with no Python installed.
+DART_COMMAND = 'dart run tool/gallery_builder/bin/prepare_gallery.dart --target '
 
 # Tasks our adapter serves over Google's official iOS SDK; see
 # mediapipe-core's lib/src/native_assets/ios_sdk.dart officialIosTasks.
@@ -202,25 +192,7 @@ def available_tasks(target):
         for block in _blocks(source, 'const visionWheelReleases'):
             if re.search(r"target: '" + re.escape(target) + r"'", block):
                 return _tasks_of(block) | NON_VISION_TASKS
-        return set()
-    tasks = set()
-    if target == 'macos/arm64':
-        # Google's engine serves these, text and audio included; core's hook
-        # downloads it.
-        tasks |= OFFICIAL_MACOS_TASKS | NON_VISION_TASKS
-    for block in _blocks(source, 'const visionRuntimeReleases'):
-        if not re.search(r"target: '" + re.escape(target) + r"'", block):
-            continue
-        published = not re.search(r'archive: null', block)
-        if not published:
-            # Unpublished rows need a maintainer build sitting in the package.
-            local = re.search(r"localBuildDirectory: '([^']*)'", block)
-            library = re.search(r"libraryName: '([^']*)'", block)
-            if not (local and library
-                    and (VISION / local.group(1) / library.group(1)).exists()):
-                continue
-        tasks |= _tasks_of(block)
-    return tasks
+    return set()
 
 
 def prepare(target, selected):
@@ -265,18 +237,12 @@ def prepare(target, selected):
         shutil.copyfile(GALLERY / 'samples' / name, samples / name)
     sample_names = sorted([*SAMPLES.values(), *audio_samples, *embedder_samples])
 
-    # On macOS, Google's engine is opt-in (95 MB); anything but the face pair
-    # needs it, and Face Landmarker then runs on it too.
-    macos_engine = (target == 'macos/arm64' and bool(
-        (OFFICIAL_MACOS_TASKS - {'face_landmarker'} | NON_VISION_TASKS)
-        & bundled.keys()))
     manifest = {
         'target': target,
         'tasks': sorted(bundled),
         'models': bundled,
         'samples': sample_names,
-        'official_macos_landmark_tasks': sorted(
-            OFFICIAL_MACOS_TASKS & bundled.keys()) if macos_engine else [],
+        'official_macos_landmark_tasks': [],
         'official_ios_sdk': '1.0.1' if target.startswith('ios') else None,
         'official_android_sdk': None,
         'official_web_sdk': '1.0.1' if target == 'web' else None,
@@ -289,12 +255,8 @@ def prepare(target, selected):
     # camera_desktop supplies native desktop preview and raw image streaming;
     # camera itself supplies the mobile implementations.
     camera = ('  camera: ^0.12.1\n  camera_desktop: ^1.2.2'
-              if target in ('macos/arm64', 'linux/x64', 'windows/x64')
+              if target in ('linux/x64', 'windows/x64')
               else '  camera: ^0.12.1' if target == 'web' or target.startswith('ios') else '')
-    # The one setting an app writes besides `tasks`, and only for macOS: every
-    # other target picks its runtime by default, which this proves.
-    core = ('    mediapipe_core:\n      tasks_runtime: true\n'
-            if macos_engine else '')
     # Chrome tests also run the host native hook. Its published face pair is
     # sufficient there; browser tasks use the JavaScript runtime instead.
     native_tasks = sorted((set(bundled) & WEB_HOST_TEST_TASKS) if target == 'web'
@@ -343,7 +305,7 @@ dev_dependencies:
 
 hooks:
   user_defines:
-{core}    mediapipe_vision:
+    mediapipe_vision:
       tasks: [{', '.join(native_tasks)}]
 
 flutter:
@@ -366,27 +328,10 @@ flutter:
 
 
 def pin_architecture(target):
-    """Keep release builds on the one architecture the runtime ships for.
+    """Add the iOS settings the runtime needs and `flutter create` omits.
 
-    Flutter defaults macOS release builds to a universal binary, and the hook
-    refuses the x86_64 slice because no macos/x64 runtime exists.
+    The simulator runtime ships arm64 only, so its x86_64 slice is excluded.
     """
-    if target == 'macos/arm64':
-        config = GALLERY / 'macos/Runner/Configs/AppInfo.xcconfig'
-        if config.exists():
-            settings = config.read_text()
-            if 'EXCLUDED_ARCHS' not in settings:
-                config.write_text(
-                    settings + '\nARCHS = arm64\nEXCLUDED_ARCHS = x86_64\n')
-                return 'pinned macOS builds to arm64'
-    if target == 'macos/arm64':
-        # The live tile needs camera access; a sandboxed macOS app is denied it
-        # without the entitlement, and macOS kills it without the usage string.
-        for name in ('DebugProfile', 'Release'):
-            set_plist_key(GALLERY / f'macos/Runner/{name}.entitlements',
-                          'com.apple.security.device.camera', True)
-        set_plist_key(GALLERY / 'macos/Runner/Info.plist',
-                      'NSCameraUsageDescription', CAMERA_REASON)
     if target.startswith('ios'):
         # A live tile needs the camera, and iOS kills an app that asks without
         # a usage string. The device runtime also needs a deployment target it
@@ -425,9 +370,9 @@ def main():
     target = args.target or host_target()
     if target is None:
         raise SystemExit('No MediaPipe runtime target matches this host.')
-    if target.startswith('android'):
-        raise SystemExit(f'Android is prepared in Dart; from the repository root run\n'
-                         f'  {ANDROID_COMMAND}')
+    if target.startswith(('android', 'macos')):
+        raise SystemExit(f'{target} is prepared in Dart; from the repository root run\n'
+                         f'  {DART_COMMAND}{target}')
     selected = available_tasks(target)
     if args.tasks:
         requested = set(args.tasks.split(','))

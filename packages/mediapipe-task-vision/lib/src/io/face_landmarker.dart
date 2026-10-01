@@ -4,6 +4,7 @@ import 'dart:io';
 
 import '../face_landmarker_backend.dart';
 import '../interface/face_landmarker_types.dart';
+import 'gpu_frame_budget.dart';
 import 'native_face_landmarker.dart';
 
 /// Official MediaPipe Face Landmarker, with inference serialized on a worker isolate.
@@ -216,9 +217,10 @@ final class FaceLandmarker {
 Future<void> _runWorker((SendPort, FaceLandmarkerOptions) initial) async {
   final (parent, options) = initial;
   final commands = ReceivePort();
+  final budget = GpuFrameBudget(options);
   NativeFaceLandmarker? native;
   try {
-    native = NativeFaceLandmarker(options);
+    var task = native = NativeFaceLandmarker(options);
     parent.send(commands.sendPort);
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, (VisionImage, int, int?)?);
@@ -226,9 +228,9 @@ Future<void> _runWorker((SendPort, FaceLandmarkerOptions) initial) async {
       VisionTaskException? failure;
       try {
         if (input == null) {
-          native.close();
+          task.close();
         } else {
-          result = native.detect(input.$1, input.$2, timestamp: input.$3);
+          result = task.detect(input.$1, input.$2, timestamp: input.$3);
         }
       } catch (error) {
         failure = error is VisionTaskException
@@ -237,6 +239,10 @@ Future<void> _runWorker((SendPort, FaceLandmarkerOptions) initial) async {
       }
       parent.send((id, result, failure));
       if (input == null) break;
+      if (budget.spend(input.$1)) {
+        task.close();
+        task = native = NativeFaceLandmarker(options);
+      }
     }
   } catch (error) {
     parent.send(

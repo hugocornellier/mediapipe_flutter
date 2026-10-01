@@ -27,22 +27,11 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Download the camera vision models
-        working-directory: packages/mediapipe-task-vision
-        run: |
-          dart pub get
-          dart tool/download_model.dart
-          dart tool/download_face_landmarker.dart
-          dart tool/download_landmark_tasks.dart
-          dart tool/download_image_tasks.dart
-          dart tool/download_object_detector.dart
-          dart tool/download_segmenter_tasks.dart
+      # The one Dart command a fresh checkout runs: it downloads and verifies
+      # the models itself, with no Python.
       - name: Prepare the camera vision gallery
         run: |
-          python3 -B gallery/tool/prepare.py --target macos/arm64 --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target macos/arm64 --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker
           cd gallery && flutter pub get
       - name: Test Face Landmarker still image inference and overlay
         working-directory: gallery
@@ -101,7 +90,7 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Generate official CPU text references on this runner
@@ -164,7 +153,7 @@ jobs:
           cache: true
       - run: flutter --version
       - run: brew install bazelisk cmake ninja
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: make get models
@@ -233,7 +222,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Prepare the official runtime and check the unsigned-image pin
@@ -261,7 +250,7 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Download the pinned models
@@ -331,7 +320,7 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Download the official face models

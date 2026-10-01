@@ -69,9 +69,56 @@ model, pass `TextClassifierOptions.fromAssetPath` (a file path) or
 `.fromAssetBuffer` (bytes, for example from `rootBundle`); the modern tasks
 take `modelPath` or `modelBytes`. Give exactly one model source.
 
-`LanguageDetector.detect` and `TextEmbedder.embed` follow the same pattern;
-`TextEmbedder.cosineSimilarity` compares two embeddings, including quantized
-ones. Results own their data and stay valid after the task is disposed.
+Results own their data and stay valid after the task is disposed.
+
+### Language detection
+
+`LanguageDetector` returns language codes with probabilities, most likely
+first.
+
+```dart
+import 'package:mediapipe_text/mediapipe_text.dart';
+
+Future<void> detectLanguage(String text) async {
+  final detector = await LanguageDetector.create(
+    LanguageDetectorOptions(model: TextModels.languageDetector),
+  );
+  try {
+    final result = await detector.detect(text);
+    for (final prediction in result.predictions.take(3)) {
+      print('${prediction.languageCode}: ${prediction.probability}');
+    }
+  } finally {
+    await detector.dispose();
+  }
+}
+```
+
+### Text embeddings
+
+`TextEmbedder` turns a sentence into a vector with the Universal Sentence
+Encoder; `cosineSimilarity` compares two, including quantized ones. The
+higher the value, the closer the meaning.
+
+```dart
+import 'package:mediapipe_text/mediapipe_text.dart';
+
+Future<double> compareSentences(String first, String second) async {
+  final embedder = await TextEmbedder.create(
+    TextEmbedderOptions(model: TextModels.universalSentenceEncoder),
+  );
+  try {
+    final a = await embedder.embed(first);
+    final b = await embedder.embed(second);
+    return await embedder.cosineSimilarity(
+      a.embeddings.first,
+      b.embeddings.first,
+    );
+  } finally {
+    await embedder.dispose();
+  }
+}
+```
 
 ## Behavior
 

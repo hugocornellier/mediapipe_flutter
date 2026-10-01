@@ -24,7 +24,7 @@ final class LiveSubject {
   /// The gallery tile that opens the demo.
   final String tile;
 
-  /// Model asset, as `tool/prepare.py` bundles it.
+  /// Model asset, as the gallery's preparer bundles it.
   final String model;
 
   /// Bundled sample with exactly one subject, used for supplied frames.

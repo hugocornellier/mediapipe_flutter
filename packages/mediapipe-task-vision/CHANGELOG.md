@@ -11,3 +11,6 @@ First release.
 - Image and video running modes; `queryXxxCapabilities()` reports supported
   delegates and why others are unavailable.
 - The `tasks` build setting bundles only the native runtimes an app uses.
+- On macOS, a GPU task reopens its native task after converting 1 GiB of
+  frames, since Google's macOS GPU path keeps every frame until the task
+  closes (UP-032 in upstream-issues.md).

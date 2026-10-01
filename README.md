@@ -102,6 +102,10 @@ supported delegates and why any other is unavailable.
 
 ## More
 
+- Samples for every task:
+  [vision](packages/mediapipe-task-vision/README.md#samples-for-every-task),
+  [text](packages/mediapipe-task-text/README.md#quick-start) and
+  [audio](packages/mediapipe-task-audio/README.md#use).
 - [Platform setup](doc/platform_setup.md): permissions, entitlements, minimum
   OS versions, offline builds and browser hosting.
 - [Privacy and licenses](doc/privacy_and_licenses.md): what is downloaded, from

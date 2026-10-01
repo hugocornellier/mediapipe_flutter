@@ -7,7 +7,7 @@ import 'package:mediapipe_text/mediapipe_text.dart';
 
 // The text demos' three tasks, from the gallery's bundled models, in the same
 // app as the vision runtimes: core's shared runtime must load and answer beside
-// them on macOS arm64, Linux x64 and Windows x64, where prepare.py bundles
+// them on macOS arm64, Linux x64 and Windows x64, where the gallery bundles
 // them. The mobile and browser plugins have sdk_text_audio_test.dart.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
