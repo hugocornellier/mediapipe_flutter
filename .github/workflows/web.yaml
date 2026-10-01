@@ -36,7 +36,7 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - uses: actions/setup-node@v4
@@ -205,7 +205,7 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - uses: actions/setup-node@v4
@@ -317,7 +317,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - uses: actions/setup-node@v4
@@ -371,7 +371,7 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
           cache: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Build release gallery
