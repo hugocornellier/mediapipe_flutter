@@ -115,21 +115,11 @@ jobs:
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
-      - name: Download the official SDK task models
-        working-directory: packages/mediapipe-task-vision
-        run: |
-          dart pub get
-          dart tool/download_face_landmarker.dart
-          dart tool/download_landmark_tasks.dart
-          dart tool/download_model.dart
-          dart tool/download_image_tasks.dart
-          dart tool/download_object_detector.dart
-          dart tool/download_segmenter_tasks.dart
-          dart tool/download_interactive_segmenter.dart
+      # The same two commands a clean checkout runs, so CI builds what a
+      # contributor with only Dart, Flutter and the Android SDK builds.
       - name: Prepare the gallery with the official SDK tasks
         run: |
-          python3 -B gallery/tool/prepare.py --target android/x64 \
-            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,text_classifier,text_embedder,audio_classifier
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64
           cd gallery && flutter pub get
       - name: Enable Android emulator hardware acceleration
         run: |

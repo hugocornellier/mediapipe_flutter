@@ -36,3 +36,12 @@ jobs:
           dart analyze --fatal-infos
           dart format --output=none --set-exit-if-changed .
           dart bin/main.dart -h
+      # Prepares the Android gallery with nothing but Dart; its model pins
+      # must match the packages'.
+      - name: Check the gallery builder
+        working-directory: tool/gallery_builder
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+          dart format --output=none --set-exit-if-changed .
+          dart test --reporter expanded

@@ -9,7 +9,7 @@ both face tasks explicitly retains the older source-built CPU runtime path.
 Prepare and build from the repository root:
 
 ```sh
-python3 gallery/tool/prepare.py --target android/arm64 --tasks face_landmarker
+dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/arm64 --tasks face_landmarker
 cd gallery
 flutter pub get
 flutter build apk --config-only --debug --target integration_test/sdk_face_landmarker_test.dart --target-platform android-arm64
