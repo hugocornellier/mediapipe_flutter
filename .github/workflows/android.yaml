@@ -45,12 +45,22 @@ jobs:
           repository-cache: false
       - name: Install the pinned Android NDK
         run: sdkmanager 'ndk;28.2.13676358'
-      - uses: actions/cache@v6
+      # The source build is pinned: the same scripts, notices and NDK build the
+      # same runtime, so it is rebuilt only when one of them changes. The
+      # validation below tests the runtime exactly as after a fresh build.
+      - uses: actions/cache/restore@v6
+        id: x64-runtime
         with:
-          path: build/codex-tmp/bazel
-          key: android-x64-ndk28-source-${{ hashFiles('packages/mediapipe-task-vision/tool/build_native.py', 'packages/mediapipe-task-vision/tool/build_android.py') }}
+          path: packages/mediapipe-task-vision/build/native/android/x86_64
+          key: android-x86_64-face-runtime-${{ runner.os }}-ndk28.2.13676358-${{ hashFiles('packages/mediapipe-task-vision/tool/build_native.py', 'packages/mediapipe-task-vision/tool/build_android.py', 'packages/mediapipe-task-vision/third_party/LICENSE', 'packages/mediapipe-task-vision/third_party/NOTICE', 'packages/mediapipe-task-vision/third_party/OPENCV_CAROTENE_NOTICES') }}
       - name: Build the pinned x64 runtime
+        if: steps.x64-runtime.outputs.cache-hit != 'true'
         run: python3 -B packages/mediapipe-task-vision/tool/build_android.py --ndk "$ANDROID_HOME/ndk/28.2.13676358" --abi x86_64 --jobs 4
+      - uses: actions/cache/save@v6
+        if: steps.x64-runtime.outputs.cache-hit != 'true'
+        with:
+          path: packages/mediapipe-task-vision/build/native/android/x86_64
+          key: ${{ steps.x64-runtime.outputs.cache-primary-key }}
       - name: Download the pinned face models
         working-directory: packages/mediapipe-task-vision
         run: |

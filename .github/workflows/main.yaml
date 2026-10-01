@@ -165,7 +165,25 @@ jobs:
         run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --object-detector
       # make get/models already ran above for the independent references.
       # Keep the remaining make ci checks, with visible stage boundaries.
+      - name: Identify the Xcode toolchain
+        id: xcode
+        run: |
+          python3 - <<'PY'
+          import hashlib, os, subprocess
+          version = subprocess.check_output(['xcodebuild', '-version'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('digest=' + hashlib.sha256(version).hexdigest()[:16] + '\n')
+          PY
+      # The source build is pinned: the same scripts, notices and Xcode build
+      # the same runtime, so it is rebuilt only when one of them changes. Every
+      # later step tests the runtime exactly as after a fresh build.
+      - uses: actions/cache/restore@v6
+        id: face-runtime
+        with:
+          path: packages/mediapipe-task-vision/build/native/tasks
+          key: macos-face-runtime-${{ runner.arch }}-${{ steps.xcode.outputs.digest }}-${{ hashFiles('packages/mediapipe-task-vision/tool/build_native.py', 'packages/mediapipe-task-vision/tool/native_smoke.cc', 'packages/mediapipe-task-vision/tool/native_landmarker_smoke.cc', 'packages/mediapipe-task-vision/third_party/LICENSE', 'packages/mediapipe-task-vision/third_party/NOTICE', 'packages/mediapipe-task-vision/third_party/OPENCV_CAROTENE_NOTICES') }}
       - name: Build official native face tasks from source
+        if: steps.face-runtime.outputs.cache-hit != 'true'
         shell: bash
         run: |
           for attempt in 1 2 3; do
@@ -178,6 +196,11 @@ jobs:
             echo "Native dependency download failed; retrying cached build ($attempt/3)."
             sleep 20
           done
+      - uses: actions/cache/save@v6
+        if: steps.face-runtime.outputs.cache-hit != 'true'
+        with:
+          path: packages/mediapipe-task-vision/build/native/tasks
+          key: ${{ steps.face-runtime.outputs.cache-primary-key }}
       - name: Analyze, format-check and test all packages
         id: packages
         run: |
