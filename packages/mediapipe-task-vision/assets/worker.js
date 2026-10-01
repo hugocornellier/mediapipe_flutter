@@ -175,6 +175,8 @@ function buildTasks() { return {
     image: 'segment', video: 'segmentForVideo',
     masks: {confidenceMasks: 4, categoryMask: 1}, labels: true,
     json: result => ({...result, qualityScores: result.qualityScores && Array.from(result.qualityScores)})},
+  // TODO: Delete with InteractiveSegmenterLegacy; only the modern
+  // InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
   // IMAGE only, for the object under a keypoint. The Dart API reports no
   // labels for it, as Google's desktop bindings have none.
   // Its model must arrive as a URL: Google's 1.0.1 task drops a model given as

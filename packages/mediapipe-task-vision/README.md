@@ -21,12 +21,10 @@ MediaPipe task runtimes on supported platforms.
 | Detection | `FaceDetector`, `ObjectDetector` |
 | Landmarks and gestures | `FaceLandmarker`, `HandLandmarker`, `PoseLandmarker`, `HolisticLandmarker`, `GestureRecognizer` |
 | Classification and embedding | `ImageClassifier`, `ImageEmbedder` |
-| Segmentation | `ImageSegmenter`, `InteractiveSegmenter`, `InteractiveSegmenterLegacy` |
+| Segmentation | `ImageSegmenter`, `InteractiveSegmenter` |
 
-`InteractiveSegmenter` is Google's stateful stroke-based MagicTouch task;
-`InteractiveSegmenterLegacy` is the separate point-based task. Their models,
-APIs and platform support differ. See the
-[Interactive Segmenter guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md).
+`InteractiveSegmenter` is Google's stateful stroke-based MagicTouch task. See
+the [Interactive Segmenter guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md).
 
 ## Installation
 
@@ -184,9 +182,8 @@ selector for all ten tasks below on supported platforms.
 | Image Embedder | `embedImage` | `embedForVideo` |
 | Image Segmenter | `segmentImage` | `segmentForVideo` |
 
-The stroke-based `InteractiveSegmenter` works on an image with editing strokes;
-the point-based `InteractiveSegmenterLegacy` takes an image and a prompt. Neither
-has a camera mode. Choose an image in the gallery's still image mode for the
+The stroke-based `InteractiveSegmenter` works on an image with editing strokes
+and has no camera mode. Choose an image in the gallery's still image mode for the
 ten camera-capable tasks; the Interactive Segmenter page starts with its bundled
 sample image.
 
@@ -207,8 +204,7 @@ once and reuse it for every image or frame.
 [Image Classifier](#image-classifier) ·
 [Image Embedder](#image-embedder) ·
 [Image Segmenter](#image-segmenter) ·
-[Interactive Segmenter](#interactive-segmenter) ·
-[Interactive Segmenter Legacy](#interactive-segmenter-legacy)
+[Interactive Segmenter](#interactive-segmenter)
 
 ### Face Detector
 
@@ -500,34 +496,6 @@ Future<SegmentationMask> selectObject(VisionImage image) async {
 The mask holds one confidence per pixel, indexed `y * width + x`, and stays
 valid after the task is disposed.
 
-### Interactive Segmenter Legacy
-
-Select the object under a single point. Not available on Android.
-
-```dart
-import 'package:mediapipe_vision/mediapipe_vision.dart';
-
-Future<void> selectAtCenter(VisionImage image) async {
-  final segmenter = await InteractiveSegmenterLegacy.create(
-    InteractiveSegmenterLegacyOptions(
-      model: VisionModels.interactiveSegmenterLegacy,
-    ),
-  );
-  try {
-    final result = await segmenter.segmentImage(
-      image,
-      keypoint: SegmentationPoint(x: 0.5, y: 0.5),
-    );
-    final mask = result.confidenceMasks!.last;
-    final center =
-        mask.confidence[mask.height ~/ 2 * mask.width + mask.width ~/ 2];
-    print('Confidence at the point: ${center.toStringAsFixed(2)}');
-  } finally {
-    await segmenter.dispose();
-  }
-}
-```
-
 ## Video and live cameras
 
 Create the task in video mode, then submit frames with **strictly increasing
@@ -597,9 +565,8 @@ before offering a GPU toggle.
 | Linux x64 | Official wheel runtime | OpenGL ES for supported tasks; EGL and a GPU driver required |
 | Windows x64 | Official wheel runtime | Not available |
 
-The point-based legacy Interactive Segmenter is unavailable on Android; the
-stroke-based Interactive Segmenter is unavailable on Windows. Some other GPU
-paths have upstream limits. Read the
+The Interactive Segmenter is unavailable on Windows. Some GPU paths have
+upstream limits. Read the
 [per-task matrix](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
 before depending on a particular combination.
 

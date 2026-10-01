@@ -43,15 +43,22 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('digest=' + hashlib.sha256(version).hexdigest()[:16] + '\n')
           PY
-      - uses: actions/cache@v6
+      # The source build is pinned: the same scripts, notices and Xcode build
+      # the same runtime, so it is rebuilt only when one of them changes. The
+      # validation below tests the runtime exactly as after a fresh build.
+      - uses: actions/cache/restore@v6
+        id: simulator-runtime
         with:
-          path: |
-            build/codex-tmp/bazel
-            build/codex-tmp/opencv-ios-simulator-build
-            build/codex-tmp/opencv-ios-simulator-install
-          key: ios-source-${{ runner.arch }}-${{ steps.xcode.outputs.digest }}-${{ hashFiles('packages/mediapipe-task-vision/tool/build_native.py', 'packages/mediapipe-task-vision/tool/build_ios_simulator.py') }}
+          path: packages/mediapipe-task-vision/build/native/ios-simulator/arm64
+          key: ios-simulator-face-runtime-${{ runner.arch }}-${{ steps.xcode.outputs.digest }}-${{ hashFiles('packages/mediapipe-task-vision/tool/build_native.py', 'packages/mediapipe-task-vision/tool/build_ios_simulator.py', 'packages/mediapipe-task-vision/third_party/LICENSE', 'packages/mediapipe-task-vision/third_party/NOTICE', 'packages/mediapipe-task-vision/third_party/OPENCV_CAROTENE_NOTICES') }}
       - name: Build the pinned simulator runtime
+        if: steps.simulator-runtime.outputs.cache-hit != 'true'
         run: python3 -B packages/mediapipe-task-vision/tool/build_ios_simulator.py --jobs 3
+      - uses: actions/cache/save@v6
+        if: steps.simulator-runtime.outputs.cache-hit != 'true'
+        with:
+          path: packages/mediapipe-task-vision/build/native/ios-simulator/arm64
+          key: ${{ steps.simulator-runtime.outputs.cache-primary-key }}
       - name: Download the pinned face models
         working-directory: packages/mediapipe-task-vision
         run: |

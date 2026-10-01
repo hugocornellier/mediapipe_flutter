@@ -8,9 +8,10 @@ import '../interface/face_detector_types.dart';
 import 'pixel_conversion.dart';
 import 'native_ios_sdk.dart';
 import 'native_desktop_runtime.dart';
+import 'vision_task_worker.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
-final class NativeFaceDetector {
+final class NativeFaceDetector implements NativeVisionTask<FaceDetectorResult> {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeFaceDetector(FaceDetectorOptions options)
     : _gpu = options.delegate == VisionDelegate.gpu,
@@ -191,7 +192,12 @@ final class NativeFaceDetector {
     });
   }
 
+  @override
+  FaceDetectorResult process(VisionTaskInput input) =>
+      detect(input.$1, input.$2, timestamp: input.$3);
+
   /// Closes the task exactly once, including when native shutdown reports failure.
+  @override
   void close() {
     if (_detector == nullptr) return;
     final pointer = _detector;

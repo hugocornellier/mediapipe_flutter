@@ -1,6 +1,4 @@
 import 'dart:ffi';
-import '../capabilities/require_delegate.dart';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:ffi/ffi.dart';
@@ -8,11 +6,11 @@ import 'package:ffi/ffi.dart';
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../vision_task_backend.dart';
-import '../sdk_vision_task.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
+import 'vision_task_runner.dart';
 import 'vision_task_worker.dart';
 
 /// Official Image Embedder with owned vectors and serialized native inference.
@@ -32,58 +30,35 @@ import 'vision_task_worker.dart';
 /// Inference futures cannot cancel native work; `Future.timeout` only limits
 /// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class ImageEmbedder {
-  ImageEmbedder._(this._worker, this._sdk, this.delegate);
-  final VisionTaskWorker<ImageEmbedderResult>? _worker;
-  final SdkVisionTask<ImageEmbedderResult>? _sdk;
+  ImageEmbedder._(this._task, this.delegate);
+  final VisionTaskRunner<ImageEmbedderResult> _task;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  RunningMode get runningMode => _sdk?.runningMode ?? _worker!.runningMode;
+  RunningMode get runningMode => _task.runningMode;
 
   /// Load a model and initialize the official graph off the calling isolate.
-  static Future<ImageEmbedder> create(ImageEmbedderOptions options) async {
-    await options.prepareModel();
-    if (Platform.isAndroid && imageEmbedderBackendFactory != null) {
-      return ImageEmbedder._(
-        null,
-        SdkVisionTask(
-          await imageEmbedderBackendFactory!(options),
-          options.runningMode,
-          options.delegate,
+  static Future<ImageEmbedder> create(ImageEmbedderOptions options) async =>
+      ImageEmbedder._(
+        await VisionTaskRunner.open(
+          options,
           name: 'ImageEmbedder',
-          // MediaPipe converts milliseconds to signed 64-bit microseconds.
-          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
+          debugName: 'MediaPipe Image Embedder',
+          android: imageEmbedderBackendFactory,
+          capabilities: queryImageEmbedderCapabilities,
+          native: _createNative,
         ),
         options.delegate,
       );
-    }
-    final capabilities = await queryImageEmbedderCapabilities();
-    requireVisionDelegate(capabilities, options.delegate);
-    return ImageEmbedder._(
-      await VisionTaskWorker.create(
-        options,
-        _createNative,
-        'MediaPipe Image Embedder',
-      ),
-      null,
-      options.delegate,
-    );
-  }
 
   /// Embed a still image or normalized region using official preprocessing.
   Future<ImageEmbedderResult> embedImage(
     VisionImage image, {
     int rotationDegrees = 0,
     VisionRegionOfInterest? regionOfInterest,
-  }) =>
-      _sdk?.detectImage(
-        image,
-        rotationDegrees: rotationDegrees,
-        regionOfInterest: regionOfInterest,
-      ) ??
-      _worker!.processImage(image, rotationDegrees, regionOfInterest);
+  }) => _task.image(image, rotationDegrees, regionOfInterest: regionOfInterest);
 
   /// Embed a video frame with a strictly increasing millisecond timestamp.
   Future<ImageEmbedderResult> embedForVideo(
@@ -91,19 +66,12 @@ final class ImageEmbedder {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
     VisionRegionOfInterest? regionOfInterest,
-  }) =>
-      _sdk?.detectForVideo(
-        image,
-        timestampMilliseconds: timestampMilliseconds,
-        rotationDegrees: rotationDegrees,
-        regionOfInterest: regionOfInterest,
-      ) ??
-      _worker!.processVideo(
-        image,
-        rotationDegrees,
-        timestampMilliseconds,
-        regionOfInterest,
-      );
+  }) => _task.video(
+    image,
+    rotationDegrees,
+    timestampMilliseconds,
+    regionOfInterest: regionOfInterest,
+  );
 
   /// Compare equally sized float vectors or equally sized quantized vectors.
   ///
@@ -152,7 +120,7 @@ final class ImageEmbedder {
   }
 
   /// Drain queued requests and release native resources exactly once.
-  Future<void> dispose() => _sdk?.dispose() ?? _worker!.dispose();
+  Future<void> dispose() => _task.dispose();
 }
 
 NativeVisionTask<ImageEmbedderResult> _createNative(

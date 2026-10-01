@@ -66,6 +66,8 @@ const models = <String, Model>{
     'https://storage.googleapis.com/mediapipe-models/interactive_segmenter_v2/magic_touch/int8/1/interactive_segmentation.task',
     '38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03',
   ),
+  // TODO: Delete with InteractiveSegmenterLegacy; only the modern
+  // InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
   'interactive_segmenter_legacy': Model(
     'magic_touch.tflite',
     'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite',

@@ -10,3 +10,5 @@ MIGRATION.md.
   model on first use; app-supplied paths and bytes still work.
 - `await XxxTask.create(options)` and idempotent `dispose()`; failures are
   `TextTaskException` or core's shared exception types.
+- On Android, a task made from model bytes keeps them until it closes, since
+  Google's SDK reads them in place (UP-033 in upstream-issues.md).

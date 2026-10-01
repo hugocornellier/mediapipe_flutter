@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:mediapipe_core/native_assets.dart';
 
 /// A checksum-pinned native C API distributed in Google's official wheel,
@@ -19,8 +17,3 @@ final class VisionWheelRelease extends OfficialWheelLibrary {
   /// Tasks permitted by this release's build hook.
   final Set<String> tasks;
 }
-
-/// Extracts only the native library and pinned notices; Python is not required.
-/// A cached library is reused only after checking every packaged file.
-Future<File> downloadVisionWheel(VisionWheelRelease release, Directory cache) =>
-    downloadOfficialWheelLibrary(release, cache);

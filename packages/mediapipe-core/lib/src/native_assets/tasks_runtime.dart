@@ -5,16 +5,14 @@ import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import '../../native_assets.dart';
 
-/// Google's MediaPipe engine, the one native asset every task family binds.
+/// The name core's build hook registers Google's MediaPipe engine under; every
+/// task family binds it as `package:mediapipe_core/mediapipe.dylib`.
 ///
 /// Core bundles it once per app (Google's official library on desktop, an
 /// adapter over Google's SDK on iOS), so vision, text and audio never load a
 /// second copy: two copies register MediaPipe's graphs twice and abort. The
 /// identifier is stable across platforms and versions; the bundled file name
 /// comes from each release.
-const tasksRuntimeAssetId = 'package:mediapipe_core/mediapipe.dylib';
-
-/// The asset name registered by the core build hook, without the package.
 const tasksRuntimeAssetName = 'mediapipe.dylib';
 
 /// Loader-metadata adjustments recorded by the packaging tool. Code and data

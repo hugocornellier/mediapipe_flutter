@@ -135,6 +135,12 @@ final class ImageSegmenterOptions extends SegmentationOutputOptions {
   final String? displayNamesLocale;
 }
 
+// TODO: Only the modern, stateful InteractiveSegmenter is needed. Delete
+// InteractiveSegmenterLegacy and the code that exists only for it: these
+// options, its io and web classes, model, capabilities, C bindings and header,
+// iOS bridge, worker.js entry, gallery page, tests and tools.
+// `git grep -iE "segmenter.?legacy|legacy.?(interactive|segmenter)"` finds
+// them. Its README section is already gone.
 /// Official legacy Interactive Segmenter model and mask options.
 ///
 /// This is the stateless MagicTouch API that segments the object under a single

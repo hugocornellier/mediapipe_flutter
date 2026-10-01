@@ -8,9 +8,11 @@ import '../interface/object_detector_types.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_desktop_runtime.dart';
 import 'native_vision_image.dart';
+import 'vision_task_worker.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
-final class NativeObjectDetector {
+final class NativeObjectDetector
+    implements NativeVisionTask<ObjectDetectorResult> {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeObjectDetector(ObjectDetectorOptions options)
     : _gpu = options.delegate == VisionDelegate.gpu {
@@ -131,7 +133,12 @@ final class NativeObjectDetector {
     });
   }
 
+  @override
+  ObjectDetectorResult process(VisionTaskInput input) =>
+      detect(input.$1, input.$2, timestamp: input.$3);
+
   /// Closes the task exactly once, including when native shutdown reports failure.
+  @override
   void close() {
     if (_detector == nullptr) return;
     final pointer = _detector;

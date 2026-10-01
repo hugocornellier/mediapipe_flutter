@@ -1,16 +1,15 @@
 import 'dart:ffi';
-import '../capabilities/require_delegate.dart';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../vision_task_backend.dart';
-import '../sdk_vision_task.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
+import 'vision_task_runner.dart';
 import 'vision_task_worker.dart';
 
 /// Official PoseLandmarker, with owned results and serialized image/video inference.
@@ -30,91 +29,64 @@ import 'vision_task_worker.dart';
 /// Inference futures cannot cancel native work; `Future.timeout` only limits
 /// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class PoseLandmarker {
-  PoseLandmarker._(this._worker, this._sdk, this.delegate);
-  final VisionTaskWorker<PoseLandmarkerResult>? _worker;
-  final SdkVisionTask<PoseLandmarkerResult>? _sdk;
+  PoseLandmarker._(this._task, this.delegate);
+  final VisionTaskRunner<PoseLandmarkerResult> _task;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  RunningMode get runningMode => _sdk?.runningMode ?? _worker!.runningMode;
+  RunningMode get runningMode => _task.runningMode;
 
   /// Load a compatible task bundle on a worker isolate.
-  static Future<PoseLandmarker> create(PoseLandmarkerOptions options) async {
-    await options.prepareModel();
-    if (Platform.isAndroid && poseLandmarkerBackendFactory != null) {
-      return PoseLandmarker._(
-        null,
-        SdkVisionTask(
-          await poseLandmarkerBackendFactory!(options),
-          options.runningMode,
-          options.delegate,
-          name: 'PoseLandmarker',
-          // MediaPipe converts milliseconds to signed 64-bit microseconds.
-          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
-        ),
-        options.delegate,
-      );
-    }
-    final capabilities = await queryPoseLandmarkerCapabilities();
-    requireVisionDelegate(capabilities, options.delegate);
-    if ((Platform.isMacOS || Platform.isLinux) &&
-        options.delegate == VisionDelegate.gpu &&
-        options.outputSegmentationMasks) {
-      // Metal fails on the first frame; OpenGL ES returns 8-bit RGBA images
-      // where the API promises float confidences.
-      throw UnsupportedError(
-        Platform.isMacOS
-            ? 'Google\'s macOS runtime cannot initialize the pose '
-                  'segmentation mask upsampler on Metal (upstream-issues.md '
-                  'UP-028). Request masks on the CPU, or landmarks alone on '
-                  'the GPU.'
-            : 'Google\'s Linux runtime returns pose masks on OpenGL ES as '
-                  '8-bit RGBA images, not float confidences (upstream-issues.md '
-                  'UP-030). Request masks on the CPU, or landmarks alone on the '
-                  'GPU.',
-      );
-    }
-    return PoseLandmarker._(
-      await VisionTaskWorker.create(
-        options,
-        _createNative,
-        'MediaPipe PoseLandmarker',
-      ),
-      null,
-      options.delegate,
-    );
-  }
+  static Future<PoseLandmarker> create(
+    PoseLandmarkerOptions options,
+  ) async => PoseLandmarker._(
+    await VisionTaskRunner.open(
+      options,
+      name: 'PoseLandmarker',
+      debugName: 'MediaPipe PoseLandmarker',
+      android: poseLandmarkerBackendFactory,
+      capabilities: queryPoseLandmarkerCapabilities,
+      validate: () {
+        if ((Platform.isMacOS || Platform.isLinux) &&
+            options.delegate == VisionDelegate.gpu &&
+            options.outputSegmentationMasks) {
+          // Metal fails on the first frame; OpenGL ES returns 8-bit RGBA images
+          // where the API promises float confidences.
+          throw UnsupportedError(
+            Platform.isMacOS
+                ? 'Google\'s macOS runtime cannot initialize the pose '
+                      'segmentation mask upsampler on Metal (upstream-issues.md '
+                      'UP-028). Request masks on the CPU, or landmarks alone on '
+                      'the GPU.'
+                : 'Google\'s Linux runtime returns pose masks on OpenGL ES as '
+                      '8-bit RGBA images, not float confidences (upstream-issues.md '
+                      'UP-030). Request masks on the CPU, or landmarks alone on the '
+                      'GPU.',
+          );
+        }
+      },
+      native: _createNative,
+    ),
+    options.delegate,
+  );
 
   /// Process one still image with official rotation preprocessing.
   Future<PoseLandmarkerResult> detectImage(
     VisionImage image, {
     int rotationDegrees = 0,
-  }) =>
-      _sdk?.detectImage(image, rotationDegrees: rotationDegrees) ??
-      _worker!.processImage(image, rotationDegrees, null);
+  }) => _task.image(image, rotationDegrees);
 
   /// Process a video frame with a strictly increasing millisecond timestamp.
   Future<PoseLandmarkerResult> detectForVideo(
     VisionImage image, {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
-  }) =>
-      _sdk?.detectForVideo(
-        image,
-        timestampMilliseconds: timestampMilliseconds,
-        rotationDegrees: rotationDegrees,
-      ) ??
-      _worker!.processVideo(
-        image,
-        rotationDegrees,
-        timestampMilliseconds,
-        null,
-      );
+  }) => _task.video(image, rotationDegrees, timestampMilliseconds);
 
   /// Drain queued requests and release native resources exactly once.
-  Future<void> dispose() => _sdk?.dispose() ?? _worker!.dispose();
+  Future<void> dispose() => _task.dispose();
 }
 
 NativeVisionTask<PoseLandmarkerResult> _createNative(

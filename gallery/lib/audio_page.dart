@@ -50,6 +50,7 @@ class _AudioPageState extends State<AudioPage> {
   String? _modelStatus;
 
   AudioClassifier? _task;
+  Future<void> _resets = Future.value();
   bool _busy = false;
   String? _error;
   AudioData? _audio;
@@ -125,12 +126,29 @@ class _AudioPageState extends State<AudioPage> {
     if (mounted) setState(() => _busy = false);
   }
 
-  /// Rebuilds the task with the changed settings or model, then reruns.
-  Future<void> _reset() async {
+  /// Rebuilds the task with the changed settings or model, then reruns the
+  /// clip, or goes on classifying the microphone with the new task. Rebuilds
+  /// run one at a time: while listening the settings stay enabled, and two at
+  /// once would open two tasks, keeping whichever finished last.
+  Future<void> _reset() {
+    final reset = _resets.then((_) => _rebuild());
+    _resets = reset.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return reset;
+  }
+
+  Future<void> _rebuild() async {
     final task = _task;
     _task = null;
     await task?.dispose();
-    if (mounted && !_microphone) await _run();
+    if (!mounted) return;
+    if (!_microphone) return _run();
+    // Without a task, every window that arrives is dropped.
+    try {
+      await _open();
+      if (mounted) setState(() => _error = null);
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    }
   }
 
   Future<void> _listen() async {

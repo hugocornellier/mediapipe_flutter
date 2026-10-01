@@ -1,16 +1,14 @@
 import 'dart:ffi';
-import '../capabilities/require_delegate.dart';
-import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../vision_task_backend.dart';
-import '../sdk_vision_task.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
+import 'vision_task_runner.dart';
 import 'vision_task_worker.dart';
 
 /// Official GestureRecognizer, with owned results and serialized image/video inference.
@@ -30,76 +28,45 @@ import 'vision_task_worker.dart';
 /// Inference futures cannot cancel native work; `Future.timeout` only limits
 /// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class GestureRecognizer {
-  GestureRecognizer._(this._worker, this._sdk, this.delegate);
-  final VisionTaskWorker<GestureRecognizerResult>? _worker;
-  final SdkVisionTask<GestureRecognizerResult>? _sdk;
+  GestureRecognizer._(this._task, this.delegate);
+  final VisionTaskRunner<GestureRecognizerResult> _task;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  RunningMode get runningMode => _sdk?.runningMode ?? _worker!.runningMode;
+  RunningMode get runningMode => _task.runningMode;
 
   /// Load a compatible task bundle on a worker isolate.
   static Future<GestureRecognizer> create(
     GestureRecognizerOptions options,
-  ) async {
-    await options.prepareModel();
-    if (Platform.isAndroid && gestureRecognizerBackendFactory != null) {
-      return GestureRecognizer._(
-        null,
-        SdkVisionTask(
-          await gestureRecognizerBackendFactory!(options),
-          options.runningMode,
-          options.delegate,
-          name: 'GestureRecognizer',
-          // MediaPipe converts milliseconds to signed 64-bit microseconds.
-          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
-        ),
-        options.delegate,
-      );
-    }
-    final capabilities = await queryGestureRecognizerCapabilities();
-    requireVisionDelegate(capabilities, options.delegate);
-    return GestureRecognizer._(
-      await VisionTaskWorker.create(
-        options,
-        _createNative,
-        'MediaPipe GestureRecognizer',
-      ),
-      null,
-      options.delegate,
-    );
-  }
+  ) async => GestureRecognizer._(
+    await VisionTaskRunner.open(
+      options,
+      name: 'GestureRecognizer',
+      debugName: 'MediaPipe GestureRecognizer',
+      android: gestureRecognizerBackendFactory,
+      capabilities: queryGestureRecognizerCapabilities,
+      native: _createNative,
+    ),
+    options.delegate,
+  );
 
   /// Process one still image with official rotation preprocessing.
   Future<GestureRecognizerResult> recognizeImage(
     VisionImage image, {
     int rotationDegrees = 0,
-  }) =>
-      _sdk?.detectImage(image, rotationDegrees: rotationDegrees) ??
-      _worker!.processImage(image, rotationDegrees, null);
+  }) => _task.image(image, rotationDegrees);
 
   /// Process a video frame with a strictly increasing millisecond timestamp.
   Future<GestureRecognizerResult> recognizeForVideo(
     VisionImage image, {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
-  }) =>
-      _sdk?.detectForVideo(
-        image,
-        timestampMilliseconds: timestampMilliseconds,
-        rotationDegrees: rotationDegrees,
-      ) ??
-      _worker!.processVideo(
-        image,
-        rotationDegrees,
-        timestampMilliseconds,
-        null,
-      );
+  }) => _task.video(image, rotationDegrees, timestampMilliseconds);
 
   /// Drain queued requests and release native resources exactly once.
-  Future<void> dispose() => _sdk?.dispose() ?? _worker!.dispose();
+  Future<void> dispose() => _task.dispose();
 }
 
 NativeVisionTask<GestureRecognizerResult> _createNative(

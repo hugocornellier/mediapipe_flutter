@@ -1,17 +1,15 @@
 import 'dart:ffi';
-import '../capabilities/require_delegate.dart';
-import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../vision_task_backend.dart';
-import '../sdk_vision_task.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
+import 'vision_task_runner.dart';
 import 'vision_task_worker.dart';
 
 /// Official Image Segmenter with owned masks and serialized inference.
@@ -31,45 +29,28 @@ import 'vision_task_worker.dart';
 /// Inference futures cannot cancel native work; `Future.timeout` only limits
 /// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class ImageSegmenter {
-  ImageSegmenter._(this._worker, this._sdk, this.delegate);
-  final VisionTaskWorker<SegmentationResult>? _worker;
-  final SdkVisionTask<SegmentationResult>? _sdk;
+  ImageSegmenter._(this._task, this.delegate);
+  final VisionTaskRunner<SegmentationResult> _task;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  RunningMode get runningMode => _sdk?.runningMode ?? _worker!.runningMode;
+  RunningMode get runningMode => _task.runningMode;
 
   /// Load a segmentation model and open its graph off the calling isolate.
-  static Future<ImageSegmenter> create(ImageSegmenterOptions options) async {
-    await options.prepareModel();
-    if (Platform.isAndroid && imageSegmenterBackendFactory != null) {
-      return ImageSegmenter._(
-        null,
-        SdkVisionTask(
-          await imageSegmenterBackendFactory!(options),
-          options.runningMode,
-          options.delegate,
+  static Future<ImageSegmenter> create(ImageSegmenterOptions options) async =>
+      ImageSegmenter._(
+        await VisionTaskRunner.open(
+          options,
           name: 'ImageSegmenter',
-          // MediaPipe converts milliseconds to signed 64-bit microseconds.
-          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
+          debugName: 'MediaPipe Image Segmenter',
+          android: imageSegmenterBackendFactory,
+          capabilities: queryImageSegmenterCapabilities,
+          native: _createNative,
         ),
         options.delegate,
       );
-    }
-    final capabilities = await queryImageSegmenterCapabilities();
-    requireVisionDelegate(capabilities, options.delegate);
-    return ImageSegmenter._(
-      await VisionTaskWorker.create(
-        options,
-        _createNative,
-        'MediaPipe Image Segmenter',
-      ),
-      null,
-      options.delegate,
-    );
-  }
 
   /// Segment one still image with official rotation preprocessing.
   ///
@@ -78,30 +59,17 @@ final class ImageSegmenter {
   Future<SegmentationResult> segmentImage(
     VisionImage image, {
     int rotationDegrees = 0,
-  }) =>
-      _sdk?.detectImage(image, rotationDegrees: rotationDegrees) ??
-      _worker!.processImage(image, rotationDegrees, null);
+  }) => _task.image(image, rotationDegrees);
 
   /// Segment a video frame with a strictly increasing millisecond timestamp.
   Future<SegmentationResult> segmentForVideo(
     VisionImage image, {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
-  }) =>
-      _sdk?.detectForVideo(
-        image,
-        timestampMilliseconds: timestampMilliseconds,
-        rotationDegrees: rotationDegrees,
-      ) ??
-      _worker!.processVideo(
-        image,
-        rotationDegrees,
-        timestampMilliseconds,
-        null,
-      );
+  }) => _task.video(image, rotationDegrees, timestampMilliseconds);
 
   /// Drain queued requests and release native resources exactly once.
-  Future<void> dispose() => _sdk?.dispose() ?? _worker!.dispose();
+  Future<void> dispose() => _task.dispose();
 }
 
 NativeVisionTask<SegmentationResult> _createNative(

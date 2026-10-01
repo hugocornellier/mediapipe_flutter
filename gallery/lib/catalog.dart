@@ -479,6 +479,8 @@ final _catalog = <GalleryTask>[
     capabilities: _segmenter,
     officialMacosCapabilities: _officialMacosSegmenter,
   ),
+  // TODO: Delete this page with InteractiveSegmenterLegacy; only the modern
+  // InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
   // Two different implementations share the MagicTouch name. This is the
   // stateless legacy API inside the combined vision runtime; the stateful
   // InteractiveSegmenter below uses core's runtime (the gallery maps it to
