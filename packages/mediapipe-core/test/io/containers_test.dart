@@ -8,7 +8,7 @@ import 'package:mediapipe_core/src/io/mediapipe_core.dart';
 import 'package:test/test.dart';
 import 'package:mediapipe_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
     as core_bindings;
-import 'package:mediapipe_core/src/io/test_utils.dart';
+import 'test_utils.dart';
 
 void main() {
   group('Category.native should', () {
