@@ -43,7 +43,7 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('digest=' + hashlib.sha256(version).hexdigest()[:16] + '\n')
           PY
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             build/codex-tmp/bazel
@@ -115,7 +115,7 @@ jobs:
           dart tool/download_object_detector.dart
           dart tool/download_segmenter_tasks.dart
           dart tool/download_interactive_segmenter.dart
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: gallery/.dart_tool/hooks_runner/shared/mediapipe_core/build/official-ios-sdk/*/sdk.zip
           key: official-ios-sdk-${{ hashFiles('packages/mediapipe-core/lib/src/native_assets/ios_sdk.dart') }}

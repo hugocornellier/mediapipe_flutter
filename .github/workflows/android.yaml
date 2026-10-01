@@ -45,7 +45,7 @@ jobs:
           repository-cache: false
       - name: Install the pinned Android NDK
         run: sdkmanager 'ndk;28.2.13676358'
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: build/codex-tmp/bazel
           key: android-x64-ndk28-source-${{ hashFiles('packages/mediapipe-task-vision/tool/build_native.py', 'packages/mediapipe-task-vision/tool/build_android.py') }}
