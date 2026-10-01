@@ -1,17 +1,15 @@
 import 'dart:ffi';
-import '../capabilities/require_delegate.dart';
-import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../vision_task_backend.dart';
-import '../sdk_vision_task.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
+import 'vision_task_runner.dart';
 import 'vision_task_worker.dart';
 
 /// Official Image Classifier with serialized inference on a worker isolate.
@@ -31,58 +29,35 @@ import 'vision_task_worker.dart';
 /// Inference futures cannot cancel native work; `Future.timeout` only limits
 /// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class ImageClassifier {
-  ImageClassifier._(this._worker, this._sdk, this.delegate);
-  final VisionTaskWorker<ImageClassifierResult>? _worker;
-  final SdkVisionTask<ImageClassifierResult>? _sdk;
+  ImageClassifier._(this._task, this.delegate);
+  final VisionTaskRunner<ImageClassifierResult> _task;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  RunningMode get runningMode => _sdk?.runningMode ?? _worker!.runningMode;
+  RunningMode get runningMode => _task.runningMode;
 
   /// Load a model and initialize the official graph off the calling isolate.
-  static Future<ImageClassifier> create(ImageClassifierOptions options) async {
-    await options.prepareModel();
-    if (Platform.isAndroid && imageClassifierBackendFactory != null) {
-      return ImageClassifier._(
-        null,
-        SdkVisionTask(
-          await imageClassifierBackendFactory!(options),
-          options.runningMode,
-          options.delegate,
+  static Future<ImageClassifier> create(ImageClassifierOptions options) async =>
+      ImageClassifier._(
+        await VisionTaskRunner.open(
+          options,
           name: 'ImageClassifier',
-          // MediaPipe converts milliseconds to signed 64-bit microseconds.
-          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
+          debugName: 'MediaPipe Image Classifier',
+          android: imageClassifierBackendFactory,
+          capabilities: queryImageClassifierCapabilities,
+          native: _createNative,
         ),
         options.delegate,
       );
-    }
-    final capabilities = await queryImageClassifierCapabilities();
-    requireVisionDelegate(capabilities, options.delegate);
-    return ImageClassifier._(
-      await VisionTaskWorker.create(
-        options,
-        _createNative,
-        'MediaPipe Image Classifier',
-      ),
-      null,
-      options.delegate,
-    );
-  }
 
   /// Classify a still image or a normalized region using official preprocessing.
   Future<ImageClassifierResult> classifyImage(
     VisionImage image, {
     int rotationDegrees = 0,
     VisionRegionOfInterest? regionOfInterest,
-  }) =>
-      _sdk?.detectImage(
-        image,
-        rotationDegrees: rotationDegrees,
-        regionOfInterest: regionOfInterest,
-      ) ??
-      _worker!.processImage(image, rotationDegrees, regionOfInterest);
+  }) => _task.image(image, rotationDegrees, regionOfInterest: regionOfInterest);
 
   /// Classify a video frame with a strictly increasing millisecond timestamp.
   Future<ImageClassifierResult> classifyForVideo(
@@ -90,22 +65,15 @@ final class ImageClassifier {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
     VisionRegionOfInterest? regionOfInterest,
-  }) =>
-      _sdk?.detectForVideo(
-        image,
-        timestampMilliseconds: timestampMilliseconds,
-        rotationDegrees: rotationDegrees,
-        regionOfInterest: regionOfInterest,
-      ) ??
-      _worker!.processVideo(
-        image,
-        rotationDegrees,
-        timestampMilliseconds,
-        regionOfInterest,
-      );
+  }) => _task.video(
+    image,
+    rotationDegrees,
+    timestampMilliseconds,
+    regionOfInterest: regionOfInterest,
+  );
 
   /// Drain queued requests and release native resources exactly once.
-  Future<void> dispose() => _sdk?.dispose() ?? _worker!.dispose();
+  Future<void> dispose() => _task.dispose();
 }
 
 NativeVisionTask<ImageClassifierResult> _createNative(

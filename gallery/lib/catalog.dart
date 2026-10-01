@@ -129,7 +129,7 @@ final class GalleryTask {
 
   bool get isExperimental => experimentalReason != null;
 
-  /// Model asset name, matching `tool/prepare.py`.
+  /// Model asset name, as the gallery's preparer bundles it.
   final String model;
 
   /// Sample input shipped for the demo.
@@ -479,6 +479,8 @@ final _catalog = <GalleryTask>[
     capabilities: _segmenter,
     officialMacosCapabilities: _officialMacosSegmenter,
   ),
+  // TODO: Delete this page with InteractiveSegmenterLegacy; only the modern
+  // InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
   // Two different implementations share the MagicTouch name. This is the
   // stateless legacy API inside the combined vision runtime; the stateful
   // InteractiveSegmenter below uses core's runtime (the gallery maps it to
@@ -515,7 +517,7 @@ final _catalog = <GalleryTask>[
     capabilities: _audio,
   ),
   // The text package's classic tasks, on the shared runtime: macOS
-  // arm64 CPU, where prepare.py bundles their models.
+  // arm64 CPU, where the gallery bundles their models.
   GalleryTask(
     id: 'language_detector',
     category: GalleryCategory.text,

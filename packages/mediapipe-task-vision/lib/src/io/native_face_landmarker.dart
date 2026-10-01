@@ -11,11 +11,13 @@ import 'native_frame_timings.dart';
 import 'native_desktop_runtime.dart';
 import 'native_ios_sdk.dart';
 import 'pixel_conversion.dart';
+import 'vision_task_worker.dart';
 
 FaceLandmarkerApi get _api => FaceLandmarkerApi.current;
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
-final class NativeFaceLandmarker {
+final class NativeFaceLandmarker
+    implements NativeVisionTask<FaceLandmarkerResult> {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeFaceLandmarker(FaceLandmarkerOptions options)
     : _gpu = options.delegate == VisionDelegate.gpu,
@@ -234,7 +236,12 @@ final class NativeFaceLandmarker {
     return detection;
   }
 
+  @override
+  FaceLandmarkerResult process(VisionTaskInput input) =>
+      detect(input.$1, input.$2, timestamp: input.$3);
+
   /// Closes the task exactly once, including when native shutdown reports failure.
+  @override
   void close() {
     if (_detector == nullptr) return;
     final pointer = _detector;

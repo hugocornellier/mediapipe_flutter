@@ -27,7 +27,7 @@ jobs:
       IMAGE_URL: https://storage.googleapis.com/mediapipe-assets/cats_and_dogs.jpg
       IMAGE_SHA256: a2eaa7ad3a1aae4e623dd362a5f737e8a88d122597ecd1a02b3e1444db56df9c
     steps:
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 

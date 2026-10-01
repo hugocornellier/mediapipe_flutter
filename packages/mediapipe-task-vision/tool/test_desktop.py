@@ -213,7 +213,8 @@ flutter:
         # Both segmenter tasks reuse the checked-in face fixtures.
         shutil.copyfile(PACKAGE / 'test/segmenter_tasks_test.dart', app / 'test/segmenter_tasks_test.dart')
     (app / 'test/native_assets').mkdir()
-    shutil.copyfile(PACKAGE / 'test/native_assets/wheel_library_test.dart',
+    # Core owns the official wheel download; its test still runs on each desktop host.
+    shutil.copyfile(REPO / 'packages/mediapipe-core/test/native_assets/wheel_library_test.dart',
                     app / 'test/native_assets/wheel_library_test.dart')
     (app / 'integration_test').mkdir()
     for source, destination in [('flutter_smoke_test.dart.template', 'integration_test/face_test.dart'),

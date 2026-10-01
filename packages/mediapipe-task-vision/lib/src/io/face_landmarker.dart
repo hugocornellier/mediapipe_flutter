@@ -1,10 +1,8 @@
-import 'dart:async';
-import 'dart:isolate';
-import 'dart:io';
-
 import '../face_landmarker_backend.dart';
 import '../interface/face_landmarker_types.dart';
 import 'native_face_landmarker.dart';
+import 'vision_task_runner.dart';
+import 'vision_task_worker.dart';
 
 /// Official MediaPipe Face Landmarker, with inference serialized on a worker isolate.
 ///
@@ -24,58 +22,27 @@ import 'native_face_landmarker.dart';
 /// Inference futures cannot cancel native work; `Future.timeout` only limits
 /// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class FaceLandmarker {
-  FaceLandmarker._(this.runningMode, this.delegate) {
-    _events.listen(_receive);
-  }
-
-  FaceLandmarker._platform(this.runningMode, this.delegate, this._backend);
-
-  FaceLandmarkerBackend? _backend;
-
-  final _events = ReceivePort();
-  final _ready = Completer<void>();
-  final _exited = Completer<void>();
-  final _pending = <int, Completer<FaceLandmarkerResult?>>{};
-  SendPort? _commands;
-  int _nextId = 0;
-  bool _disposing = false;
-  Future<void>? _disposeFuture;
-  VisionTaskException? _failure;
-  int? _lastTimestamp;
+  FaceLandmarker._(this._task, this.delegate);
+  final VisionTaskRunner<FaceLandmarkerResult> _task;
 
   /// The official running mode selected when this detector was created.
-  final RunningMode runningMode;
+  RunningMode get runningMode => _task.runningMode;
 
   /// The backend requested at creation. Fixed for the lifetime of this task.
   final VisionDelegate delegate;
 
   /// Load an official model and initialize MediaPipe off the calling isolate.
-  static Future<FaceLandmarker> create(FaceLandmarkerOptions options) async {
-    await options.prepareModel();
-    if (Platform.isAndroid && faceLandmarkerBackendFactory != null) {
-      return FaceLandmarker._platform(
-        options.runningMode,
+  static Future<FaceLandmarker> create(FaceLandmarkerOptions options) async =>
+      FaceLandmarker._(
+        await VisionTaskRunner.open(
+          options,
+          name: 'FaceLandmarker',
+          debugName: 'MediaPipe Face Landmarker',
+          android: faceLandmarkerBackendFactory,
+          native: _createNative,
+        ),
         options.delegate,
-        await faceLandmarkerBackendFactory!(options),
       );
-    }
-    final detector = FaceLandmarker._(options.runningMode, options.delegate);
-    try {
-      await Isolate.spawn(
-        _runWorker,
-        (detector._events.sendPort, options),
-        onError: detector._events.sendPort,
-        onExit: detector._events.sendPort,
-        debugName: 'MediaPipe Face Landmarker',
-      );
-    } catch (error, stack) {
-      detector._events.close();
-      // No worker was started; no futures have listeners yet.
-      Error.throwWithStackTrace(error, stack);
-    }
-    await detector._ready.future;
-    return detector;
-  }
 
   /// Locate face landmarks with MediaPipe's unmodified task pipeline.
   ///
@@ -84,11 +51,7 @@ final class FaceLandmarker {
   Future<FaceLandmarkerResult> detectImage(
     VisionImage image, {
     int rotationDegrees = 0,
-  }) async {
-    _checkMode(RunningMode.image);
-    _checkRotation(rotationDegrees);
-    return (await _request((image, rotationDegrees, null)))!;
-  }
+  }) => _task.image(image, rotationDegrees);
 
   /// Process a video or camera frame on the inference worker.
   ///
@@ -100,155 +63,15 @@ final class FaceLandmarker {
     VisionImage image, {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
-  }) async {
-    _checkMode(RunningMode.video);
-    _checkRotation(rotationDegrees);
-    // MediaPipe converts milliseconds to signed 64-bit microseconds internally.
-    if (timestampMilliseconds < 0 ||
-        timestampMilliseconds > 0x7fffffffffffffff ~/ 1000 ||
-        (_lastTimestamp != null && timestampMilliseconds <= _lastTimestamp!)) {
-      throw ArgumentError.value(
-        timestampMilliseconds,
-        'timestampMilliseconds',
-        'Must be nonnegative, strictly increasing, and fit MediaPipe timestamps',
-      );
-    }
-    _lastTimestamp = timestampMilliseconds;
-    return (await _request((image, rotationDegrees, timestampMilliseconds)))!;
-  }
-
-  void _checkMode(RunningMode expected) {
-    if (_disposing) throw StateError('FaceLandmarker has been disposed.');
-    if (_failure case final failure?) throw failure;
-    if (runningMode != expected) {
-      throw StateError(
-        'This method requires ${expected.name} mode; '
-        'the detector was created in ${runningMode.name} mode.',
-      );
-    }
-  }
-
-  void _checkRotation(int rotationDegrees) {
-    if (rotationDegrees % 90 != 0 ||
-        rotationDegrees < -0x80000000 ||
-        rotationDegrees > 0x7fffffff) {
-      throw ArgumentError.value(
-        rotationDegrees,
-        'rotationDegrees',
-        'Must be a C int divisible by 90',
-      );
-    }
-  }
-
-  Future<FaceLandmarkerResult?> _request((VisionImage, int, int?)? input) {
-    if (_backend case final backend?) {
-      return input == null
-          ? backend.dispose().then((_) => null)
-          : backend.detect(input.$1, input.$2, input.$3);
-    }
-    final id = _nextId++;
-    final completer = Completer<FaceLandmarkerResult?>();
-    _pending[id] = completer;
-    _commands!.send((id, input));
-    return completer.future;
-  }
+  }) => _task.video(image, rotationDegrees, timestampMilliseconds);
 
   /// Finish queued requests, close the native task, and stop its worker.
   ///
   /// Repeated calls return the same completion. New detections are rejected as
   /// soon as disposal starts.
-  Future<void> dispose() {
-    _disposing = true;
-    return _disposeFuture ??= _close();
-  }
-
-  Future<void> _close() async {
-    if (_backend != null) {
-      try {
-        await _request(null);
-      } finally {
-        _events.close();
-      }
-      return;
-    }
-    try {
-      if (_failure == null) await _request(null);
-    } finally {
-      await _exited.future;
-    }
-  }
-
-  void _receive(dynamic event) {
-    switch (event) {
-      case SendPort port:
-        _commands = port;
-        _ready.complete();
-      case (int id, FaceLandmarkerResult? result, VisionTaskException? error):
-        final completer = _pending.remove(id);
-        if (error != null) {
-          completer?.completeError(error);
-        } else {
-          completer?.complete(result);
-        }
-      case VisionTaskException error:
-        _fail(error);
-      case List<dynamic> error:
-        _fail(VisionTaskException('Worker failed: ${error.join('\n')}'));
-      case null:
-        if (!_ready.isCompleted || _pending.isNotEmpty || !_disposing) {
-          _fail(const VisionTaskException('Face Landmarker worker exited.'));
-        }
-        _events.close();
-        _exited.complete();
-    }
-  }
-
-  void _fail(VisionTaskException error) {
-    _failure ??= error;
-    if (!_ready.isCompleted) _ready.completeError(error);
-    for (final completer in _pending.values) {
-      completer.completeError(error);
-    }
-    _pending.clear();
-  }
+  Future<void> dispose() => _task.dispose();
 }
 
-Future<void> _runWorker((SendPort, FaceLandmarkerOptions) initial) async {
-  final (parent, options) = initial;
-  final commands = ReceivePort();
-  NativeFaceLandmarker? native;
-  try {
-    native = NativeFaceLandmarker(options);
-    parent.send(commands.sendPort);
-    await for (final dynamic message in commands) {
-      final (id, input) = message as (int, (VisionImage, int, int?)?);
-      FaceLandmarkerResult? result;
-      VisionTaskException? failure;
-      try {
-        if (input == null) {
-          native.close();
-        } else {
-          result = native.detect(input.$1, input.$2, timestamp: input.$3);
-        }
-      } catch (error) {
-        failure = error is VisionTaskException
-            ? error
-            : VisionTaskException(error.toString());
-      }
-      parent.send((id, result, failure));
-      if (input == null) break;
-    }
-  } catch (error) {
-    parent.send(
-      error is VisionTaskException
-          ? error
-          : VisionTaskException(error.toString()),
-    );
-  } finally {
-    try {
-      native?.close();
-    } finally {
-      commands.close();
-    }
-  }
-}
+NativeVisionTask<FaceLandmarkerResult> _createNative(
+  FaceLandmarkerOptions options,
+) => NativeFaceLandmarker(options);

@@ -44,6 +44,8 @@ abstract final class VisionModels {
     sha256: interactiveSegmenterModelSha256,
   );
 
+  // TODO: Delete with InteractiveSegmenterLegacy; only the modern
+  // InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
   /// Legacy Interactive Segmenter, MagicTouch float32.
   static const interactiveSegmenterLegacy = DownloadAsset(
     url: magicTouchUrl,

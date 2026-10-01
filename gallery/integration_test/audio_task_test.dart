@@ -7,7 +7,7 @@ import 'package:mediapipe_audio/mediapipe_audio.dart';
 
 // The Audio Classifier demo's task, from the gallery's bundled YAMNet and
 // sample clip, in the same app as the vision and text runtimes: core's shared
-// runtime on macOS arm64, Linux x64 and Windows x64, where prepare.py bundles
+// runtime on macOS arm64, Linux x64 and Windows x64, where the gallery bundles
 // it. The mobile and browser plugins have sdk_text_audio_test.dart.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

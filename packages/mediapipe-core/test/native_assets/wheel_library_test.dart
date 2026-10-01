@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_core/native_assets.dart';
-import 'package:mediapipe_vision/src/native_assets/wheel_library.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -15,7 +14,7 @@ void main() {
       late HttpServer server;
       late Uint8List library;
       late List<int> response;
-      late VisionWheelRelease release;
+      late OfficialWheelLibrary release;
       var requests = 0;
       final name = target.startsWith('linux')
           ? 'libmediapipe.so'
@@ -44,7 +43,7 @@ void main() {
       }
 
       void pin({String? wheelHash, String? libraryHash}) {
-        release = VisionWheelRelease(
+        release = OfficialWheelLibrary(
           target: target,
           version: version,
           wheel: DownloadAsset(
@@ -57,12 +56,11 @@ void main() {
             for (final entry in notices.entries)
               entry.key: sha256.convert(utf8.encode(entry.value)).toString(),
           },
-          tasks: {'face_detector'},
         );
       }
 
       setUp(() async {
-        cache = await Directory.systemTemp.createTemp('vision-wheel-');
+        cache = await Directory.systemTemp.createTemp('official-wheel-');
         library = Uint8List(128);
         final data = ByteData.sublistView(library);
         if (target.startsWith('linux')) {
@@ -93,7 +91,7 @@ void main() {
       test(
         'cold extraction preserves notices and ignores Python paths',
         () async {
-          final file = await downloadVisionWheel(release, cache);
+          final file = await downloadOfficialWheelLibrary(release, cache);
           expect(await file.readAsBytes(), library);
           expect(
             await File.fromUri(
@@ -113,11 +111,11 @@ void main() {
       test(
         'offline cache validates all files and repairs corrupt notices',
         () async {
-          final file = await downloadVisionWheel(release, cache);
+          final file = await downloadOfficialWheelLibrary(release, cache);
           await File.fromUri(
             file.parent.uri.resolve('NOTICE'),
           ).writeAsString('corrupt');
-          await downloadVisionWheel(release, cache);
+          await downloadOfficialWheelLibrary(release, cache);
           expect(requests, 1); // The checksum-pinned wheel is also cached.
           expect(
             await File.fromUri(
@@ -126,7 +124,10 @@ void main() {
             'notice',
           );
           await server.close(force: true);
-          expect((await downloadVisionWheel(release, cache)).path, file.path);
+          expect(
+            (await downloadOfficialWheelLibrary(release, cache)).path,
+            file.path,
+          );
         },
       );
       test(
@@ -134,7 +135,7 @@ void main() {
         () async {
           pin(wheelHash: '0' * 64);
           await expectLater(
-            downloadVisionWheel(release, cache),
+            downloadOfficialWheelLibrary(release, cache),
             throwsA(isA<DownloadException>()),
           );
           expect(
@@ -149,13 +150,13 @@ void main() {
         response = bundle(contents: [1, 2, 3]);
         pin();
         await expectLater(
-          downloadVisionWheel(release, cache),
+          downloadOfficialWheelLibrary(release, cache),
           throwsStateError,
         );
         response = bundle(missingNotice: true);
         pin();
         await expectLater(
-          downloadVisionWheel(release, cache),
+          downloadOfficialWheelLibrary(release, cache),
           throwsFormatException,
         );
       });
@@ -166,7 +167,7 @@ void main() {
           response = bundle();
           pin();
           await expectLater(
-            downloadVisionWheel(release, cache),
+            downloadOfficialWheelLibrary(release, cache),
             throwsFormatException,
           );
         },

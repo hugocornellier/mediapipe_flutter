@@ -1,16 +1,14 @@
 import 'dart:ffi';
-import '../capabilities/require_delegate.dart';
-import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import '../../capabilities.dart';
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
 import '../vision_task_backend.dart';
-import '../sdk_vision_task.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
+import 'vision_task_runner.dart';
 import 'vision_task_worker.dart';
 
 /// Official Holistic Landmarker with serialized, owned image/video results.
@@ -30,76 +28,45 @@ import 'vision_task_worker.dart';
 /// Inference futures cannot cancel native work; `Future.timeout` only limits
 /// caller waiting. `dispose()` drains accepted work and is idempotent.
 final class HolisticLandmarker {
-  HolisticLandmarker._(this._worker, this._sdk, this.delegate);
-  final VisionTaskWorker<HolisticLandmarkerResult>? _worker;
-  final SdkVisionTask<HolisticLandmarkerResult>? _sdk;
+  HolisticLandmarker._(this._task, this.delegate);
+  final VisionTaskRunner<HolisticLandmarkerResult> _task;
 
   /// Requested backend, fixed until disposal.
   final VisionDelegate delegate;
 
   /// Mode selected when creating this task.
-  RunningMode get runningMode => _sdk?.runningMode ?? _worker!.runningMode;
+  RunningMode get runningMode => _task.runningMode;
 
   /// Load a compatible task bundle on a worker isolate.
   static Future<HolisticLandmarker> create(
     HolisticLandmarkerOptions options,
-  ) async {
-    await options.prepareModel();
-    if (Platform.isAndroid && holisticLandmarkerBackendFactory != null) {
-      return HolisticLandmarker._(
-        null,
-        SdkVisionTask(
-          await holisticLandmarkerBackendFactory!(options),
-          options.runningMode,
-          options.delegate,
-          name: 'HolisticLandmarker',
-          // MediaPipe converts milliseconds to signed 64-bit microseconds.
-          maxTimestamp: 0x7fffffffffffffff ~/ 1000,
-        ),
-        options.delegate,
-      );
-    }
-    final capabilities = await queryHolisticLandmarkerCapabilities();
-    requireVisionDelegate(capabilities, options.delegate);
-    return HolisticLandmarker._(
-      await VisionTaskWorker.create(
-        options,
-        _createNative,
-        'MediaPipe Holistic Landmarker',
-      ),
-      null,
-      options.delegate,
-    );
-  }
+  ) async => HolisticLandmarker._(
+    await VisionTaskRunner.open(
+      options,
+      name: 'HolisticLandmarker',
+      debugName: 'MediaPipe Holistic Landmarker',
+      android: holisticLandmarkerBackendFactory,
+      capabilities: queryHolisticLandmarkerCapabilities,
+      native: _createNative,
+    ),
+    options.delegate,
+  );
 
   /// Detect face, pose and hand landmarks in a still image.
   Future<HolisticLandmarkerResult> detectImage(
     VisionImage image, {
     int rotationDegrees = 0,
-  }) =>
-      _sdk?.detectImage(image, rotationDegrees: rotationDegrees) ??
-      _worker!.processImage(image, rotationDegrees, null);
+  }) => _task.image(image, rotationDegrees);
 
   /// Detect landmarks in a frame with a strictly increasing timestamp.
   Future<HolisticLandmarkerResult> detectForVideo(
     VisionImage image, {
     required int timestampMilliseconds,
     int rotationDegrees = 0,
-  }) =>
-      _sdk?.detectForVideo(
-        image,
-        timestampMilliseconds: timestampMilliseconds,
-        rotationDegrees: rotationDegrees,
-      ) ??
-      _worker!.processVideo(
-        image,
-        rotationDegrees,
-        timestampMilliseconds,
-        null,
-      );
+  }) => _task.video(image, rotationDegrees, timestampMilliseconds);
 
   /// Drain queued requests and release native resources exactly once.
-  Future<void> dispose() => _sdk?.dispose() ?? _worker!.dispose();
+  Future<void> dispose() => _task.dispose();
 }
 
 NativeVisionTask<HolisticLandmarkerResult> _createNative(

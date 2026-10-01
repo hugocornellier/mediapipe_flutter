@@ -35,16 +35,14 @@ import java.util.function.Function;
  * JavaScript API, which the Dart package decodes on every platform.
  */
 public final class MediaPipeTextPlugin implements FlutterPlugin, MethodChannel.MethodCallHandler {
-  /** One official task and the model buffer it reads. Only the worker touches it. */
+  /** One official task and how to run it. Only the worker touches it. */
   private static final class Task {
     final AutoCloseable task;
     final Function<String, Map<String, Object>> run;
-    final ByteBuffer model;
 
-    Task(AutoCloseable task, Function<String, Map<String, Object>> run, ByteBuffer model) {
+    Task(AutoCloseable task, Function<String, Map<String, Object>> run) {
       this.task = task;
       this.run = run;
-      this.model = model;
     }
   }
 
@@ -53,6 +51,11 @@ public final class MediaPipeTextPlugin implements FlutterPlugin, MethodChannel.M
   private ExecutorService worker;
   private final Handler main = new Handler(Looper.getMainLooper());
   private final Map<Integer, Task> tasks = new HashMap<>();
+  // Google's native task reads a direct model buffer in place, without a copy,
+  // so each one is held here until its task is closed. A field that is only
+  // written would not hold it: R8 removes such fields from release builds, the
+  // buffer is collected, and inference reads freed memory.
+  private final Map<Integer, ByteBuffer> modelBuffers = new HashMap<>();
   private int nextId;
 
   @Override public void onAttachedToEngine(FlutterPluginBinding binding) {
@@ -67,6 +70,7 @@ public final class MediaPipeTextPlugin implements FlutterPlugin, MethodChannel.M
     worker.execute(() -> {
       for (Task task : tasks.values()) close(task);
       tasks.clear();
+      modelBuffers.clear();
     });
     worker.shutdown();
   }
@@ -88,8 +92,10 @@ public final class MediaPipeTextPlugin implements FlutterPlugin, MethodChannel.M
             break;
           }
           default: {
-            Task task = tasks.remove(number(call, "id"));
+            int id = number(call, "id");
+            Task task = tasks.remove(id);
             if (task != null) close(task);
+            modelBuffers.remove(id);
             value = null;
           }
         }
@@ -132,7 +138,7 @@ public final class MediaPipeTextPlugin implements FlutterPlugin, MethodChannel.M
         }
         TextClassifier classifier = TextClassifier.createFromOptions(context, options.build());
         task = new Task(classifier,
-            text -> classifications(classifier.classify(text).classificationResult()), model);
+            text -> classifications(classifier.classify(text).classificationResult()));
         break;
       }
       case "text_embedder": {
@@ -141,7 +147,7 @@ public final class MediaPipeTextPlugin implements FlutterPlugin, MethodChannel.M
             .setL2Normalize(Boolean.TRUE.equals(call.argument("l2Normalize")))
             .setQuantize(Boolean.TRUE.equals(call.argument("quantize")));
         TextEmbedder embedder = TextEmbedder.createFromOptions(context, options.build());
-        task = new Task(embedder, text -> embeddings(embedder.embed(text).embeddingResult()), model);
+        task = new Task(embedder, text -> embeddings(embedder.embed(text).embeddingResult()));
         break;
       }
       case "language_detector": {
@@ -172,13 +178,14 @@ public final class MediaPipeTextPlugin implements FlutterPlugin, MethodChannel.M
           Map<String, Object> result = new HashMap<>();
           result.put("languages", languages);
           return result;
-        }, model);
+        });
         break;
       }
       default: throw new IllegalArgumentException("Unsupported MediaPipe text task: " + name);
     }
     int id = nextId++;
     tasks.put(id, task);
+    if (model != null) modelBuffers.put(id, model);
     return id;
   }
 

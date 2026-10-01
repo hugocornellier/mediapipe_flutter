@@ -5,6 +5,7 @@ import 'dart:math' show Random;
 
 import '../interface/segmenter_task_types.dart' show SegmentationPoint;
 import '../interface/vision_task_types.dart';
+import 'gpu_frame_budget.dart';
 
 /// Input transported to a native task's worker without sharing native pointers.
 ///
@@ -49,17 +50,27 @@ final class VisionTaskWorker<R> {
   final RunningMode runningMode;
 
   /// Construct the native owner from a top-level factory on a new isolate.
+  ///
+  /// [reopenAfterBytes] overrides the [GpuFrameBudget] that bounds what
+  /// Google's macOS GPU path keeps, so tests can exercise the reopening.
   static Future<VisionTaskWorker<R>> create<R, O extends VisionModelOptions>(
     O options,
     NativeVisionTask<R> Function(O) factory,
-    String name,
-  ) async {
+    String name, {
+    int? reopenAfterBytes,
+  }) async {
     final worker = VisionTaskWorker<R>._(options.runningMode, name);
     _trace(worker._tag, name, 'spawn', 'start');
     try {
       await Isolate.spawn(
         _runWorker<R, O>,
-        (worker._events.sendPort, options, factory, worker._tag),
+        (
+          worker._events.sendPort,
+          options,
+          factory,
+          worker._tag,
+          reopenAfterBytes,
+        ),
         onError: worker._events.sendPort,
         onExit: worker._events.sendPort,
         debugName: name,
@@ -184,15 +195,16 @@ final class VisionTaskWorker<R> {
 }
 
 Future<void> _runWorker<R, O extends VisionModelOptions>(
-  (SendPort, O, NativeVisionTask<R> Function(O), int) initial,
+  (SendPort, O, NativeVisionTask<R> Function(O), int, int?) initial,
 ) async {
-  final (parent, options, factory, tag) = initial;
+  final (parent, options, factory, tag, reopenAfterBytes) = initial;
   final name = Isolate.current.debugName ?? 'worker';
   final commands = ReceivePort();
+  final budget = GpuFrameBudget(options, limitBytes: reopenAfterBytes);
   NativeVisionTask<R>? native;
   try {
     _trace(tag, name, 'create', 'start');
-    native = factory(options);
+    var task = native = factory(options);
     _trace(tag, name, 'create', 'end');
     parent.send(commands.sendPort);
     await for (final dynamic message in commands) {
@@ -202,9 +214,9 @@ Future<void> _runWorker<R, O extends VisionModelOptions>(
       _trace(tag, name, id, 'start');
       try {
         if (input == null) {
-          native.close();
+          task.close();
         } else {
-          result = native.process(input);
+          result = task.process(input);
         }
       } catch (error) {
         failure = error is VisionTaskException
@@ -214,6 +226,12 @@ Future<void> _runWorker<R, O extends VisionModelOptions>(
       _trace(tag, name, id, failure == null ? 'end' : 'error');
       parent.send((id, result, failure));
       if (input == null) break;
+      if (budget.spend(input.$1)) {
+        _trace(tag, name, 'reopen', 'start');
+        task.close();
+        task = native = factory(options);
+        _trace(tag, name, 'reopen', 'end');
+      }
     }
   } catch (error) {
     _trace(tag, name, 'create', 'error');

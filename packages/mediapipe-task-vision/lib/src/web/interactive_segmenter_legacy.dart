@@ -1,6 +1,8 @@
 import '../vision_task_backend.dart';
 import '../sdk_vision_task.dart';
 
+// TODO: Delete this file with InteractiveSegmenterLegacy; only the modern
+// InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
 /// Official MediaPipe browser Interactive Segmenter Legacy installed by the
 /// web adapter: the stateless MagicTouch API, selecting the object under a
 /// point.

@@ -14,6 +14,8 @@ import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 import 'vision_task_worker.dart';
 
+// TODO: Delete this file with InteractiveSegmenterLegacy; only the modern
+// InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
 /// Official stateless MagicTouch segmenter, selecting the object under a point.
 ///
 /// This is not the stateful `InteractiveSegmenter`: that task keeps stroke

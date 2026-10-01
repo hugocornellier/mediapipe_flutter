@@ -29,7 +29,7 @@ jobs:
           cache: true
       - name: Make flutter test wait for the simulator log reader
         run: python3 -B tool/ci/patch_flutter_simulator_launch.py
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Install native build tools
@@ -43,15 +43,22 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('digest=' + hashlib.sha256(version).hexdigest()[:16] + '\n')
           PY
-      - uses: actions/cache@v4
+      # The source build is pinned: the same scripts, notices and Xcode build
+      # the same runtime, so it is rebuilt only when one of them changes. The
+      # validation below tests the runtime exactly as after a fresh build.
+      - uses: actions/cache/restore@v6
+        id: simulator-runtime
         with:
-          path: |
-            build/codex-tmp/bazel
-            build/codex-tmp/opencv-ios-simulator-build
-            build/codex-tmp/opencv-ios-simulator-install
-          key: ios-source-${{ runner.arch }}-${{ steps.xcode.outputs.digest }}-${{ hashFiles('packages/mediapipe-task-vision/tool/build_native.py', 'packages/mediapipe-task-vision/tool/build_ios_simulator.py') }}
+          path: packages/mediapipe-task-vision/build/native/ios-simulator/arm64
+          key: ios-simulator-face-runtime-${{ runner.arch }}-${{ steps.xcode.outputs.digest }}-${{ hashFiles('packages/mediapipe-task-vision/tool/build_native.py', 'packages/mediapipe-task-vision/tool/build_ios_simulator.py', 'packages/mediapipe-task-vision/third_party/LICENSE', 'packages/mediapipe-task-vision/third_party/NOTICE', 'packages/mediapipe-task-vision/third_party/OPENCV_CAROTENE_NOTICES') }}
       - name: Build the pinned simulator runtime
+        if: steps.simulator-runtime.outputs.cache-hit != 'true'
         run: python3 -B packages/mediapipe-task-vision/tool/build_ios_simulator.py --jobs 3
+      - uses: actions/cache/save@v6
+        if: steps.simulator-runtime.outputs.cache-hit != 'true'
+        with:
+          path: packages/mediapipe-task-vision/build/native/ios-simulator/arm64
+          key: ${{ steps.simulator-runtime.outputs.cache-primary-key }}
       - name: Download the pinned face models
         working-directory: packages/mediapipe-task-vision
         run: |
@@ -101,7 +108,7 @@ jobs:
           cache: true
       - name: Make flutter test wait for the simulator log reader
         run: python3 -B tool/ci/patch_flutter_simulator_launch.py
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Download the official SDK task models
@@ -115,7 +122,7 @@ jobs:
           dart tool/download_object_detector.dart
           dart tool/download_segmenter_tasks.dart
           dart tool/download_interactive_segmenter.dart
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: gallery/.dart_tool/hooks_runner/shared/mediapipe_core/build/official-ios-sdk/*/sdk.zip
           key: official-ios-sdk-${{ hashFiles('packages/mediapipe-core/lib/src/native_assets/ios_sdk.dart') }}

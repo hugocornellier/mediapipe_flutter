@@ -96,6 +96,9 @@ struct MpImageSegmenterInternal {
   __strong NSString *temporaryModel;
 };
 
+// TODO: Delete the legacy segmenter's bridge with InteractiveSegmenterLegacy;
+// only the modern InteractiveSegmenter is needed. See
+// InteractiveSegmenterLegacyOptions in mediapipe_vision.
 struct MpInteractiveSegmenterLegacyInternal {
   __strong MPPInteractiveSegmenterLegacy *task;
   __strong NSString *temporaryModel;

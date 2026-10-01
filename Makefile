@@ -2,9 +2,9 @@ SHELL := /bin/bash
 DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-genai tool/builder tool/task_benchmarks
 FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
-# The gallery's pubspec is generated per target by gallery/tool/prepare.py, so
-# it is format-checked without package resolution and analyzed by the
-# platform workflows after preparation.
+# The gallery's pubspec is generated per target by tool/gallery_builder or
+# gallery/tool/prepare.py, so it is format-checked without package resolution
+# and analyzed by the platform workflows after preparation.
 GALLERY_SOURCES := lib test integration_test tool
 # The generated pubspec (sdk ^3.12.0) may be absent when formatting, and
 # unresolved files default to the newest language version, whose style differs.

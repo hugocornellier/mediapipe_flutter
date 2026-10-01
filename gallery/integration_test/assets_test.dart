@@ -8,9 +8,10 @@ import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_registry.dart';
 import 'package:mediapipe_gallery/main.dart';
 
-/// `tool/prepare.py` chooses what the app bundles per target, so an asset a
-/// screen asks for by name can silently not be there. These check the bundle
-/// the app was actually built with.
+/// The gallery's preparer (`tool/gallery_builder` for Android and macOS,
+/// `tool/prepare.py` for the rest) chooses what the app bundles per target,
+/// so an asset a screen asks for by name can silently not be there. These
+/// check the bundle the app was actually built with.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

@@ -61,6 +61,34 @@ channel count; Google's task resamples to the model's rate. `decodeWav` reads
 (-1 for all) and `scoreThreshold`. To use your own model, pass `modelPath` or
 `modelBytes` instead of `model`.
 
+Samples from a microphone or any other source work the same way: wrap them
+in `AudioData`, at whatever rate they were recorded. This sample names the
+sound in the latest chunk.
+
+```dart
+import 'dart:typed_data';
+
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+
+Future<String?> latestSound(Float32List samples, double sampleRate) async {
+  final classifier = await AudioClassifier.create(
+    AudioClassifierOptions(model: AudioModels.yamnet, maxResults: 1),
+  );
+  try {
+    final chunks = await classifier.classify(
+      AudioData(samples: samples, sampleRate: sampleRate),
+    );
+    if (chunks.isEmpty || chunks.last.categories.isEmpty) return null;
+    return chunks.last.categories.first.name;
+  } finally {
+    await classifier.dispose();
+  }
+}
+```
+
+Keep one classifier for a live stream and pass it about one second of audio
+at a time, YAMNet's window.
+
 Query support before offering the task:
 
 ```dart

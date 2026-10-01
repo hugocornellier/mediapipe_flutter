@@ -1,8 +1,9 @@
-/// The models and samples an Android gallery bundles.
+/// The models, samples and task lists the Android and macOS galleries bundle.
 ///
 /// Every URL and SHA-256 here must equal the pin in the owning package's
-/// `lib/models.dart`; `test/pins_test.dart` checks that, since this tool
-/// cannot import those Flutter packages.
+/// `lib/models.dart`, and the macOS task list must match the vision package's
+/// `sdk_downloads.dart`; `test/pins_test.dart` and `test/targets_test.dart`
+/// check that, since this tool cannot import those Flutter packages.
 library;
 
 final class Model {
@@ -13,7 +14,7 @@ final class Model {
   final String sha256;
 }
 
-/// Every task Google's Android SDKs serve, with the model the gallery uses.
+/// The model the gallery uses for every task some target bundles.
 const models = <String, Model>{
   'audio_classifier': Model(
     'yamnet.tflite',
@@ -65,6 +66,13 @@ const models = <String, Model>{
     'https://storage.googleapis.com/mediapipe-models/interactive_segmenter_v2/magic_touch/int8/1/interactive_segmentation.task',
     '38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03',
   ),
+  // TODO: Delete with InteractiveSegmenterLegacy; only the modern
+  // InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
+  'interactive_segmenter_legacy': Model(
+    'magic_touch.tflite',
+    'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite',
+    'e24338a717c1b7ad8d159666677ef400babb7f33b8ad60c4d96db4ecf694cd25',
+  ),
   'language_detector': Model(
     'language_detector.tflite',
     'https://storage.googleapis.com/mediapipe-models/language_detector/language_detector/float32/1/language_detector.tflite',
@@ -109,6 +117,61 @@ const nonVisionTasks = {
   'text_classifier',
   'text_embedder',
 };
+
+/// Every task Google's Android SDKs serve.
+const androidTasks = {
+  'audio_classifier',
+  'face_detector',
+  'face_landmarker',
+  'gesture_recognizer',
+  'hand_landmarker',
+  'holistic_landmarker',
+  'image_classifier',
+  'image_embedder',
+  'image_segmenter',
+  'interactive_segmenter',
+  'language_detector',
+  'object_detector',
+  'pose_landmarker',
+  'text_classifier',
+  'text_embedder',
+};
+
+/// Vision tasks Google's macOS engine serves, as `macosEngineTasks` in the
+/// vision package's `sdk_downloads.dart` lists them. Core bundles the engine
+/// (about 95 MB) only for an app that sets `tasks_runtime: true`.
+const macosEngineTasks = {
+  'face_landmarker',
+  'gesture_recognizer',
+  'hand_landmarker',
+  'holistic_landmarker',
+  'image_classifier',
+  'image_embedder',
+  'image_segmenter',
+  'interactive_segmenter',
+  'interactive_segmenter_legacy',
+  'object_detector',
+  'pose_landmarker',
+};
+
+/// Every task a macOS gallery can bundle: the engine's, Face Detector from its
+/// published source build, and text and audio, which the engine also serves.
+const macosTasks = {...macosEngineTasks, 'face_detector', ...nonVisionTasks};
+
+/// The tasks each target this tool prepares can bundle.
+const targetTasks = <String, Set<String>>{
+  'android/arm64': androidTasks,
+  'android/x64': androidTasks,
+  'macos/arm64': macosTasks,
+};
+
+/// Whether a macOS gallery bundling [tasks] needs Google's engine: anything
+/// but the face pair does, and Face Landmarker then runs on it too.
+bool needsMacosEngine(Iterable<String> tasks) => tasks.any(
+  (task) =>
+      task != 'face_landmarker' &&
+      (macosEngineTasks.contains(task) || nonVisionTasks.contains(task)),
+);
 
 /// Sample inputs, from the test fixtures and the gallery's own samples, by
 /// the name the gallery reads them under.

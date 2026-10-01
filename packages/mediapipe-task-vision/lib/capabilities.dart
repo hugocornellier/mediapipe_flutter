@@ -375,6 +375,8 @@ TaskCapabilities<VisionDelegate> imageSegmenterCapabilitiesForPlatform(
       : null,
 );
 
+// TODO: Delete with InteractiveSegmenterLegacy; only the modern
+// InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
 /// Query Interactive Segmenter Legacy support on this process platform.
 Future<TaskCapabilities<VisionDelegate>>
 queryInteractiveSegmenterLegacyCapabilities() async =>
