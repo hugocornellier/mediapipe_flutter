@@ -10,7 +10,11 @@ apply plugin: 'com.android.library'
 android {
     namespace = 'dev.mediapipe.flutter.text'
     compileSdk = 36
-    defaultConfig { minSdk = 24 }
+    defaultConfig {
+        minSdk = 24
+        // Applied to every app's release build; see the file.
+        consumerProguardFiles 'proguard-rules.pro'
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

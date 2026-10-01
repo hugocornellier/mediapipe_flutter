@@ -54,7 +54,7 @@ class LivePage extends StatefulWidget {
   State<LivePage> createState() => _LivePageState();
 }
 
-class _LivePageState extends State<LivePage> {
+class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
   late final LiveDemo _demo = liveDemoFor(widget.task.id)!;
   late final LiveTask<Object?> _task = _demo.task();
   late final LiveCameraController<Object?> _controller =
@@ -187,7 +187,30 @@ class _LivePageState extends State<LivePage> {
     _controller.addListener(_onControllerChanged);
     widget.navigationOpen?.addListener(_onCoverChanged);
     _onCoverChanged();
+    WidgetsBinding.instance.addObserver(this);
     if (_mode == _VisionInputMode.camera) _findCameras();
+  }
+
+  /// Whether Android sent the app to the background with the camera running,
+  /// so that it starts again when the app returns.
+  bool _stoppedInBackground = false;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // On Android a camera frame that reaches Flutter after the activity is
+    // destroyed crashes the app ("FlutterJNI is not attached to native"), as
+    // backing out of a running demo did on a Pixel 8a. Flutter's camera plugin
+    // leaves lifecycle to the app, so the camera stops as soon as the app
+    // leaves the foreground. Not while the permission prompt is up: the camera
+    // opens last in a start, so it is not running yet then.
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    if (state == AppLifecycleState.inactive && _controller.running) {
+      _stoppedInBackground = true;
+      unawaited(_controller.stop());
+    } else if (state == AppLifecycleState.resumed && _stoppedInBackground) {
+      _stoppedInBackground = false;
+      unawaited(_start());
+    }
   }
 
   /// The navigation drawer or the settings sheet over the feed pauses it.
@@ -249,6 +272,7 @@ class _LivePageState extends State<LivePage> {
     _modeRevision++;
     _controller.removeListener(_onControllerChanged);
     widget.navigationOpen?.removeListener(_onCoverChanged);
+    WidgetsBinding.instance.removeObserver(this);
     _controller.close();
     _controller.dispose();
     _revision.dispose();
