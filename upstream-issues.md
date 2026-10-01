@@ -748,6 +748,8 @@ Each plugin now keeps its buffers in a map until the task closes, as the vision
 plugin already did. On the same emulator the release gallery then kept its
 scores through 3 forced collections in Clips mode and 3 for Text Classifier,
 and ran a minute of microphone input through 6 more without an error.
+Android CI now builds the release gallery and fails when R8's usage report
+lists an instance field removed from the plugins (`tool/ci/check_r8_usage.py`).
 
 ## Integration pitfalls resolved in this repo
 

@@ -152,3 +152,22 @@ jobs:
           name: coverage-android-sdk-emulator
           path: build/coverage/
           if-no-files-found: error
+      # Only release builds run R8, and every test above is a debug build. R8
+      # removes a field that is written but never read, so a plugin that keeps
+      # memory alive for native code that way loses it in release builds only
+      # (UP-033 in upstream-issues.md). This fails on any instance field R8
+      # removed from the plugins. The APK is the release gallery, for phones.
+      - name: Release gallery keeps every plugin field through R8
+        if: ${{ !cancelled() }}
+        run: |
+          python3 -B -m unittest tool/ci/test_check_r8_usage.py
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/arm64
+          cd gallery
+          flutter build apk --release --target-platform android-arm64
+          python3 -B ../tool/ci/check_r8_usage.py build/app/outputs/mapping/release/usage.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gallery-release-android-arm64
+          path: gallery/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+          if-no-files-found: error
