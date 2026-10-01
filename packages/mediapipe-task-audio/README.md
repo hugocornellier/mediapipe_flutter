@@ -2,7 +2,10 @@
 
 Google's MediaPipe **Audio Classifier** for Dart and Flutter, for example
 YAMNet's 521 sound categories, on Android, iOS, macOS, Linux, Windows and the
-web. Google's pinned YAMNet model downloads on first use.
+web. Google's pinned YAMNet model is bundled with your app at build time:
+list it under `hooks.user_defines.mediapipe_audio.models: [yamnet]` in the
+app's pubspec, declare `assets/mediapipe/` under `flutter: assets:`, and run
+`dart run mediapipe_core:bundle_models` from the app's root.
 
 > **Not on pub.dev yet.** Depend on it by path from a checkout of
 > [the repository](https://github.com/hugocornellier/mediapipe_flutter) until

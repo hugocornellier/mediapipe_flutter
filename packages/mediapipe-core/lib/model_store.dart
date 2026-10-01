@@ -1,4 +1,5 @@
-/// Persistent, verified on-demand models shared by every task family.
+/// Verified models shared by every task family: the app's bundled copies,
+/// cached on native platforms, and downloads when asked for.
 library;
 
 export 'src/download_asset.dart';

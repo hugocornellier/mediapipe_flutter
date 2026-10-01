@@ -9,6 +9,9 @@ pre-phase symbols reachable from each family's primary library, including
 conditional exports. A retained result or value type stays because it carries
 the task's output or input without exposing native ownership.
 
+[API_UNIFICATION.md](API_UNIFICATION.md) plans changes to several of these
+decisions; its "Superseded decisions" section lists them.
+
 | Package | Current symbol | Google equivalent | Decision and reason |
 | --- | --- | --- | --- |
 | `mediapipe-core` | `BaseCategory` | `BaseCategory` | Keep; task, result, value or capability API remains useful to apps. |

@@ -67,6 +67,9 @@ final class VisionTaskRunner<R> {
       ) ??
       _worker!.processImage(image, rotationDegrees, regionOfInterest);
 
+  // TODO: Add LIVE_STREAM beside video() when it is split from VIDEO: a call
+  // that returns at once and drops frames the way Google's runtime does,
+  // before they are copied to the worker. See RunningMode.liveStream.
   /// VIDEO inference with a strictly increasing millisecond timestamp.
   Future<R> video(
     VisionImage image,

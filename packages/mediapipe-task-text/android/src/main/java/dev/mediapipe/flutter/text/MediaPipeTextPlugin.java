@@ -29,6 +29,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
+// TODO: Share the worker thread, model buffers and channel handling with
+// MediaPipeAudioPlugin. See tool/SHARED_CODE.md at the repository root.
 /**
  * Google's unmodified text tasks (tasks-text 1.0.0) for mediapipe_text. One worker
  * thread creates, runs and closes every task; results travel in the JSON shape of Google's

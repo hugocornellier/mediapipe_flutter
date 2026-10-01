@@ -52,6 +52,9 @@ void setVisionBaseOptions(
   }
 }
 
+// TODO: Map liveStream here only if LIVE_STREAM goes native rather than being
+// emulated on VIDEO; desktop would need a C shim that copies callback results.
+// See RunningMode.liveStream.
 /// Convert the public running mode into the native task enum.
 mp.MpRunningMode nativeRunningMode(RunningMode mode) =>
     mode == RunningMode.video

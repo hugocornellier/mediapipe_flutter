@@ -1,4 +1,6 @@
 // One worker owns each official audio task, so inference never blocks the UI.
+// TODO: Move this bridge and worker.js, alike in text and audio, into core.
+// See tool/SHARED_CODE.md at the repository root.
 (() => {
   const base = new URL('.', document.currentScript.src);
   const workers = new Map();

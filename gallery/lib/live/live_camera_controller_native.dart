@@ -350,6 +350,9 @@ class LiveCameraController<T> extends ChangeNotifier {
     }
   }
 
+  // TODO: Use live stream mode once LIVE_STREAM is split from VIDEO, and
+  // delete this hand-rolled copy of Google's frame dropping. See
+  // RunningMode.liveStream in mediapipe_vision.
   void _onFrame(CameraImage image, int generation) {
     if (!running || _closed || generation != _generation) return;
     if (_frame != null) {

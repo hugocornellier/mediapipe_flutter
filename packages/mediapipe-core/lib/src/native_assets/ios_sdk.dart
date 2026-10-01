@@ -76,6 +76,8 @@ const officialIosSdkArchives = <String, DownloadAsset>{
 
 /// The adapter's sources: the vision tasks, then the text and audio tasks
 /// (one translation unit each: Google's frameworks repeat shared headers).
+// TODO: Rename face_sdk_bridge.mm, which adapts every vision task; see the
+// TODO at the top of that file.
 const _adapterSources = [
   'native/ios/face_sdk_bridge.mm',
   'native/ios/text_sdk_bridge.mm',

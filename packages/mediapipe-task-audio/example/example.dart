@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 
 /// Classifies a 16-bit PCM WAV clip with Google's pinned YAMNet model, which
-/// is downloaded and verified on first use.
+/// the app bundles by listing `yamnet` under
+/// `hooks.user_defines.mediapipe_audio.models` and running
+/// `dart run mediapipe_core:bundle_models`.
 Future<void> main(List<String> arguments) async {
   final classifier = await AudioClassifier.create(
     AudioClassifierOptions(model: AudioModels.yamnet, maxResults: 3),

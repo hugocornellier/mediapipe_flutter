@@ -83,11 +83,24 @@ shows which task selections and delegates each platform serves.
 
 ## Quick start: detect face landmarks
 
-Pass one of Google's pinned models as `model:`. It is downloaded the first
-time, checked against its SHA-256 and cached for later runs, including
-offline. Android release builds and sandboxed macOS apps need network
-permission for that download; see
-[platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md).
+Pass one of Google's pinned models as `model:`, bundled with your app at build
+time. List it in your app's pubspec and declare the folder it goes in:
+
+```yaml
+flutter:
+  assets:
+    - assets/mediapipe/
+
+hooks:
+  user_defines:
+    mediapipe_vision:
+      models: [face_landmarker]
+```
+
+Then run `dart run mediapipe_core:bundle_models` from the app's root, and
+again whenever the list changes. It downloads each model once, checks it
+against its pinned SHA-256 and writes it into `assets/mediapipe/`, so nothing
+is downloaded at run time. `VisionModels.byName` lists the accepted names.
 
 ```dart
 import 'dart:typed_data';
@@ -149,8 +162,14 @@ Future<FaceLandmarker> createFromAsset() async {
 }
 ```
 
-To download ahead of time (on an onboarding screen, say), call
-`ModelStore().prefetch(VisionModels.faceLandmarker)` from `mediapipe_core`.
+A model that is not bundled makes `create` throw a
+`RuntimeUnavailableException` whose `fix` names the pubspec entry to add. To
+download models at run time instead, set `ModelStore.allowDownloads = true`
+from `mediapipe_core` before creating tasks; Android release builds and
+sandboxed macOS apps then need network permission, as
+[platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md)
+describes. `ModelStore().prefetch(VisionModels.faceLandmarker)` downloads
+ahead of time, on an onboarding screen say.
 
 ### Errors
 

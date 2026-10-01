@@ -5,6 +5,7 @@ import 'package:mediapipe_core/mediapipe_exception.dart';
 import 'package:mediapipe_core/model_store.dart';
 import 'package:mediapipe_core/platform_interface.dart';
 
+import '../models.dart' show AudioModels;
 import 'audio_task_backend.dart';
 
 /// Failure in a MediaPipe audio task, reported by Google's runtime.
@@ -111,13 +112,18 @@ final class AudioClassifierOptions {
     if (maxResults == 0) throw ArgumentError.value(maxResults, 'maxResults');
   }
 
-  /// Pinned official model, downloaded and verified when the task is created.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   final DownloadAsset? model;
 
   /// Resolve [model] while preserving the other classifier options.
   Future<AudioClassifierOptions> resolveModel() async {
     if (model case final selected?) {
-      final source = await resolvePinnedModel(selected);
+      final source = await resolvePinnedModel(
+        selected,
+        family: 'mediapipe_audio',
+        registry: AudioModels.byName,
+      );
       return AudioClassifierOptions(
         modelPath: source.path,
         modelBytes: source.bytes,

@@ -75,7 +75,41 @@ asset name. It never uploads anything. The prefill path uses core's verified
 downloader. Copy the resulting SHA-named directory to the build machine, or
 serve it from an internal URL root.
 
+## Bundled models
+
+Apps bundle the models they use at build time. Each family's `XxxModels.byName`
+names its models. The app lists the ones it needs per family in its pubspec,
+declares `assets/mediapipe/` under `flutter: assets:`, and runs from its root:
+
+```sh
+dart run mediapipe_core:bundle_models
+```
+
+The command downloads each listed model (from `asset_source` when it is set),
+checks it against its pinned SHA-256, and writes it into `assets/mediapipe/`,
+named by that SHA-256 with a readable `manifest.json` beside it. Models that
+are no longer listed are removed. With `--check` it changes nothing and fails
+when the folder does not match the lists, for CI. It reads each family's
+models by running a small generated program,
+`.dart_tool/mediapipe_core/bundle_models_registry.dart`, with the app's
+packages, since core cannot depend on the families.
+
+A task created with `model:` then looks for its model in this order:
+
+1. the store's cache;
+2. the app's bundled copy, copied into the cache once on native platforms,
+   where MediaPipe takes a file path;
+3. a download, only when `ModelStore.allowDownloads` is true.
+
+Otherwise `create` throws a `RuntimeUnavailableException` whose `fix` names
+the pubspec entry to add. `ModelStore().find(model)` performs the same lookup
+without ever using the network.
+
 ## On-demand models
+
+Downloading at run time is opt-in. Set `ModelStore.allowDownloads = true`
+before creating tasks to let `model:` download what the app does not bundle;
+calling `get` or `prefetch` directly always may download.
 
 `package:mediapipe_core/model_store.dart` exports `ModelStore` and
 `DownloadAsset`. A family model pin can be passed directly to `get` or
@@ -84,8 +118,9 @@ returns a `File` in application support, whose path can be given to the task
 options. Each model keeps its original file name. Downloads go to an adjacent
 temporary file under a per-model lock shared across isolates and processes,
 and cached bytes are checked again on every read. iOS excludes this model folder
-from iCloud backup. On web `get` returns verified bytes from Cache Storage,
-or downloads them on first use. An invalid cached response is discarded.
+from iCloud backup. On web `get` returns verified bytes from Cache Storage
+or the app's bundle, and otherwise downloads them. An invalid cached
+response is discarded.
 Core uses Flutter's `path_provider` for application support rather than
 asking every family to supply a directory, so the storage policy stays shared.
 
@@ -101,9 +136,9 @@ Future<void> prepareModels() async {
 }
 ```
 
-The app needs Android's `INTERNET` permission for first use. A sandboxed
-macOS app needs `com.apple.security.network.client`. An already verified
-cache entry works without network access.
+Downloading needs Android's `INTERNET` permission, and a sandboxed macOS app
+needs `com.apple.security.network.client`. Bundled models and already
+verified cache entries work without network access.
 
 ## Web runtime
 

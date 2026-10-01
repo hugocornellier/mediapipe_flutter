@@ -3,7 +3,8 @@
 Google's MediaPipe text tasks for Dart and Flutter: text classification, text
 embeddings and language detection on every platform, plus EmbeddingGemma,
 Proofreader and Summarizer on macOS. Every task runs Google's official
-MediaPipe pipeline, and Google's pinned models download on first use.
+MediaPipe pipeline, and Google's pinned models are bundled with your app at
+build time.
 
 > **Not on pub.dev yet.** Depend on it by path from a checkout of
 > [the repository](https://github.com/hugocornellier/mediapipe_flutter) until
@@ -63,8 +64,27 @@ Future<void> classify() async {
 
 `TextModels` names Google's model for every task (`bertClassifier`,
 `universalSentenceEncoder`, `languageDetector`, `embeddingGemma`,
-`proofreader`, `summarizer`). Each downloads on first use, is checked against
-its SHA-256 and is cached for later runs, including offline. To use your own
+`proofreader`, `summarizer`). Bundle the ones your app uses at build time:
+list them in its pubspec, declare the folder they go in, and run
+`dart run mediapipe_core:bundle_models` from the app's root, which downloads
+each once and checks it against its SHA-256:
+
+```yaml
+flutter:
+  assets:
+    - assets/mediapipe/
+
+hooks:
+  user_defines:
+    mediapipe_text:
+      models: [bert_classifier]
+```
+
+`TextModels.byName` lists the accepted names. A model that is not bundled
+makes `create` throw a `RuntimeUnavailableException` naming the entry to add;
+setting `ModelStore.allowDownloads = true` from `mediapipe_core` downloads it
+at run time instead. The text generation models are 118 to 184 MB, so weigh
+that against your app's size. To use your own
 model, pass `TextClassifierOptions.fromAssetPath` (a file path) or
 `.fromAssetBuffer` (bytes, for example from `rootBundle`); the modern tasks
 take `modelPath` or `modelBytes`. Give exactly one model source.

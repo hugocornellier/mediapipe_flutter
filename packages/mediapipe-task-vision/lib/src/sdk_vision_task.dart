@@ -34,6 +34,8 @@ class SdkVisionTask<R> implements BrowserVisionTask<R> {
   int? _timestamp;
   Future<void>? _disposing;
 
+  // TODO: Share these checks with VisionTaskWorker's, so every platform fails
+  // the same way. See tool/SHARED_CODE.md at the repository root.
   void _check(RunningMode mode, int rotation, int? timestamp) {
     if (_disposing != null) {
       throw StateError('$name has been disposed.');
@@ -82,6 +84,9 @@ class SdkVisionTask<R> implements BrowserVisionTask<R> {
     );
   }
 
+  // TODO: Add LIVE_STREAM beside detectForVideo and detectBrowserFrame when it
+  // is split from VIDEO, for the Android adapter and the web. See
+  // RunningMode.liveStream.
   /// Runs VIDEO inference with a strictly increasing timestamp.
   @override
   Future<R> detectForVideo(

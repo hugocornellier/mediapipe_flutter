@@ -5,6 +5,18 @@
 // Embedder, Image Segmenter and both Interactive Segmenters. This file
 // contains no
 // inference, tracking, or model postprocessing code.
+
+// TODO: Rename this file, which adapts every vision task and not only the face
+// pair, to vision_sdk_bridge.mm beside text_sdk_bridge.mm and
+// audio_sdk_bridge.mm. Update _adapterSources in ios_sdk.dart (the adapter
+// manifest records each source by path), native/ios/README.md and the tool
+// docs that name it. Then check other names the same way, so each says what
+// it is: "landmark" names that mean Google's whole macOS engine, such as the
+// official-landmarks-v1.0.0 release tag, hasOfficialMacosLandmarkRuntime(),
+// the *_official_macos_landmark_runtime.py tools, the gallery manifest's
+// official_macos_landmark_tasks and the required CI check "Official macOS
+// landmark runtime / ...". Renaming the release tag means republishing its
+// archive, and renaming that CI job means updating main's required checks.
 #import <Accelerate/Accelerate.h>
 #import <MediaPipeTasksVision/MediaPipeTasksVision.h>
 #import <UIKit/UIKit.h>
@@ -667,6 +679,9 @@ void CopyDetector(SdkResult *source, MpDetectionResult *out) {
 template <typename SdkOptions>
 MpStatus Configure(SdkOptions *sdk, const MpBaseOptions &base, MpRunningMode mode,
                    NSString **temporary, char **message) {
+  // TODO: Accept LIVE_STREAM here only if it goes native on iOS rather than
+  // being emulated on VIDEO: adopt the SDK's live stream delegates and post
+  // copied results to Dart. See RunningMode.liveStream in mediapipe_vision.
   if (mode != MP_RUNNING_MODE_IMAGE && mode != MP_RUNNING_MODE_VIDEO) {
     return Fail(message, @"The Dart adapter supports IMAGE and VIDEO only", kMpUnimplemented);
   }

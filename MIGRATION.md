@@ -19,9 +19,14 @@ Each package's `MIGRATION.md` lists every renamed or removed symbol:
    for apps; plugin code uses `platform_interface.dart`.
 4. Catch `MediaPipeException` (or its subtypes) instead of the per-task
    exception classes; see each package's table.
-5. Optionally replace bundled models with `model: VisionModels.x`,
-   `TextModels.x` or `AudioModels.yamnet`, which download Google's pinned
-   model on first use.
+5. Optionally replace your own model files with Google's pinned ones
+   (`model: VisionModels.x`, `TextModels.x` or `AudioModels.yamnet`): list
+   them under `hooks.user_defines.<family>.models`, declare
+   `assets/mediapipe/` under `flutter: assets:`, and run
+   `dart run mediapipe_core:bundle_models`.
+6. `model:` no longer downloads at run time by default. Bundle the models as
+   in step 5, or set `ModelStore.allowDownloads = true` (from
+   `mediapipe_core`) before creating tasks to keep downloading them.
 
 ## From Google's `mediapipe_text` 0.0.1
 

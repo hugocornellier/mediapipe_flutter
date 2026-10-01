@@ -22,6 +22,8 @@ export 'embedding_gemma.dart';
 export 'text_proofreader.dart';
 export 'text_summarizer.dart';
 
+// TODO: Make this API identical on every platform and flatten the classic
+// tasks' options. See tool/API_UNIFICATION.md at the repository root.
 export 'universal_mediapipe_text.dart'
     if (dart.library.js_interop) 'src/web/mediapipe_text.dart'
     if (dart.library.io) 'src/io/mediapipe_text.dart';

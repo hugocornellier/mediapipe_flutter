@@ -3,6 +3,10 @@ import 'dart:typed_data';
 import 'package:mediapipe_vision/interface.dart';
 import 'package:mediapipe_vision/platform_interface.dart';
 
+// TODO: Decode Android's results here too, through one wire format, as text
+// and audio already share one decoder. See tool/SHARED_CODE.md at the
+// repository root.
+
 /// Copies Google's browser results into the platform-independent Dart types.
 ///
 /// With [landmarks], the worker sent the face landmarks packed as x, y, z,

@@ -1,16 +1,19 @@
 # Platform setup
 
-What an app needs on each platform beyond adding a family package. Tasks that
-use Google's pinned models (`model: VisionModels.faceLandmarker` and the like)
-download them on first use; everything about network access below exists for
-that download, and for the one-time native runtime download at build time.
+What an app needs on each platform beyond adding a family package. Google's
+pinned models (`model: VisionModels.faceLandmarker` and the like) are bundled
+with the app at build time by `dart run mediapipe_core:bundle_models` (see
+[Build settings](#build-settings)), so an app that bundles its models needs no
+network access at run time. The network settings below are only for apps
+that set `ModelStore.allowDownloads = true` to download models at run time
+instead.
 
 ## Android
 
 - `minSdk` 24 or higher.
-- Add the `INTERNET` permission to `android/app/src/main/AndroidManifest.xml`.
-  Flutter adds it only to debug and profile builds, so a release build without
-  it cannot download models:
+- To download models at run time, add the `INTERNET` permission to
+  `android/app/src/main/AndroidManifest.xml`. Flutter adds it only to debug
+  and profile builds, so a release build without it cannot download models:
 
   ```xml
   <uses-permission android:name="android.permission.INTERNET"/>
@@ -48,9 +51,9 @@ that download, and for the one-time native runtime download at build time.
   Without it the app still builds (so `dart run` keeps working in iOS and
   Android apps developed on a Mac); creating one of those tasks then throws a
   `RuntimeUnavailableException` whose `fix` shows these lines.
-- A sandboxed app needs the network client entitlement in
-  `macos/Runner/DebugProfile.entitlements` and `Release.entitlements` to
-  download models:
+- To download models at run time, a sandboxed app needs the network client
+  entitlement in `macos/Runner/DebugProfile.entitlements` and
+  `Release.entitlements`:
 
   ```xml
   <key>com.apple.security.network.client</key>
@@ -97,6 +100,38 @@ and applies to all of the app's platforms.
 | `mediapipe_core.tasks_runtime` | `true` / `false` | macOS opt-in to Google's engine; `false` turns it off where it is on by default (iOS, Linux, Windows) |
 | `mediapipe_core.asset_source` | directory or `http(s)` URL | Downloads every pinned runtime from there instead of its URLs; see below |
 | `mediapipe_vision.tasks` | list of task names | Bundles native runtimes only for these vision tasks (default: `face_detector`, `face_landmarker`) |
+| `mediapipe_vision.models`, `mediapipe_text.models`, `mediapipe_audio.models` | list of model names from `XxxModels.byName` | The models `dart run mediapipe_core:bundle_models` bundles into `assets/mediapipe/`, which the app declares under `flutter: assets:` |
+
+### Bundling models
+
+List the models each family uses, declare the folder, and run the command
+from the app's root whenever the lists change:
+
+```yaml
+flutter:
+  assets:
+    - assets/mediapipe/
+
+hooks:
+  user_defines:
+    mediapipe_vision:
+      models: [face_landmarker, hand_landmarker]
+    mediapipe_audio:
+      models: [yamnet]
+```
+
+```sh
+dart run mediapipe_core:bundle_models          # download, verify, prune
+dart run mediapipe_core:bundle_models --check  # verify only, for CI
+```
+
+Each model is downloaded once (from `asset_source` when it is set), checked
+against its pinned SHA-256 and written into `assets/mediapipe/`, named by
+that SHA-256, with a readable `manifest.json` beside it. Whether to commit
+the folder or run the command in CI before `flutter build` is your choice.
+A task created with `model:` uses the bundled copy; a model that is not
+bundled makes `create` throw a `RuntimeUnavailableException` whose `fix`
+names the entry to add, unless the app set `ModelStore.allowDownloads = true`.
 
 ### Offline and mirrored builds
 

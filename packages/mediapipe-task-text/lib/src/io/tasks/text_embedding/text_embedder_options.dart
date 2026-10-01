@@ -23,7 +23,8 @@ class TextEmbedderOptions extends BaseTextEmbedderOptions {
     }
   }
 
-  /// Pinned official model, downloaded on task creation.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   final DownloadAsset? model;
   BaseOptions? _baseOptions;
 

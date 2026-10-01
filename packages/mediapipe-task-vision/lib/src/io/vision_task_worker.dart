@@ -115,6 +115,8 @@ final class VisionTaskWorker<R> {
     return (await _request((image, rotation, timestamp, region, null)))!;
   }
 
+  // TODO: Share these checks with SdkVisionTask's, so every platform fails the
+  // same way. See tool/SHARED_CODE.md at the repository root.
   void _check(RunningMode expected, int rotation) {
     if (_disposing) throw StateError('Vision task has been disposed.');
     if (_failure case final error?) throw error;

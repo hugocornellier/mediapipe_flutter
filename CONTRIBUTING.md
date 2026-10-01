@@ -29,10 +29,13 @@ make test                      # analysis and every package's unit tests
 python3 -B tool/check_docs.py  # README samples compile, links resolve
 python3 -B packages/mediapipe-core/tool/publish_check.py   # pub dry run
 python3 -B packages/mediapipe-core/tool/test_family_consumers.py --platform macos
+python3 -B packages/mediapipe-core/tool/test_bundled_models.py
 ```
 
-The last one builds fresh apps from the packages as pub.dev would ship them;
-it has an `--platform ios-simulator --device <uuid>` form too. CI runs the
+The last two build fresh apps from the packages as pub.dev would ship them.
+`test_family_consumers.py` has an `--platform ios-simulator --device <uuid>`
+form too, and `test_bundled_models.py` bundles one model per family with
+`dart run mediapipe_core:bundle_models` and runs them offline. CI runs the
 rest (Android emulator, Linux, Windows and three browsers).
 
 ## How to add a task
@@ -41,8 +44,9 @@ A task is only complete when it runs Google's official pipeline on every
 platform it claims, and a test proves the output matches Google's.
 
 1. **Pin the model.** Add Google's model URL and SHA-256 to the family's
-   `lib/models.dart` (`XxxModels.name`). `mirror_runtime_assets.py` picks it
-   up; give it a license there if it is not Apache-2.0.
+   `lib/models.dart` (`XxxModels.name`), and its snake_case name to
+   `XxxModels.byName` so apps can bundle it. `mirror_runtime_assets.py` picks
+   it up; give it a license there if it is not Apache-2.0.
 2. **Native platforms.** Bind Google's C API with the family's `ffigen` config
    and wrap it in `lib/src/io/`: create, run and close on a worker isolate,
    copying results into owned Dart types. On iOS, where Google ships only an

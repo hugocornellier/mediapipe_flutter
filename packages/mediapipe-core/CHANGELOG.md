@@ -1,3 +1,18 @@
+## Unreleased
+
+- Models are bundled with the app at build time.
+  `dart run mediapipe_core:bundle_models` downloads the models an app lists
+  under `hooks.user_defines.<family>.models`, verifies each against its pin,
+  writes them into `assets/mediapipe/` and removes unlisted ones; `--check`
+  verifies that folder in CI.
+- Breaking: `model:` no longer downloads at run time by default. It uses the
+  store's cache, then the app's bundled copy, and downloads only when
+  `ModelStore.allowDownloads` is true. Otherwise task creation throws a
+  `RuntimeUnavailableException` whose `fix` names the pubspec entry to add.
+- `ModelStore.find` returns a cached or bundled model without using the
+  network, and `resolvePinnedModel` takes the model's family and registry so
+  that error can name the entry.
+
 ## 0.1.0
 
 First release of this rewrite; Google's `mediapipe_core` 0.0.1 held only the

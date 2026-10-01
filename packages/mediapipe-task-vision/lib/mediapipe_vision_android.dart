@@ -199,6 +199,9 @@ abstract final class MediaPipeVisionAndroid {
     }
   }
 
+  // TODO: Decode these results with lib/web_src/result.dart through one wire
+  // format, as text and audio already share one decoder. See
+  // tool/SHARED_CODE.md at the repository root.
   static SegmentationResult _segmentation(
     Map<String, dynamic> r,
     int? timestamp,

@@ -4,6 +4,7 @@ import 'package:mediapipe_core/model_store.dart';
 import 'package:mediapipe_core/mediapipe_exception.dart';
 import 'package:mediapipe_core/platform_interface.dart';
 
+import '../../models.dart' show VisionModels;
 import 'vision_types.dart';
 export 'vision_types.dart';
 
@@ -44,7 +45,8 @@ abstract base class VisionModelOptions {
     }
   }
 
-  /// Pinned official model, downloaded and verified on first task creation.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   final DownloadAsset? model;
 
   final String? _modelPath;
@@ -55,13 +57,19 @@ abstract base class VisionModelOptions {
   Future<void> prepareModel() => _resolveModel();
 
   Future<void> _resolveModel() async {
+    // TODO: Remove this rejection when LIVE_STREAM is split from VIDEO. See
+    // RunningMode.liveStream.
     if (runningMode == RunningMode.liveStream) {
       throw UnsupportedError(
         'Live stream mode is not implemented by this runtime.',
       );
     }
     if (model case final selected?) {
-      _resolvedModel = await resolvePinnedModel(selected);
+      _resolvedModel = await resolvePinnedModel(
+        selected,
+        family: 'mediapipe_vision',
+        registry: VisionModels.byName,
+      );
     }
   }
 

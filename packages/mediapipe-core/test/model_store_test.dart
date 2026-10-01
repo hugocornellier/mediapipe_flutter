@@ -115,7 +115,10 @@ void main() {
       final pin = asset('good');
       final files = await Future.wait(List.generate(4, (_) => store.get(pin)));
       expect(files.map((f) => f.path).toSet().length, 1);
-      expect(files.first.path, endsWith('/${digest.substring(0, 16)}/good'));
+      expect(
+        files.first.uri.path,
+        endsWith('/${digest.substring(0, 16)}/good'),
+      );
       expect(requests, 1);
       await server.close(force: true);
       expect(await (await store.get(pin)).readAsBytes(), good);

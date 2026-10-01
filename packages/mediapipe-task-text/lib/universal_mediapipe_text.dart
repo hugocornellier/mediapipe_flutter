@@ -45,7 +45,8 @@ class TextClassifierOptions extends BaseTextClassifierOptions {
     ClassifierOptions classifierOptions = const ClassifierOptions(),
   });
 
-  /// Pinned official model, downloaded on task creation.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   DownloadAsset? get model => throw UnimplementedError();
 
   /// {@template TextClassifierOptions.fromAssetPath}
@@ -131,7 +132,8 @@ class TextEmbedderOptions extends BaseTextEmbedderOptions {
     EmbedderOptions embedderOptions = const EmbedderOptions(),
   });
 
-  /// Pinned official model, downloaded on task creation.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   DownloadAsset? get model => throw UnimplementedError();
 
   /// {@template TextEmbedderOptions.fromAssetPath}
@@ -212,7 +214,8 @@ class LanguageDetectorOptions extends BaseLanguageDetectorOptions {
     ClassifierOptions classifierOptions = const ClassifierOptions(),
   });
 
-  /// Pinned official model, downloaded on task creation.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   DownloadAsset? get model => throw UnimplementedError();
 
   /// {@template LanguageDetectorOptions.fromAssetPath}

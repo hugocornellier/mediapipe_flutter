@@ -13,6 +13,7 @@ import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart';
 import 'package:mediapipe_text/interface.dart';
 
+import '../../models.dart' show TextModels;
 import '../backend_text_task.dart';
 import '../interface/embedding_gemma_types.dart' show TextEmbedding;
 
@@ -72,7 +73,8 @@ class TextClassifierOptions extends BaseTextClassifierOptions {
     }
   }
 
-  /// Pinned official model, downloaded on task creation.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   final DownloadAsset? model;
   BaseOptions? _baseOptions;
 
@@ -81,7 +83,11 @@ class TextClassifierOptions extends BaseTextClassifierOptions {
 
   Future<void> _resolveModel() async {
     if (model case final selected?) {
-      final source = await resolvePinnedModel(selected);
+      final source = await resolvePinnedModel(
+        selected,
+        family: 'mediapipe_text',
+        registry: TextModels.byName,
+      );
       _baseOptions = source.path != null
           ? BaseOptions.path(source.path!)
           : BaseOptions.memory(source.bytes!);
@@ -206,7 +212,8 @@ class TextEmbedderOptions extends BaseTextEmbedderOptions {
     }
   }
 
-  /// Pinned official model, downloaded on task creation.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   final DownloadAsset? model;
   BaseOptions? _baseOptions;
 
@@ -215,7 +222,11 @@ class TextEmbedderOptions extends BaseTextEmbedderOptions {
 
   Future<void> _resolveModel() async {
     if (model case final selected?) {
-      final source = await resolvePinnedModel(selected);
+      final source = await resolvePinnedModel(
+        selected,
+        family: 'mediapipe_text',
+        registry: TextModels.byName,
+      );
       _baseOptions = source.path != null
           ? BaseOptions.path(source.path!)
           : BaseOptions.memory(source.bytes!);
@@ -330,7 +341,8 @@ class LanguageDetectorOptions extends BaseLanguageDetectorOptions {
     }
   }
 
-  /// Pinned official model, downloaded on task creation.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   final DownloadAsset? model;
   BaseOptions? _baseOptions;
 
@@ -339,7 +351,11 @@ class LanguageDetectorOptions extends BaseLanguageDetectorOptions {
 
   Future<void> _resolveModel() async {
     if (model case final selected?) {
-      final source = await resolvePinnedModel(selected);
+      final source = await resolvePinnedModel(
+        selected,
+        family: 'mediapipe_text',
+        registry: TextModels.byName,
+      );
       _baseOptions = source.path != null
           ? BaseOptions.path(source.path!)
           : BaseOptions.memory(source.bytes!);

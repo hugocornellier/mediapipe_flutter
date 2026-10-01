@@ -1,3 +1,11 @@
+## Unreleased
+
+- `TextModels.byName` names every pinned model for
+  `hooks.user_defines.mediapipe_text.models`, which
+  `dart run mediapipe_core:bundle_models` bundles into the app.
+- Breaking: `model:` uses the app's bundled copy and no longer downloads at
+  run time unless `ModelStore.allowDownloads` is true.
+
 ## 0.1.0
 
 First release under Google's name since `mediapipe_text` 0.0.1; see

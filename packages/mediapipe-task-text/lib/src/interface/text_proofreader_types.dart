@@ -2,6 +2,8 @@ import 'embedding_gemma_types.dart' show TextDelegate;
 export 'embedding_gemma_types.dart' show TextDelegate;
 import 'package:mediapipe_core/model_store.dart';
 import 'package:mediapipe_core/platform_interface.dart';
+
+import '../../models.dart' show TextModels;
 export 'text_task_exception.dart' show TextTaskException;
 
 /// Options passed to Google's official Proofreader pipeline.
@@ -43,7 +45,8 @@ final class TextProofreaderOptions {
     }
   }
 
-  /// Pinned official model, downloaded and verified when creating the task.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   final DownloadAsset? model;
 
   final String? _modelPath;
@@ -54,7 +57,11 @@ final class TextProofreaderOptions {
 
   Future<void> _resolveModel() async {
     if (model case final selected?) {
-      _resolvedPath = (await resolvePinnedModel(selected)).path;
+      _resolvedPath = (await resolvePinnedModel(
+        selected,
+        family: 'mediapipe_text',
+        registry: TextModels.byName,
+      )).path;
     }
   }
 

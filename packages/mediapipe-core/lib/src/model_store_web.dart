@@ -2,10 +2,15 @@ import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:meta/meta.dart';
 import 'package:web/web.dart' as web;
 
 import 'download_asset.dart';
+import 'model_bundle.dart';
 import 'model_download_exception.dart';
+import 'bundled_model_stub.dart'
+    if (dart.library.ui) 'bundled_model_flutter.dart'
+    as bundle;
 
 /// Verified model bytes in the browser's persistent Cache Storage.
 final class ModelStore {
@@ -14,24 +19,47 @@ final class ModelStore {
 
   static const _cacheName = 'mediapipe-models-v1';
 
+  /// Whether tasks created with `model:` may download a model the app does
+  /// not bundle. Off by default: `dart run mediapipe_core:bundle_models`
+  /// bundles models at build time instead. Set it before creating tasks.
+  ///
+  /// Calling [get] or [prefetch] may download regardless of this setting.
+  static bool allowDownloads = false;
+
+  /// Stands in for the app's bundled models in tests.
+  @visibleForTesting
+  static Future<Uint8List?> Function(String sha256)? debugBundledModels;
+
   /// Internal URL root whose files are named by SHA-256.
   final String? source;
+  final Map<String, Future<Uint8List?>> _finding = {};
   final Map<String, Future<Uint8List>> _inflight = {};
 
   String _key(String sha) =>
       Uri.base.resolve('/__mediapipe_models__/$sha').toString();
 
-  /// Returns verified bytes, fetching only when Cache Storage has no valid copy.
+  /// The verified bytes of [model] without downloading: a copy in Cache
+  /// Storage, else the app's bundled copy. Returns null when there is neither.
+  Future<Uint8List?> find(DownloadAsset model) =>
+      _finding.putIfAbsent(model.sha256, () async {
+        try {
+          return await _find(model);
+        } finally {
+          _finding.remove(model.sha256);
+        }
+      });
+
+  /// Returns verified bytes: cached, bundled or downloaded.
   Future<Uint8List> get(DownloadAsset model) =>
       _inflight.putIfAbsent(model.sha256, () async {
         try {
-          return await _get(model);
+          return await find(model) ?? await _download(model);
         } finally {
           _inflight.remove(model.sha256);
         }
       });
 
-  Future<Uint8List> _get(DownloadAsset model) async {
+  Future<Uint8List?> _find(DownloadAsset model) async {
     final cache = await web.window.caches.open(_cacheName).toDart;
     final key = _key(model.sha256);
     final cached = await cache.match(key.toJS).toDart;
@@ -40,6 +68,19 @@ final class ModelStore {
       if (sha256.convert(bytes).toString() == model.sha256) return bytes;
       await cache.delete(key.toJS).toDart;
     }
+    final bundled = await (debugBundledModels ?? bundle.readBundledModel)(
+      model.sha256,
+    );
+    if (bundled == null) return null;
+    if (sha256.convert(bundled).toString() != model.sha256) {
+      throw bundledModelCorrupt(model);
+    }
+    return bundled;
+  }
+
+  Future<Uint8List> _download(DownloadAsset model) async {
+    final cache = await web.window.caches.open(_cacheName).toDart;
+    final key = _key(model.sha256);
     final locations = source == null
         ? model.urls
         : [

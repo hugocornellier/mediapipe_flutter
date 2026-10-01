@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:mediapipe_core/model_store.dart';
 import 'package:mediapipe_core/platform_interface.dart';
+
+import '../../models.dart' show TextModels;
 export 'text_task_exception.dart' show TextTaskException;
 
 /// Official task formatting modes. Formatting is performed inside MediaPipe.
@@ -121,7 +123,8 @@ final class EmbeddingGemmaOptions {
     }
   }
 
-  /// Pinned official model, downloaded and verified when creating the task.
+  /// Pinned official model: the app's bundled copy, or a download when
+  /// `ModelStore.allowDownloads` is true. Verified against its SHA-256.
   final DownloadAsset? model;
 
   final String? _modelPath;
@@ -133,7 +136,11 @@ final class EmbeddingGemmaOptions {
 
   Future<void> _resolveModel() async {
     if (model case final selected?) {
-      _resolvedModel = await resolvePinnedModel(selected);
+      _resolvedModel = await resolvePinnedModel(
+        selected,
+        family: 'mediapipe_text',
+        registry: TextModels.byName,
+      );
     }
   }
 

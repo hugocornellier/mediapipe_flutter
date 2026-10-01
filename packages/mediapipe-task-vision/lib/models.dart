@@ -75,6 +75,23 @@ abstract final class VisionModels {
     url: holisticLandmarkerUrl,
     sha256: holisticLandmarkerSha256,
   );
+
+  /// Every model above by the name an app lists to bundle it, under
+  /// `hooks.user_defines.mediapipe_vision.models` in pubspec.yaml.
+  static const byName = <String, DownloadAsset>{
+    'face_detector': faceDetector,
+    'face_landmarker': faceLandmarker,
+    'object_detector': objectDetector,
+    'image_classifier': imageClassifier,
+    'image_embedder': imageEmbedder,
+    'image_segmenter': imageSegmenter,
+    'interactive_segmenter': interactiveSegmenter,
+    'interactive_segmenter_legacy': interactiveSegmenterLegacy,
+    'hand_landmarker': handLandmarker,
+    'gesture_recognizer': gestureRecognizer,
+    'pose_landmarker': poseLandmarker,
+    'holistic_landmarker': holisticLandmarker,
+  };
 }
 
 /// Versioned official DeepLab-v3 float32 image segmentation model.
@@ -189,7 +206,7 @@ const interactiveSegmenterModelUrl =
 const interactiveSegmenterModelSha256 =
     '38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03';
 
-/// Pinned model records for the shared on-demand store.
+/// Pinned model records for the shared model store.
 const visionModels = <String, DownloadAsset>{
   'deep_lab_v3': DownloadAsset(url: deepLabV3Url, sha256: deepLabV3Sha256),
   'magic_touch': DownloadAsset(url: magicTouchUrl, sha256: magicTouchSha256),

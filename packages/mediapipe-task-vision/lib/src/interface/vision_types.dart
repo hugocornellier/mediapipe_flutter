@@ -8,6 +8,13 @@ enum RunningMode {
   /// Frames with monotonically increasing timestamps.
   video,
 
+  // TODO: Split LIVE_STREAM from VIDEO. Google's LIVE_STREAM returns at once,
+  // sends results to a listener and drops frames while busy (one in flight,
+  // the newest one queued), while VIDEO processes every frame. Cameras use
+  // VIDEO here, and the gallery and the vision example drop frames by hand.
+  // The plan, Google's behavior and the emulate-or-native decision are in
+  // packages/mediapipe-task-vision/tool/LIVE_STREAM.md, and
+  // `git grep -n "TODO.*LIVE_STREAM"` lists every site to revisit.
   /// Reserved for asynchronous frames and callbacks.
   ///
   /// Task creation throws [UnsupportedError] until the selected runtime

@@ -1,9 +1,11 @@
 import 'package:mediapipe_core/mediapipe_core.dart';
 
-/// Downloads a pinned model once, verifies its SHA-256 and reuses the cached
-/// copy afterwards, including offline. Task options accept these pins directly
-/// (`model: VisionModels.faceDetector`); the store is for prefetching, for
-/// example during onboarding, and for clearing the cache.
+/// Downloads a pinned model at run time, verifies its SHA-256 and reuses the
+/// cached copy afterwards, including offline. Task options accept these pins
+/// directly (`model: VisionModels.faceDetector`) and use the copy the app
+/// bundles with `dart run mediapipe_core:bundle_models`; the store is for apps
+/// that download instead, for example during onboarding, and for clearing the
+/// cache.
 Future<void> main() async {
   const model = DownloadAsset(
     url:
