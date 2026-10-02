@@ -105,12 +105,17 @@ def main():
                     stream_ms = (time.perf_counter() - start) * 1000
                     assert not any('error' in event for event in events), events
                     assert sum(e['done'] for e in events) == 1 and events[-1]['done']
-                    assert ''.join(e['chunk'] or '' for e in events) == (result.summary or '')
+                    # Google's streamed text can differ from its completed text
+                    # for the same input: on its x86_64 1.0.0 wheels it does
+                    # (upstream-issues.md UP-036). Both are recorded, and each
+                    # path of the package is compared with its own.
+                    streamed = ''.join(e['chunk'] or '' for e in events)
                     report['cases'].append({
                         'name': f'{mode.name.lower()}-{name}' + (f'-limit-{limit}' if limit else ''),
                         'input': text, 'mode': mode.name, 'max_num_tokens': limit,
                         'result': {'summary': result.summary, 'done': result.done},
-                        'stream': events, 'sync_ms': sync_ms, 'stream_ms': stream_ms})
+                        'stream': events, 'stream_matches_result': streamed == (result.summary or ''),
+                        'sync_ms': sync_ms, 'stream_ms': stream_ms})
                     print(mode.name, name, limit, round(sync_ms, 2), repr(result.summary), flush=True)
     report['abi'] = {cls.__name__: {
         'size': ctypes.sizeof(cls), 'alignment': ctypes.alignment(cls),

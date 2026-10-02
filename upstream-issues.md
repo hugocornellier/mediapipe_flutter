@@ -811,6 +811,14 @@ completed text, after 94 characters. Greedy decoding picks a different word
 once floating-point noise between the two builds flips a near-tie, which
 longer generations give more chances to.
 
+Google's own Python API shows the same on its x86_64 1.0.0 wheels: on the
+Linux and Windows CI runners, `TextSummarizer.summarize_async` streamed a
+different text than `summarize` returned for the same input and task (the
+macOS arm64 wheels agree on every case). The reference generators therefore
+record both paths and note whether they agreed (`stream_matches_result`),
+and the desktop tests compare the package's completed and streamed results
+each with Google's own for that path.
+
 `gallery/integration_test/sdk_modern_text_test.dart` therefore requires
 every generated text to follow Google's for at least 80 characters, or in
 full when Google's is shorter, which identical prompts, tokenization, mode

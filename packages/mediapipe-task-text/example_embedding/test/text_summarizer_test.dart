@@ -28,6 +28,9 @@ TextSummarizerMode modeFor(Map<String, dynamic> entry) =>
 void compare(TextSummarizerResult result, Map<String, dynamic> entry) =>
     expect(result.summary, entry['result']['summary'], reason: entry['name']);
 
+/// Google's streamed text can differ from its completed text for the same
+/// input (upstream-issues.md UP-036), so the stream is compared with the
+/// reference's own streamed chunks, joined.
 void compareStream(
   List<TextSummarizerUpdate> updates,
   Map<String, dynamic> entry,
@@ -35,7 +38,10 @@ void compareStream(
   expect(updates, isNotEmpty);
   expect(updates.where((e) => e.done), hasLength(1));
   expect(updates.last.done, isTrue);
-  expect(updates.map((e) => e.chunk ?? '').join(), entry['result']['summary']);
+  final expected = (entry['stream'] as List)
+      .map((e) => (e as Map)['chunk'] as String? ?? '')
+      .join();
+  expect(updates.map((e) => e.chunk ?? '').join(), expected);
 }
 
 Future<TextSummarizer> create([

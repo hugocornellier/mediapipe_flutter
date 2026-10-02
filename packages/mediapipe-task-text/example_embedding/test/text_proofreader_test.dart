@@ -27,6 +27,10 @@ void compare(TextProofreaderResult result, Map<String, dynamic> entry) {
   expect(edits(result.corrections), entry['result']['corrections']);
 }
 
+/// Google's streamed text can differ from its completed text for the same
+/// input (upstream-issues.md UP-036), so the stream is compared with the
+/// reference's own streamed events: the chunks joined, and the corrections
+/// of the final one.
 void compareStream(
   List<TextProofreaderUpdate> updates,
   Map<String, dynamic> entry,
@@ -34,8 +38,12 @@ void compareStream(
   expect(updates, isNotEmpty);
   expect(updates.where((e) => e.done), hasLength(1));
   expect(updates.last.done, isTrue);
-  expect(updates.map((e) => e.chunk ?? '').join(), entry['result']['text']);
-  expect(edits(updates.last.corrections), entry['result']['corrections']);
+  final events = (entry['stream'] as List).cast<Map<String, dynamic>>();
+  expect(
+    updates.map((e) => e.chunk ?? '').join(),
+    events.map((e) => e['text'] as String? ?? '').join(),
+  );
+  expect(edits(updates.last.corrections), events.last['corrections']);
 }
 
 Future<TextProofreader> create([int? maxNumTokens]) => TextProofreader.create(
