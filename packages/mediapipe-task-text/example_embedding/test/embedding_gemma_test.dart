@@ -1,7 +1,6 @@
-@TestOn('mac-os')
+@TestOn('mac-os || linux || windows')
 library;
 
-import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
@@ -12,14 +11,10 @@ import 'package:mediapipe_text/src/io/third_party/mediapipe/embedding_gemma_bind
     as mp;
 import 'package:test/test.dart';
 
+import 'support/reference.dart';
+
 final model = File('../models/embedding_gemma.task').absolute.path;
-final reference =
-    jsonDecode(
-          File(
-            '../test/fixtures/embedding_gemma/official_reference.json',
-          ).readAsStringSync(),
-        )
-        as Map<String, dynamic>;
+final reference = loadReference('embedding_gemma');
 final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
 
 TextFormatContext? contextFor(Map<String, dynamic> entry) {
@@ -71,7 +66,14 @@ void compare(TextEmbedderResult result, Map<String, dynamic> entry) {
 }
 
 void main() {
-  test('FFI layout matches the official Python 1.0.1 ABI', () {
+  test("the reference comes from this host's pinned runtime", () async {
+    await expectReferenceRuntime(
+      reference,
+      () => queryTextEmbedderCapabilities(TextModels.embeddingGemma),
+    );
+  });
+
+  test("FFI layout matches the official Python ABI of this host's wheel", () {
     final abi = reference['abi'] as Map<String, dynamic>;
     expect(sizeOf<mp.MpBaseOptions>(), abi['MpBaseOptionsC']['size']);
     expect(sizeOf<mp.MpEmbedderOptions>(), abi['_MpEmbedderOptionsC']['size']);

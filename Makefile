@@ -188,6 +188,12 @@ example_embedding: models_embedding models_proofreader models_summarizer
 test_embedding_macos:
 	cd packages/mediapipe-task-text && python3 -B tool/test_embedding_macos.py
 
+# EmbeddingGemma, Proofreader and Summarizer against Google's wheel for this
+# host, as the Linux and Windows CI runners test them.
+.PHONY: test_modern_text
+test_modern_text:
+	python3 -B tool/test_modern_text.py
+
 .PHONY: test_modern_task_matrix
 test_modern_task_matrix:
 	cd tool/task_benchmarks && dart pub get

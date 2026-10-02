@@ -1,8 +1,7 @@
-@TestOn('mac-os')
+@TestOn('mac-os || linux || windows')
 library;
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
@@ -13,14 +12,10 @@ import 'package:mediapipe_text/src/io/third_party/mediapipe/proofreader_bindings
     as mp;
 import 'package:test/test.dart';
 
+import 'support/reference.dart';
+
 final model = File('../models/proofread_quant_200m.litertlm').absolute.path;
-final reference =
-    jsonDecode(
-          File(
-            '../test/fixtures/proofreader/official_reference.json',
-          ).readAsStringSync(),
-        )
-        as Map<String, dynamic>;
+final reference = loadReference('proofreader');
 final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
 
 List<Map<String, String>> edits(List<ProofreadingCorrection> values) => [
@@ -48,6 +43,13 @@ Future<TextProofreader> create([int? maxNumTokens]) => TextProofreader.create(
 );
 
 void main() {
+  test("the reference comes from this host's pinned runtime", () async {
+    await expectReferenceRuntime(
+      reference,
+      () => queryTextProofreaderCapabilities(),
+    );
+  });
+
   test(
     'zero token budget and an explicit native cache preserve output',
     () async {

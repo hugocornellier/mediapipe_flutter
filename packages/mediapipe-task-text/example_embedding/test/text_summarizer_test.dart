@@ -1,8 +1,7 @@
-@TestOn('mac-os')
+@TestOn('mac-os || linux || windows')
 library;
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
@@ -13,16 +12,12 @@ import 'package:mediapipe_text/src/io/third_party/mediapipe/summarizer_bindings.
     as mp;
 import 'package:test/test.dart';
 
+import 'support/reference.dart';
+
 final model = File(
   '../models/summarization_quant_200m_2modes.litertlm',
 ).absolute.path;
-final reference =
-    jsonDecode(
-          File(
-            '../test/fixtures/summarizer/official_reference.json',
-          ).readAsStringSync(),
-        )
-        as Map<String, dynamic>;
+final reference = loadReference('summarizer');
 final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
 
 TextSummarizerMode modeFor(Map<String, dynamic> entry) =>
@@ -51,6 +46,13 @@ Future<TextSummarizer> create([
 );
 
 void main() {
+  test("the reference comes from this host's pinned runtime", () async {
+    await expectReferenceRuntime(
+      reference,
+      () => queryTextSummarizerCapabilities(),
+    );
+  });
+
   test('FFI sizes and field offsets match the official Python ABI', () {
     final abi = reference['abi'];
     expect(

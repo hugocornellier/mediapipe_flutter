@@ -22,7 +22,7 @@ runtime for its platform, with Google's pinned models bundled at build time.
 | Package | Use it for | Guide |
 | --- | --- | --- |
 | `mediapipe_vision` | Face and object detection; face, hand, pose and holistic landmarks; gestures; image classification, embeddings and segmentation | [Vision](packages/mediapipe-task-vision/README.md) |
-| `mediapipe_text` | Text classification and embeddings, language detection, and on macOS EmbeddingGemma, proofreading and summarization | [Text](packages/mediapipe-task-text/README.md) |
+| `mediapipe_text` | Text classification, embeddings (EmbeddingGemma included) and language detection; proofreading and summarization everywhere but browsers | [Text](packages/mediapipe-task-text/README.md) |
 | `mediapipe_audio` | Audio classification | [Audio](packages/mediapipe-task-audio/README.md) |
 
 Add only the families you use. Each one depends on `mediapipe_core`, which
@@ -120,7 +120,8 @@ models work too: pass `modelPath` or `modelBytes` instead of `model`.
 | --- | --- | --- | --- | --- | --- | --- |
 | Vision | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Text (classify, embed, detect language) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Text (EmbeddingGemma, proofread, summarize) | | | ✓ | | | |
+| Text (EmbeddingGemma) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Text (proofread, summarize) | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | Audio | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 CPU works everywhere a family is listed; GPU (Metal, OpenGL ES, WebGL or

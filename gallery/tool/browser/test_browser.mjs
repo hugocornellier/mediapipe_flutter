@@ -929,6 +929,33 @@ async function textAudioChecks() {
       };
       task.close();
     }
+    // EmbeddingGemma, when bundled: Google's embedder with its TextFormatOptions,
+    // the same cases as the probe's embeddingGemmaCases.
+    const manifest = await (await fetch(asset('assets/manifest.json'))).json();
+    let embeddingGemma = 'not bundled';
+    if (manifest.tasks.includes('embedding_gemma')) {
+      const cases = [
+        ['A cat is sleeping on the sofa.', undefined],
+        ['A cat is sleeping on the sofa.', {type: 'SEMANTIC_SIMILARITY', textRole: 'QUERY'}],
+        ['How do I grow tomatoes?', {type: 'RETRIEVAL_QUERY', textRole: 'QUERY'}],
+        ['Plant tomatoes in a sunny spot and water regularly.',
+          {type: 'RETRIEVAL_DOCUMENT', title: 'Growing tomatoes', textRole: 'DOCUMENT'}],
+        ['Sort a list of integers.', {type: 'CODE_RETRIEVAL', textRole: 'QUERY'}],
+      ];
+      embeddingGemma = {};
+      const gemma = await bytes('assets/models/embedding_gemma.task');
+      for (const quantize of [false, true]) {
+        const task = await text.TextEmbedder.createFromOptions(textFiles, {l2Normalize: quantize, quantize,
+          baseOptions: {modelAssetBuffer: gemma}});
+        const e = (quantize ? cases.slice(0, 2) : cases).map(([t, options]) => task.embed(t, options).embeddings[0]);
+        embeddingGemma[quantize ? 'quantized' : 'float'] = {
+          values: e.map(v => Array.from(quantize ? v.quantizedEmbedding : v.floatEmbedding)),
+          head: [e[0].headIndex, e[0].headName || null],
+          similarity: quantize ? null : [text.TextEmbedder.cosineSimilarity(e[0], e[1]), text.TextEmbedder.cosineSimilarity(e[2], e[3])],
+        };
+        task.close();
+      }
+    }
     const detector = await text.LanguageDetector.createFromOptions(textFiles,
       {maxResults: 3, scoreThreshold: 0, baseOptions: {modelAssetBuffer: await bytes('assets/models/language_detector.tflite')}});
     const language = ['Hello, world!', 'Quiero agua, por favor.', 'こんにちは、元気ですか？'].map(t =>
@@ -956,7 +983,7 @@ async function textAudioChecks() {
         chunk.classifications[0].categories.slice(0, 5).map(c => [c.index, c.score, c.categoryName || null])]);
     }
     yamnet.close();
-    return {classifier, embedder, language, audio: clips};
+    return {classifier, embedder, embedding_gemma: embeddingGemma, language, audio: clips};
   });
   fs.writeFileSync(path.join(evidence, 'text-audio-official.json'), JSON.stringify(official, null, 2));
   // Same runtime and inputs: every number must match, strings exactly.
@@ -978,6 +1005,15 @@ async function textAudioChecks() {
   for (const group of ['classifier', 'embedder', 'language', 'audio']) compare(group, api[group], official[group]);
   report.text_audio_max_error = errors;
   report.checks.push('text-audio-match-official-javascript');
+  if (official.embedding_gemma !== 'not bundled') {
+    // Google's JavaScript formats the prompts; the package must hand it the
+    // same TextFormatOptions, so every value matches on the same page.
+    assert.notEqual(api.embedding_gemma, 'not bundled', 'the probe did not run EmbeddingGemma');
+    compare('embedding_gemma', api.embedding_gemma, official.embedding_gemma);
+    assert.equal(api.embedding_gemma.float.values[0].length, 768);
+    report.embedding_gemma_max_error = errors.embedding_gemma ?? 0;
+    report.checks.push('embedding-gemma-match-official-javascript');
+  }
   if (microphone) {
     const heard = api.microphone.chunks.flatMap(([, categories]) => categories.map(c => c[2]));
     fs.writeFileSync(path.join(evidence, 'microphone.json'), JSON.stringify(api.microphone, null, 2));

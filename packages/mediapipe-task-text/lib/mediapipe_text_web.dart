@@ -1,5 +1,6 @@
 /// Flutter's registration of Google's browser runtime behind the classic
-/// text tasks. Not for applications: import `mediapipe_text.dart`.
+/// text tasks and EmbeddingGemma. Not for applications: import
+/// `mediapipe_text.dart`.
 library;
 
 import 'dart:convert';
@@ -32,9 +33,23 @@ final class _WorkerTextTask implements TextTaskBackend {
   );
 
   @override
-  Future<Map<String, dynamic>> run(String text) async =>
-      jsonDecode(await _worker.run({'text': text}.jsify()! as JSObject))
+  Future<Map<String, dynamic>> run(
+    String text, [
+    Map<String, Object?> arguments = const {},
+  ]) async =>
+      jsonDecode(
+            await _worker.run(
+              {'text': text, ...arguments}.jsify()! as JSObject,
+            ),
+          )
           as Map<String, dynamic>;
+
+  /// Google's browser runtime has no generative text task (upstream-issues.md
+  /// UP-034); their capability queries refuse browsers before a task opens.
+  @override
+  Stream<Map<String, dynamic>> stream(String text) => Stream.error(
+    UnsupportedError("Google's browser text runtime streams no task."),
+  );
 
   @override
   Future<void> dispose() => _worker.close();

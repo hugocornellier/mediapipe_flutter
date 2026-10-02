@@ -120,9 +120,7 @@ class _ProofreaderPageState extends State<ProofreaderPage> {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Proofreader 200M · Official MediaPipe pipeline · macOS CPU',
-          ),
+          const Text('Proofreader 200M · Official MediaPipe pipeline · CPU'),
           const TaskSupport(query: queryTextProofreaderCapabilities),
           const SizedBox(height: 28),
           TextField(

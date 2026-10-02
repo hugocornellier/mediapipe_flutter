@@ -1,5 +1,8 @@
 ## 0.2.0
 
+- The iOS adapter implements Google's Proofreader and Summarizer C API over
+  `MPPTextProofreader` and `MPPTextSummarizer`, so the text package's
+  generative tasks run on iOS through the same shared runtime.
 - Breaking: one API for every family on every platform; MIGRATION.md maps
   every old name. `mediapipe_core.dart` is the one library apps see, through
   each family's library, which re-exports it; `platform_interface.dart` is for

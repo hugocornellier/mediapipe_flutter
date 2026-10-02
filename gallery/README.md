@@ -72,7 +72,11 @@ Three gates, in order:
 1. **Bundled**: the preparer selects the tasks whose runtime this target can
    actually obtain. `tool/prepare.py` reads them from `sdk_downloads.dart`;
    `tool/gallery_builder` lists Android's and macOS's, and its tests check the
-   macOS list against `sdk_downloads.dart`.
+   macOS list against `sdk_downloads.dart`. EmbeddingGemma, the Proofreader
+   and the Summarizer (419 MB of models) are bundled only when `--tasks` names
+   them, as the simulator, emulator and browser test builds do, with Google's
+   references for their suite from `--modern-text-reference` or the text
+   package's checked-in fixtures.
 2. **Validated**: `lib/catalog.dart` asks the package's own capability query.
    Nothing restates support by hand, so a task validated on a new platform
    appears here with no code change.

@@ -34,6 +34,35 @@ void main() {
   });
   tearDown(() => messenger.setMockMethodCallHandler(channel, null));
 
+  test(
+    'the update handler is installed with the first task, not at registration',
+    () async {
+      // Flutter registers plugins before its binding exists, so a handler set
+      // in registerWith would have no messenger, and streams would wait
+      // forever for updates that reach nothing.
+      Future<ByteData?> deliver() async {
+        ByteData? answer;
+        await messenger.handlePlatformMessage(
+          channel.name,
+          channel.codec.encodeMethodCall(
+            const MethodCall('update', {'request': 0, 'result': {}}),
+          ),
+          (data) => answer = data,
+        );
+        return answer;
+      }
+
+      // The first test in this file: no task has been created yet.
+      MediaPipeTextAndroid.registerWith();
+      // No handler yet: the message gets no reply.
+      expect(await deliver(), isNull);
+      await TextSummarizer.create(
+        TextSummarizerOptions(modelPath: '/models/summarizer'),
+      );
+      expect(await deliver(), isNotNull);
+    },
+  );
+
   test('classifier settings travel in Google JavaScript names', () async {
     reply = (_) => {
       'timestampMs': 0,
@@ -91,17 +120,162 @@ void main() {
     final [floats, bytes] = (await task.embed('Hello')).embeddings;
     expect(floats.floatEmbedding, [0.5, -0.5]);
     expect(bytes.quantizedEmbedding, [1, 255]);
+    expect(calls.last.arguments, {'id': 3, 'text': 'Hello'});
+    // EmbeddingGemma's format context travels in Google's JavaScript names,
+    // which the plugin maps onto its Java TextFormatContext.
+    await task.embed(
+      'Hello',
+      formatContext: TextFormatContext(
+        taskType: EmbeddingType.retrievalDocument,
+        title: 'Greetings',
+        role: TextRole.document,
+      ),
+    );
+    expect(calls.last.arguments, {
+      'id': 3,
+      'text': 'Hello',
+      'formatContext': {
+        'type': 'RETRIEVAL_DOCUMENT',
+        'title': 'Greetings',
+        'textRole': 'DOCUMENT',
+      },
+    });
+    await task.embed(
+      'Hello',
+      formatContext: TextFormatContext(taskType: EmbeddingType.clustering),
+    );
+    expect((calls.last.arguments as Map)['formatContext'], {
+      'type': 'CLUSTERING',
+      'textRole': 'QUERY',
+    });
+    await task.dispose();
+  });
+
+  /// Sends one of the plugin's streamed updates to the Dart adapter.
+  Future<void> update(Map<String, Object?> event) async {
+    await messenger.handlePlatformMessage(
+      channel.name,
+      channel.codec.encodeMethodCall(MethodCall('update', event)),
+      (_) {},
+    );
+  }
+
+  test('generative options travel in Google Java names; results and '
+      'streamed updates decode', () async {
+    reply = (_) => {
+      'proofreadText': 'She goes home.',
+      'corrections': [
+        {'type': 'SAME', 'text': 'She '},
+        {'type': 'DELETION', 'text': 'go'},
+        {'type': 'INSERTION', 'text': 'goes'},
+        {'type': 'SAME', 'text': ' home.'},
+      ],
+    };
+    final task = await TextProofreader.create(
+      TextProofreaderOptions(
+        modelPath: '/models/proofreader',
+        maxNumTokens: 64,
+      ),
+    );
+    expect(calls.first.arguments, {
+      'task': 'text_proofreader',
+      'modelPath': '/models/proofreader',
+      'maxNumTokens': 64,
+    });
+    final result = await task.proofread('She go home.');
+    expect(result.proofreadText, 'She goes home.');
+    expect(result.corrections.map((c) => c.type.name), [
+      'same',
+      'deletion',
+      'insertion',
+      'same',
+    ]);
+    expect(result.corrections[1].text, 'go');
+
+    final updates = task.proofreadStream('She go home.').toList();
+    // Updates arrive once the plugin has accepted the stream request.
+    await Future<void>.delayed(Duration.zero);
+    final stream = calls.last;
+    expect(stream.method, 'stream');
+    expect((stream.arguments as Map)['text'], 'She go home.');
+    final request = (stream.arguments as Map)['request'];
+    await update({
+      'request': request,
+      'result': {'chunk': 'She ', 'corrections': [], 'done': false},
+    });
+    await update({
+      'request': 999,
+      'result': {'chunk': 'x', 'done': true},
+    });
+    await update({
+      'request': request,
+      'result': {
+        'chunk': 'goes home.',
+        'corrections': [
+          {'type': 'SAME', 'text': 'She goes home.'},
+        ],
+        'done': true,
+      },
+    });
+    final received = await updates;
+    expect(received.map((u) => u.chunk), ['She ', 'goes home.']);
+    expect(received.map((u) => u.done), [false, true]);
+    expect(received.last.corrections.single.text, 'She goes home.');
+    await task.dispose();
+    expect(calls.last.method, 'close');
+  });
+
+  test("a summarizer's mode travels as Google's Java Mode name; stream "
+      'errors are TaskException', () async {
+    final task = await TextSummarizer.create(
+      TextSummarizerOptions(
+        modelPath: '/models/summarizer',
+        mode: TextSummarizerMode.tldr,
+      ),
+    );
+    expect(calls.first.arguments, {
+      'task': 'text_summarizer',
+      'modelPath': '/models/summarizer',
+      'mode': 'TLDR',
+    });
+    final updates = task.summarizeStream('A long text.').toList();
+    await Future<void>.delayed(Duration.zero);
+    final request = (calls.last.arguments as Map)['request'];
+    await update({'request': request, 'error': 'Input too long.'});
     await expectLater(
-      task.embed(
-        'Hello',
-        formatContext: TextFormatContext(
-          taskType: EmbeddingType.semanticSimilarity,
+      updates,
+      throwsA(
+        isA<TaskException>().having(
+          (e) => e.message,
+          'message',
+          'Input too long.',
         ),
       ),
-      throwsA(isA<RuntimeUnavailableException>()),
     );
     await task.dispose();
   });
+
+  test(
+    'a cache directory is refused on Android before the plugin runs',
+    () async {
+      await expectLater(
+        TextSummarizer.create(
+          TextSummarizerOptions(
+            modelPath: '/models/summarizer',
+            cacheDirectory: '/cache',
+          ),
+        ),
+        throwsA(
+          isA<RuntimeUnavailableException>().having(
+            (e) => e.fix,
+            'fix',
+            contains('cacheDirectory'),
+          ),
+        ),
+      );
+      expect(calls, isEmpty);
+    },
+  );
 
   test(
     'plugin errors become TaskException; requests after dispose fail',

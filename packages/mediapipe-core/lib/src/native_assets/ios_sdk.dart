@@ -33,6 +33,8 @@ const officialIosSharedTasks = {
   'language_detector',
   'text_classifier',
   'text_embedder',
+  'text_proofreader',
+  'text_summarizer',
 };
 
 /// Google 1.0.1 XCFrameworks, pinned from upstream's Package.swift.

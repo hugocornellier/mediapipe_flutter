@@ -142,9 +142,7 @@ class _SummarizerPageState extends State<SummarizerPage> {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Summarizer 200M · Official MediaPipe pipeline · macOS CPU',
-          ),
+          const Text('Summarizer 200M · Official MediaPipe pipeline · CPU'),
           const TaskSupport(query: queryTextSummarizerCapabilities),
           const SizedBox(height: 24),
           SegmentedButton<TextSummarizerMode>(

@@ -3,11 +3,12 @@ import {loadVerifiedRuntime} from '../../mediapipe_core/assets/verified_runtime.
 const loadRuntime = baseUrl =>
   loadVerifiedRuntime(new URL('runtime.json', import.meta.url), baseUrl, 'Text');
 
-// Google's class and the method that runs one text, per task.
+// Google's class and the method that runs one request, per task. The
+// embedder's optional format context arrives as Google's `TextFormatOptions`.
 const taskSpecs = (TextClassifier, TextEmbedder, LanguageDetector) => ({
-  text_classifier: {type: TextClassifier, run: (task, text) => task.classify(text)},
-  text_embedder: {type: TextEmbedder, run: (task, text) => task.embed(text)},
-  language_detector: {type: LanguageDetector, run: (task, text) => task.detect(text)},
+  text_classifier: {type: TextClassifier, run: (task, input) => task.classify(input.text)},
+  text_embedder: {type: TextEmbedder, run: (task, input) => task.embed(input.text, input.formatContext)},
+  language_detector: {type: LanguageDetector, run: (task, input) => task.detect(input.text)},
 });
 
 let task;
@@ -44,7 +45,7 @@ async function run(type, input) {
   }
   if (!task) throw new Error('MediaPipe text task is closed');
   // Quantized embeddings are typed arrays, which JSON would turn into objects.
-  return JSON.stringify(spec.run(task, input.text),
+  return JSON.stringify(spec.run(task, input),
     (_, value) => value instanceof Uint8Array ? Array.from(value) : value);
 }
 

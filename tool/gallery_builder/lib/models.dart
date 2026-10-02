@@ -21,6 +21,11 @@ const models = <String, Model>{
     'https://storage.googleapis.com/mediapipe-models/audio_classifier/yamnet/float32/1/yamnet.tflite',
     '4d8b4a53282dc83ef04e3e7dbc4fbc98082e34e44ed798e16c3a0cdd4c584faf',
   ),
+  'embedding_gemma': Model(
+    'embedding_gemma.task',
+    'https://storage.googleapis.com/mediapipe-models/text_embedder/embedding_gemma/int4int8/1/embedding_gemma.task',
+    '913b7a1edc7c7c3d1da3979ec1d0648ed9e0a370f181bb59ab177ca4b97707ad',
+  ),
   'face_detector': Model(
     'blaze_face_short_range.tflite',
     'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',
@@ -91,6 +96,16 @@ const models = <String, Model>{
     'https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/1/universal_sentence_encoder.tflite',
     '89ad3c74175dd8caa398cc22b657296d94302d20c525c12b58b29420f7249749',
   ),
+  'text_proofreader': Model(
+    'proofread_quant_200m.litertlm',
+    'https://storage.googleapis.com/mediapipe-models/text_proofreader/200m/1/proofread_quant_200m.litertlm',
+    '2caa317d5a6f951af6e437edce3bb3a9fdedc85a7a8c2a8fcaec96318d7708cc',
+  ),
+  'text_summarizer': Model(
+    'summarization_quant_200m_2modes.litertlm',
+    'https://storage.googleapis.com/mediapipe-models/text_summarizer/200m/1/summarization_quant_200m_2modes.litertlm',
+    '8b2d4ef09236adb9ead3127325526ba1aa5a59feb7c5de2d3f5958f27479de59',
+  ),
 };
 
 /// The package whose `lib/models.dart` pins each task's model.
@@ -98,8 +113,29 @@ String packageOf(String task) => switch (task) {
   'audio_classifier' => 'mediapipe-task-audio',
   'language_detector' ||
   'text_classifier' ||
-  'text_embedder' => 'mediapipe-task-text',
+  'text_embedder' ||
+  'embedding_gemma' ||
+  'text_proofreader' ||
+  'text_summarizer' => 'mediapipe-task-text',
   _ => 'mediapipe-task-vision',
+};
+
+/// The text package's generative tasks and EmbeddingGemma, 419 MB of models
+/// in all, so a target bundles them only when `--tasks` asks for them: the
+/// emulator test build does, the published galleries do not. Their suite
+/// compares with Google's references, bundled from `--modern-text-reference`
+/// or the package's checked-in macOS fixtures.
+const modernTextTasks = {
+  'embedding_gemma',
+  'text_proofreader',
+  'text_summarizer',
+};
+
+/// The checked-in fixture each modern text task's reference comes from.
+const modernTextReferences = {
+  'embedding_gemma': 'embedding_gemma',
+  'text_proofreader': 'proofreader',
+  'text_summarizer': 'summarizer',
 };
 
 /// Tasks outside the vision package, which its build hook must not be asked
@@ -109,11 +145,13 @@ const nonVisionTasks = {
   'language_detector',
   'text_classifier',
   'text_embedder',
+  ...modernTextTasks,
 };
 
 /// Every task Google's Android SDKs serve.
 const androidTasks = {
   'audio_classifier',
+  'embedding_gemma',
   'face_detector',
   'face_landmarker',
   'gesture_recognizer',
@@ -128,6 +166,8 @@ const androidTasks = {
   'pose_landmarker',
   'text_classifier',
   'text_embedder',
+  'text_proofreader',
+  'text_summarizer',
 };
 
 /// Vision tasks Google's macOS engine serves, as `macosEngineTasks` in the

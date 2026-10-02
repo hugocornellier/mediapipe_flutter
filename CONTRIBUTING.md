@@ -82,6 +82,9 @@ platform it claims, and a test proves the output matches Google's.
    runtime version, check it in as a fixture, and compare every value in unit
    tests; add the task to `test_family_consumers.py`, to the browser suite's
    comparison with Google's JavaScript, and to the CI coverage rows
-   (`tool/coverage/`).
+   (`tool/coverage/`). A task whose output differs between Google's releases
+   (the generative text tasks) is compared with the wheel of each platform's
+   own version, generated on the runner
+   (`packages/mediapipe-task-text/tool/prepare_modern_text_reference.py`).
 8. **Docs.** The family README's task table, the CHANGELOG, and any platform
    limit with its upstream issue in `upstream-issues.md`.
