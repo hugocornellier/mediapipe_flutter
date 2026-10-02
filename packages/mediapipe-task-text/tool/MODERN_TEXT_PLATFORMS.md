@@ -112,7 +112,10 @@ same task.
   byte; the Summarizer on 8 of 10 cases, parting late in the two longest
   summaries (UP-036), so the mobile suite requires every generated text to
   follow Google's for 80 characters or in full when shorter, and logs the
-  exact-match count. Google's iOS SDK also hands back non-ASCII generated
+  exact-match count. The x86_64 Android build in CI matches its Linux wheel
+  the same way for the generated text, while its EmbeddingGemma values differ
+  by up to 0.004, so the suite bounds each value at 0.01 and requires a cosine
+  similarity of 0.995 with Google's vector. Google's iOS SDK also hands back non-ASCII generated
   text decoded as Mac Roman, which the adapter inverts (UP-035).
 - **Android emulator** (`android.yaml`): Google's 1.0.0 Linux x86_64 wheel on
   the same runner is the oracle for the x86_64 emulator, bundled by

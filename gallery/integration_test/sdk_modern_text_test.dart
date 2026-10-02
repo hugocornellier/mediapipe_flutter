@@ -18,10 +18,19 @@ import 'package:mediapipe_text/mediapipe_text.dart';
 /// package's macOS fixtures). Generated text must match exactly; embeddings
 /// come from another build of the same runtime on another CPU and get a bound.
 /// Runs on the Android emulator and iOS simulator in CI, and on phones.
-const _embeddingBound = 2e-3;
+///
+/// EmbeddingGemma's vectors come from another build of the same release on
+/// another CPU: the arm64 emulator and the iOS simulator reproduce Google's
+/// wheel bit for bit, while Google's x86_64 Android build on the x86_64
+/// emulator differs from its Linux x86_64 wheel by up to 0.004 per value
+/// (upstream-issues.md UP-036). So each value gets a bound, and each vector
+/// must point where Google's does.
+const _embeddingBound = 1e-2;
+const _embeddingCosine = 0.995;
 
-/// Scalar-quantized bytes may round differently by one step across builds.
-const _quantizedBound = 1;
+/// Scalar-quantized bytes may round differently by a step or two across
+/// builds.
+const _quantizedBound = 2;
 
 /// Generated text is compared with Google's wheel of the same release on the
 /// same architecture, and Google's mobile and desktop builds of the same
@@ -159,15 +168,27 @@ void main() {
                 }
               } else {
                 final floats = embedding.floatEmbedding!;
+                var delta = 0.0;
+                var dot = 0.0;
+                var ours = 0.0;
+                var theirs = 0.0;
                 for (var j = 0; j < values.length; j++) {
-                  final delta = (floats[j] - values[j]).abs();
-                  worstFloat = math.max(worstFloat, delta);
-                  expect(
-                    floats[j],
-                    closeTo(values[j], _embeddingBound),
-                    reason: '${entry['name']} value $j',
-                  );
+                  delta = math.max(delta, (floats[j] - values[j]).abs());
+                  dot += floats[j] * values[j];
+                  ours += floats[j] * floats[j];
+                  theirs += values[j] * values[j];
                 }
+                worstFloat = math.max(worstFloat, delta);
+                expect(
+                  delta,
+                  lessThanOrEqualTo(_embeddingBound),
+                  reason: '${entry['name']}: largest value difference',
+                );
+                expect(
+                  dot / math.sqrt(ours * theirs),
+                  greaterThanOrEqualTo(_embeddingCosine),
+                  reason: '${entry['name']}: cosine similarity with Google\'s',
+                );
               }
             }
           }

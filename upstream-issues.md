@@ -829,7 +829,16 @@ Google's for 80 characters or in full when shorter.
 every generated text to follow Google's for at least 80 characters, or in
 full when Google's is shorter, which identical prompts, tokenization, mode
 and decoding produce and anything else does not, and logs the exact-match
-count. The earliest parting measured is the 94 characters above. The desktop suites keep byte-for-byte comparison, since each host
+count. The earliest parting measured is the 94 characters above.
+
+EmbeddingGemma's vectors show the same build dependence: the arm64 emulator
+and the iOS simulator reproduce Google's wheel of their release bit for bit,
+while Google's x86_64 Android 1.0.0 build on the x86_64 emulator differs
+from its Linux x86_64 1.0.0 wheel by up to 0.004 per value (0.0723 against
+0.0685 for the third value of the plain "A cat is sleeping on the sofa."
+embedding). The mobile suite bounds each value at 0.01, requires a cosine
+similarity of at least 0.995 with Google's vector, and logs the largest
+difference it saw. The desktop suites keep byte-for-byte comparison, since each host
 compares with the wheel its own runtime library comes from.
 
 ## Integration pitfalls resolved in this repo
