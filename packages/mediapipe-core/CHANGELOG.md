@@ -1,5 +1,11 @@
 ## 0.2.0
 
+- An Android library, `dev.mediapipe.flutter.core`, that the family plugins
+  build on: `TaskHost` runs Google's tasks on one worker thread, keeps their
+  model buffers alive, answers the method channel and sends a streamed
+  request's updates, and `TaskJson` shapes Google's classification and
+  embedding containers as its JavaScript API does. Its plugin class
+  registers nothing; apps see no change.
 - The iOS adapter implements Google's Proofreader and Summarizer C API over
   `MPPTextProofreader` and `MPPTextSummarizer`, so the text package's
   generative tasks run on iOS through the same shared runtime.
