@@ -22,6 +22,9 @@ android {
 }
 repositories { google(); mavenCentral() }
 dependencies {
+    // Core's Android library: the worker thread, model buffers, channel
+    // dispatch and streamed updates every family plugin builds on (TaskHost).
+    implementation project(':mediapipe_core')
     // As in mediapipe_vision: Google's 1.0.0 POMs declare
     // protobuf-javalite while the vision SDK needs full protobuf-java at
     // runtime (google-ai-edge/mediapipe#6348). One app can hold all three

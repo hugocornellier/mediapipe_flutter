@@ -44,6 +44,13 @@ dev_dependencies:
   test: ^1.31.0
 
 flutter:
+  # The Android library the family plugins build on (TaskHost); the class
+  # registers nothing. The package's own platforms are the `platforms` above.
+  plugin:
+    platforms:
+      android:
+        package: dev.mediapipe.flutter.core
+        pluginClass: MediaPipeCorePlugin
   assets:
     - assets/verified_runtime.js
     - path: assets/task_bridge.js
