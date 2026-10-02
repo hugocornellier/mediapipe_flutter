@@ -376,7 +376,11 @@ void main() {
       final cancelling = subscription.cancel();
       final next = task.summarize(tldr[1]['input'] as String);
       await cancelling;
-      expect((await next).summary, tldr[1]['result']['summary']);
+      _expectFollows(
+        (await next).summary,
+        tldr[1]['result']['summary'] as String,
+        reason: 'the request after a cancel',
+      );
       expect(delivered, before);
       // Pausing buffers updates; disposal drains accepted work first.
       final updates = <TextSummarizerUpdate>[];
@@ -396,9 +400,10 @@ void main() {
       paused.resume();
       await done.future;
       await closing;
-      expect(
+      _expectFollows(
         updates.map((u) => u.chunk ?? '').join(),
-        tldr[1]['result']['summary'],
+        tldr[1]['result']['summary'] as String,
+        reason: 'the stream drained by dispose',
       );
       await expectLater(task.summarize('closed'), throwsStateError);
       await expectLater(
@@ -558,6 +563,19 @@ void _expectSummaries(List<Map<String, Object?>> agreement) {
     reason:
         "only $exact of ${agreement.length} summaries match Google's wheel of "
         'this runtime version exactly',
+  );
+}
+
+/// Google's generation is not reproducible across devices (UP-036: the
+/// Galaxy A12 wrote a different, correct TL;DR for the lifecycle case), so a
+/// lifecycle check asks of one summary what the suite asks of every case:
+/// that it follows Google's for [_minSharedPrefix] characters.
+void _expectFollows(String? actual, String expected, {required String reason}) {
+  expect(actual, isNotNull, reason: reason);
+  expect(
+    _sharedPrefix(actual!, expected),
+    greaterThanOrEqualTo(math.min(_minSharedPrefix, expected.length)),
+    reason: '$reason: "$actual" against "$expected"',
   );
 }
 
