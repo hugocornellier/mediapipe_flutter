@@ -1,8 +1,8 @@
 # Shared implementation plan
 
-**Status:** items 1 and 2 shipped with the API unification (0.2.0), and
-item 3 shipped for the browser; sharing the Java plugins is deferred, for
-the reason under item 3. "Where the code stands" records the starting point.
+**Status:** all three items shipped: 1 and 2 with the API unification
+(0.2.0), item 3 for the browser with it and for Android after it. "Where
+the code stands" records the starting point.
 
 - **Item 1:** `VisionTaskChecks` runs the same mode, rotation, timestamp and
   disposal checks for every vision task on every platform, with the browser
@@ -24,12 +24,14 @@ the reason under item 3. "Where the code stands" records the starting point.
   both web plugins use with their own `worker.js`. The workers stay per
   family: they share only a 15-line message loop, and the rest is each
   family's tasks. Vision keeps its own bridge for frames, masks and
-  overlays. The Java plugins still duplicate their worker thread, model
-  buffers and channel handling (about 100 lines), but sharing Java between
-  Flutter plugins needs an Android library in core, with its own Gradle
-  module, publication and versioning for every family; that costs more than
-  the duplication, so the TODOs in both plugins stay until a third Java
-  family appears.
+  overlays. On Android, core is now a library the three Java plugins build
+  on: `TaskHost` owns the worker thread, the task and model-buffer maps,
+  the channel's dispatch and replies, and the `update` events of a streamed
+  request, and `TaskJson` shapes Google's shared classification and
+  embedding containers as its JavaScript API does. Each family keeps only
+  what Google's SDK needs from it: how each task is created, run and
+  closed, and vision's GPU probe and masks channel. The wire formats did
+  not change, so the Dart adapters and their tests are as they were.
 
 ## Where the code stands
 

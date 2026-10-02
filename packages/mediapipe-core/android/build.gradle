@@ -1,4 +1,4 @@
-group = 'dev.mediapipe.flutter.text'
+group = 'dev.mediapipe.flutter.core'
 version = '1.0'
 
 buildscript {
@@ -8,7 +8,7 @@ buildscript {
 apply plugin: 'com.android.library'
 
 android {
-    namespace = 'dev.mediapipe.flutter.text'
+    namespace = 'dev.mediapipe.flutter.core'
     compileSdk = 36
     defaultConfig {
         minSdk = 24
@@ -22,14 +22,11 @@ android {
 }
 repositories { google(); mavenCentral() }
 dependencies {
-    // Core's Android library: the worker thread, model buffers, channel
-    // dispatch and streamed updates every family plugin builds on (TaskHost).
-    implementation project(':mediapipe_core')
-    // As in mediapipe_vision: Google's 1.0.0 POMs declare
-    // protobuf-javalite while the vision SDK needs full protobuf-java at
-    // runtime (google-ai-edge/mediapipe#6348). One app can hold all three
-    // plugins only if they agree, so this one uses the full runtime too.
-    implementation('com.google.mediapipe:tasks-text:1.0.0') {
+    // The result containers every family's SDK shares; the families' AARs
+    // bring the same release. Google's 1.0.0 POMs declare protobuf-javalite
+    // while the vision SDK needs full protobuf-java at runtime
+    // (google-ai-edge/mediapipe#6348), so every module agrees on the full one.
+    implementation('com.google.mediapipe:tasks-core:1.0.0') {
         exclude group: 'com.google.protobuf', module: 'protobuf-javalite'
     }
     implementation 'com.google.protobuf:protobuf-java:4.26.1'

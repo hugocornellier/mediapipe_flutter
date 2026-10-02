@@ -22,6 +22,9 @@ android {
 }
 repositories { google(); mavenCentral() }
 dependencies {
+    // Core's Android library: the worker thread, model buffers, channel
+    // dispatch and streamed updates every family plugin builds on (TaskHost).
+    implementation project(':mediapipe_core')
     // Google's 1.0.0 POMs declare protobuf-javalite, but Holistic Landmarker's
     // options were compiled against full protobuf-java and fail at runtime
     // with NoSuchMethodError on Any$Builder.build(). Same version, full runtime:
