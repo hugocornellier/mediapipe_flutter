@@ -109,13 +109,15 @@ void main() {
         of: sidebar,
         matching: find.text(task.title),
       );
-      await tester.scrollUntilVisible(
-        tile,
-        250,
-        scrollable: find
-            .descendant(of: sidebar, matching: find.byType(Scrollable))
-            .first,
-      );
+      final list = find
+          .descendant(of: sidebar, matching: find.byType(Scrollable))
+          .first;
+      // scrollUntilVisible only scrolls toward the end, and leaves the tile
+      // it found at the top of the list, so once the list outgrows the
+      // window the next tile can sit above the viewport: start from the top.
+      tester.state<ScrollableState>(list).position.jumpTo(0);
+      await tester.pump();
+      await tester.scrollUntilVisible(tile, 250, scrollable: list);
       // scrollUntilVisible ends by jumping the list without a frame, so the
       // tile's position is stale until the list is laid out again.
       await _settle(tester);
@@ -282,17 +284,25 @@ void main() {
           break;
         case GalleryDemo.text:
           checks.add('${task.id}:cpu:run');
-          final run = find.text(
-            task.runtimeId == 'text_embedder' ? 'Compare' : 'Run',
-          );
+          final compare = _comparingTasks.contains(task.runtimeId);
+          final generative = _generativeTasks.contains(task.runtimeId);
+          final run = find.text(compare ? 'Compare' : 'Run');
           await tester.ensureVisible(run);
           await tester.tap(run);
+          // The generative models load hundreds of megabytes and then write
+          // a few sentences; the wait allows for an emulated CPU.
           await _until(
             tester,
             () => find.textContaining('Done in').evaluate().isNotEmpty,
+            attempts: generative ? 2400 : 480,
           );
-          if (task.runtimeId == 'text_embedder') {
+          if (compare) {
             expect(find.text('Cosine similarity'), findsOneWidget);
+          } else if (generative) {
+            final written = tester.widget<SelectableText>(
+              find.byKey(generatedTextKey),
+            );
+            expect(written.data?.trim(), isNotEmpty, reason: task.id);
           } else {
             final category = _textCategories[task.runtimeId];
             expect(category, isNotNull, reason: '${task.id} needs a result');
@@ -386,6 +396,13 @@ const _textCategories = <String, String>{
   'language_detector': 'fr',
   'text_classifier': 'positive',
 };
+
+/// The embedders compare two texts.
+const _comparingTasks = {'text_embedder', 'embedding_gemma'};
+
+/// The Proofreader and Summarizer write text, checked here for arriving;
+/// sdk_modern_text_test.dart compares what they write with Google's.
+const _generativeTasks = {'text_proofreader', 'text_summarizer'};
 
 /// Lets a drawer or menu finish animating. Unlike pumpAndSettle it gives up
 /// after a few seconds, because a live camera preview never stops scheduling
@@ -581,8 +598,14 @@ void _note(String message) {
   print('GALLERY_JOURNEY_NOTE $message');
 }
 
-Future<void> _until(WidgetTester tester, bool Function() done) async {
-  for (var i = 0; i < 480; i++) {
+/// Pumps until [done], for [attempts] quarter seconds: two minutes unless a
+/// page says otherwise.
+Future<void> _until(
+  WidgetTester tester,
+  bool Function() done, {
+  int attempts = 480,
+}) async {
+  for (var i = 0; i < attempts; i++) {
     await tester.pump();
     if (done()) return;
     await tester.runAsync(
