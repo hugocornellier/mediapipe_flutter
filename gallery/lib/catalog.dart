@@ -1,7 +1,12 @@
 import 'package:mediapipe_audio/mediapipe_audio.dart'
     show audioClassifierCapabilitiesForPlatform;
 import 'package:mediapipe_text/mediapipe_text.dart'
-    show textClassifierCapabilitiesForPlatform;
+    show
+        TextModels,
+        textClassifierCapabilitiesForPlatform,
+        textEmbedderCapabilitiesForPlatform,
+        textProofreaderCapabilitiesForPlatform,
+        textSummarizerCapabilitiesForPlatform;
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 /// How a tile demonstrates its task.
@@ -37,42 +42,39 @@ enum GalleryCategory {
 }
 
 /// A MediaPipe task the home page lists in its section on every platform
-/// even though the gallery cannot run it yet, with the reason it cannot.
+/// even though this build cannot run it; [plannedReason] says why.
 typedef PlannedTask = ({
   GalleryCategory category,
   String title,
-  String summary,
-  String reason,
+  String runtimeId,
 });
 
-/// Audio and text tasks, listed as MediaPipe Studio lists them. Every
-/// platform runs them now; a build prepared without one shows its card.
-const plannedTasks = <PlannedTask>[
-  (
-    category: GalleryCategory.audio,
-    title: 'Audio Classifier',
-    summary: 'Sound categories in a clip or the microphone.',
-    reason: 'Not bundled in this build.',
-  ),
-  (
-    category: GalleryCategory.text,
-    title: 'Language Detector',
-    summary: 'The language of a piece of text.',
-    reason: 'Not bundled in this build.',
-  ),
-  (
-    category: GalleryCategory.text,
-    title: 'Text Classifier',
-    summary: 'Sentiment and categories of a piece of text.',
-    reason: 'Not bundled in this build.',
-  ),
-  (
-    category: GalleryCategory.text,
-    title: 'Text Embedder',
-    summary: 'Text as a vector, compared by similarity.',
-    reason: 'Not bundled in this build.',
-  ),
+/// The audio and text tasks, listed as MediaPipe Studio lists them. A build
+/// prepared without one, or a browser for the Proofreader and Summarizer,
+/// shows its card in place of the tile.
+final plannedTasks = <PlannedTask>[
+  for (final task in _catalog)
+    if (task.category != GalleryCategory.vision)
+      (category: task.category, title: task.title, runtimeId: task.runtimeId),
 ];
+
+/// Why [task] is a card rather than a tile: this build did not bundle it, or
+/// its runtime on [platform] cannot run it, in the package's own words.
+String plannedReason(
+  PlannedTask task,
+  TaskPlatform platform,
+  Set<String> bundled,
+  Set<String> officialMacosLandmarkTasks,
+) {
+  if (!bundled.contains(task.runtimeId)) return 'Not bundled in this build.';
+  final entry = _catalog.firstWhere((t) => t.runtimeId == task.runtimeId);
+  final capabilities = entry.capabilitiesFor(
+    platform,
+    officialMacosLandmarkTasks,
+  );
+  return capabilities.unavailableReasons[Delegate.cpu] ??
+      'Not validated on this platform.';
+}
 
 /// One entry in the gallery.
 ///
@@ -262,6 +264,14 @@ Delegate preferredDelegate(Iterable<Delegate> supported) =>
 /// plugin has installed its backend.
 TaskCapabilities _text(TaskPlatform platform) =>
     textClassifierCapabilitiesForPlatform(platform);
+
+/// EmbeddingGemma's support, from the embedder's table for that model: the
+/// CPU wherever the classic embedders run.
+TaskCapabilities _embeddingGemma(TaskPlatform platform) =>
+    textEmbedderCapabilitiesForPlatform(
+      platform,
+      model: TextModels.embeddingGemma,
+    );
 
 /// Audio Classifier's support, from its own capability table.
 TaskCapabilities _audio(TaskPlatform platform) =>
@@ -491,6 +501,36 @@ final _catalog = <GalleryTask>[
     model: 'universal_sentence_encoder.tflite',
     sample: '',
     capabilities: _text,
+  ),
+  GalleryTask(
+    id: 'embedding_gemma',
+    category: GalleryCategory.text,
+    demo: GalleryDemo.text,
+    title: 'EmbeddingGemma',
+    summary: 'Two texts as Gemma vectors, formatted for a chosen use.',
+    model: 'embedding_gemma.task',
+    sample: '',
+    capabilities: _embeddingGemma,
+  ),
+  GalleryTask(
+    id: 'text_proofreader',
+    category: GalleryCategory.text,
+    demo: GalleryDemo.text,
+    title: 'Proofreader',
+    summary: 'Corrected text and the edits that make it, as it is written.',
+    model: 'proofread_quant_200m.litertlm',
+    sample: '',
+    capabilities: textProofreaderCapabilitiesForPlatform,
+  ),
+  GalleryTask(
+    id: 'text_summarizer',
+    category: GalleryCategory.text,
+    demo: GalleryDemo.text,
+    title: 'Summarizer',
+    summary: 'Key points or a short paragraph for a piece of text.',
+    model: 'summarization_quant_200m_2modes.litertlm',
+    sample: '',
+    capabilities: textSummarizerCapabilitiesForPlatform,
   ),
 ];
 

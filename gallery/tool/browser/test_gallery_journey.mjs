@@ -30,7 +30,8 @@ const cases = {
   // must score at least 0.5, not merely be listed.
   language_detector: {title: 'Language Detector', text: true, row: /^fr (0\.[5-9]|1\.0)/},
   text_classifier: {title: 'Text Classifier', text: true, row: /^positive (0\.[5-9]|1\.0)/},
-  text_embedder: {title: 'Text Embedder', text: true, result: /^Cosine similarity -?\d+\.\d+$/},
+  text_embedder: {title: 'Text Embedder', text: true, compare: true, result: /^Cosine similarity -?\d+\.\d+$/},
+  embedding_gemma: {title: 'EmbeddingGemma', text: true, compare: true, result: /^Cosine similarity -?\d+\.\d+$/},
 };
 
 // The delegates each page must offer and run come from the coverage matrix the
@@ -103,10 +104,10 @@ try {
   const manifestResponse = await page.request.get(new URL('assets/assets/manifest.json', base).href);
   assert.ok(manifestResponse.ok(), 'release manifest unavailable');
   const manifest = await manifestResponse.json();
-  // EmbeddingGemma and the generative text tasks are bundled for the text
-  // probe's comparison with Google's JavaScript, not as tiles: the gallery's
-  // Text Embedder page offers the classic model.
-  const probeOnly = new Set(['embedding_gemma', 'text_proofreader', 'text_summarizer']);
+  // Google's browser runtime has no Proofreader or Summarizer (UP-034), so a
+  // web build bundles them for the text probe's comparison only; the gallery
+  // shows their cards, not tiles. EmbeddingGemma is a tile.
+  const probeOnly = new Set(['text_proofreader', 'text_summarizer']);
   const expected = manifest.tasks.filter(id => !probeOnly.has(id));
   assert.ok(expected.length > 0, 'empty release task list');
   for (const id of expected) assert.ok(cases[id], `new bundled task ${id} needs a gallery journey`);
@@ -197,7 +198,7 @@ try {
       await page.screenshot({path: path.join(evidence, `${id}.png`)});
     } else if (spec.text) {
       enter(`${id}:run`);
-      await page.getByRole('button', {name: id === 'text_embedder' ? 'Compare' : 'Run', exact: true}).click();
+      await page.getByRole('button', {name: spec.compare ? 'Compare' : 'Run', exact: true}).click();
       await page.getByText(spec.row || spec.result)
         .waitFor({timeout: 120000});
       await page.getByText(/Done in \d+\.\d ms/).waitFor();

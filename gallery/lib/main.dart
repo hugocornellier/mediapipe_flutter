@@ -248,7 +248,11 @@ class _GalleryShellState extends State<_GalleryShell> {
         officialMacosLandmarkTasks: widget.assets.officialMacosLandmarkTasks,
         onOpenMenu: openMenu,
       ),
-      GalleryDemo.text => TextPage(task: task, onOpenMenu: openMenu),
+      GalleryDemo.text => TextPage(
+        task: task,
+        assets: widget.assets,
+        onOpenMenu: openMenu,
+      ),
       GalleryDemo.audio => AudioPage(task: task, onOpenMenu: openMenu),
       GalleryDemo.none => throw StateError('${task.id} has no demo'),
     };
@@ -616,7 +620,12 @@ class _Gallery extends StatelessWidget {
                             for (final task in plannedIn(category))
                               _TaskCard(
                                 title: task.title,
-                                summary: task.reason,
+                                summary: plannedReason(
+                                  task,
+                                  platform,
+                                  assets.bundledTasks,
+                                  assets.officialMacosLandmarkTasks,
+                                ),
                                 gpu: false,
                                 onTap: null,
                               ),

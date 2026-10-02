@@ -26,11 +26,12 @@ granter=$!
 trap 'kill $granter 2>/dev/null || true' EXIT
 log=$(mktemp)
 for attempt in 1 2; do
-  # The suites take about 10 minutes with the Gradle build. On hosted emulators
+  # The suites take about 11 minutes with the Gradle build, the gallery
+  # journey's Proofreader and Summarizer pages included. On hosted emulators
   # flutter test sometimes installs the app and then hears nothing more, so a
-  # run still going at 15 minutes has stalled.
+  # run still going at 20 minutes has stalled.
   status=0
-  timeout 900 flutter test -d "$device" integration_test/sdk_all_test.dart \
+  timeout 1200 flutter test -d "$device" integration_test/sdk_all_test.dart \
       --dart-define=SDK_GPU=skip --reporter expanded 2>&1 | tee "$log" || status=$?
   [ "$status" = 0 ] && break
   if [ "$status" = 124 ]; then
