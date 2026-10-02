@@ -13,7 +13,7 @@ verified MediaPipe engine, which every family binds:
 | Linux x64 | the official 1.0.1 wheel's library | on by default |
 | Windows x64 | the official 1.0.0 wheel's library | on by default |
 | macOS 14+ arm64 | the official 1.0.0 wheel's library (about 95 MB) | opt-in |
-| Android, web | Google's own SDKs, through each family's plugin | none |
+| Android, web | Google's own SDKs, through each family's plugin (on Android, built on core's `TaskHost` library) | none |
 
 On macOS, text, audio and every vision task except Face Detector and Face
 Landmarker need the engine, so the app opts in:

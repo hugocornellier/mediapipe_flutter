@@ -4,6 +4,14 @@
 
 #include <stdbool.h>
 
+// The bridge is a shared library the Dart bindings resolve by name; a Windows
+// DLL exports nothing unless told to, while clang and gcc export by default.
+#if defined(_WIN32)
+#define MP_FLUTTER_EXPORT __declspec(dllexport)
+#else
+#define MP_FLUTTER_EXPORT __attribute__((visibility("default")))
+#endif
+
 // Official mediapipe==1.0.1 Python ctypes layouts, text/text_proofreader.py.
 // These are callback views owned by Google and valid only during the callback.
 typedef struct {
@@ -35,14 +43,13 @@ typedef struct {
 typedef void (*MpFlutterTextSink)(MpFlutterTextEvent*, bool terminal);
 typedef struct MpFlutterTextStreamContext MpFlutterTextStreamContext;
 
-MpFlutterTextStreamContext* MpFlutterTextStreamCreate(MpFlutterTextSink sink);
-void MpFlutterTextStreamFree(MpFlutterTextStreamContext* context);
-void MpFlutterTextEventFree(MpFlutterTextEvent* event);
-void MpFlutterProofreaderCallback(void* context,
-                                 const MpFlutterProofreaderStreamView* result,
-                                 const char* error);
-void MpFlutterSummarizerCallback(void* context,
-                                const MpFlutterSummarizerStreamView* result,
-                                const char* error);
+MP_FLUTTER_EXPORT MpFlutterTextStreamContext* MpFlutterTextStreamCreate(
+    MpFlutterTextSink sink);
+MP_FLUTTER_EXPORT void MpFlutterTextStreamFree(MpFlutterTextStreamContext* context);
+MP_FLUTTER_EXPORT void MpFlutterTextEventFree(MpFlutterTextEvent* event);
+MP_FLUTTER_EXPORT void MpFlutterProofreaderCallback(
+    void* context, const MpFlutterProofreaderStreamView* result, const char* error);
+MP_FLUTTER_EXPORT void MpFlutterSummarizerCallback(
+    void* context, const MpFlutterSummarizerStreamView* result, const char* error);
 
 #endif

@@ -53,6 +53,21 @@ jobs:
       - name: Record linux CPU text and audio coverage (linux-text-audio)
         if: always() && runner.os == 'Linux'
         run: python3 -B tool/coverage/record.py --suite linux-text-audio --platform linux --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.linux_text_audio.outcome }}
+      # The generative text models, 419 MB in all, by their pinned SHA-256.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            packages/mediapipe-task-text/models/embedding_gemma.task
+            packages/mediapipe-task-text/models/proofread_quant_200m.litertlm
+            packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
+          key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
+      - name: EmbeddingGemma, Proofreader and Summarizer against Google's Linux wheel
+        id: linux_modern_text
+        if: ${{ !cancelled() && runner.os == 'Linux' }}
+        run: python3 -B tool/test_modern_text.py
+      - name: Record linux CPU modern text coverage (linux-modern-text)
+        if: always() && runner.os == 'Linux'
+        run: python3 -B tool/coverage/record.py --suite linux-modern-text --platform linux --delegate cpu --tasks embedding_gemma,text_proofreader,text_summarizer --outcome ${{ steps.linux_modern_text.outcome }}
       - uses: actions/upload-artifact@v4
         if: always() && runner.os == 'Linux'
         with:
@@ -84,6 +99,13 @@ jobs:
       - name: Record windows CPU text and audio coverage (windows-text-audio)
         if: always() && runner.os == 'Windows'
         run: python -B tool/coverage/record.py --suite windows-text-audio --platform windows --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.windows_text_audio.outcome }}
+      - name: EmbeddingGemma, Proofreader and Summarizer against Google's Windows wheel
+        id: windows_modern_text
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
+        run: python -B tool/test_modern_text.py
+      - name: Record windows CPU modern text coverage (windows-modern-text)
+        if: always() && runner.os == 'Windows'
+        run: python -B tool/coverage/record.py --suite windows-modern-text --platform windows --delegate cpu --tasks embedding_gemma,text_proofreader,text_summarizer --outcome ${{ steps.windows_modern_text.outcome }}
       - uses: actions/upload-artifact@v4
         if: always() && runner.os == 'Windows'
         with:
@@ -108,8 +130,12 @@ jobs:
             build/codex-tmp/gallery-desktop-*/report.json
             build/codex-tmp/text-audio/*.log
             build/codex-tmp/text-audio/report.json
+            build/codex-tmp/modern-text/*.log
+            build/codex-tmp/modern-text/report.json
             build/classic-text-reference/*.json
             build/classic-text-reference/*.log
+            build/modern-text-reference/*.json
+            build/modern-text-reference/*.log
             build/audio-reference/*.json
             build/audio-reference/*.log
           if-no-files-found: error

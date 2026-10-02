@@ -1,9 +1,8 @@
 import 'dart:ffi';
-import 'dart:io';
-
 import 'package:ffi/ffi.dart';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart' show mpHostSystem;
 
 import '../types/options.dart';
 import '../types/results.dart';
@@ -17,17 +16,15 @@ final class NativeTextProofreader
         NativeTextTask<String, TextProofreaderResult, TextProofreaderUpdate> {
   /// Load the official CPU task.
   NativeTextProofreader(TextProofreaderOptions options) {
-    if (!Platform.isMacOS || options.delegate != Delegate.cpu) {
-      throw UnsupportedError(
-        'TextProofreader currently supports macOS arm64 CPU only.',
-      );
+    if (options.delegate != Delegate.cpu) {
+      throw UnsupportedError('TextProofreader supports the CPU delegate only.');
     }
     using((arena) {
       final native = arena<mp.MpTextProofreaderOptions>();
       native.ref.baseOptions
         ..fileDescriptor = -1
         ..delegate = 0
-        ..hostSystem = 2
+        ..hostSystem = mpHostSystem
         ..modelAssetPath = options.modelPath!
             .toNativeUtf8(allocator: arena)
             .cast();

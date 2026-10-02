@@ -106,7 +106,7 @@ jobs:
   sdk-tasks:
     name: Landmark, detection and classification tasks / official Android SDK on an x64 emulator
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
@@ -125,11 +125,37 @@ jobs:
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
+      # The generative text models, 419 MB in all, by their pinned SHA-256.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            packages/mediapipe-task-text/models/embedding_gemma.task
+            packages/mediapipe-task-text/models/proofread_quant_200m.litertlm
+            packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
+          key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
+      # Google's answers for the 1.0.0 Android SDK on the x86_64 emulator: its
+      # Linux x86_64 1.0.0 wheel on this runner
+      # (packages/mediapipe-task-text/tool/MODERN_TEXT_PLATFORMS.md).
+      - name: Google's 1.0.0 references for EmbeddingGemma, Proofreader and Summarizer
+        run: |
+          sudo apt-get update && sudo apt-get install -y libegl1 libgles2
+          cd packages/mediapipe-task-text
+          dart pub get
+          dart tool/download_embedding_gemma.dart
+          dart tool/download_proofreader.dart
+          dart tool/download_summarizer.dart
+          cd ../..
+          python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
+            --venv build/codex-tmp/official-python-1.0.0 --runtime-version 1.0.0 \
+            --output-dir build/modern-text-reference
       # The same two commands a clean checkout runs, so CI builds what a
-      # contributor with only Dart, Flutter and the Android SDK builds.
+      # contributor with only Dart, Flutter and the Android SDK builds; the
+      # generative text tasks are opt-in, bundled here for their suite.
       - name: Prepare the gallery with the official SDK tasks
         run: |
-          dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64 \
+            --tasks audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer \
+            --modern-text-reference build/modern-text-reference
           cd gallery && flutter pub get
       - name: Enable Android emulator hardware acceleration
         run: |
@@ -153,6 +179,9 @@ jobs:
       - name: Record android CPU task coverage (android-sdk-emulator-text-audio)
         if: always()
         run: python3 -B tool/coverage/record.py --suite android-sdk-emulator-text-audio --platform android --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.sdk.outcome }}
+      - name: Record android CPU modern text coverage (android-sdk-emulator-modern-text)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite android-sdk-emulator-modern-text --platform android --delegate cpu --tasks embedding_gemma,text_proofreader,text_summarizer --outcome "$(cat build/coverage-outcomes/android-modern-text 2>/dev/null || echo failure)"
       - name: Record android CPU task coverage (android-sdk-emulator)
         if: always()
         run: python3 -B tool/coverage/record.py --suite android-sdk-emulator --platform android --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.sdk.outcome }}

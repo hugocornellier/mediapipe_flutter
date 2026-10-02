@@ -44,9 +44,16 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: gallery/tool/browser/package-lock.json
+      # EmbeddingGemma's 184 MB model, by its pinned SHA-256; the published
+      # gallery (the deploy job) is prepared without it.
+      - uses: actions/cache@v6
+        with:
+          path: packages/mediapipe-task-text/models/embedding_gemma.task
+          key: embedding-gemma-model-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
       - name: Prepare official web runtime and models
         run: |
-          python3 -B gallery/tool/prepare.py --target web
+          python3 -B gallery/tool/prepare.py --target web \
+            --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma
           sudo apt-get update && sudo apt-get install -y ffmpeg xvfb libgl1-mesa-dri
           python3 -B gallery/tool/browser/prepare_camera.py
       - name: Install browser test dependencies
@@ -156,13 +163,13 @@ jobs:
         run: xvfb-run -a node gallery/tool/browser/test_gallery_journey.mjs --browser=firefox --headed=true
       - name: Record web CPU task coverage (web-text-audio-chromium)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite web-text-audio-chromium --platform web --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.text_audio_chromium.outcome }}
+        run: python3 -B tool/coverage/record.py --suite web-text-audio-chromium --platform web --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma --outcome ${{ steps.text_audio_chromium.outcome }}
       - name: Record web CPU task coverage (web-text-audio-firefox)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite web-text-audio-firefox --platform web --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.text_audio_firefox.outcome }}
+        run: python3 -B tool/coverage/record.py --suite web-text-audio-firefox --platform web --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma --outcome ${{ steps.text_audio_firefox.outcome }}
       - name: Record web CPU task coverage (web-text-audio-webkit)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite web-text-audio-webkit --platform web --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.text_audio_webkit.outcome }}
+        run: python3 -B tool/coverage/record.py --suite web-text-audio-webkit --platform web --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma --outcome ${{ steps.text_audio_webkit.outcome }}
       - name: Record web CPU task coverage (web-chromium-cpu)
         if: always()
         run: python3 -B tool/coverage/record.py --suite web-chromium-cpu --platform web --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.chromium_cpu.outcome }}

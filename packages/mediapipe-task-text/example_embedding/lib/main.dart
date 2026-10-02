@@ -199,7 +199,7 @@ class _SimilarityPageState extends State<SimilarityPage> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'TextEmbedder 300M · Official MediaPipe pipeline · macOS CPU',
+              'EmbeddingGemma 300M · Official MediaPipe pipeline · CPU',
             ),
             ExpansionTile(
               subtitle: TaskSupport(query: _embeddingGemmaSupport),

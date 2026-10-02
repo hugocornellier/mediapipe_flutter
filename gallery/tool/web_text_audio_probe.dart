@@ -52,6 +52,32 @@ const languageTexts = [
   'Quiero agua, por favor.',
   'こんにちは、元気ですか？',
 ];
+
+/// EmbeddingGemma inputs with Google's formatting modes, shared with the
+/// JavaScript side of the test, which passes the same `TextFormatOptions`.
+final embeddingGemmaCases = <(String, TextFormatContext?)>[
+  ('A cat is sleeping on the sofa.', null),
+  (
+    'A cat is sleeping on the sofa.',
+    TextFormatContext(taskType: EmbeddingType.semanticSimilarity),
+  ),
+  (
+    'How do I grow tomatoes?',
+    TextFormatContext(taskType: EmbeddingType.retrievalQuery),
+  ),
+  (
+    'Plant tomatoes in a sunny spot and water regularly.',
+    TextFormatContext(
+      taskType: EmbeddingType.retrievalDocument,
+      title: 'Growing tomatoes',
+      role: TextRole.document,
+    ),
+  ),
+  (
+    'Sort a list of integers.',
+    TextFormatContext(taskType: EmbeddingType.codeRetrieval),
+  ),
+];
 const clips = ['speech_16000_hz_mono.wav', 'speech_48000_hz_mono.wav'];
 
 Future<void> main() async {
@@ -68,6 +94,7 @@ Future<void> main() async {
   try {
     report['classifier'] = await _classifier();
     report['embedder'] = await _embedder();
+    report['embedding_gemma'] = await _embeddingGemma();
     report['language'] = await _language();
     report['audio'] = await _audio();
     report['model_cache'] = await _modelCache();
@@ -206,6 +233,60 @@ Future<Object?> _embedder() async {
           TextEmbedder.cosineSimilarity(embeddings[0], embeddings[1]),
           TextEmbedder.cosineSimilarity(embeddings[0], embeddings[2]),
         ],
+      };
+    } finally {
+      await task.dispose();
+    }
+  }
+  return result;
+}
+
+/// EmbeddingGemma through Google's browser TextEmbedder, when the build
+/// bundles its 184 MB model (prepare.py --tasks ...,embedding_gemma).
+Future<Object?> _embeddingGemma() async {
+  final manifest =
+      jsonDecode(await rootBundle.loadString('assets/manifest.json'))
+          as Map<String, dynamic>;
+  if (!(manifest['tasks'] as List).contains('embedding_gemma')) {
+    return 'not bundled';
+  }
+  final support = await queryTextEmbedderCapabilities(
+    TextModels.embeddingGemma,
+  );
+  _require(
+    support.supportedDelegates.contains(Delegate.cpu),
+    'EmbeddingGemma must be supported in browsers.',
+  );
+  final model = await _asset('assets/models/embedding_gemma.task');
+  final result = <String, Object?>{};
+  for (final quantize in [false, true]) {
+    final task = await TextEmbedder.create(
+      TextEmbedderOptions(
+        modelBytes: model,
+        l2Normalize: quantize,
+        quantize: quantize,
+      ),
+    );
+    try {
+      final embeddings = [
+        for (final (text, context)
+            in quantize ? embeddingGemmaCases.take(2) : embeddingGemmaCases)
+          (await task.embed(text, formatContext: context)).embeddings.single,
+      ];
+      result[quantize ? 'quantized' : 'float'] = {
+        'values': [
+          for (final e in embeddings)
+            quantize
+                ? e.quantizedEmbedding!.toList()
+                : e.floatEmbedding!.toList(),
+        ],
+        'head': [embeddings.first.headIndex, embeddings.first.headName],
+        'similarity': quantize
+            ? null
+            : [
+                TextEmbedder.cosineSimilarity(embeddings[0], embeddings[1]),
+                TextEmbedder.cosineSimilarity(embeddings[2], embeddings[3]),
+              ],
       };
     } finally {
       await task.dispose();

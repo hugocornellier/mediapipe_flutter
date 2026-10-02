@@ -188,6 +188,33 @@ const taskSettings = <String, List<TaskSetting>>{
     SwitchSetting('l2Normalize', 'L2 Normalize'),
     SwitchSetting('quantize', 'Quantize'),
   ],
+  // Google's embedder formats EmbeddingGemma's prompt for the chosen use.
+  // The retrieval, question, fact and code uses pair a query with a
+  // document: the first text is the query and the second the document.
+  'embedding_gemma': [
+    ChoiceSetting(
+      'taskType',
+      'Task Type',
+      options: [
+        'Semantic Similarity',
+        'Retrieval',
+        'Question Answering',
+        'Fact Checking',
+        'Code Retrieval',
+        'Classification',
+        'Clustering',
+      ],
+    ),
+    SwitchSetting('l2Normalize', 'L2 Normalize'),
+    SwitchSetting('quantize', 'Quantize'),
+  ],
+  // Streaming shows the text as Google generates it; off, the result
+  // arrives whole, as `proofread()` and `summarize()` return it.
+  'text_proofreader': [SwitchSetting('stream', 'Stream Output', initial: true)],
+  'text_summarizer': [
+    ChoiceSetting('mode', 'Mode', options: ['Key Points', 'TL;DR']),
+    SwitchSetting('stream', 'Stream Output', initial: true),
+  ],
 };
 
 /// The current value of every setting of one task.

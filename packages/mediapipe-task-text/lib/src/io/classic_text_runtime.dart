@@ -8,9 +8,10 @@ import 'package:mediapipe_core/platform_interface.dart';
 import 'text_task_worker.dart';
 import 'third_party/mediapipe/classic_text_bindings.dart' as mp;
 
-/// Where core's shared runtime serves these tasks: Google's macOS 1.0.1
-/// library, its Linux 1.0.1 and Windows 1.0.0 wheel libraries, and its iOS
-/// 1.0.1 SDK through the adapter mediapipe_core builds.
+/// Where core's shared runtime serves the text tasks, the Proofreader and
+/// Summarizer included: Google's macOS 1.0.0 library, its Linux 1.0.1 and
+/// Windows 1.0.0 wheel libraries, and its iOS 1.0.1 SDK through the adapter
+/// mediapipe_core builds.
 const _runtimeAbis = {
   Abi.macosArm64,
   Abi.linuxX64,
@@ -22,7 +23,7 @@ const _runtimeAbis = {
 void requireTextTasksRuntime() {
   if (!_runtimeAbis.contains(Abi.current())) {
     throw const RuntimeUnavailableException(
-      'Classic text runtime unavailable on this platform.',
+      "Google's text runtime is unavailable on this platform.",
       fix:
           'Use macOS arm64, Linux x64, Windows x64 or iOS arm64, or install '
           'the browser or Android platform plugin.',
@@ -43,7 +44,7 @@ void requireTextTasksRuntime() {
       throw missing;
     }
     throw RuntimeUnavailableException(
-      'Classic text runtime unavailable.',
+      "Google's text runtime is unavailable.",
       fix: tasksRuntimeUnavailable('this text task', Platform.operatingSystem),
     );
   }

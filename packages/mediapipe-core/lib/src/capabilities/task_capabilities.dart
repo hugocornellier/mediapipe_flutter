@@ -50,8 +50,9 @@ Future<String?> Function()? taskPlatformGpuReader;
 typedef RuntimeTargets = Map<String, String?>;
 
 /// Process targets where core bundles Google's MediaPipe engine, which serves
-/// the Audio Classifier and the text classifier, embedder and language
-/// detector (on macOS once the app sets `tasks_runtime: true`).
+/// the Audio Classifier and every text task: the classifier, embedder
+/// (EmbeddingGemma included), language detector, Proofreader and Summarizer
+/// (on macOS once the app sets `tasks_runtime: true`).
 ///
 /// This mirrors the build-time release tables in core's hook code; the two are
 /// kept in step so that a platform is never reported supported without a
@@ -80,9 +81,9 @@ String tasksRuntimeUnavailable(String task, String operatingSystem) =>
           'Remove tasks_runtime: false from '
           "hooks.user_defines.mediapipe_core in the app's pubspec.yaml.";
 
-/// The part of [tasksRuntimeTargets] whose engine also serves EmbeddingGemma,
-/// Proofreader, Summarizer and the stateful Interactive Segmenter: Google's
-/// macOS library. Those tasks are validated there only.
+/// The part of [tasksRuntimeTargets] whose engine also serves the stateful
+/// Interactive Segmenter: Google's macOS library. That task is validated
+/// there only.
 const macosTasksRuntimeTargets = <String, String?>{'macos/arm64': '14.0'};
 
 /// The official MediaPipe release behind core's engine on [platform]:

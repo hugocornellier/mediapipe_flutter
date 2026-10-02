@@ -8,7 +8,8 @@ the vision, text and audio packages all bind this one image. No MediaPipe code
 is compiled from source here.
 
 - `vision_sdk_bridge.mm`: the vision tasks.
-- `text_sdk_bridge.mm`: Text Classifier, Text Embedder and Language Detector.
+- `text_sdk_bridge.mm`: Text Classifier, Text Embedder (EmbeddingGemma
+  included), Language Detector, Proofreader and Summarizer.
 - `audio_sdk_bridge.mm`: Audio Classifier.
 
 `include/mediapipe/tasks/c/` holds unchanged copies of the MediaPipe C API

@@ -1,5 +1,8 @@
 ## 0.2.0
 
+- The Android plugin builds on core's `TaskHost` for its worker thread,
+  model buffers and channel handling, keeping only what Google's audio
+  SDK needs; the channel's methods and results are unchanged.
 - Breaking: `AudioClassifierResult` is a class with `classifications` (one
   `Classifications` per model head) and `timestampMilliseconds`; the
   `AudioClassifierCategory` record is core's `MediaPipeCategory`. See
