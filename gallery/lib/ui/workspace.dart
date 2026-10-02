@@ -341,10 +341,8 @@ class TaskToolbar extends StatelessWidget {
 Future<void> showTaskInfo(BuildContext context, GalleryTask task) {
   final c = GalleryColors.of(context);
   final family = task.category.title.toLowerCase();
-  final id = task.runtimeId == 'interactive_segmenter_legacy'
-      ? 'interactive_segmenter'
-      : task.runtimeId;
-  final guide = 'https://ai.google.dev/edge/mediapipe/solutions/$family/$id';
+  final guide =
+      'https://ai.google.dev/edge/mediapipe/solutions/$family/${task.runtimeId}';
   final label = TextStyle(color: c.muted, fontSize: Sizes.sm);
   return showDialog<void>(
     context: context,

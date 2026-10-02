@@ -3,8 +3,9 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_core/model_store.dart';
-import 'package:mediapipe_core/native_assets.dart' show downloadVerified;
+import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_assets.dart'
+    show DownloadException, downloadVerified;
 import 'package:test/test.dart';
 
 void main() {
@@ -111,9 +112,14 @@ void main() {
   test(
     'model cache survives offline and coalesces concurrent requests',
     () async {
-      final store = ModelStore(directory: Directory('${root.path}/models'));
+      final store = ModelStore(cacheDirectory: '${root.path}/models');
       final pin = asset('good');
-      final files = await Future.wait(List.generate(4, (_) => store.get(pin)));
+      final files = [
+        for (final source in await Future.wait(
+          List.generate(4, (_) => store.get(pin)),
+        ))
+          File(source.path!),
+      ];
       expect(files.map((f) => f.path).toSet().length, 1);
       expect(
         files.first.uri.path,
@@ -121,13 +127,14 @@ void main() {
       );
       expect(requests, 1);
       await server.close(force: true);
-      expect(await (await store.get(pin)).readAsBytes(), good);
+      expect(await File((await store.get(pin)).path!).readAsBytes(), good);
       // Another pin for the same bytes finds the verified copy offline.
       final other = DownloadAsset(
         url: 'https://invalid.example/other.task',
         sha256: digest,
       );
       expect((await store.get(other)).path, files.first.path);
+      expect((await store.find(other))!.path, files.first.path);
       await store.clear();
       expect(files.first.existsSync(), isFalse);
     },
@@ -156,9 +163,11 @@ void main() {
   });
 
   test('model mirror fallback and checksum failure', () async {
-    final store = ModelStore(directory: Directory('${root.path}/models'));
+    final store = ModelStore(cacheDirectory: '${root.path}/models');
     expect(
-      await (await store.get(asset('missing', ['good']))).readAsBytes(),
+      await File(
+        (await store.get(asset('missing', ['good']))).path!,
+      ).readAsBytes(),
       good,
     );
     await store.clear();
@@ -169,7 +178,7 @@ void main() {
   });
 
   test('interrupted response leaves no usable model', () async {
-    final store = ModelStore(directory: Directory('${root.path}/models'));
+    final store = ModelStore(cacheDirectory: '${root.path}/models');
     await expectLater(
       store.get(asset('partial')),
       throwsA(isA<ModelDownloadException>()),
@@ -185,5 +194,5 @@ void main() {
 Future<void> _isolatedGet((String, String, String, SendPort) args) async {
   final (path, url, digest, reply) = args;
   final model = DownloadAsset(url: url, sha256: digest);
-  reply.send((await ModelStore(directory: Directory(path)).get(model)).path);
+  reply.send((await ModelStore(cacheDirectory: path).get(model)).path);
 }

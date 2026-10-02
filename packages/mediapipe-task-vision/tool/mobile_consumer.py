@@ -113,6 +113,6 @@ Future<void> main() async {
   });
 ''' + ''.join(f"  group('{suite}', suite{i}.main);\n" for i, suite in enumerate(suites)) + '}\n')
     smoke = (PACKAGE / 'tool/flutter_release_smoke.dart.template').read_text().replace(
-        'VisionDelegate.values', 'const [VisionDelegate.cpu]')
+        'Delegate.values', 'const [Delegate.cpu]')
     (app / 'lib/main.dart').write_text(smoke)
     return app, vision

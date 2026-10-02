@@ -57,11 +57,11 @@ Future<void> main(List<String> args) async {
       final actual = await sha256.bind(File(model(entry.key)).openRead()).first;
       check(actual.toString() == entry.value, 'Model hash: ${entry.key}');
     }
-    final capabilities = await queryTextTaskCapabilities(
-      TextTask.embeddingGemma,
+    final capabilities = await queryTextEmbedderCapabilities(
+      TextModels.embeddingGemma,
     );
     check(
-      capabilities.supportedDelegates.contains(TextDelegate.cpu),
+      capabilities.supportedDelegates.contains(Delegate.cpu),
       'Unsupported process platform',
     );
     report['platform'] = {
@@ -145,8 +145,8 @@ Future<Loaded> load(Json entry, {String? cache}) async {
   final options = entry['options'] as Json;
   switch (kind) {
     case 'embedding':
-      final task = await EmbeddingGemma.create(
-        EmbeddingGemmaOptions(
+      final task = await TextEmbedder.create(
+        TextEmbedderOptions(
           modelPath: model(kind),
           l2Normalize: options['normalize'],
           quantize: options['quantize'],
@@ -156,10 +156,10 @@ Future<Loaded> load(Json entry, {String? cache}) async {
         final context = entry['context'] as Json?;
         final result = await task.embed(
           entry['input'],
-          context: context == null
+          formatContext: context == null
               ? null
               : TextFormatContext(
-                  taskType: EmbeddingTaskType.values.firstWhere(
+                  taskType: EmbeddingType.values.firstWhere(
                     (value) =>
                         value.name
                             .replaceAll(RegExp('[^a-zA-Z]'), '')
@@ -175,8 +175,8 @@ Future<Loaded> load(Json entry, {String? cache}) async {
                 ),
         );
         final embedding = result.embeddings.single;
-        return embedding.floatValues?.toList() ??
-            embedding.quantizedValues!.toList();
+        return embedding.floatEmbedding?.toList() ??
+            embedding.quantizedEmbedding!.toList();
       }, task.dispose);
     case 'proofreader':
       final task = await TextProofreader.create(
@@ -274,7 +274,7 @@ Future<void> validateOptions() async {
           actual = await task.run(entry, streaming);
         } catch (failure) {
           error = switch (failure) {
-            TextTaskException e => e.message,
+            TaskException e => e.message,
             _ => throw failure,
           };
         }
@@ -312,7 +312,7 @@ Future<void> validateOptions() async {
     } finally {
       try {
         await task.dispose();
-      } on TextTaskException catch (error) {
+      } on TaskException catch (error) {
         check(
           entry['name'] == 'over-capacity',
           'Unexpected dispose error: $error',
@@ -362,7 +362,7 @@ Future<void> benchmark(int iterations, int reloads) async {
   final loaded = <String, Loaded>{};
   InteractiveSegmenter? segmenter;
   late VisionImage image;
-  late List<SegmentationStroke> history;
+  late List<Stroke> history;
   late List<double> expected;
   try {
     for (final kind in ['embedding', 'proofreader', 'summarizer']) {
@@ -413,11 +413,11 @@ Future<void> benchmark(int iterations, int reloads) async {
     );
     history = [
       for (final Json s in (entry['strokes'] as List).cast<Json>())
-        SegmentationStroke(
-          brushMode: SegmentationBrushMode.values.byName(s['brush_mode']),
+        Stroke(
+          brushMode: BrushMode.values.byName(s['brush_mode']),
           points: [
             for (final p in s['points'])
-              SegmentationPoint(
+              NormalizedKeypoint(
                 x: (p[0] as num).toDouble(),
                 y: (p[1] as num).toDouble(),
               ),
@@ -440,7 +440,7 @@ Future<void> benchmark(int iterations, int reloads) async {
     metrics['segmenter']['set_image_ms'] = await timed(
       () => segmenter!.setImage(image),
     );
-    SegmentationMask? mask;
+    ConfidenceMask? mask;
     metrics['segmenter']['first_segment_ms'] = await timed(() async {
       mask = await segmenter!.segment(history);
     });
@@ -617,38 +617,43 @@ Future<void> validateCaches() async {
 }
 
 Future<void> validateGpuRejection() async {
-  for (final kind in TextTask.values) {
-    final support = await queryTextTaskCapabilities(kind);
+  for (final kind in _Generative.values) {
+    // A model given by path is checked against the task's general table.
+    final support = await switch (kind) {
+      _Generative.embeddingGemma => queryTextEmbedderCapabilities(),
+      _Generative.proofreader => queryTextProofreaderCapabilities(),
+      _Generative.summarizer => queryTextSummarizerCapabilities(),
+    };
     try {
       switch (kind) {
-        case TextTask.embeddingGemma:
-          final task = await EmbeddingGemma.create(
-            EmbeddingGemmaOptions(
+        case _Generative.embeddingGemma:
+          final task = await TextEmbedder.create(
+            TextEmbedderOptions(
               modelPath: model('embedding'),
-              delegate: TextDelegate.gpu,
+              delegate: Delegate.gpu,
             ),
           );
           await task.dispose();
-        case TextTask.proofreader:
+        case _Generative.proofreader:
           final task = await TextProofreader.create(
             TextProofreaderOptions(
               modelPath: model('proofreader'),
-              delegate: TextDelegate.gpu,
+              delegate: Delegate.gpu,
             ),
           );
           await task.dispose();
-        case TextTask.summarizer:
+        case _Generative.summarizer:
           final task = await TextSummarizer.create(
             TextSummarizerOptions(
               modelPath: model('summarizer'),
-              delegate: TextDelegate.gpu,
+              delegate: Delegate.gpu,
             ),
           );
           await task.dispose();
       }
     } catch (error) {
       check(
-        '$error'.contains(support.unavailableReasons[TextDelegate.gpu]!),
+        '$error'.contains(support.unavailableReasons[Delegate.gpu]!),
         'GPU error differs from capabilities',
       );
       continue;
@@ -658,3 +663,6 @@ Future<void> validateGpuRejection() async {
   report['gpu_rejections'] =
       'all three text tasks reject with their capability explanation';
 }
+
+/// The tasks this benchmark measures beyond the classic ones.
+enum _Generative { embeddingGemma, proofreader, summarizer }

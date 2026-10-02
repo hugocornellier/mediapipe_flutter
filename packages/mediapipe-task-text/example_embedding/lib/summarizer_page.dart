@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:mediapipe_text/text_summarizer.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 import 'token_budget_field.dart';
 import 'task_support.dart';
@@ -145,7 +145,7 @@ class _SummarizerPageState extends State<SummarizerPage> {
           const Text(
             'Summarizer 200M · Official MediaPipe pipeline · macOS CPU',
           ),
-          const TaskSupport(task: TextTask.summarizer),
+          const TaskSupport(query: queryTextSummarizerCapabilities),
           const SizedBox(height: 24),
           SegmentedButton<TextSummarizerMode>(
             segments: const [

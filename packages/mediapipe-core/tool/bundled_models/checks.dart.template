@@ -29,7 +29,7 @@ Future<void> checkVision() async {
     FaceDetectorOptions(model: VisionModels.faceDetector),
   );
   try {
-    final result = await detector.detectImage(await _portrait());
+    final result = await detector.detect(await _portrait());
     _expect(
       result.detections.length == 1,
       'one face in the portrait, found ${result.detections.length}',
@@ -71,7 +71,10 @@ Future<void> checkAudio() async {
     final results = await classifier.classify(
       AudioData(samples: samples, sampleRate: rate),
     );
-    final names = [for (final c in results.first.categories) c.name];
+    final names = [
+      for (final c in results.first.classifications.first.categories)
+        c.categoryName,
+    ];
     _expect(names.contains('Sine wave'), 'a sine wave, heard $names');
   } finally {
     await classifier.dispose();
@@ -105,7 +108,7 @@ Future<void> checkDownload() async {
       FaceLandmarkerOptions(model: VisionModels.faceLandmarker),
     );
     try {
-      final result = await landmarker.detectImage(await _portrait());
+      final result = await landmarker.detect(await _portrait());
       _expect(
         result.faceLandmarks.length == 1,
         'one face in the portrait, found ${result.faceLandmarks.length}',
@@ -129,8 +132,9 @@ Future<void> checkDownload() async {
 
 /// The store's copy of [model] must match its pin.
 Future<File> _stored(DownloadAsset model) async {
-  final file = await ModelStore().find(model);
-  if (file == null) throw StateError('No stored copy of ${model.url}.');
+  final path = (await ModelStore().find(model))?.path;
+  if (path == null) throw StateError('No stored copy of ${model.url}.');
+  final file = File(path);
   final digest = sha256.convert(await file.readAsBytes()).toString();
   _expect(digest == model.sha256, '${file.path} to match its pin');
   return file;

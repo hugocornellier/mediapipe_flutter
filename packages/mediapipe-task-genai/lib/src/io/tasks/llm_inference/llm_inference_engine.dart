@@ -8,7 +8,7 @@ import 'dart:isolate';
 
 import 'package:async/async.dart';
 import 'package:logging/logging.dart';
-import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/io.dart';
 import 'package:mediapipe_genai/interface.dart';
 import 'package:mediapipe_genai/io.dart';
 

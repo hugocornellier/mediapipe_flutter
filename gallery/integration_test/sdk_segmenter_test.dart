@@ -47,14 +47,14 @@ void main() {
         final assets = await GalleryAssets.unpack();
         final model = await _model();
         final frame = await loadSample('portrait.jpg');
-        final references = <VisionDelegate, SegmentationResult>{};
+        final references = <Delegate, ImageSegmenterResult>{};
         var shiftedClasses = false;
         // The package declares the GPU unsupported on a PowerVR GPU (UP-023)
         // and refuses to create it. A phone that must run the GPU may lose it
         // only to that documented gap, not to a misread GPU name.
         final capabilities = await queryImageSegmenterCapabilities();
         final gpuDeclared = capabilities.supportedDelegates.contains(
-          VisionDelegate.gpu,
+          Delegate.gpu,
         );
         if (!gpuDeclared && _gpu == 'required') {
           expect(
@@ -62,7 +62,7 @@ void main() {
             anyOf(contains('PowerVR'), contains('Imagination')),
           );
           expect(
-            capabilities.unavailableReasons[VisionDelegate.gpu],
+            capabilities.unavailableReasons[Delegate.gpu],
             contains('UP-023'),
           );
           // Asked for anyway, the plugin refuses it before Google's task
@@ -71,12 +71,12 @@ void main() {
             ImageSegmenter.create(
               ImageSegmenterOptions(
                 modelBytes: model,
-                delegate: VisionDelegate.gpu,
+                delegate: Delegate.gpu,
                 outputCategoryMask: true,
               ),
             ),
             throwsA(
-              isA<VisionTaskException>().having(
+              isA<TaskException>().having(
                 (error) => error.message,
                 'message',
                 contains('UP-023'),
@@ -86,11 +86,11 @@ void main() {
           _report('gpu_withdrawn', {'gpu': capabilities.platform.gpu});
         }
         for (final delegate in [
-          VisionDelegate.cpu,
+          Delegate.cpu,
           if (_gpu != 'skip' &&
               gpuDeclared &&
               !_gpuSkipped.split(',').contains('image_segmenter'))
-            VisionDelegate.gpu,
+            Delegate.gpu,
         ]) {
           final ImageSegmenter task;
           try {
@@ -101,13 +101,13 @@ void main() {
                 outputCategoryMask: true,
               ),
             );
-          } on VisionTaskException catch (error) {
-            if (delegate == VisionDelegate.cpu || _gpu == 'required') rethrow;
+          } on TaskException catch (error) {
+            if (delegate == Delegate.cpu || _gpu == 'required') rethrow;
             _report('gpu_unavailable', {'error': error.message});
             continue;
           }
           try {
-            final file = await task.segmentImage(
+            final file = await task.segment(
               VisionImage.fromFile(assets.path('portrait.jpg')),
             );
             _expectShape(
@@ -118,7 +118,7 @@ void main() {
             // Google's GPU inference scores DeepLab's classes differently from
             // its CPU inference, so each delegate is held to the wheel's output
             // from the same delegate.
-            final expected = delegate == VisionDelegate.gpu
+            final expected = delegate == Delegate.gpu
                 ? officialGpuSegmenterReference
                 : officialSegmenterReference;
             final match = compareMasks(file, expected);
@@ -134,7 +134,7 @@ void main() {
                   '$key': value,
               },
             });
-            if (delegate == VisionDelegate.gpu &&
+            if (delegate == Delegate.gpu &&
                 match.categoryAgreement <= _categoryAgreement &&
                 _matchesShiftedUp(file, expected, match)) {
               // UP-024: the category mask is Google's, one class low; the
@@ -145,13 +145,11 @@ void main() {
               _expectMatch(match);
             }
 
-            final reference = await task.segmentImage(frame.image);
+            final reference = await task.segment(frame.image);
             references[delegate] = reference;
             _expectShape(reference, frame.width, frame.height);
             for (final format in VisionPixelFormat.values) {
-              final padded = await task.segmentImage(
-                paddedImage(frame, format),
-              );
+              final padded = await task.segment(paddedImage(frame, format));
               expect(
                 turnedCategoryAgreement(
                   reference.categoryMask!,
@@ -165,7 +163,7 @@ void main() {
             final turns = <String, double>{};
             for (final turn in [90, 180, 270]) {
               final input = (360 - turn) % 360;
-              final result = await task.segmentImage(
+              final result = await task.segment(
                 rotatedImage(frame, input),
                 rotationDegrees: turn,
               );
@@ -199,12 +197,12 @@ void main() {
             await task.dispose();
           }
           await task.dispose();
-          await expectLater(task.segmentImage(frame.image), throwsStateError);
+          await expectLater(task.segment(frame.image), throwsStateError);
         }
         if (references.length == 2) {
-          final gpuClasses = references[VisionDelegate.gpu]!.categoryMask!;
+          final gpuClasses = references[Delegate.gpu]!.categoryMask!;
           final agreement = turnedCategoryAgreement(
-            references[VisionDelegate.cpu]!.categoryMask!,
+            references[Delegate.cpu]!.categoryMask!,
             shiftedClasses ? _shiftedUp(gpuClasses) : gpuClasses,
             0,
           );
@@ -222,7 +220,7 @@ void main() {
             ),
           );
           try {
-            final result = await task.segmentImage(frame.image);
+            final result = await task.segment(frame.image);
             expect(result.confidenceMasks != null, confidence);
             expect(result.categoryMask != null, category);
             expect(result.labels, hasLength(21));
@@ -255,7 +253,7 @@ void main() {
           ),
         );
         try {
-          await expectLater(task.segmentImage(frame.image), throwsStateError);
+          await expectLater(task.segment(frame.image), throwsStateError);
           await expectLater(
             task.segmentForVideo(frame.image, timestampMilliseconds: -1),
             throwsArgumentError,
@@ -287,109 +285,9 @@ void main() {
     },
     timeout: const Timeout(Duration(minutes: 2)),
   );
-
-  _legacyTest();
 }
 
-/// Interactive Segmenter Legacy (MagicTouch) for the object under the
-/// reference's keypoint: Google's masks, pixel formats, and rotation, which
-/// this task turns back into the input's frame, unlike Image Segmenter.
-void _legacyTest() {
-  testWidgets(
-    'official SDK interactive_segmenter_legacy: reference, pixels, rotation',
-    (tester) async {
-      await tester.runAsync(() async {
-        if (Platform.isAndroid) {
-          // Google's Android 1.0.0 task ignores the keypoint, so the adapter
-          // does not serve it, or bundle its model (upstream-issues.md UP-020).
-          await expectLater(
-            InteractiveSegmenterLegacy.create(
-              InteractiveSegmenterLegacyOptions(modelBytes: Uint8List(1)),
-            ),
-            throwsA(isA<RuntimeUnavailableException>()),
-          );
-          _report('interactive_legacy', {'android': 'UP-020'});
-          return;
-        }
-        final bytes = await rootBundle.load('assets/models/magic_touch.tflite');
-        final model = bytes.buffer.asUint8List(
-          bytes.offsetInBytes,
-          bytes.lengthInBytes,
-        );
-        final assets = await GalleryAssets.unpack();
-        final frame = await loadSample('portrait.jpg');
-        final keypoint = SegmentationPoint(x: 0.5, y: 0.4);
-        final task = await InteractiveSegmenterLegacy.create(
-          InteractiveSegmenterLegacyOptions(
-            modelBytes: model,
-            outputCategoryMask: true,
-          ),
-        );
-        try {
-          final file = await task.segmentImage(
-            VisionImage.fromFile(assets.path('portrait.jpg')),
-            keypoint: keypoint,
-          );
-          expect(file.labels, isEmpty);
-          expect(file.confidenceMasks, hasLength(1));
-          final match = compareMasks(file, officialInteractiveLegacyReference);
-          expect(match.categoryAgreement, greaterThan(_categoryAgreement));
-          expect(match.shareError, lessThan(_shareError));
-          expect(match.confidence[0]!.mean, lessThan(_confidenceMean));
-
-          final reference = await task.segmentImage(
-            frame.image,
-            keypoint: keypoint,
-          );
-          for (final format in VisionPixelFormat.values) {
-            final padded = await task.segmentImage(
-              paddedImage(frame, format),
-              keypoint: keypoint,
-            );
-            expect(
-              turnedCategoryAgreement(
-                reference.categoryMask!,
-                padded.categoryMask!,
-                0,
-              ),
-              greaterThan(0.999),
-              reason: format.name,
-            );
-          }
-          final turns = <String, double>{};
-          for (final turn in [90, 180, 270]) {
-            final input = (360 - turn) % 360;
-            final result = await task.segmentImage(
-              rotatedImage(frame, input),
-              keypoint: keypoint,
-              rotationDegrees: turn,
-            );
-            final agreement = turnedCategoryAgreement(
-              reference.categoryMask!,
-              result.categoryMask!,
-              input,
-            );
-            expect(agreement, greaterThan(0.95), reason: '$turn');
-            turns['$turn'] = agreement;
-          }
-          _report('interactive_legacy', {
-            ..._summary(match),
-            'rotated_agreement': turns,
-          });
-        } finally {
-          await task.dispose();
-        }
-        await expectLater(
-          task.segmentImage(frame.image, keypoint: keypoint),
-          throwsStateError,
-        );
-      });
-    },
-    timeout: const Timeout(Duration(minutes: 4)),
-  );
-}
-
-void _expectShape(SegmentationResult result, int width, int height) {
+void _expectShape(ImageSegmenterResult result, int width, int height) {
   expect((result.imageWidth, result.imageHeight), (width, height));
   expect(result.labels, hasLength(21));
   expect(result.labels.first, 'background');
@@ -420,7 +318,7 @@ CategoryMask _shiftedUp(CategoryMask mask) => CategoryMask(
 /// makes the category grid and class shares match and the confidence masks
 /// already match; any other mismatch still fails.
 bool _matchesShiftedUp(
-  SegmentationResult result,
+  ImageSegmenterResult result,
   OfficialMasks reference,
   MaskMatch match,
 ) {

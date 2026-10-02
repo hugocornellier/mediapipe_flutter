@@ -9,8 +9,14 @@ pre-phase symbols reachable from each family's primary library, including
 conditional exports. A retained result or value type stays because it carries
 the task's output or input without exposing native ownership.
 
-[API_UNIFICATION.md](API_UNIFICATION.md) plans changes to several of these
-decisions; its "Superseded decisions" section lists them.
+> **Superseded in 0.2.0.** This review records the 0.1.0 API. The API
+> unification ([API_UNIFICATION.md](API_UNIFICATION.md)) replaced it: one
+> library per family, one `Delegate`, `TaskOptions`, `TaskException` and set
+> of shared value types, Google's verbs, and per-task capability queries. The
+> decisions it changed are listed under that plan's "Superseded decisions";
+> each package's MIGRATION.md maps every symbol below that changed, and
+> `tool/api_parity/snapshots/` holds the current API. The table is kept as
+> the 0.1.0 record.
 
 | Package | Current symbol | Google equivalent | Decision and reason |
 | --- | --- | --- | --- |
@@ -114,8 +120,6 @@ decisions; its "Superseded decisions" section lists them.
 | `mediapipe-task-vision` | `ImageSegmenterOptions` | none | Keep; add a pinned `model` source and strict source validation. |
 | `mediapipe-task-vision` | `InteractiveSegmenter` | none | Keep; task, result, value or capability API remains useful to apps. |
 | `mediapipe-task-vision` | `InteractiveSegmenterException` | none | Remove; merged into `VisionTaskException`, which carries the same fields. |
-| `mediapipe-task-vision` | `InteractiveSegmenterLegacy` | none | Keep; task, result, value or capability API remains useful to apps. |
-| `mediapipe-task-vision` | `InteractiveSegmenterLegacyOptions` | none | Keep; add a pinned `model` source and strict source validation. |
 | `mediapipe-task-vision` | `InteractiveSegmenterOptions` | none | Keep; add a pinned `model` source and strict source validation. |
 | `mediapipe-task-vision` | `ObjectBoundingBox` | none | Keep; task, result, value or capability API remains useful to apps. |
 | `mediapipe-task-vision` | `ObjectCategory` | none | Keep; task, result, value or capability API remains useful to apps. |
@@ -193,7 +197,7 @@ testing a platform snapshot; they do not initialize a runtime.
 | vision | `queryFaceDetectorCapabilities`, `queryFaceLandmarkerCapabilities`, `queryObjectDetectorCapabilities` | none | Keep; one query per detector task. |
 | vision | `queryHandLandmarkerCapabilities`, `queryPoseLandmarkerCapabilities`, `queryGestureRecognizerCapabilities`, `queryHolisticLandmarkerCapabilities` | none | Keep; one query per landmark task. |
 | vision | `queryImageClassifierCapabilities`, `queryImageEmbedderCapabilities`, `queryImageSegmenterCapabilities` | none | Keep; one query per image task. |
-| vision | `queryInteractiveSegmenterCapabilities`, `queryInteractiveSegmenterLegacyCapabilities` | none | Keep; their runtime support differs. |
+| vision | `queryInteractiveSegmenterCapabilities` | none | Keep; one query for the stateful segmenter. |
 | vision | `queryLandmarkTaskCapabilities`, `queryImageTaskCapabilities`, `querySegmenterTaskCapabilities` | none | Remove; unreleased grouped aliases with no callers, replaced by the per-task queries. |
 | text | `queryTextClassifierCapabilities`, `queryTextEmbedderCapabilities`, `queryLanguageDetectorCapabilities` | none | Keep; one query per classic text task. |
 | text | `queryEmbeddingGemmaCapabilities`, `queryTextProofreaderCapabilities`, `queryTextSummarizerCapabilities` | none | Keep; one query per modern text task. |

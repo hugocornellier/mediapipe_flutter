@@ -1,6 +1,6 @@
 let FilesetResolver, FaceDetector, FaceLandmarker, GestureRecognizer, HandLandmarker;
 let HolisticLandmarker, ImageClassifier, ImageEmbedder, ImageSegmenter;
-let InteractiveSegmenter, InteractiveSegmenterLegacy, ObjectDetector, PoseLandmarker;
+let InteractiveSegmenter, ObjectDetector, PoseLandmarker;
 let DrawingUtils;
 
 import {loadVerifiedRuntime} from '../../mediapipe_core/assets/verified_runtime.js';
@@ -15,7 +15,7 @@ function loadRuntime(baseUrl) {
         new URL('runtime.json', import.meta.url), baseUrl, 'Vision');
       ({FilesetResolver, FaceDetector, FaceLandmarker, GestureRecognizer, HandLandmarker,
         HolisticLandmarker, ImageClassifier, ImageEmbedder, ImageSegmenter,
-        InteractiveSegmenter, InteractiveSegmenterLegacy, ObjectDetector, PoseLandmarker,
+        InteractiveSegmenter, ObjectDetector, PoseLandmarker,
         DrawingUtils} = bundle);
       // Compiling Google's WASM here, rather than inside createFromOptions,
       // lets a spare worker do it before the page asks for a task. A browser
@@ -175,18 +175,6 @@ function buildTasks() { return {
     image: 'segment', video: 'segmentForVideo',
     masks: {confidenceMasks: 4, categoryMask: 1}, labels: true,
     json: result => ({...result, qualityScores: result.qualityScores && Array.from(result.qualityScores)})},
-  // TODO: Delete with InteractiveSegmenterLegacy; only the modern
-  // InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
-  // IMAGE only, for the object under a keypoint. The Dart API reports no
-  // labels for it, as Google's desktop bindings have none.
-  // Its model must arrive as a URL: Google's 1.0.1 task drops a model given as
-  // a buffer (upstream-issues.md UP-021).
-  interactive_segmenter_legacy: {name: 'InteractiveSegmenterLegacy', type: InteractiveSegmenterLegacy,
-    masks: {confidenceMasks: 4, categoryMask: 1}, modelAsUrl: true,
-    call: (task, source, input, processing) =>
-      task.segment(source, {keypoint: {x: input.keypoint[0], y: input.keypoint[1]}}, processing),
-    json: result => ({...result, qualityScores: result.qualityScores && Array.from(result.qualityScores),
-      labels: []})},
   // Stateful MagicTouch: setImage keeps an image, then each request carries a
   // full stroke history and returns one float mask.
   interactive_segmenter: {name: 'InteractiveSegmenter', type: InteractiveSegmenter,
@@ -215,6 +203,10 @@ self.onmessage = ({data}) => {
 };
 async function run(type, input, timing) {
   if (type === 'overlay') {
+    if (!input.overlay) {
+      overlay = drawing = undefined;
+      return null;
+    }
     overlay = input.overlay;
     const context = overlay.getContext('2d');
     if (!context) throw new Error('Worker canvas 2D context is unavailable');
@@ -244,7 +236,6 @@ async function run(type, input, timing) {
     if (delegate === 'GPU' && !canvas.getContext('webgl2')) {
       throw new Error('GPU ' + spec.name + ' requires WebGL 2 in a browser worker. Select CPU or enable browser hardware acceleration.');
     }
-    const url = modelBytes && spec.modelAsUrl ? URL.createObjectURL(new Blob([modelBytes])) : null;
     // Google's loader instantiates the precompiled module through this hook
     // instead of fetching and compiling the WASM again, and clears it after.
     // Synchronous, so a failure rejects createFromOptions.
@@ -260,13 +251,11 @@ async function run(type, input, timing) {
         canvas,
         baseOptions: {
           delegate,
-          ...(url ? {modelAssetPath: url}
-            : modelBytes ? {modelAssetBuffer: modelBytes} : {modelAssetPath: modelPath}),
+          ...(modelBytes ? {modelAssetBuffer: modelBytes} : {modelAssetPath: modelPath}),
         },
       });
     } finally {
       self.Module = undefined;
-      if (url) URL.revokeObjectURL(url);
     }
     labels = spec.labels ? task.getLabels() : undefined;
     return null;
@@ -312,8 +301,7 @@ async function run(type, input, timing) {
       processing.regionOfInterest = {left, top, right, bottom};
     }
     const started = performance.now();
-    const result = spec.call ? spec.call(task, source, input, processing)
-      : input.timestamp == null
+    const result = input.timestamp == null
         ? task[spec.image ?? 'detect'](source, processing)
         : task[spec.video ?? 'detectForVideo'](source, input.timestamp, processing);
     const inferred = performance.now();

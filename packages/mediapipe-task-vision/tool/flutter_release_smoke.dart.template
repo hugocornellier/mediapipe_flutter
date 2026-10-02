@@ -17,7 +17,7 @@ Future<void> main() async {
   try {
     final model = await rootBundle.load('assets/model.tflite');
     final pixels = await rootBundle.load('assets/portrait.rgb');
-    for (final delegate in VisionDelegate.values) {
+    for (final delegate in Delegate.values) {
       final detector = await FaceDetector.create(
         FaceDetectorOptions(
           delegate: delegate,
@@ -28,7 +28,7 @@ Future<void> main() async {
         ),
       );
       try {
-        final result = await detector.detectImage(
+        final result = await detector.detect(
           VisionImage.fromPixels(
             pixels: pixels.buffer.asUint8List(
               pixels.offsetInBytes,
@@ -79,7 +79,7 @@ Future<void> main() async {
             if (landmarks.faceLandmarks.length != 1 ||
                 landmarks.faceLandmarks.single.length != 478 ||
                 landmarks.faceBlendshapes.single.length != 52 ||
-                landmarks.facialTransformationMatrixes.single.values.length !=
+                landmarks.facialTransformationMatrixes.single.data.length !=
                     16 ||
                 landmarks.timestampMilliseconds != timestamp) {
               throw StateError('Release Face Landmarker inference failed.');

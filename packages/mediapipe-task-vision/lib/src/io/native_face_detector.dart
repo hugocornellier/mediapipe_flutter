@@ -2,19 +2,22 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 
 import '../../third_party/mediapipe/mediapipe_vision_bindings.dart' as mp;
-import '../interface/face_detector_types.dart';
+import '../runner/native_interface.dart';
+import '../types/options.dart';
+import '../types/results.dart';
+import '../types/vision_types.dart';
 import 'pixel_conversion.dart';
 import 'native_ios_sdk.dart';
 import 'native_desktop_runtime.dart';
-import 'vision_task_worker.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceDetector implements NativeVisionTask<FaceDetectorResult> {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeFaceDetector(FaceDetectorOptions options)
-    : _gpu = options.delegate == VisionDelegate.gpu,
+    : _gpu = options.delegate == Delegate.gpu,
       _officialIos = hasOfficialIosFaceRuntime(detector: true) {
     if (!Platform.isMacOS && !Platform.isLinux && !_officialIos && _gpu) {
       throw UnsupportedError(
@@ -28,7 +31,7 @@ final class NativeFaceDetector implements NativeVisionTask<FaceDetectorResult> {
       final native = arena<mp.MpFaceDetectorOptions>();
       final base = native.ref.base_options;
       base.file_descriptor = -1;
-      base.delegate = options.delegate == VisionDelegate.gpu
+      base.delegate = options.delegate == Delegate.gpu
           ? mp.MpDelegate.MP_DELEGATE_GPU
           : mp.MpDelegate.MP_DELEGATE_CPU;
       base.host_system = Platform.isIOS
@@ -61,11 +64,11 @@ final class NativeFaceDetector implements NativeVisionTask<FaceDetectorResult> {
       final output = arena<mp.MpFaceDetectorPtr>();
       try {
         _checked((error) => mp.MpFaceDetectorCreate(native, output, error));
-      } on VisionTaskException catch (error) {
+      } on TaskException catch (error) {
         // Google's runtime reports every GPU refusal (no EGL display, a
         // software renderer) as its missing GPU service.
         if (!_gpu || !error.message.contains('kGpuService')) rethrow;
-        throw VisionTaskException(
+        throw TaskException(
           error.message,
           statusCode: error.statusCode,
           gpuUnavailable: true,
@@ -211,7 +214,7 @@ void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
   try {
     final status = call(error);
     if (status != mp.MpStatus.kMpOk) {
-      throw VisionTaskException(
+      throw TaskException(
         _string(error.value) ?? 'MediaPipe returned ${status.name}',
         statusCode: status.value,
       );
@@ -229,8 +232,8 @@ String? _string(Pointer<Char> pointer) {
   return value.isEmpty ? null : value;
 }
 
-FaceDetection _copyDetection(mp.MpDetection value) => FaceDetection(
-  boundingBox: FaceBoundingBox(
+Detection _copyDetection(mp.MpDetection value) => Detection(
+  boundingBox: BoundingBox(
     left: value.bounding_box.left,
     top: value.bounding_box.top,
     right: value.bounding_box.right,
@@ -238,7 +241,7 @@ FaceDetection _copyDetection(mp.MpDetection value) => FaceDetection(
   ),
   categories: [
     for (var i = 0; i < value.categories_count; i++)
-      FaceCategory(
+      MediaPipeCategory(
         index: value.categories[i].index,
         score: value.categories[i].score,
         categoryName: _string(value.categories[i].category_name),
@@ -247,7 +250,7 @@ FaceDetection _copyDetection(mp.MpDetection value) => FaceDetection(
   ],
   keypoints: [
     for (var i = 0; i < value.keypoints_count; i++)
-      FaceKeypoint(
+      NormalizedKeypoint(
         x: value.keypoints[i].x,
         y: value.keypoints[i].y,
         label: _string(value.keypoints[i].label),

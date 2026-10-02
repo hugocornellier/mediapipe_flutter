@@ -13,27 +13,27 @@ const _fixtures = 'test/fixtures/face_detection';
 const _model = 'models/blaze_face_short_range.tflite';
 
 void main() {
-  for (final delegate in VisionDelegate.values) {
+  for (final delegate in Delegate.values) {
     group(
       delegate.name,
       () => _testDelegate(delegate),
-      skip: delegate == VisionDelegate.gpu && !gpuFaceTestsEnabled
+      skip: delegate == Delegate.gpu && !gpuFaceTestsEnabled
           ? gpuFaceTestsSkipReason
           : false,
     );
   }
   test('CPU is the default delegate', () {
-    expect(FaceDetectorOptions(modelPath: _model).delegate, VisionDelegate.cpu);
+    expect(FaceDetectorOptions(modelPath: _model).delegate, Delegate.cpu);
   });
   tearDownAll(() => reportReferenceDeltas('face_detector'));
 }
 
-void _testDelegate(VisionDelegate delegate) {
+void _testDelegate(Delegate delegate) {
   void compare(FaceDetectorResult actual, Map<String, dynamic> expected) =>
       _compare(actual, expected, delegate);
   final reference = loadFaceReference(
     'face_detection',
-    'official${delegate == VisionDelegate.gpu ? '_gpu' : ''}_reference.json',
+    'official${delegate == Delegate.gpu ? '_gpu' : ''}_reference.json',
   );
   final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
   late FaceDetector detector;
@@ -57,7 +57,7 @@ void _testDelegate(VisionDelegate delegate) {
 
   for (final expected in cases) {
     test('official reference: ${expected['name']}', () async {
-      final result = await detector.detectImage(
+      final result = await detector.detect(
         fixtureImage(expected),
         rotationDegrees: expected['rotation_degrees'] as int,
       );
@@ -72,7 +72,7 @@ void _testDelegate(VisionDelegate delegate) {
     final task = await FaceDetector.create(options);
     try {
       final expected = cases.first;
-      compare(await task.detectImage(fixtureImage(expected)), expected);
+      compare(await task.detect(fixtureImage(expected)), expected);
     } finally {
       await task.dispose();
     }
@@ -84,14 +84,11 @@ void _testDelegate(VisionDelegate delegate) {
     );
     final expected = cases.where((c) => c['name'] == 'rgb').single;
     final requests = [
-      for (var i = 0; i < 12; i++) task.detectImage(fixtureImage(expected)),
+      for (var i = 0; i < 12; i++) task.detect(fixtureImage(expected)),
     ];
     final closing = task.dispose();
     expect(identical(closing, task.dispose()), isTrue);
-    await expectLater(
-      task.detectImage(fixtureImage(expected)),
-      throwsStateError,
-    );
+    await expectLater(task.detect(fixtureImage(expected)), throwsStateError);
     final results = await Future.wait(requests);
     await closing;
     for (final result in results) {
@@ -108,19 +105,16 @@ void _testDelegate(VisionDelegate delegate) {
     'missing image reports a native error and leaves the task usable',
     () async {
       await expectLater(
-        detector.detectImage(VisionImage.fromFile('missing-image.jpg')),
+        detector.detect(VisionImage.fromFile('missing-image.jpg')),
         throwsA(
-          isA<VisionTaskException>().having(
+          isA<TaskException>().having(
             (e) => e.message,
             'diagnostic',
             isNotEmpty,
           ),
         ),
       );
-      compare(
-        await detector.detectImage(fixtureImage(cases.first)),
-        cases.first,
-      );
+      compare(await detector.detect(fixtureImage(cases.first)), cases.first);
     },
   );
 
@@ -136,7 +130,7 @@ void _testDelegate(VisionDelegate delegate) {
       ]) {
         await expectLater(
           FaceDetector.create(options).timeout(const Duration(seconds: 10)),
-          throwsA(isA<VisionTaskException>()),
+          throwsA(isA<TaskException>()),
         );
       }
       final task = await FaceDetector.create(
@@ -206,7 +200,7 @@ void _testDelegate(VisionDelegate delegate) {
         throwsArgumentError,
       );
       await expectLater(
-        detector.detectImage(fixtureImage(cases.first), rotationDegrees: 45),
+        detector.detect(fixtureImage(cases.first), rotationDegrees: 45),
         throwsArgumentError,
       );
     },
@@ -223,13 +217,13 @@ void _testDelegate(VisionDelegate delegate) {
     );
     source.fillRange(0, source.length, 0);
     expect(() => image.pixels![0] = 0, throwsUnsupportedError);
-    compare(await detector.detectImage(image), expected);
+    compare(await detector.detect(image), expected);
   });
 
   test('video sequence matches the official VIDEO-mode reference', () async {
     final reference = loadFaceReference(
       'face_detection',
-      'official${delegate == VisionDelegate.gpu ? '_gpu' : ''}_video_reference.json',
+      'official${delegate == Delegate.gpu ? '_gpu' : ''}_video_reference.json',
     );
     expect(reference['running_mode'], 'VIDEO');
     expect(reference['model_sha256'], blazeFaceShortRangeSha256);
@@ -273,7 +267,7 @@ void _testDelegate(VisionDelegate delegate) {
         ),
       );
       try {
-        await expectLater(video.detectImage(image), throwsStateError);
+        await expectLater(video.detect(image), throwsStateError);
         await expectLater(
           detector.detectForVideo(image, timestampMilliseconds: 0),
           throwsStateError,
@@ -301,7 +295,7 @@ void _testDelegate(VisionDelegate delegate) {
             VisionImage.fromFile('missing.jpg'),
             timestampMilliseconds: 11,
           ),
-          throwsA(isA<VisionTaskException>()),
+          throwsA(isA<TaskException>()),
         );
         compare(
           await video.detectForVideo(image, timestampMilliseconds: 12),
@@ -341,7 +335,7 @@ void _testDelegate(VisionDelegate delegate) {
           bytesPerRow: stride,
         );
         bytes.fillRange(0, bytes.length, 0);
-        compare(await detector.detectImage(image), expected);
+        compare(await detector.detect(image), expected);
       },
     );
   }
@@ -365,7 +359,7 @@ void _testDelegate(VisionDelegate delegate) {
 void _compare(
   FaceDetectorResult actual,
   Map<String, dynamic> expected,
-  VisionDelegate delegate,
+  Delegate delegate,
 ) {
   final name = expected['name'] as String;
   void close(

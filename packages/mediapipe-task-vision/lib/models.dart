@@ -1,4 +1,4 @@
-import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 
 /// Verified official models accepted by vision task options.
 abstract final class VisionModels {
@@ -44,14 +44,6 @@ abstract final class VisionModels {
     sha256: interactiveSegmenterModelSha256,
   );
 
-  // TODO: Delete with InteractiveSegmenterLegacy; only the modern
-  // InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
-  /// Legacy Interactive Segmenter, MagicTouch float32.
-  static const interactiveSegmenterLegacy = DownloadAsset(
-    url: magicTouchUrl,
-    sha256: magicTouchSha256,
-  );
-
   /// Hand Landmarker, float16.
   static const handLandmarker = DownloadAsset(
     url: handLandmarkerUrl,
@@ -86,7 +78,6 @@ abstract final class VisionModels {
     'image_embedder': imageEmbedder,
     'image_segmenter': imageSegmenter,
     'interactive_segmenter': interactiveSegmenter,
-    'interactive_segmenter_legacy': interactiveSegmenterLegacy,
     'hand_landmarker': handLandmarker,
     'gesture_recognizer': gestureRecognizer,
     'pose_landmarker': poseLandmarker,
@@ -102,15 +93,6 @@ const deepLabV3Url =
 /// SHA-256 of [deepLabV3Url].
 const deepLabV3Sha256 =
     'ff36e24d40547fe9e645e2f4e8745d1876d6e38b332d39a82f0bf0f5d1d561b3';
-
-/// Versioned official MagicTouch float32 model for the legacy segmenter API.
-const magicTouchUrl =
-    'https://storage.googleapis.com/mediapipe-models/'
-    'interactive_segmenter/magic_touch/float32/1/magic_touch.tflite';
-
-/// SHA-256 of [magicTouchUrl].
-const magicTouchSha256 =
-    'e24338a717c1b7ad8d159666677ef400babb7f33b8ad60c4d96db4ecf694cd25';
 
 /// Versioned official Hand Landmarker float16 task bundle.
 const handLandmarkerUrl =
@@ -209,7 +191,6 @@ const interactiveSegmenterModelSha256 =
 /// Pinned model records for the shared model store.
 const visionModels = <String, DownloadAsset>{
   'deep_lab_v3': DownloadAsset(url: deepLabV3Url, sha256: deepLabV3Sha256),
-  'magic_touch': DownloadAsset(url: magicTouchUrl, sha256: magicTouchSha256),
   'hand_landmarker': DownloadAsset(
     url: handLandmarkerUrl,
     sha256: handLandmarkerSha256,

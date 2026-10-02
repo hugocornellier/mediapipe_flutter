@@ -1,9 +1,27 @@
 # API unification plan
 
-**Status:** planned, not started. The goal is one public API for core, vision,
-text and audio that is identical on all six platforms and follows the same
-conventions in every family. Code sites that start this work carry a TODO
-pointing here; `git grep -n "API_UNIFICATION.md"` lists them.
+**Status:** phases 0 to 6 shipped as 0.2.0 on `feat/unified-api`; phase 7
+(streaming) has not started. Core, vision, text and audio now have one public
+API that is identical on all six platforms: `tool/api_parity` finds no
+difference between the native and web APIs and no convention gap (its
+baseline is empty), and CI keeps it that way. "Where the API stands" below
+records the 0.1.0 starting point. What shipped differs from this plan in a
+few places:
+
+- Text Classifier and Text Embedder results keep a `timestampMilliseconds`:
+  Google's runtime stamps every text request (0, 1000, 2000 ms), its Python
+  API exposes it as `timestamp_ms`, and the reference tests compare it.
+- `queryTextEmbedderCapabilities(model)` recognizes EmbeddingGemma by its pin
+  (`TextModels.embeddingGemma`); a model given by `modelPath` or
+  `modelBytes` is checked against the classic embedders' table.
+- `VisionImage.fromBrowserFrame` also takes the frame's `width` and
+  `height`, and `BrowserOverlay` is `attach`, `configure`, `active` and
+  `detach`.
+- The API snapshot is `tool/api_parity/snapshots/`, written by the parity
+  tool, rather than `dart_apitool`.
+- The `comment_references` and `unawaited_futures` lints run on the five
+  packages and the gallery, and every result class and small value type is
+  `@immutable`.
 
 Related: [LIVE_STREAM.md](../packages/mediapipe-task-vision/tool/LIVE_STREAM.md)
 plans the streaming modes on top of this API, [SHARED_CODE.md](SHARED_CODE.md)

@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_vision/interface.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 void main() {
   test(
@@ -17,9 +17,9 @@ void main() {
       );
       final options = FaceLandmarkerOptions(
         modelBytes: Uint8List.fromList([1]),
-        delegate: VisionDelegate.gpu,
+        delegate: Delegate.gpu,
       );
-      expect(options.delegate, VisionDelegate.gpu);
+      expect(options.delegate, Delegate.gpu);
     },
   );
 }

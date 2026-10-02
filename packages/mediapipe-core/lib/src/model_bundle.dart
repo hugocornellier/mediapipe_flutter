@@ -1,4 +1,4 @@
-import '../mediapipe_exception.dart';
+import 'exceptions.dart';
 import 'download_asset.dart';
 
 /// Where `dart run mediapipe_core:bundle_models` writes an app's models, and

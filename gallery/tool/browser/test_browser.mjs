@@ -407,10 +407,6 @@ async function apiChecks() {
         {outputConfidenceMasks: true, outputCategoryMask: true});
       const pose = await open('PoseLandmarker', 'pose_landmarker_lite.task',
         {outputSegmentationMasks: true});
-      const legacy = await vision.InteractiveSegmenterLegacy.createFromOptions(files, {
-        baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/magic_touch.tflite', document.baseURI).href},
-        outputConfidenceMasks: true, outputCategoryMask: true,
-      });
       // Stateful MagicTouch runs on CPU only, in both delegate passes.
       const magic = await vision.InteractiveSegmenter.createFromOptions(files, {
         baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/interactive_segmentation.task', document.baseURI).href},
@@ -446,7 +442,6 @@ async function apiChecks() {
           image_embedder: [{values: Array.from(embedder.embed(bitmap).embeddings[0].floatEmbedding)}],
           image_embedder_quantized: [{values: Array.from(quantizer.embed(bitmap).embeddings[0].quantizedEmbedding)}],
           image_segmenter: [segmentation(segmenter.segment(bitmap))],
-          interactive_segmenter_legacy: [segmentation(legacy.segment(bitmap, {keypoint: {x: 0.5, y: 0.4}}), 0)],
           interactive_segmenter: (magic.setImage(bitmap),
             [strokes([[1, 0.5, 0.4]]), strokes([[1, 0.5, 0.4], [2, 0.5, 0.8]])]),
           pose_mask: [poseMask(pose.detect(figure), 'segmentationMasks')],
@@ -454,7 +449,7 @@ async function apiChecks() {
         };
       } finally {
         faces.close(); objects.close(); classifier.close(); embedder.close(); quantizer.close();
-        segmenter.close(); legacy.close(); magic.close(); pose.close(); holistic.close();
+        segmenter.close(); magic.close(); pose.close(); holistic.close();
       }
     } finally {bitmap.close(); figure.close();}
   }, delegate);
@@ -990,7 +985,7 @@ async function textAudioChecks() {
     assert.ok(heard.includes('Speech'), 'the fake microphone plays speech; heard ' + heard);
     report.checks.push('microphone-speech-classified');
   }
-  await wait(page, () => mediapipeText.stats().activeWorkers === 0 && mediapipeAudio.stats().activeWorkers === 0);
+  await wait(page, () => mediapipeTasks.stats().activeWorkers === 0);
   report.checks.push('text-audio-worker-cleanup');
   // Exercise the gallery's default settings as well as the package API.
   await page.goto(gallery);

@@ -1,20 +1,13 @@
-import 'dart:async';
+/// Flutter's registration of Google's browser runtime behind the classic
+/// text tasks. Not for applications: import `mediapipe_text.dart`.
+library;
+
 import 'dart:convert';
 import 'dart:js_interop';
-import 'dart:typed_data';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'package:mediapipe_core/web_task_bridge.dart';
 import 'package:mediapipe_text/platform_interface.dart';
-import 'package:web/web.dart' as web;
-
-import 'web_runtime.dart';
-
-@JS('mediapipeText.create')
-external JSPromise<JSNumber> _create(JSObject options);
-@JS('mediapipeText.run')
-external JSPromise<JSString> _run(JSNumber id, JSObject input);
-@JS('mediapipeText.close')
-external JSPromise<JSAny?> _close(JSNumber id);
 
 /// Flutter registration for Google's official browser text runtime.
 abstract final class MediaPipeTextWeb {
@@ -24,59 +17,25 @@ abstract final class MediaPipeTextWeb {
   }
 }
 
-/// One of Google's text tasks on its own worker (assets/worker.js).
+/// One of Google's text tasks on its own worker (assets/worker.js), through
+/// core's shared bridge.
 final class _WorkerTextTask implements TextTaskBackend {
-  _WorkerTextTask._(this._id);
+  _WorkerTextTask._(this._worker);
 
-  final JSNumber _id;
-  static Future<void>? _loaded;
+  final WebTaskWorker _worker;
 
   static Future<TextTaskBackend> create(
     String task,
     Map<String, Object?> options,
-  ) async {
-    await (_loaded ??= _loadBridge(
-      'assets/packages/mediapipe_text/assets/bridge.js',
-      () => _loaded = null,
-    ));
-    final bytes = options['modelBytes'] as Uint8List?;
-    final path = options['modelPath'] as String?;
-    final input = {
-      ...options,
-      'task': task,
-      'modelBytes': bytes == null ? null : Uint8List.fromList(bytes).toJS,
-      // A model path is a URL here, resolved against the page.
-      'modelPath': path == null ? null : Uri.base.resolve(path).toString(),
-      'runtimeBaseUrl': MediaPipeWebRuntime.resolve(Uri.base),
-    }.jsify()!;
-    return _WorkerTextTask._(await _create(input as JSObject).toDart);
-  }
+  ) async => _WorkerTextTask._(
+    await WebTaskWorker.create('mediapipe_text', {...options, 'task': task}),
+  );
 
   @override
-  Future<Map<String, dynamic>> run(String text) async {
-    final json = await _run(_id, {'text': text}.jsify()! as JSObject).toDart;
-    return jsonDecode(json.toDart) as Map<String, dynamic>;
-  }
+  Future<Map<String, dynamic>> run(String text) async =>
+      jsonDecode(await _worker.run({'text': text}.jsify()! as JSObject))
+          as Map<String, dynamic>;
 
   @override
-  Future<void> dispose() => _close(_id).toDart;
-}
-
-/// Adds the bridge script to the page once; a failure can be retried.
-Future<void> _loadBridge(String path, void Function() reset) async {
-  final script = web.HTMLScriptElement()
-    ..src = Uri.base.resolve(path).toString();
-  final ready = Completer<void>();
-  script.onLoad.first.then((_) => ready.complete());
-  script.onError.first.then((_) {
-    ready.completeError(StateError('Unable to load the MediaPipe web bridge.'));
-  });
-  web.document.head!.append(script);
-  try {
-    await ready.future.timeout(const Duration(seconds: 60));
-  } catch (_) {
-    script.remove();
-    reset();
-    rethrow;
-  }
+  Future<void> dispose() => _worker.close();
 }

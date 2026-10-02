@@ -95,17 +95,20 @@ class SdksFinderCommand extends Command with RepoFinderMixin {
   /// Google Storage bucket which houses all MediaPipe SDK uploads.
   static const _bucketName = 'mediapipe-nightly-public/prod/mediapipe';
 
+  /// One finder per upload layout this bucket is known to have. Only the
+  /// genai manifest pins binaries from it, for these three targets; the text,
+  /// vision and audio runtimes are pinned from other sources on every
+  /// platform, so there is nothing here to discover for Linux, Windows or the
+  /// web.
   final _finders = <_OsFinder>[
     _OsFinder(OS.android),
     _OsFinder(OS.macOS),
     _OsFinder(OS.iOS),
-    // TODO: Add other values as their support is ready
   ];
 
   @override
   Future<void> run() async {
     setUpLogging();
-    await _checkGsUtil();
     final results = _SdkLocations();
 
     for (final finder in _finders) {
@@ -141,38 +144,6 @@ final Map<String, Map<String, Map<String, String>>> sdkDownloadUrls = ${encoder.
         'sdk_downloads.candidate.dart',
       ]),
     );
-  }
-
-  Future<void> _checkGsUtil() async {
-    if (!io.Platform.isMacOS && !io.Platform.isLinux) {
-      // `which` is not available on Windows, so allow the command to attempt
-      // to run on Windows
-      // TODO: possibly add Windows-specific support
-      return;
-    }
-    final process = await Process.start('which', ['gsutil']);
-    final exitCode = await process.exitCode;
-    final List<String> processStdOut = await process.processedStdOut;
-    if (exitCode != 0) {
-      stderr.writeln(
-        wrapWith(
-          'Warning: Unexpected exit code $exitCode checking for gsutil. Output:'
-          '${processStdOut.join('\n')}',
-          [yellow],
-        ),
-      );
-      // Not exiting here, since this could be a false-negative.
-    }
-    if (processStdOut.isEmpty) {
-      stderr.writeln(
-        wrapWith(
-          'gsutil command not found. Visit: '
-          'https://cloud.google.com/storage/docs/gsutil_install',
-          [red],
-        ),
-      );
-      exit(1);
-    }
   }
 }
 
@@ -367,8 +338,22 @@ Future<List<String>> _gsUtil(String path, {bool recursive = false}) async {
     'gs://${SdksFinderCommand._bucketName}/$path',
   ];
   _log.finest('Running: `gsutil ${cmd.join(' ')}`');
-  final process = await Process.start('gsutil', cmd);
+  final Process process;
+  try {
+    // On Windows gsutil is a .cmd script, which only a shell can start.
+    process = await Process.start(
+      'gsutil',
+      cmd,
+      runInShell: Platform.isWindows,
+    );
+  } on ProcessException {
+    _gsUtilMissing();
+  }
   final exitCode = await process.exitCode;
+  // cmd.exe reports an unknown command with exit code 9009.
+  if (Platform.isWindows && exitCode == 9009) {
+    _gsUtilMissing();
+  }
   if (exitCode > 1) {
     // Exit codes of 1 appear when `gsutil` checks for a file that does not
     // exist, which for our purposes does not constitute an actual error, and is
@@ -386,6 +371,18 @@ Future<List<String>> _gsUtil(String path, {bool recursive = false}) async {
   final processStdout = await process.processedStdOut;
   final filtered = (processStdout).where((String line) => line != '').toList();
   return filtered;
+}
+
+/// Points at the gsutil install guide and exits.
+Never _gsUtilMissing() {
+  stderr.writeln(
+    wrapWith(
+      'gsutil command not found. Visit: '
+      'https://cloud.google.com/storage/docs/gsutil_install',
+      [red],
+    ),
+  );
+  exit(1);
 }
 
 /// Simple container for the location of a specific MediaPipe SDK in GCS.

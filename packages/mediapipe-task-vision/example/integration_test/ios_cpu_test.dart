@@ -30,10 +30,10 @@ void main() {
       FaceDetectorOptions(modelBytes: fixtures.detectorModel),
     );
     try {
-      expect(task.delegate, VisionDelegate.cpu);
+      expect(task.delegate, Delegate.cpu);
       for (final frame
           in (reference['cases'] as List).cast<Map<String, dynamic>>()) {
-        final result = await task.detectImage(
+        final result = await task.detect(
           await fixtures.image(frame),
           rotationDegrees: frame['rotation_degrees'] as int,
         );
@@ -107,7 +107,7 @@ void main() {
                     timestampMilliseconds: frame['timestamp_ms'] as int,
                     rotationDegrees: frame['rotation'] as int,
                   )
-                : await task.detectImage(
+                : await task.detect(
                     image,
                     rotationDegrees: frame['rotation'] as int,
                   );
@@ -175,8 +175,8 @@ void main() {
             format: format,
           );
           // Both libraries coexist, with independent worker and native lifetimes.
-          final pendingDetection = detector.detectImage(image);
-          final pendingLandmarks = landmarker.detectImage(image);
+          final pendingDetection = detector.detect(image);
+          final pendingLandmarks = landmarker.detect(image);
           _detectorMatches(await pendingDetection, expectedDetection);
           _landmarksMatch(await pendingLandmarks, expectedLandmarks);
         }
@@ -194,11 +194,11 @@ void main() {
       FaceDetector.create(
         FaceDetectorOptions(
           modelBytes: fixtures.detectorModel,
-          delegate: VisionDelegate.gpu,
+          delegate: Delegate.gpu,
         ),
       ),
       throwsA(
-        isA<VisionTaskException>().having(
+        isA<TaskException>().having(
           (e) => e.message,
           'message',
           contains('CPU only'),
@@ -209,11 +209,11 @@ void main() {
       FaceLandmarker.create(
         FaceLandmarkerOptions(
           modelBytes: fixtures.landmarkerModel,
-          delegate: VisionDelegate.gpu,
+          delegate: Delegate.gpu,
         ),
       ),
       throwsA(
-        isA<VisionTaskException>().having(
+        isA<TaskException>().having(
           (e) => e.message,
           'message',
           contains('CPU only'),
@@ -225,7 +225,7 @@ void main() {
     );
     try {
       expect(
-        (await task.detectImage(fixtures.portrait)).faceLandmarks.single,
+        (await task.detect(fixtures.portrait)).faceLandmarks.single,
         hasLength(478),
       );
     } finally {
@@ -243,16 +243,13 @@ void main() {
         ),
       );
       try {
-        await expectLater(
-          task.detectImage(fixtures.portrait),
-          throwsStateError,
-        );
+        await expectLater(task.detect(fixtures.portrait), throwsStateError);
         await expectLater(
           task.detectForVideo(
             VisionImage.fromFile('${fixtures.directory.path}/missing.jpg'),
             timestampMilliseconds: 0,
           ),
-          throwsA(isA<VisionTaskException>()),
+          throwsA(isA<TaskException>()),
         );
         final frames = [
           for (var i = 1; i <= 6; i++)

@@ -1,7 +1,7 @@
 name: "MediaPipeCommonBindings"
 description: "Bindings for shared MediaPipe structs common across many tasks"
 output:
-  bindings: "lib/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart"
+  bindings: "lib/src/legacy/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart"
   symbol-file:
     output: "package:mediapipe_core/generated/core_symbols.yaml"
     import-path: "package:mediapipe_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart"

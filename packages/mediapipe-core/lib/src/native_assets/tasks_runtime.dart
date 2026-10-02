@@ -128,15 +128,15 @@ final class TasksRuntimeRelease {
 const tasksRuntimeReleases = <String, TasksRuntimeRelease>{
   'macos/arm64': TasksRuntimeRelease(
     target: 'macos/arm64',
-    release: 'official-landmarks-v1.0.0',
+    release: 'macos-tasks-runtime-v1.0.0',
     version: '1.0.0',
     archive: DownloadAsset(
       url:
           'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
-          'download/official-landmarks-v1.0.0/'
-          'mediapipe-official-vision-1.0.0-macos-arm64.tar.gz',
+          'download/macos-tasks-runtime-v1.0.0/'
+          'mediapipe-tasks-runtime-1.0.0-macos-arm64.tar.gz',
       sha256:
-          'f662a259669792872d54da3a4f0932e63d87f423473fc08acf7d8d0528d9fb8d',
+          '5a810390e75ccb38d16aaf42c820534becedfa39cc0ef185efc0e8379e9e6d4a',
     ),
     libraryName: 'libmediapipe.dylib',
     librarySha256:
@@ -267,7 +267,7 @@ bool tasksRuntimeEnabledByDefault(String target) =>
 /// engine is on by default and the app turned it off.
 ///
 /// Where it is opt-in (macOS) the family builds without its engine tasks
-/// instead, and creating one throws [tasksRuntimeUnavailable]'s message. `dart
+/// instead, and creating one throws `tasksRuntimeUnavailable`'s message. `dart
 /// run` builds an app's hooks for the host with the app's settings, so an iOS
 /// or Android app developed on a Mac must not need the macOS opt-in to run a
 /// script.

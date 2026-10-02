@@ -19,7 +19,7 @@ import 'live_subject.dart';
 Future<void> selectDelegate(
   WidgetTester tester,
   LiveCameraController<Object?> controller,
-  VisionDelegate delegate, {
+  Delegate delegate, {
   Duration timeout = const Duration(minutes: 3),
 }) async {
   Future<void> settle() async {

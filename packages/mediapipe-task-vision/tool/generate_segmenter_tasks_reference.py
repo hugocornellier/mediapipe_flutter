@@ -8,7 +8,6 @@ import platform
 import mediapipe as mp
 import numpy as np
 from mediapipe.tasks.python import vision
-from mediapipe.tasks.python.components.containers import keypoint as keypoint_module
 from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
@@ -18,11 +17,7 @@ FIXTURES = ROOT / 'test/fixtures/face_detection'
 MODELS = {
     'image': ('deeplab_v3.tflite',
         'ff36e24d40547fe9e645e2f4e8745d1876d6e38b332d39a82f0bf0f5d1d561b3'),
-    'interactive': ('magic_touch.tflite',
-        'e24338a717c1b7ad8d159666677ef400babb7f33b8ad60c4d96db4ecf694cd25'),
 }
-# A point on the subject of portrait-301x209, in normalized image coordinates.
-KEYPOINT = (0.5, 0.4)
 # Coarse views of each file-input mask, for runtimes whose bytes differ from
 # this wheel's: the mobile SDKs and the browser decode the JPEG themselves and
 # run other builds. (columns, rows) of cell means for confidence masks that
@@ -151,9 +146,8 @@ def main():
         if args.delegate == 'gpu':
             # Google's 1.0.0 macOS Metal path aborts in VIDEO mode on the
             # third frame with both mask kinds ("unsupported ImageFrame
-            # format: 1" in gpu_buffer_storage_cv_pixel_buffer.cc), and in the
-            # legacy Interactive Segmenter below. GPU references cover Image
-            # Segmenter's IMAGE mode only.
+            # format: 1" in gpu_buffer_storage_cv_pixel_buffer.cc). GPU
+            # references cover Image Segmenter's IMAGE mode only.
             continue
         options.running_mode = vision.RunningMode.VIDEO
         with vision.ImageSegmenter.create_from_options(options) as task:
@@ -162,23 +156,6 @@ def main():
                 record('image', kind, image, configuration,
                        task.segment_for_video(image, index * 33),
                        rotation_degrees=0, timestamp_ms=index * 33)
-
-    base = mp.tasks.BaseOptions(
-        model_asset_path=str(ROOT / 'models' / MODELS['interactive'][0]), delegate=delegate)
-    region_type = vision.InteractiveSegmenterLegacyRegionOfInterest
-    roi = region_type(format=region_type.Format.KEYPOINT,
-                      keypoint=keypoint_module.NormalizedKeypoint(*KEYPOINT))
-    for configuration in [] if args.delegate == 'gpu' else [masks_only, category_only]:
-        options = vision.InteractiveSegmenterLegacyOptions(base_options=base, **configuration)
-        with vision.InteractiveSegmenterLegacy.create_from_options(options) as task:
-            for kind in ['rgb', 'rgba', 'file', 'blank', 'rotated']:
-                image = image_for(kind)
-                rotation = 90 if kind == 'rotated' else 0
-                processing = ImageProcessingOptions(rotation_degrees=rotation)
-                record('interactive', kind, image, configuration,
-                       task.segment(image, roi, processing),
-                       rotation_degrees=rotation, timestamp_ms=None,
-                       keypoint=dict(x=KEYPOINT[0], y=KEYPOINT[1]))
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     suffix = '_gpu' if args.delegate == 'gpu' else ''

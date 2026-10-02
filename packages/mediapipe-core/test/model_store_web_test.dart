@@ -4,7 +4,7 @@ library;
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -17,12 +17,12 @@ void main() {
       url: 'data:application/octet-stream;base64,${base64.encode(bytes)}',
       sha256: digest,
     );
-    expect(await store.get(online), bytes);
+    expect((await store.get(online)).bytes, bytes);
     final offline = DownloadAsset(
       url: 'https://invalid.example/model',
       sha256: digest,
     );
-    expect(await store.get(offline), bytes);
+    expect((await store.get(offline)).bytes, bytes);
     await store.clear();
   });
 }

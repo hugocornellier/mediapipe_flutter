@@ -9,38 +9,102 @@ import '../live/task_settings.dart';
 /// each demo supplies only its name and how its task is built.
 abstract base class _WebLiveTask<R>
     implements BrowserLiveTask<R>, BrowserOverlayLiveTask {
-  BrowserVisionTask<R>? _task;
+  VisionTask? _task;
+  BrowserOverlay? _overlay;
 
   /// Creates a task in the requested running mode.
-  Future<Object> create(
-    VisionDelegate delegate,
+  Future<VisionTask> create(
+    Delegate delegate,
     Uint8List model,
     RunningMode mode,
   );
 
   @override
   Future<void> open(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List modelBytes, {
     RunningMode mode = RunningMode.video,
   }) async {
-    // The primary package export selects the browser implementations on web.
-    _task = await create(delegate, modelBytes, mode) as BrowserVisionTask<R>;
+    _task = await create(delegate, modelBytes, mode);
   }
 
   @override
-  Future<R> detectImage(VisionImage image) => _task!.detectImage(image);
+  Future<R> detectImage(VisionImage image) =>
+      switch (_task!) {
+            final FaceLandmarker t => t.detect(image),
+            final HandLandmarker t => t.detect(image),
+            final PoseLandmarker t => t.detect(image),
+            final GestureRecognizer t => t.recognize(image),
+            final HolisticLandmarker t => t.detect(image),
+            final FaceDetector t => t.detect(image),
+            final ObjectDetector t => t.detect(image),
+            final ImageClassifier t => t.classify(image),
+            final ImageEmbedder t => t.embed(image),
+            final ImageSegmenter t => t.segment(image),
+            final task => throw UnsupportedError('$task has no still images.'),
+          }
+          as Future<R>;
 
   @override
   Future<R> detect(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.detectForVideo(
-    frame,
-    timestampMilliseconds: timestamp,
-    rotationDegrees: rotationDegrees,
-  );
+  }) =>
+      switch (_task!) {
+            final FaceLandmarker t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final HandLandmarker t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final PoseLandmarker t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final GestureRecognizer t => t.recognizeForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final HolisticLandmarker t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final FaceDetector t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final ObjectDetector t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final ImageClassifier t => t.classifyForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final ImageEmbedder t => t.embedForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final ImageSegmenter t => t.segmentForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final task => throw UnsupportedError('$task has no video mode.'),
+          }
+          as Future<R>;
 
   @override
   Future<R> detectBrowserFrame(
@@ -48,16 +112,16 @@ abstract base class _WebLiveTask<R>
     int width,
     int height,
     int timestamp,
-  ) => _task!.detectBrowserFrame(
-    frame,
-    width: width,
-    height: height,
-    timestampMilliseconds: timestamp,
+  ) => detect(
+    VisionImage.fromBrowserFrame(frame, width: width, height: height),
+    timestamp,
+    rotationDegrees: 0,
   );
 
   @override
-  Future<void> attachOverlay(Object canvas) =>
-      _task!.attachBrowserOverlay(canvas);
+  Future<void> attachOverlay(Object canvas) async {
+    _overlay = await BrowserOverlay.attach(_task!, canvas);
+  }
 
   @override
   void setOverlayOptions({
@@ -65,7 +129,7 @@ abstract base class _WebLiveTask<R>
     required bool points,
     required bool mirrored,
     required double scale,
-  }) => _task?.setBrowserOverlayOptions(
+  }) => _overlay?.configure(
     connections: connections,
     points: points,
     mirrored: mirrored,
@@ -73,12 +137,13 @@ abstract base class _WebLiveTask<R>
   );
 
   @override
-  bool get overlayActive => _task?.browserOverlayActive ?? false;
+  bool get overlayActive => _overlay?.active ?? false;
 
   @override
   Future<void> close() async {
     final task = _task;
     _task = null;
+    _overlay = null;
     await task?.dispose();
   }
 }
@@ -93,7 +158,7 @@ final class FaceLandmarkerLiveTask extends _WebLiveTask<FaceLandmarkerResult> {
 
   @override
   Future<FaceLandmarker> create(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List model,
     RunningMode mode,
   ) => FaceLandmarker.create(
@@ -122,7 +187,7 @@ final class HandLandmarkerLiveTask extends _WebLiveTask<HandLandmarkerResult> {
 
   @override
   Future<HandLandmarker> create(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List model,
     RunningMode mode,
   ) => HandLandmarker.create(
@@ -148,7 +213,7 @@ final class PoseLandmarkerLiveTask extends _WebLiveTask<PoseLandmarkerResult> {
 
   @override
   Future<PoseLandmarker> create(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List model,
     RunningMode mode,
   ) => PoseLandmarker.create(
@@ -176,7 +241,7 @@ final class GestureRecognizerLiveTask
 
   @override
   Future<GestureRecognizer> create(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List model,
     RunningMode mode,
   ) => GestureRecognizer.create(
@@ -188,7 +253,7 @@ final class GestureRecognizerLiveTask
       minHandDetectionConfidence: settings.share('minHandDetectionConfidence'),
       minHandPresenceConfidence: settings.share('minHandPresenceConfidence'),
       minTrackingConfidence: settings.share('minTrackingConfidence'),
-      cannedGesturesClassifierOptions: GestureClassifierOptions(
+      cannedGesturesClassifierOptions: ClassifierOptions(
         maxResults: settings.count('maxResults'),
         scoreThreshold: settings.share('scoreThreshold'),
       ),
@@ -208,7 +273,7 @@ final class HolisticLandmarkerLiveTask
 
   @override
   Future<HolisticLandmarker> create(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List model,
     RunningMode mode,
   ) => HolisticLandmarker.create(
@@ -242,7 +307,7 @@ final class FaceDetectorLiveTask extends _WebLiveTask<FaceDetectorResult> {
 
   @override
   Future<FaceDetector> create(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List model,
     RunningMode mode,
   ) => FaceDetector.create(
@@ -266,7 +331,7 @@ final class ObjectDetectorLiveTask extends _WebLiveTask<ObjectDetectorResult> {
 
   @override
   Future<ObjectDetector> create(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List model,
     RunningMode mode,
   ) => ObjectDetector.create(
@@ -291,7 +356,7 @@ final class ImageClassifierLiveTask
 
   @override
   Future<ImageClassifier> create(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List model,
     RunningMode mode,
   ) => ImageClassifier.create(
@@ -308,7 +373,7 @@ final class ImageClassifierLiveTask
 /// Browser Image Segmenter, returning the category mask and, for Output
 /// Type Confidence Mask, the confidence masks.
 final class ImageSegmenterLiveTask
-    implements BrowserLiveTask<SegmentationResult> {
+    implements BrowserLiveTask<ImageSegmenterResult> {
   @override
   final settings = TaskSettingValues('image_segmenter');
 
@@ -319,7 +384,7 @@ final class ImageSegmenterLiveTask
 
   @override
   Future<void> open(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List modelBytes, {
     RunningMode mode = RunningMode.video,
   }) async {
@@ -335,11 +400,11 @@ final class ImageSegmenterLiveTask
   }
 
   @override
-  Future<SegmentationResult> detectImage(VisionImage image) =>
-      _task!.segmentImage(image);
+  Future<ImageSegmenterResult> detectImage(VisionImage image) =>
+      _task!.segment(image);
 
   @override
-  Future<SegmentationResult> detect(
+  Future<ImageSegmenterResult> detect(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
@@ -350,15 +415,13 @@ final class ImageSegmenterLiveTask
   );
 
   @override
-  Future<SegmentationResult> detectBrowserFrame(
+  Future<ImageSegmenterResult> detectBrowserFrame(
     Object frame,
     int width,
     int height,
     int timestamp,
-  ) => (_task! as BrowserVisionTask<SegmentationResult>).detectBrowserFrame(
-    frame,
-    width: width,
-    height: height,
+  ) => _task!.segmentForVideo(
+    VisionImage.fromBrowserFrame(frame, width: width, height: height),
     timestampMilliseconds: timestamp,
   );
 

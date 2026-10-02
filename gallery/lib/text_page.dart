@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
-import 'package:mediapipe_vision/capabilities.dart';
 
 import 'catalog.dart';
 import 'live/task_models.dart';
@@ -103,30 +102,26 @@ class _TextPageState extends State<TextPage> {
   Future<Object> _open() async {
     if (_task case final task?) return task;
     final bytes = await _bytes();
-    ClassifierOptions classifier() => ClassifierOptions(
-      maxResults: _values.count('maxResults'),
-      scoreThreshold: _values.share('scoreThreshold'),
-    );
     return _task = switch (_id) {
       'text_classifier' => await TextClassifier.create(
-        TextClassifierOptions.fromAssetBuffer(
-          bytes,
-          classifierOptions: classifier(),
+        TextClassifierOptions(
+          modelBytes: bytes,
+          maxResults: _values.count('maxResults'),
+          scoreThreshold: _values.share('scoreThreshold'),
         ),
       ),
       'language_detector' => await LanguageDetector.create(
-        LanguageDetectorOptions.fromAssetBuffer(
-          bytes,
-          classifierOptions: classifier(),
+        LanguageDetectorOptions(
+          modelBytes: bytes,
+          maxResults: _values.count('maxResults'),
+          scoreThreshold: _values.share('scoreThreshold'),
         ),
       ),
       _ => await TextEmbedder.create(
-        TextEmbedderOptions.fromAssetBuffer(
-          bytes,
-          embedderOptions: EmbedderOptions(
-            l2Normalize: _values.on('l2Normalize'),
-            quantize: _values.on('quantize'),
-          ),
+        TextEmbedderOptions(
+          modelBytes: bytes,
+          l2Normalize: _values.on('l2Normalize'),
+          quantize: _values.on('quantize'),
         ),
       ),
     };
@@ -156,7 +151,7 @@ class _TextPageState extends State<TextPage> {
         case TextEmbedder task:
           final a = await task.embed(_first.text);
           final b = await task.embed(_second.text);
-          _similarity = await task.cosineSimilarity(
+          _similarity = TextEmbedder.cosineSimilarity(
             a.embeddings.first,
             b.embeddings.first,
           );
@@ -238,8 +233,8 @@ class _TextPageState extends State<TextPage> {
     builder: (context, _) => TaskSettingsPanel(
       settings: _settings,
       values: _values,
-      delegates: const [VisionDelegate.cpu],
-      delegate: VisionDelegate.cpu,
+      delegates: const [Delegate.cpu],
+      delegate: Delegate.cpu,
       enabled: !_busy,
       onChanged: _setSetting,
       onDelegate: (_) {},

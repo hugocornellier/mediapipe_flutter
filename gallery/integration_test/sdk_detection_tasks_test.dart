@@ -50,16 +50,16 @@ void main() {
           final assets = await GalleryAssets.unpack();
           final model = await _model(subject.model);
           final frame = await loadSample('portrait.jpg');
-          final references = <VisionDelegate, List<_Item>>{};
+          final references = <Delegate, List<_Item>>{};
           for (final delegate in [
-            VisionDelegate.cpu,
-            if (_gpu != 'skip') VisionDelegate.gpu,
+            Delegate.cpu,
+            if (_gpu != 'skip') Delegate.gpu,
           ]) {
             final _Task task;
             try {
               task = await subject.open(model, delegate, RunningMode.image);
             } on Exception catch (error) {
-              if (delegate == VisionDelegate.cpu || _gpu == 'required') {
+              if (delegate == Delegate.cpu || _gpu == 'required') {
                 rethrow;
               }
               _report(subject, 'gpu_unavailable', {'error': '$error'});
@@ -140,14 +140,14 @@ void main() {
                 '${item.name} ${item.score.toStringAsFixed(3)}',
             ].join(', ');
             _report(subject, 'cpu_gpu', {
-              'cpu': top(references[VisionDelegate.cpu]!),
-              'gpu': top(references[VisionDelegate.gpu]!),
+              'cpu': top(references[Delegate.cpu]!),
+              'gpu': top(references[Delegate.gpu]!),
             });
           }
           await expectLater(
             subject.open(
               Uint8List.fromList([1, 2, 3]),
-              VisionDelegate.cpu,
+              Delegate.cpu,
               RunningMode.image,
             ),
             throwsA(isA<Exception>()),
@@ -164,7 +164,7 @@ void main() {
           final frame = await loadSample('portrait.jpg');
           final task = await subject.open(
             await _model(subject.model),
-            VisionDelegate.cpu,
+            Delegate.cpu,
             RunningMode.video,
           );
           try {
@@ -243,7 +243,7 @@ final class _Subject {
   final int? maxResults;
   final Future<_Task> Function(
     Uint8List model,
-    VisionDelegate delegate,
+    Delegate delegate,
     RunningMode mode,
   )
   open;
@@ -254,8 +254,8 @@ final class _Subject {
   /// its CPU inference (portrait.jpg's top class: 0.31 on CPU, 0.80 on GPU, in
   /// its wheel, its browser runtime and its Android SDK alike), so GPU results
   /// are held to the wheel's GPU output, never to the CPU one.
-  double compare(String sample, _Result result, VisionDelegate delegate) {
-    final gpu = delegate == VisionDelegate.gpu;
+  double compare(String sample, _Result result, Delegate delegate) {
+    final gpu = delegate == Delegate.gpu;
     if (name == 'image_classifier') {
       final expected = gpu
           ? officialGpuClassifierReference
@@ -367,7 +367,7 @@ final _subjects = <_Subject>[
       );
       return _Task(
         (image, {rotation = 0, region}) async =>
-            map(await task.detectImage(image, rotationDegrees: rotation)),
+            map(await task.detect(image, rotationDegrees: rotation)),
         (image, timestamp) async => map(
           await task.detectForVideo(image, timestampMilliseconds: timestamp),
         ),
@@ -412,7 +412,7 @@ final _subjects = <_Subject>[
       );
       return _Task(
         (image, {rotation = 0, region}) async =>
-            map(await task.detectImage(image, rotationDegrees: rotation)),
+            map(await task.detect(image, rotationDegrees: rotation)),
         (image, timestamp) async => map(
           await task.detectForVideo(image, timestampMilliseconds: timestamp),
         ),
@@ -452,7 +452,7 @@ final _subjects = <_Subject>[
       );
       return _Task(
         (image, {rotation = 0, region}) async => map(
-          await task.classifyImage(
+          await task.classify(
             image,
             rotationDegrees: rotation,
             regionOfInterest: region,

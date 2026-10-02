@@ -110,6 +110,15 @@ public final class MediaPipeAudioPlugin implements FlutterPlugin, MethodChannel.
     if (call.hasArgument("scoreThreshold")) {
       options.setScoreThreshold(((Number) call.argument("scoreThreshold")).floatValue());
     }
+    if (call.hasArgument("displayNamesLocale")) {
+      options.setDisplayNamesLocale(call.argument("displayNamesLocale"));
+    }
+    if (call.hasArgument("categoryAllowlist")) {
+      options.setCategoryAllowlist(call.argument("categoryAllowlist"));
+    }
+    if (call.hasArgument("categoryDenylist")) {
+      options.setCategoryDenylist(call.argument("categoryDenylist"));
+    }
     int id = nextId++;
     tasks.put(id, AudioClassifier.createFromOptions(context, options.build()));
     if (model != null) modelBuffers.put(id, model);

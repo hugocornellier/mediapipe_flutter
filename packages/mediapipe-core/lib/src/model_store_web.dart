@@ -1,21 +1,37 @@
+import 'dart:async';
 import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:web/web.dart' as web;
 
 import 'download_asset.dart';
+import 'exceptions.dart';
 import 'model_bundle.dart';
 import 'model_download_exception.dart';
+import 'model_source.dart';
 import 'bundled_model_stub.dart'
     if (dart.library.ui) 'bundled_model_flutter.dart'
     as bundle;
 
-/// Verified model bytes in the browser's persistent Cache Storage.
+/// Verified models shared by every task family: the app's bundled copies,
+/// cached in the browser's persistent Cache Storage, and downloads when asked
+/// for. The same API as on native platforms, where a [ModelSource] holds a
+/// file path instead of bytes.
 final class ModelStore {
-  /// [source] is an internal URL root whose files are named by SHA-256.
-  ModelStore({this.source});
+  /// [source] is an internal URL root whose files are named by SHA-256;
+  /// [client] replaces the browser's own fetch. Browsers keep models in Cache
+  /// Storage, so a [cacheDirectory] is refused here.
+  ModelStore({this.cacheDirectory, this.source, this.client}) {
+    if (cacheDirectory != null) {
+      throw const RuntimeUnavailableException(
+        'Browsers keep MediaPipe models in Cache Storage, not in a directory.',
+        fix: 'Leave cacheDirectory null in browsers.',
+      );
+    }
+  }
 
   static const _cacheName = 'mediapipe-models-v1';
 
@@ -30,34 +46,52 @@ final class ModelStore {
   @visibleForTesting
   static Future<Uint8List?> Function(String sha256)? debugBundledModels;
 
+  /// Unused in browsers, where models live in Cache Storage; exists so tests
+  /// can set it on every platform.
+  @visibleForTesting
+  static String? debugCacheDirectory;
+
+  /// Always null in browsers; see the constructor.
+  final String? cacheDirectory;
+
   /// Internal URL root whose files are named by SHA-256.
   final String? source;
-  final Map<String, Future<Uint8List?>> _finding = {};
-  final Map<String, Future<Uint8List>> _inflight = {};
+
+  /// HTTP client override; null downloads with the browser's fetch.
+  final http.Client? client;
+  final Map<String, Future<ModelSource?>> _finding = {};
+  final Map<String, Future<ModelSource>> _inflight = {};
 
   String _key(String sha) =>
       Uri.base.resolve('/__mediapipe_models__/$sha').toString();
 
   /// The verified bytes of [model] without downloading: a copy in Cache
   /// Storage, else the app's bundled copy. Returns null when there is neither.
-  Future<Uint8List?> find(DownloadAsset model) =>
+  Future<ModelSource?> find(DownloadAsset model) =>
       _finding.putIfAbsent(model.sha256, () async {
         try {
-          return await _find(model);
+          final bytes = await _find(model);
+          return bytes == null ? null : ModelSource(bytes: bytes);
         } finally {
-          _finding.remove(model.sha256);
+          // The entry is this very future, still completing; awaiting it would
+          // never finish.
+          unawaited(_finding.remove(model.sha256));
         }
       });
 
   /// Returns verified bytes: cached, bundled or downloaded.
-  Future<Uint8List> get(DownloadAsset model) =>
-      _inflight.putIfAbsent(model.sha256, () async {
-        try {
-          return await find(model) ?? await _download(model);
-        } finally {
-          _inflight.remove(model.sha256);
-        }
-      });
+  Future<ModelSource> get(DownloadAsset model) => _inflight.putIfAbsent(
+    model.sha256,
+    () async {
+      try {
+        return ModelSource(bytes: await _find(model) ?? await _download(model));
+      } finally {
+        // The entry is this very future, still completing; awaiting it would
+        // never finish.
+        unawaited(_inflight.remove(model.sha256));
+      }
+    },
+  );
 
   Future<Uint8List?> _find(DownloadAsset model) async {
     final cache = await web.window.caches.open(_cacheName).toDart;
@@ -91,10 +125,7 @@ final class ModelStore {
     final failures = <DownloadFailure>[];
     for (final location in locations) {
       try {
-        final response = await web.window.fetch(location.toJS).toDart;
-        if (!response.ok) throw StateError('HTTP ${response.status}');
-        final bytes = (await response.arrayBuffer().toDart).toDart
-            .asUint8List();
+        final bytes = await _fetch(location);
         final digest = sha256.convert(bytes).toString();
         if (digest != model.sha256) {
           throw StateError(
@@ -108,6 +139,19 @@ final class ModelStore {
       }
     }
     throw ModelDownloadException(failures, null);
+  }
+
+  Future<Uint8List> _fetch(String location) async {
+    if (client case final client?) {
+      final response = await client.get(Uri.parse(location));
+      if (response.statusCode != 200) {
+        throw StateError('HTTP ${response.statusCode}');
+      }
+      return response.bodyBytes;
+    }
+    final response = await web.window.fetch(location.toJS).toDart;
+    if (!response.ok) throw StateError('HTTP ${response.status}');
+    return (await response.arrayBuffer().toDart).toDart.asUint8List();
   }
 
   /// Downloads ahead of task creation.

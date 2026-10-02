@@ -1,7 +1,7 @@
 # Vision task status
 
 Where each MediaPipe vision task runs, on which delegate, and what proves it.
-The capability queries in `lib/capabilities.dart` are the source of truth;
+The capability queries in `lib/src/capabilities.dart` are the source of truth;
 this table restates them for readers and must change in the same commit.
 Hand and Face Landmarker have deeper per-platform evidence in
 [HAND_LANDMARKER_STATUS.md](HAND_LANDMARKER_STATUS.md) and
@@ -36,7 +36,6 @@ one. ✗ means the package refuses the task on that target.
 | Image Classifier | WebGL | Metal | GPU | Metal | GL ES | CPU |
 | Image Embedder | WebGL | Metal | GPU | Metal | CPU [f] | CPU |
 | Image Segmenter | WebGL | Metal | GPU | Metal | GL ES | CPU |
-| Interactive Segmenter Legacy (point) | WebGL | Metal | ✗ [a] | CPU | CPU | CPU |
 | Interactive Segmenter (strokes) | WebGL | CPU | CPU | CPU [g] | CPU [g] | ✗ [b] |
 
 Pose and Holistic segmentation masks are returned on every target, with one
@@ -66,7 +65,7 @@ emulator's software GL cannot run it.
   Google's GPU inference differs from its CPU inference for the image-model
   tasks (portrait.jpg's top class scores 0.80 on GPU, 0.31 on CPU, on every GPU
   tried), so GPU results are compared with the wheel's GPU output.
-- **macOS:** `tool/test_official_macos_landmark_runtime.py` compares every task
+- **macOS:** `tool/test_macos_tasks_runtime.py` compares every task
   served by the official runtime with references Google's wheel generates on
   the same Mac, including Metal for Face, Hand, Pose (landmarks), Gesture,
   Object Detector, Image Classifier, Image Embedder and Image Segmenter (IMAGE
@@ -83,8 +82,6 @@ emulator's software GL cannot run it.
 
 Details and reproductions are in [upstream-issues.md](../../../upstream-issues.md).
 
-- [a] UP-020: Google's Android 1.0.0 point-based task ignores the keypoint and
-  returns the same mask for every point, so the plugin does not serve it.
 - [b] Google's Windows wheels do not export the stateful Interactive Segmenter
   API. The Linux wheel does, and the package binds it there.
 - [d] UP-028 and UP-030: Google's desktop GPU paths give no float Pose masks

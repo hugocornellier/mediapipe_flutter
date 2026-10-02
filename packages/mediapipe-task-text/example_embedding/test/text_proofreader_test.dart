@@ -7,10 +7,8 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:mediapipe_text/mediapipe_text.dart'
-    show RuntimeUnavailableException;
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_text/text_proofreader.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:mediapipe_text/src/io/third_party/mediapipe/proofreader_bindings.dart'
     as mp;
 import 'package:test/test.dart';
@@ -160,7 +158,10 @@ void main() {
       expect(() => result.corrections.clear(), throwsUnsupportedError);
       expect(() => updates.last.corrections.clear(), throwsUnsupportedError);
       await expectLater(task.proofread('closed'), throwsStateError);
-      expect(() => task.proofreadStream('closed'), throwsStateError);
+      await expectLater(
+        task.proofreadStream('closed').toList(),
+        throwsStateError,
+      );
     },
   );
 
@@ -229,11 +230,11 @@ void main() {
       TextProofreader.create(
         TextProofreaderOptions(modelPath: '$model.missing'),
       ),
-      throwsA(isA<TextTaskException>()),
+      throwsA(isA<TaskException>()),
     );
     await expectLater(
       TextProofreader.create(
-        TextProofreaderOptions(modelPath: model, delegate: TextDelegate.gpu),
+        TextProofreaderOptions(modelPath: model, delegate: Delegate.gpu),
       ),
       throwsA(
         isA<RuntimeUnavailableException>().having(
@@ -265,8 +266,8 @@ void main() {
       final task = await create();
       try {
         await expectLater(task.proofread('bad\u0000text'), throwsArgumentError);
-        expect(
-          () => task.proofreadStream('bad\u0000text'),
+        await expectLater(
+          task.proofreadStream('bad\u0000text').toList(),
           throwsArgumentError,
         );
         compare(await task.proofread(cases[0]['input']), cases[0]);

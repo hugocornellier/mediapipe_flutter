@@ -21,20 +21,17 @@ final _reference = loadFaceReference(
 );
 
 void main() {
-  for (final delegate in VisionDelegate.values) {
+  for (final delegate in Delegate.values) {
     group(
       delegate.name,
       () => _testDelegate(delegate),
-      skip: delegate == VisionDelegate.gpu && !gpuFaceTestsEnabled
+      skip: delegate == Delegate.gpu && !gpuFaceTestsEnabled
           ? gpuFaceTestsSkipReason
           : false,
     );
   }
   test('CPU is the default delegate', () {
-    expect(
-      FaceLandmarkerOptions(modelPath: _model).delegate,
-      VisionDelegate.cpu,
-    );
+    expect(FaceLandmarkerOptions(modelPath: _model).delegate, Delegate.cpu);
   });
   test(
     "macOS Face Landmarker calls core's engine after Face Detector loads",
@@ -51,7 +48,7 @@ void main() {
       final usesEngine = await Isolate.run(
         () => FaceLandmarkerApi.current.usesEngine,
       );
-      expect(usesEngine, Platform.isMacOS && hasOfficialMacosLandmarkRuntime());
+      expect(usesEngine, Platform.isMacOS && hasMacosTasksRuntime());
     },
   );
   test(
@@ -61,13 +58,10 @@ void main() {
       // Linux runtime refuses by name.
       await expectLater(
         FaceLandmarker.create(
-          FaceLandmarkerOptions(
-            modelPath: _model,
-            delegate: VisionDelegate.gpu,
-          ),
+          FaceLandmarkerOptions(modelPath: _model, delegate: Delegate.gpu),
         ),
         throwsA(
-          isA<VisionTaskException>()
+          isA<TaskException>()
               .having((error) => error.gpuUnavailable, 'gpuUnavailable', true)
               .having(
                 (error) => error.message,
@@ -84,10 +78,10 @@ void main() {
   tearDownAll(() => reportReferenceDeltas('face_landmarker'));
 }
 
-void _testDelegate(VisionDelegate delegate) {
+void _testDelegate(Delegate delegate) {
   void compare(FaceLandmarkerResult actual, Map<String, dynamic> expected) =>
       _compare(actual, expected, delegate);
-  final reference = delegate == VisionDelegate.cpu
+  final reference = delegate == Delegate.cpu
       ? _reference
       : loadFaceReference('face_landmarker', 'official_gpu_reference.json');
   final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
@@ -129,14 +123,14 @@ void _testDelegate(VisionDelegate delegate) {
                     timestampMilliseconds: frame['timestamp_ms'] as int,
                     rotationDegrees: frame['rotation'] as int,
                   )
-                : task.detectImage(
+                : task.detect(
                     _image(frame),
                     rotationDegrees: frame['rotation'] as int,
                   ),
         ];
         final closing = task.dispose();
         expect(identical(closing, task.dispose()), isTrue);
-        await expectLater(task.detectImage(_image(rgbFrame)), throwsStateError);
+        await expectLater(task.detect(_image(rgbFrame)), throwsStateError);
         final results = await Future.wait(requests);
         await closing;
         for (var i = 0; i < frames.length; i++) {
@@ -153,7 +147,7 @@ void _testDelegate(VisionDelegate delegate) {
           throwsUnsupportedError,
         );
         expect(
-          () => results.first.facialTransformationMatrixes.first.values.clear(),
+          () => results.first.facialTransformationMatrixes.first.data.clear(),
           throwsUnsupportedError,
         );
       },
@@ -169,7 +163,7 @@ void _testDelegate(VisionDelegate delegate) {
     bytes.fillRange(0, bytes.length, 0);
     final task = await FaceLandmarker.create(options);
     try {
-      final result = await task.detectImage(_image(rgbFrame));
+      final result = await task.detect(_image(rgbFrame));
       compare(result, {
         ...rgbFrame,
         'face_blendshapes': [],
@@ -195,8 +189,8 @@ void _testDelegate(VisionDelegate delegate) {
       try {
         for (var i = 0; i < 3; i++) {
           final results = await Future.wait<Object>([
-            detector.detectImage(_image(rgbFrame)),
-            landmarker.detectImage(_image(rgbFrame)),
+            detector.detect(_image(rgbFrame)),
+            landmarker.detect(_image(rgbFrame)),
           ]);
           expect(
             (results[0] as FaceDetectorResult).detections.single.keypoints,
@@ -209,7 +203,7 @@ void _testDelegate(VisionDelegate delegate) {
         }
         await detector.dispose();
         expect(
-          (await landmarker.detectImage(_image(rgbFrame))).faceLandmarks.single,
+          (await landmarker.detect(_image(rgbFrame))).faceLandmarks.single,
           hasLength(478),
         );
       } finally {
@@ -256,7 +250,7 @@ void _testDelegate(VisionDelegate delegate) {
             bytesPerRow: stride,
           );
           pixels.fillRange(0, pixels.length, 0);
-          compare(await task.detectImage(image), rgbFrame);
+          compare(await task.detect(image), rgbFrame);
         } finally {
           await task.dispose();
         }
@@ -275,7 +269,7 @@ void _testDelegate(VisionDelegate delegate) {
         ),
       );
       try {
-        await expectLater(task.detectImage(_image(rgbFrame)), throwsStateError);
+        await expectLater(task.detect(_image(rgbFrame)), throwsStateError);
         await task.detectForVideo(_image(rgbFrame), timestampMilliseconds: 10);
         for (final timestamp in [-1, 9, 10, 0x7fffffffffffffff]) {
           await expectLater(
@@ -299,7 +293,7 @@ void _testDelegate(VisionDelegate delegate) {
             VisionImage.fromFile('missing.jpg'),
             timestampMilliseconds: 11,
           ),
-          throwsA(isA<VisionTaskException>()),
+          throwsA(isA<TaskException>()),
         );
         await expectLater(
           task.detectForVideo(_image(rgbFrame), timestampMilliseconds: 11),
@@ -327,7 +321,7 @@ void _testDelegate(VisionDelegate delegate) {
       ]) {
         await expectLater(
           FaceLandmarker.create(options).timeout(const Duration(seconds: 10)),
-          throwsA(isA<VisionTaskException>()),
+          throwsA(isA<TaskException>()),
         );
       }
       final task = await FaceLandmarker.create(
@@ -339,7 +333,7 @@ void _testDelegate(VisionDelegate delegate) {
           throwsStateError,
         );
         expect(
-          (await task.detectImage(_image(rgbFrame))).faceLandmarks.single,
+          (await task.detect(_image(rgbFrame))).faceLandmarks.single,
           hasLength(478),
         );
       } finally {
@@ -437,11 +431,11 @@ VisionImage _image(Map<String, dynamic> frame) {
 void _compare(
   FaceLandmarkerResult actual,
   Map<String, dynamic> expected,
-  VisionDelegate delegate,
+  Delegate delegate,
 ) {
   // Measured against the independent wheel, separately for each backend.
   // See fixtures/face_landmarker/README.md for observed maxima and provenance.
-  final gpu = delegate == VisionDelegate.gpu;
+  final gpu = delegate == Delegate.gpu;
   final name = expected['name'] as String;
   void close(
     num measured,

@@ -22,9 +22,9 @@ void main() {
   ) async {
     await tester.runAsync(() async {
       final classifier = await TextClassifier.create(
-        TextClassifierOptions.fromAssetBuffer(
-          await model('bert_classifier.tflite'),
-          classifierOptions: const ClassifierOptions(maxResults: 2),
+        TextClassifierOptions(
+          modelBytes: await model('bert_classifier.tflite'),
+          maxResults: 2,
         ),
       );
       try {
@@ -39,8 +39,8 @@ void main() {
       }
 
       final detector = await LanguageDetector.create(
-        LanguageDetectorOptions.fromAssetBuffer(
-          await model('language_detector.tflite'),
+        LanguageDetectorOptions(
+          modelBytes: await model('language_detector.tflite'),
         ),
       );
       try {
@@ -51,20 +51,20 @@ void main() {
       }
 
       final embedder = await TextEmbedder.create(
-        TextEmbedderOptions.fromAssetBuffer(
-          await model('universal_sentence_encoder.tflite'),
-          embedderOptions: const EmbedderOptions(l2Normalize: true),
+        TextEmbedderOptions(
+          modelBytes: await model('universal_sentence_encoder.tflite'),
+          l2Normalize: true,
         ),
       );
       try {
         final a = await embedder.embed('The weather is lovely today.');
         final b = await embedder.embed("It's a beautiful sunny day.");
         final c = await embedder.embed('The invoice is overdue.');
-        final close = await embedder.cosineSimilarity(
+        final close = TextEmbedder.cosineSimilarity(
           a.embeddings.first,
           b.embeddings.first,
         );
-        final far = await embedder.cosineSimilarity(
+        final far = TextEmbedder.cosineSimilarity(
           a.embeddings.first,
           c.embeddings.first,
         );

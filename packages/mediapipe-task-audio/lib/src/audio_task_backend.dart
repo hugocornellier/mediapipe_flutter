@@ -14,7 +14,7 @@ abstract interface class AudioTaskBackend {
   Future<void> dispose();
 }
 
-/// Creates Google's Audio Classifier from [options] named as in Google's
+/// Creates Google's Audio Classifier from `options` named as in Google's
 /// JavaScript API, plus `modelBytes` (a `Uint8List`) or `modelPath` (a URL).
 ///
 /// Installed by this package's platform code in browsers and on Android;

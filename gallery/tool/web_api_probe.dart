@@ -31,13 +31,13 @@ Map<String, Object?> copied(FaceLandmarkerResult result) => {
     for (final p in result.faceLandmarks.single) [p.x, p.y, p.z],
   ],
   'blendshapes': [for (final c in result.faceBlendshapes.single) c.score],
-  'matrix': result.facialTransformationMatrixes.single.values,
+  'matrix': result.facialTransformationMatrixes.single.data,
 };
 
 Future<Map<String, Object?>> checkApi() async {
   final delegate = Uri.base.queryParameters['delegate'] == 'gpu'
-      ? VisionDelegate.gpu
-      : VisionDelegate.cpu;
+      ? Delegate.gpu
+      : Delegate.cpu;
   final data = await rootBundle.load('assets/models/face_landmarker.task');
   final sourceModel = Uint8List.fromList(
     data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
@@ -66,7 +66,7 @@ Future<Map<String, Object?>> checkApi() async {
       options.modelBytes!.first == modelFirstByte,
       'Model buffer detached',
     );
-    original = await task.detectImage(image);
+    original = await task.detect(image);
     require(
       original.faceLandmarks.single.length == 478,
       'Expected 478 landmarks',
@@ -76,7 +76,7 @@ Future<Map<String, Object?>> checkApi() async {
       'Expected 52 blendshapes',
     );
     require(
-      original.facialTransformationMatrixes.single.values.length == 16,
+      original.facialTransformationMatrixes.single.data.length == 16,
       'Expected 4x4 matrix',
     );
     checks.add('official-image-landmarks-blendshapes-matrix');
@@ -115,7 +115,7 @@ Future<Map<String, Object?>> checkApi() async {
         bytesPerRow: stride,
       );
       pixels.fillRange(0, pixels.length, 0);
-      final result = await task.detectImage(frame);
+      final result = await task.detect(frame);
       require(
         result.faceLandmarks.single.length == 478,
         'Pixel inference failed',
@@ -139,7 +139,7 @@ Future<Map<String, Object?>> checkApi() async {
     }
     checks.add('copied-padded-rgb-rgba-bgra');
     for (final rotation in [0, 90, 180, 270, -90, 360, -360, 450]) {
-      final result = await task.detectImage(image, rotationDegrees: rotation);
+      final result = await task.detect(image, rotationDegrees: rotation);
       require(
         result.imageWidth == original.imageWidth &&
             result.imageHeight == original.imageHeight,
@@ -153,10 +153,7 @@ Future<Map<String, Object?>> checkApi() async {
       );
     }
     checks.add('all-four-rotations');
-    await rejects(
-      () => task.detectImage(image, rotationDegrees: 45),
-      ArgumentError,
-    );
+    await rejects(() => task.detect(image, rotationDegrees: 45), ArgumentError);
     await rejects(
       () => task.detectForVideo(image, timestampMilliseconds: 1),
       StateError,
@@ -165,7 +162,7 @@ Future<Map<String, Object?>> checkApi() async {
     await task.dispose();
   }
   await task.dispose();
-  await rejects(() => task.detectImage(image), StateError);
+  await rejects(() => task.detect(image), StateError);
   require(
     original.faceLandmarks.single.length == 478,
     'Results invalid after disposal',
@@ -201,7 +198,7 @@ Future<Map<String, Object?>> checkApi() async {
         VisionImage.fromFile('missing.jpg'),
         timestampMilliseconds: 4,
       ),
-      VisionTaskException,
+      TaskException,
     );
     await rejects(
       () => video.detectForVideo(image, timestampMilliseconds: 4),
@@ -221,7 +218,7 @@ Future<Map<String, Object?>> checkApi() async {
     () => FaceLandmarker.create(
       FaceLandmarkerOptions(modelBytes: Uint8List.fromList([1])),
     ),
-    VisionTaskException,
+    TaskException,
   );
   checks.add('invalid-model-explicit-error');
   final hand = await checkHandApi(delegate, checks);
@@ -239,7 +236,7 @@ Future<Map<String, Object?>> checkApi() async {
 
 /// The same public contract for Hand Landmarker on the official web runtime.
 Future<Map<String, Object?>> checkHandApi(
-  VisionDelegate delegate,
+  Delegate delegate,
   List<String> checks,
 ) async {
   final data = await rootBundle.load('assets/models/hand_landmarker.task');
@@ -254,7 +251,7 @@ Future<Map<String, Object?>> checkHandApi(
   );
   late HandLandmarkerResult result;
   try {
-    result = await task.detectImage(image);
+    result = await task.detect(image);
     require(result.handLandmarks.isNotEmpty, 'Expected a hand');
     require(
       result.handLandmarks.every((hand) => hand.length == 21) &&
@@ -263,7 +260,7 @@ Future<Map<String, Object?>> checkHandApi(
       'Expected 21 image and world landmarks and handedness per hand',
     );
     for (final rotation in [90, 180, 270, -90]) {
-      final rotated = await task.detectImage(image, rotationDegrees: rotation);
+      final rotated = await task.detect(image, rotationDegrees: rotation);
       require(
         rotated.imageWidth == result.imageWidth &&
             rotated.imageHeight == result.imageHeight,
@@ -277,7 +274,7 @@ Future<Map<String, Object?>> checkHandApi(
   } finally {
     await task.dispose();
   }
-  await rejects(() => task.detectImage(image), StateError);
+  await rejects(() => task.detect(image), StateError);
   checks.add('hand-image-world-landmarks-handedness-rotation-disposal');
   final video = await HandLandmarker.create(
     HandLandmarkerOptions(
@@ -302,7 +299,7 @@ Future<Map<String, Object?>> checkHandApi(
         VisionImage.fromFile('missing.jpg'),
         timestampMilliseconds: 4,
       ),
-      VisionTaskException,
+      TaskException,
     );
     final recovery = video.detectForVideo(image, timestampMilliseconds: 5);
     await video.dispose();
@@ -317,7 +314,7 @@ Future<Map<String, Object?>> checkHandApi(
     () => HandLandmarker.create(
       HandLandmarkerOptions(modelBytes: Uint8List.fromList([1])),
     ),
-    VisionTaskException,
+    TaskException,
   );
   checks.add('hand-video-queue-failed-frame-recovery-invalid-model');
   return {
@@ -340,7 +337,7 @@ Future<Map<String, Object?>> checkHandApi(
 /// does with Google's JavaScript: Holistic's IMAGE mode keeps state between
 /// calls, so only a first call is comparable.
 Future<Map<String, Object?>> checkLandmarkTasksApi(
-  VisionDelegate delegate,
+  Delegate delegate,
   List<String> checks,
 ) async {
   Future<Uint8List> model(String name) async {
@@ -351,8 +348,10 @@ Future<Map<String, Object?>> checkLandmarkTasksApi(
   VisionImage sample(String name) => VisionImage.fromFile(
     Uri.base.resolve('assets/assets/samples/$name').toString(),
   );
-  List<List<double>> points(List<VisionLandmark> landmarks) => [
-    for (final p in landmarks) [p.x, p.y, p.z],
+
+  /// Image or world landmarks, which share their fields.
+  List<List<double>> points(List<Object> landmarks) => [
+    for (final dynamic p in landmarks) <double>[p.x, p.y, p.z],
   ];
   final report = <String, Object?>{};
 
@@ -363,7 +362,7 @@ Future<Map<String, Object?>> checkLandmarkTasksApi(
     ),
   );
   try {
-    final result = await pose.detectImage(sample('pose.jpg'));
+    final result = await pose.detect(sample('pose.jpg'));
     require(
       result.poseLandmarks.length == 1 &&
           result.poseLandmarks.single.length == 33 &&
@@ -390,7 +389,7 @@ Future<Map<String, Object?>> checkLandmarkTasksApi(
     ),
   );
   try {
-    final result = await gesture.recognizeImage(sample('thumb_up.jpg'));
+    final result = await gesture.recognize(sample('thumb_up.jpg'));
     require(
       result.gestures.length == 1 &&
           result.gestures.single.first.categoryName == 'Thumb_Up' &&
@@ -420,7 +419,7 @@ Future<Map<String, Object?>> checkLandmarkTasksApi(
     ),
   );
   try {
-    final result = await holistic.detectImage(sample('pose.jpg'));
+    final result = await holistic.detect(sample('pose.jpg'));
     require(
       result.poseLandmarks.length == 33 &&
           result.leftHandLandmarks.length == 21 &&
@@ -470,7 +469,7 @@ Future<Map<String, Object?>> checkLandmarkTasksApi(
         delegate: delegate,
       ),
     ),
-    VisionTaskException,
+    TaskException,
   );
   checks.add('pose-gesture-holistic-image-video-invalid-model');
   return report;
@@ -481,7 +480,7 @@ Future<Map<String, Object?>> checkLandmarkTasksApi(
 /// suite runs Google's JavaScript. Boxes are reported as the Dart API holds
 /// them: whole pixels.
 Future<Map<String, Object?>> checkDetectionTasksApi(
-  VisionDelegate delegate,
+  Delegate delegate,
   List<String> checks,
 ) async {
   Future<Uint8List> model(String name) async {
@@ -501,7 +500,7 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
     ),
   );
   try {
-    final result = await faces.detectImage(portrait);
+    final result = await faces.detect(portrait);
     require(
       result.detections.length == 1 &&
           result.detections.single.keypoints.length == 6,
@@ -536,7 +535,7 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
     ),
   );
   try {
-    final result = await objects.detectImage(portrait);
+    final result = await objects.detect(portrait);
     require(
       result.detections.isNotEmpty &&
           result.detections.first.categories.first.categoryName == 'person',
@@ -567,8 +566,8 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
     ),
   );
   try {
-    final result = await classifier.classifyImage(portrait);
-    final region = await classifier.classifyImage(
+    final result = await classifier.classify(portrait);
+    final region = await classifier.classify(
       portrait,
       regionOfInterest: VisionRegionOfInterest(
         left: 0.25,
@@ -600,7 +599,7 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
       ),
     );
     try {
-      final embedding = (await embedder.embedImage(portrait)).embeddings.single;
+      final embedding = (await embedder.embed(portrait)).embeddings.single;
       require(
         (embedding.floatEmbedding?.length ??
                 embedding.quantizedEmbedding!.length) ==
@@ -626,7 +625,7 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
     ),
   );
   try {
-    final result = await segmenter.segmentImage(portrait);
+    final result = await segmenter.segment(portrait);
     require(
       result.labels.length == 21 &&
           result.labels.first == 'background' &&
@@ -653,36 +652,6 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
   } finally {
     await segmenter.dispose();
   }
-  final legacy = await InteractiveSegmenterLegacy.create(
-    InteractiveSegmenterLegacyOptions(
-      delegate: delegate,
-      modelBytes: await model('magic_touch.tflite'),
-      outputCategoryMask: true,
-    ),
-  );
-  try {
-    final result = await legacy.segmentImage(
-      portrait,
-      keypoint: SegmentationPoint(x: 0.5, y: 0.4),
-    );
-    final category = result.categoryMask!;
-    final subject = result.confidenceMasks!.single;
-    final values = <num>[];
-    for (var r = 0; r < 12; r++) {
-      for (var c = 0; c < 16; c++) {
-        final x = (2 * c + 1) * category.width ~/ 32;
-        final y = (2 * r + 1) * category.height ~/ 24;
-        values
-          ..add(category.categories[y * category.width + x])
-          ..add(subject.confidence[y * category.width + x]);
-      }
-    }
-    report['interactive_segmenter_legacy'] = [
-      {'values': values},
-    ];
-  } finally {
-    await legacy.dispose();
-  }
   // Stateful MagicTouch: a point, then the point and a negative one.
   final magic = await InteractiveSegmenter.create(
     InteractiveSegmenterOptions(
@@ -691,14 +660,11 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
     ),
   );
   try {
-    SegmentationStroke point(SegmentationBrushMode mode, double x, double y) =>
-        SegmentationStroke(
-          brushMode: mode,
-          points: [SegmentationPoint(x: x, y: y)],
-        );
-    Future<Map<String, Object?>> sampled(
-      List<SegmentationStroke> history,
-    ) async {
+    Stroke point(BrushMode mode, double x, double y) => Stroke(
+      brushMode: mode,
+      points: [NormalizedKeypoint(x: x, y: y)],
+    );
+    Future<Map<String, Object?>> sampled(List<Stroke> history) async {
       final mask = await magic.segment(history);
       return {
         'values': [
@@ -711,19 +677,16 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
     }
 
     await magic.setImage(portrait);
-    final positive = point(SegmentationBrushMode.positive, 0.5, 0.4);
+    final positive = point(BrushMode.positive, 0.5, 0.4);
     report['interactive_segmenter'] = [
       await sampled([positive]),
-      await sampled([
-        positive,
-        point(SegmentationBrushMode.negative, 0.5, 0.8),
-      ]),
+      await sampled([positive, point(BrushMode.negative, 0.5, 0.8)]),
     ];
   } finally {
     await magic.dispose();
   }
   // Pose segmentation masks from pose.jpg, sampled on the same grid.
-  List<double> sampled(SegmentationMask mask) => [
+  List<double> sampled(ConfidenceMask mask) => [
     for (var r = 0; r < 12; r++)
       for (var c = 0; c < 16; c++)
         mask.confidence[(2 * r + 1) * mask.height ~/ 24 * mask.width +
@@ -740,7 +703,7 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
     ),
   );
   try {
-    final masks = (await pose.detectImage(figure)).segmentationMasks!;
+    final masks = (await pose.detect(figure)).segmentationMasks!;
     report['pose_mask'] = [
       {'values': sampled(masks.single)},
     ];
@@ -756,7 +719,7 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
     ),
   );
   try {
-    final mask = (await holistic.detectImage(figure)).poseSegmentationMask!;
+    final mask = (await holistic.detect(figure)).poseSegmentationMask!;
     report['holistic_mask'] = [
       {'values': sampled(mask)},
     ];

@@ -52,12 +52,12 @@ class _FaceCameraPageState extends State<FaceCameraPage>
   bool loading = true;
   bool showConnections = true;
   bool showPoints = false;
-  VisionDelegate delegate = switch (const String.fromEnvironment(
+  Delegate delegate = switch (const String.fromEnvironment(
     'FACE_CAMERA_DELEGATE',
     defaultValue: 'cpu',
   )) {
-    'cpu' => VisionDelegate.cpu,
-    'gpu' => VisionDelegate.gpu,
+    'cpu' => Delegate.cpu,
+    'gpu' => Delegate.gpu,
     final value => throw ArgumentError.value(value, 'FACE_CAMERA_DELEGATE'),
   };
 
@@ -202,14 +202,11 @@ class _FaceCameraPageState extends State<FaceCameraPage>
                               },
                       ),
                     ),
-                    SegmentedButton<VisionDelegate>(
+                    SegmentedButton<Delegate>(
                       segments: const [
+                        ButtonSegment(value: Delegate.cpu, label: Text('CPU')),
                         ButtonSegment(
-                          value: VisionDelegate.cpu,
-                          label: Text('CPU'),
-                        ),
-                        ButtonSegment(
-                          value: VisionDelegate.gpu,
+                          value: Delegate.gpu,
                           label: Text('GPU (Metal)'),
                         ),
                       ],

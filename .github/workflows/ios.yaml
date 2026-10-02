@@ -129,7 +129,7 @@ jobs:
       - name: Prepare the gallery with the official SDK tasks
         run: |
           python3 -B gallery/tool/prepare.py --target ios-simulator/arm64 \
-            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,interactive_segmenter_legacy,audio_classifier,language_detector,text_classifier,text_embedder
+            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder
           cd gallery && flutter pub get
       - name: Boot an installed iPhone simulator
         id: simulator

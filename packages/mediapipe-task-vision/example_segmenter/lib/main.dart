@@ -43,7 +43,7 @@ class _SegmenterEditorState extends State<SegmenterEditor> {
   EditorController? _editor;
   ui.Image? _image;
   ui.Image? _overlay;
-  SegmentationMask? _renderedMask;
+  ConfidenceMask? _renderedMask;
   String _imageName = 'Animals';
   String? _error;
   bool _loading = true;
@@ -82,7 +82,7 @@ class _SegmenterEditorState extends State<SegmenterEditor> {
       await _sample('animals.jpg', 'Animals');
       if (mounted && _editor!.ready) {
         _editor!
-          ..begin(SegmentationPoint(x: 0.66, y: 0.55))
+          ..begin(NormalizedKeypoint(x: 0.66, y: 0.55))
           ..end();
       }
     } catch (error) {
@@ -184,7 +184,7 @@ class _SegmenterEditorState extends State<SegmenterEditor> {
     setState(() {});
   }
 
-  Future<void> _renderMask(SegmentationMask? mask) async {
+  Future<void> _renderMask(ConfidenceMask? mask) async {
     final generation = ++_overlayGeneration;
     if (mask == null) {
       final previous = _overlay;
@@ -290,17 +290,17 @@ class _SegmenterEditorState extends State<SegmenterEditor> {
                 runSpacing: 12,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  SegmentedButton<SegmentationBrushMode>(
+                  SegmentedButton<BrushMode>(
                     segments: const [
                       ButtonSegment(
-                        value: SegmentationBrushMode.positive,
+                        value: BrushMode.positive,
                         icon: Icon(Icons.add),
                         label: Text('Include'),
                       ),
                       // TODO: Re-add the Exclude (negative) and Lasso brushes
                       // once they are better tested.
                     ],
-                    selected: {editor?.brush ?? SegmentationBrushMode.positive},
+                    selected: {editor?.brush ?? BrushMode.positive},
                     onSelectionChanged: canEdit
                         ? (value) => setState(() => editor.brush = value.single)
                         : null,
@@ -414,7 +414,7 @@ class _SegmenterEditorState extends State<SegmenterEditor> {
                                       activePoints: editor?.activePoints ?? [],
                                       activeBrush:
                                           editor?.activeBrush ??
-                                          SegmentationBrushMode.positive,
+                                          BrushMode.positive,
                                     ),
                                   ),
                                 ),
@@ -488,9 +488,9 @@ class _SelectionPainter extends CustomPainter {
   final ui.Image image;
   final ui.Image? overlay;
   final Rect rect;
-  final List<SegmentationStroke> strokes;
-  final List<SegmentationPoint> activePoints;
-  final SegmentationBrushMode activeBrush;
+  final List<Stroke> strokes;
+  final List<NormalizedKeypoint> activePoints;
+  final BrushMode activeBrush;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -513,24 +513,20 @@ class _SelectionPainter extends CustomPainter {
     for (final stroke in strokes) {
       _stroke(canvas, stroke.points, stroke.brushMode);
     }
-    if (activeBrush == SegmentationBrushMode.lasso && activePoints.length < 3) {
+    if (activeBrush == BrushMode.lasso && activePoints.length < 3) {
       _stroke(canvas, activePoints, activeBrush);
     }
     canvas.restore();
   }
 
-  void _stroke(
-    Canvas canvas,
-    List<SegmentationPoint> points,
-    SegmentationBrushMode mode,
-  ) {
+  void _stroke(Canvas canvas, List<NormalizedKeypoint> points, BrushMode mode) {
     if (points.isEmpty) return;
     final color = switch (mode) {
-      SegmentationBrushMode.positive => const Color(0xff43eeb5),
-      SegmentationBrushMode.negative => const Color(0xffff7b7b),
-      SegmentationBrushMode.lasso => const Color(0xffc5a3ff),
+      BrushMode.positive => const Color(0xff43eeb5),
+      BrushMode.negative => const Color(0xffff7b7b),
+      BrushMode.lasso => const Color(0xffc5a3ff),
     };
-    Offset offset(SegmentationPoint p) =>
+    Offset offset(NormalizedKeypoint p) =>
         Offset(rect.left + p.x * rect.width, rect.top + p.y * rect.height);
     final paint = Paint()
       ..color = color

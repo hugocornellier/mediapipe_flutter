@@ -17,7 +17,7 @@ build time.
 | Text classification (BERT) | `TextClassifier` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Text embeddings (Universal Sentence Encoder) | `TextEmbedder` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Language detection | `LanguageDetector` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| EmbeddingGemma 300M | `EmbeddingGemma` | | | ✓ | | | |
+| EmbeddingGemma 300M | `TextEmbedder` | | | ✓ | | | |
 | Proofreader 200M | `TextProofreader` | | | ✓ | | | |
 | Summarizer 200M | `TextSummarizer` | | | ✓ | | | |
 
@@ -85,9 +85,10 @@ makes `create` throw a `RuntimeUnavailableException` naming the entry to add;
 setting `ModelStore.allowDownloads = true` from `mediapipe_core` downloads it
 at run time instead. The text generation models are 118 to 184 MB, so weigh
 that against your app's size. To use your own
-model, pass `TextClassifierOptions.fromAssetPath` (a file path) or
-`.fromAssetBuffer` (bytes, for example from `rootBundle`); the modern tasks
-take `modelPath` or `modelBytes`. Give exactly one model source.
+model, pass `modelPath` (a file on native platforms, a URL in browsers) or
+`modelBytes` (for example from `rootBundle`); the Proofreader and Summarizer
+read their large models from a file, so they take `model` or `modelPath`.
+Give exactly one model source.
 
 Results own their data and stay valid after the task is disposed.
 
@@ -117,7 +118,8 @@ Future<void> detectLanguage(String text) async {
 ### Text embeddings
 
 `TextEmbedder` turns a sentence into a vector with the Universal Sentence
-Encoder; `cosineSimilarity` compares two, including quantized ones. The
+Encoder; the static `TextEmbedder.cosineSimilarity` compares two, including
+quantized ones, computed in Dart so every platform gives the same answer. The
 higher the value, the closer the meaning.
 
 ```dart
@@ -130,7 +132,7 @@ Future<double> compareSentences(String first, String second) async {
   try {
     final a = await embedder.embed(first);
     final b = await embedder.embed(second);
-    return await embedder.cosineSimilarity(
+    return TextEmbedder.cosineSimilarity(
       a.embeddings.first,
       b.embeddings.first,
     );
@@ -142,14 +144,16 @@ Future<double> compareSentences(String first, String second) async {
 
 ## Behavior
 
-- `create` reports initialization errors; each task runs on its own isolate
-  and queues concurrent calls.
+- `create` reports initialization errors and refuses a delegate the
+  capability query rules out; each task runs on its own isolate and queues
+  concurrent calls. Every task has a `delegate` getter.
 - `dispose()` drains accepted calls, releases the native task and waits for
   the isolate to exit. It is idempotent; calls after it throw `StateError`.
 - Failures are `MediaPipeException`s: `RuntimeUnavailableException` (the
   platform or settings cannot run the task, with a `fix`),
-  `ModelDownloadException`, and `TextTaskException` with Google's message and
-  native `statusCode`.
+  `ModelDownloadException`, and `TaskException` with Google's message and
+  native `statusCode`. Errors arrive through the returned `Future` or
+  stream.
 - Input containing NUL characters is rejected before it reaches native code.
 - Nothing is reimplemented in Dart: tokenization, prompts, label order,
   thresholds, normalization and quantization are Google's.
@@ -161,7 +165,7 @@ import 'package:mediapipe_text/mediapipe_text.dart';
 
 Future<bool> canSummarize() async {
   final support = await queryTextSummarizerCapabilities();
-  return support.supportedDelegates.contains(TextDelegate.cpu);
+  return support.supportedDelegates.contains(Delegate.cpu);
 }
 ```
 
@@ -170,24 +174,26 @@ describes declared support; it does not load a model.
 
 ## EmbeddingGemma 300M
 
-`EmbeddingGemma` runs Google's complete TextEmbedder pipeline: prompt
-formatting, SentencePiece tokenization, inference and postprocessing. It
-returns 768-value vectors.
+`TextEmbedder` with `TextModels.embeddingGemma` runs Google's complete
+EmbeddingGemma pipeline: prompt formatting, SentencePiece tokenization,
+inference and postprocessing. It returns 768-value vectors, on macOS today;
+`queryTextEmbedderCapabilities(TextModels.embeddingGemma)` reports where it
+runs.
 
 ```dart
 import 'package:mediapipe_text/mediapipe_text.dart';
 
 Future<double> similarity(String a, String b) async {
-  final task = await EmbeddingGemma.create(
-    EmbeddingGemmaOptions(model: TextModels.embeddingGemma),
+  final task = await TextEmbedder.create(
+    TextEmbedderOptions(model: TextModels.embeddingGemma),
   );
   try {
     final context = TextFormatContext(
-      taskType: EmbeddingTaskType.semanticSimilarity,
+      taskType: EmbeddingType.semanticSimilarity,
     );
-    final first = await task.embed(a, context: context);
-    final second = await task.embed(b, context: context);
-    return TextEmbedding.cosineSimilarity(
+    final first = await task.embed(a, formatContext: context);
+    final second = await task.embed(b, formatContext: context);
+    return TextEmbedder.cosineSimilarity(
       first.embeddings.single,
       second.embeddings.single,
     );
@@ -198,7 +204,7 @@ Future<double> similarity(String a, String b) async {
 ```
 
 All eight official formatting modes are supported, including retrieval
-documents with titles and query/document roles; omitting `context` passes
+documents with titles and query/document roles; omitting `formatContext` passes
 none to Google's API. `l2Normalize` and `quantize` (both off by default) go to
 Google's postprocessor, and quantized results keep Google's signed-int8 bytes.
 The model's 512-token limit includes formatting and special tokens; input is

@@ -1,6 +1,8 @@
 import 'dart:io';
 
-import '../interface/vision_task_types.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
+
+import '../types/vision_types.dart';
 
 /// Bounds the frames Google's macOS GPU path keeps after processing them.
 ///
@@ -13,15 +15,17 @@ import '../interface/vision_task_types.dart';
 ///
 /// A worker counts each image it processes and, once [limitBytes] of frames
 /// have gone to the GPU, closes its native task and opens an identical one.
+/// It holds the model in memory from the first open, so a reopen still works
+/// after the app deletes the model file.
 /// On an M4 Max that takes about 20 ms for Face Detector and up to 800 ms for
 /// Object Detector, and a video task then starts tracking from a detection.
 final class GpuFrameBudget {
   /// The budget for a task created with [options]: [limitBytes] when given,
   /// otherwise 1 GiB for a macOS GPU task and none elsewhere.
-  GpuFrameBudget(VisionModelOptions options, {int? limitBytes})
+  GpuFrameBudget(VisionTaskOptions options, {int? limitBytes})
     : limitBytes =
           limitBytes ??
-          (Platform.isMacOS && options.delegate == VisionDelegate.gpu
+          (Platform.isMacOS && options.delegate == Delegate.gpu
               ? 1 << 30
               : null);
 

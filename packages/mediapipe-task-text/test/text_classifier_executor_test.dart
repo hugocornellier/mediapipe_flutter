@@ -10,9 +10,8 @@ library;
 import 'dart:io' as io;
 
 import 'package:path/path.dart' as path;
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/io.dart';
-import 'package:mediapipe_text/src/io/tasks/text_classification/text_classifier_executor.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_text/src/io/native_text_classifier.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -22,10 +21,10 @@ void main() {
   ]);
   final modelBytes = io.File(pathToModel).readAsBytesSync();
 
-  group('TextClassifierExecutor should', () {
+  group('NativeTextClassifier should', () {
     test('run a task', () {
-      final executor = TextClassifierExecutor(
-        TextClassifierOptions.fromAssetBuffer(modelBytes),
+      final executor = NativeTextClassifier(
+        TextClassifierOptions(modelBytes: modelBytes),
       );
       final TextClassifierResult result = executor.classify('Hello, world!');
       expect(result.classifications, isNotEmpty);
@@ -33,8 +32,8 @@ void main() {
     });
 
     test('run multiple tasks', () {
-      final executor = TextClassifierExecutor(
-        TextClassifierOptions.fromAssetBuffer(modelBytes),
+      final executor = NativeTextClassifier(
+        TextClassifierOptions(modelBytes: modelBytes),
       );
       final TextClassifierResult result = executor.classify('Hello, world!');
       expect(result.classifications, isNotEmpty);
@@ -44,8 +43,8 @@ void main() {
     });
 
     test('unpack a result', () {
-      final executor = TextClassifierExecutor(
-        TextClassifierOptions.fromAssetBuffer(modelBytes),
+      final executor = NativeTextClassifier(
+        TextClassifierOptions(modelBytes: modelBytes),
       );
       final TextClassifierResult result = executor.classify('Hello, world!');
       final classifications = result.classifications.first;
@@ -59,10 +58,10 @@ void main() {
     });
 
     test('use the denylist', () {
-      final executor = TextClassifierExecutor(
-        TextClassifierOptions.fromAssetBuffer(
-          modelBytes,
-          classifierOptions: ClassifierOptions(categoryDenylist: ['positive']),
+      final executor = NativeTextClassifier(
+        TextClassifierOptions(
+          modelBytes: modelBytes,
+          categoryDenylist: ['positive'],
         ),
       );
       final TextClassifierResult result = executor.classify('Hello, world!');
@@ -75,10 +74,10 @@ void main() {
     });
 
     test('use the allowlist', () {
-      final executor = TextClassifierExecutor(
-        TextClassifierOptions.fromAssetBuffer(
-          modelBytes,
-          classifierOptions: ClassifierOptions(categoryAllowlist: ['positive']),
+      final executor = NativeTextClassifier(
+        TextClassifierOptions(
+          modelBytes: modelBytes,
+          categoryAllowlist: ['positive'],
         ),
       );
       final TextClassifierResult result = executor.classify('Hello, world!');
@@ -87,7 +86,6 @@ void main() {
       expect(classifications.categories, hasLength(1));
       expect(classifications.categories.first.categoryName, equals('positive'));
       expect(classifications.categories.first.score, closeTo(0.9919, 0.0009));
-      result.dispose();
       executor.dispose();
     });
   });

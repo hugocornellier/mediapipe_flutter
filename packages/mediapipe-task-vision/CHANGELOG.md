@@ -1,10 +1,43 @@
-## Unreleased
+## 0.2.0
 
+- Breaking: every task is one class with the same API on Android, iOS,
+  macOS, Linux, Windows and the web, and `mediapipe_vision.dart` is the only
+  app library. `interface.dart`, `vision_native.dart`, `capabilities.dart` and
+  `web_runtime.dart` are gone. See MIGRATION.md.
+- Breaking: Google's verbs: `detect`, `recognize`, `classify`, `embed` and
+  `segment` replace `detectImage`, `recognizeImage`, `classifyImage`,
+  `embedImage` and `segmentImage`; the `ForVideo` methods keep their names.
+  Only Image Classifier and Image Embedder take a region of interest.
+- Breaking: results use core's shared types (`Detection`, `BoundingBox`,
+  `MediaPipeCategory`, `NormalizedLandmark` and `Landmark`, `Matrix`,
+  `Classifications`, `Embedding`, `ConfidenceMask`); `SegmentationResult` is
+  `ImageSegmenterResult`, and `VisionDelegate` and `VisionTaskException` are
+  core's `Delegate` and `TaskException`.
+- Breaking: `VisionImage.fromBrowserFrame` and `BrowserOverlay` replace the
+  web-only `detectBrowserFrame` and overlay methods, and exist everywhere.
+- Breaking: the Interactive Segmenter takes Google's `Stroke` and `BrushMode`
+  and returns a `ConfidenceMask`. `Hand`, `Pose` and
+  `FaceLandmarksConnections` take Google's names; `ClassifierOptions`
+  replaces `GestureClassifierOptions`; the grouped capability helpers are
+  gone.
+- The same input checks run on every platform, with the browser's timestamp
+  limit (9007199254740 ms) everywhere; errors name the task.
+- Android and browser results go through one decoder; Android boxes keep
+  their whole-pixel edges.
+
+- Breaking: `InteractiveSegmenterLegacy`, its options, its model
+  (`VisionModels.interactiveSegmenterLegacy`) and its capability query are
+  gone. The stateful `InteractiveSegmenter` is the one Interactive Segmenter;
+  Google's Android task never served the legacy API (UP-020).
 - `VisionModels.byName` names every pinned model for
   `hooks.user_defines.mediapipe_vision.models`, which
   `dart run mediapipe_core:bundle_models` bundles into the app.
 - Breaking: `model:` uses the app's bundled copy and no longer downloads at
   run time unless `ModelStore.allowDownloads` is true.
+- macOS GPU tasks keep working when the app deletes the model file after
+  creating them. The reopen that bounds their memory (UP-032) read the file
+  again and failed with `Unable to open file`, about 30 seconds into a
+  640x480 camera stream; tasks that can reopen now hold the model in memory.
 
 ## 0.1.0
 

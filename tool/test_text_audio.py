@@ -68,8 +68,13 @@ def main():
     env = {**os.environ,
            'MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR': str(text_reference),
            'MEDIAPIPE_AUDIO_REFERENCE_DIR': str(audio_reference)}
-    run(['dart', 'test', '--reporter', 'expanded'], TEXT, evidence / 'text-tests.log', env)
-    run(['dart', 'test', '--reporter', 'expanded'], AUDIO, evidence / 'audio-tests.log', env)
+    # The Android adapter tests need Flutter's test binding (tag `flutter`),
+    # which `dart test` cannot load; Flutter runs them.
+    for package, name in ((TEXT, 'text'), (AUDIO, 'audio')):
+        run(['dart', 'test', '--reporter', 'expanded', '--exclude-tags', 'flutter'],
+            package, evidence / f'{name}-tests.log', env)
+        run(['flutter', 'test', '--reporter', 'expanded', '--tags', 'flutter'],
+            package, evidence / f'{name}-flutter-tests.log', env)
     receipts = {name: json.loads((folder / 'provenance.json').read_text(encoding='utf-8'))
                 for name, folder in [('text', text_reference), ('audio', audio_reference)]}
     (evidence / 'report.json').write_text(json.dumps({

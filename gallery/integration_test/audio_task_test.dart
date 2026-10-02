@@ -32,12 +32,15 @@ void main() {
           decodeWav(await asset('assets/samples/speech_16000_hz_mono.wav')),
         );
         expect(chunks, hasLength(5));
-        expect(chunks.first.categories.first.name, 'Speech');
+        expect(
+          chunks.first.classifications.first.categories.first.categoryName,
+          'Speech',
+        );
         // Google's Python output for this chunk on macOS. YAMNet's scores move
         // in 1/256 steps; the package suite compares each desktop host with
         // Google's library on that host.
         expect(
-          chunks.first.categories.first.score,
+          chunks.first.classifications.first.categories.first.score,
           closeTo(0.917969, Platform.isMacOS ? 1e-5 : 2 / 256),
         );
       } finally {

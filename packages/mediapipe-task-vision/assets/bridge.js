@@ -130,6 +130,12 @@
       await request(state, 'overlay', {overlay});
       state.overlayActive = true;
     },
+    async detachOverlay(id) {
+      const state = workers.get(id);
+      if (!state) return;
+      state.overlayActive = false;
+      await request(state, 'overlay', {overlay: null});
+    },
     setOverlayOptions(id, options) {
       const state = workers.get(id);
       if (state) state.overlayOptions = options;

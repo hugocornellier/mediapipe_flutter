@@ -41,7 +41,7 @@ FAMILIES = {
       final faces = await FaceDetector.create(FaceDetectorOptions(
           modelBytes: await asset('blaze_face_short_range.tflite')));
       try {
-        final result = await faces.detectImage(image);
+        final result = await faces.detect(image);
         expect(result.detections, hasLength(1));
         report['face_detector'] = result.detections.single.categories.first.score;
       } finally {
@@ -50,7 +50,7 @@ FAMILIES = {
       final objects = await ObjectDetector.create(ObjectDetectorOptions(
           modelBytes: await asset('efficientdet_lite0.tflite'), maxResults: 1));
       try {
-        final result = await objects.detectImage(image);
+        final result = await objects.detect(image);
         expect(result.detections.single.categories.first.categoryName, 'person');
         report['object_detector'] = result.detections.single.categories.first.score;
       } finally {
@@ -71,7 +71,7 @@ FAMILIES = {
         'test': """  testWidgets('text: Text Classifier', (tester) async {
     await tester.runAsync(() async {
       final task = await TextClassifier.create(
-          TextClassifierOptions.fromAssetBuffer(await asset('bert_classifier.tflite')));
+          TextClassifierOptions(modelBytes: await asset('bert_classifier.tflite')));
       try {
         final result = await task.classify('Hello, world!');
         final top = result.classifications.single.categories.first;
@@ -99,8 +99,8 @@ FAMILIES = {
       try {
         final chunks = await task.classify(
             decodeWav(await asset('speech_16000_hz_mono.wav')));
-        expect(chunks.first.categories.first.name, 'Speech');
-        report['audio_classifier'] = chunks.first.categories.first.score;
+        expect(chunks.first.classifications.first.categories.first.categoryName, 'Speech');
+        report['audio_classifier'] = chunks.first.classifications.first.categories.first.score;
       } finally {
         await task.dispose();
       }
@@ -124,7 +124,7 @@ WITHOUT_ENGINE = """  testWidgets('without the opt-in, engine tasks name it', (t
       final faces = await FaceDetector.create(FaceDetectorOptions(
           modelBytes: await asset('blaze_face_short_range.tflite')));
       try {
-        final result = await faces.detectImage(
+        final result = await faces.detect(
             VisionImage.fromFile(await file('portrait.jpg')));
         expect(result.detections, hasLength(1));
         report['face_detector'] = result.detections.single.categories.first.score;
@@ -135,7 +135,7 @@ WITHOUT_ENGINE = """  testWidgets('without the opt-in, engine tasks name it', (t
           allOf(contains('On macOS'), contains('tasks_runtime: true')));
       await expectLater(ObjectDetector.create(ObjectDetectorOptions(
           modelBytes: await asset('efficientdet_lite0.tflite'))), throwsA(optIn));
-      await expectLater(TextClassifier.create(TextClassifierOptions.fromAssetBuffer(
+      await expectLater(TextClassifier.create(TextClassifierOptions(modelBytes: 
           await asset('bert_classifier.tflite'))), throwsA(optIn));
       await expectLater(AudioClassifier.create(AudioClassifierOptions(
           modelBytes: await asset('yamnet.tflite'))), throwsA(optIn));

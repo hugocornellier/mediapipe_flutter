@@ -115,7 +115,7 @@ class LiveCameraController<T> extends ChangeNotifier {
 
   int frameRotationDegrees = 0;
   DeviceOrientation deviceOrientation = DeviceOrientation.landscapeLeft;
-  VisionDelegate delegate = VisionDelegate.cpu;
+  Delegate delegate = Delegate.cpu;
   int processedFrames = 0;
 
   /// Camera frames never processed. A frame that arrives during inference
@@ -357,7 +357,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// camera frames; see [_warmUp].
   Future<void> start({
     CameraDescription? description,
-    VisionDelegate? delegate,
+    Delegate? delegate,
     String? modelAsset,
     String? warmUpSample,
   }) {
@@ -375,7 +375,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     changing = true;
     initializing = true;
     error = null;
-    if (chosen == VisionDelegate.gpu) notice = null;
+    if (chosen == Delegate.gpu) notice = null;
     result = null;
     _cancelCallback();
     _changed();
@@ -463,7 +463,7 @@ class LiveCameraController<T> extends ChangeNotifier {
           // A browser without WebGL2 (or one that loses the context) fails
           // while the GPU task opens or warms up; the demo then uses CPU,
           // visibly, as the native demo does.
-          if (chosen == VisionDelegate.gpu && !taskReady && !cameraFailure) {
+          if (chosen == Delegate.gpu && !taskReady && !cameraFailure) {
             notice = 'GPU unavailable, using CPU. ${_message(failure)}';
             fallBack = true;
           } else {
@@ -486,12 +486,12 @@ class LiveCameraController<T> extends ChangeNotifier {
         }
       }
       if (fallBack && !_closed && generation == _generation) {
-        unawaited(start(delegate: VisionDelegate.cpu));
+        unawaited(start(delegate: Delegate.cpu));
       }
     });
   }
 
-  Future<void> _openTask(VisionDelegate chosen, String asset) async {
+  Future<void> _openTask(Delegate chosen, String asset) async {
     final loader = modelLoader;
     final bytes = loader != null
         ? await loader()

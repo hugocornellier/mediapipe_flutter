@@ -45,37 +45,37 @@ void main() {
             .widget<LiveCameraView>(find.byType(LiveCameraView))
             .controller;
         final live = controller;
-        final firstFrames = <VisionDelegate, List<LivePoint>>{};
+        final firstFrames = <Delegate, List<LivePoint>>{};
         live.addListener(() {
           final subjects = liveSubjects(live.result);
           if (live.processedFrames == 1 && subjects.isNotEmpty) {
             firstFrames.putIfAbsent(live.delegate, () => subjects.first);
           }
         });
-        await selectDelegate(tester, live, VisionDelegate.cpu);
+        await selectDelegate(tester, live, Delegate.cpu);
         camera.deliverFrames = true;
         await waitForFrames(tester, live);
-        expect(live.delegate, VisionDelegate.cpu);
+        expect(live.delegate, Delegate.cpu);
 
-        await tapDelegate(tester, VisionDelegate.gpu);
+        await tapDelegate(tester, Delegate.gpu);
         // A software renderer takes about 15 s for the first GPU frame.
         await waitForFrames(tester, live, timeout: const Duration(minutes: 3));
         await tester.pump();
         expect(live.running, isTrue);
         if (_expectation == 'works') {
-          expect(live.delegate, VisionDelegate.gpu);
+          expect(live.delegate, Delegate.gpu);
           expect(live.notice, isNull);
           // Same sample, first frame of each fresh task. Face GPU and CPU
           // differ by about 0.013 on Google's own paths; Android's test
           // allows 0.03.
-          final cpu = firstFrames[VisionDelegate.cpu]!;
-          final gpu = firstFrames[VisionDelegate.gpu]!;
+          final cpu = firstFrames[Delegate.cpu]!;
+          final gpu = firstFrames[Delegate.gpu]!;
           for (var i = 0; i < cpu.length; i++) {
             expect(gpu[i].x, closeTo(cpu[i].x, 0.03));
             expect(gpu[i].y, closeTo(cpu[i].y, 0.03));
           }
         } else {
-          expect(live.delegate, VisionDelegate.cpu);
+          expect(live.delegate, Delegate.cpu);
           expect(live.notice, contains('GPU unavailable, using CPU'));
           expect(live.notice, contains('kGpuService'));
           expect(find.textContaining('GPU unavailable'), findsOneWidget);

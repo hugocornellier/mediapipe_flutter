@@ -240,6 +240,9 @@ jobs:
           if-no-files-found: error
 
   official-runtime-pin:
+    # main's ruleset requires this check by this exact name. Rename it to
+    # "Official macOS runtime / ..." together with the ruleset's required
+    # check, never on its own, or no pull request can merge.
     name: Official macOS landmark runtime / pin survives this runner's Xcode
     runs-on: macos-15
     timeout-minutes: 10
@@ -255,10 +258,10 @@ jobs:
         # records which one signed it.
         run: |
           xcodebuild -version | head -1
-          python3 -B packages/mediapipe-task-vision/tool/prepare_official_macos_landmark_runtime.py \
+          python3 -B packages/mediapipe-task-vision/tool/prepare_macos_tasks_runtime.py \
             | python3 -c "import json,sys; t=sys.stdin.read(); m=json.loads(t[t.index('{'):])['manifest']; print('signed', m['sha256'][:16], 'unsigned', m['unsigned_sha256'][:16], m['signing_toolchain'])"
 
-  official-landmark-validation:
+  official-runtime-validation:
     # Every vision task Google's macOS engine serves (core bundles it with
     # tasks_runtime: true), against Google's 1.0.0 wheel on this runner: CPU
     # goldens, and Metal references generated here for Face, Hand and Object
@@ -289,7 +292,7 @@ jobs:
       # Core's hook downloads Google's engine from its pinned release.
       - name: Compare every served task with Google's wheel
         id: official
-        run: python3 -B packages/mediapipe-task-vision/tool/test_official_macos_landmark_runtime.py
+        run: python3 -B packages/mediapipe-task-vision/tool/test_macos_tasks_runtime.py
       - name: Record macos CPU task coverage (macos-official-cpu)
         if: always()
         run: python3 -B tool/coverage/record.py --suite macos-official-cpu --platform macos --delegate cpu --tasks face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.official.outcome }}
@@ -307,8 +310,8 @@ jobs:
         with:
           name: official-macos-runtime-validation
           path: |
-            packages/mediapipe-task-vision/build/official-landmark-validation/*.log
-            packages/mediapipe-task-vision/build/official-landmark-validation/gpu/**/*.json
+            packages/mediapipe-task-vision/build/macos-tasks-runtime-validation/*.log
+            packages/mediapipe-task-vision/build/macos-tasks-runtime-validation/gpu/**/*.json
           if-no-files-found: warn
 
   prebuilt-consumer:

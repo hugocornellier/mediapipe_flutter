@@ -5,7 +5,7 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  for (final delegate in VisionDelegate.values) {
+  for (final delegate in Delegate.values) {
     testWidgets(
       'bundled ${delegate.name} face runtimes process a real portrait together',
       (tester) async {
@@ -21,7 +21,7 @@ void main() {
           ),
         );
         try {
-          final result = await detector.detectImage(
+          final result = await detector.detect(
             VisionImage.fromPixels(
               pixels: pixels.buffer.asUint8List(
                 pixels.offsetInBytes,
@@ -53,7 +53,7 @@ void main() {
             ),
           );
           try {
-            final landmarks = await landmarker.detectImage(
+            final landmarks = await landmarker.detect(
               VisionImage.fromPixels(
                 pixels: pixels.buffer.asUint8List(
                   pixels.offsetInBytes,
@@ -67,7 +67,7 @@ void main() {
             expect(landmarks.faceLandmarks.single, hasLength(478));
             expect(landmarks.faceBlendshapes.single, hasLength(52));
             expect(
-              landmarks.facialTransformationMatrixes.single.values,
+              landmarks.facialTransformationMatrixes.single.data,
               hasLength(16),
             );
           } finally {

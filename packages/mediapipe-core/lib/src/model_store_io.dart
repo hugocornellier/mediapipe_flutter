@@ -9,6 +9,7 @@ import 'package:meta/meta.dart';
 import 'download_asset.dart';
 import 'model_bundle.dart';
 import 'model_download_exception.dart';
+import 'model_source.dart';
 import 'verified_download.dart';
 import 'bundled_model_stub.dart'
     if (dart.library.ui) 'bundled_model_flutter.dart'
@@ -17,12 +18,15 @@ import 'support_directory_stub.dart'
     if (dart.library.ui) 'support_directory_flutter.dart'
     as support;
 
-/// Models in the application's persistent support directory.
-///
-/// Native callers receive a file path suitable for MediaPipe task options.
+/// Verified models shared by every task family: the app's bundled copies,
+/// cached in the application's persistent support directory, and downloads
+/// when asked for. The same API in browsers, where models live in Cache
+/// Storage and a [ModelSource] holds bytes instead of a path.
 final class ModelStore {
-  /// [directory] is useful for tests; the default is application support.
-  ModelStore({this.directory, this.source, this.client});
+  /// [cacheDirectory] replaces application support (useful for tests and
+  /// Dart command-line tools); [source] is a SHA-named local directory or
+  /// internal URL root; [client] replaces the default HTTP client.
+  ModelStore({this.cacheDirectory, this.source, this.client});
 
   /// Whether tasks created with `model:` may download a model the app does
   /// not bundle. Off by default: `dart run mediapipe_core:bundle_models`
@@ -35,25 +39,27 @@ final class ModelStore {
   @visibleForTesting
   static Future<Uint8List?> Function(String sha256)? debugBundledModels;
 
-  /// Stands in for application support when no [directory] is given, in
+  /// Stands in for application support when no [cacheDirectory] is given, in
   /// tests that run without Flutter.
   @visibleForTesting
-  static Directory? debugDirectory;
+  static String? debugCacheDirectory;
 
   /// Override for the persistent root, primarily for tests.
-  final Directory? directory;
+  final String? cacheDirectory;
 
   /// A SHA-named local directory or internal URL root.
   final String? source;
 
   /// HTTP client override, primarily for tests.
   final http.Client? client;
-  final Map<String, Future<File?>> _finding = {};
-  final Map<String, Future<File>> _inflight = {};
+  final Map<String, Future<ModelSource?>> _finding = {};
+  final Map<String, Future<ModelSource>> _inflight = {};
 
   Future<Directory> _root() async {
-    final explicit = directory ?? debugDirectory;
-    final root = explicit ?? await support.modelsDirectory();
+    final explicit = cacheDirectory ?? debugCacheDirectory;
+    final root = explicit == null
+        ? await support.modelsDirectory()
+        : Directory(explicit);
     await root.create(recursive: true);
     if (explicit == null) await support.prepareModelsDirectory(root);
     return root;
@@ -65,25 +71,34 @@ final class ModelStore {
   ///
   /// The file keeps the model's original name (MediaPipe can depend on its
   /// extension) inside a folder named by the start of its SHA-256.
-  Future<File?> find(DownloadAsset model) =>
+  Future<ModelSource?> find(DownloadAsset model) =>
       _finding.putIfAbsent(model.sha256, () async {
         try {
           final root = await _root();
           final name = _folder(model);
-          return await _withLock(root, name, () => _local(root, name, model));
+          final file = await _withLock(
+            root,
+            name,
+            () => _local(root, name, model),
+          );
+          return file == null ? null : ModelSource(path: file.path);
         } finally {
-          _finding.remove(model.sha256);
+          // The entry is this very future, still completing; awaiting it would
+          // never finish.
+          unawaited(_finding.remove(model.sha256));
         }
       });
 
   /// Returns the verified file for [model]: cached, bundled or downloaded.
   /// Verifies every read and reuses valid bytes.
-  Future<File> get(DownloadAsset model) =>
+  Future<ModelSource> get(DownloadAsset model) =>
       _inflight.putIfAbsent(model.sha256, () async {
         try {
-          return await _get(model);
+          return ModelSource(path: (await _get(model)).path);
         } finally {
-          _inflight.remove(model.sha256);
+          // The entry is this very future, still completing; awaiting it would
+          // never finish.
+          unawaited(_inflight.remove(model.sha256));
         }
       });
 

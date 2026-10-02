@@ -19,10 +19,8 @@ Future<ModelSource> resolvePinnedModel(
 }) async {
   final store = ModelStore();
   final local = await store.find(model);
-  if (local != null) return ModelSource(bytes: local);
-  if (ModelStore.allowDownloads) {
-    return ModelSource(bytes: await store.get(model));
-  }
+  if (local != null) return local;
+  if (ModelStore.allowDownloads) return store.get(model);
   throw modelNotBundled(
     model,
     family: family,

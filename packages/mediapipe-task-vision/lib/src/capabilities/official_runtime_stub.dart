@@ -1,5 +1,5 @@
 /// Native runtime selection is unavailable outside `dart:io` platforms.
-bool hasOfficialMacosLandmarkRuntime() => false;
+bool hasMacosTasksRuntime() => false;
 
 /// Native runtime selection is unavailable outside `dart:io` platforms.
 bool hasOfficialIosVisionRuntime() => false;

@@ -16,7 +16,6 @@ const visionTasks = {
   'image_embedder',
   'image_segmenter',
   'interactive_segmenter',
-  'interactive_segmenter_legacy',
   'object_detector',
   'pose_landmarker',
 };
@@ -85,7 +84,6 @@ const macosEngineTasks = {
   'image_embedder',
   'image_segmenter',
   'interactive_segmenter',
-  'interactive_segmenter_legacy',
   'object_detector',
   'pose_landmarker',
 };
@@ -203,7 +201,6 @@ const visionWheelReleases = <String, VisionWheelRelease>{
       'holistic_landmarker',
       'image_segmenter',
       'interactive_segmenter',
-      'interactive_segmenter_legacy',
     },
   ),
   'windows/x64': VisionWheelRelease(
@@ -232,7 +229,6 @@ const visionWheelReleases = <String, VisionWheelRelease>{
       'pose_landmarker',
       'holistic_landmarker',
       'image_segmenter',
-      'interactive_segmenter_legacy',
     },
   ),
 };

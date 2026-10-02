@@ -13,15 +13,15 @@ void main() {
     tester,
   ) async {
     final history = SpeedHistory()
-      ..add(VisionDelegate.cpu, 10, Duration.zero)
-      ..add(VisionDelegate.gpu, 5, const Duration(milliseconds: 100));
+      ..add(Delegate.cpu, 10, Duration.zero)
+      ..add(Delegate.gpu, 5, const Duration(milliseconds: 100));
     await tester.pumpWidget(
       MaterialApp(
         theme: galleryTheme(Brightness.dark),
         home: Scaffold(
           body: StatsCard(
             history: history,
-            delegates: const [VisionDelegate.cpu, VisionDelegate.gpu],
+            delegates: const [Delegate.cpu, Delegate.gpu],
           ),
         ),
       ),
@@ -40,31 +40,31 @@ void main() {
                 .painter!
             as SpeedChartPainter;
 
-    expect(chart().shown, [VisionDelegate.cpu, VisionDelegate.gpu]);
+    expect(chart().shown, [Delegate.cpu, Delegate.gpu]);
     await tester.tap(find.byKey(const ValueKey('stats-gpu')));
     await tester.pump();
-    expect(chart().shown, [VisionDelegate.cpu]);
+    expect(chart().shown, [Delegate.cpu]);
     await tester.tap(find.byKey(const ValueKey('stats-cpu')));
     await tester.pump();
     expect(chart().shown, isEmpty);
     await tester.tap(find.byKey(const ValueKey('stats-gpu')));
     await tester.pump();
-    expect(chart().shown, [VisionDelegate.gpu]);
+    expect(chart().shown, [Delegate.gpu]);
   });
 
   testWidgets('the switch names the other delegate and asks for it', (
     tester,
   ) async {
-    final asked = <VisionDelegate>[];
+    final asked = <Delegate>[];
     for (final (running, label, other) in [
-      (VisionDelegate.cpu, 'Switch to GPU', VisionDelegate.gpu),
-      (VisionDelegate.gpu, 'Switch to CPU', VisionDelegate.cpu),
+      (Delegate.cpu, 'Switch to GPU', Delegate.gpu),
+      (Delegate.gpu, 'Switch to CPU', Delegate.cpu),
     ]) {
       await _pumpCard(
         tester,
         StatsCard(
           history: SpeedHistory(),
-          delegates: const [VisionDelegate.cpu, VisionDelegate.gpu],
+          delegates: const [Delegate.cpu, Delegate.gpu],
           delegate: running,
           onSwitchDelegate: asked.add,
         ),
@@ -73,7 +73,7 @@ void main() {
       await tester.tap(find.text(label));
       expect(asked.last, other);
     }
-    expect(asked, [VisionDelegate.gpu, VisionDelegate.cpu]);
+    expect(asked, [Delegate.gpu, Delegate.cpu]);
   });
 
   testWidgets('a task with one delegate has nothing to switch to', (
@@ -83,8 +83,8 @@ void main() {
       tester,
       StatsCard(
         history: SpeedHistory(),
-        delegates: const [VisionDelegate.cpu],
-        delegate: VisionDelegate.cpu,
+        delegates: const [Delegate.cpu],
+        delegate: Delegate.cpu,
         onSwitchDelegate: (_) => fail('no other delegate'),
       ),
     );
@@ -96,8 +96,8 @@ void main() {
       tester,
       StatsCard(
         history: SpeedHistory(),
-        delegates: const [VisionDelegate.cpu, VisionDelegate.gpu],
-        delegate: VisionDelegate.gpu,
+        delegates: const [Delegate.cpu, Delegate.gpu],
+        delegate: Delegate.gpu,
       ),
     );
     final button = find.byKey(const ValueKey('stats-switch'));
@@ -112,15 +112,15 @@ void main() {
 
   testWidgets('reset clears the chart', (tester) async {
     final history = SpeedHistory()
-      ..add(VisionDelegate.cpu, 10, Duration.zero)
-      ..add(VisionDelegate.cpu, 9, const Duration(milliseconds: 100));
+      ..add(Delegate.cpu, 10, Duration.zero)
+      ..add(Delegate.cpu, 9, const Duration(milliseconds: 100));
     await _pumpCard(
       tester,
       StatefulBuilder(
         builder: (context, setState) => StatsCard(
           history: history,
-          delegates: const [VisionDelegate.cpu, VisionDelegate.gpu],
-          delegate: VisionDelegate.cpu,
+          delegates: const [Delegate.cpu, Delegate.gpu],
+          delegate: Delegate.cpu,
           onSwitchDelegate: (_) {},
           onReset: () => setState(history.clear),
         ),

@@ -2,20 +2,23 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../interface/object_detector_types.dart';
+import '../runner/native_interface.dart';
+import '../types/options.dart';
+import '../types/results.dart';
+import '../types/vision_types.dart';
 import '../capabilities/official_runtime_io.dart';
 import 'native_desktop_runtime.dart';
 import 'native_vision_image.dart';
-import 'vision_task_worker.dart';
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeObjectDetector
     implements NativeVisionTask<ObjectDetectorResult> {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeObjectDetector(ObjectDetectorOptions options)
-    : _gpu = options.delegate == VisionDelegate.gpu {
+    : _gpu = options.delegate == Delegate.gpu {
     if (!Platform.isMacOS &&
         !Platform.isLinux &&
         !hasOfficialIosVisionRuntime() &&
@@ -30,7 +33,7 @@ final class NativeObjectDetector
       final native = arena<mp.MpObjectDetectorOptions>();
       final base = native.ref.base_options;
       base.file_descriptor = -1;
-      base.delegate = options.delegate == VisionDelegate.gpu
+      base.delegate = options.delegate == Delegate.gpu
           ? mp.MpDelegate.MP_DELEGATE_GPU
           : mp.MpDelegate.MP_DELEGATE_CPU;
       base.host_system = Platform.isIOS
@@ -159,11 +162,11 @@ Pointer<Pointer<Char>> _strings(Arena arena, List<String> values) {
 void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) => checkedCall(
   call,
   onError: (message, statusCode) =>
-      VisionTaskException(message, statusCode: statusCode),
+      TaskException(message, statusCode: statusCode),
 );
 
-ObjectDetection _copyDetection(mp.MpDetection value) => ObjectDetection(
-  boundingBox: ObjectBoundingBox(
+Detection _copyDetection(mp.MpDetection value) => Detection(
+  boundingBox: BoundingBox(
     left: value.bounding_box.left,
     top: value.bounding_box.top,
     right: value.bounding_box.right,
@@ -171,7 +174,7 @@ ObjectDetection _copyDetection(mp.MpDetection value) => ObjectDetection(
   ),
   categories: [
     for (var i = 0; i < value.categories_count; i++)
-      ObjectCategory(
+      MediaPipeCategory(
         index: value.categories[i].index,
         score: value.categories[i].score,
         categoryName: nativeString(value.categories[i].category_name),

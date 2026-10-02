@@ -5,9 +5,9 @@ import '../gallery_theme.dart';
 import 'camera_geometry.dart';
 
 /// One set of landmarks and the official edges joining them, with an
-/// optional [label] drawn beside the first landmark.
+/// optional `label` drawn beside the first landmark.
 typedef LandmarkFigure = ({
-  List<VisionLandmark> landmarks,
+  List<NormalizedLandmark> landmarks,
   List<(int, int)> edges,
   Color color,
   String? label,
@@ -17,7 +17,8 @@ typedef LandmarkFigure = ({
 ///
 /// Landmarks are normalized to the frame the camera delivered, so [transform]
 /// rotates, mirrors and fits them onto the preview. Edge lists come from
-/// `landmark_connections.dart`, which is generated from the official API, so
+/// `HandLandmarksConnections`, `PoseLandmarksConnections` and
+/// `FaceLandmarksConnections`, generated from the official API, so
 /// nothing here encodes a topology of its own.
 class LandmarkOverlay extends CustomPainter {
   const LandmarkOverlay(
@@ -107,7 +108,7 @@ List<LandmarkFigure> figuresFor(Object? result) => switch (result) {
     _hand(person.rightHandLandmarks, 1),
     (
       landmarks: person.faceLandmarks,
-      edges: FaceLandmarkConnections.contours,
+      edges: FaceLandmarksConnections.contours,
       color: GalleryTheme.white,
       label: null,
     ),
@@ -115,17 +116,20 @@ List<LandmarkFigure> figuresFor(Object? result) => switch (result) {
   _ => const [],
 };
 
-LandmarkFigure _hand(List<VisionLandmark> landmarks, int i, {String? label}) =>
-    (
-      landmarks: landmarks,
-      edges: HandLandmarkConnections.all,
-      color: i == 0 ? GalleryTheme.accentLight : GalleryTheme.white,
-      label: label,
-    );
-
-LandmarkFigure _pose(List<VisionLandmark> landmarks) => (
+LandmarkFigure _hand(
+  List<NormalizedLandmark> landmarks,
+  int i, {
+  String? label,
+}) => (
   landmarks: landmarks,
-  edges: PoseLandmarkConnections.all,
+  edges: HandLandmarksConnections.all,
+  color: i == 0 ? GalleryTheme.accentLight : GalleryTheme.white,
+  label: label,
+);
+
+LandmarkFigure _pose(List<NormalizedLandmark> landmarks) => (
+  landmarks: landmarks,
+  edges: PoseLandmarksConnections.all,
   color: GalleryTheme.accentLight,
   label: null,
 );

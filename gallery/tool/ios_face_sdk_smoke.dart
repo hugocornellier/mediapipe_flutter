@@ -59,10 +59,10 @@ Future<void> main() async {
     decoded.dispose();
     codec.dispose();
     final outcomes = <Map<String, Object?>>[];
-    final baselineByDelegate = <VisionDelegate, FaceLandmarkerResult>{};
+    final baselineByDelegate = <Delegate, FaceLandmarkerResult>{};
     // Landmarker is the system alias: create it before the bundled detector
     // asset is ever called, proving the alias loads the same library itself.
-    for (final delegate in [VisionDelegate.cpu, VisionDelegate.gpu]) {
+    for (final delegate in [Delegate.cpu, Delegate.gpu]) {
       final landmarker = await FaceLandmarker.create(
         FaceLandmarkerOptions(
           modelBytes: model,
@@ -72,7 +72,7 @@ Future<void> main() async {
         ),
       );
       try {
-        final baseline = await landmarker.detectImage(rgba);
+        final baseline = await landmarker.detect(rgba);
         require(
           baseline.faceLandmarks.length == 1,
           '$delegate RGBA found no face.',
@@ -86,11 +86,11 @@ Future<void> main() async {
           '$delegate missing blendshapes.',
         );
         require(
-          baseline.facialTransformationMatrixes.single.values.length == 16,
+          baseline.facialTransformationMatrixes.single.data.length == 16,
           '$delegate missing transform.',
         );
         baselineByDelegate[delegate] = baseline;
-        final file = await landmarker.detectImage(
+        final file = await landmarker.detect(
           VisionImage.fromFile(assets.path('portrait.jpg')),
         );
         require(
@@ -103,7 +103,7 @@ Future<void> main() async {
         final filePixelDelta = _difference(baseline, file);
         for (final format in VisionPixelFormat.values) {
           final padded = _convert(rgba, format);
-          final result = await landmarker.detectImage(padded);
+          final result = await landmarker.detect(padded);
           require(
             result.faceLandmarks.length == 1,
             '$delegate $format found no face.',
@@ -116,7 +116,7 @@ Future<void> main() async {
         final rotationDeltas = <String, double>{};
         for (final angle in [90, 180, 270]) {
           final turned = _rotate(rgba, (360 - angle) % 360);
-          final result = await landmarker.detectImage(
+          final result = await landmarker.detect(
             turned,
             rotationDegrees: angle,
           );
@@ -143,12 +143,12 @@ Future<void> main() async {
           // this is a coordinate-space check, not a bit-identical oracle.
           // Check alignment within 1% CPU / 3% GPU; record the actual deltas.
           require(
-            maximum < (delegate == VisionDelegate.gpu ? 0.03 : 0.01),
+            maximum < (delegate == Delegate.gpu ? 0.03 : 0.01),
             '$delegate rotation $angle remaps incorrectly: $maximum.',
           );
           rotationDeltas['$angle'] = maximum;
         }
-        final blank = await landmarker.detectImage(
+        final blank = await landmarker.detect(
           VisionImage.fromPixels(
             pixels: Uint8List(128 * 128 * 4),
             width: 128,
@@ -165,14 +165,14 @@ Future<void> main() async {
         // Grow after the 128px blank frame, reuse the buffer with face pixels,
         // then shrink and grow again. A pool must not return stale contents.
         for (var cycle = 0; cycle < 2; cycle++) {
-          final restored = await landmarker.detectImage(
+          final restored = await landmarker.detect(
             _convert(rgba, VisionPixelFormat.bgra),
           );
           require(
             _difference(baseline, restored) < 0.001,
             '$delegate changed face pixels after resizing storage.',
           );
-          final empty = await landmarker.detectImage(
+          final empty = await landmarker.detect(
             VisionImage.fromPixels(
               pixels: Uint8List(128 * 128 * 4),
               width: 128,
@@ -207,7 +207,7 @@ Future<void> main() async {
         ),
       );
       try {
-        final result = await detector.detectImage(
+        final result = await detector.detect(
           _convert(rgba, VisionPixelFormat.bgra),
         );
         require(
@@ -263,7 +263,7 @@ Future<void> main() async {
             delegate: delegate,
           ),
         );
-      } on VisionTaskException {
+      } on TaskException {
         rejected = true;
       }
       require(rejected, '$delegate accepted a corrupt model.');
@@ -276,8 +276,8 @@ Future<void> main() async {
       outcomes.last['error_recovery'] = 'passed';
     }
     final difference = _difference(
-      baselineByDelegate[VisionDelegate.cpu]!,
-      baselineByDelegate[VisionDelegate.gpu]!,
+      baselineByDelegate[Delegate.cpu]!,
+      baselineByDelegate[Delegate.gpu]!,
     );
     // CPU/GPU parity depends on the SDK and device's precision. This is a
     // functionality smoke test; report the difference without inventing an

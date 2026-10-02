@@ -88,7 +88,7 @@ Future<int> countFaces(Uint8List rgba, int width, int height) async {
     FaceLandmarkerOptions(model: VisionModels.faceLandmarker),
   );
   try {
-    final result = await landmarker.detectImage(
+    final result = await landmarker.detect(
       VisionImage.fromPixels(
         pixels: rgba,
         width: width,

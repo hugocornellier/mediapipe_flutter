@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: [main, ci/linux-windows]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 

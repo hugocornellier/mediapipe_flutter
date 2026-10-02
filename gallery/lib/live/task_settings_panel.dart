@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mediapipe_vision/capabilities.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import '../ui/components.dart';
 import '../ui/design.dart';
@@ -60,13 +60,13 @@ class TaskSettingsPanel extends StatefulWidget {
 
   final List<TaskSetting> settings;
   final TaskSettingValues values;
-  final List<VisionDelegate> delegates;
-  final VisionDelegate delegate;
+  final List<Delegate> delegates;
+  final Delegate delegate;
 
   /// False while the task is being rebuilt.
   final bool enabled;
   final void Function(String key, Object value) onChanged;
-  final void Function(VisionDelegate delegate) onDelegate;
+  final void Function(Delegate delegate) onDelegate;
 
   @override
   State<TaskSettingsPanel> createState() => _TaskSettingsPanelState();
@@ -148,13 +148,13 @@ class _TaskSettingsPanelState extends State<TaskSettingsPanel> {
         _Section(
           label: 'Delegate',
           children: [
-            Segmented<VisionDelegate>(
+            Segmented<Delegate>(
               expand: true,
               segments: [
                 for (final delegate in widget.delegates)
                   (
                     value: delegate,
-                    label: delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+                    label: delegate == Delegate.gpu ? 'GPU' : 'CPU',
                     icon: null,
                     key: ValueKey('delegate-${delegate.name}'),
                   ),

@@ -26,7 +26,7 @@ class FaceCameraController extends ChangeNotifier {
   int processedFrames = 0;
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
-  VisionDelegate delegate = VisionDelegate.cpu;
+  Delegate delegate = Delegate.cpu;
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
       ? 0
       : processedFrames * 1000000 / _clock.elapsedMicroseconds;
@@ -47,7 +47,7 @@ class FaceCameraController extends ChangeNotifier {
 
   Future<void> start(
     CameraDescription description, {
-    VisionDelegate delegate = VisionDelegate.cpu,
+    Delegate delegate = Delegate.cpu,
   }) {
     if (_closed) return Future.error(StateError('Camera demo is closed.'));
     final generation = ++_generation;

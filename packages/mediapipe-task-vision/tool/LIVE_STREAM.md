@@ -98,7 +98,7 @@ Going native, platform by platform:
   compile no C today. `nativeRunningMode`, plus the running-mode mappings in
   `native_face_detector.dart`, `native_face_landmarker.dart` and
   `native_object_detector.dart`, would map the new mode.
-- **iOS:** `packages/mediapipe-core/native/ios/face_sdk_bridge.mm` already
+- **iOS:** `packages/mediapipe-core/native/ios/vision_sdk_bridge.mm` already
   copies results into C structs, but its `Configure` rejects LIVE_STREAM. It
   would adopt the SDK's live stream delegates and post copied results to Dart.
 - **Android:** `MediaPipeVisionPlugin.java` maps only IMAGE and VIDEO.

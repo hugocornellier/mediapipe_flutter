@@ -12,7 +12,7 @@ typedef MaskMatch = ({
 });
 
 /// Compares [result]'s masks with [reference], each where both exist.
-MaskMatch compareMasks(SegmentationResult result, OfficialMasks reference) {
+MaskMatch compareMasks(ImageSegmenterResult result, OfficialMasks reference) {
   final category = result.categoryMask;
   final masks = result.confidenceMasks;
   return (
@@ -69,7 +69,7 @@ double shareError(Map<int, double> actual, Map<int, double> expected) {
 
 /// Mean and largest difference between [mask]'s cell means and [grid]'s.
 ({double mean, double max}) confidenceGridError(
-  SegmentationMask mask,
+  ConfidenceMask mask,
   List<List<double>> grid,
 ) {
   final rows = grid.length, columns = grid.first.length;
@@ -129,8 +129,8 @@ double turnedCategoryAgreement(
 /// The mean confidence difference between [upright] and [turned] at the
 /// pixels rotatedImage moved by [turn] degrees (every [step]th).
 double turnedConfidenceError(
-  SegmentationMask upright,
-  SegmentationMask turned,
+  ConfidenceMask upright,
+  ConfidenceMask turned,
   int turn, {
   int step = 4,
 }) {
@@ -177,8 +177,8 @@ double stretchedCategoryAgreement(
 
 /// The mean confidence difference measured as [stretchedCategoryAgreement].
 double stretchedConfidenceError(
-  SegmentationMask upright,
-  SegmentationMask stretched, {
+  ConfidenceMask upright,
+  ConfidenceMask stretched, {
   int step = 4,
 }) {
   var error = 0.0;

@@ -14,9 +14,7 @@ final class GalleryAssets {
       (manifest['tasks'] as List).cast<String>().toSet();
 
   Set<String> get officialMacosLandmarkTasks =>
-      (manifest['official_macos_landmark_tasks'] as List)
-          .cast<String>()
-          .toSet();
+      (manifest['macos_engine_tasks'] as List).cast<String>().toSet();
 
   String path(String name) => '${directory.path}/$name';
 

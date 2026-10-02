@@ -164,9 +164,6 @@ const taskSettings = <String, List<TaskSetting>>{
   'interactive_segmenter': [
     ShareSetting('threshold', 'Threshold', display: true),
   ],
-  'interactive_segmenter_legacy': [
-    ShareSetting('threshold', 'Threshold', display: true),
-  ],
   'image_classifier': [
     CountSetting('maxResults', 'Max Results', initial: 3),
     ShareSetting('scoreThreshold', 'Score Threshold', initial: 0),

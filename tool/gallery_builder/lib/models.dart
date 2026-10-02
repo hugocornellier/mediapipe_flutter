@@ -66,13 +66,6 @@ const models = <String, Model>{
     'https://storage.googleapis.com/mediapipe-models/interactive_segmenter_v2/magic_touch/int8/1/interactive_segmentation.task',
     '38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03',
   ),
-  // TODO: Delete with InteractiveSegmenterLegacy; only the modern
-  // InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
-  'interactive_segmenter_legacy': Model(
-    'magic_touch.tflite',
-    'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite',
-    'e24338a717c1b7ad8d159666677ef400babb7f33b8ad60c4d96db4ecf694cd25',
-  ),
   'language_detector': Model(
     'language_detector.tflite',
     'https://storage.googleapis.com/mediapipe-models/language_detector/language_detector/float32/1/language_detector.tflite',
@@ -149,7 +142,6 @@ const macosEngineTasks = {
   'image_embedder',
   'image_segmenter',
   'interactive_segmenter',
-  'interactive_segmenter_legacy',
   'object_detector',
   'pose_landmarker',
 };

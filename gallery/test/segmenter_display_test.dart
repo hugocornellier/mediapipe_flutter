@@ -9,19 +9,19 @@ import 'package:mediapipe_gallery/live/task_settings.dart';
 import 'package:mediapipe_gallery/live/task_settings_panel.dart';
 
 void main() {
-  final result = SegmentationResult(
+  final result = ImageSegmenterResult(
     categoryMask: CategoryMask(
       width: 3,
       height: 1,
       categories: Uint8List.fromList([0, 15, 200]),
     ),
     confidenceMasks: [
-      SegmentationMask(
+      ConfidenceMask(
         width: 3,
         height: 1,
         confidence: Float32List.fromList([1, 0, 0]),
       ),
-      SegmentationMask(
+      ConfidenceMask(
         width: 3,
         height: 1,
         confidence: Float32List.fromList([0, 0.5, 1]),
@@ -66,8 +66,8 @@ void main() {
               TaskSettingsPanel(
                 settings: taskSettings['image_segmenter']!,
                 values: values,
-                delegates: const [VisionDelegate.cpu],
-                delegate: VisionDelegate.cpu,
+                delegates: const [Delegate.cpu],
+                delegate: Delegate.cpu,
                 enabled: true,
                 onChanged: (key, value) => setState(() {
                   values[key] = value;

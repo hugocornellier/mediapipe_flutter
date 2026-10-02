@@ -1,4 +1,4 @@
-import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 
 /// Verified official models accepted by audio task options.
 abstract final class AudioModels {

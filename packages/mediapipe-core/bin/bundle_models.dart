@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:mediapipe_core/model_store.dart' show DownloadAsset;
+import 'package:mediapipe_core/mediapipe_core.dart' show DownloadAsset;
 import 'package:mediapipe_core/src/model_bundler.dart';
 import 'package:yaml/yaml.dart';
 

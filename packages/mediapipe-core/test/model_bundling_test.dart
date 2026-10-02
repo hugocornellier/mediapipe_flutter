@@ -3,8 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_core/mediapipe_exception.dart';
-import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart';
 import 'package:mediapipe_core/src/model_bundle.dart';
 import 'package:mediapipe_core/src/model_bundler.dart';
@@ -50,7 +49,7 @@ void main() {
   tearDown(() async {
     ModelStore.allowDownloads = false;
     ModelStore.debugBundledModels = null;
-    ModelStore.debugDirectory = null;
+    ModelStore.debugCacheDirectory = null;
     await mirror.close(force: true);
     await root.delete(recursive: true);
   });
@@ -291,7 +290,7 @@ void main() {
 
     setUp(() {
       store = Directory('${root.path}/support');
-      ModelStore.debugDirectory = store;
+      ModelStore.debugCacheDirectory = store.path;
       bundleReads = 0;
     });
 
@@ -308,7 +307,7 @@ void main() {
       final first = await ModelStore().find(face);
       expect(first, isNotNull);
       expect(first!.path, endsWith('face_detector.tflite'));
-      expect(await first.readAsBytes(), faceBytes);
+      expect(await File(first.path!).readAsBytes(), faceBytes);
       final second = await ModelStore().find(face);
       expect(second!.path, first.path);
       expect(bundleReads, 1);

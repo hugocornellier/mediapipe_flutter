@@ -1,4 +1,7 @@
-import 'dart:async';
+/// Flutter's registration of Google's browser runtime behind the Audio
+/// Classifier. Not for applications: import `mediapipe_audio.dart`.
+library;
+
 import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
@@ -6,16 +9,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:mediapipe_audio/platform_interface.dart';
-import 'package:web/web.dart' as web;
-
-import 'web_runtime.dart';
-
-@JS('mediapipeAudio.create')
-external JSPromise<JSNumber> _create(JSObject options);
-@JS('mediapipeAudio.run')
-external JSPromise<JSString> _run(JSNumber id, JSObject input);
-@JS('mediapipeAudio.close')
-external JSPromise<JSAny?> _close(JSNumber id);
+import 'package:mediapipe_core/web_task_bridge.dart';
 
 /// Flutter registration for Google's official browser audio runtime.
 abstract final class MediaPipeAudioWeb {
@@ -25,58 +19,26 @@ abstract final class MediaPipeAudioWeb {
   }
 }
 
-/// Google's Audio Classifier on its own worker (assets/worker.js).
+/// Google's Audio Classifier on its own worker (assets/worker.js), through
+/// core's shared bridge.
 final class _WorkerAudioTask implements AudioTaskBackend {
-  _WorkerAudioTask._(this._id);
+  _WorkerAudioTask._(this._worker);
 
-  final JSNumber _id;
-  static Future<void>? _loaded;
+  final WebTaskWorker _worker;
 
-  static Future<AudioTaskBackend> create(Map<String, Object?> options) async {
-    await (_loaded ??= _loadBridge(
-      'assets/packages/mediapipe_audio/assets/bridge.js',
-      () => _loaded = null,
-    ));
-    final bytes = options['modelBytes'] as Uint8List?;
-    final path = options['modelPath'] as String?;
-    final input = {
-      ...options,
-      'modelBytes': bytes == null ? null : Uint8List.fromList(bytes).toJS,
-      // A model path is a URL here, resolved against the page.
-      'modelPath': path == null ? null : Uri.base.resolve(path).toString(),
-      'runtimeBaseUrl': MediaPipeWebRuntime.resolve(Uri.base),
-    }.jsify()!;
-    return _WorkerAudioTask._(await _create(input as JSObject).toDart);
-  }
+  static Future<AudioTaskBackend> create(Map<String, Object?> options) async =>
+      _WorkerAudioTask._(
+        await WebTaskWorker.create('mediapipe_audio', options),
+      );
 
   @override
   Future<List<Object?>> classify(Float32List samples, double sampleRate) async {
     final input = JSObject()
       ..['samples'] = Float32List.fromList(samples).toJS
       ..['sampleRate'] = sampleRate.toJS;
-    final json = await _run(_id, input).toDart;
-    return jsonDecode(json.toDart) as List<Object?>;
+    return jsonDecode(await _worker.run(input)) as List<Object?>;
   }
 
   @override
-  Future<void> dispose() => _close(_id).toDart;
-}
-
-/// Adds the bridge script to the page once; a failure can be retried.
-Future<void> _loadBridge(String path, void Function() reset) async {
-  final script = web.HTMLScriptElement()
-    ..src = Uri.base.resolve(path).toString();
-  final ready = Completer<void>();
-  script.onLoad.first.then((_) => ready.complete());
-  script.onError.first.then((_) {
-    ready.completeError(StateError('Unable to load the MediaPipe web bridge.'));
-  });
-  web.document.head!.append(script);
-  try {
-    await ready.future.timeout(const Duration(seconds: 60));
-  } catch (_) {
-    script.remove();
-    reset();
-    rethrow;
-  }
+  Future<void> dispose() => _worker.close();
 }

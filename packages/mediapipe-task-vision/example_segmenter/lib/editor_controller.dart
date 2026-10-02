@@ -5,7 +5,7 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 abstract interface class SegmentationBackend {
   Future<void> setImage(VisionImage image);
-  Future<SegmentationMask> segment(List<SegmentationStroke> strokes);
+  Future<ConfidenceMask> segment(List<Stroke> strokes);
   Future<void> dispose();
 }
 
@@ -16,8 +16,7 @@ class NativeSegmentationBackend implements SegmentationBackend {
   @override
   Future<void> setImage(VisionImage image) => task.setImage(image);
   @override
-  Future<SegmentationMask> segment(List<SegmentationStroke> strokes) =>
-      task.segment(strokes);
+  Future<ConfidenceMask> segment(List<Stroke> strokes) => task.segment(strokes);
   @override
   Future<void> dispose() => task.dispose();
 }
@@ -29,18 +28,18 @@ class NativeSegmentationBackend implements SegmentationBackend {
 class EditorController extends ChangeNotifier {
   EditorController(this._backend);
   final SegmentationBackend _backend;
-  final _completed = <SegmentationStroke>[];
-  List<SegmentationPoint>? _active;
-  SegmentationBrushMode _activeBrush = SegmentationBrushMode.positive;
-  SegmentationBrushMode brush = SegmentationBrushMode.positive;
+  final _completed = <Stroke>[];
+  List<NormalizedKeypoint>? _active;
+  BrushMode _activeBrush = BrushMode.positive;
+  BrushMode brush = BrushMode.positive;
   VisionImage? _input;
-  SegmentationMask? mask;
+  ConfidenceMask? mask;
   String? error;
   bool ready = false;
   bool _closed = false;
   int _generation = 0;
   int _revision = 0;
-  ({int generation, int revision, List<SegmentationStroke> strokes})? _pending;
+  ({int generation, int revision, List<Stroke> strokes})? _pending;
   Future<void>? _draining;
   Future<void>? _loading;
   Future<void>? _closing;
@@ -50,18 +49,14 @@ class EditorController extends ChangeNotifier {
 
   bool get busy => _draining != null;
   bool get canUndo => _completed.isNotEmpty || _active != null;
-  List<SegmentationPoint> get activePoints => List.unmodifiable(_active ?? []);
-  SegmentationBrushMode get activeBrush => _activeBrush;
-  List<SegmentationStroke> get strokes => List.unmodifiable([
+  List<NormalizedKeypoint> get activePoints => List.unmodifiable(_active ?? []);
+  BrushMode get activeBrush => _activeBrush;
+  List<Stroke> get strokes => List.unmodifiable([
     ..._completed,
     if (_active case final points?
         when points.isNotEmpty &&
-            (_activeBrush != SegmentationBrushMode.lasso || points.length >= 3))
-      SegmentationStroke(
-        brushMode: _activeBrush,
-        points: points,
-        isCompleted: false,
-      ),
+            (_activeBrush != BrushMode.lasso || points.length >= 3))
+      Stroke(brushMode: _activeBrush, points: points, isCompleted: false),
   ]);
 
   Future<void> loadImage(VisionImage image) {
@@ -90,14 +85,14 @@ class EditorController extends ChangeNotifier {
     _notify();
   }
 
-  void begin(SegmentationPoint point) {
+  void begin(NormalizedKeypoint point) {
     if (!ready || _closed || _active != null) return;
     _activeBrush = brush;
     _active = [point];
     _changed();
   }
 
-  void extend(SegmentationPoint point) {
+  void extend(NormalizedKeypoint point) {
     final points = _active;
     if (points == null || !ready || _closed) return;
     final previous = points.last;
@@ -109,13 +104,13 @@ class EditorController extends ChangeNotifier {
   void end() {
     final points = _active;
     if (points == null || _closed) return;
-    if (_activeBrush != SegmentationBrushMode.lasso || points.length >= 3) {
+    if (_activeBrush != BrushMode.lasso || points.length >= 3) {
       _completed.add(
-        SegmentationStroke(
+        Stroke(
           brushMode: _activeBrush,
           points: [
             ...points,
-            if (_activeBrush == SegmentationBrushMode.lasso) points.first,
+            if (_activeBrush == BrushMode.lasso) points.first,
           ],
         ),
       );

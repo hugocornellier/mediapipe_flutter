@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:mediapipe_text/text_proofreader.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 import 'token_budget_field.dart';
 import 'task_support.dart';
@@ -123,7 +123,7 @@ class _ProofreaderPageState extends State<ProofreaderPage> {
           const Text(
             'Proofreader 200M · Official MediaPipe pipeline · macOS CPU',
           ),
-          const TaskSupport(task: TextTask.proofreader),
+          const TaskSupport(query: queryTextProofreaderCapabilities),
           const SizedBox(height: 28),
           TextField(
             key: const Key('proofreader-input'),

@@ -148,30 +148,48 @@ class DownloadModelCommand extends Command with RepoFinderMixin {
     }
   }
 
+  /// Streams a custom, unverified model to [destinationFile] chunk by chunk,
+  /// so a large model is never held in memory, and leaves no partial file
+  /// behind on failure. Standard models go through [downloadVerified].
   Future<void> downloadModel(
     String modelSource,
     io.File destinationFile,
   ) async {
     _log.info('Downloading $modelSource');
-
-    // TODO(craiglabenz): Convert to StreamedResponse
-    final response = await http.get(Uri.parse(modelSource));
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        '${response.statusCode} ${response.reasonPhrase} :: '
-        '$modelSource',
+    final partial = io.File('${destinationFile.path}.part');
+    final client = http.Client();
+    try {
+      final response = await client.send(
+        http.Request('GET', Uri.parse(modelSource)),
       );
+      if (response.statusCode != 200) {
+        throw Exception(
+          '${response.statusCode} ${response.reasonPhrase} :: $modelSource',
+        );
+      }
+      var bytes = 0;
+      final sink = partial.openWrite();
+      try {
+        await sink.addStream(
+          response.stream.map((chunk) {
+            bytes += chunk.length;
+            return chunk;
+          }),
+        );
+      } finally {
+        await sink.close();
+      }
+      _log.fine('Downloaded $bytes bytes');
+      _log.info('Saving to ${destinationFile.absolute.path}');
+      await partial.rename(destinationFile.path);
+    } catch (_) {
+      if (await partial.exists()) {
+        await partial.delete();
+      }
+      rethrow;
+    } finally {
+      client.close();
     }
-
-    if (!(await destinationFile.exists())) {
-      _log.fine('Creating file at ${destinationFile.absolute.path}');
-      await destinationFile.create();
-    }
-
-    _log.fine('Downloaded ${response.contentLength} bytes');
-    _log.info('Saving to ${destinationFile.absolute.path}');
-    await destinationFile.writeAsBytes(response.bodyBytes);
   }
 }
 

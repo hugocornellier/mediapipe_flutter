@@ -21,10 +21,10 @@ import 'support/gallery_tiles.dart';
 /// delegate fails on the first frame (see test_android_sdk_tasks.sh). GPU is
 /// then a phone check, as for the other SDK suites.
 const _gpu = String.fromEnvironment('SDK_GPU', defaultValue: 'optional');
-const _delegates = [VisionDelegate.cpu, if (_gpu != 'skip') VisionDelegate.gpu];
+const _delegates = [Delegate.cpu, if (_gpu != 'skip') Delegate.gpu];
 const _switches = [
-  VisionDelegate.cpu,
-  if (_gpu != 'skip') ...[VisionDelegate.gpu, VisionDelegate.cpu],
+  Delegate.cpu,
+  if (_gpu != 'skip') ...[Delegate.gpu, Delegate.cpu],
 ];
 
 // Face Landmarker through Google's official mobile SDKs: iOS through the
@@ -60,7 +60,7 @@ void main() {
             ),
           );
           try {
-            final reference = await task.detectImage(frame.image);
+            final reference = await task.detect(frame.image);
             _face(reference, optional: true);
             references.add(reference);
             final copied = reference.faceLandmarks.single.first.x;
@@ -80,7 +80,7 @@ void main() {
                   if (channels == 4) pixels[dst + 3] = 255;
                 }
               }
-              final padded = await task.detectImage(
+              final padded = await task.detect(
                 VisionImage.fromPixels(
                   pixels: pixels,
                   width: frame.width,
@@ -96,12 +96,12 @@ void main() {
               );
             }
             _face(
-              await task.detectImage(
+              await task.detect(
                 VisionImage.fromFile(assets.path('portrait.jpg')),
               ),
               optional: true,
             );
-            final blank = await task.detectImage(_blank());
+            final blank = await task.detect(_blank());
             expect(blank.faceLandmarks, isEmpty);
             expect(blank.faceBlendshapes, isEmpty);
             expect(blank.facialTransformationMatrixes, isEmpty);
@@ -110,13 +110,13 @@ void main() {
               'delegate': delegate.name,
               'landmarks': 478,
               'blendshapes': reference.faceBlendshapes.single.length,
-              'matrix': reference.facialTransformationMatrixes.single.values,
+              'matrix': reference.facialTransformationMatrixes.single.data,
             });
           } finally {
             await task.dispose();
           }
           await task.dispose();
-          await expectLater(task.detectImage(frame.image), throwsStateError);
+          await expectLater(task.detect(frame.image), throwsStateError);
         }
         if (references.length == 2) {
           final delta = _delta(references[0], references[1]);
@@ -134,7 +134,7 @@ void main() {
               delegate: _delegates.last,
             ),
           ),
-          throwsA(isA<VisionTaskException>()),
+          throwsA(isA<TaskException>()),
         );
       });
     },
@@ -156,7 +156,7 @@ void main() {
           ),
         );
         try {
-          await expectLater(task.detectImage(frame.image), throwsStateError);
+          await expectLater(task.detect(frame.image), throwsStateError);
           await expectLater(
             task.detectForVideo(frame.image, timestampMilliseconds: -1),
             throwsArgumentError,
@@ -214,7 +214,7 @@ void main() {
         try {
           for (final turn in [0, 90, 180, 270]) {
             final rotated = _rotate(frame, (360 - turn) % 360);
-            _face(await task.detectImage(rotated, rotationDegrees: turn));
+            _face(await task.detect(rotated, rotationDegrees: turn));
           }
         } finally {
           await task.dispose();
@@ -276,7 +276,7 @@ void main() {
     final controller = tester
         .widget<LiveCameraView>(find.byType(LiveCameraView))
         .controller;
-    Future<void> waitFor(VisionDelegate delegate) async {
+    Future<void> waitFor(Delegate delegate) async {
       final deadline = DateTime.now().add(const Duration(seconds: 35));
       while ((controller.delegate != delegate ||
               controller.changing ||
@@ -321,10 +321,10 @@ void main() {
     });
     await tester.pump();
     expect(controller.error, isNull);
-    if (controller.delegate != VisionDelegate.cpu) {
-      await tapDelegate(tester, VisionDelegate.cpu);
+    if (controller.delegate != Delegate.cpu) {
+      await tapDelegate(tester, Delegate.cpu);
     }
-    await tester.runAsync(() => waitFor(VisionDelegate.cpu));
+    await tester.runAsync(() => waitFor(Delegate.cpu));
     await tester.pump();
     // With SDK_GPU=skip (emulators) the demo may offer no GPU, and none is
     // switched to below. Elsewhere tapDelegate fails if GPU is not offered.
@@ -421,8 +421,8 @@ void _face(FaceLandmarkerResult result, {bool optional = false}) {
   if (optional) {
     expect(result.faceBlendshapes.single, hasLength(52));
     final matrix = result.facialTransformationMatrixes.single;
-    expect(matrix.values, hasLength(16));
-    for (final value in matrix.values) {
+    expect(matrix.data, hasLength(16));
+    for (final value in matrix.data) {
       expect(value.isFinite, isTrue);
     }
     // Column-major contract: the affine bottom row is [0,0,0,1].

@@ -1,8 +1,12 @@
+/// Flutter's registration of Google's Android SDK behind the vision task
+/// classes. Not for applications: import `mediapipe_vision.dart`.
+library;
+
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
-import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
 
 import 'src/capabilities/official_runtime_io.dart'
     show hasSourceBuiltAndroidFaceRuntime;
@@ -49,148 +53,108 @@ abstract final class MediaPipeVisionAndroid {
     // The GPU's name lets a task declare a GPU family it fails on, such as
     // Image Segmenter on PowerVR (UP-023), before anything runs there.
     taskPlatformGpuReader = () => _channel.invokeMethod<String>('gpuRenderer');
-    faceLandmarkerBackendFactory = (o) => AndroidVisionTask.create(
-      {
-        'task': 'face_landmarker',
-        ..._base(o.modelPath, o.modelBytes, o.runningMode, o.delegate),
-        'numFaces': o.numFaces,
-        'detectionConfidence': o.minFaceDetectionConfidence,
-        'presenceConfidence': o.minFacePresenceConfidence,
-        'trackingConfidence': o.minTrackingConfidence,
-        'blendshapes': o.outputFaceBlendshapes,
-        'matrices': o.outputFacialTransformationMatrixes,
-      },
-      _face,
-      VisionTaskException.new,
-    );
-    handLandmarkerBackendFactory = (o) => AndroidVisionTask.create(
-      {
-        'task': 'hand_landmarker',
-        ..._base(o.modelPath, o.modelBytes, o.runningMode, o.delegate),
-        'numHands': o.numHands,
-        'detectionConfidence': o.minHandDetectionConfidence,
-        'presenceConfidence': o.minHandPresenceConfidence,
-        'trackingConfidence': o.minTrackingConfidence,
-      },
-      _hand,
-      VisionTaskException.new,
-    );
-    poseLandmarkerBackendFactory = (o) => AndroidVisionTask.create(
-      {
-        'task': 'pose_landmarker',
-        ..._base(o.modelPath, o.modelBytes, o.runningMode, o.delegate),
-        'numPoses': o.numPoses,
-        'detectionConfidence': o.minPoseDetectionConfidence,
-        'presenceConfidence': o.minPosePresenceConfidence,
-        'trackingConfidence': o.minTrackingConfidence,
-        'masks': o.outputSegmentationMasks,
-      },
-      _pose,
-      VisionTaskException.new,
-    );
-    gestureRecognizerBackendFactory = (o) => AndroidVisionTask.create(
-      {
-        'task': 'gesture_recognizer',
-        ..._base(o.modelPath, o.modelBytes, o.runningMode, o.delegate),
-        'numHands': o.numHands,
-        'detectionConfidence': o.minHandDetectionConfidence,
-        'presenceConfidence': o.minHandPresenceConfidence,
-        'trackingConfidence': o.minTrackingConfidence,
-        'canned': _classifier(o.cannedGesturesClassifierOptions),
-        'custom': _classifier(o.customGesturesClassifierOptions),
-      },
-      _gesture,
-      VisionTaskException.new,
-    );
-    holisticLandmarkerBackendFactory = (o) => AndroidVisionTask.create(
-      {
-        'task': 'holistic_landmarker',
-        ..._base(o.modelPath, o.modelBytes, o.runningMode, o.delegate),
-        'faceDetectionConfidence': o.minFaceDetectionConfidence,
-        'faceSuppressionThreshold': o.minFaceSuppressionThreshold,
-        'facePresenceConfidence': o.minFacePresenceConfidence,
-        'handLandmarksConfidence': o.minHandLandmarksConfidence,
-        'poseDetectionConfidence': o.minPoseDetectionConfidence,
-        'poseSuppressionThreshold': o.minPoseSuppressionThreshold,
-        'posePresenceConfidence': o.minPosePresenceConfidence,
-        'blendshapes': o.outputFaceBlendshapes,
-        'masks': o.outputPoseSegmentationMask,
-      },
-      _holistic,
-      VisionTaskException.new,
-    );
-    faceDetectorBackendFactory = (o) => AndroidVisionTask.create(
-      {
-        'task': 'face_detector',
-        ..._base(o.modelPath, o.modelBytes, o.runningMode, o.delegate),
-        'detectionConfidence': o.minDetectionConfidence,
-        'suppressionThreshold': o.minSuppressionThreshold,
-      },
-      _faceDetections,
-      VisionTaskException.new,
-    );
-    objectDetectorBackendFactory = (o) => AndroidVisionTask.create(
-      {
-        'task': 'object_detector',
-        ..._base(o.modelPath, o.modelBytes, o.runningMode, o.delegate),
-        'classifier': _limits(
-          maxResults: o.maxResults,
-          scoreThreshold: o.scoreThreshold,
-          displayNamesLocale: o.displayNamesLocale,
-          categoryAllowlist: o.categoryAllowlist,
-          categoryDenylist: o.categoryDenylist,
-        ),
-      },
-      _objectDetections,
-      VisionTaskException.new,
-    );
-    imageClassifierBackendFactory = (o) => AndroidVisionTask.create(
-      {
-        'task': 'image_classifier',
-        ..._base(o.modelPath, o.modelBytes, o.runningMode, o.delegate),
-        'classifier': _limits(
-          maxResults: o.maxResults,
-          scoreThreshold: o.scoreThreshold,
-          displayNamesLocale: o.displayNamesLocale,
-          categoryAllowlist: o.categoryAllowlist,
-          categoryDenylist: o.categoryDenylist,
-        ),
-      },
-      _classifications,
-      VisionTaskException.new,
-    );
-    imageEmbedderBackendFactory = (o) => AndroidVisionTask.create(
-      {
-        'task': 'image_embedder',
-        ..._base(o.modelPath, o.modelBytes, o.runningMode, o.delegate),
-        'l2Normalize': o.l2Normalize,
-        'quantize': o.quantize,
-      },
-      _embeddings,
-      VisionTaskException.new,
-    );
+    faceLandmarkerBackendFactory = (o) => AndroidVisionTask.create({
+      'task': 'face_landmarker',
+      ..._base(o, o.runningMode),
+      'numFaces': o.numFaces,
+      'detectionConfidence': o.minFaceDetectionConfidence,
+      'presenceConfidence': o.minFacePresenceConfidence,
+      'trackingConfidence': o.minTrackingConfidence,
+      'blendshapes': o.outputFaceBlendshapes,
+      'matrices': o.outputFacialTransformationMatrixes,
+    }, (r, t) => decodeFaceLandmarkerResult(_face(r, t)));
+    handLandmarkerBackendFactory = (o) => AndroidVisionTask.create({
+      'task': 'hand_landmarker',
+      ..._base(o, o.runningMode),
+      'numHands': o.numHands,
+      'detectionConfidence': o.minHandDetectionConfidence,
+      'presenceConfidence': o.minHandPresenceConfidence,
+      'trackingConfidence': o.minTrackingConfidence,
+    }, (r, t) => decodeHandLandmarkerResult(_hands(r, t)));
+    poseLandmarkerBackendFactory = (o) => AndroidVisionTask.create({
+      'task': 'pose_landmarker',
+      ..._base(o, o.runningMode),
+      'numPoses': o.numPoses,
+      'detectionConfidence': o.minPoseDetectionConfidence,
+      'presenceConfidence': o.minPosePresenceConfidence,
+      'trackingConfidence': o.minTrackingConfidence,
+      'masks': o.outputSegmentationMasks,
+    }, (r, t) => decodePoseLandmarkerResult(_pose(r, t)));
+    gestureRecognizerBackendFactory = (o) => AndroidVisionTask.create({
+      'task': 'gesture_recognizer',
+      ..._base(o, o.runningMode),
+      'numHands': o.numHands,
+      'detectionConfidence': o.minHandDetectionConfidence,
+      'presenceConfidence': o.minHandPresenceConfidence,
+      'trackingConfidence': o.minTrackingConfidence,
+      'canned': _classifier(o.cannedGesturesClassifierOptions),
+      'custom': _classifier(o.customGesturesClassifierOptions),
+    }, (r, t) => decodeGestureRecognizerResult(_hands(r, t)));
+    holisticLandmarkerBackendFactory = (o) => AndroidVisionTask.create({
+      'task': 'holistic_landmarker',
+      ..._base(o, o.runningMode),
+      'faceDetectionConfidence': o.minFaceDetectionConfidence,
+      'faceSuppressionThreshold': o.minFaceSuppressionThreshold,
+      'facePresenceConfidence': o.minFacePresenceConfidence,
+      'handLandmarksConfidence': o.minHandLandmarksConfidence,
+      'poseDetectionConfidence': o.minPoseDetectionConfidence,
+      'poseSuppressionThreshold': o.minPoseSuppressionThreshold,
+      'posePresenceConfidence': o.minPosePresenceConfidence,
+      'blendshapes': o.outputFaceBlendshapes,
+      'masks': o.outputPoseSegmentationMask,
+    }, (r, t) => decodeHolisticLandmarkerResult(_holistic(r, t)));
+    faceDetectorBackendFactory = (o) => AndroidVisionTask.create({
+      'task': 'face_detector',
+      ..._base(o, o.runningMode),
+      'detectionConfidence': o.minDetectionConfidence,
+      'suppressionThreshold': o.minSuppressionThreshold,
+    }, (r, t) => decodeFaceDetectorResult(_detections(r, t)));
+    objectDetectorBackendFactory = (o) => AndroidVisionTask.create({
+      'task': 'object_detector',
+      ..._base(o, o.runningMode),
+      'classifier': _limits(
+        maxResults: o.maxResults,
+        scoreThreshold: o.scoreThreshold,
+        displayNamesLocale: o.displayNamesLocale,
+        categoryAllowlist: o.categoryAllowlist,
+        categoryDenylist: o.categoryDenylist,
+      ),
+    }, (r, t) => decodeObjectDetectorResult(_detections(r, t)));
+    imageClassifierBackendFactory = (o) => AndroidVisionTask.create({
+      'task': 'image_classifier',
+      ..._base(o, o.runningMode),
+      'classifier': _limits(
+        maxResults: o.maxResults,
+        scoreThreshold: o.scoreThreshold,
+        displayNamesLocale: o.displayNamesLocale,
+        categoryAllowlist: o.categoryAllowlist,
+        categoryDenylist: o.categoryDenylist,
+      ),
+    }, (r, t) => decodeImageClassifierResult(_classifications(r, t)));
+    imageEmbedderBackendFactory = (o) => AndroidVisionTask.create({
+      'task': 'image_embedder',
+      ..._base(o, o.runningMode),
+      'l2Normalize': o.l2Normalize,
+      'quantize': o.quantize,
+    }, (r, t) => decodeImageEmbedderResult(_embeddings(r, t)));
     interactiveSegmenterBackendFactory = (o) async {
       try {
         final id = await _channel.invokeMethod<int>('create', {
           'task': 'interactive_segmenter',
-          ..._base(o.modelPath, o.modelBytes, RunningMode.image, o.delegate),
+          ..._base(o, RunningMode.image),
         });
         return AndroidInteractiveSegmenter._(id!);
       } on PlatformException catch (cause) {
-        throw VisionTaskException(cause.message ?? cause.code);
+        throw _error(cause);
       }
     };
-    imageSegmenterBackendFactory = (o) => AndroidVisionTask.create(
-      {
-        'task': 'image_segmenter',
-        ..._base(o.modelPath, o.modelBytes, o.runningMode, o.delegate),
-        'confidenceMasks': o.outputConfidenceMasks,
-        'categoryMask': o.outputCategoryMask,
-        'displayNamesLocale': o.displayNamesLocale,
-      },
-      _segmentation,
-      VisionTaskException.new,
-    );
+    imageSegmenterBackendFactory = (o) => AndroidVisionTask.create({
+      'task': 'image_segmenter',
+      ..._base(o, o.runningMode),
+      'confidenceMasks': o.outputConfidenceMasks,
+      'categoryMask': o.outputCategoryMask,
+      'displayNamesLocale': o.displayNamesLocale,
+    }, (r, t) => decodeImageSegmenterResult(_data(r, t, r)));
     // `official_android_sdk: false` bundles the source-built face runtime;
     // the face tasks then call it through FFI rather than Google's SDK.
     if (hasSourceBuiltAndroidFaceRuntime()) {
@@ -198,137 +162,6 @@ abstract final class MediaPipeVisionAndroid {
       faceDetectorBackendFactory = null;
     }
   }
-
-  // TODO: Decode these results with lib/web_src/result.dart through one wire
-  // format, as text and audio already share one decoder. See
-  // tool/SHARED_CODE.md at the repository root.
-  static SegmentationResult _segmentation(
-    Map<String, dynamic> r,
-    int? timestamp,
-  ) {
-    final category = r['categoryMask'] as List?;
-    return SegmentationResult(
-      imageWidth: r['width'] as int,
-      imageHeight: r['height'] as int,
-      timestampMilliseconds: timestamp,
-      confidenceMasks: _masks(r['confidenceMasks'] as List?),
-      categoryMask: category == null
-          ? null
-          : CategoryMask(
-              width: category[0] as int,
-              height: category[1] as int,
-              categories: category[2] as Uint8List,
-            ),
-      qualityScores: r['qualityScores'] as Float32List?,
-      labels: (r['labels'] as List).cast<String>(),
-    );
-  }
-
-  /// Confidence masks sent as [width, height, Float32List] each.
-  static List<SegmentationMask>? _masks(List? masks) => masks == null
-      ? null
-      : [
-          for (final mask in masks.cast<List>())
-            SegmentationMask(
-              width: mask[0] as int,
-              height: mask[1] as int,
-              confidence: mask[2] as Float32List,
-            ),
-        ];
-
-  static ImageEmbedderResult _embeddings(
-    Map<String, dynamic> r,
-    int? timestamp,
-  ) => ImageEmbedderResult(
-    imageWidth: r['width'] as int,
-    imageHeight: r['height'] as int,
-    timestampMilliseconds: timestamp,
-    embeddings: [
-      for (final head in r['embeddings'] as List)
-        VisionEmbedding(
-          floatEmbedding: head[0] as Float64List?,
-          quantizedEmbedding: head[1] as Uint8List?,
-          headIndex: head[2] as int,
-          headName: _label(head[3] as String?),
-        ),
-    ],
-  );
-
-  static FaceDetectorResult _faceDetections(
-    Map<String, dynamic> r,
-    int? timestamp,
-  ) => FaceDetectorResult(
-    imageWidth: r['width'] as int,
-    imageHeight: r['height'] as int,
-    timestampMilliseconds: timestamp,
-    detections: [
-      for (final d in r['detections'] as List)
-        FaceDetection(
-          boundingBox: _box(d[0] as Float64List, FaceBoundingBox.new),
-          categories: _categories(d[1] as List, FaceCategory.new),
-          keypoints: [
-            for (final k in d[2] as List)
-              FaceKeypoint(
-                x: (k[0] as num).toDouble(),
-                y: (k[1] as num).toDouble(),
-                label: k[2] as String?,
-                score: (k[3] as num?)?.toDouble(),
-              ),
-          ],
-        ),
-    ],
-  );
-
-  static ObjectDetectorResult _objectDetections(
-    Map<String, dynamic> r,
-    int? timestamp,
-  ) => ObjectDetectorResult(
-    imageWidth: r['width'] as int,
-    imageHeight: r['height'] as int,
-    timestampMilliseconds: timestamp,
-    detections: [
-      for (final d in r['detections'] as List)
-        ObjectDetection(
-          boundingBox: _box(d[0] as Float64List, ObjectBoundingBox.new),
-          categories: _categories(d[1] as List, ObjectCategory.new),
-        ),
-    ],
-  );
-
-  static ImageClassifierResult _classifications(
-    Map<String, dynamic> r,
-    int? timestamp,
-  ) => ImageClassifierResult(
-    imageWidth: r['width'] as int,
-    imageHeight: r['height'] as int,
-    timestampMilliseconds: timestamp,
-    classifications: [
-      for (final head in r['classifications'] as List)
-        VisionClassifications(
-          categories: _categories(head[0] as List, VisionCategory.new),
-          headIndex: head[1] as int,
-          headName: head[2] as String?,
-        ),
-    ],
-  );
-
-  /// Google's Java boxes are float pixels; the Dart boxes are whole pixels, as
-  /// the C API truncates them.
-  static T _box<T>(
-    Float64List box,
-    T Function({
-      required int left,
-      required int top,
-      required int right,
-      required int bottom,
-    })
-    create,
-  ) => create(
-    left: box[0].toInt(),
-    top: box[1].toInt(),
-    right: box[2].toInt(),
-    bottom: box[3].toInt(),
-  );
 
   static Map<String, Object?> _limits({
     required int maxResults,
@@ -344,167 +177,186 @@ abstract final class MediaPipeVisionAndroid {
     'denylist': categoryDenylist,
   };
 
-  static Map<String, Object?> _classifier(GestureClassifierOptions o) => {
-    'maxResults': o.maxResults,
-    'scoreThreshold': o.scoreThreshold,
-    'displayNamesLocale': o.displayNamesLocale,
-    'allowlist': o.categoryAllowlist,
-    'denylist': o.categoryDenylist,
-  };
+  static Map<String, Object?> _classifier(ClassifierOptions o) => _limits(
+    maxResults: o.maxResults,
+    scoreThreshold: o.scoreThreshold,
+    displayNamesLocale: o.displayNamesLocale,
+    categoryAllowlist: o.categoryAllowlist,
+    categoryDenylist: o.categoryDenylist,
+  );
 
-  static Map<String, Object?> _base(
-    String? modelPath,
-    Uint8List? modelBytes,
-    RunningMode mode,
-    VisionDelegate delegate,
-  ) => {
-    'modelPath': modelPath,
-    'modelBytes': modelBytes,
+  static Map<String, Object?> _base(TaskOptions o, RunningMode mode) => {
+    'modelPath': o.modelPath,
+    'modelBytes': o.modelBytes,
     'mode': mode.name,
-    'delegate': delegate.name,
+    'delegate': o.delegate.name,
   };
-
-  static FaceLandmarkerResult _face(Map<String, dynamic> r, int? timestamp) =>
-      FaceLandmarkerResult(
-        imageWidth: r['width'] as int,
-        imageHeight: r['height'] as int,
-        timestampMilliseconds: timestamp,
-        faceLandmarks: _landmarks(r, 'landmarks', 'counts', FaceLandmark.new),
-        faceBlendshapes: [
-          for (final face in r['blendshapes'] as List)
-            _categories(face as List, FaceCategory.new),
-        ],
-        facialTransformationMatrixes: [
-          for (final values in r['matrices'] as List)
-            FaceTransformationMatrix(
-              rows: 4,
-              columns: 4,
-              values: values as Float64List,
-            ),
-        ],
-      );
-
-  static HandLandmarkerResult _hand(Map<String, dynamic> r, int? timestamp) =>
-      HandLandmarkerResult(
-        imageWidth: r['width'] as int,
-        imageHeight: r['height'] as int,
-        timestampMilliseconds: timestamp,
-        handLandmarks: _landmarks(r, 'landmarks', 'counts', VisionLandmark.new),
-        handWorldLandmarks: _landmarks(
-          r,
-          'worldLandmarks',
-          'worldCounts',
-          VisionLandmark.new,
-        ),
-        handedness: [
-          for (final hand in r['handedness'] as List)
-            _categories(hand as List, VisionCategory.new),
-        ],
-      );
-
-  static PoseLandmarkerResult _pose(Map<String, dynamic> r, int? timestamp) =>
-      PoseLandmarkerResult(
-        imageWidth: r['width'] as int,
-        imageHeight: r['height'] as int,
-        timestampMilliseconds: timestamp,
-        poseLandmarks: _landmarks(r, 'landmarks', 'counts', VisionLandmark.new),
-        poseWorldLandmarks: _landmarks(
-          r,
-          'worldLandmarks',
-          'worldCounts',
-          VisionLandmark.new,
-        ),
-        segmentationMasks: _masks(r['masks'] as List?),
-      );
-
-  static GestureRecognizerResult _gesture(
-    Map<String, dynamic> r,
-    int? timestamp,
-  ) => GestureRecognizerResult(
-    imageWidth: r['width'] as int,
-    imageHeight: r['height'] as int,
-    timestampMilliseconds: timestamp,
-    handLandmarks: _landmarks(r, 'landmarks', 'counts', VisionLandmark.new),
-    handWorldLandmarks: _landmarks(
-      r,
-      'worldLandmarks',
-      'worldCounts',
-      VisionLandmark.new,
-    ),
-    handedness: [
-      for (final hand in r['handedness'] as List)
-        _categories(hand as List, VisionCategory.new),
-    ],
-    gestures: [
-      for (final hand in r['gestures'] as List)
-        [
-          // Canned and custom labels are numbered independently, so the
-          // merged index carries no meaning; the native bindings report -1.
-          for (final gesture in _categories(hand as List, VisionCategory.new))
-            VisionCategory(
-              index: -1,
-              score: gesture.score,
-              categoryName: gesture.categoryName,
-              displayName: gesture.displayName,
-            ),
-        ],
-    ],
-  );
-
-  static HolisticLandmarkerResult _holistic(
-    Map<String, dynamic> r,
-    int? timestamp,
-  ) {
-    List<VisionLandmark> part(String name) =>
-        _landmarks(r, name, '${name}Counts', VisionLandmark.new).single;
-    final blendshapes = r['blendshapes'] as List?;
-    return HolisticLandmarkerResult(
-      imageWidth: r['width'] as int,
-      imageHeight: r['height'] as int,
-      timestampMilliseconds: timestamp,
-      faceLandmarks: part('face'),
-      poseLandmarks: part('pose'),
-      poseWorldLandmarks: part('poseWorld'),
-      leftHandLandmarks: part('leftHand'),
-      leftHandWorldLandmarks: part('leftHandWorld'),
-      rightHandLandmarks: part('rightHand'),
-      rightHandWorldLandmarks: part('rightHandWorld'),
-      faceBlendshapes: blendshapes == null
-          ? null
-          : _categories(blendshapes, VisionCategory.new),
-      poseSegmentationMask: switch (r['mask']) {
-        final List mask => _masks([mask])!.single,
-        _ => null,
-      },
-    );
-  }
-
-  static List<List<T>> _landmarks<T>(
-    Map<String, dynamic> result,
-    String values,
-    String counts,
-    LandmarkBuilder<T> point,
-  ) => unpackLandmarks(
-    result[values] as Float64List,
-    result[counts] as Int32List,
-    point,
-  );
-
-  // Google's Java SDK reports an unlabeled category as an empty name; its C,
-  // Python and iOS APIs report none, as the Dart API does.
-  static List<T> _categories<T>(List raw, CategoryBuilder<T> category) => [
-    for (final c in raw)
-      category(
-        index: c[0] as int,
-        score: (c[1] as num).toDouble(),
-        categoryName: _label(c[2] as String?),
-        displayName: _label(c[3] as String?),
-      ),
-  ];
-
-  static String? _label(String? value) =>
-      value == null || value.isEmpty ? null : value;
 }
+
+// The Java plugin sends compact positional lists; these reshape them into
+// Google's JavaScript result shape, which the shared decoder reads for the
+// browser too. Landmarks and masks stay packed typed arrays.
+
+VisionResultData _data(
+  Map<String, dynamic> r,
+  int? timestamp,
+  Map<String, dynamic> result, {
+  Float64List? landmarks,
+  List<int>? counts,
+  Float64List? worldLandmarks,
+  List<int>? worldCounts,
+  List<(String, List<int>)>? parts,
+}) => VisionResultData(
+  result: result,
+  width: r['width'] as int,
+  height: r['height'] as int,
+  timestamp: timestamp,
+  landmarks: landmarks,
+  counts: counts,
+  worldLandmarks: worldLandmarks,
+  worldCounts: worldCounts,
+  parts: parts,
+);
+
+VisionResultData _face(Map<String, dynamic> r, int? timestamp) => _data(
+  r,
+  timestamp,
+  {
+    'faceBlendshapes': [
+      for (final face in r['blendshapes'] as List)
+        {'categories': _categories(face as List)},
+    ],
+    'facialTransformationMatrixes': [
+      for (final values in r['matrices'] as List)
+        {'rows': 4, 'columns': 4, 'data': values as Float64List},
+    ],
+  },
+  landmarks: r['landmarks'] as Float64List,
+  counts: r['counts'] as Int32List,
+);
+
+/// Hand Landmarker and Gesture Recognizer, which add `gestures`.
+VisionResultData _hands(Map<String, dynamic> r, int? timestamp) => _data(
+  r,
+  timestamp,
+  {
+    'handedness': [
+      for (final hand in r['handedness'] as List) _categories(hand as List),
+    ],
+    if (r['gestures'] case final List gestures)
+      'gestures': [for (final hand in gestures) _categories(hand as List)],
+  },
+  landmarks: r['landmarks'] as Float64List,
+  counts: r['counts'] as Int32List,
+  worldLandmarks: r['worldLandmarks'] as Float64List,
+  worldCounts: r['worldCounts'] as Int32List,
+);
+
+VisionResultData _pose(Map<String, dynamic> r, int? timestamp) => _data(
+  r,
+  timestamp,
+  {'segmentationMasks': ?r['masks']},
+  landmarks: r['landmarks'] as Float64List,
+  counts: r['counts'] as Int32List,
+  worldLandmarks: r['worldLandmarks'] as Float64List,
+  worldCounts: r['worldCounts'] as Int32List,
+);
+
+/// The seven landmark parts, concatenated into one buffer in `parts` order.
+VisionResultData _holistic(Map<String, dynamic> r, int? timestamp) {
+  const parts = [
+    ('face', 'faceLandmarks'),
+    ('pose', 'poseLandmarks'),
+    ('poseWorld', 'poseWorldLandmarks'),
+    ('leftHand', 'leftHandLandmarks'),
+    ('leftHandWorld', 'leftHandWorldLandmarks'),
+    ('rightHand', 'rightHandLandmarks'),
+    ('rightHandWorld', 'rightHandWorldLandmarks'),
+  ];
+  final buffers = [for (final (key, _) in parts) r[key] as Float64List];
+  final packed = Float64List(buffers.fold(0, (n, b) => n + b.length));
+  var at = 0;
+  for (final buffer in buffers) {
+    packed.setAll(at, buffer);
+    at += buffer.length;
+  }
+  final blendshapes = r['blendshapes'] as List?;
+  return _data(
+    r,
+    timestamp,
+    {
+      if (blendshapes != null)
+        'faceBlendshapes': [
+          {'categories': _categories(blendshapes)},
+        ],
+      if (r['mask'] case final List mask) 'poseSegmentationMasks': [mask],
+    },
+    landmarks: packed,
+    parts: [
+      for (final (key, name) in parts) (name, r['${key}Counts'] as Int32List),
+    ],
+  );
+}
+
+/// Face and Object Detector boxes stay whole: Java's left, top, right and
+/// bottom pixels go to the decoder as they are, without a float round trip.
+VisionResultData _detections(Map<String, dynamic> r, int? timestamp) =>
+    _data(r, timestamp, {
+      'detections': [
+        for (final d in r['detections'] as List)
+          {
+            'boundingBox': _box(d[0] as Float64List),
+            'categories': _categories(d[1] as List),
+            if ((d as List).length > 2)
+              'keypoints': [
+                for (final k in d[2] as List)
+                  {'x': k[0], 'y': k[1], 'label': k[2], 'score': k[3]},
+              ],
+          },
+      ],
+    });
+
+Map<String, double> _box(Float64List box) => {
+  'left': box[0],
+  'top': box[1],
+  'right': box[2],
+  'bottom': box[3],
+};
+
+VisionResultData _classifications(Map<String, dynamic> r, int? timestamp) =>
+    _data(r, timestamp, {
+      'classifications': [
+        for (final head in r['classifications'] as List)
+          {
+            'categories': _categories(head[0] as List),
+            'headIndex': head[1],
+            'headName': head[2],
+          },
+      ],
+    });
+
+VisionResultData _embeddings(Map<String, dynamic> r, int? timestamp) =>
+    _data(r, timestamp, {
+      'embeddings': [
+        for (final head in r['embeddings'] as List)
+          {
+            'floatEmbedding': head[0],
+            'quantizedEmbedding': head[1],
+            'headIndex': head[2],
+            'headName': head[3],
+          },
+      ],
+    });
+
+/// Google's Java SDK reports an unlabeled category as an empty name, which
+/// the decoder turns into null as the C, Python and iOS APIs report it.
+List<Map<String, Object?>> _categories(List raw) => [
+  for (final c in raw)
+    {'index': c[0], 'score': c[1], 'categoryName': c[2], 'displayName': c[3]},
+];
+
+TaskException _error(PlatformException cause) =>
+    TaskException(cause.message ?? cause.code, cause: cause);
 
 /// The pixels or file of [image], as the plugin decodes it.
 Map<String, Object?> _imageArguments(VisionImage image) => {
@@ -525,7 +377,7 @@ final class AndroidInteractiveSegmenter implements InteractiveSegmenterBackend {
     try {
       return await _channel.invokeMethod<T>(method, {'id': _id, ...arguments});
     } on PlatformException catch (cause) {
-      throw VisionTaskException(cause.message ?? cause.code);
+      throw _error(cause);
     }
   }
 
@@ -534,7 +386,7 @@ final class AndroidInteractiveSegmenter implements InteractiveSegmenterBackend {
       _call<void>('setImage', _imageArguments(image));
 
   @override
-  Future<SegmentationMask> segment(List<SegmentationStroke> strokes) async {
+  Future<ConfidenceMask> segment(List<Stroke> strokes) async {
     final result = <String, dynamic>{
       'mask': await _call<List<Object?>>('segment', {
         'strokes': [
@@ -550,18 +402,18 @@ final class AndroidInteractiveSegmenter implements InteractiveSegmenterBackend {
       }),
     };
     await _fetchMasks(result);
-    final [width as int, height as int, values] = result['mask'] as List;
-    return SegmentationMask(
-      width: width,
-      height: height,
-      confidence: switch (values) {
+    final [width, height, values] = result['mask'] as List;
+    return confidenceMaskFromList([
+      width,
+      height,
+      switch (values) {
         final Float32List floats => floats,
         final Uint8List bytes => Float32List.fromList([
           for (final v in bytes) v / 255,
         ]),
         _ => throw StateError('Unexpected mask values'),
       },
-    );
+    ]);
   }
 
   @override
@@ -570,22 +422,20 @@ final class AndroidInteractiveSegmenter implements InteractiveSegmenterBackend {
 
 /// One official Android SDK task on the plugin's worker thread.
 final class AndroidVisionTask<R> implements VisionTaskBackend<R> {
-  AndroidVisionTask._(this._id, this._decode, this._error);
+  AndroidVisionTask._(this._id, this._decode);
   final int _id;
   final R Function(Map<String, dynamic> result, int? timestamp) _decode;
-  final Exception Function(String message) _error;
 
   /// Creates the task named by `arguments['task']` on the plugin's worker.
   static Future<AndroidVisionTask<R>> create<R>(
     Map<String, Object?> arguments,
     R Function(Map<String, dynamic> result, int? timestamp) decode,
-    Exception Function(String message) error,
   ) async {
     try {
       final id = await _channel.invokeMethod<int>('create', arguments);
-      return AndroidVisionTask._(id!, decode, error);
+      return AndroidVisionTask._(id!, decode);
     } on PlatformException catch (cause) {
-      throw error(cause.message ?? cause.code);
+      throw _error(cause);
     }
   }
 
@@ -595,7 +445,6 @@ final class AndroidVisionTask<R> implements VisionTaskBackend<R> {
     int rotationDegrees,
     int? timestampMilliseconds, {
     VisionRegionOfInterest? regionOfInterest,
-    SegmentationPoint? keypoint,
   }) async {
     try {
       final result = (await _channel.invokeMapMethod<String, dynamic>(
@@ -614,7 +463,7 @@ final class AndroidVisionTask<R> implements VisionTaskBackend<R> {
       await _fetchMasks(result);
       return _decode(result, timestampMilliseconds);
     } on PlatformException catch (cause) {
-      throw _error(cause.message ?? cause.code);
+      throw _error(cause);
     }
   }
 
@@ -623,7 +472,7 @@ final class AndroidVisionTask<R> implements VisionTaskBackend<R> {
     try {
       await _channel.invokeMethod<void>('close', {'id': _id});
     } on PlatformException catch (cause) {
-      throw _error(cause.message ?? cause.code);
+      throw _error(cause);
     }
   }
 }

@@ -1,4 +1,24 @@
-## Unreleased
+## 0.2.0
+
+- Breaking: one API for every family on every platform; MIGRATION.md maps
+  every old name. `mediapipe_core.dart` is the one library apps see, through
+  each family's library, which re-exports it; `platform_interface.dart` is for
+  family packages and plugins.
+- Breaking: `capabilities.dart`, `model_store.dart`, `mediapipe_exception.dart`
+  and `web_runtime.dart` are gone; their names come from `mediapipe_core.dart`.
+- New shared types: `TaskOptions` (the base of every options class), one
+  `Delegate`, a non-generic `TaskCapabilities`, `TaskException`, and the value
+  types `MediaPipeCategory`, `Classifications`, `Embedding`, `Detection`,
+  `BoundingBox`, `NormalizedKeypoint`, `NormalizedLandmark`, `Landmark`,
+  `Matrix`, `ConfidenceMask` and `CategoryMask`.
+- Breaking: `ModelStore` is the same everywhere: `cacheDirectory` replaces the
+  native `Directory`, and `get` and `find` return a `ModelSource`.
+- The FFI-era containers (`BaseOptions`, `ClassifierOptions`,
+  `EmbedderOptions`, `Category` and friends) leave the app API; the
+  experimental `mediapipe_genai` keeps them through `io.dart` and
+  `interface.dart`.
+- `checkClassifierSettings` and `requireDelegate` give every family the same
+  option checks and delegate refusal.
 
 - Models are bundled with the app at build time.
   `dart run mediapipe_core:bundle_models` downloads the models an app lists

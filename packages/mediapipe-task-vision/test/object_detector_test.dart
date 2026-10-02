@@ -15,19 +15,19 @@ const _scoreThreshold = 0.3;
 const _maxResults = 5;
 
 void main() {
-  for (final delegate in VisionDelegate.values) {
+  for (final delegate in Delegate.values) {
     group(
       delegate.name,
       () => _testDelegate(delegate),
       // Google's CPU output drifts between Apple CPUs, so macOS CPU compares
-      // with same-host outputs (tool/test_official_macos_landmark_runtime.py).
+      // with same-host outputs (tool/test_macos_tasks_runtime.py).
       skip:
-          delegate == VisionDelegate.cpu &&
+          delegate == Delegate.cpu &&
               Platform.isMacOS &&
               Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
                   '1'
           ? 'macOS CPU compares with same-host official outputs'
-          : delegate == VisionDelegate.gpu &&
+          : delegate == Delegate.gpu &&
                 !Platform.isMacOS &&
                 !(Platform.isLinux &&
                     Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] != null)
@@ -38,23 +38,20 @@ void main() {
   }
 
   test('CPU is the default delegate', () {
-    expect(
-      ObjectDetectorOptions(modelPath: _model).delegate,
-      VisionDelegate.cpu,
-    );
+    expect(ObjectDetectorOptions(modelPath: _model).delegate, Delegate.cpu);
   });
 
   // Core bundles Google's macOS engine for this package's tests, so the CPU
   // path passes the capability gate and reaches Google's own model loader.
   if (Platform.isMacOS) {
     test("macOS CPU runs in Google's engine from core", () async {
-      expect(hasOfficialMacosLandmarkRuntime(), isTrue);
+      expect(hasMacosTasksRuntime(), isTrue);
       await expectLater(
         ObjectDetector.create(
           ObjectDetectorOptions(modelPath: 'missing-model.tflite'),
         ),
         throwsA(
-          isA<VisionTaskException>().having(
+          isA<TaskException>().having(
             (e) => e.message,
             'message',
             contains('missing-model.tflite'),
@@ -93,8 +90,8 @@ void main() {
   });
 }
 
-void _testDelegate(VisionDelegate delegate) {
-  final suffix = delegate == VisionDelegate.gpu ? '_gpu' : '';
+void _testDelegate(Delegate delegate) {
+  final suffix = delegate == Delegate.gpu ? '_gpu' : '';
   final reference = loadFaceReference(
     'object_detection',
     'official${suffix}_reference.json',
@@ -142,14 +139,11 @@ void _testDelegate(VisionDelegate delegate) {
     );
     final expected = cases.where((c) => c['name'] == 'rgb').single;
     final requests = [
-      for (var i = 0; i < 6; i++) task.detectImage(fixtureImage(expected)),
+      for (var i = 0; i < 6; i++) task.detect(fixtureImage(expected)),
     ];
     final closing = task.dispose();
     expect(identical(closing, task.dispose()), isTrue);
-    await expectLater(
-      task.detectImage(fixtureImage(expected)),
-      throwsStateError,
-    );
+    await expectLater(task.detect(fixtureImage(expected)), throwsStateError);
     final results = await Future.wait(requests);
     await closing;
     for (final result in results) {
@@ -164,11 +158,11 @@ void _testDelegate(VisionDelegate delegate) {
 
   test('native input errors leave the detector usable', () async {
     await expectLater(
-      detector.detectImage(VisionImage.fromFile('missing-image.jpg')),
-      throwsA(isA<VisionTaskException>()),
+      detector.detect(VisionImage.fromFile('missing-image.jpg')),
+      throwsA(isA<TaskException>()),
     );
     _expectMatches(
-      await detector.detectImage(fixtureImage(cases.first)),
+      await detector.detect(fixtureImage(cases.first)),
       cases.first,
     );
   });
@@ -185,7 +179,7 @@ void _testDelegate(VisionDelegate delegate) {
       ]) {
         await expectLater(
           ObjectDetector.create(options).timeout(const Duration(seconds: 10)),
-          throwsA(isA<VisionTaskException>()),
+          throwsA(isA<TaskException>()),
         );
       }
       final task = await ObjectDetector.create(
@@ -197,7 +191,7 @@ void _testDelegate(VisionDelegate delegate) {
 
   for (final expected in cases) {
     test('matches the official result for ${expected['name']}', () async {
-      final result = await detector.detectImage(
+      final result = await detector.detect(
         fixtureImage(expected),
         rotationDegrees: expected['rotation_degrees'] as int,
       );

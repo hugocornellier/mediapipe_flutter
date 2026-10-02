@@ -83,7 +83,8 @@ void main() {
       final want = (expected as List).cast<Map<String, dynamic>>();
       expect(chunks, hasLength(want.length));
       for (final (i, chunk) in chunks.indexed) {
-        expect(chunk.timestampMs, want[i]['timestamp_ms']);
+        expect(chunk.timestampMilliseconds, want[i]['timestamp_ms']);
+        final categories = chunk.classifications.single.categories;
         final top = {
           for (final [name as String, score as num]
               in (want[i]['top'] as List).cast<List>())
@@ -91,11 +92,14 @@ void main() {
         };
         // Google's scores for these names, in its order; categories with
         // equal scores may come in either order.
-        expect(chunk.categories.map((c) => c.name).toSet(), top.keys.toSet());
-        for (final category in chunk.categories) {
-          expect(category.score, closeTo(top[category.name]!, _scoreDelta));
+        expect(categories.map((c) => c.categoryName).toSet(), top.keys.toSet());
+        for (final category in categories) {
+          expect(
+            category.score,
+            closeTo(top[category.categoryName]!, _scoreDelta),
+          );
         }
-        final scores = [for (final c in chunk.categories) c.score];
+        final scores = [for (final c in categories) c.score];
         expect(
           scores,
           orderedEquals([...scores]..sort((x, y) => y.compareTo(x))),
@@ -119,10 +123,13 @@ void main() {
       task.classify(audio),
       task.classify(audio),
     ]);
-    expect(first.first.categories.single.name, 'Speech');
     expect(
-      second.first.categories.single.score,
-      first.first.categories.single.score,
+      first.first.classifications.single.categories.single.categoryName,
+      'Speech',
+    );
+    expect(
+      second.first.classifications.single.categories.single.score,
+      first.first.classifications.single.categories.single.score,
     );
   });
 
@@ -135,7 +142,7 @@ void main() {
       decodeWav(File('$_fixtures/speech_16000_hz_mono.wav').readAsBytesSync()),
     );
     for (final chunk in chunks) {
-      for (final category in chunk.categories) {
+      for (final category in chunk.classifications.single.categories) {
         expect(category.score, greaterThanOrEqualTo(0.5));
       }
     }
@@ -146,7 +153,7 @@ void main() {
       AudioClassifier.create(
         AudioClassifierOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
       ),
-      throwsA(isA<MediaPipeException>()),
+      throwsA(isA<TaskException>()),
     );
     final task = await AudioClassifier.create(
       AudioClassifierOptions(modelPath: _model),
@@ -154,13 +161,59 @@ void main() {
     final closing = task.dispose();
     expect(identical(closing, task.dispose()), isTrue);
     await closing;
-    expect(
-      () => task.classify(
-        AudioData(samples: Float32List(16000), sampleRate: 16000),
-      ),
+    await expectLater(
+      task.classify(AudioData(samples: Float32List(16000), sampleRate: 16000)),
       throwsStateError,
     );
+    expect(task.delegate, Delegate.cpu);
+    expect(task.runningMode, AudioRunningMode.audioClips);
     expect(() => decodeWav(Uint8List(4)), throwsFormatException);
+  });
+
+  test('options are checked the same way on every platform', () async {
+    expect(
+      () => AudioClassifierOptions(modelPath: _model, maxResults: 0),
+      throwsArgumentError,
+    );
+    expect(
+      () => AudioClassifierOptions(
+        modelPath: _model,
+        categoryAllowlist: ['Speech'],
+        categoryDenylist: ['Music'],
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      AudioClassifier.create(
+        AudioClassifierOptions(
+          modelPath: _model,
+          runningMode: AudioRunningMode.audioStream,
+        ),
+      ),
+      throwsUnsupportedError,
+    );
+    await expectLater(
+      AudioClassifier.create(
+        AudioClassifierOptions(modelPath: _model, delegate: Delegate.gpu),
+      ),
+      throwsA(isA<RuntimeUnavailableException>()),
+    );
+  });
+
+  test('the allowlist keeps only the named categories', () async {
+    final task = await AudioClassifier.create(
+      AudioClassifierOptions(modelPath: _model, categoryAllowlist: ['Music']),
+    );
+    addTearDown(task.dispose);
+    final chunks = await task.classify(
+      decodeWav(File('$_fixtures/speech_16000_hz_mono.wav').readAsBytesSync()),
+    );
+    for (final chunk in chunks) {
+      expect(
+        chunk.classifications.single.categories.map((c) => c.categoryName),
+        everyElement('Music'),
+      );
+    }
   });
 
   test('struct layouts match the official 1.0.1 ctypes', () {

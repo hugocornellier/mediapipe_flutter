@@ -1,13 +1,10 @@
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/capabilities.dart' show tasksRuntimeUnavailable;
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_core/mediapipe_exception.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart';
 
-import '../interface/text_task_exception.dart';
 import 'text_task_worker.dart';
 import 'third_party/mediapipe/classic_text_bindings.dart' as mp;
 
@@ -52,95 +49,42 @@ void requireTextTasksRuntime() {
   }
 }
 
-/// Snapshot the caller's model bytes; options never retain native allocations.
-BaseOptions copyTextBaseOptions(BaseOptions value) {
-  final path = value.modelAssetPath;
-  final bytes = value.modelAssetBuffer;
-  if (path != null) {
-    if (path.isEmpty || path.contains('\u0000')) {
-      throw ArgumentError.value(
-        path,
-        'modelAssetPath',
-        'Expected a nonempty filesystem path without NUL.',
-      );
-    }
-    return BaseOptions.path(path);
-  }
-  if (bytes == null || bytes.isEmpty || bytes.length > 0xffffffff) {
-    throw ArgumentError('modelAssetBuffer must contain 1 to 2^32-1 bytes.');
-  }
-  return BaseOptions.memory(Uint8List.fromList(bytes).asUnmodifiableView());
-}
-
-/// Snapshot option lists and reject values that cannot be represented in C.
-ClassifierOptions copyTextClassifierOptions(ClassifierOptions value) {
-  for (final text in [
-    value.displayNamesLocale,
-    ...?value.categoryAllowlist,
-    ...?value.categoryDenylist,
-  ]) {
-    if (text?.contains('\u0000') ?? false) {
-      throw ArgumentError('Classifier strings must not contain NUL.');
-    }
-  }
-  if (value.maxResults != null &&
-      (value.maxResults! < -0x80000000 || value.maxResults! > 0x7fffffff)) {
-    throw ArgumentError.value(
-      value.maxResults,
-      'maxResults',
-      'Must fit int32.',
-    );
-  }
-  if (value.scoreThreshold != null && !value.scoreThreshold!.isFinite) {
-    throw ArgumentError.value(
-      value.scoreThreshold,
-      'scoreThreshold',
-      'Must be finite.',
-    );
-  }
-  return ClassifierOptions(
-    displayNamesLocale: value.displayNamesLocale,
-    maxResults: value.maxResults,
-    scoreThreshold: value.scoreThreshold,
-    categoryAllowlist: value.categoryAllowlist == null
-        ? null
-        : List.unmodifiable(value.categoryAllowlist!),
-    categoryDenylist: value.categoryDenylist == null
-        ? null
-        : List.unmodifiable(value.categoryDenylist!),
-  );
-}
-
-/// Fill the current base ABI without using the inherited 2024 structs.
+/// Fill Google's base options from [options]' resolved model, always on
+/// the CPU, which is all the classic text tasks run on.
 void fillTextBaseOptions(
   mp.MpBaseOptions target,
-  BaseOptions source,
+  TaskOptions options,
   Arena arena,
 ) {
   target
     ..fileDescriptor = -1
     ..delegate = 0
     ..hostSystem = mpHostSystem;
-  if (source.modelAssetPath case final path?) {
-    target.modelAssetPath = path.toNativeUtf8(allocator: arena).cast();
-  } else {
-    final bytes = source.modelAssetBuffer!;
+  if (options.modelBytes case final bytes?) {
     final buffer = arena<Uint8>(bytes.length);
     buffer.asTypedList(bytes.length).setAll(0, bytes);
     target
       ..modelAssetBuffer = buffer.cast()
       ..modelAssetBufferCount = bytes.length;
+  } else {
+    target.modelAssetPath = options.modelPath!
+        .toNativeUtf8(allocator: arena)
+        .cast();
   }
 }
 
 /// Allocate all nested strings in the same short-lived arena.
 void fillTextClassifierOptions(
   mp.MpClassifierOptions target,
-  ClassifierOptions source,
-  Arena arena,
-) {
-  Pointer<Pointer<Char>> strings(List<String>? values) {
-    if (values == null || values.isEmpty) return nullptr;
+  Arena arena, {
+  required String? displayNamesLocale,
+  required int maxResults,
+  required double scoreThreshold,
+  required List<String> categoryAllowlist,
+  required List<String> categoryDenylist,
+}) {
+  Pointer<Pointer<Char>> strings(List<String> values) {
+    if (values.isEmpty) return nullptr;
     final array = arena<Pointer<Char>>(values.length);
     for (var i = 0; i < values.length; i++) {
       array[i] = values[i].toNativeUtf8(allocator: arena).cast();
@@ -150,14 +94,13 @@ void fillTextClassifierOptions(
 
   target
     ..displayNamesLocale =
-        source.displayNamesLocale?.toNativeUtf8(allocator: arena).cast() ??
-        nullptr
-    ..maxResults = source.maxResults ?? -1
-    ..scoreThreshold = source.scoreThreshold ?? 0
-    ..categoryAllowlist = strings(source.categoryAllowlist)
-    ..categoryAllowlistCount = source.categoryAllowlist?.length ?? 0
-    ..categoryDenylist = strings(source.categoryDenylist)
-    ..categoryDenylistCount = source.categoryDenylist?.length ?? 0;
+        displayNamesLocale?.toNativeUtf8(allocator: arena).cast() ?? nullptr
+    ..maxResults = maxResults
+    ..scoreThreshold = scoreThreshold
+    ..categoryAllowlist = strings(categoryAllowlist)
+    ..categoryAllowlistCount = categoryAllowlist.length
+    ..categoryDenylist = strings(categoryDenylist)
+    ..categoryDenylistCount = categoryDenylist.length;
 }
 
 /// Copy an optional C string into Dart.
@@ -171,7 +114,7 @@ void checkTextStatus(int Function(Pointer<Pointer<Char>>) call) =>
       try {
         final status = call(error);
         if (status != 0) {
-          throw TextTaskException(
+          throw TaskException(
             textTaskString(error.value) ?? 'MediaPipe operation failed.',
             statusCode: status,
           );
@@ -182,7 +125,8 @@ void checkTextStatus(int Function(Pointer<Pointer<Char>>) call) =>
     });
 
 /// Synchronous native owner. Only its worker exposes asynchronous requests.
-abstract class NativeClassicTextTask<R> implements NativeTextTask<R, Never> {
+abstract class NativeClassicTextTask<I, R>
+    implements NativeTextTask<I, R, Never> {
   /// Native handle, owned exclusively by this executor.
   Pointer<Void> handle = nullptr;
 
@@ -195,7 +139,7 @@ abstract class NativeClassicTextTask<R> implements NativeTextTask<R, Never> {
   }
 
   @override
-  Future<void> stream(String text, void Function(Never) emit) =>
+  Future<void> stream(I input, void Function(Never) emit) =>
       throw UnsupportedError('This task has no native streaming API.');
 
   /// Close synchronously when using an executor directly.

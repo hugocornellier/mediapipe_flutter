@@ -152,7 +152,7 @@ class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
   @override
   final settings = TaskSettingValues('scripted');
 
-  final opened = <VisionDelegate>[];
+  final opened = <Delegate>[];
 
   /// Times the controller asked the task to forget the frames it has seen.
   int forgot = 0;
@@ -168,14 +168,14 @@ class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
   Object? failure;
 
   /// When set, opening with that delegate throws this error.
-  (VisionDelegate, Object)? openFailure;
+  (Delegate, Object)? openFailure;
 
   @override
   String get name => 'scripted';
 
   @override
   Future<void> open(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List modelBytes, {
     RunningMode mode = RunningMode.video,
   }) async {

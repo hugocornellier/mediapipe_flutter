@@ -35,28 +35,5 @@ Future<void> runSegmenterTasksSmoke() async {
   } finally {
     await segmenter.dispose();
   }
-  final touchModel = await rootBundle.load('assets/magic_touch.tflite');
-  final touch = await InteractiveSegmenterLegacy.create(
-    InteractiveSegmenterLegacyOptions(
-      modelBytes: touchModel.buffer.asUint8List(touchModel.offsetInBytes,
-        touchModel.lengthInBytes),
-      outputCategoryMask: true,
-    ));
-  try {
-    final result = await touch.segmentImage(image,
-      keypoint: SegmentationPoint(x: 0.5, y: 0.4));
-    final category = result.categoryMask;
-    final confidence = result.confidenceMasks?.single;
-    if (result.imageWidth != 301 || result.imageHeight != 209 ||
-        result.labels.isNotEmpty ||
-        confidence == null || confidence.confidence.length != 301 * 209 ||
-        !confidence.confidence.every((value) => value >= 0 && value <= 1) ||
-        category == null || category.width != 301 || category.height != 209 ||
-        !category.categories.any((value) => value != 0)) {
-      throw StateError('Bundled legacy Interactive Segmenter inference failed.');
-    }
-  } finally {
-    await touch.dispose();
-  }
-  stdout.writeln('Image Segmenter and legacy Interactive Segmenter CPU inference passed.');
+  stdout.writeln('Image Segmenter CPU inference passed.');
 }

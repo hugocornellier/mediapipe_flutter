@@ -245,7 +245,7 @@ String registryProgram(List<String> families) {
     )
     ..writeln("import 'dart:isolate';")
     ..writeln()
-    ..writeln("import 'package:mediapipe_core/model_store.dart';");
+    ..writeln("import 'package:mediapipe_core/mediapipe_core.dart';");
   for (final (index, family) in families.indexed) {
     buffer.writeln("import 'package:$family/models.dart' as family$index;");
   }

@@ -14,9 +14,7 @@ Future<void> main(List<String> arguments) async {
     FaceDetectorOptions(modelPath: arguments[0]),
   );
   try {
-    final result = await detector.detectImage(
-      VisionImage.fromFile(arguments[1]),
-    );
+    final result = await detector.detect(VisionImage.fromFile(arguments[1]));
     stdout.writeln(
       '${result.detections.length} face(s) in '
       '${result.imageWidth} × ${result.imageHeight} image',

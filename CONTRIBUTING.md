@@ -49,21 +49,35 @@ platform it claims, and a test proves the output matches Google's.
    it up; give it a license there if it is not Apache-2.0.
 2. **Native platforms.** Bind Google's C API with the family's `ffigen` config
    and wrap it in `lib/src/io/`: create, run and close on a worker isolate,
-   copying results into owned Dart types. On iOS, where Google ships only an
+   copying results into the shared value types from `mediapipe_core`
+   (`MediaPipeCategory`, `Classifications`, `Landmark` and so on). On iOS, where Google ships only an
    Objective-C SDK, add the same C functions to core's adapter in
    `packages/mediapipe-core/native/ios/`.
 3. **Android.** Add the task to the family's Java plugin (Google's Android
-   SDK) and its Dart backend in `lib/mediapipe_<family>_android.dart`.
+   SDK) and its Dart backend in `lib/mediapipe_<family>_android.dart`. The
+   backend only reshapes the plugin's reply into Google's JavaScript result
+   shape; the family's one decoder (`lib/src/results/decoders.dart` in
+   vision and text, `lib/src/decoders.dart` in audio) reads it, for Android
+   and the web alike.
 4. **Web.** Add it to the family's `assets/worker.js`, using Google's bundle,
-   and to the Dart web backend.
+   and to the Dart web backend, which hands the worker's JSON to the same
+   decoder.
 5. **Capabilities.** Declare where it runs and why not elsewhere in the
-   family's `capabilities.dart`. For vision, also add it to the hook's task
+   family's `lib/src/capabilities.dart`: `queryXxxCapabilities()` and a pure
+   `xxxCapabilitiesForPlatform(TaskPlatform)`. For vision, also add it to the hook's task
    lists (`officialAndroidTasks`, `officialIosTasks`, `macosEngineTasks`) and
    to `tool/VISION_TASKS_STATUS.md` in the same commit.
-6. **Public API.** `XxxOptions` taking `model:`, `modelPath` or `modelBytes`;
-   `static Future<Xxx> create(XxxOptions)`; an `XxxResult`; an idempotent
-   `dispose()`; failures as the family's `MediaPipeException` subtype. Export
-   it from the family's main library and record it in `tool/API_REVIEW.md`.
+6. **Public API.** One class for every platform. `XxxOptions` extends core's
+   `TaskOptions` (`model`, `modelPath`, `modelBytes`, `delegate`) with
+   Google's settings and defaults; `static Future<Xxx> create(XxxOptions)`
+   refuses a delegate the capability query rules out (core's
+   `requireDelegate`); Google's verb (`detect`, `classify`, `embed` and so
+   on); an immutable `XxxResult` on the shared value types; a `delegate`
+   getter; an idempotent `Future<void> dispose()`; failures as
+   `TaskException`, errors through the returned `Future`. Export it from the
+   family's main library and run `tool/api_parity`
+   (`dart run bin/api_parity.dart --update`) so the snapshot shows the new
+   API; the check requires it to be identical on native and web.
 7. **Tests.** Generate a reference with Google's own Python for the pinned
    runtime version, check it in as a fixture, and compare every value in unit
    tests; add the task to `test_family_consumers.py`, to the browser suite's

@@ -1,6 +1,6 @@
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import 'package:mediapipe_core/capabilities.dart';
+import 'package:mediapipe_core/platform_interface.dart';
 import 'package:mediapipe_core/native_assets.dart';
 import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
 import 'package:test/test.dart';

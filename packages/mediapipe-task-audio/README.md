@@ -48,7 +48,8 @@ Future<void> classifyClip(String wavPath) async {
   try {
     final clip = decodeWav(await File(wavPath).readAsBytes());
     for (final chunk in await classifier.classify(clip)) {
-      print('${chunk.timestampMs} ms: ${chunk.categories.first.name}');
+      final top = chunk.classifications.first.categories.first;
+      print('${chunk.timestampMilliseconds} ms: ${top.categoryName}');
     }
   } finally {
     await classifier.dispose();
@@ -60,8 +61,13 @@ Future<void> classifyClip(String wavPath) async {
 each with its start time. It runs on a background isolate and serves calls in
 order. `AudioData` takes interleaved samples in -1 to 1 at any sample rate and
 channel count; Google's task resamples to the model's rate. `decodeWav` reads
-16-bit PCM and 32-bit float WAV files. Options mirror Google's: `maxResults`
-(-1 for all) and `scoreThreshold`. To use your own model, pass `modelPath` or
+16-bit PCM and 32-bit float WAV files. Each result lists the categories per
+model head (`classifications`, on core's shared `Classifications`) and the
+chunk's `timestampMilliseconds`. Options mirror Google's: `maxResults` (-1 for
+all), `scoreThreshold`, `displayNamesLocale`, `categoryAllowlist` or
+`categoryDenylist`, `delegate` (CPU) and `runningMode`
+(`AudioRunningMode.audioClips`; `audioStream` is reserved and refused at
+`create`). To use your own model, pass `modelPath` or
 `modelBytes` instead of `model`.
 
 Samples from a microphone or any other source work the same way: wrap them
@@ -81,8 +87,10 @@ Future<String?> latestSound(Float32List samples, double sampleRate) async {
     final chunks = await classifier.classify(
       AudioData(samples: samples, sampleRate: sampleRate),
     );
-    if (chunks.isEmpty || chunks.last.categories.isEmpty) return null;
-    return chunks.last.categories.first.name;
+    final categories = chunks.isEmpty
+        ? const <MediaPipeCategory>[]
+        : chunks.last.classifications.first.categories;
+    return categories.isEmpty ? null : categories.first.categoryName;
   } finally {
     await classifier.dispose();
   }
@@ -99,12 +107,12 @@ import 'package:mediapipe_audio/mediapipe_audio.dart';
 
 Future<bool> audioAvailable() async {
   final support = await queryAudioClassifierCapabilities();
-  return support.supportedDelegates.contains(AudioDelegate.cpu);
+  return support.supportedDelegates.contains(Delegate.cpu);
 }
 ```
 
 Failures are `MediaPipeException`s: `RuntimeUnavailableException` (with a
-`fix`), `ModelDownloadException`, and `AudioTaskException` for errors from
+`fix`), `ModelDownloadException`, and `TaskException` for errors from
 Google's runtime. `dispose()` drains queued calls and is idempotent.
 
 ## Validation

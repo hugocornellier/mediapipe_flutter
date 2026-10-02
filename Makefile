@@ -81,6 +81,8 @@ test:
 	$(MAKE) models
 	$(MAKE) test_only
 
+# Tests tagged `flutter` need Flutter's test binding, which `dart test`
+# cannot load, so Flutter runs them.
 test_only:
 	$(MAKE) test_core
 	$(MAKE) test_text
@@ -92,17 +94,20 @@ test_core:
 	cd packages/mediapipe-core && dart test --reporter expanded
 
 test_text:
-	cd packages/mediapipe-task-text && dart test --reporter expanded
+	cd packages/mediapipe-task-text && dart test --reporter expanded --exclude-tags flutter
+	cd packages/mediapipe-task-text && flutter test --reporter expanded --tags flutter
 
 .PHONY: test_audio models_audio
 models_audio:
 	cd packages/mediapipe-task-audio && dart run tool/download_model.dart
 
 test_audio:
-	cd packages/mediapipe-task-audio && dart test --reporter expanded
+	cd packages/mediapipe-task-audio && dart test --reporter expanded --exclude-tags flutter
+	cd packages/mediapipe-task-audio && flutter test --reporter expanded --tags flutter
 
 test_vision:
-	cd packages/mediapipe-task-vision && dart test --reporter expanded
+	cd packages/mediapipe-task-vision && dart test --reporter expanded --exclude-tags flutter
+	cd packages/mediapipe-task-vision && flutter test --reporter expanded --tags flutter
 
 .PHONY: test_vision_web
 test_vision_web:

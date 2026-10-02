@@ -9,7 +9,7 @@ import 'package:mediapipe_core/interface.dart';
 /// {@endtemplate}
 abstract class BaseLlmResponseContext extends TaskResult {
   /// The core of the LLM's response from this query. If the asynchronous
-  /// API is used, this [response] value should be chained with subsequent
+  /// API is used, this `response` value should be chained with subsequent
   /// values until the LLM emits one with [isDone] set to true.
   List<String> get responseArray;
 

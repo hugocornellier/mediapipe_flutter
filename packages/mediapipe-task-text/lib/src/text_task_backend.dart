@@ -12,8 +12,8 @@ abstract interface class TextTaskBackend {
   Future<void> dispose();
 }
 
-/// Creates Google's [task] (`text_classifier`, `text_embedder` or
-/// `language_detector`) from [options] named as in Google's JavaScript API,
+/// Creates Google's `task` (`text_classifier`, `text_embedder` or
+/// `language_detector`) from `options` named as in Google's JavaScript API,
 /// plus `modelBytes` (a `Uint8List`) or `modelPath` (a URL in a browser).
 ///
 /// Installed by this package's platform code in browsers and on Android;

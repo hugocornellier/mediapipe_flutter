@@ -3,37 +3,21 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:math' show Random;
 
-import '../interface/segmenter_task_types.dart' show SegmentationPoint;
-import '../interface/vision_task_types.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart';
+
+import '../runner/checks.dart';
+import '../runner/native_interface.dart';
+import '../types/vision_types.dart';
 import 'gpu_frame_budget.dart';
 
-/// Input transported to a native task's worker without sharing native pointers.
-///
-/// The trailing point is the legacy Interactive Segmenter's region of interest;
-/// every other task leaves it null.
-typedef VisionTaskInput = (
-  VisionImage,
-  int,
-  int?,
-  VisionRegionOfInterest?,
-  SegmentationPoint?,
-);
-
-/// Native owners are created, used and closed exclusively on their worker.
-abstract interface class NativeVisionTask<R> {
-  /// Process one input and return an owned Dart result.
-  R process(VisionTaskInput input);
-
-  /// Close idempotently, including after a failed processing call.
-  void close();
-}
-
-/// Shared request ordering, timestamp validation and native task ownership.
-final class VisionTaskWorker<R> {
-  VisionTaskWorker._(this.runningMode, this._name) {
+/// Google's native task on its own isolate: the shared checks, then requests
+/// in submission order, with the task created, used and closed there.
+final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
+  VisionTaskWorker._(this._checks) {
     _events.listen(_receive);
   }
-  final String _name;
+  final VisionTaskChecks _checks;
   final int _tag = Random().nextInt(1 << 32);
   final _events = ReceivePort();
   final _ready = Completer<void>();
@@ -41,26 +25,26 @@ final class VisionTaskWorker<R> {
   final _pending = <int, Completer<R?>>{};
   SendPort? _commands;
   var _nextId = 0;
-  var _disposing = false;
   Future<void>? _disposal;
-  VisionTaskException? _failure;
-  int? _lastTimestamp;
 
-  /// Mode selected at initialization.
-  final RunningMode runningMode;
+  /// The task's name, as its errors say it.
+  String get name => _checks.name;
 
   /// Construct the native owner from a top-level factory on a new isolate.
   ///
   /// [reopenAfterBytes] overrides the [GpuFrameBudget] that bounds what
   /// Google's macOS GPU path keeps, so tests can exercise the reopening.
-  static Future<VisionTaskWorker<R>> create<R, O extends VisionModelOptions>(
+  static Future<VisionTaskWorker<R>> create<R, O extends VisionTaskOptions>(
     O options,
     NativeVisionTask<R> Function(O) factory,
-    String name, {
+    String name,
+    String debugName, {
     int? reopenAfterBytes,
   }) async {
-    final worker = VisionTaskWorker<R>._(options.runningMode, name);
-    _trace(worker._tag, name, 'spawn', 'start');
+    final worker = VisionTaskWorker<R>._(
+      VisionTaskChecks(name, options.runningMode),
+    );
+    _trace(worker._tag, debugName, 'spawn', 'start');
     try {
       await Isolate.spawn(
         _runWorker<R, O>,
@@ -73,7 +57,7 @@ final class VisionTaskWorker<R> {
         ),
         onError: worker._events.sendPort,
         onExit: worker._events.sendPort,
-        debugName: name,
+        debugName: debugName,
       );
     } catch (error, stack) {
       worker._events.close();
@@ -83,53 +67,30 @@ final class VisionTaskWorker<R> {
     return worker;
   }
 
-  /// Validate a still-image request before sending it to the native worker.
+  @override
   Future<R> processImage(
     VisionImage image,
-    int rotation,
-    VisionRegionOfInterest? region, {
-    SegmentationPoint? keypoint,
-  }) async {
-    _check(RunningMode.image, rotation);
-    return (await _request((image, rotation, null, region, keypoint)))!;
+    int rotationDegrees,
+    VisionRegionOfInterest? regionOfInterest,
+  ) async {
+    _checks.image(rotationDegrees);
+    return (await _request((image, rotationDegrees, null, regionOfInterest)))!;
   }
 
-  /// Reserve strictly increasing timestamps in submission order.
+  @override
   Future<R> processVideo(
     VisionImage image,
-    int rotation,
-    int timestamp,
-    VisionRegionOfInterest? region,
+    int rotationDegrees,
+    int timestampMilliseconds,
+    VisionRegionOfInterest? regionOfInterest,
   ) async {
-    _check(RunningMode.video, rotation);
-    if (timestamp < 0 ||
-        timestamp > 0x7fffffffffffffff ~/ 1000 ||
-        (_lastTimestamp != null && timestamp <= _lastTimestamp!)) {
-      throw ArgumentError.value(
-        timestamp,
-        'timestampMilliseconds',
-        'Must be nonnegative, strictly increasing and fit MediaPipe timestamps',
-      );
-    }
-    _lastTimestamp = timestamp;
-    return (await _request((image, rotation, timestamp, region, null)))!;
-  }
-
-  // TODO: Share these checks with SdkVisionTask's, so every platform fails the
-  // same way. See tool/SHARED_CODE.md at the repository root.
-  void _check(RunningMode expected, int rotation) {
-    if (_disposing) throw StateError('Vision task has been disposed.');
-    if (_failure case final error?) throw error;
-    if (runningMode != expected) {
-      throw StateError('This method requires ${expected.name} mode.');
-    }
-    if (rotation % 90 != 0 || rotation < -0x80000000 || rotation > 0x7fffffff) {
-      throw ArgumentError.value(
-        rotation,
-        'rotationDegrees',
-        'Must be a C int divisible by 90',
-      );
-    }
+    _checks.video(rotationDegrees, timestampMilliseconds);
+    return (await _request((
+      image,
+      rotationDegrees,
+      timestampMilliseconds,
+      regionOfInterest,
+    )))!;
   }
 
   Future<R?> _request(VisionTaskInput? input) {
@@ -140,15 +101,15 @@ final class VisionTaskWorker<R> {
     return completion.future;
   }
 
-  /// Reject new work immediately and drain queued requests before shutdown.
+  @override
   Future<void> dispose() {
-    _disposing = true;
+    _checks.markDisposing();
     return _disposal ??= _close();
   }
 
   Future<void> _close() async {
     try {
-      if (_failure == null) await _request(null);
+      if (_checks.failure == null) await _request(null);
     } finally {
       await _exited.future;
     }
@@ -157,28 +118,26 @@ final class VisionTaskWorker<R> {
   void _receive(dynamic event) {
     switch (event) {
       case SendPort port:
-        _trace(_tag, _name, 'spawn', 'end');
+        _trace(_tag, name, 'spawn', 'end');
         _commands = port;
         _ready.complete();
-      case (int id, Object? result, VisionTaskException? error):
-        _trace(_tag, _name, id, 'received');
+      case (int id, Object? result, TaskException? error):
+        _trace(_tag, name, id, 'received');
         final completion = _pending.remove(id);
         if (error != null) {
           completion?.completeError(error);
         } else {
           completion?.complete(result as R?);
         }
-      case VisionTaskException error:
+      case TaskException error:
         _fail(error);
       case List<dynamic> error:
-        _fail(VisionTaskException('Worker failed: ${error.join('\n')}'));
+        _fail(TaskException('Worker failed: ${error.join('\n')}'));
       case null:
-        _trace(_tag, _name, 'exit', 'exited');
-        if (!_ready.isCompleted || _pending.isNotEmpty || !_disposing) {
+        _trace(_tag, name, 'exit', 'exited');
+        if (!_ready.isCompleted || _pending.isNotEmpty || !_checks.disposing) {
           _fail(
-            const VisionTaskException(
-              'Native vision worker exited unexpectedly.',
-            ),
+            const TaskException('Native vision worker exited unexpectedly.'),
           );
         }
         _events.close();
@@ -186,8 +145,8 @@ final class VisionTaskWorker<R> {
     }
   }
 
-  void _fail(VisionTaskException error) {
-    _failure ??= error;
+  void _fail(TaskException error) {
+    _checks.failure ??= error;
     if (!_ready.isCompleted) _ready.completeError(error);
     for (final completion in _pending.values) {
       completion.completeError(error);
@@ -196,7 +155,7 @@ final class VisionTaskWorker<R> {
   }
 }
 
-Future<void> _runWorker<R, O extends VisionModelOptions>(
+Future<void> _runWorker<R, O extends VisionTaskOptions>(
   (SendPort, O, NativeVisionTask<R> Function(O), int, int?) initial,
 ) async {
   final (parent, options, factory, tag, reopenAfterBytes) = initial;
@@ -208,11 +167,12 @@ Future<void> _runWorker<R, O extends VisionModelOptions>(
     _trace(tag, name, 'create', 'start');
     var task = native = factory(options);
     _trace(tag, name, 'create', 'end');
+    if (budget.limitBytes != null) _holdModel(options);
     parent.send(commands.sendPort);
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, VisionTaskInput?);
       R? result;
-      VisionTaskException? failure;
+      TaskException? failure;
       _trace(tag, name, id, 'start');
       try {
         if (input == null) {
@@ -221,9 +181,9 @@ Future<void> _runWorker<R, O extends VisionModelOptions>(
           result = task.process(input);
         }
       } catch (error) {
-        failure = error is VisionTaskException
+        failure = error is TaskException
             ? error
-            : VisionTaskException(error.toString());
+            : TaskException(error.toString());
       }
       _trace(tag, name, id, failure == null ? 'end' : 'error');
       parent.send((id, result, failure));
@@ -238,9 +198,7 @@ Future<void> _runWorker<R, O extends VisionModelOptions>(
   } catch (error) {
     _trace(tag, name, 'create', 'error');
     parent.send(
-      error is VisionTaskException
-          ? error
-          : VisionTaskException(error.toString()),
+      error is TaskException ? error : TaskException(error.toString()),
     );
   } finally {
     try {
@@ -264,4 +222,18 @@ void _trace(int tag, String name, Object id, String phase) {
     'MPTRACE ${DateTime.now().millisecondsSinceEpoch} pid=$pid tag=$tag '
     '$name #$id $phase',
   );
+}
+
+/// Reopening reads the model again, but MediaPipe has read it by the time a
+/// task exists, so the app may delete the file. Holds it in memory while the
+/// file is certainly present: [VisionTaskWorker.create] has not returned.
+void _holdModel(VisionTaskOptions options) {
+  final path = options.modelPath;
+  if (path == null) return;
+  try {
+    holdModelBytes(options, File(path).readAsBytesSync().asUnmodifiableView());
+  } on FileSystemException {
+    // MediaPipe read the file a moment ago. If it is unreadable now, reopening
+    // reads it again, as without this.
+  }
 }

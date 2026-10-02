@@ -1,3 +1,6 @@
+import '../delegate.dart';
+import '../exceptions.dart';
+
 /// The current process platform, including its ABI (not the host CPU's ABI).
 final class TaskPlatform {
   /// Construct a platform snapshot. A null OS version means it is unknown.
@@ -29,6 +32,11 @@ final class TaskPlatform {
 
   /// `operatingSystem/architecture`, the key used by runtime target tables.
   String get target => '$operatingSystem/$architecture';
+
+  @override
+  String toString() =>
+      'TaskPlatform($target${version == null ? '' : ' $version'}'
+      '${gpu == null ? '' : ', $gpu'}${simulator ? ', simulator' : ''})';
 }
 
 /// Names this device's GPU for [TaskPlatform.gpu]. An adapter package that can
@@ -87,23 +95,25 @@ String tasksRuntimeVersionOn(TaskPlatform platform) =>
       _ => '1.0.1',
     };
 
-/// Declared package support on a platform. This is not an inference self-test.
+/// Declared package support for one task on a platform: which [Delegate]s run
+/// there and why the others do not. This is not an inference self-test.
 ///
 /// Model validity, native-asset opt-in, and available memory are checked when
-/// creating a task. Querying support does not download assets or initialize GPU.
-final class TaskCapabilities<D extends Enum> {
+/// creating a task. Querying support does not download assets or initialize
+/// the GPU.
+final class TaskCapabilities {
   /// Describe delegates whose validated target sets differ.
   ///
   /// Each delegate is checked against its own minimum OS version. Unsupported
   /// delegates use [unavailableReasons], or the target mismatch diagnostic.
   factory TaskCapabilities.onTargets({
     required TaskPlatform platform,
-    required Map<D, RuntimeTargets> delegates,
-    required Map<D, String> unavailableReasons,
+    required Map<Delegate, RuntimeTargets> delegates,
+    required Map<Delegate, String> unavailableReasons,
     required String runtimeVersion,
   }) {
-    final supported = <D>{};
-    final reasons = <D, String>{};
+    final supported = <Delegate>{};
+    final reasons = <Delegate, String>{};
     final targets = <String, String?>{};
     for (final entry in delegates.entries) {
       for (final target in entry.value.entries) {
@@ -132,15 +142,13 @@ final class TaskCapabilities<D extends Enum> {
     );
   }
 
-  /// Describe CPU support on every target in [targets], with GPU explained as
-  /// unavailable by [gpuUnavailableReason] on targets that are supported.
+  /// Describe CPU support on every target in [targets], with the GPU explained
+  /// as unavailable by [gpuUnavailableReason] on targets that are supported.
   ///
   /// Targets not in the table, unknown OS versions and versions older than the
   /// table's minimum fail closed for every delegate.
   factory TaskCapabilities.cpuOnTargets({
     required TaskPlatform platform,
-    required D cpu,
-    required D gpu,
     required String gpuUnavailableReason,
     RuntimeTargets targets = tasksRuntimeTargets,
     String runtimeVersion = '1.0.1',
@@ -148,26 +156,24 @@ final class TaskCapabilities<D extends Enum> {
     final platformReason = _platformReason(platform, targets);
     return TaskCapabilities._(
       platform,
-      Set.unmodifiable({if (platformReason == null) cpu}),
+      Set.unmodifiable({if (platformReason == null) Delegate.cpu}),
       Map.unmodifiable({
-        cpu: ?platformReason,
-        gpu: platformReason ?? gpuUnavailableReason,
+        Delegate.cpu: ?platformReason,
+        Delegate.gpu: platformReason ?? gpuUnavailableReason,
       }),
       targets,
       runtimeVersion: runtimeVersion,
     );
   }
 
-  /// Describe GPU support on every target in [targets], with CPU explained as
-  /// unavailable by [cpuUnavailableReason] on targets that are supported.
+  /// Describe GPU support on every target in [targets], with the CPU explained
+  /// as unavailable by [cpuUnavailableReason] on targets that are supported.
   ///
   /// The mirror of [TaskCapabilities.cpuOnTargets], for a task whose CPU path
   /// is the broken one. Targets not in the table, unknown OS versions and
   /// versions older than the table's minimum fail closed for every delegate.
   factory TaskCapabilities.gpuOnTargets({
     required TaskPlatform platform,
-    required D cpu,
-    required D gpu,
     required String cpuUnavailableReason,
     RuntimeTargets targets = tasksRuntimeTargets,
     String runtimeVersion = '1.0.1',
@@ -175,10 +181,10 @@ final class TaskCapabilities<D extends Enum> {
     final platformReason = _platformReason(platform, targets);
     return TaskCapabilities._(
       platform,
-      Set.unmodifiable({if (platformReason == null) gpu}),
+      Set.unmodifiable({if (platformReason == null) Delegate.gpu}),
       Map.unmodifiable({
-        gpu: ?platformReason,
-        cpu: platformReason ?? cpuUnavailableReason,
+        Delegate.gpu: ?platformReason,
+        Delegate.cpu: platformReason ?? cpuUnavailableReason,
       }),
       targets,
       runtimeVersion: runtimeVersion,
@@ -191,13 +197,9 @@ final class TaskCapabilities<D extends Enum> {
   /// [macosTasksRuntimeTargets].
   factory TaskCapabilities.macosCpu({
     required TaskPlatform platform,
-    required D cpu,
-    required D gpu,
     required String gpuUnavailableReason,
   }) => TaskCapabilities.cpuOnTargets(
     platform: platform,
-    cpu: cpu,
-    gpu: gpu,
     gpuUnavailableReason: gpuUnavailableReason,
     targets: macosTasksRuntimeTargets,
   );
@@ -214,10 +216,10 @@ final class TaskCapabilities<D extends Enum> {
   final TaskPlatform platform;
 
   /// Delegates supported by this package on the current process platform.
-  final Set<D> supportedDelegates;
+  final Set<Delegate> supportedDelegates;
 
   /// A human-readable explanation for each unavailable delegate.
-  final Map<D, String> unavailableReasons;
+  final Map<Delegate, String> unavailableReasons;
 
   /// Pinned upstream runtime version behind these tasks.
   final String runtimeVersion;
@@ -245,6 +247,11 @@ final class TaskCapabilities<D extends Enum> {
   String get _reference => _targets.containsKey(platform.target)
       ? platform.target
       : _targets.keys.first;
+
+  @override
+  String toString() =>
+      'TaskCapabilities($platform, supported: $supportedDelegates, '
+      'runtime $runtimeVersion)';
 
   static String? _platformReason(
     TaskPlatform platform,
@@ -289,4 +296,17 @@ final class TaskCapabilities<D extends Enum> {
     }
     return 0;
   }
+}
+
+/// Fails with the capability query's reason when [delegate] is unavailable,
+/// so every task's `create` refuses a delegate the same way on every
+/// platform.
+void requireDelegate(TaskCapabilities capabilities, Delegate delegate) {
+  if (capabilities.supportedDelegates.contains(delegate)) return;
+  throw RuntimeUnavailableException(
+    'The ${delegate.name.toUpperCase()} delegate is unavailable here.',
+    fix:
+        capabilities.unavailableReasons[delegate] ??
+        'Choose a delegate the capability query reports as supported.',
+  );
 }

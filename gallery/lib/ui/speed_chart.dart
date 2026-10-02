@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mediapipe_vision/mediapipe_vision.dart' show VisionDelegate;
+import 'package:mediapipe_vision/mediapipe_vision.dart' show Delegate;
 
 import '../live/speed_history.dart';
 import 'components.dart';
@@ -26,15 +26,15 @@ class StatsCard extends StatefulWidget {
   final SpeedHistory history;
 
   /// The delegates the page offers, in the order their entries appear.
-  final List<VisionDelegate> delegates;
+  final List<Delegate> delegates;
 
   /// The delegate the task runs on. With two [delegates], the card offers
   /// to switch to the other one.
-  final VisionDelegate? delegate;
+  final Delegate? delegate;
 
   /// Switches the task to the delegate it is given; null disables the switch,
   /// as while the task restarts.
-  final ValueChanged<VisionDelegate>? onSwitchDelegate;
+  final ValueChanged<Delegate>? onSwitchDelegate;
 
   /// Clears the chart; null hides the button.
   final VoidCallback? onReset;
@@ -47,7 +47,7 @@ class StatsCard extends StatefulWidget {
 }
 
 class _StatsCardState extends State<StatsCard> {
-  final _hidden = <VisionDelegate>{};
+  final _hidden = <Delegate>{};
 
   /// The crosshair's x in the chart, while a pointer is on it.
   double? _pointer;
@@ -58,10 +58,7 @@ class _StatsCardState extends State<StatsCard> {
   Widget build(BuildContext context) {
     final c = GalleryColors.of(context);
     final history = widget.history;
-    final colors = {
-      VisionDelegate.cpu: c.seriesCpu,
-      VisionDelegate.gpu: c.seriesGpu,
-    };
+    final colors = {Delegate.cpu: c.seriesCpu, Delegate.gpu: c.seriesGpu};
     final muted = TextStyle(color: c.muted, fontSize: Sizes.xs);
     final shown = [
       for (final delegate in widget.delegates)
@@ -191,8 +188,8 @@ class _StatsCardState extends State<StatsCard> {
     );
   }
 
-  static String _name(VisionDelegate delegate) =>
-      delegate == VisionDelegate.gpu ? 'GPU' : 'CPU';
+  static String _name(Delegate delegate) =>
+      delegate == Delegate.gpu ? 'GPU' : 'CPU';
 }
 
 /// A legend entry: a checkbox in the series color when [checked] is not null,
@@ -306,8 +303,8 @@ class SpeedChartPainter extends CustomPainter {
   final SpeedHistory history;
 
   /// The delegates whose lines are drawn.
-  final List<VisionDelegate> shown;
-  final Map<VisionDelegate, Color> colors;
+  final List<Delegate> shown;
+  final Map<Delegate, Color> colors;
 
   /// The crosshair's x, or null without a pointer.
   final double? pointer;
@@ -417,7 +414,7 @@ class SpeedChartPainter extends CustomPainter {
         _dot(canvas, at(value), colors[delegate]!);
         rows.add((
           colors[delegate]!,
-          '${delegate == VisionDelegate.gpu ? 'GPU' : 'CPU'}  '
+          '${delegate == Delegate.gpu ? 'GPU' : 'CPU'}  '
               '${value.milliseconds.toStringAsFixed(1)} ms',
         ));
       }
@@ -569,6 +566,6 @@ class SpeedChartPainter extends CustomPainter {
       old.pointer != pointer ||
       old.shown.length != shown.length ||
       !old.shown.every(shown.contains) ||
-      old.colors[VisionDelegate.cpu] != colors[VisionDelegate.cpu] ||
+      old.colors[Delegate.cpu] != colors[Delegate.cpu] ||
       old.ink != ink;
 }

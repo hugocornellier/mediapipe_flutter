@@ -42,9 +42,7 @@ void main() {
           .capabilitiesFor(platform, assets.officialMacosLandmarkTasks)
           .supportedDelegates;
       await task.open(
-        delegates.contains(VisionDelegate.cpu)
-            ? VisionDelegate.cpu
-            : delegates.first,
+        delegates.contains(Delegate.cpu) ? Delegate.cpu : delegates.first,
         model.buffer.asUint8List(model.offsetInBytes, model.lengthInBytes),
       );
       final result = await task.detect(
@@ -80,8 +78,8 @@ void main() {
     await tester.runAsync(() async {
       if (bundled.contains('text_classifier')) {
         final classifier = await TextClassifier.create(
-          TextClassifierOptions.fromAssetBuffer(
-            await asset('assets/models/bert_classifier.tflite'),
+          TextClassifierOptions(
+            modelBytes: await asset('assets/models/bert_classifier.tflite'),
           ),
         );
         try {
@@ -104,7 +102,10 @@ void main() {
           final chunks = await classifier.classify(
             decodeWav(await asset('assets/samples/speech_16000_hz_mono.wav')),
           );
-          expect(chunks.first.categories.first.name, 'Speech');
+          expect(
+            chunks.first.classifications.first.categories.first.categoryName,
+            'Speech',
+          );
         } finally {
           await classifier.dispose();
         }
@@ -135,9 +136,9 @@ void main() {
       try {
         await task.setImage(VisionImage.fromFile(assets.path('animals.jpg')));
         final mask = await task.segment([
-          SegmentationStroke(
-            brushMode: SegmentationBrushMode.positive,
-            points: [SegmentationPoint(x: 0.42, y: 0.6)],
+          Stroke(
+            brushMode: BrushMode.positive,
+            points: [NormalizedKeypoint(x: 0.42, y: 0.6)],
           ),
         ]);
         expect(mask.width, greaterThan(0));

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:mediapipe_text/text_summarizer.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 void _check(bool condition, String message) {
   if (!condition) throw StateError(message);
@@ -39,7 +39,7 @@ Future<Map<String, Object>> validateSummarizer(String model, Map<String, dynamic
             final expected = (reference['errors'] as List).singleWhere((e) => e['mode'] == mode.name.toUpperCase());
             for (final call in [() async { await task.summarize(''); }, () async { await task.summarizeStream('').toList(); }]) {
               var rejected = false;
-              try { await call(); } on TextTaskException catch (error) {
+              try { await call(); } on TaskException catch (error) {
                 rejected = error.message == expected['message'];
               }
               _check(rejected, 'Official empty-input error not preserved');

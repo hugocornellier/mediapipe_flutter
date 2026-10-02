@@ -126,13 +126,10 @@ void main() {
           final task = await ImageClassifier.create(options);
           try {
             await expectLater(
-              task.classifyImage(VisionImage.fromFile('missing-image.jpg')),
-              throwsA(isA<VisionTaskException>()),
+              task.classify(VisionImage.fromFile('missing-image.jpg')),
+              throwsA(isA<TaskException>()),
             );
-            _compareClassifier(
-              await task.classifyImage(_image(expected)),
-              expected,
-            );
+            _compareClassifier(await task.classify(_image(expected)), expected);
           } finally {
             await task.dispose();
           }
@@ -140,7 +137,7 @@ void main() {
             ImageEmbedder.create(
               ImageEmbedderOptions(modelBytes: Uint8List(32)),
             ).timeout(const Duration(seconds: 10)),
-            throwsA(isA<VisionTaskException>()),
+            throwsA(isA<TaskException>()),
           );
           final valid = await ImageEmbedder.create(
             ImageEmbedderOptions(modelPath: _embedderModel),
@@ -160,10 +157,7 @@ void main() {
             ),
           );
           try {
-            await expectLater(
-              task.embedImage(_image(expected)),
-              throwsStateError,
-            );
+            await expectLater(task.embed(_image(expected)), throwsStateError);
             for (final timestamp in [-1, 0x7fffffffffffffff]) {
               await expectLater(
                 task.embedForVideo(
@@ -199,7 +193,7 @@ void main() {
       );
     },
     // Google's CPU output drifts between Apple CPUs, so macOS compares with
-    // same-host outputs (tool/test_official_macos_landmark_runtime.py).
+    // same-host outputs (tool/test_macos_tasks_runtime.py).
     skip:
         Platform.isMacOS &&
             Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
@@ -226,7 +220,7 @@ void main() {
     for (final expected in gpuCases.where((c) => c['timestamp_ms'] == null)) {
       test(
         'official ${expected['task']} / ${expected['input']} / ${expected['options']}',
-        () => _runCase(expected, delegate: VisionDelegate.gpu),
+        () => _runCase(expected, delegate: Delegate.gpu),
       );
     }
   }, skip: _gpuSkip);
@@ -266,9 +260,9 @@ void main() {
   test(
     'cosine similarity handles signed quantized vectors and rejects incompatible inputs',
     () {
-      VisionEmbedding floats(List<double> values) =>
-          VisionEmbedding(floatEmbedding: values, headIndex: 0);
-      VisionEmbedding quantized(List<int> values) => VisionEmbedding(
+      Embedding floats(List<double> values) =>
+          Embedding(floatEmbedding: Float32List.fromList(values), headIndex: 0);
+      Embedding quantized(List<int> values) => Embedding(
         quantizedEmbedding: Uint8List.fromList(values),
         headIndex: 0,
       );
@@ -313,10 +307,10 @@ const _gpuEmbeddingTolerance = 0.001;
 /// Runs one IMAGE-mode reference case on [delegate] and compares it.
 Future<void> _runCase(
   Map<String, dynamic> expected, {
-  VisionDelegate delegate = VisionDelegate.cpu,
+  Delegate delegate = Delegate.cpu,
 }) async {
   final options = expected['options'] as Map<String, dynamic>;
-  final gpu = delegate == VisionDelegate.gpu;
+  final gpu = delegate == Delegate.gpu;
   if (expected['task'] == 'classifier') {
     final task = await ImageClassifier.create(
       ImageClassifierOptions(
@@ -327,7 +321,7 @@ Future<void> _runCase(
     );
     try {
       _compareClassifier(
-        await task.classifyImage(
+        await task.classify(
           _image(expected),
           rotationDegrees: expected['rotation_degrees'] as int,
           regionOfInterest: _region(expected),
@@ -349,7 +343,7 @@ Future<void> _runCase(
     );
     try {
       _compareEmbedder(
-        await task.embedImage(
+        await task.embed(
           _image(expected),
           rotationDegrees: expected['rotation_degrees'] as int,
           regionOfInterest: _region(expected),

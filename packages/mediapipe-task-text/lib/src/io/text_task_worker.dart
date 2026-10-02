@@ -1,48 +1,52 @@
 import 'dart:async';
 import 'dart:isolate';
 
+import 'package:mediapipe_core/mediapipe_core.dart';
+
+import '../runner/text_task_runner.dart';
+
 /// Native owner constructed and used only inside a persistent text worker.
-abstract interface class NativeTextTask<R, U> {
+/// [I] is the request: the text, or the text and its format context.
+abstract interface class NativeTextTask<I, R, U> {
   /// Run a completed request.
-  R run(String text);
+  R run(I input);
 
   /// Drain one native stream, including its terminal callback.
-  Future<void> stream(String text, void Function(U) emit);
+  Future<void> stream(I input, void Function(U) emit);
 
   /// Close once all requests have drained.
   void close();
 }
 
 /// Shared queue, stream cancellation and lifecycle for official text tasks.
-final class TextTaskWorker<R, U, E extends Exception> {
-  TextTaskWorker._(this._name, this._exception) {
+final class TextTaskWorker<I extends Object, R, U>
+    implements TextStreamRunner<I, R, U> {
+  TextTaskWorker._(this._name) {
     _events.listen(_receive);
   }
 
   final String _name;
-  final E Function(Object) _exception;
   final _events = ReceivePort();
   final _ready = Completer<void>();
   final _exited = Completer<void>();
-  final _pending = <int, _Request<R, U, E>>{};
+  final _pending = <int, _Request<R, U>>{};
   SendPort? _commands;
   int _nextId = 0;
   bool _disposing = false;
   Future<void>? _disposeFuture;
-  E? _failure;
+  TaskException? _failure;
 
   /// Factories must be sendable; callers use top-level function tear-offs.
-  static Future<TextTaskWorker<R, U, E>> start<R, U, E extends Exception, O>({
+  static Future<TextTaskWorker<I, R, U>> start<I extends Object, R, U, O>({
     required String name,
     required O options,
-    required NativeTextTask<R, U> Function(O) create,
-    required E Function(Object) exception,
+    required NativeTextTask<I, R, U> Function(O) create,
   }) async {
-    final task = TextTaskWorker<R, U, E>._(name, exception);
+    final task = TextTaskWorker<I, R, U>._(name);
     try {
       await Isolate.spawn(
-        _worker<R, U, E, O>,
-        (task._events.sendPort, options, create, exception),
+        _worker<I, R, U, O>,
+        (task._events.sendPort, options, create),
         onError: task._events.sendPort,
         onExit: task._events.sendPort,
         debugName: 'MediaPipe $name',
@@ -61,28 +65,30 @@ final class TextTaskWorker<R, U, E extends Exception> {
   }
 
   /// Submit one completed request.
-  Future<R> run(String text) async {
-    _check(text);
-    final request = _Request<R, U, E>();
+  @override
+  Future<R> run(I input) async {
+    _check();
+    final request = _Request<R, U>();
     final id = _nextId++;
     _pending[id] = request;
-    _commands!.send((id, text, false));
-    return (await request.result.future)!;
+    _commands!.send((id, input, false));
+    return (await request.result.future) as R;
   }
 
   /// Start on listen; cancellation drops delivery and waits for native drain.
-  Stream<U> stream(String text) {
-    _check(text);
+  @override
+  Stream<U> stream(I input) {
+    _check();
     late StreamController<U> controller;
-    _Request<R, U, E>? request;
+    _Request<R, U>? request;
     controller = StreamController<U>(
       onListen: () {
         try {
-          _check(text);
-          final active = request = _Request<R, U, E>(updates: controller);
+          _check();
+          final active = request = _Request<R, U>(updates: controller);
           final id = _nextId++;
           _pending[id] = active;
-          _commands!.send((id, text, true));
+          _commands!.send((id, input, true));
         } catch (error, stack) {
           controller.addError(error, stack);
           unawaited(controller.close());
@@ -98,15 +104,13 @@ final class TextTaskWorker<R, U, E extends Exception> {
     return controller.stream;
   }
 
-  void _check(String text) {
+  void _check() {
     if (_disposing) throw StateError('$_name has been disposed.');
     if (_failure case final error?) throw error;
-    if (text.contains('\u0000')) {
-      throw ArgumentError.value(text, 'text', 'Must not contain NUL.');
-    }
   }
 
   /// Drain queued requests, release the native task and wait for worker exit.
+  @override
   Future<void> dispose() {
     _disposing = true;
     return _disposeFuture ??= _close();
@@ -115,7 +119,7 @@ final class TextTaskWorker<R, U, E extends Exception> {
   Future<void> _close() async {
     try {
       if (_failure == null) {
-        final request = _Request<R, U, E>();
+        final request = _Request<R, U>();
         final id = _nextId++;
         _pending[id] = request;
         _commands!.send((id, null, false));
@@ -134,22 +138,22 @@ final class TextTaskWorker<R, U, E extends Exception> {
       case (int id, U update):
         final request = _pending[id];
         if (request != null && !request.cancelled) request.updates?.add(update);
-      case (int id, R? result, E? error):
+      case (int id, R? result, TaskException? error):
         _pending.remove(id)?.complete(result, error);
-      case E error:
+      case TaskException error:
         _fail(error);
       case List<dynamic> error:
-        _fail(_exception(StateError('Worker failed: ${error.join('\n')}')));
+        _fail(TaskException('Worker failed: ${error.join('\n')}'));
       case null:
         if (!_ready.isCompleted || _pending.isNotEmpty || !_disposing) {
-          _fail(_exception(StateError('$_name worker exited.')));
+          _fail(TaskException('$_name worker exited.'));
         }
         _events.close();
         _exited.complete();
     }
   }
 
-  void _fail(E error) {
+  void _fail(TaskException error) {
     _failure ??= error;
     if (!_ready.isCompleted) _ready.completeError(error);
     for (final request in _pending.values) {
@@ -159,14 +163,14 @@ final class TextTaskWorker<R, U, E extends Exception> {
   }
 }
 
-final class _Request<R, U, E extends Exception> {
+final class _Request<R, U> {
   _Request({this.updates});
   final result = Completer<R?>();
   final finished = Completer<void>();
   final StreamController<U>? updates;
   bool cancelled = false;
 
-  void complete(R? value, E? error) {
+  void complete(R? value, TaskException? error) {
     finished.complete();
     final stream = updates;
     if (stream != null) {
@@ -180,35 +184,35 @@ final class _Request<R, U, E extends Exception> {
   }
 }
 
-Future<void> _worker<R, U, E extends Exception, O>(
-  (SendPort, O, NativeTextTask<R, U> Function(O), E Function(Object)) initial,
+Future<void> _worker<I extends Object, R, U, O>(
+  (SendPort, O, NativeTextTask<I, R, U> Function(O)) initial,
 ) async {
-  final (parent, options, create, exception) = initial;
+  final (parent, options, create) = initial;
   final commands = ReceivePort();
-  NativeTextTask<R, U>? task;
+  NativeTextTask<I, R, U>? task;
   try {
     task = create(options);
     parent.send(commands.sendPort);
     await for (final dynamic message in commands) {
-      final (id, text, streaming) = message as (int, String?, bool);
+      final (id, input, streaming) = message as (int, I?, bool);
       R? result;
-      E? failure;
+      TaskException? failure;
       try {
-        if (text == null) {
+        if (input == null) {
           task.close();
         } else if (streaming) {
-          await task.stream(text, (update) => parent.send((id, update)));
+          await task.stream(input, (update) => parent.send((id, update)));
         } else {
-          result = task.run(text);
+          result = task.run(input);
         }
       } catch (error) {
-        failure = exception(error);
+        failure = taskException(error);
       }
       parent.send((id, result, failure));
-      if (text == null) break;
+      if (input == null) break;
     }
   } catch (error) {
-    parent.send(exception(error));
+    parent.send(taskException(error));
   } finally {
     try {
       task?.close();

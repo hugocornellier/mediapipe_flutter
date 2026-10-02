@@ -11,7 +11,7 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../interface/vision_types.dart';
+import '../types/vision_types.dart';
 import 'native_ios_sdk.dart';
 import 'pixel_conversion.dart';
 

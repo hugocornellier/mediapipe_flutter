@@ -93,7 +93,7 @@ Future<void> main() async {
     ];
     final cases = [
       for (var f = 0; f < fixtures.length; f++)
-        for (final delegate in VisionDelegate.values)
+        for (final delegate in Delegate.values)
           for (final paced in [false, true]) (f, delegate, paced),
     ];
     final random = math.Random(9182026);
@@ -161,7 +161,7 @@ Future<void> main() async {
     }
     // Separate native stage timings avoid adding stopwatches to public calls.
     for (final f in fixtures) {
-      for (final delegate in VisionDelegate.values) {
+      for (final delegate in Delegate.values) {
         final profile = await Isolate.run(() => _profile(f, model, delegate));
         (report['runs'] as List).add(profile);
         await save();
@@ -187,11 +187,7 @@ Future<void> main() async {
   }
 }
 
-Map<String, Object?> _profile(
-  _Fixture f,
-  Uint8List model,
-  VisionDelegate delegate,
-) {
+Map<String, Object?> _profile(_Fixture f, Uint8List model, Delegate delegate) {
   final task = NativeFaceLandmarker(
     FaceLandmarkerOptions(
       modelBytes: model,

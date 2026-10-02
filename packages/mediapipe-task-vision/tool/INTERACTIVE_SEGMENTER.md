@@ -55,15 +55,15 @@ them. Build hooks download native libraries, not models.
 final task = await InteractiveSegmenter.create(
   InteractiveSegmenterOptions(
     modelPath: '/absolute/path/interactive_segmentation.task',
-    delegate: VisionDelegate.cpu,
+    delegate: Delegate.cpu,
   ),
 );
 try {
   await task.setImage(VisionImage.fromFile('/absolute/path/photo.jpg'));
   final history = [
-    SegmentationStroke(
-      brushMode: SegmentationBrushMode.positive,
-      points: [SegmentationPoint(x: 0.66, y: 0.55)],
+    Stroke(
+      brushMode: BrushMode.positive,
+      points: [const NormalizedKeypoint(x: 0.66, y: 0.55)],
     ),
   ];
   final mask = await task.segment(history);
@@ -113,8 +113,8 @@ not part of the Interactive Segmenter API.
 
 ## GPU status
 
-`queryInteractiveSegmenterCapabilities()` (exported by the vision package and
-its standalone `capabilities.dart` entry point) returns supported delegates,
+`queryInteractiveSegmenterCapabilities()` (exported by
+`mediapipe_vision.dart`) returns supported delegates,
 required macOS version/architecture and unavailable-delegate explanations. It
 does not load a model. Creation checks the same support information before
 starting a worker. The shared
@@ -122,7 +122,8 @@ starting a worker. The shared
 repeated strokes, image replacement, reloading and process memory alongside the
 three modern text tasks.
 
-`VisionDelegate.gpu` fails explicitly for this task. The official 1.0.1 macOS
+`Delegate.gpu` fails explicitly for this task, with a
+`RuntimeUnavailableException`. The official 1.0.1 macOS
 runtime's `HeatmapFromStrokesCalculatorGl` requests GLSL 330 in a macOS OpenGL
 2.1 context and fails to compile its shader. This was reproduced using the
 official Python API with valid RGBA input outside the sandbox.

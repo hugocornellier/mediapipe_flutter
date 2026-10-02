@@ -165,14 +165,14 @@ void main() {
       expect(platform.frames.hasListener, isFalse);
       expect(platform.disposed, 1);
       // Switch backend after draining the old task, then switch back below.
-      await session.start(_description, delegate: VisionDelegate.gpu);
-      expect(session.delegate, VisionDelegate.gpu);
+      await session.start(_description, delegate: Delegate.gpu);
+      expect(session.delegate, Delegate.gpu);
       expect(session.error, isNull);
       platform.frames.add(image);
       await _until(() => session.processedFrames == 1);
       expect(session.result!.faceLandmarks, hasLength(1));
-      await session.start(_description, delegate: VisionDelegate.cpu);
-      expect(session.delegate, VisionDelegate.cpu);
+      await session.start(_description, delegate: Delegate.cpu);
+      expect(session.delegate, Delegate.cpu);
       platform.frames.add(image);
       await _until(() => session.processedFrames == 1);
       expect(session.result!.faceLandmarks.single, hasLength(478));

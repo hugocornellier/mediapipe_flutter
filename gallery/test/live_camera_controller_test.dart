@@ -48,7 +48,7 @@ void main() {
     CameraPlatform.instance = original;
   });
 
-  Future<void> started({VisionDelegate? delegate}) async {
+  Future<void> started({Delegate? delegate}) async {
     await controller.findCameras();
     await controller.start(delegate: delegate, modelAsset: 'model.task');
     expect(controller.error, isNull);
@@ -60,7 +60,7 @@ void main() {
   test('opens the task, starts capture and prefers the front camera', () async {
     await started();
     expect(controller.description!.name, 'front');
-    expect(task.opened, [VisionDelegate.cpu]);
+    expect(task.opened, [Delegate.cpu]);
     expect(camera.created, ['front']);
     expect(camera.activeStreams, 1);
     expect(controller.changing, isFalse);
@@ -219,27 +219,27 @@ void main() {
     await controller.findCameras();
     camera.initializeGate = Completer<void>();
     final first = controller.start(
-      delegate: VisionDelegate.cpu,
+      delegate: Delegate.cpu,
       modelAsset: 'model.task',
     );
     await settle();
-    expect(task.opened, [VisionDelegate.cpu]);
-    final second = controller.start(delegate: VisionDelegate.gpu);
+    expect(task.opened, [Delegate.cpu]);
+    final second = controller.start(delegate: Delegate.gpu);
     camera.initializeGate!.complete();
     camera.initializeGate = null;
     await Future.wait([first, second]);
-    expect(task.opened, [VisionDelegate.cpu, VisionDelegate.gpu]);
+    expect(task.opened, [Delegate.cpu, Delegate.gpu]);
     expect(task.closed, 1, reason: 'the CPU task was closed, not leaked');
     expect(camera.disposed, 1);
     expect(camera.created, ['front', 'front']);
-    expect(controller.delegate, VisionDelegate.gpu);
+    expect(controller.delegate, Delegate.gpu);
     expect(controller.running, isTrue);
     expect(controller.error, isNull);
   });
 
   test('an inference failure stops capture and reports the message', () async {
     await started();
-    task.failure = const VisionTaskException('graph aborted');
+    task.failure = const TaskException('graph aborted');
     camera.emit();
     await settle();
     await settle();
@@ -254,23 +254,20 @@ void main() {
 
   test('a refused GPU falls back to CPU with a visible notice', () async {
     task.openFailure = (
-      VisionDelegate.gpu,
-      const VisionTaskException(
+      Delegate.gpu,
+      const TaskException(
         'Service "kGpuService" ... GPU emulation detected',
         gpuUnavailable: true,
       ),
     );
     await controller.findCameras();
-    await controller.start(
-      delegate: VisionDelegate.gpu,
-      modelAsset: 'model.task',
-    );
+    await controller.start(delegate: Delegate.gpu, modelAsset: 'model.task');
     // The CPU restart is queued behind the refused start; let it run.
     for (var i = 0; i < 20 && !controller.running; i++) {
       await settle();
     }
-    expect(task.opened, [VisionDelegate.gpu, VisionDelegate.cpu]);
-    expect(controller.delegate, VisionDelegate.cpu);
+    expect(task.opened, [Delegate.gpu, Delegate.cpu]);
+    expect(controller.delegate, Delegate.cpu);
     expect(controller.running, isTrue);
     expect(controller.error, isNull);
     expect(controller.notice, contains('GPU unavailable, using CPU'));
@@ -281,37 +278,28 @@ void main() {
     'a refused GPU on a generic task, such as hand, also falls back',
     () async {
       task.openFailure = (
-        VisionDelegate.gpu,
-        const VisionTaskException(
+        Delegate.gpu,
+        const TaskException(
           'Service "kGpuService" ... Unable to initialize EGL',
           gpuUnavailable: true,
         ),
       );
       await controller.findCameras();
-      await controller.start(
-        delegate: VisionDelegate.gpu,
-        modelAsset: 'model.task',
-      );
+      await controller.start(delegate: Delegate.gpu, modelAsset: 'model.task');
       for (var i = 0; i < 20 && !controller.running; i++) {
         await settle();
       }
-      expect(task.opened, [VisionDelegate.gpu, VisionDelegate.cpu]);
+      expect(task.opened, [Delegate.gpu, Delegate.cpu]);
       expect(controller.running, isTrue);
       expect(controller.notice, contains('Unable to initialize EGL'));
     },
   );
 
   test('other GPU failures are errors, never a silent fallback', () async {
-    task.openFailure = (
-      VisionDelegate.gpu,
-      const VisionTaskException('model is corrupt'),
-    );
+    task.openFailure = (Delegate.gpu, const TaskException('model is corrupt'));
     await controller.findCameras();
-    await controller.start(
-      delegate: VisionDelegate.gpu,
-      modelAsset: 'model.task',
-    );
-    expect(task.opened, [VisionDelegate.gpu]);
+    await controller.start(delegate: Delegate.gpu, modelAsset: 'model.task');
+    expect(task.opened, [Delegate.gpu]);
     expect(controller.running, isFalse);
     expect(controller.error, contains('model is corrupt'));
     expect(controller.notice, isNull);
@@ -335,7 +323,7 @@ void main() {
     expect(controller.isFrontCamera, isFalse);
     expect(camera.created, ['front', 'back']);
     expect(camera.disposed, 1);
-    expect(task.opened, [VisionDelegate.cpu]);
+    expect(task.opened, [Delegate.cpu]);
     expect(task.closed, 0);
     expect(controller.running, isTrue);
   });
@@ -382,10 +370,10 @@ void main() {
   });
 
   test('start re-uses the previous delegate and model by default', () async {
-    await started(delegate: VisionDelegate.gpu);
+    await started(delegate: Delegate.gpu);
     await controller.stop();
     await controller.start();
-    expect(task.opened, [VisionDelegate.gpu, VisionDelegate.gpu]);
+    expect(task.opened, [Delegate.gpu, Delegate.gpu]);
     expect(controller.running, isTrue);
   });
 

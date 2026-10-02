@@ -7,10 +7,8 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:mediapipe_text/mediapipe_text.dart'
-    show RuntimeUnavailableException;
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_text/text_summarizer.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:mediapipe_text/src/io/third_party/mediapipe/summarizer_bindings.dart'
     as mp;
 import 'package:test/test.dart';
@@ -105,7 +103,7 @@ void main() {
           final task = await create(mode, budget);
           try {
             expect(task.mode, mode);
-            expect(task.delegate, TextDelegate.cpu);
+            expect(task.delegate, Delegate.cpu);
             for (final entry in cases.where(
               (e) => modeFor(e) == mode && e['max_num_tokens'] == budget,
             )) {
@@ -129,7 +127,7 @@ void main() {
         final entry = (reference['errors'] as List).singleWhere(
           (e) => e['mode'] == mode.name.toUpperCase(),
         );
-        final error = isA<TextTaskException>().having(
+        final error = isA<TaskException>().having(
           (e) => e.message,
           'message',
           entry['message'],
@@ -171,7 +169,10 @@ void main() {
       compare(result, cases[1]);
       compare(otherMode, bullets);
       await expectLater(tldr.summarize('closed'), throwsStateError);
-      expect(() => tldr.summarizeStream('closed'), throwsStateError);
+      await expectLater(
+        tldr.summarizeStream('closed').toList(),
+        throwsStateError,
+      );
     },
   );
 
@@ -245,11 +246,11 @@ void main() {
   test('creation errors propagate without hanging', () async {
     await expectLater(
       TextSummarizer.create(TextSummarizerOptions(modelPath: '$model.missing')),
-      throwsA(isA<TextTaskException>()),
+      throwsA(isA<TaskException>()),
     );
     await expectLater(
       TextSummarizer.create(
-        TextSummarizerOptions(modelPath: model, delegate: TextDelegate.gpu),
+        TextSummarizerOptions(modelPath: model, delegate: Delegate.gpu),
       ),
       throwsA(
         isA<RuntimeUnavailableException>().having(
@@ -278,7 +279,10 @@ void main() {
     final task = await create(TextSummarizerMode.tldr);
     try {
       await expectLater(task.summarize('bad\u0000text'), throwsArgumentError);
-      expect(() => task.summarizeStream('bad\u0000text'), throwsArgumentError);
+      await expectLater(
+        task.summarizeStream('bad\u0000text').toList(),
+        throwsArgumentError,
+      );
       compare(await task.summarize(cases.first['input']), cases.first);
     } finally {
       await task.dispose();

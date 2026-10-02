@@ -1108,93 +1108,6 @@ MpStatus MpImageSegmenterSegmentImage(
 
 @ffi.Native<
   ffi.UnsignedInt Function(
-    MpInteractiveSegmenterLegacyPtr,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpInteractiveSegmenterLegacyClose')
-external int _MpInteractiveSegmenterLegacyClose(
-  MpInteractiveSegmenterLegacyPtr segmenter,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpInteractiveSegmenterLegacyClose(
-  MpInteractiveSegmenterLegacyPtr segmenter,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpInteractiveSegmenterLegacyClose(segmenter, error_msg),
-  );
-}
-
-@ffi.Native<ffi.Void Function(ffi.Pointer<MpImageSegmenterResult>)>()
-external void MpInteractiveSegmenterLegacyCloseResult(
-  ffi.Pointer<MpImageSegmenterResult> result,
-);
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    ffi.Pointer<MpInteractiveSegmenterLegacyOptions>,
-    ffi.Pointer<MpInteractiveSegmenterLegacyPtr>,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpInteractiveSegmenterLegacyCreate')
-external int _MpInteractiveSegmenterLegacyCreate(
-  ffi.Pointer<MpInteractiveSegmenterLegacyOptions> options,
-  ffi.Pointer<MpInteractiveSegmenterLegacyPtr> segmenter,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpInteractiveSegmenterLegacyCreate(
-  ffi.Pointer<MpInteractiveSegmenterLegacyOptions> options,
-  ffi.Pointer<MpInteractiveSegmenterLegacyPtr> segmenter,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpInteractiveSegmenterLegacyCreate(options, segmenter, error_msg),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpInteractiveSegmenterLegacyPtr,
-    MpImagePtr,
-    ffi.Pointer<MpRegionOfInterest>,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Pointer<MpImageSegmenterResult>,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpInteractiveSegmenterLegacySegmentImage')
-external int _MpInteractiveSegmenterLegacySegmentImage(
-  MpInteractiveSegmenterLegacyPtr segmenter,
-  MpImagePtr image,
-  ffi.Pointer<MpRegionOfInterest> roi,
-  ffi.Pointer<MpImageProcessingOptions> image_processing_options,
-  ffi.Pointer<MpImageSegmenterResult> result,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpInteractiveSegmenterLegacySegmentImage(
-  MpInteractiveSegmenterLegacyPtr segmenter,
-  MpImagePtr image,
-  ffi.Pointer<MpRegionOfInterest> roi,
-  ffi.Pointer<MpImageProcessingOptions> image_processing_options,
-  ffi.Pointer<MpImageSegmenterResult> result,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpInteractiveSegmenterLegacySegmentImage(
-      segmenter,
-      image,
-      roi,
-      image_processing_options,
-      result,
-      error_msg,
-    ),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
     MpObjectDetectorPtr,
     ffi.Pointer<ffi.Pointer<ffi.Char>>,
   )
@@ -2238,21 +2151,6 @@ final class MpImageSegmenterResult extends ffi.Struct {
     ..ref.quality_scores_count = quality_scores_count;
 }
 
-final class MpInteractiveSegmenterLegacyInternal extends ffi.Opaque {}
-
-final class MpInteractiveSegmenterLegacyOptions extends ffi.Struct {
-  external MpBaseOptions base_options;
-
-  @ffi.Bool()
-  external bool output_confidence_masks;
-
-  @ffi.Bool()
-  external bool output_category_mask;
-}
-
-typedef MpInteractiveSegmenterLegacyPtr =
-    ffi.Pointer<MpInteractiveSegmenterLegacyInternal>;
-
 final class MpLandmark extends ffi.Struct {
   @ffi.Float()
   external double x;
@@ -2572,52 +2470,6 @@ final class MpRectF extends ffi.Struct {
     ..ref.top = top
     ..ref.bottom = bottom
     ..ref.right = right;
-}
-
-final class MpRegionOfInterest extends ffi.Struct {
-  @ffi.UnsignedInt()
-  external int formatAsInt;
-
-  MpRegionOfInterestFormat get format =>
-      MpRegionOfInterestFormat.fromValue(formatAsInt);
-  set format(MpRegionOfInterestFormat value) => formatAsInt = value.value;
-
-  external ffi.Pointer<MpNormalizedKeypoint> keypoint;
-
-  external ffi.Pointer<MpNormalizedKeypoint> scribble;
-
-  @ffi.Uint32()
-  external int scribble_count;
-
-  static ffi.Pointer<MpRegionOfInterest> $allocate(
-    ffi.Allocator $allocator, {
-    required MpRegionOfInterestFormat format,
-    required ffi.Pointer<MpNormalizedKeypoint> keypoint,
-    required ffi.Pointer<MpNormalizedKeypoint> scribble,
-    required int scribble_count,
-  }) => $allocator<MpRegionOfInterest>()
-    ..ref.format = format
-    ..ref.keypoint = keypoint
-    ..ref.scribble = scribble
-    ..ref.scribble_count = scribble_count;
-}
-
-enum MpRegionOfInterestFormat {
-  MP_REGION_OF_INTEREST_FORMAT_UNSPECIFIED(0),
-  MP_REGION_OF_INTEREST_FORMAT_KEYPOINT(1),
-  MP_REGION_OF_INTEREST_FORMAT_SCRIBBLE(2);
-
-  final int value;
-  const MpRegionOfInterestFormat(this.value);
-
-  static MpRegionOfInterestFormat fromValue(int value) => switch (value) {
-    0 => MP_REGION_OF_INTEREST_FORMAT_UNSPECIFIED,
-    1 => MP_REGION_OF_INTEREST_FORMAT_KEYPOINT,
-    2 => MP_REGION_OF_INTEREST_FORMAT_SCRIBBLE,
-    _ => throw ArgumentError(
-      'Unknown value for MpRegionOfInterestFormat: $value',
-    ),
-  };
 }
 
 enum MpRunningMode {

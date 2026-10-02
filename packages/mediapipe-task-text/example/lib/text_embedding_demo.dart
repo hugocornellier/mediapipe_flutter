@@ -29,7 +29,7 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
     with AutomaticKeepAliveClientMixin<TextEmbeddingDemo> {
   final TextEditingController _controller = TextEditingController();
   List<EmbeddingFeedItem> feed = [];
-  EmbeddingType type = EmbeddingType.quantized;
+  bool quantize = true;
   bool l2Normalize = true;
 
   TextEmbedder? _embedder;
@@ -50,12 +50,6 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
     _revision++;
     _controller.dispose();
     unawaited(_embedder?.dispose() ?? Future<void>.value());
-    final resultsIter = feed.where(
-      (el) => el._type == _EmbeddingFeedItemType.result,
-    );
-    for (final feedItem in resultsIter) {
-      feedItem.embeddingResult!.result?.dispose();
-    }
     super.dispose();
   }
 
@@ -75,7 +69,7 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
       'Changing embedder configuration not supported when an embedder is '
       'supplied to the widget.',
     );
-    setState(() => type = type.opposite);
+    setState(() => quantize = !quantize);
     _initEmbedder();
   }
 
@@ -108,19 +102,20 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
     _initializing = true;
     _error = null;
     final normalize = l2Normalize;
-    final quantize = type == EmbeddingType.quantized;
+    final quantizeVectors = quantize;
     try {
       await previous?.dispose();
       final bytes = await rootBundle.load(
         'assets/universal_sentence_encoder.tflite',
       );
       final task = await TextEmbedder.create(
-        TextEmbedderOptions.fromAssetBuffer(
-          bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
-          embedderOptions: EmbedderOptions(
-            l2Normalize: normalize,
-            quantize: quantize,
+        TextEmbedderOptions(
+          modelBytes: bytes.buffer.asUint8List(
+            bytes.offsetInBytes,
+            bytes.lengthInBytes,
           ),
+          l2Normalize: normalize,
+          quantize: quantizeVectors,
         ),
       );
       if (!mounted || revision != _revision) {
@@ -222,7 +217,7 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
       'Comparing "${feed[lowIndex].embeddingResult!.value}" and '
       '"${feed[highIndex].embeddingResult!.value}"',
     );
-    final similarity = await (await embedder).cosineSimilarity(
+    final similarity = TextEmbedder.cosineSimilarity(
       feed[lowIndex].embeddingResult!.result!.embeddings.first,
       feed[highIndex].embeddingResult!.result!.embeddings.first,
     );
@@ -252,7 +247,7 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
                           children: <Widget>[
                             const Text('Float:'),
                             Checkbox(
-                              value: type == EmbeddingType.float,
+                              value: !quantize,
                               onChanged:
                                   widget.embedder != null ||
                                       _initializing ||
@@ -269,7 +264,7 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
                           children: <Widget>[
                             const Text('Quantize:'),
                             Checkbox(
-                              value: type == EmbeddingType.quantized,
+                              value: quantize,
                               onChanged:
                                   widget.embedder != null ||
                                       _initializing ||
@@ -386,10 +381,8 @@ class TextEmbedderResultDisplay extends StatelessWidget {
       return const CircularProgressIndicator.adaptive();
     }
     final embedding = embeddedText.result!.embeddings.last;
-    String embeddingDisplay = switch (embedding.type) {
-      EmbeddingType.float => '${embedding.floatEmbedding!}',
-      EmbeddingType.quantized => '${embedding.quantizedEmbedding!}',
-    };
+    final embeddingDisplay =
+        '${embedding.floatEmbedding ?? embedding.quantizedEmbedding!}';
     // Replace "..." with the results
     return Card(
       key: Key('Embedding::"${embeddedText.value}" $index'),
@@ -407,9 +400,9 @@ class TextEmbedderResultDisplay extends StatelessWidget {
             Wrap(
               spacing: 4,
               children: <Widget>[
-                if (embedding.type == EmbeddingType.float)
+                if (embedding.floatEmbedding != null)
                   _embeddingAttribute('Float', Colors.blue[600]!),
-                if (embedding.type == EmbeddingType.quantized)
+                if (embedding.quantizedEmbedding != null)
                   _embeddingAttribute('Quantized', Colors.orange[600]!),
                 if (embeddedText.l2Normalized)
                   _embeddingAttribute('L2 Normalized', Colors.green[600]!),
@@ -437,7 +430,7 @@ class TextEmbedderResultDisplay extends StatelessWidget {
   }
 }
 
-/// Bundled [TextEmbeddingResult], the original text, and whether
+/// Bundled [TextEmbedderResult], the original text, and whether
 /// that value was embedded with L2 normalization.
 ///
 /// See also:
@@ -474,7 +467,8 @@ class TextWithEmbedding {
       other.result != null &&
       other.result!.embeddings.isNotEmpty &&
       l2Normalized == other.l2Normalized &&
-      result!.embeddings.first.type == other.result!.embeddings.first.type;
+      (result!.embeddings.first.floatEmbedding == null) ==
+          (other.result!.embeddings.first.floatEmbedding == null);
 }
 
 /// Contains the various types of application state that can appear in the demo

@@ -37,24 +37,24 @@ void main() {
         final assets = await GalleryAssets.unpack();
         final model = await _model();
         final frame = await loadSample('portrait.jpg');
-        final references = <VisionDelegate, VisionEmbedding>{};
+        final references = <Delegate, Embedding>{};
         for (final delegate in [
-          VisionDelegate.cpu,
-          if (_gpu != 'skip') VisionDelegate.gpu,
+          Delegate.cpu,
+          if (_gpu != 'skip') Delegate.gpu,
         ]) {
           final ImageEmbedder task;
           try {
             task = await ImageEmbedder.create(
               ImageEmbedderOptions(modelBytes: model, delegate: delegate),
             );
-          } on VisionTaskException catch (error) {
-            if (delegate == VisionDelegate.cpu || _gpu == 'required') rethrow;
+          } on TaskException catch (error) {
+            if (delegate == Delegate.cpu || _gpu == 'required') rethrow;
             _report('gpu_unavailable', {'error': error.message});
             continue;
           }
           try {
             final file = _single(
-              await task.embedImage(
+              await task.embed(
                 VisionImage.fromFile(assets.path('portrait.jpg')),
               ),
             );
@@ -62,17 +62,17 @@ void main() {
             // inference (cosine 0.965 between them, in its wheel, browser
             // runtime and Android SDK alike), so each delegate is held to the
             // wheel's output from the same delegate.
-            final expected = delegate == VisionDelegate.gpu
+            final expected = delegate == Delegate.gpu
                 ? officialGpuEmbedderReference
                 : officialEmbedderReference;
             expect(file.floatEmbedding, hasLength(expected.length));
             final official = _cosine(file.floatEmbedding!, expected);
             expect(official, greaterThan(_crossRuntime));
-            final reference = await task.embedImage(frame.image);
+            final reference = await task.embed(frame.image);
             references[delegate] = _single(reference);
             expect(reference.imageWidth, frame.width);
             for (final format in VisionPixelFormat.values) {
-              final padded = await task.embedImage(paddedImage(frame, format));
+              final padded = await task.embed(paddedImage(frame, format));
               expect(
                 ImageEmbedder.cosineSimilarity(
                   _single(reference),
@@ -84,10 +84,7 @@ void main() {
             }
             for (final turn in [90, 180, 270]) {
               final rotated = rotatedImage(frame, (360 - turn) % 360);
-              final result = await task.embedImage(
-                rotated,
-                rotationDegrees: turn,
-              );
+              final result = await task.embed(rotated, rotationDegrees: turn);
               expect(
                 result.imageWidth,
                 turn % 180 == 0 ? frame.width : frame.height,
@@ -104,7 +101,7 @@ void main() {
             }
             // A full-frame region is the whole image, which also pins the
             // region's normalized coordinates.
-            final whole = await task.embedImage(
+            final whole = await task.embed(
               frame.image,
               regionOfInterest: VisionRegionOfInterest(
                 left: 0,
@@ -129,12 +126,12 @@ void main() {
             await task.dispose();
           }
           await task.dispose();
-          await expectLater(task.embedImage(frame.image), throwsStateError);
+          await expectLater(task.embed(frame.image), throwsStateError);
         }
         if (references.length == 2) {
           final similarity = ImageEmbedder.cosineSimilarity(
-            references[VisionDelegate.cpu]!,
-            references[VisionDelegate.gpu]!,
+            references[Delegate.cpu]!,
+            references[Delegate.gpu]!,
           );
           // Recorded, not asserted: the two delegates legitimately differ.
           _report('cpu_gpu', {'cosine': similarity});
@@ -152,12 +149,12 @@ void main() {
           ),
         );
         try {
-          final unit = _single(await normalized.embedImage(frame.image));
+          final unit = _single(await normalized.embed(frame.image));
           final norm = math.sqrt(
             unit.floatEmbedding!.fold(0.0, (sum, v) => sum + v * v),
           );
           expect(norm, closeTo(1, 1e-4));
-          final bytes = _single(await quantized.embedImage(frame.image));
+          final bytes = _single(await quantized.embed(frame.image));
           expect(bytes.floatEmbedding, isNull);
           expect(
             bytes.quantizedEmbedding,
@@ -196,7 +193,7 @@ void main() {
           ),
         );
         try {
-          await expectLater(task.embedImage(frame.image), throwsStateError);
+          await expectLater(task.embed(frame.image), throwsStateError);
           await expectLater(
             task.embedForVideo(frame.image, timestampMilliseconds: -1),
             throwsArgumentError,
@@ -223,7 +220,7 @@ void main() {
   );
 }
 
-VisionEmbedding _single(ImageEmbedderResult result) {
+Embedding _single(ImageEmbedderResult result) {
   expect(result.embeddings, hasLength(1));
   return result.embeddings.single;
 }

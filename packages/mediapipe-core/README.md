@@ -27,9 +27,34 @@ hooks:
 
 Without it a macOS build still succeeds, so `dart run` keeps working in an
 app that only ships iOS or Android. Capability queries then report those tasks
-unavailable, and creating one throws an `UnsupportedError` with this fix.
+unavailable, and creating one throws a `RuntimeUnavailableException` whose
+`fix` names this setting.
 `tasks_runtime: false` turns the engine off where it is on by default; a
 family that needs it there fails the build with the fix instead.
+
+## What every family shares
+
+Each family's library (`package:mediapipe_vision/mediapipe_vision.dart`,
+`mediapipe_text` and `mediapipe_audio`) re-exports
+`package:mediapipe_core/mediapipe_core.dart`, so these types are the same
+on every platform and in every family:
+
+- `TaskOptions`, the base of every options class: exactly one of `model` (a
+  pinned `DownloadAsset`), `modelPath` and `modelBytes`, plus `delegate`
+  (`Delegate.cpu` or `Delegate.gpu`).
+- The value types results are made of, named after Google's containers:
+  `MediaPipeCategory`, `Classifications`, `Embedding`, `Detection`,
+  `BoundingBox`, `NormalizedKeypoint`, `NormalizedLandmark`, `Landmark`,
+  `Matrix`, `ConfidenceMask` and `CategoryMask`.
+- `MediaPipeException` and its subtypes: `RuntimeUnavailableException` (with a
+  `fix`), `ModelDownloadException` and `TaskException` (Google's runtime
+  refused a call; `statusCode`, `gpuUnavailable`).
+- `TaskCapabilities` and `TaskPlatform`, which every task's
+  `queryXxxCapabilities()` returns; `ModelStore` and `ModelSource`; and
+  `MediaPipeWebRuntime`.
+
+`package:mediapipe_core/platform_interface.dart` holds what family packages
+and platform plugins need and apps do not.
 
 ## Verified downloads and offline builds
 
@@ -111,11 +136,11 @@ Downloading at run time is opt-in. Set `ModelStore.allowDownloads = true`
 before creating tasks to let `model:` download what the app does not bundle;
 calling `get` or `prefetch` directly always may download.
 
-`package:mediapipe_core/model_store.dart` exports `ModelStore` and
-`DownloadAsset`. A family model pin can be passed directly to `get` or
-`prefetch`; `clear` removes the store's entries. On native platforms `get`
-returns a `File` in application support, whose path can be given to the task
-options. Each model keeps its original file name. Downloads go to an adjacent
+`ModelStore` and `DownloadAsset` come with every family's library. A family
+model pin can be passed directly to `get` or `prefetch`; `clear` removes the
+store's entries. `get` and `find` return a `ModelSource`: on native platforms
+its `path` is a file in application support, which can be given to the task
+options as `modelPath`. Each model keeps its original file name. Downloads go to an adjacent
 temporary file under a per-model lock shared across isolates and processes,
 and cached bytes are checked again on every read. iOS excludes this model folder
 from iCloud backup. On web `get` returns verified bytes from Cache Storage
@@ -125,14 +150,13 @@ Core uses Flutter's `path_provider` for application support rather than
 asking every family to supply a directory, so the storage policy stays shared.
 
 ```dart
-import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
 
 Future<void> prepareModels() async {
   final store = ModelStore();
   await store.prefetch(TextModels.bertClassifier);
-  final file = await store.get(TextModels.bertClassifier); // native: a File
-  print(file.path);
+  final source = await store.get(TextModels.bertClassifier);
+  print(source.path); // A file on native platforms; `bytes` in browsers.
 }
 ```
 
@@ -159,7 +183,7 @@ loading the bundle and WASM through Blob URLs. Then, before creating the
 first task:
 
 ```dart
-import 'package:mediapipe_core/web_runtime.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 
 void useSelfHostedRuntime() {
   MediaPipeWebRuntime.baseUrl = 'mediapipe/';
@@ -167,8 +191,8 @@ void useSelfHostedRuntime() {
 ```
 
 `baseUrl` is an npm-style root, so another npm CDN such as
-`https://unpkg.com/` works as well. Each family's
-`package:mediapipe_<family>/web_runtime.dart` exports the same class.
+`https://unpkg.com/` works as well. Each family's library exports the same
+class, and it does nothing off the web.
 Serve the files with CORS and CSP rules appropriate to your origin.
 
 ## Issues and feedback

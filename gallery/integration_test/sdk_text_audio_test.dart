@@ -43,33 +43,49 @@ void main() {
       );
       final bert = await asset('assets/models/bert_classifier.tflite');
       for (final (text, options, expected)
-          in <(String, ClassifierOptions, List<(String, double)>)>[
+          in <
+            (
+              String,
+              ({int maxResults, double scoreThreshold, List<String> denylist}),
+              List<(String, double)>,
+            )
+          >[
             (
               'Hello, world!',
-              const ClassifierOptions(),
+              (maxResults: -1, scoreThreshold: 0.0, denylist: const <String>[]),
               [('positive', 0.992178), ('negative', 0.007822)],
             ),
             (
               'This was a terrible movie. I hated every minute.',
-              const ClassifierOptions(),
+              (maxResults: -1, scoreThreshold: 0.0, denylist: const <String>[]),
               [('negative', 0.998278), ('positive', 0.001722)],
             ),
             (
               'Hello, world!',
-              const ClassifierOptions(maxResults: 1),
+              (maxResults: 1, scoreThreshold: 0.0, denylist: const <String>[]),
               [('positive', 0.992178)],
             ),
             (
               'Hello, world!',
-              const ClassifierOptions(categoryDenylist: ['positive']),
+              (
+                maxResults: -1,
+                scoreThreshold: 0.0,
+                denylist: const ['positive'],
+              ),
               [('negative', 0.007822)],
             ),
-            ('Hello, world!', const ClassifierOptions(scoreThreshold: 1), []),
+            (
+              'Hello, world!',
+              (maxResults: -1, scoreThreshold: 1.0, denylist: const <String>[]),
+              [],
+            ),
           ]) {
         final task = await TextClassifier.create(
-          TextClassifierOptions.fromAssetBuffer(
-            bert,
-            classifierOptions: options,
+          TextClassifierOptions(
+            modelBytes: bert,
+            maxResults: options.maxResults,
+            scoreThreshold: options.scoreThreshold,
+            categoryDenylist: options.denylist,
           ),
         );
         try {
@@ -88,7 +104,7 @@ void main() {
       }
       // Requests run in order; none is accepted after disposal.
       final ordered = await TextClassifier.create(
-        TextClassifierOptions.fromAssetBuffer(bert),
+        TextClassifierOptions(modelBytes: bert),
       );
       final results = await Future.wait([
         ordered.classify('Hello, world!'),
@@ -105,16 +121,16 @@ void main() {
       expect(() => ordered.classify('Hello'), throwsStateError);
       await expectLater(
         TextClassifier.create(
-          TextClassifierOptions.fromAssetBuffer(Uint8List.fromList([1, 2, 3])),
+          TextClassifierOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
         ),
-        throwsA(isA<TextTaskException>()),
+        throwsA(isA<TaskException>()),
       );
 
       final use = await asset(
         'assets/models/universal_sentence_encoder.tflite',
       );
       final embedder = await TextEmbedder.create(
-        TextEmbedderOptions.fromAssetBuffer(use),
+        TextEmbedderOptions(modelBytes: use),
       );
       try {
         final greeting = (await embedder.embed(
@@ -139,42 +155,33 @@ void main() {
           expect(greeting.floatEmbedding![i], closeTo(value, _scoreBound));
         }
         expect(
-          await embedder.cosineSimilarity(greeting, related),
+          TextEmbedder.cosineSimilarity(greeting, related),
           closeTo(0.9605238, _scoreBound),
         );
         expect(
-          await embedder.cosineSimilarity(greeting, different),
+          TextEmbedder.cosineSimilarity(greeting, different),
           closeTo(0.8081205, _scoreBound),
         );
       } finally {
         await embedder.dispose();
       }
       final quantizer = await TextEmbedder.create(
-        TextEmbedderOptions.fromAssetBuffer(
-          use,
-          embedderOptions: const EmbedderOptions(
-            l2Normalize: true,
-            quantize: true,
-          ),
-        ),
+        TextEmbedderOptions(modelBytes: use, l2Normalize: true, quantize: true),
       );
       try {
         final a = (await quantizer.embed('Hello, world!')).embeddings.single;
         final b = (await quantizer.embed('Hello there!')).embeddings.single;
-        expect(a.isQuantized, isTrue);
+        expect(a.quantizedEmbedding != null, isTrue);
         expect(a.quantizedEmbedding, hasLength(100));
-        expect(
-          await quantizer.cosineSimilarity(a, b),
-          closeTo(0.9590452, 1e-2),
-        );
+        expect(TextEmbedder.cosineSimilarity(a, b), closeTo(0.9590452, 1e-2));
       } finally {
         await quantizer.dispose();
       }
 
       final detector = await LanguageDetector.create(
-        LanguageDetectorOptions.fromAssetBuffer(
-          await asset('assets/models/language_detector.tflite'),
-          classifierOptions: const ClassifierOptions(maxResults: 3),
+        LanguageDetectorOptions(
+          modelBytes: await asset('assets/models/language_detector.tflite'),
+          maxResults: 3,
         ),
       );
       try {
@@ -239,12 +246,19 @@ void main() {
         expect(chunks, hasLength(expected.length));
         var worst = 0.0;
         for (final (i, (timestamp, name, score)) in expected.indexed) {
-          expect(chunks[i].timestampMs, timestamp);
-          expect(chunks[i].categories.first.name, name);
-          expect(chunks[i].categories.first.score, closeTo(score, _audioBound));
+          expect(chunks[i].timestampMilliseconds, timestamp);
+          expect(
+            chunks[i].classifications.first.categories.first.categoryName,
+            name,
+          );
+          expect(
+            chunks[i].classifications.first.categories.first.score,
+            closeTo(score, _audioBound),
+          );
           worst = math.max(
             worst,
-            (chunks[i].categories.first.score - score).abs(),
+            (chunks[i].classifications.first.categories.first.score - score)
+                .abs(),
           );
         }
         // The 48 kHz recording of the same speech is resampled by Google's
@@ -252,7 +266,10 @@ void main() {
         final resampled = await task.classify(
           decodeWav(await asset('assets/samples/speech_48000_hz_mono.wav')),
         );
-        expect(resampled.first.categories.first.name, 'Speech');
+        expect(
+          resampled.first.classifications.first.categories.first.categoryName,
+          'Speech',
+        );
         _report('audio', {'max_top_score_delta': worst});
       } finally {
         await task.dispose();
@@ -273,8 +290,14 @@ void main() {
         final chunks = await every.classify(
           decodeWav(await asset('assets/samples/speech_16000_hz_mono.wav')),
         );
-        expect(chunks.first.categories.first.name, 'Speech');
-        expect(chunks.first.categories, hasLength(greaterThan(3)));
+        expect(
+          chunks.first.classifications.first.categories.first.categoryName,
+          'Speech',
+        );
+        expect(
+          chunks.first.classifications.first.categories,
+          hasLength(greaterThan(3)),
+        );
       } finally {
         await every.dispose();
       }

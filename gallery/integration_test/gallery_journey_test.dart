@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mediapipe_vision/capabilities.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/audio_page.dart';
 import 'package:mediapipe_gallery/catalog.dart';
@@ -81,17 +80,17 @@ void main() {
     );
 
     var gpuRefused = false;
-    Set<VisionDelegate> offered(GalleryTask task) => task
+    Set<Delegate> offered(GalleryTask task) => task
         .capabilitiesFor(platform, assets.officialMacosLandmarkTasks)
         .supportedDelegates;
     // The delegates this run exercises, in the order a user would try them.
-    List<VisionDelegate> delegatesFor(GalleryTask task) => [
-      if (offered(task).contains(VisionDelegate.cpu)) VisionDelegate.cpu,
-      if (offered(task).contains(VisionDelegate.gpu) &&
+    List<Delegate> delegatesFor(GalleryTask task) => [
+      if (offered(task).contains(Delegate.cpu)) Delegate.cpu,
+      if (offered(task).contains(Delegate.gpu) &&
           _gpu != 'skip' &&
           !gpuRefused &&
           !_gpuSkipTasks.split(',').contains(task.runtimeId))
-        VisionDelegate.gpu,
+        Delegate.gpu,
     ];
 
     final visited = <String>[];
@@ -171,14 +170,13 @@ void main() {
           } else {
             for (final delegate in delegates) {
               if (choices) await tapDelegate(tester, delegate);
-              final optional =
-                  delegate == VisionDelegate.gpu && _gpu == 'optional';
+              final optional = delegate == Delegate.gpu && _gpu == 'optional';
               if (!await _liveFrames(tester, delegate, optional: optional)) {
                 gpuRefused = true;
                 _note(
                   '${task.id}: live GPU refused, CPU from here: ${_screen(tester)}',
                 );
-                await tapDelegate(tester, VisionDelegate.cpu);
+                await tapDelegate(tester, Delegate.cpu);
                 break;
               }
               checks.add('${task.id}:${delegate.name}:live');
@@ -203,8 +201,7 @@ void main() {
           // page is already on it.
           for (final delegate in delegatesFor(task).reversed) {
             if (choices) await tapDelegate(tester, delegate);
-            final optional =
-                delegate == VisionDelegate.gpu && _gpu == 'optional';
+            final optional = delegate == Delegate.gpu && _gpu == 'optional';
             if (!await _stillRan(
               tester,
               delegate,
@@ -235,18 +232,17 @@ void main() {
           String? similarity;
           for (final delegate in delegatesFor(task)) {
             if (choices) await tapDelegate(tester, delegate);
-            final optional =
-                delegate == VisionDelegate.gpu && _gpu == 'optional';
+            final optional = delegate == Delegate.gpu && _gpu == 'optional';
             similarity = await _compared(tester, delegate, optional: optional);
             if (similarity == null) {
               gpuRefused = true;
               _note(
                 '${task.id}: GPU refused, CPU from here: ${_screen(tester)}',
               );
-              await tapDelegate(tester, VisionDelegate.cpu);
+              await tapDelegate(tester, Delegate.cpu);
               similarity = await _compared(
                 tester,
-                VisionDelegate.cpu,
+                Delegate.cpu,
                 optional: false,
               );
               break;
@@ -345,7 +341,7 @@ void main() {
               await _settle(tester);
               await tester.tap(canvas);
             }
-            final label = delegate == VisionDelegate.gpu ? 'GPU' : 'CPU';
+            final label = delegate == Delegate.gpu ? 'GPU' : 'CPU';
             await _until(
               tester,
               () => _status(tester).any(
@@ -432,10 +428,10 @@ Iterable<FeedStatus> _status(WidgetTester tester) =>
 /// delegate that errors or stays silent for a minute returns false.
 Future<bool> _liveFrames(
   WidgetTester tester,
-  VisionDelegate delegate, {
+  Delegate delegate, {
   required bool optional,
 }) async {
-  final label = delegate == VisionDelegate.gpu ? 'GPU' : 'CPU';
+  final label = delegate == Delegate.gpu ? 'GPU' : 'CPU';
   final deadline = DateTime.now().add(Duration(seconds: optional ? 60 : 120));
   while (DateTime.now().isBefore(deadline)) {
     await tester.pump();
@@ -471,11 +467,11 @@ Future<bool> _liveFrames(
 /// [optional] delegate that gives none within a minute returns false.
 Future<bool> _stillRan(
   WidgetTester tester,
-  VisionDelegate delegate,
+  Delegate delegate,
   RegExp expected, {
   required bool optional,
 }) async {
-  final label = delegate == VisionDelegate.gpu ? 'GPU' : 'CPU';
+  final label = delegate == Delegate.gpu ? 'GPU' : 'CPU';
   final ran = RegExp(r'^Inference \d+\.\d ms$');
   final deadline = DateTime.now().add(Duration(seconds: optional ? 60 : 120));
   while (DateTime.now().isBefore(deadline)) {
@@ -519,10 +515,10 @@ String? _similarity(WidgetTester tester) {
 /// returns null.
 Future<String?> _compared(
   WidgetTester tester,
-  VisionDelegate delegate, {
+  Delegate delegate, {
   required bool optional,
 }) async {
-  final label = delegate == VisionDelegate.gpu ? 'GPU' : 'CPU';
+  final label = delegate == Delegate.gpu ? 'GPU' : 'CPU';
   final ran = RegExp(r'^Inference \d+\.\d ms$');
   final error = find.byKey(const ValueKey('image-embedder-error'));
   final deadline = DateTime.now().add(Duration(seconds: optional ? 60 : 120));

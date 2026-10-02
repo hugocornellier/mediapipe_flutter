@@ -12,9 +12,10 @@ import 'package:mediapipe_text/mediapipe_text.dart';
 import 'enumerate.dart';
 
 class LanguageDetectionDemo extends StatefulWidget {
-  const LanguageDetectionDemo({super.key, this.detector});
+  const LanguageDetectionDemo({super.key, this.detect});
 
-  final LanguageDetector? detector;
+  /// Replaces the model, as widget tests do.
+  final Future<LanguageDetectorResult> Function(String text)? detect;
 
   @override
   State<LanguageDetectionDemo> createState() => _LanguageDetectionDemoState();
@@ -23,7 +24,7 @@ class LanguageDetectionDemo extends StatefulWidget {
 class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
     with AutomaticKeepAliveClientMixin<LanguageDetectionDemo> {
   final TextEditingController _controller = TextEditingController();
-  late final Future<LanguageDetector> _task;
+  late final Future<LanguageDetector>? _task;
   String? _error;
   final results = <Widget>[];
   String? _isProcessing;
@@ -32,9 +33,9 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
   void initState() {
     super.initState();
     _controller.text = 'Quiero agua, por favor';
-    _task = _initDetector();
+    _task = widget.detect == null ? _initDetector() : null;
     unawaited(
-      _task.then<void>(
+      (_task ?? Future<void>.value()).then<void>(
         (_) {},
         onError: (Object error, StackTrace _) {
           if (mounted) setState(() => _error = error.toString());
@@ -44,11 +45,13 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
   }
 
   Future<LanguageDetector> _initDetector() async {
-    if (widget.detector != null) return widget.detector!;
     final bytes = await rootBundle.load('assets/language_detector.tflite');
     return LanguageDetector.create(
-      LanguageDetectorOptions.fromAssetBuffer(
-        bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+      LanguageDetectorOptions(
+        modelBytes: bytes.buffer.asUint8List(
+          bytes.offsetInBytes,
+          bytes.lengthInBytes,
+        ),
       ),
     );
   }
@@ -56,9 +59,9 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
   @override
   void dispose() {
     _controller.dispose();
-    if (widget.detector == null) {
+    if (_task case final task?) {
       unawaited(
-        _task.then((task) => task.dispose()).catchError((Object error) {
+        task.then((task) => task.dispose()).catchError((Object error) {
           debugPrint('Closing LanguageDetector: $error');
         }),
       );
@@ -76,7 +79,9 @@ class _LanguageDetectionDemoState extends State<LanguageDetectionDemo>
   Future<void> _detect() async {
     _prepareForDetection();
     try {
-      final result = await (await _task).detect(_isProcessing!);
+      final result = await (widget.detect ?? (await _task!).detect)(
+        _isProcessing!,
+      );
       if (mounted) _showDetectionResults(result);
     } catch (error) {
       if (mounted) {

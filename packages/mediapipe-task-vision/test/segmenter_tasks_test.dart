@@ -7,20 +7,17 @@ import 'package:test/test.dart';
 import 'support/face_reference.dart';
 
 const _fixtures = 'test/fixtures/face_detection';
-const _models = {
-  'image': ('models/deeplab_v3.tflite', deepLabV3Sha256),
-  'interactive': ('models/magic_touch.tflite', magicTouchSha256),
-};
-// DeepLab-v3's Pascal VOC order; the legacy task has no label API at all.
+const _models = {'image': ('models/deeplab_v3.tflite', deepLabV3Sha256)};
+// DeepLab-v3's Pascal VOC order.
 const _deepLabLabels = 21;
 typedef _Task = (
   Future<Map<String, dynamic>> Function(VisionImage, int, int?),
   Future<void> Function(),
 );
 
-// Both tasks are validated against the official wheel that ships the same
+// The task is validated against the official wheel that ships the same
 // native library on Linux and Windows, and on Google's macOS engine against
-// same-host outputs (tool/test_official_macos_landmark_runtime.py), since its
+// same-host outputs (tool/test_macos_tasks_runtime.py), since its
 // CPU output drifts between Apple CPUs.
 final _unvalidatedHost =
     Platform.isMacOS &&
@@ -104,7 +101,7 @@ void main() {
         try {
           await expectLater(
             process(VisionImage.fromFile('missing-image.jpg'), 0, null),
-            throwsA(isA<VisionTaskException>()),
+            throwsA(isA<TaskException>()),
           );
           _compare(
             await process(_image(expected), 0, null),
@@ -118,7 +115,7 @@ void main() {
             expected,
             modelBytes: Uint8List(32),
           ).timeout(const Duration(seconds: 10)),
-          throwsA(isA<VisionTaskException>()),
+          throwsA(isA<TaskException>()),
         );
         final (_, validClose) = await _create(expected);
         await validClose();
@@ -139,8 +136,8 @@ void main() {
     try {
       // The official Python bindings do not expose this list, so it is
       // checked against the model's documented categories, not an official
-      // output. The legacy task has no label API and reports none.
-      final result = await task.segmentImage(_image(expected));
+      // output.
+      final result = await task.segment(_image(expected));
       expect(result.labels, hasLength(_deepLabLabels));
       expect(result.labels.first, 'background');
       expect(result.labels, contains('person'));
@@ -148,18 +145,6 @@ void main() {
       expect(() => result.labels.clear(), throwsUnsupportedError);
     } finally {
       await task.dispose();
-    }
-    final legacy = await InteractiveSegmenterLegacy.create(
-      InteractiveSegmenterLegacyOptions(modelPath: _models['interactive']!.$1),
-    );
-    try {
-      final result = await legacy.segmentImage(
-        _image(expected),
-        keypoint: SegmentationPoint(x: 0.5, y: 0.4),
-      );
-      expect(result.labels, isEmpty);
-    } finally {
-      await legacy.dispose();
     }
   }, skip: _unvalidatedHost);
   // Image Segmenter's IMAGE mode on GPU, against the official GPU references
@@ -179,7 +164,7 @@ void main() {
         () async {
           final (process, close) = await _create(
             expected,
-            delegate: VisionDelegate.gpu,
+            delegate: Delegate.gpu,
           );
           try {
             _compare(
@@ -209,13 +194,6 @@ void main() {
       throwsArgumentError,
     );
     expect(
-      () => InteractiveSegmenterLegacyOptions(
-        modelPath: 'model',
-        outputConfidenceMasks: false,
-      ),
-      throwsArgumentError,
-    );
-    expect(
       () => ImageSegmenterOptions(modelPath: 'model', displayNamesLocale: ''),
       throwsArgumentError,
     );
@@ -223,7 +201,13 @@ void main() {
       () => ImageSegmenterOptions(modelPath: 'model', modelBytes: Uint8List(4)),
       throwsArgumentError,
     );
-    expect(() => SegmentationPoint(x: 1.5, y: 0.5), throwsArgumentError);
+    expect(
+      () => Stroke(
+        brushMode: BrushMode.positive,
+        points: [NormalizedKeypoint(x: 1.5, y: 0.5)],
+      ),
+      throwsArgumentError,
+    );
     expect(
       () => CategoryMask(width: 2, height: 2, categories: Uint8List(3)),
       throwsArgumentError,
@@ -284,7 +268,7 @@ VisionImage _image(Map<String, dynamic> expected) {
 Future<_Task> _create(
   Map<String, dynamic> expected, {
   Uint8List? modelBytes,
-  VisionDelegate delegate = VisionDelegate.cpu,
+  Delegate delegate = Delegate.cpu,
 }) async {
   final options = expected['options'] as Map<String, dynamic>;
   final name = expected['task'] as String;
@@ -307,7 +291,7 @@ Future<_Task> _create(
     return (
       (image, rotation, timestamp) async => _summary(
         timestamp == null
-            ? await task.segmentImage(image, rotationDegrees: rotation)
+            ? await task.segment(image, rotationDegrees: rotation)
             : await task.segmentForVideo(
                 image,
                 rotationDegrees: rotation,
@@ -319,34 +303,11 @@ Future<_Task> _create(
       task.dispose,
     );
   }
-  final task = await InteractiveSegmenterLegacy.create(
-    InteractiveSegmenterLegacyOptions(
-      modelPath: modelPath,
-      modelBytes: modelBytes,
-      outputConfidenceMasks: confidence,
-      outputCategoryMask: category,
-    ),
-  );
-  final point = expected['keypoint'] as Map<String, dynamic>;
-  return (
-    (image, rotation, timestamp) async => _summary(
-      await task.segmentImage(
-        image,
-        rotationDegrees: rotation,
-        keypoint: SegmentationPoint(
-          x: (point['x'] as num).toDouble(),
-          y: (point['y'] as num).toDouble(),
-        ),
-      ),
-      image,
-      timestamp,
-    ),
-    task.dispose,
-  );
+  throw StateError('Unexpected task ${expected['task']}');
 }
 
 Map<String, dynamic> _summary(
-  SegmentationResult result,
+  ImageSegmenterResult result,
   VisionImage image,
   int? timestamp,
 ) {

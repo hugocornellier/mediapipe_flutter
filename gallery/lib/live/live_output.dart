@@ -165,7 +165,7 @@ LiveOutput? liveOutput(Object? result) => switch (result) {
     items: [
       for (final category
           in classifications.firstOrNull?.categories ??
-              const <VisionCategory>[])
+              const <MediaPipeCategory>[])
         (
           name: _name(
             category.displayName,
@@ -177,13 +177,13 @@ LiveOutput? liveOutput(Object? result) => switch (result) {
     ],
     empty: 'No class above the score threshold.',
   ),
-  SegmentationResult(:final categoryMask?, :final labels) => (
+  ImageSegmenterResult(:final categoryMask?, :final labels) => (
     title: 'Coverage',
     count: _plural(labels.length, 'class', 'classes'),
     items: _top(_coverage(categoryMask, labels), 4),
     empty: 'Nothing segmented.',
   ),
-  SegmentationResult() => (
+  ImageSegmenterResult() => (
     title: 'Coverage',
     count: null,
     items: const [],
@@ -192,7 +192,7 @@ LiveOutput? liveOutput(Object? result) => switch (result) {
   _ => null,
 };
 
-double _visibility(List<VisionLandmark> landmarks) {
+double _visibility(List<NormalizedLandmark> landmarks) {
   final seen = [for (final landmark in landmarks) ?landmark.visibility];
   if (seen.isEmpty) return 1;
   return seen.reduce((a, b) => a + b) / seen.length;

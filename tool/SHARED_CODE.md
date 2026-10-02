@@ -1,9 +1,35 @@
 # Shared implementation plan
 
-**Status:** planned, not started. [API_UNIFICATION.md](API_UNIFICATION.md)
-makes the API that apps see identical everywhere; this plan removes code that
-is duplicated behind it, so each behavior is fixed in one place. Code sites to
-revisit carry a TODO pointing here; `git grep -n "SHARED_CODE.md"` lists them.
+**Status:** items 1 and 2 shipped with the API unification (0.2.0), and
+item 3 shipped for the browser; sharing the Java plugins is deferred, for
+the reason under item 3. "Where the code stands" records the starting point.
+
+- **Item 1:** `VisionTaskChecks` runs the same mode, rotation, timestamp and
+  disposal checks for every vision task on every platform, with the browser
+  timestamp limit everywhere; core's `checkClassifierSettings` and
+  `requireDelegate` give vision, text and audio the same option checks and
+  delegate refusal.
+- **Item 2:** one decoder per family. Vision's Android adapter reshapes the
+  Java plugin's compact lists into Google's JavaScript result shape
+  (`VisionResultData`), keeping packed landmarks and masks, and
+  `lib/src/results/decoders.dart` reads both it and the browser worker's
+  replies; Android boxes now reach the decoder as whole pixels. Text and
+  audio decode their JSON in one place too. The Android frame-time
+  comparison on the Test Lab phones and the Android GPU run are still to do
+  before release.
+- **Item 3:** the text and audio `bridge.js` files matched in all but two
+  lines, and their Dart loaders and create/run/close plumbing were the same,
+  so core now ships one `assets/task_bridge.js` and
+  `package:mediapipe_core/web_task_bridge.dart` (`WebTaskWorker`), which
+  both web plugins use with their own `worker.js`. The workers stay per
+  family: they share only a 15-line message loop, and the rest is each
+  family's tasks. Vision keeps its own bridge for frames, masks and
+  overlays. The Java plugins still duplicate their worker thread, model
+  buffers and channel handling (about 100 lines), but sharing Java between
+  Flutter plugins needs an Android library in core, with its own Gradle
+  module, publication and versioning for every family; that costs more than
+  the duplication, so the TODOs in both plugins stay until a third Java
+  family appears.
 
 ## Where the code stands
 

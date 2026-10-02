@@ -2,11 +2,13 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/io.dart' show mpHostSystem;
+import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart' show mpHostSystem;
 
 import '../../third_party/mediapipe/interactive_segmenter_bindings.dart' as mp;
-import '../interface/interactive_segmenter_types.dart';
-import '../interface/vision_types.dart';
+import '../types/options.dart';
+import '../types/strokes.dart';
+import '../types/vision_types.dart';
 import 'native_desktop_runtime.dart';
 import 'pixel_conversion.dart';
 
@@ -17,7 +19,7 @@ abstract interface class InteractiveSegmenterSession {
   void setImage(VisionImage input);
 
   /// Submit the full stroke history and copy the returned confidence mask.
-  SegmentationMask segment(List<SegmentationStroke> strokes);
+  ConfidenceMask segment(List<Stroke> strokes);
 
   /// Release the task and its image exactly once.
   void close();
@@ -33,7 +35,7 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
       );
     }
     if (Platform.isLinux) loadOfficialDesktopRuntime();
-    if (options.delegate != VisionDelegate.cpu) {
+    if (options.delegate != Delegate.cpu) {
       throw UnsupportedError(
         'Interactive Segmenter supports CPU only. The official macOS runtime '
         'cannot initialize its GPU stroke shader, and Linux GPU is not '
@@ -86,7 +88,7 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
 
   /// Submit the full history and copy the returned confidence mask.
   @override
-  SegmentationMask segment(List<SegmentationStroke> strokes) {
+  ConfidenceMask segment(List<Stroke> strokes) {
     if (!_hasImage) {
       throw StateError('Call setImage successfully before segment.');
     }
@@ -132,7 +134,7 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
         if (data.value == nullptr) {
           throw StateError('MediaPipe returned no mask data.');
         }
-        return SegmentationMask(
+        return ConfidenceMask(
           width: width,
           height: height,
           confidence: data.value.asTypedList(width * height),
@@ -218,7 +220,7 @@ void _checked(int Function(Pointer<Pointer<Char>>) call) {
   try {
     final status = call(error);
     if (status != 0) {
-      throw VisionTaskException(
+      throw TaskException(
         error.value == nullptr
             ? 'MediaPipe returned status $status.'
             : error.value.cast<Utf8>().toDartString(),

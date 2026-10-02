@@ -43,7 +43,7 @@ typedef MaskStyle = ({bool confidence, int selectedClass});
 /// being built so a slow build never queues frames.
 final class SegmentationMaskImages extends ChangeNotifier {
   ui.Image? _image;
-  SegmentationResult? _wanted;
+  ImageSegmenterResult? _wanted;
   MaskStyle _style = (confidence: false, selectedClass: 0);
   bool _building = false;
   bool _disposed = false;
@@ -52,7 +52,7 @@ final class SegmentationMaskImages extends ChangeNotifier {
   ui.Image? get image => _image;
 
   /// Builds the mask image for [result] in [style]; null clears it.
-  void show(SegmentationResult? result, MaskStyle style) {
+  void show(ImageSegmenterResult? result, MaskStyle style) {
     if (identical(result, _wanted) && style == _style) return;
     _wanted = result;
     _style = style;
@@ -108,7 +108,7 @@ final class SegmentationMaskImages extends ChangeNotifier {
 /// lacks the mask that style needs. Colors are premultiplied by their alpha,
 /// as [ui.decodeImageFromPixels] reads them.
 ({Uint8List rgba, int width, int height})? maskPixels(
-  SegmentationResult result,
+  ImageSegmenterResult result,
   MaskStyle style,
 ) {
   if (style.confidence) {

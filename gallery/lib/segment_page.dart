@@ -70,7 +70,7 @@ class _SegmentPageState extends State<SegmentPage> {
   int _paintedRevision = -1;
   int _openRevision = 0;
 
-  late final List<VisionDelegate> _delegates =
+  late final List<Delegate> _delegates =
       widget.task
           .capabilitiesFor(
             widget.platform,
@@ -79,7 +79,7 @@ class _SegmentPageState extends State<SegmentPage> {
           .supportedDelegates
           .toList()
         ..sort((a, b) => a.index.compareTo(b.index));
-  late VisionDelegate _delegate = preferredDelegate(_delegates);
+  late Delegate _delegate = preferredDelegate(_delegates);
 
   @override
   void initState() {
@@ -137,7 +137,7 @@ class _SegmentPageState extends State<SegmentPage> {
 
   /// Reopens the segmenter on [delegate] with the same image; strokes and the
   /// mask start over, since they belong to the task being replaced.
-  Future<void> _setDelegate(VisionDelegate delegate) async {
+  Future<void> _setDelegate(Delegate delegate) async {
     if (delegate == _delegate) return;
     final editor = _editor;
     final task = _task;
@@ -189,7 +189,7 @@ class _SegmentPageState extends State<SegmentPage> {
 
   /// For the browser tests (`?test-hooks`): the strokes sent and the mask's
   /// area, bounding box and centroid, normalized to the image, as one line.
-  void _logMask(SegmentationMask mask) {
+  void _logMask(ConfidenceMask mask) {
     final confidence = mask.confidence;
     var count = 0, minX = mask.width, minY = mask.height, maxX = -1, maxY = -1;
     var sumX = 0.0, sumY = 0.0;
@@ -207,7 +207,7 @@ class _SegmentPageState extends State<SegmentPage> {
     }
     String n(num value, int size) => (value / size).toStringAsFixed(2);
     final strokes = [
-      for (final stroke in _editor?.strokes ?? const <SegmentationStroke>[])
+      for (final stroke in _editor?.strokes ?? const <Stroke>[])
         '${stroke.brushMode.name}@'
             '${stroke.points.map((p) => '${p.x.toStringAsFixed(2)},'
                 '${p.y.toStringAsFixed(2)}').join(' ')}',
@@ -234,7 +234,7 @@ class _SegmentPageState extends State<SegmentPage> {
           'width': mask.width,
           'height': mask.height,
           'strokes': [
-            for (final stroke in _editor?.strokes ?? const <SegmentationStroke>[]) {
+            for (final stroke in _editor?.strokes ?? const <Stroke>[]) {
                 'brush': stroke.brushMode.name,
                 'completed': stroke.isCompleted,
                 'points': [
@@ -272,18 +272,17 @@ class _SegmentPageState extends State<SegmentPage> {
 
   /// A lasso stroke is discarded below three points, so a tap does nothing in
   /// that mode. Say which gesture the selected tool expects.
-  static String _hintFor(SegmentationBrushMode? brush) => switch (brush) {
-    SegmentationBrushMode.negative => 'Tap or drag over an area to exclude it.',
-    SegmentationBrushMode.lasso =>
-      'Draw a shape around a subject to select it.',
+  static String _hintFor(BrushMode? brush) => switch (brush) {
+    BrushMode.negative => 'Tap or drag over an area to exclude it.',
+    BrushMode.lasso => 'Draw a shape around a subject to select it.',
     _ => 'Tap or drag over a subject to include it.',
   };
 
-  SegmentationPoint? _pointFor(Offset local, Size size) {
+  NormalizedKeypoint? _pointFor(Offset local, Size size) {
     if (size.width <= 0 || size.height <= 0) return null;
     final x = (local.dx / size.width).clamp(0.0, 1.0);
     final y = (local.dy / size.height).clamp(0.0, 1.0);
-    return SegmentationPoint(x: x, y: y);
+    return NormalizedKeypoint(x: x, y: y);
   }
 
   Widget _panel() => TaskSettingsPanel(
@@ -372,7 +371,7 @@ class _SegmentPageState extends State<SegmentPage> {
                           onPanEnd: (_) => editor.end(),
                           // A single point is never a valid lasso, so let
                           // taps fall through rather than silently drop.
-                          onTapUp: editor.brush == SegmentationBrushMode.lasso
+                          onTapUp: editor.brush == BrushMode.lasso
                               ? null
                               : (details) {
                                   final point = _pointFor(
@@ -445,11 +444,11 @@ class _SegmentPageState extends State<SegmentPage> {
             ] else
               _hintFor(editor?.brush),
           ],
-          delegate: _delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+          delegate: _delegate == Delegate.gpu ? 'GPU' : 'CPU',
         ),
         // TODO: finish Exclude (negative) and Lasso strokes on every
         // platform, then restore the Include/Exclude/Lasso selector (a
-        // Segmented<SegmentationBrushMode> setting editor.brush). Until then
+        // Segmented<BrushMode> setting editor.brush). Until then
         // the gallery offers Include only.
         const SizedBox(height: 11),
         OutputCard(
@@ -473,7 +472,7 @@ class _StrokePainter extends CustomPainter {
   const _StrokePainter(this.points);
 
   /// Normalized to the picture, which fills this painter exactly.
-  final List<SegmentationPoint> points;
+  final List<NormalizedKeypoint> points;
 
   @override
   void paint(Canvas canvas, Size size) {

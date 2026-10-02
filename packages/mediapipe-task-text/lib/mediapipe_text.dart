@@ -1,29 +1,23 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-/// Package containing MediaPipe's text-specific tasks.
+/// Google's MediaPipe text tasks, with one API on Android, iOS, macOS,
+/// Linux, Windows and the web: Text Classifier, Text Embedder (EmbeddingGemma
+/// included), Language Detector, Proofreader and Summarizer.
+///
+/// Every task has `static create(options)`, Google's verbs (`classify`,
+/// `embed`, `detect`, `proofread`, `summarize`), a `delegate` getter and
+/// `dispose()`. What a platform's runtime cannot do throws
+/// `RuntimeUnavailableException`, and each task's capability query reports
+/// it in advance.
 library;
 
-export 'models.dart' show TextModels;
-export 'package:mediapipe_core/mediapipe_core.dart'
-    show
-        BaseEmbedding,
-        BaseOptions,
-        Category,
-        Classifications,
-        ClassifierOptions,
-        EmbedderOptions,
-        Embedding,
-        EmbeddingType;
-export 'package:mediapipe_core/mediapipe_exception.dart';
-export 'src/interface/text_task_exception.dart';
-export 'embedding_gemma.dart';
-export 'text_proofreader.dart';
-export 'text_summarizer.dart';
+export 'package:mediapipe_core/mediapipe_core.dart';
 
-// TODO: Make this API identical on every platform and flatten the classic
-// tasks' options. See tool/API_UNIFICATION.md at the repository root.
-export 'universal_mediapipe_text.dart'
-    if (dart.library.js_interop) 'src/web/mediapipe_text.dart'
-    if (dart.library.io) 'src/io/mediapipe_text.dart';
+export 'models.dart' show TextModels;
+export 'src/capabilities.dart';
+export 'src/tasks/language_detector.dart';
+export 'src/tasks/text_classifier.dart';
+export 'src/tasks/text_embedder.dart';
+export 'src/tasks/text_proofreader.dart';
+export 'src/tasks/text_summarizer.dart';
+export 'src/types/format_context.dart';
+export 'src/types/options.dart';
+export 'src/types/results.dart';

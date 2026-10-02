@@ -6,9 +6,9 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 /// Selects [delegate] in the settings once the page enables it; a tap on a
 /// disabled control would be ignored. Phones keep settings in a bottom sheet,
 /// which is opened for the tap and closed again.
-Future<void> tapDelegate(WidgetTester tester, VisionDelegate delegate) async {
+Future<void> tapDelegate(WidgetTester tester, Delegate delegate) async {
   final control = find.byWidgetPredicate(
-    (widget) => widget is Segmented<VisionDelegate>,
+    (widget) => widget is Segmented<Delegate>,
   );
   final sheet =
       control.evaluate().isEmpty &&
@@ -27,7 +27,7 @@ Future<void> tapDelegate(WidgetTester tester, VisionDelegate delegate) async {
       fail('The page offers no ${delegate.name}: ${_screen(tester)}');
     }
     if (found &&
-        tester.widget<Segmented<VisionDelegate>>(control).onChanged != null) {
+        tester.widget<Segmented<Delegate>>(control).onChanged != null) {
       break;
     }
     if (DateTime.now().isAfter(deadline)) {

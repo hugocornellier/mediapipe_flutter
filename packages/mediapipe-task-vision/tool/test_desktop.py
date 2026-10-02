@@ -87,8 +87,7 @@ def main():
                    ('poseLandmarkerLite', 'pose_landmarker_lite.task'),
                    ('holisticLandmarker', 'holistic_landmarker.task')]
     if args.segmenter_tasks:
-        models += [('deepLabV3', 'deeplab_v3.tflite'),
-                   ('magicTouch', 'magic_touch.tflite')]
+        models += [('deepLabV3', 'deeplab_v3.tflite')]
     for prefix, name in models:
         url = dart_strings(re.search(r'const ' + prefix + r'Url\s*=(.*?);', model_pins, re.S).group(1))
         sha = dart_strings(re.search(r'const ' + prefix + r'Sha256\s*=(.*?);', model_pins, re.S).group(1))
@@ -155,9 +154,8 @@ def main():
     if args.interactive_segmenter:
         selected.append('interactive_segmenter')
     if args.segmenter_tasks:
-        selected += ['image_segmenter', 'interactive_segmenter_legacy']
-        bundled += [(PACKAGE / 'models/deeplab_v3.tflite', 'image_segmenter.tflite'),
-                    (PACKAGE / 'models/magic_touch.tflite', 'magic_touch.tflite')]
+        selected += ['image_segmenter']
+        bundled += [(PACKAGE / 'models/deeplab_v3.tflite', 'image_segmenter.tflite')]
     (app / 'pubspec.yaml').write_text('''name: mediapipe_desktop_smoke
 publish_to: none
 environment:
@@ -220,7 +218,7 @@ flutter:
     for source, destination in [('flutter_smoke_test.dart.template', 'integration_test/face_test.dart'),
                                 ('flutter_release_smoke.dart.template', 'lib/main.dart')]:
         content = (PACKAGE / 'tool' / source).read_text().replace(
-            'VisionDelegate.values', 'const [VisionDelegate.cpu]')
+            'Delegate.values', 'const [Delegate.cpu]')
         if args.object_detector and destination == 'lib/main.dart':
             content = content.replace('      report(', '      await runObjectDetectorSmoke();\n      report(')
             content += (PACKAGE / 'tool/flutter_desktop_object_smoke.dart.template').read_text()
@@ -266,8 +264,7 @@ flutter:
         if args.landmark_tasks and ('Hand, Gesture, Pose and Holistic Landmarker CPU inference '
                                     'passed.') not in log.read_text():
             raise RuntimeError(f'{mode} app did not confirm landmark task inference')
-        if args.segmenter_tasks and ('Image Segmenter and legacy Interactive Segmenter CPU '
-                                     'inference passed.') not in log.read_text():
+        if args.segmenter_tasks and 'Image Segmenter CPU inference passed.' not in log.read_text():
             raise RuntimeError(f'{mode} app did not confirm segmenter task inference')
         report['modes'][mode] = {'inference': 'passed',
                                  'bundled_libraries': [str(path.relative_to(bundle)) for path in libraries]}

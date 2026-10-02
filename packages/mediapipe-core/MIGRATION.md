@@ -1,5 +1,25 @@
 # Core API migration
 
+## 0.1.0 to 0.2.0
+
+Apps import their family's library, which re-exports
+`package:mediapipe_core/mediapipe_core.dart`. Plugins and family packages use
+`package:mediapipe_core/platform_interface.dart`.
+
+| 0.1.0 | 0.2.0 |
+| --- | --- |
+| `capabilities.dart`, `model_store.dart`, `mediapipe_exception.dart`, `web_runtime.dart` | `mediapipe_core.dart` |
+| `VisionDelegate`, `TextDelegate`, `AudioDelegate` | `Delegate` |
+| `TaskCapabilities<D>` | `TaskCapabilities` (non-generic) |
+| `VisionTaskException`, `TextTaskException`, `AudioTaskException` | `TaskException` (`statusCode`, `gpuUnavailable`) |
+| `DownloadException` | `ModelDownloadException` |
+| `ModelStore(directory: Directory(...))` | `ModelStore(cacheDirectory: '...')` |
+| `ModelStore.get` and `find` returning a `File` (native) or bytes (web) | A `ModelSource` with `path` (native) or `bytes` (web) |
+| FFI-era `BaseOptions`, `ClassifierOptions`, `EmbedderOptions`, `Category`, `Classifications`, `Embedding` on the main library | Removed from the app API; the shared value types `MediaPipeCategory`, `Classifications` and `Embedding` replace the containers |
+| Each family's options base | `TaskOptions` (`model`, `modelPath`, `modelBytes`, `delegate`) |
+
+## Before 0.1.0
+
 | Before | Now |
 | --- | --- |
 | Package `mediapipe_flutter_core`, `import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart'` | Package `mediapipe_core`, `import 'package:mediapipe_core/mediapipe_core.dart'`; build settings move to `hooks.user_defines.mediapipe_core` |
