@@ -48,17 +48,22 @@ openNativeTextEmbedder(TextEmbedderOptions options) {
 
 /// Opens Google's Proofreader on a worker.
 Future<TextStreamRunner<String, TextProofreaderResult, TextProofreaderUpdate>>
-openNativeTextProofreader(TextProofreaderOptions options) =>
-    TextTaskWorker.start(
-      name: 'TextProofreader',
-      options: options,
-      create: NativeTextProofreader.new,
-    );
+openNativeTextProofreader(TextProofreaderOptions options) {
+  requireTextTasksRuntime();
+  return TextTaskWorker.start(
+    name: 'TextProofreader',
+    options: options,
+    create: NativeTextProofreader.new,
+  );
+}
 
 /// Opens Google's Summarizer on a worker.
 Future<TextStreamRunner<String, TextSummarizerResult, TextSummarizerUpdate>>
-openNativeTextSummarizer(TextSummarizerOptions options) => TextTaskWorker.start(
-  name: 'TextSummarizer',
-  options: options,
-  create: NativeTextSummarizer.new,
-);
+openNativeTextSummarizer(TextSummarizerOptions options) {
+  requireTextTasksRuntime();
+  return TextTaskWorker.start(
+    name: 'TextSummarizer',
+    options: options,
+    create: NativeTextSummarizer.new,
+  );
+}

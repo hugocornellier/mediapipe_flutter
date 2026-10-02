@@ -754,6 +754,104 @@ and ran a minute of microphone input through 6 more without an error.
 Android CI now builds the release gallery and fails when R8's usage report
 lists an instance field removed from the plugins (`tool/ci/check_r8_usage.py`).
 
+## UP-034: Browser text runtime omits Proofreader and Summarizer
+
+**Status:** confirmed against the pinned `@mediapipe/tasks-text` 1.0.1 bundle
+and its `text.d.ts` on September 30, 2026, and again on October 2. The web
+package keeps the two tasks unsupported, with the capability queries citing
+this entry, and serves EmbeddingGemma through `TextEmbedder`, whose browser
+`embed(text, formatOptions)` takes Google's format context.
+
+Google's Android SDK, iOS SDK and desktop wheel C APIs expose
+`TextProofreader` and `TextSummarizer`, including streaming callbacks. The
+browser bundle exports only `TextClassifier`, `TextEmbedder` and
+`LanguageDetector`, and `text.d.ts` declares no other task. The
+1.1.0-rc.20260929 nightly adds a JavaScript `TextSummarizer` that calls
+`createTextSummarizer` on the WASM module, but its declarations do not list
+it and its WASM, the same size as 1.0.1's, shows no sign of it; neither
+version has a Proofreader. Recheck when a stable release declares either
+task.
+
+## UP-035: iOS Proofreader and Summarizer return their text decoded as Mac Roman
+
+**Status:** observed October 2, 2026 with Google's 1.0.1 iOS SDK
+(MediaPipeTasksText and MediaPipeTasksCommon XCFrameworks) on the arm64 iOS
+simulator; worked around in core's adapter. No upstream issue filed.
+
+`MPPTextProofreader` and `MPPTextSummarizer` turn the generated UTF-8 bytes
+into `NSString`s as if they were Mac Roman: for the input "The café serve
+delicious croissants, and María enjoy them." the Proofreader returns
+"The caf√© serves delicious croissants, and Mar√≠a enjoys them.", in the
+completed result, in every streamed chunk and in the corrections. The model
+saw the input correctly (the rest of the sentence is Google's wheel's answer,
+byte for byte), so the conversion is on the way out. The classic text tasks
+and the Text Embedder, EmbeddingGemma included, are unaffected.
+
+Mac Roman assigns a character to every byte, so the conversion loses nothing:
+`text_sdk_bridge.mm` encodes such a string back to Mac Roman and reads the
+bytes as UTF-8, and leaves text that is already valid UTF-8 (plain ASCII,
+or a correct "é", whose Mac Roman byte is not valid UTF-8) as it is. With
+that, every Proofreader and Summarizer case with non-ASCII text matches
+Google's macOS 1.0.1 wheel on the simulator.
+
+## UP-036: iOS Summarizer generations drift from Google's wheel late in long summaries
+
+**Status:** measured October 2, 2026 on the arm64 iOS simulator against
+Google's macOS arm64 1.0.1 wheel, the same release on the same architecture.
+Google's behavior, not a defect in this repo; recorded so the mobile suite's
+tolerance has its evidence. No upstream issue filed.
+
+With the same model, inputs and request order, the simulator matched the
+wheel byte for byte on all 9 Proofreader cases and on all 17 EmbeddingGemma
+embeddings (maximum error 0.0, quantized bytes identical), and on 8 of the 10
+Summarizer cases. The two longest summaries part from the wheel after 167 of
+221 and 110 of 238 characters, the sentences rephrased from that point on;
+on the first request of a fresh task the streamed text also parted from the
+completed text, after 94 characters. Greedy decoding picks a different word
+once floating-point noise between the two builds flips a near-tie, which
+longer generations give more chances to.
+
+Google's own Python API shows the same on its x86_64 1.0.0 wheels: on the
+Linux and Windows CI runners, `TextSummarizer.summarize_async` streamed a
+different text than `summarize` returned for the same input and task (the
+macOS arm64 wheels agree on every case). The reference generators therefore
+record both paths and note whether they agreed (`stream_matches_result`),
+and the desktop tests compare the package's completed and streamed results
+each with Google's own for that path. The text also depends on the requests
+before it on the same task: on the Windows 1.0.0 wheel, the same summary
+streamed as the first request of a fresh task ended "if no critical bugs
+remain" where the reference, recorded after a completed request, ended "if
+no bugs remain". The tests that compare exactly replay the generator's
+request order; the lifecycle tests, which do not, require the text to follow
+Google's for 80 characters or in full when shorter.
+
+`gallery/integration_test/sdk_modern_text_test.dart` therefore requires
+every generated text to follow Google's for at least 80 characters, or in
+full when Google's is shorter, which identical prompts, tokenization, mode
+and decoding produce and anything else does not, and logs the exact-match
+count. The earliest parting measured is the 94 characters above.
+
+On the x86_64 Android emulator in CI, against Google's Linux x86_64 1.0.0
+wheel, the Proofreader matched exactly in both runs measured (9 of 9), while
+the Summarizer matched 8 of 10 cases in one run and 7 of 10 in the next, on
+different cases each time; one key-points summary shared only its first 21
+characters with the wheel's. Google's x86_64 build is not reproducible there
+even run to run, so the mobile suite requires each summary to have its
+mode's shape (key points bulleted, a TL;DR in prose) and a majority of the
+cases to match Google's exactly, which a wrong prompt, mode or token budget
+could not produce; the arm64 emulator (10 of 10) and the iOS simulator (8 of
+10) clear that easily.
+
+EmbeddingGemma's vectors show the same build dependence: the arm64 emulator
+and the iOS simulator reproduce Google's wheel of their release bit for bit,
+while Google's x86_64 Android 1.0.0 build on the x86_64 emulator differs
+from its Linux x86_64 1.0.0 wheel by up to 0.008 per value (0.0723 against
+0.0685 for the third value of the plain "A cat is sleeping on the sofa."
+embedding in one run, 0.0073 at most in the next). The mobile suite bounds
+each value at 0.02, requires a cosine similarity of at least 0.995 with
+Google's vector, and logs the largest difference it saw. The desktop suites keep byte-for-byte comparison, since each host
+compares with the wheel its own runtime library comes from.
+
 ## Integration pitfalls resolved in this repo
 
 These are recorded for continuity, not classified as confirmed MediaPipe defects.

@@ -14,10 +14,10 @@ import '../types/results.dart';
 ///
 /// One class on every platform. Google's native runtime serves it on a
 /// worker isolate on macOS, Linux, Windows and iOS; its Android SDK and
-/// browser runtime serve the classic embedders through the registered
-/// platform plugin. EmbeddingGemma (`TextModels.embeddingGemma`) runs on
-/// Google's macOS engine today, which
-/// `queryTextEmbedderCapabilities(TextModels.embeddingGemma)` reports.
+/// browser runtime serve it through the registered platform plugin.
+/// EmbeddingGemma (`TextModels.embeddingGemma`) runs on every one of them,
+/// with Google's prompt formatting on each;
+/// `queryTextEmbedderCapabilities(TextModels.embeddingGemma)` reports it.
 ///
 /// ```dart
 /// final task = await TextEmbedder.create(
@@ -52,7 +52,7 @@ final class TextEmbedder {
               'quantize': options.quantize,
             },
             decode: decodeTextEmbedderResult,
-            text: _browserText,
+            request: _request,
             native: openNativeTextEmbedder,
           ),
         ),
@@ -78,15 +78,12 @@ final class TextEmbedder {
   Future<void> dispose() => _task.dispose();
 }
 
-/// Google's browser and Android text embedders take no format context.
-String _browserText(TextEmbedderInput input) {
-  if (input.$2 != null) {
-    throw const RuntimeUnavailableException(
-      "Google's browser and Android text embedders take no format context.",
-      fix:
-          'Embed without formatContext there, or run the model on a '
-          'platform whose capability query lists it.',
-    );
-  }
-  return input.$1;
-}
+/// The text and, for a format context, Google's `formatOptions`, which its
+/// browser and Android embedders take with the text.
+BackendRequest _request(TextEmbedderInput input) => (
+  input.$1,
+  {
+    if (input.$2 case final context?)
+      'formatContext': formatContextSettings(context),
+  },
+);

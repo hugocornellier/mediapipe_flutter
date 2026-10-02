@@ -19,6 +19,15 @@
   `TaskException`.
 - Invalid classifier settings fail in Dart on every platform, and `create`
   refuses the GPU, which no text task runs on.
+- EmbeddingGemma runs on Android, iOS, Linux, Windows and in browsers as well
+  as macOS, with Google's prompt formatting (`formatContext`) on every
+  runtime.
+- Proofreader and Summarizer run on Android, iOS, Linux and Windows as well as
+  macOS: on Google's native runtime through the same worker isolate, and on
+  its Android SDK through the plugin, streamed updates included. Browsers
+  have neither task (upstream-issues.md UP-034), which the capability queries
+  report. On Android a `cacheDirectory` is refused, since Google's options
+  there have none.
 
 - `TextModels.byName` names every pinned model for
   `hooks.user_defines.mediapipe_text.models`, which

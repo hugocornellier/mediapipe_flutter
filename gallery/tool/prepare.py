@@ -66,7 +66,7 @@ WEB_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
              'image_embedder', 'image_segmenter', 'interactive_segmenter',
              'object_detector',
              'pose_landmarker', 'audio_classifier', 'language_detector',
-             'text_classifier', 'text_embedder'}
+             'text_classifier', 'text_embedder', 'embedding_gemma'}
 
 # The text package's three classic tasks, on the same shared runtime, with the
 # models its example downloads and verifies (make models_text). They are not
@@ -74,6 +74,18 @@ WEB_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
 TEXT_TASKS = {'language_detector': 'language_detector.tflite',
               'text_classifier': 'bert_classifier.tflite',
               'text_embedder': 'universal_sentence_encoder.tflite'}
+# The text package's generative tasks and EmbeddingGemma, 419 MB of models in
+# all (make models_embedding models_proofreader models_summarizer), so they are
+# bundled only when --tasks asks for them: the simulator and browser test
+# builds do, the published galleries do not. Their suites compare with
+# Google's references, bundled from --modern-text-reference or the package's
+# checked-in macOS fixtures.
+MODERN_TEXT_TASKS = {'embedding_gemma': 'embedding_gemma.task',
+                     'text_proofreader': 'proofread_quant_200m.litertlm',
+                     'text_summarizer': 'summarization_quant_200m_2modes.litertlm'}
+MODERN_TEXT_REFERENCES = {'embedding_gemma': 'embedding_gemma',
+                          'text_proofreader': 'proofreader',
+                          'text_summarizer': 'summarizer'}
 
 # The audio package's Audio Classifier, on the same shared runtime, with the
 # model its tool downloads (make models_audio) and Google's sample clips.
@@ -81,7 +93,7 @@ AUDIO_TASKS = {'audio_classifier': 'yamnet.tflite'}
 AUDIO_SAMPLES = ['speech_16000_hz_mono.wav', 'speech_48000_hz_mono.wav',
                  'two_heads_16000_hz_mono.wav']
 # Tasks outside the vision package, which its hook must not be asked for.
-NON_VISION_TASKS = {*TEXT_TASKS, *AUDIO_TASKS}
+NON_VISION_TASKS = {*TEXT_TASKS, *MODERN_TEXT_TASKS, *AUDIO_TASKS}
 
 # Sample inputs, reused from the test fixtures so the gallery ships nothing new
 # and inherits their recorded provenance and licence.
@@ -155,7 +167,10 @@ def _pinned_model(task):
     else:
         constant = {'language_detector': 'languageDetectorModel',
                     'text_classifier': 'bertClassifierModel',
-                    'text_embedder': 'universalSentenceEncoderModel'}[task]
+                    'text_embedder': 'universalSentenceEncoderModel',
+                    'embedding_gemma': 'embeddingGemmaModel',
+                    'text_proofreader': 'proofreaderModel',
+                    'text_summarizer': 'summarizerModel'}[task]
         source = (TEXT / 'lib/models.dart').read_text()
         row = re.search(r'const DownloadAsset ' + constant + r' = DownloadAsset\((.*?)\);',
                         source, re.S).group(1)
@@ -194,7 +209,7 @@ def available_tasks(target):
     return set()
 
 
-def prepare(target, selected):
+def prepare(target, selected, reference_dir=None):
     if target == 'web':
         subprocess.run([sys.executable, '-B', str(REPO / 'packages/mediapipe-task-vision/tool/prepare_web_model.py')], check=True)
     assets = GALLERY / 'assets/models'
@@ -207,6 +222,9 @@ def prepare(target, selected):
         if task in TEXT_TASKS:
             name = TEXT_TASKS[task]
             source = TEXT / 'example/assets' / name
+        elif task in MODERN_TEXT_TASKS:
+            name = MODERN_TEXT_TASKS[task]
+            source = TEXT / 'models' / name
         elif task in AUDIO_TASKS:
             name = AUDIO_TASKS[task]
             source = AUDIO / 'models' / name
@@ -235,6 +253,17 @@ def prepare(target, selected):
     for name in embedder_samples:
         shutil.copyfile(GALLERY / 'samples' / name, samples / name)
     sample_names = sorted([*SAMPLES.values(), *audio_samples, *embedder_samples])
+    references = GALLERY / 'assets/references/modern_text'
+    if references.exists():
+        shutil.rmtree(references)
+    modern_text = sorted(set(bundled) & set(MODERN_TEXT_TASKS))
+    if modern_text and target != 'web':
+        references.mkdir(parents=True)
+        for task in modern_text:
+            fixture = MODERN_TEXT_REFERENCES[task]
+            source = (Path(reference_dir) / f'{fixture}.json' if reference_dir
+                      else TEXT / 'test/fixtures' / fixture / 'official_reference.json')
+            shutil.copyfile(source, references / f'{fixture}.json')
 
     manifest = {
         'target': target,
@@ -250,7 +279,8 @@ def prepare(target, selected):
 
     entries = '\n'.join(
         [f'    - assets/models/{name}' for name in sorted(bundled.values())]
-        + [f'    - assets/samples/{name}' for name in sample_names])
+        + [f'    - assets/samples/{name}' for name in sample_names]
+        + (['    - assets/references/modern_text/'] if references.exists() else []))
     # camera_desktop supplies native desktop preview and raw image streaming;
     # camera itself supplies the mobile implementations.
     camera = ('  camera: ^0.12.1\n  camera_desktop: ^1.2.2'
@@ -365,6 +395,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', help='Defaults to this host')
     parser.add_argument('--tasks', help='Comma-separated subset of available tasks')
+    parser.add_argument('--modern-text-reference',
+                        help='A directory of same-architecture references from '
+                             'tool/prepare_modern_text_reference.py to bundle for the '
+                             'generative text suites; the checked-in macOS fixtures otherwise')
     args = parser.parse_args()
     target = args.target or host_target()
     if target is None:
@@ -378,9 +412,11 @@ def main():
         if not requested <= selected:
             raise SystemExit(f'Unavailable tasks for {target}: {requested - selected}')
         selected = requested
+    else:
+        selected -= set(MODERN_TEXT_TASKS)
     if not selected:
         raise SystemExit(f'No vision runtime is available for {target}.')
-    manifest, missing = prepare(target, selected)
+    manifest, missing = prepare(target, selected, args.modern_text_reference)
     pinned = pin_architecture(target)
     if pinned:
         print(f'  {pinned}')

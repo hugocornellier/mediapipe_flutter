@@ -58,15 +58,53 @@ def macos_engine():
     }
 
 
-def host_runtime():
-    """The pinned official runtime for this host, or SystemExit where none is."""
+# Google's wheels of the other release on a host, pinned so a CI runner can
+# generate Google's answers for a mobile runtime of that version on the same
+# architecture: the macOS arm64 1.0.1 wheel for the iOS 1.0.1 SDK on the arm64
+# simulator, and the Linux x86_64 1.0.0 wheel for the Android 1.0.0 SDK on the
+# x86_64 emulator (packages/mediapipe-task-text/tool/MODERN_TEXT_PLATFORMS.md).
+ORACLES = {
+    ('Darwin', 'arm64', '1.0.1'): {
+        'version': '1.0.1',
+        'library': 'libmediapipe.dylib',
+        'library_sha256': '9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a',
+        'wheel_url': ('https://files.pythonhosted.org/packages/18/56/'
+                      '911762884caba685dc8156d0136c58196a228c2b447023cfa0cfdb32f6c5/'
+                      'mediapipe-1.0.1-py3-none-macosx_11_0_arm64.whl'),
+        'wheel_sha256': '0a9fb67957f7d28e84f485e9c6716a43367b3f6f07170f31c3f72cac1addd031',
+    },
+    ('Linux', 'x86_64', '1.0.0'): {
+        'version': '1.0.0',
+        'library': 'libmediapipe.so',
+        'library_sha256': '35ef4187d381addb1309f0f9dedd32613127fa98d1ad1f5ddeea57595cdbcaf0',
+        'wheel_url': ('https://files.pythonhosted.org/packages/d3/1d/'
+                      'bc666b2edee87cc06421b040df0282607339091954ab9d4906a65a45be10/'
+                      'mediapipe-1.0.0-py3-none-manylinux_2_28_x86_64.whl'),
+        'wheel_sha256': '07a449446bf888a8a2787dbf6fc1a33da4c47977313deec64d13c35bff41f6d2',
+    },
+}
+
+
+def host_runtime(version=None):
+    """The pinned official runtime for this host, or SystemExit where none is.
+
+    With [version], the wheel of that release for this host instead: the
+    host's own pin when the versions agree, else an ORACLES row.
+    """
     host = (platform.system(), platform.machine())
     if host == ('Darwin', 'arm64'):
-        return dict(MACOS)
-    target = {('Linux', 'x86_64'): 'linux/x64', ('Windows', 'AMD64'): 'windows/x64'}.get(host)
-    if target is None:
-        raise SystemExit(f'No official wheel is pinned for {host[0]} {host[1]}.')
-    return desktop_runtime(target)
+        runtime = dict(MACOS)
+    else:
+        target = {('Linux', 'x86_64'): 'linux/x64', ('Windows', 'AMD64'): 'windows/x64'}.get(host)
+        if target is None:
+            raise SystemExit(f'No official wheel is pinned for {host[0]} {host[1]}.')
+        runtime = desktop_runtime(target)
+    if version is None or version == runtime['version']:
+        return runtime
+    oracle = ORACLES.get((*host, version))
+    if oracle is None:
+        raise SystemExit(f'No mediapipe {version} wheel is pinned for {host[0]} {host[1]}.')
+    return dict(oracle)
 
 
 def venv_python(environment):

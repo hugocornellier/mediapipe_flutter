@@ -1,4 +1,8 @@
-"""Capture official macOS CPU Summarizer results, streams and ctypes layouts."""
+"""Capture Google's Summarizer results, streams and ctypes layouts on this host.
+
+Runs Google's wheel pinned for this host (core's tool/official_wheels.py) and
+writes the checked-in fixture unless --output names another file.
+"""
 import argparse
 import ctypes
 import hashlib
@@ -13,24 +17,29 @@ import time
 PACKAGE = Path(__file__).resolve().parents[1]
 MODEL_SHA256 = '8b2d4ef09236adb9ead3127325526ba1aa5a59feb7c5de2d3f5958f27479de59'
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
-from official_wheels import MACOS  # noqa: E402  the engine core bundles on macOS
-LIBRARY_SHA256 = MACOS['library_sha256']
+from official_wheels import host_runtime  # noqa: E402
 MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/text_summarizer/200m/1/summarization_quant_200m_2modes.litertlm'
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--python-package-root', required=True, type=Path)
+    parser.add_argument('--python-package-root', type=Path,
+                        help='an extracted wheel to import instead of the installed one')
+    parser.add_argument('--output', type=Path,
+                        default=PACKAGE / 'test/fixtures/summarizer/official_reference.json')
+    parser.add_argument('--runtime-version',
+                        help="Google's release to compare with instead of this host's pin")
     args = parser.parse_args()
-    sys.path.insert(0, str(args.python_package_root.resolve()))
+    if args.python_package_root:
+        sys.path.insert(0, str(args.python_package_root.resolve()))
     os.environ.setdefault('MPLCONFIGDIR', str(PACKAGE / 'build/matplotlib'))
     import mediapipe as mp
     from mediapipe.tasks.python.text import text_summarizer as api
     from mediapipe.tasks.python.core.base_options_c import MpBaseOptionsC
-    assert platform.system() == 'Darwin' and platform.machine() == 'arm64'
-    assert mp.__version__ == MACOS['version'], mp.__version__
-    library = Path(mp.__file__).parent / 'tasks/c/libmediapipe.dylib'
-    assert hashlib.sha256(library.read_bytes()).hexdigest() == LIBRARY_SHA256
+    runtime = host_runtime(args.runtime_version)
+    assert mp.__version__ == runtime['version'], mp.__version__
+    library = Path(mp.__file__).parent / 'tasks/c' / runtime['library']
+    assert hashlib.sha256(library.read_bytes()).hexdigest() == runtime['library_sha256']
     model = PACKAGE / 'models/summarization_quant_200m_2modes.litertlm'
     assert hashlib.sha256(model.read_bytes()).hexdigest() == MODEL_SHA256
     cases = [
@@ -51,9 +60,10 @@ def main():
         ('short', 'The library will close at six today for maintenance and reopen tomorrow morning.'),
         ('empty', ''),
     ]
-    report = {'runtime': 'mediapipe==' + MACOS['version'], 'delegate': 'CPU',
-              'library_sha256': LIBRARY_SHA256, 'model_sha256': MODEL_SHA256,
-              'model_url': MODEL_URL, 'macos': platform.mac_ver()[0], 'cases': [], 'errors': []}
+    report = {'runtime': 'mediapipe==' + runtime['version'], 'delegate': 'CPU',
+              'library_sha256': runtime['library_sha256'], 'model_sha256': MODEL_SHA256,
+              'model_url': MODEL_URL, 'os': platform.platform(),
+              'machine': platform.machine(), 'cases': [], 'errors': []}
     for mode in api.Mode:
         for limit in [None, 64]:
             options = api.TextSummarizerOptions(mp.tasks.BaseOptions(
@@ -95,19 +105,26 @@ def main():
                     stream_ms = (time.perf_counter() - start) * 1000
                     assert not any('error' in event for event in events), events
                     assert sum(e['done'] for e in events) == 1 and events[-1]['done']
-                    assert ''.join(e['chunk'] or '' for e in events) == (result.summary or '')
+                    # Google's streamed text can differ from its completed text
+                    # for the same input: on its x86_64 1.0.0 wheels it does
+                    # (upstream-issues.md UP-036). Both are recorded, and each
+                    # path of the package is compared with its own.
+                    streamed = ''.join(e['chunk'] or '' for e in events)
                     report['cases'].append({
                         'name': f'{mode.name.lower()}-{name}' + (f'-limit-{limit}' if limit else ''),
                         'input': text, 'mode': mode.name, 'max_num_tokens': limit,
                         'result': {'summary': result.summary, 'done': result.done},
-                        'stream': events, 'sync_ms': sync_ms, 'stream_ms': stream_ms})
+                        'stream': events, 'stream_matches_result': streamed == (result.summary or ''),
+                        'sync_ms': sync_ms, 'stream_ms': stream_ms})
                     print(mode.name, name, limit, round(sync_ms, 2), repr(result.summary), flush=True)
     report['abi'] = {cls.__name__: {
         'size': ctypes.sizeof(cls), 'alignment': ctypes.alignment(cls),
         'offsets': {f[0]: getattr(cls, f[0]).offset for f in cls._fields_}}
         for cls in (MpBaseOptionsC, api._MpTextSummarizerOptionsC,
                     api._MpTextSummarizerResultC, api._MpTextSummarizerStreamResultC)}
-    (PACKAGE / 'test/fixtures/summarizer/official_reference.json').write_text(json.dumps(report, indent=2) + '\n')
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(report, indent=2) + '\n')
+    print(args.output, flush=True)
 
 
 if __name__ == '__main__':

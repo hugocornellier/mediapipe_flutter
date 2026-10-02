@@ -46,7 +46,7 @@ final class TextClassifier {
               categoryDenylist: options.categoryDenylist,
             ),
             decode: decodeTextClassifierResult,
-            text: (String text) => text,
+            request: (String text) => (text, const {}),
             native: openNativeTextClassifier,
           ),
         ),

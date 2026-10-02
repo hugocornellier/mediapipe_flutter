@@ -1,52 +1,126 @@
 import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_text/platform_interface.dart';
 import 'package:test/test.dart';
 
-void main() {
-  const mac = TaskPlatform(
+/// Where core's runtime serves the text tasks (every task on CPU), and where
+/// the registered Android and browser backends do.
+const _runtime = [
+  TaskPlatform(
     operatingSystem: 'macos',
     architecture: 'arm64',
     version: '26.4',
-  );
+  ),
+  TaskPlatform(operatingSystem: 'linux', architecture: 'x64'),
+  TaskPlatform(operatingSystem: 'windows', architecture: 'x64'),
+  TaskPlatform(operatingSystem: 'ios', architecture: 'arm64', version: '18.0'),
+];
+const _android = [
+  TaskPlatform(operatingSystem: 'android', architecture: 'arm64'),
+  TaskPlatform(operatingSystem: 'android', architecture: 'x64'),
+];
+const _web = TaskPlatform(operatingSystem: 'web', architecture: 'unknown');
 
-  test('the generative tasks declare macOS CPU with their GPU blockers', () {
-    for (final (result, blocker) in [
-      (
-        textEmbedderCapabilitiesForPlatform(
-          mac,
-          model: TextModels.embeddingGemma,
-        ),
-        'Metal',
-      ),
-      (textProofreaderCapabilitiesForPlatform(mac), 'only the CPU'),
-      (textSummarizerCapabilitiesForPlatform(mac), 'only the CPU'),
-    ]) {
-      expect(result.runtimeVersion, '1.0.1');
-      expect(result.minimumOperatingSystemVersion, '14.0');
-      expect(result.supportedDelegates, {Delegate.cpu});
-      expect(result.unavailableReasons[Delegate.gpu], contains(blocker));
+Never _unused(String task, Map<String, Object?> options) =>
+    throw UnimplementedError();
+
+void main() {
+  final every = <String, TaskCapabilities Function(TaskPlatform)>{
+    'text classifier': textClassifierCapabilitiesForPlatform,
+    'language detector': languageDetectorCapabilitiesForPlatform,
+    'text embedder': textEmbedderCapabilitiesForPlatform,
+    'EmbeddingGemma': (p) => textEmbedderCapabilitiesForPlatform(
+      p,
+      model: TextModels.embeddingGemma,
+    ),
+    'proofreader': textProofreaderCapabilitiesForPlatform,
+    'summarizer': textSummarizerCapabilitiesForPlatform,
+  };
+
+  tearDown(() => textTaskBackendFactory = null);
+
+  test("every task runs on the CPU of core's runtime targets", () {
+    for (final platform in _runtime) {
+      for (final MapEntry(key: name, value: claim) in every.entries) {
+        final result = claim(platform);
+        expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
+        expect(
+          result.runtimeVersion,
+          platform.operatingSystem == 'linux' ||
+                  platform.operatingSystem == 'ios'
+              ? '1.0.1'
+              : '1.0.0',
+          reason: '$name on ${platform.target}',
+        );
+        expect(
+          result.unavailableReasons[Delegate.gpu],
+          contains('CPU'),
+          reason: name,
+        );
+      }
+    }
+    final mac = textProofreaderCapabilitiesForPlatform(_runtime.first);
+    expect(mac.minimumOperatingSystemVersion, '14.0');
+    expect(
+      textEmbedderCapabilitiesForPlatform(
+        _runtime.first,
+        model: TextModels.embeddingGemma,
+      ).unavailableReasons[Delegate.gpu],
+      contains('Metal'),
+    );
+  });
+
+  test('nothing runs on Android or in browsers without the plugin', () {
+    for (final platform in [..._android, _web]) {
+      for (final MapEntry(key: name, value: claim) in every.entries) {
+        expect(claim(platform).isSupported, isFalse, reason: name);
+      }
     }
   });
 
-  test('EmbeddingGemma runs on macOS only; the classic embedders wider', () {
-    const linux = TaskPlatform(operatingSystem: 'linux', architecture: 'x64');
-    expect(
-      textEmbedderCapabilitiesForPlatform(
-        linux,
-        model: TextModels.embeddingGemma,
-      ).isSupported,
-      isFalse,
-    );
-    for (final result in [
-      textEmbedderCapabilitiesForPlatform(linux),
-      textEmbedderCapabilitiesForPlatform(
-        linux,
-        model: TextModels.universalSentenceEncoder,
-      ),
-      textClassifierCapabilitiesForPlatform(linux),
-      languageDetectorCapabilitiesForPlatform(linux),
+  test("Google's Android SDK serves every task once the plugin registers", () {
+    textTaskBackendFactory = _unused;
+    for (final platform in _android) {
+      for (final MapEntry(key: name, value: claim) in every.entries) {
+        final result = claim(platform);
+        expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
+        expect(result.runtimeVersion, '1.0.0');
+      }
+    }
+  });
+
+  test('browsers run the classic tasks and EmbeddingGemma, not the '
+      'generative tasks (UP-034)', () {
+    textTaskBackendFactory = _unused;
+    for (final name in [
+      'text classifier',
+      'language detector',
+      'text embedder',
+      'EmbeddingGemma',
     ]) {
-      expect(result.supportedDelegates, {Delegate.cpu});
-      expect(result.unavailableReasons[Delegate.gpu], contains('CPU only'));
+      final result = every[name]!(_web);
+      expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
+      expect(result.runtimeVersion, '1.0.1');
+    }
+    for (final name in ['proofreader', 'summarizer']) {
+      final result = every[name]!(_web);
+      expect(result.isSupported, isFalse, reason: name);
+      for (final delegate in Delegate.values) {
+        expect(
+          result.unavailableReasons[delegate],
+          contains('UP-034'),
+          reason: '$name ${delegate.name}',
+        );
+      }
+    }
+  });
+
+  test('a target outside every runtime is refused with the target list', () {
+    textTaskBackendFactory = _unused;
+    const other = TaskPlatform(operatingSystem: 'linux', architecture: 'arm64');
+    for (final MapEntry(key: name, value: claim) in every.entries) {
+      final result = claim(other);
+      expect(result.isSupported, isFalse, reason: name);
+      expect(result.unavailableReasons[Delegate.cpu], contains('linux/x64'));
     }
   });
 

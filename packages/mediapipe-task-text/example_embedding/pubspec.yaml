@@ -1,5 +1,5 @@
 name: embedding_gemma_demo
-description: Official EmbeddingGemma, Proofreader and Summarizer on macOS CPU.
+description: Official EmbeddingGemma, Proofreader and Summarizer on the CPU.
 publish_to: 'none'
 version: 0.1.0+1
 

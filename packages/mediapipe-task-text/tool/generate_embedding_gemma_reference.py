@@ -1,7 +1,10 @@
-"""Capture EmbeddingGemma outputs from Google's unmodified macOS Python API.
+"""Capture EmbeddingGemma outputs from Google's unmodified Python API on this host.
 
-Use a verified, extracted mediapipe wheel core's macOS engine comes from via --python-package-root.
-This does not modify the separate MediaPipe 1.0.0 face reference environment.
+Runs Google's wheel pinned for this host (core's tool/official_wheels.py): on
+macOS arm64 the 1.0.0 wheel the engine was repackaged from (pass its extracted
+site-packages via --python-package-root, or run with an interpreter that has it
+installed), on Linux x64 and Windows x64 the wheel whose library core bundles.
+Writes the checked-in fixture unless --output names another file.
 """
 import argparse
 import ctypes
@@ -16,13 +19,16 @@ import time
 PACKAGE = Path(__file__).resolve().parents[1]
 MODEL_SHA256 = '913b7a1edc7c7c3d1da3979ec1d0648ed9e0a370f181bb59ab177ca4b97707ad'
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
-from official_wheels import MACOS  # noqa: E402  the engine core bundles on macOS
-LIBRARY_SHA256 = MACOS['library_sha256']
+from official_wheels import host_runtime  # noqa: E402
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--python-package-root', type=Path)
+    parser.add_argument('--output', type=Path,
+                        default=PACKAGE / 'test/fixtures/embedding_gemma/official_reference.json')
+    parser.add_argument('--runtime-version',
+                        help="Google's release to compare with instead of this host's pin")
     args = parser.parse_args()
     if args.python_package_root:
         sys.path.insert(0, str(args.python_package_root.resolve()))
@@ -36,10 +42,10 @@ def main():
     from mediapipe.tasks.python.components.containers.embedding_result_c import (
         MpEmbeddingC, MpEmbeddingResultC)
 
-    assert mp.__version__ == MACOS['version'], mp.__version__
-    assert platform.system() == 'Darwin' and platform.machine() == 'arm64'
-    library = Path(mp.__file__).parent / 'tasks/c/libmediapipe.dylib'
-    assert hashlib.sha256(library.read_bytes()).hexdigest() == LIBRARY_SHA256
+    runtime = host_runtime(args.runtime_version)
+    assert mp.__version__ == runtime['version'], mp.__version__
+    library = Path(mp.__file__).parent / 'tasks/c' / runtime['library']
+    assert hashlib.sha256(library.read_bytes()).hexdigest() == runtime['library_sha256']
     model = PACKAGE / 'models/embedding_gemma.task'
     assert hashlib.sha256(model.read_bytes()).hexdigest() == MODEL_SHA256
     cases = [
@@ -59,10 +65,10 @@ def main():
         ('empty', '', None),
         ('long', 'A cat sleeps peacefully. ' * 80, ('SEMANTIC_SIMILARITY', None, 'QUERY')),
     ]
-    report = {'runtime': 'mediapipe==' + MACOS['version'], 'delegate': 'CPU',
-              'library_sha256': LIBRARY_SHA256, 'model_sha256': MODEL_SHA256,
+    report = {'runtime': 'mediapipe==' + runtime['version'], 'delegate': 'CPU',
+              'library_sha256': runtime['library_sha256'], 'model_sha256': MODEL_SHA256,
               'model_url': 'https://storage.googleapis.com/mediapipe-models/text_embedder/embedding_gemma/int4int8/1/embedding_gemma.task',
-              'machine': platform.machine(), 'macos': platform.mac_ver()[0], 'cases': []}
+              'machine': platform.machine(), 'os': platform.platform(), 'cases': []}
     for quantize, normalize in [(False, False), (True, True)]:
         options = api.TextEmbedderOptions(mp.tasks.BaseOptions(
             model_asset_path=str(model), delegate=mp.tasks.BaseOptions.Delegate.CPU),
@@ -93,9 +99,9 @@ def main():
                       'offsets': {f[0]: getattr(cls, f[0]).offset for f in cls._fields_}}
         for cls in (MpBaseOptionsC, api._MpEmbedderOptionsC, api._MpTextEmbedderOptionsC,
                     api._MpTextFormatContextC, MpEmbeddingC, MpEmbeddingResultC)}
-    path = PACKAGE / 'test/fixtures/embedding_gemma/official_reference.json'
-    path.write_text(json.dumps(report, indent=2) + '\n')
-    print(path, flush=True)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(report, indent=2) + '\n')
+    print(args.output, flush=True)
 
 
 if __name__ == '__main__':

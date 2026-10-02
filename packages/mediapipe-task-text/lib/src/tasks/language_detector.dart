@@ -47,7 +47,7 @@ final class LanguageDetector {
           categoryDenylist: options.categoryDenylist,
         ),
         decode: decodeLanguageDetectorResult,
-        text: (String text) => text,
+        request: (String text) => (text, const {}),
         native: openNativeLanguageDetector,
       ),
     ),

@@ -98,7 +98,7 @@ jobs:
   sdk-tasks:
     name: Landmark, detection and classification tasks / official iOS SDK on an arm64 simulator
     runs-on: macos-15
-    timeout-minutes: 75
+    timeout-minutes: 110
     steps:
       - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
@@ -126,10 +126,32 @@ jobs:
         with:
           path: gallery/.dart_tool/hooks_runner/shared/mediapipe_core/build/official-ios-sdk/*/sdk.zip
           key: official-ios-sdk-${{ hashFiles('packages/mediapipe-core/lib/src/native_assets/ios_sdk.dart') }}
+      # The generative text models, 419 MB in all, by their pinned SHA-256.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            packages/mediapipe-task-text/models/embedding_gemma.task
+            packages/mediapipe-task-text/models/proofread_quant_200m.litertlm
+            packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
+          key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
+      # Google's answers for the 1.0.1 iOS SDK: its macOS arm64 1.0.1 wheel on
+      # this arm64 runner (packages/mediapipe-task-text/tool/MODERN_TEXT_PLATFORMS.md).
+      - name: Google's 1.0.1 references for EmbeddingGemma, Proofreader and Summarizer
+        run: |
+          cd packages/mediapipe-task-text
+          dart pub get
+          dart tool/download_embedding_gemma.dart
+          dart tool/download_proofreader.dart
+          dart tool/download_summarizer.dart
+          cd ../..
+          python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
+            --venv build/codex-tmp/official-python-1.0.1 --runtime-version 1.0.1 \
+            --output-dir build/modern-text-reference
       - name: Prepare the gallery with the official SDK tasks
         run: |
           python3 -B gallery/tool/prepare.py --target ios-simulator/arm64 \
-            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder
+            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer \
+            --modern-text-reference build/modern-text-reference
           cd gallery && flutter pub get
       - name: Boot an installed iPhone simulator
         id: simulator
@@ -206,6 +228,34 @@ jobs:
       - name: Record ios CPU text and audio coverage (ios-sdk-simulator-text-audio)
         if: always()
         run: python3 -B tool/coverage/record.py --suite ios-sdk-simulator-text-audio --platform ios --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.text_audio.outcome }}
+      # The generative text tasks and EmbeddingGemma through the same adapter,
+      # against Google's 1.0.1 wheel's answers generated above.
+      - name: EmbeddingGemma, Proofreader and Summarizer through Google's iOS SDK
+        id: modern_text
+        if: ${{ !cancelled() && steps.simulator.outcome == 'success' }}
+        working-directory: gallery
+        # bash runs with pipefail, so `| tee` keeps flutter test's exit status.
+        shell: bash
+        run: |
+          device=${{ steps.simulator.outputs.device }}
+          for attempt in 1 2; do
+            status=0
+            perl -e 'alarm shift; exec @ARGV' 1800 flutter test -d "$device" \
+              integration_test/sdk_modern_text_test.dart \
+              --reporter expanded 2>&1 | tee -a sdk-ios-simulator.log || status=$?
+            [ "$status" = 0 ] && exit 0
+            if [ "$status" = 142 ] && [ "$attempt" = 1 ]; then
+              echo "sdk_modern_text_test stalled; rebooting the simulator and retrying"
+              xcrun simctl shutdown "$device" || true
+              xcrun simctl boot "$device"
+              xcrun simctl bootstatus "$device" -b
+              continue
+            fi
+            exit "$status"
+          done
+      - name: Record ios CPU modern text coverage (ios-sdk-simulator-modern-text)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite ios-sdk-simulator-modern-text --platform ios --delegate cpu --tasks embedding_gemma,text_proofreader,text_summarizer --outcome ${{ steps.modern_text.outcome }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

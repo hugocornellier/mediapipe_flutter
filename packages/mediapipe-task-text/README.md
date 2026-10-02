@@ -1,10 +1,10 @@
 # mediapipe_text
 
 Google's MediaPipe text tasks for Dart and Flutter: text classification, text
-embeddings and language detection on every platform, plus EmbeddingGemma,
-Proofreader and Summarizer on macOS. Every task runs Google's official
-MediaPipe pipeline, and Google's pinned models are bundled with your app at
-build time.
+embeddings (EmbeddingGemma included) and language detection on every
+platform, plus Proofreader and Summarizer on every platform but the web.
+Every task runs Google's official MediaPipe pipeline, and Google's pinned
+models are bundled with your app at build time.
 
 > **Not on pub.dev yet.** Depend on it by path from a checkout of
 > [the repository](https://github.com/hugocornellier/mediapipe_flutter) until
@@ -17,9 +17,9 @@ build time.
 | Text classification (BERT) | `TextClassifier` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Text embeddings (Universal Sentence Encoder) | `TextEmbedder` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Language detection | `LanguageDetector` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| EmbeddingGemma 300M | `TextEmbedder` | | | ✓ | | | |
-| Proofreader 200M | `TextProofreader` | | | ✓ | | | |
-| Summarizer 200M | `TextSummarizer` | | | ✓ | | | |
+| EmbeddingGemma 300M | `TextEmbedder` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Proofreader 200M | `TextProofreader` | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| Summarizer 200M | `TextSummarizer` | ✓ | ✓ | ✓ | ✓ | ✓ | |
 
 All text tasks run on the CPU. The runtimes are Google's: the Android SDK
 (`tasks-text` 1.0.0), an adapter over the 1.0.1 iOS SDK (iOS 15+, devices and
@@ -27,6 +27,14 @@ the arm64 simulator), the official wheel libraries on Linux (1.0.1) and
 Windows (1.0.0), Google's 1.0.0 library on macOS 14+, and
 `@mediapipe/tasks-text` 1.0.1 in browsers. `mediapipe_core` bundles the
 native engine once per app, shared with vision and audio.
+
+Google's browser runtime has no Proofreader or Summarizer
+([UP-034](../../upstream-issues.md#up-034-browser-text-runtime-omits-proofreader-and-summarizer)),
+which their capability queries report there. Google's Android options for the
+two take no cache directory, so a `cacheDirectory` is refused on Android
+rather than ignored. On iOS, Google's SDK returns their non-ASCII text
+decoded as Mac Roman, which core's adapter inverts
+([UP-035](../../upstream-issues.md#up-035-ios-proofreader-and-summarizer-return-their-text-decoded-as-mac-roman)).
 
 On macOS, text tasks need Google's engine, which is opt-in because it adds
 about 95 MB:
@@ -176,9 +184,9 @@ describes declared support; it does not load a model.
 
 `TextEmbedder` with `TextModels.embeddingGemma` runs Google's complete
 EmbeddingGemma pipeline: prompt formatting, SentencePiece tokenization,
-inference and postprocessing. It returns 768-value vectors, on macOS today;
-`queryTextEmbedderCapabilities(TextModels.embeddingGemma)` reports where it
-runs.
+inference and postprocessing. It returns 768-value vectors on every platform,
+with Google's prompt formatting on each runtime;
+`queryTextEmbedderCapabilities(TextModels.embeddingGemma)` reports it.
 
 ```dart
 import 'package:mediapipe_text/mediapipe_text.dart';
@@ -283,11 +291,19 @@ truncated. Both models are 117.6 MB and under the
 
 ## Validation
 
-Every task is compared with Google's own Python output for the same model,
-runtime and inputs: 26 cases for the classic tasks, 17 for EmbeddingGemma, 9
-for Proofreader and 10 for Summarizer. Fresh Flutter apps built from the
-packages as pub.dev ships them run the tasks in debug and release, alongside
-vision and audio, with one shared engine. From the repository root:
+Every task is compared with Google's own output for the same model, runtime
+version and inputs: 26 cases for the classic tasks, 17 for EmbeddingGemma, 9
+for Proofreader and 10 for Summarizer. Generated text must match byte for
+byte, and Google's 1.0.0 and 1.0.1 runtimes generate different text, so each
+platform is compared with Google's wheel of its own version: the checked-in
+macOS references, references generated on the Linux and Windows runners
+(`tool/test_modern_text.py`), Google's 1.0.1 macOS wheel for the iOS
+simulator and its 1.0.0 Linux wheel for the Android emulator
+(`tool/prepare_modern_text_reference.py`, bundled by the gallery's test
+builds), and Google's JavaScript on the same page for EmbeddingGemma in
+browsers. Fresh Flutter apps built from the packages as pub.dev ships them run
+the tasks in debug and release, alongside vision and audio, with one shared
+engine. From the repository root:
 
 ```sh
 make get models
@@ -295,5 +311,6 @@ make test_text
 make example_text
 ```
 
-`packages/mediapipe-task-text/example_embedding` is the macOS demo of the
-modern tasks, with every formatting mode, token-budget preset and streaming.
+`packages/mediapipe-task-text/example_embedding` is the desktop demo of the
+modern tasks, with every formatting mode, token-budget preset and streaming;
+its tests run on macOS, Linux and Windows.
