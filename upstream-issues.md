@@ -831,14 +831,25 @@ full when Google's is shorter, which identical prompts, tokenization, mode
 and decoding produce and anything else does not, and logs the exact-match
 count. The earliest parting measured is the 94 characters above.
 
+On the x86_64 Android emulator in CI, against Google's Linux x86_64 1.0.0
+wheel, the Proofreader matched exactly in both runs measured (9 of 9), while
+the Summarizer matched 8 of 10 cases in one run and 7 of 10 in the next, on
+different cases each time; one key-points summary shared only its first 21
+characters with the wheel's. Google's x86_64 build is not reproducible there
+even run to run, so the mobile suite requires each summary to have its
+mode's shape (key points bulleted, a TL;DR in prose) and a majority of the
+cases to match Google's exactly, which a wrong prompt, mode or token budget
+could not produce; the arm64 emulator (10 of 10) and the iOS simulator (8 of
+10) clear that easily.
+
 EmbeddingGemma's vectors show the same build dependence: the arm64 emulator
 and the iOS simulator reproduce Google's wheel of their release bit for bit,
 while Google's x86_64 Android 1.0.0 build on the x86_64 emulator differs
-from its Linux x86_64 1.0.0 wheel by up to 0.004 per value (0.0723 against
+from its Linux x86_64 1.0.0 wheel by up to 0.008 per value (0.0723 against
 0.0685 for the third value of the plain "A cat is sleeping on the sofa."
-embedding). The mobile suite bounds each value at 0.01, requires a cosine
-similarity of at least 0.995 with Google's vector, and logs the largest
-difference it saw. The desktop suites keep byte-for-byte comparison, since each host
+embedding in one run, 0.0073 at most in the next). The mobile suite bounds
+each value at 0.02, requires a cosine similarity of at least 0.995 with
+Google's vector, and logs the largest difference it saw. The desktop suites keep byte-for-byte comparison, since each host
 compares with the wheel its own runtime library comes from.
 
 ## Integration pitfalls resolved in this repo

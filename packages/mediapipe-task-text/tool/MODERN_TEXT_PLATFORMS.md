@@ -113,9 +113,11 @@ same task.
   summaries (UP-036), so the mobile suite requires every generated text to
   follow Google's for 80 characters or in full when shorter, and logs the
   exact-match count. The x86_64 Android build in CI matches its Linux wheel
-  the same way for the generated text, while its EmbeddingGemma values differ
-  by up to 0.004, so the suite bounds each value at 0.01 and requires a cosine
-  similarity of 0.995 with Google's vector. Google's iOS SDK also hands back non-ASCII generated
+  exactly for the Proofreader but not reproducibly for the Summarizer (8 then
+  7 of 10 cases, on different cases), so the suite requires each summary to
+  have its mode's shape and a majority of the cases to match exactly; its
+  EmbeddingGemma values differ by up to 0.008, so the suite bounds each value
+  at 0.02 and requires a cosine similarity of 0.995 with Google's vector. Google's iOS SDK also hands back non-ASCII generated
   text decoded as Mac Roman, which the adapter inverts (UP-035).
 - **Android emulator** (`android.yaml`): Google's 1.0.0 Linux x86_64 wheel on
   the same runner is the oracle for the x86_64 emulator, bundled by
