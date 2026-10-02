@@ -1,0 +1,622 @@
+final class BoundingBox
+  String toString()
+  bool ==(Object other)
+  int get bottom
+  int get hashCode
+  int get height
+  int get left
+  int get right
+  int get top
+  int get width
+  new BoundingBox({required int left, required int top, required int right, required int bottom})
+final class BrowserOverlay
+  Future<void> detach()
+  bool get active
+  static Future<BrowserOverlay> attach(VisionTask task, Object canvas)
+  void configure({required bool connections, required bool points, bool mirrored = false, double scale = 1})
+enum BrushMode extends Enum
+  int get index
+  int get nativeValue
+  new BrushMode(int nativeValue)
+  static BrushMode lasso
+  static BrushMode negative
+  static BrushMode positive
+  static List<BrushMode> values
+  value BrushMode.lasso
+  value BrushMode.negative
+  value BrushMode.positive
+final class CategoryMask
+  String toString()
+  Uint8List get categories
+  int get height
+  int get width
+  new CategoryMask({required int width, required int height, required Uint8List categories})
+final class Classifications
+  List<MediaPipeCategory> get categories
+  String toString()
+  String? get headName
+  int get headIndex
+  new Classifications({required List<MediaPipeCategory> categories, required int headIndex, String? headName})
+final class ClassifierOptions
+  List<String> get categoryAllowlist
+  List<String> get categoryDenylist
+  String? get displayNamesLocale
+  double get scoreThreshold
+  int get maxResults
+  new ClassifierOptions({int maxResults = -1, double scoreThreshold = 0, String? displayNamesLocale, List<String>? categoryAllowlist, List<String>? categoryDenylist})
+final class ConfidenceMask
+  Float32List get confidence
+  String toString()
+  int get height
+  int get width
+  new ConfidenceMask({required int width, required int height, required Float32List confidence})
+enum Delegate extends Enum
+  int get index
+  new Delegate()
+  static Delegate cpu
+  static Delegate gpu
+  static List<Delegate> values
+  value Delegate.cpu
+  value Delegate.gpu
+final class Detection
+  BoundingBox get boundingBox
+  List<MediaPipeCategory> get categories
+  List<NormalizedKeypoint> get keypoints
+  String toString()
+  new Detection({required BoundingBox boundingBox, required List<MediaPipeCategory> categories, List<NormalizedKeypoint> keypoints = const []})
+final class DownloadAsset
+  Iterable<String> get urls
+  List<String> get mirrors
+  String get sha256
+  String get url
+  new DownloadAsset({required String url, required String sha256, List<String> mirrors = const []})
+final class DownloadFailure
+  String get reason
+  String get url
+  new DownloadFailure(String url, String reason)
+final class Embedding
+  Float32List? get floatEmbedding
+  String toString()
+  String? get headName
+  Uint8List? get quantizedEmbedding
+  int get headIndex
+  int get length
+  new Embedding({Float32List? floatEmbedding, Uint8List? quantizedEmbedding, required int headIndex, String? headName})
+final class FaceDetector implements VisionTask
+  Delegate get delegate
+  Future<FaceDetectorResult> detect(VisionImage image, {int rotationDegrees = 0})
+  Future<FaceDetectorResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
+  Future<void> dispose()
+  RunningMode get runningMode
+  static Future<FaceDetector> create(FaceDetectorOptions options)
+final class FaceDetectorOptions extends VisionTaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get modelPath
+  Uint8List? get modelBytes
+  double get minDetectionConfidence
+  double get minSuppressionThreshold
+  new FaceDetectorOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, double minDetectionConfidence = 0.5, double minSuppressionThreshold = 0.3})
+final class FaceDetectorResult
+  List<Detection> get detections
+  String toString()
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new FaceDetectorResult({required int imageWidth, required int imageHeight, required List<Detection> detections, int? timestampMilliseconds})
+final class FaceLandmarker implements VisionTask
+  Delegate get delegate
+  Future<FaceLandmarkerResult> detect(VisionImage image, {int rotationDegrees = 0})
+  Future<FaceLandmarkerResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
+  Future<void> dispose()
+  RunningMode get runningMode
+  static Future<FaceLandmarker> create(FaceLandmarkerOptions options)
+final class FaceLandmarkerOptions extends VisionTaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get modelPath
+  Uint8List? get modelBytes
+  bool get outputFaceBlendshapes
+  bool get outputFacialTransformationMatrixes
+  double get minFaceDetectionConfidence
+  double get minFacePresenceConfidence
+  double get minTrackingConfidence
+  int get numFaces
+  new FaceLandmarkerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, int numFaces = 1, double minFaceDetectionConfidence = 0.5, double minFacePresenceConfidence = 0.5, double minTrackingConfidence = 0.5, bool outputFaceBlendshapes = false, bool outputFacialTransformationMatrixes = false})
+final class FaceLandmarkerResult
+  List<List<MediaPipeCategory>> get faceBlendshapes
+  List<List<NormalizedLandmark>> get faceLandmarks
+  List<Matrix> get facialTransformationMatrixes
+  String toString()
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new FaceLandmarkerResult({required int imageWidth, required int imageHeight, required List<List<NormalizedLandmark>> faceLandmarks, required List<List<MediaPipeCategory>> faceBlendshapes, required List<Matrix> facialTransformationMatrixes, int? timestampMilliseconds})
+abstract final class FaceLandmarksConnections
+  new FaceLandmarksConnections()
+  static List<(int, int)> contours
+  static List<(int, int)> leftIris
+  static List<(int, int)> rightIris
+  static List<(int, int)> tessellation
+final class GestureRecognizer implements VisionTask
+  Delegate get delegate
+  Future<GestureRecognizerResult> recognize(VisionImage image, {int rotationDegrees = 0})
+  Future<GestureRecognizerResult> recognizeForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
+  Future<void> dispose()
+  RunningMode get runningMode
+  static Future<GestureRecognizer> create(GestureRecognizerOptions options)
+final class GestureRecognizerOptions extends HandTrackingOptions
+  ClassifierOptions get cannedGesturesClassifierOptions
+  ClassifierOptions get customGesturesClassifierOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get modelPath
+  Uint8List? get modelBytes
+  double get minHandDetectionConfidence
+  double get minHandPresenceConfidence
+  double get minTrackingConfidence
+  int get numHands
+  new GestureRecognizerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, int numHands = 1, double minHandDetectionConfidence = 0.5, double minHandPresenceConfidence = 0.5, double minTrackingConfidence = 0.5, ClassifierOptions? cannedGesturesClassifierOptions, ClassifierOptions? customGesturesClassifierOptions})
+final class GestureRecognizerResult
+  List<List<Landmark>> get handWorldLandmarks
+  List<List<MediaPipeCategory>> get gestures
+  List<List<MediaPipeCategory>> get handedness
+  List<List<NormalizedLandmark>> get handLandmarks
+  String toString()
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new GestureRecognizerResult({required List<List<MediaPipeCategory>> gestures, required List<List<MediaPipeCategory>> handedness, required List<List<NormalizedLandmark>> handLandmarks, required List<List<Landmark>> handWorldLandmarks, required int imageWidth, required int imageHeight, int? timestampMilliseconds})
+final class HandLandmarker implements VisionTask
+  Delegate get delegate
+  Future<HandLandmarkerResult> detect(VisionImage image, {int rotationDegrees = 0})
+  Future<HandLandmarkerResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
+  Future<void> dispose()
+  RunningMode get runningMode
+  static Future<HandLandmarker> create(HandLandmarkerOptions options)
+final class HandLandmarkerOptions extends HandTrackingOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get modelPath
+  Uint8List? get modelBytes
+  double get minHandDetectionConfidence
+  double get minHandPresenceConfidence
+  double get minTrackingConfidence
+  int get numHands
+  new HandLandmarkerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, int numHands = 1, double minHandDetectionConfidence = 0.5, double minHandPresenceConfidence = 0.5, double minTrackingConfidence = 0.5})
+final class HandLandmarkerResult
+  List<List<Landmark>> get handWorldLandmarks
+  List<List<MediaPipeCategory>> get handedness
+  List<List<NormalizedLandmark>> get handLandmarks
+  String toString()
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new HandLandmarkerResult({required List<List<MediaPipeCategory>> handedness, required List<List<NormalizedLandmark>> handLandmarks, required List<List<Landmark>> handWorldLandmarks, required int imageWidth, required int imageHeight, int? timestampMilliseconds})
+abstract final class HandLandmarksConnections
+  new HandLandmarksConnections()
+  static List<(int, int)> all
+  static List<(int, int)> indexFinger
+  static List<(int, int)> middleFinger
+  static List<(int, int)> palm
+  static List<(int, int)> pinkyFinger
+  static List<(int, int)> ringFinger
+  static List<(int, int)> thumb
+abstract base class HandTrackingOptions extends VisionTaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get modelPath
+  Uint8List? get modelBytes
+  double get minHandDetectionConfidence
+  double get minHandPresenceConfidence
+  double get minTrackingConfidence
+  int get numHands
+  new HandTrackingOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, int numHands = 1, double minHandDetectionConfidence = 0.5, double minHandPresenceConfidence = 0.5, double minTrackingConfidence = 0.5})
+final class HolisticLandmarker implements VisionTask
+  Delegate get delegate
+  Future<HolisticLandmarkerResult> detect(VisionImage image, {int rotationDegrees = 0})
+  Future<HolisticLandmarkerResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
+  Future<void> dispose()
+  RunningMode get runningMode
+  static Future<HolisticLandmarker> create(HolisticLandmarkerOptions options)
+final class HolisticLandmarkerOptions extends VisionTaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get modelPath
+  Uint8List? get modelBytes
+  bool get outputFaceBlendshapes
+  bool get outputPoseSegmentationMask
+  double get minFaceDetectionConfidence
+  double get minFacePresenceConfidence
+  double get minFaceSuppressionThreshold
+  double get minHandLandmarksConfidence
+  double get minPoseDetectionConfidence
+  double get minPosePresenceConfidence
+  double get minPoseSuppressionThreshold
+  new HolisticLandmarkerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, double minFaceDetectionConfidence = 0.5, double minFaceSuppressionThreshold = 0.5, double minFacePresenceConfidence = 0.5, double minHandLandmarksConfidence = 0.5, double minPoseDetectionConfidence = 0.5, double minPoseSuppressionThreshold = 0.5, double minPosePresenceConfidence = 0.5, bool outputFaceBlendshapes = false, bool outputPoseSegmentationMask = false})
+final class HolisticLandmarkerResult
+  ConfidenceMask? get poseSegmentationMask
+  List<Landmark> get leftHandWorldLandmarks
+  List<Landmark> get poseWorldLandmarks
+  List<Landmark> get rightHandWorldLandmarks
+  List<MediaPipeCategory>? get faceBlendshapes
+  List<NormalizedLandmark> get faceLandmarks
+  List<NormalizedLandmark> get leftHandLandmarks
+  List<NormalizedLandmark> get poseLandmarks
+  List<NormalizedLandmark> get rightHandLandmarks
+  String toString()
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new HolisticLandmarkerResult({required List<NormalizedLandmark> faceLandmarks, required List<NormalizedLandmark> poseLandmarks, required List<Landmark> poseWorldLandmarks, required List<NormalizedLandmark> leftHandLandmarks, required List<NormalizedLandmark> rightHandLandmarks, required List<Landmark> leftHandWorldLandmarks, required List<Landmark> rightHandWorldLandmarks, List<MediaPipeCategory>? faceBlendshapes, ConfidenceMask? poseSegmentationMask, required int imageWidth, required int imageHeight, int? timestampMilliseconds})
+final class ImageClassifier implements VisionTask
+  Delegate get delegate
+  Future<ImageClassifierResult> classify(VisionImage image, {int rotationDegrees = 0, VisionRegionOfInterest? regionOfInterest})
+  Future<ImageClassifierResult> classifyForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0, VisionRegionOfInterest? regionOfInterest})
+  Future<void> dispose()
+  RunningMode get runningMode
+  static Future<ImageClassifier> create(ImageClassifierOptions options)
+final class ImageClassifierOptions extends VisionTaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  List<String> get categoryAllowlist
+  List<String> get categoryDenylist
+  RunningMode get runningMode
+  String? get displayNamesLocale
+  String? get modelPath
+  Uint8List? get modelBytes
+  double get scoreThreshold
+  int get maxResults
+  new ImageClassifierOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, String? displayNamesLocale, int maxResults = -1, double scoreThreshold = 0, List<String>? categoryAllowlist, List<String>? categoryDenylist})
+final class ImageClassifierResult
+  List<Classifications> get classifications
+  String toString()
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new ImageClassifierResult({required List<Classifications> classifications, required int imageWidth, required int imageHeight, int? timestampMilliseconds})
+final class ImageEmbedder implements VisionTask
+  Delegate get delegate
+  Future<ImageEmbedderResult> embed(VisionImage image, {int rotationDegrees = 0, VisionRegionOfInterest? regionOfInterest})
+  Future<ImageEmbedderResult> embedForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0, VisionRegionOfInterest? regionOfInterest})
+  Future<void> dispose()
+  RunningMode get runningMode
+  static Future<ImageEmbedder> create(ImageEmbedderOptions options)
+  static double cosineSimilarity(Embedding first, Embedding second)
+final class ImageEmbedderOptions extends VisionTaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get modelPath
+  Uint8List? get modelBytes
+  bool get l2Normalize
+  bool get quantize
+  new ImageEmbedderOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, bool l2Normalize = false, bool quantize = false})
+final class ImageEmbedderResult
+  List<Embedding> get embeddings
+  String toString()
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new ImageEmbedderResult({required List<Embedding> embeddings, required int imageWidth, required int imageHeight, int? timestampMilliseconds})
+final class ImageSegmenter implements VisionTask
+  Delegate get delegate
+  Future<ImageSegmenterResult> segment(VisionImage image, {int rotationDegrees = 0})
+  Future<ImageSegmenterResult> segmentForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
+  Future<void> dispose()
+  RunningMode get runningMode
+  static Future<ImageSegmenter> create(ImageSegmenterOptions options)
+final class ImageSegmenterOptions extends VisionTaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get displayNamesLocale
+  String? get modelPath
+  Uint8List? get modelBytes
+  bool get outputCategoryMask
+  bool get outputConfidenceMasks
+  new ImageSegmenterOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, bool outputConfidenceMasks = true, bool outputCategoryMask = false, String? displayNamesLocale})
+final class ImageSegmenterResult
+  CategoryMask? get categoryMask
+  Float32List? get qualityScores
+  List<ConfidenceMask>? get confidenceMasks
+  List<String> get labels
+  String toString()
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new ImageSegmenterResult({List<ConfidenceMask>? confidenceMasks, CategoryMask? categoryMask, Float32List? qualityScores, List<String> labels = const [], required int imageWidth, required int imageHeight, int? timestampMilliseconds})
+final class InteractiveSegmenter implements VisionTask
+  Delegate get delegate
+  Future<ConfidenceMask> segment(List<Stroke> strokes)
+  Future<void> dispose()
+  Future<void> setImage(VisionImage image)
+  RunningMode get runningMode
+  static Future<InteractiveSegmenter> create(InteractiveSegmenterOptions options)
+final class InteractiveSegmenterOptions extends VisionTaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get modelPath
+  Uint8List? get modelBytes
+  new InteractiveSegmenterOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, Delegate delegate = Delegate.cpu})
+final class Landmark
+  String toString()
+  String? get name
+  bool ==(Object other)
+  double get x
+  double get y
+  double get z
+  double? get presence
+  double? get visibility
+  int get hashCode
+  new Landmark({required double x, required double y, required double z, double? visibility, double? presence, String? name})
+final class Matrix
+  List<double> get data
+  String toString()
+  double at(int row, int column)
+  int get columns
+  int get rows
+  new Matrix({required int rows, required int columns, required List<double> data})
+final class MediaPipeCategory
+  String toString()
+  String? get categoryName
+  String? get displayName
+  bool ==(Object other)
+  double get score
+  int get hashCode
+  int get index
+  new MediaPipeCategory({required int index, required double score, String? categoryName, String? displayName})
+class MediaPipeException implements Exception
+  Object? get cause
+  String get message
+  String toString()
+  new MediaPipeException(String message, {Object? cause})
+abstract final class MediaPipeWebRuntime
+  new MediaPipeWebRuntime()
+  static String baseUrl
+  static String defaultBaseUrl
+  static String resolve(Uri page)
+final class ModelDownloadException extends MediaPipeException
+  List<DownloadFailure> get failures
+  Object? get cause
+  String get message
+  String toString()
+  String? get hint
+  new ModelDownloadException(List<DownloadFailure> failures, String? hint)
+final class ModelSource
+  String toString()
+  String? get path
+  Uint8List? get bytes
+  new ModelSource({String? path, Uint8List? bytes})
+final class ModelStore
+  Client? get client
+  Future<ModelSource> get(DownloadAsset model)
+  Future<ModelSource?> find(DownloadAsset model)
+  Future<void> clear()
+  Future<void> prefetch(DownloadAsset model)
+  String? get cacheDirectory
+  String? get source
+  new ModelStore({String? cacheDirectory, String? source, Client? client})
+  static Future<Uint8List?> Function(String)? debugBundledModels
+  static String? debugCacheDirectory
+  static bool allowDownloads
+final class NormalizedKeypoint
+  String toString()
+  String? get label
+  bool ==(Object other)
+  double get x
+  double get y
+  double? get score
+  int get hashCode
+  new NormalizedKeypoint({required double x, required double y, String? label, double? score})
+final class NormalizedLandmark
+  String toString()
+  String? get name
+  bool ==(Object other)
+  double get x
+  double get y
+  double get z
+  double? get presence
+  double? get visibility
+  int get hashCode
+  new NormalizedLandmark({required double x, required double y, required double z, double? visibility, double? presence, String? name})
+final class ObjectDetector implements VisionTask
+  Delegate get delegate
+  Future<ObjectDetectorResult> detect(VisionImage image, {int rotationDegrees = 0})
+  Future<ObjectDetectorResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
+  Future<void> dispose()
+  RunningMode get runningMode
+  static Future<ObjectDetector> create(ObjectDetectorOptions options)
+final class ObjectDetectorOptions extends VisionTaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  List<String> get categoryAllowlist
+  List<String> get categoryDenylist
+  RunningMode get runningMode
+  String? get displayNamesLocale
+  String? get modelPath
+  Uint8List? get modelBytes
+  double get scoreThreshold
+  int get maxResults
+  new ObjectDetectorOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, String? displayNamesLocale, int maxResults = -1, double scoreThreshold = 0, List<String>? categoryAllowlist, List<String>? categoryDenylist})
+final class ObjectDetectorResult
+  List<Detection> get detections
+  String toString()
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new ObjectDetectorResult({required int imageWidth, required int imageHeight, required List<Detection> detections, int? timestampMilliseconds})
+final class PoseLandmarker implements VisionTask
+  Delegate get delegate
+  Future<PoseLandmarkerResult> detect(VisionImage image, {int rotationDegrees = 0})
+  Future<PoseLandmarkerResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
+  Future<void> dispose()
+  RunningMode get runningMode
+  static Future<PoseLandmarker> create(PoseLandmarkerOptions options)
+final class PoseLandmarkerOptions extends VisionTaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get modelPath
+  Uint8List? get modelBytes
+  bool get outputSegmentationMasks
+  double get minPoseDetectionConfidence
+  double get minPosePresenceConfidence
+  double get minTrackingConfidence
+  int get numPoses
+  new PoseLandmarkerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, int numPoses = 1, double minPoseDetectionConfidence = 0.5, double minPosePresenceConfidence = 0.5, double minTrackingConfidence = 0.5, bool outputSegmentationMasks = false})
+final class PoseLandmarkerResult
+  List<ConfidenceMask>? get segmentationMasks
+  List<List<Landmark>> get poseWorldLandmarks
+  List<List<NormalizedLandmark>> get poseLandmarks
+  String toString()
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new PoseLandmarkerResult({required List<List<NormalizedLandmark>> poseLandmarks, required List<List<Landmark>> poseWorldLandmarks, List<ConfidenceMask>? segmentationMasks, required int imageWidth, required int imageHeight, int? timestampMilliseconds})
+abstract final class PoseLandmarksConnections
+  new PoseLandmarksConnections()
+  static List<(int, int)> all
+enum RunningMode extends Enum
+  int get index
+  new RunningMode()
+  static List<RunningMode> values
+  static RunningMode image
+  static RunningMode liveStream
+  static RunningMode video
+  value RunningMode.image
+  value RunningMode.liveStream
+  value RunningMode.video
+typedef RuntimeTargets = Map<String, String?>
+final class RuntimeUnavailableException extends MediaPipeException
+  Object? get cause
+  String get fix
+  String get message
+  String toString()
+  new RuntimeUnavailableException(String message, {required String fix, Object? cause})
+final class Stroke
+  BrushMode get brushMode
+  List<NormalizedKeypoint> get points
+  String toString()
+  bool get isCompleted
+  new Stroke({required BrushMode brushMode, required List<NormalizedKeypoint> points, bool isCompleted = true})
+final class TaskCapabilities
+  Map<Delegate, String> get unavailableReasons
+  Map<String, String?> get supportedTargets
+  Set<Delegate> get supportedDelegates
+  String get requiredArchitecture
+  String get requiredOperatingSystem
+  String get runtimeVersion
+  String toString()
+  String? get minimumOperatingSystemVersion
+  TaskPlatform get platform
+  bool get isSupported
+  factory TaskCapabilities.cpuOnTargets({required TaskPlatform platform, required String gpuUnavailableReason, Map<String, String?> targets = tasksRuntimeTargets, String runtimeVersion = '1.0.1'})
+  factory TaskCapabilities.gpuOnTargets({required TaskPlatform platform, required String cpuUnavailableReason, Map<String, String?> targets = tasksRuntimeTargets, String runtimeVersion = '1.0.1'})
+  factory TaskCapabilities.macosCpu({required TaskPlatform platform, required String gpuUnavailableReason})
+  factory TaskCapabilities.onTargets({required TaskPlatform platform, required Map<Delegate, Map<String, String?>> delegates, required Map<Delegate, String> unavailableReasons, required String runtimeVersion})
+final class TaskException extends MediaPipeException
+  Object? get cause
+  String get message
+  String toString()
+  bool get gpuUnavailable
+  int? get statusCode
+  new TaskException(String message, {int? statusCode, bool gpuUnavailable = false, Object? cause})
+abstract base class TaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  String? get modelPath
+  Uint8List? get modelBytes
+  new TaskOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, Delegate delegate = Delegate.cpu, required String family, required Map<String, DownloadAsset> registry})
+final class TaskPlatform
+  String get architecture
+  String get operatingSystem
+  String get target
+  String toString()
+  String? get gpu
+  String? get version
+  bool get simulator
+  new TaskPlatform({required String operatingSystem, required String architecture, String? version, String? gpu, bool simulator = false})
+final class VisionImage
+  Object? get browserFrame
+  String? get path
+  Uint8List? get pixels
+  VisionPixelFormat? get format
+  int? get bytesPerRow
+  int? get height
+  int? get width
+  new VisionImage.fromBrowserFrame(Object frame, {required int width, required int height})
+  new VisionImage.fromFile(String path)
+  new VisionImage.fromPixels({required Uint8List pixels, required int width, required int height, required VisionPixelFormat format, int? bytesPerRow})
+abstract final class VisionModels
+  new VisionModels()
+  static DownloadAsset faceDetector
+  static DownloadAsset faceLandmarker
+  static DownloadAsset gestureRecognizer
+  static DownloadAsset handLandmarker
+  static DownloadAsset holisticLandmarker
+  static DownloadAsset imageClassifier
+  static DownloadAsset imageEmbedder
+  static DownloadAsset imageSegmenter
+  static DownloadAsset interactiveSegmenter
+  static DownloadAsset objectDetector
+  static DownloadAsset poseLandmarker
+  static Map<String, DownloadAsset> byName
+enum VisionPixelFormat extends Enum
+  int get channels
+  int get index
+  new VisionPixelFormat(int channels)
+  static List<VisionPixelFormat> values
+  static VisionPixelFormat bgra
+  static VisionPixelFormat rgb
+  static VisionPixelFormat rgba
+  value VisionPixelFormat.bgra
+  value VisionPixelFormat.rgb
+  value VisionPixelFormat.rgba
+final class VisionRegionOfInterest
+  double get bottom
+  double get left
+  double get right
+  double get top
+  new VisionRegionOfInterest({required double left, required double top, required double right, required double bottom})
+abstract interface class VisionTask
+  Delegate get delegate
+  Future<void> dispose()
+  RunningMode get runningMode
+  new VisionTask()
+abstract base class VisionTaskOptions extends TaskOptions
+  Delegate get delegate
+  DownloadAsset? get model
+  RunningMode get runningMode
+  String? get modelPath
+  Uint8List? get modelBytes
+  new VisionTaskOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, Delegate delegate = Delegate.cpu, RunningMode runningMode = RunningMode.image})
+function TaskCapabilities faceDetectorCapabilitiesForPlatform(TaskPlatform platform)
+function TaskCapabilities faceLandmarkerCapabilitiesForPlatform(TaskPlatform platform)
+function TaskCapabilities gestureRecognizerCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
+function TaskCapabilities handLandmarkerCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
+function TaskCapabilities holisticLandmarkerCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
+function TaskCapabilities imageClassifierCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
+function TaskCapabilities imageEmbedderCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
+function TaskCapabilities imageSegmenterCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
+function TaskCapabilities interactiveSegmenterCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
+function TaskCapabilities objectDetectorCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
+function TaskCapabilities poseLandmarkerCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
+function Future<TaskCapabilities> queryFaceDetectorCapabilities()
+function Future<TaskCapabilities> queryFaceLandmarkerCapabilities()
+function Future<TaskCapabilities> queryGestureRecognizerCapabilities()
+function Future<TaskCapabilities> queryHandLandmarkerCapabilities()
+function Future<TaskCapabilities> queryHolisticLandmarkerCapabilities()
+function Future<TaskCapabilities> queryImageClassifierCapabilities()
+function Future<TaskCapabilities> queryImageEmbedderCapabilities()
+function Future<TaskCapabilities> queryImageSegmenterCapabilities()
+function Future<TaskCapabilities> queryInteractiveSegmenterCapabilities()
+function Future<TaskCapabilities> queryObjectDetectorCapabilities()
+function Future<TaskCapabilities> queryPoseLandmarkerCapabilities()

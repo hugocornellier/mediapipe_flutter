@@ -14,7 +14,7 @@ external Pointer<Char> _tfLiteVersion();
 
 /// Whether core bundled Google's macOS engine (`tasks_runtime: true`), which
 /// every vision task except the source-built face pair runs on.
-bool hasOfficialMacosLandmarkRuntime() {
+bool hasMacosTasksRuntime() {
   if (!Platform.isMacOS) return false;
   try {
     return _tfLiteVersion() != nullptr;

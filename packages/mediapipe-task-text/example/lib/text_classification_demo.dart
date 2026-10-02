@@ -12,9 +12,10 @@ import 'package:mediapipe_text/mediapipe_text.dart';
 import 'enumerate.dart';
 
 class TextClassificationDemo extends StatefulWidget {
-  const TextClassificationDemo({super.key, this.classifier});
+  const TextClassificationDemo({super.key, this.classify});
 
-  final TextClassifier? classifier;
+  /// Replaces the model, as widget tests do.
+  final Future<TextClassifierResult> Function(String text)? classify;
 
   @override
   State<TextClassificationDemo> createState() => _TextClassificationDemoState();
@@ -23,7 +24,7 @@ class TextClassificationDemo extends StatefulWidget {
 class _TextClassificationDemoState extends State<TextClassificationDemo>
     with AutomaticKeepAliveClientMixin<TextClassificationDemo> {
   final TextEditingController _controller = TextEditingController();
-  late final Future<TextClassifier> _task;
+  late final Future<TextClassifier>? _task;
   String? _error;
   final results = <Widget>[];
   String? _isProcessing;
@@ -32,9 +33,9 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
   void initState() {
     super.initState();
     _controller.text = 'Hello, world!';
-    _task = _initClassifier();
+    _task = widget.classify == null ? _initClassifier() : null;
     unawaited(
-      _task.then<void>(
+      (_task ?? Future<void>.value()).then<void>(
         (_) {},
         onError: (Object error, StackTrace _) {
           if (mounted) setState(() => _error = error.toString());
@@ -44,11 +45,13 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
   }
 
   Future<TextClassifier> _initClassifier() async {
-    if (widget.classifier != null) return widget.classifier!;
     final bytes = await rootBundle.load('assets/bert_classifier.tflite');
     return TextClassifier.create(
-      TextClassifierOptions.fromAssetBuffer(
-        bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+      TextClassifierOptions(
+        modelBytes: bytes.buffer.asUint8List(
+          bytes.offsetInBytes,
+          bytes.lengthInBytes,
+        ),
       ),
     );
   }
@@ -56,9 +59,9 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
   @override
   void dispose() {
     _controller.dispose();
-    if (widget.classifier == null) {
+    if (_task case final task?) {
       unawaited(
-        _task.then((task) => task.dispose()).catchError((Object error) {
+        task.then((task) => task.dispose()).catchError((Object error) {
           debugPrint('Closing TextClassifier: $error');
         }),
       );
@@ -118,7 +121,7 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
         .toList();
   }
 
-  Widget _textClassification(Category category, Color color) {
+  Widget _textClassification(MediaPipeCategory category, Color color) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Chip(
@@ -134,7 +137,9 @@ class _TextClassificationDemoState extends State<TextClassificationDemo>
   Future<void> _classify() async {
     _prepareForClassification();
     try {
-      final result = await (await _task).classify(_isProcessing!);
+      final result = await (widget.classify ?? (await _task!).classify)(
+        _isProcessing!,
+      );
       if (mounted) _showClassificationResults(result);
     } catch (error) {
       if (mounted) {

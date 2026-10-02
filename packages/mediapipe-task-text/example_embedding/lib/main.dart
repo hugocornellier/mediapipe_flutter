@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mediapipe_text/embedding_gemma.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 import 'proofreader_page.dart';
 import 'summarizer_page.dart';
@@ -52,11 +52,11 @@ class _SimilarityPageState extends State<SimilarityPage> {
   final _second = TextEditingController(
     text: 'A kitten is resting on a couch.',
   );
-  EmbeddingGemma? _task;
+  TextEmbedder? _task;
   (bool, bool)? _loadedConfiguration;
   bool _normalize = false;
   bool _quantize = false;
-  EmbeddingTaskType _taskType = EmbeddingTaskType.semanticSimilarity;
+  EmbeddingType _taskType = EmbeddingType.semanticSimilarity;
   TextRole _firstRole = TextRole.query;
   TextRole _secondRole = TextRole.query;
   final _firstTitle = TextEditingController();
@@ -65,10 +65,10 @@ class _SimilarityPageState extends State<SimilarityPage> {
   String? _error;
   double? _similarity;
   double? _elapsedMs;
-  TextEmbedding? _firstEmbedding;
-  TextEmbedding? _secondEmbedding;
+  Embedding? _firstEmbedding;
+  Embedding? _secondEmbedding;
 
-  Future<EmbeddingGemma> _load() async {
+  Future<TextEmbedder> _load() async {
     // A packaged macOS app can mmap the bundled file without copying 184 MB
     // through Dart. flutter_tester uses rootBundle instead of an app bundle.
     final file = File.fromUri(
@@ -77,8 +77,8 @@ class _SimilarityPageState extends State<SimilarityPage> {
       ),
     );
     if (await file.exists()) {
-      return EmbeddingGemma.create(
-        EmbeddingGemmaOptions(
+      return TextEmbedder.create(
+        TextEmbedderOptions(
           modelPath: file.path,
           l2Normalize: _normalize,
           quantize: _quantize,
@@ -86,8 +86,8 @@ class _SimilarityPageState extends State<SimilarityPage> {
       );
     }
     final data = await rootBundle.load('assets/embedding_gemma.task');
-    return EmbeddingGemma.create(
-      EmbeddingGemmaOptions(
+    return TextEmbedder.create(
+      TextEmbedderOptions(
         l2Normalize: _normalize,
         quantize: _quantize,
         modelBytes: data.buffer.asUint8List(
@@ -120,7 +120,7 @@ class _SimilarityPageState extends State<SimilarityPage> {
       final results = await Future.wait([
         task.embed(
           first,
-          context: TextFormatContext(
+          formatContext: TextFormatContext(
             taskType: _taskType,
             role: _firstRole,
             title: _firstTitle.text.isEmpty ? null : _firstTitle.text,
@@ -128,7 +128,7 @@ class _SimilarityPageState extends State<SimilarityPage> {
         ),
         task.embed(
           second,
-          context: TextFormatContext(
+          formatContext: TextFormatContext(
             taskType: _taskType,
             role: _secondRole,
             title: _secondTitle.text.isEmpty ? null : _secondTitle.text,
@@ -136,7 +136,7 @@ class _SimilarityPageState extends State<SimilarityPage> {
         ),
       ]);
       final elapsed = watch.elapsedMicroseconds / 1000;
-      final similarity = TextEmbedding.cosineSimilarity(
+      final similarity = TextEmbedder.cosineSimilarity(
         results[0].embeddings.single,
         results[1].embeddings.single,
       );
@@ -199,19 +199,19 @@ class _SimilarityPageState extends State<SimilarityPage> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'EmbeddingGemma 300M · Official MediaPipe pipeline · macOS CPU',
+              'TextEmbedder 300M · Official MediaPipe pipeline · macOS CPU',
             ),
             ExpansionTile(
-              subtitle: const TaskSupport(task: TextTask.embeddingGemma),
+              subtitle: TaskSupport(query: _embeddingGemmaSupport),
               key: const Key('embedding-settings'),
               title: const Text('Embedding settings'),
               children: [
-                DropdownButtonFormField<EmbeddingTaskType>(
+                DropdownButtonFormField<EmbeddingType>(
                   key: const Key('embedding-format'),
                   initialValue: _taskType,
                   decoration: const InputDecoration(labelText: 'Task format'),
                   items: [
-                    for (final type in EmbeddingTaskType.values)
+                    for (final type in EmbeddingType.values)
                       DropdownMenuItem(
                         value: type,
                         child: Text(_taskLabels[type]!),
@@ -221,12 +221,11 @@ class _SimilarityPageState extends State<SimilarityPage> {
                       ? null
                       : (value) => _changeSettings(() {
                           _taskType = value!;
-                          if (value == EmbeddingTaskType.retrievalDocument) {
+                          if (value == EmbeddingType.retrievalDocument) {
                             _firstRole = _secondRole = TextRole.document;
                           } else {
                             _firstRole = TextRole.query;
-                            _secondRole =
-                                value == EmbeddingTaskType.retrievalQuery
+                            _secondRole = value == EmbeddingType.retrievalQuery
                                 ? TextRole.document
                                 : TextRole.query;
                           }
@@ -405,27 +404,27 @@ class _SimilarityPageState extends State<SimilarityPage> {
 }
 
 const _taskLabels = {
-  EmbeddingTaskType.retrievalDocument: 'Retrieval document',
-  EmbeddingTaskType.retrievalQuery: 'Retrieval query',
-  EmbeddingTaskType.semanticSimilarity: 'Semantic similarity',
-  EmbeddingTaskType.classification: 'Classification',
-  EmbeddingTaskType.clustering: 'Clustering',
-  EmbeddingTaskType.questionAnswering: 'Question answering',
-  EmbeddingTaskType.factChecking: 'Fact checking',
-  EmbeddingTaskType.codeRetrieval: 'Code retrieval',
+  EmbeddingType.retrievalDocument: 'Retrieval document',
+  EmbeddingType.retrievalQuery: 'Retrieval query',
+  EmbeddingType.semanticSimilarity: 'Semantic similarity',
+  EmbeddingType.classification: 'Classification',
+  EmbeddingType.clustering: 'Clustering',
+  EmbeddingType.questionAnswering: 'Question answering',
+  EmbeddingType.factChecking: 'Fact checking',
+  EmbeddingType.codeRetrieval: 'Code retrieval',
 };
 
 class _EmbeddingVector extends StatelessWidget {
   const _EmbeddingVector({required this.label, required this.embedding});
 
   final String label;
-  final TextEmbedding embedding;
+  final Embedding embedding;
 
   @override
   Widget build(BuildContext context) {
     final List<num> values =
-        embedding.floatValues?.toList() ??
-        [for (final byte in embedding.quantizedValues!) byte.toSigned(8)];
+        embedding.floatEmbedding?.toList() ??
+        [for (final byte in embedding.quantizedEmbedding!) byte.toSigned(8)];
     final encoded = jsonEncode(values);
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
@@ -458,3 +457,6 @@ class _EmbeddingVector extends StatelessWidget {
     );
   }
 }
+
+Future<TaskCapabilities> _embeddingGemmaSupport() =>
+    queryTextEmbedderCapabilities(TextModels.embeddingGemma);

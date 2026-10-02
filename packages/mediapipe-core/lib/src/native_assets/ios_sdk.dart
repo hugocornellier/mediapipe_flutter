@@ -23,7 +23,6 @@ const officialIosTasks = {
   'image_embedder',
   'image_segmenter',
   'interactive_segmenter',
-  'interactive_segmenter_legacy',
   'object_detector',
   'pose_landmarker',
 };
@@ -77,7 +76,7 @@ const officialIosSdkArchives = <String, DownloadAsset>{
 /// The adapter's sources: the vision tasks, then the text and audio tasks
 /// (one translation unit each: Google's frameworks repeat shared headers).
 const _adapterSources = [
-  'native/ios/face_sdk_bridge.mm',
+  'native/ios/vision_sdk_bridge.mm',
   'native/ios/text_sdk_bridge.mm',
   'native/ios/audio_sdk_bridge.mm',
 ];

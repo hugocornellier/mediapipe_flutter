@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/semantics.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mediapipe_vision/capabilities.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'catalog.dart';
 import 'embed_page.dart';
@@ -38,7 +38,6 @@ const _taskOrder = [
   'image_embedder',
   'image_segmenter',
   'interactive_segmenter',
-  'interactive_segmenter_legacy',
   'audio_classifier',
   'language_detector',
   'text_classifier',
@@ -545,7 +544,7 @@ class _Gallery extends StatelessWidget {
   bool _gpu(GalleryTask task) => task
       .capabilitiesFor(platform, assets.officialMacosLandmarkTasks)
       .supportedDelegates
-      .contains(VisionDelegate.gpu);
+      .contains(Delegate.gpu);
 
   @override
   Widget build(BuildContext context) {

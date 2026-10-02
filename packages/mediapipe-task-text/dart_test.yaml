@@ -1,3 +1,5 @@
 tags:
   # Integration tests that talk to C code bundled via the native-assets feature
   native-assets:
+  # Tests that need Flutter's test binding; run them with `flutter test`.
+  flutter:

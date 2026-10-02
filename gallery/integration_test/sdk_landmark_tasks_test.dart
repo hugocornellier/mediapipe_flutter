@@ -50,16 +50,16 @@ void main() {
           final assets = await GalleryAssets.unpack();
           final model = await _model(subject.model);
           final frame = await loadSample(subject.sample);
-          final references = <VisionDelegate, _Parts>{};
+          final references = <Delegate, _Parts>{};
           for (final delegate in [
-            VisionDelegate.cpu,
-            if (_gpu != 'skip') VisionDelegate.gpu,
+            Delegate.cpu,
+            if (_gpu != 'skip') Delegate.gpu,
           ]) {
             final _Task task;
             try {
               task = await subject.open(model, delegate, RunningMode.image);
-            } on VisionTaskException catch (error) {
-              if (delegate == VisionDelegate.cpu || _gpu == 'required') {
+            } on TaskException catch (error) {
+              if (delegate == Delegate.cpu || _gpu == 'required') {
                 rethrow;
               }
               _report(subject, 'gpu_unavailable', {'error': error.message});
@@ -109,8 +109,7 @@ void main() {
               // The reference is Google's CPU result. Google's Pose GPU turns
               // rotated input differently from its CPU (0.16 apart in the
               // macOS wheel itself), so there the value is only recorded.
-              if (delegate == VisionDelegate.cpu ||
-                  subject.gpuRotationMatchesCpu) {
+              if (delegate == Delegate.cpu || subject.gpuRotationMatchesCpu) {
                 expect(officialTurned, lessThan(_crossRuntime));
               }
 
@@ -150,8 +149,8 @@ void main() {
           }
           if (references.length == 2) {
             final delta = _delta(
-              references[VisionDelegate.cpu]!,
-              references[VisionDelegate.gpu]!,
+              references[Delegate.cpu]!,
+              references[Delegate.gpu]!,
             );
             // Recorded, not asserted: each delegate already matched Google's
             // reference above. On a Galaxy S24's Adreno GPU, Pose was 0.003
@@ -161,10 +160,10 @@ void main() {
           await expectLater(
             subject.open(
               Uint8List.fromList([1, 2, 3]),
-              VisionDelegate.cpu,
+              Delegate.cpu,
               RunningMode.image,
             ),
-            throwsA(isA<VisionTaskException>()),
+            throwsA(isA<TaskException>()),
           );
           if (subject.maskOf case final maskOf?) {
             await _checkMasks(subject, maskOf, model, frame, assets);
@@ -181,7 +180,7 @@ void main() {
           final frame = await loadSample(subject.sample);
           final task = await subject.open(
             await _model(subject.model),
-            VisionDelegate.cpu,
+            Delegate.cpu,
             RunningMode.video,
           );
           try {
@@ -214,7 +213,7 @@ void main() {
 }
 
 /// Image landmarks per named part: one subject's points, or empty.
-typedef _Parts = Map<String, List<VisionLandmark>>;
+typedef _Parts = Map<String, List<NormalizedLandmark>>;
 
 typedef _Result = ({
   _Parts parts,
@@ -251,7 +250,7 @@ final class _Subject {
   final bool Function() registered;
   final Future<_Task> Function(
     Uint8List model,
-    VisionDelegate delegate,
+    Delegate delegate,
     RunningMode mode,
   )
   open;
@@ -263,7 +262,7 @@ final class _Subject {
   /// image, or null for a task without masks. Holistic smooths masks across
   /// IMAGE calls and fails on a size change (upstream-issues.md), so every
   /// image gets its own task.
-  final Future<({SegmentationMask mask, List<VisionLandmark> pose})> Function(
+  final Future<({ConfidenceMask mask, List<NormalizedLandmark> pose})> Function(
     Uint8List model,
     VisionImage image,
     int rotation,
@@ -284,7 +283,7 @@ _Result _result(
   Map<String, Object?> extra = const {},
 ]) => (parts: parts, width: width, timestamp: timestamp, extra: extra);
 
-List<VisionLandmark> _single(List<List<VisionLandmark>> subjects) =>
+List<NormalizedLandmark> _single(List<List<NormalizedLandmark>> subjects) =>
     subjects.isEmpty ? const [] : subjects.single;
 
 void Function(_Result) _expectParts(Map<String, int> points) => (result) {
@@ -322,7 +321,7 @@ final _subjects = <_Subject>[
 
       return _Task(
         (image, {rotation = 0}) async =>
-            map(await task.detectImage(image, rotationDegrees: rotation)),
+            map(await task.detect(image, rotationDegrees: rotation)),
         (image, timestamp) async => map(
           await task.detectForVideo(image, timestampMilliseconds: timestamp),
         ),
@@ -336,7 +335,7 @@ final _subjects = <_Subject>[
         PoseLandmarkerOptions(modelBytes: model, outputSegmentationMasks: true),
       );
       try {
-        final r = await task.detectImage(image, rotationDegrees: rotation);
+        final r = await task.detect(image, rotationDegrees: rotation);
         return (
           mask: r.segmentationMasks!.single,
           pose: r.poseLandmarks.single,
@@ -381,7 +380,7 @@ final _subjects = <_Subject>[
 
       return _Task(
         (image, {rotation = 0}) async =>
-            map(await task.recognizeImage(image, rotationDegrees: rotation)),
+            map(await task.recognize(image, rotationDegrees: rotation)),
         (image, timestamp) async => map(
           await task.recognizeForVideo(image, timestampMilliseconds: timestamp),
         ),
@@ -427,7 +426,7 @@ final _subjects = <_Subject>[
 
       return _Task(
         (image, {rotation = 0}) async =>
-            map(await task.detectImage(image, rotationDegrees: rotation)),
+            map(await task.detect(image, rotationDegrees: rotation)),
         (image, timestamp) async => map(
           await task.detectForVideo(image, timestampMilliseconds: timestamp),
         ),
@@ -444,7 +443,7 @@ final _subjects = <_Subject>[
         ),
       );
       try {
-        final r = await task.detectImage(image, rotationDegrees: rotation);
+        final r = await task.detect(image, rotationDegrees: rotation);
         return (mask: r.poseSegmentationMask!, pose: r.poseLandmarks);
       } finally {
         await task.dispose();
@@ -458,7 +457,7 @@ final _subjects = <_Subject>[
 /// its frame, as Google does for pose masks (unlike Image Segmenter, UP-017).
 Future<void> _checkMasks(
   _Subject subject,
-  Future<({SegmentationMask mask, List<VisionLandmark> pose})> Function(
+  Future<({ConfidenceMask mask, List<NormalizedLandmark> pose})> Function(
     Uint8List,
     VisionImage,
     int,
@@ -495,7 +494,7 @@ Future<void> _checkMasks(
     await expectLater(
       maskOf(model, rotatedImage(frame, 270), 90),
       throwsA(
-        isA<VisionTaskException>().having(
+        isA<TaskException>().having(
           (e) => e.message,
           'message',
           contains('contiguously'),
@@ -524,7 +523,7 @@ Future<void> _checkMasks(
   });
 }
 
-double _mean(SegmentationMask mask) =>
+double _mean(ConfidenceMask mask) =>
     mask.confidence.fold(0.0, (sum, v) => sum + v) / mask.confidence.length;
 
 Future<Uint8List> _model(String name) async {

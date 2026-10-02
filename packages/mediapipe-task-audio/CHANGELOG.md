@@ -1,3 +1,22 @@
+## 0.2.0
+
+- Breaking: `AudioClassifierResult` is a class with `classifications` (one
+  `Classifications` per model head) and `timestampMilliseconds`; the
+  `AudioClassifierCategory` record is core's `MediaPipeCategory`. See
+  MIGRATION.md.
+- Breaking: `AudioClassifierOptions` extends core's `TaskOptions` and adds
+  Google's `runningMode` (`AudioRunningMode.audioClips`; `audioStream` is
+  reserved), `displayNamesLocale`, `categoryAllowlist` and
+  `categoryDenylist`. `AudioDelegate` and `AudioTaskException` are core's
+  `Delegate` and `TaskException`; `web_runtime.dart` is gone.
+- `AudioClassifier` has `delegate` and `runningMode` getters.
+
+- `AudioModels.byName` names YAMNet for
+  `hooks.user_defines.mediapipe_audio.models`, which
+  `dart run mediapipe_core:bundle_models` bundles into the app.
+- Breaking: `model:` uses the app's bundled copy and no longer downloads at
+  run time unless `ModelStore.allowDownloads` is true.
+
 ## 0.1.0
 
 First release.

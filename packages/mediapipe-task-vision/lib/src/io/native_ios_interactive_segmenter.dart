@@ -1,12 +1,14 @@
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 
 import '../../third_party/mediapipe/interactive_segmenter_bindings.dart'
     as strokes;
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../interface/interactive_segmenter_types.dart';
-import '../interface/vision_task_types.dart';
+import '../types/options.dart';
+import '../types/strokes.dart';
+import '../types/vision_types.dart';
 import 'native_interactive_segmenter.dart';
 import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
@@ -63,10 +65,8 @@ external int _close(Pointer<Void> task, Pointer<Pointer<Char>> error);
 final class IosInteractiveSegmenter implements InteractiveSegmenterSession {
   /// Create the SDK task; CPU only, as the task's other runtimes.
   IosInteractiveSegmenter(InteractiveSegmenterOptions options) {
-    if (options.delegate != VisionDelegate.cpu) {
-      throw const VisionTaskException(
-        'Interactive Segmenter supports CPU only.',
-      );
+    if (options.delegate != Delegate.cpu) {
+      throw const TaskException('Interactive Segmenter supports CPU only.');
     }
     using((arena) {
       final base = arena<mp.MpBaseOptions>();
@@ -115,7 +115,7 @@ final class IosInteractiveSegmenter implements InteractiveSegmenterSession {
   });
 
   @override
-  SegmentationMask segment(List<SegmentationStroke> history) {
+  ConfidenceMask segment(List<Stroke> history) {
     if (!_hasImage) {
       throw StateError('Call setImage successfully before segment.');
     }
@@ -170,8 +170,8 @@ final class IosInteractiveSegmenter implements InteractiveSegmenterSession {
 void _checkedStatus(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
   try {
     checkVisionCall(call);
-  } on VisionTaskException catch (error) {
-    throw VisionTaskException(error.message, statusCode: error.statusCode);
+  } on TaskException catch (error) {
+    throw TaskException(error.message, statusCode: error.statusCode);
   }
 }
 

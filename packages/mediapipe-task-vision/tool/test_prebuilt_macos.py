@@ -3,7 +3,7 @@
 Default: download from the pinned public release. Before publishing, pass
 --local-release to serve the identical pinned archive over loopback HTTP.
 Only the URL in the isolated package copy changes; both digests stay pinned.
---official-landmarks turns on core's copy of Google's macOS engine, which Face
+--tasks-runtime turns on core's copy of Google's macOS engine, which Face
 Landmarker then runs on instead of its source build.
 """
 import argparse
@@ -122,7 +122,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--local-release", type=Path,
                         help="Directory containing the pinned archive before publication")
-    parser.add_argument("--official-landmarks", action="store_true",
+    parser.add_argument("--tasks-runtime", action="store_true",
                         help="Turn on core's macOS engine, which serves Face Landmarker")
     args = parser.parse_args()
     build = PACKAGE.parents[1] / "build"
@@ -130,14 +130,14 @@ def main():
     root = Path(tempfile.mkdtemp(prefix="prebuilt-consumer-", dir=build))
     if args.local_release:
         with release_server(args.local_release.resolve()) as (urls, requests):
-            verify(root, local_urls=urls, official=args.official_landmarks)
+            verify(root, local_urls=urls, official=args.tasks_runtime)
             if not requests:
                 raise RuntimeError("Cold consumer never requested the release archive")
             if any(path.lstrip('/') not in urls for path in requests):
                 raise RuntimeError(f"Unexpected release requests: {requests}")
             print(f"Verified {len(requests)} unauthenticated archive download(s).", flush=True)
     else:
-        verify(root, official=args.official_landmarks)
+        verify(root, official=args.tasks_runtime)
 
 
 if __name__ == "__main__":

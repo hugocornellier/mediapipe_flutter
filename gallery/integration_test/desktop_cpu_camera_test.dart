@@ -75,12 +75,12 @@ void main() {
             );
           }
         });
-        await selectDelegate(tester, live, VisionDelegate.cpu);
+        await selectDelegate(tester, live, Delegate.cpu);
         camera.deliverFrames = true;
         await waitForFrames(tester, live);
         await tester.pump();
         expect(find.byKey(const ValueKey('delegate-gpu')), gpuOffered);
-        expect(live.delegate, VisionDelegate.cpu);
+        expect(live.delegate, Delegate.cpu);
         expect(live.frameRotationDegrees, 0);
 
         // Switch from the padded RGBA camera to padded BGRA without closing the
@@ -115,7 +115,7 @@ void main() {
         await waitForFrames(tester, live);
         await tester.pump();
         expect(live.running, isTrue);
-        expect(live.delegate, VisionDelegate.cpu);
+        expect(live.delegate, Delegate.cpu);
       } finally {
         await tester.runAsync(() async => await controller?.close());
         await tester.pumpWidget(const MaterialApp(home: SizedBox()));

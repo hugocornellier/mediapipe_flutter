@@ -1,0 +1,33 @@
+# API parity
+
+Checks the public API each family exports from
+`package:mediapipe_<family>/mediapipe_<family>.dart`:
+
+- **Parity.** The analyzer resolves the library twice, once with the native
+  compilers' `dart.library.io`, `ffi` and `isolate`, once with the web
+  compilers' `js_interop`, `js_util`, `html` and `js`, and diffs every public
+  symbol and member. The two must be identical.
+- **Conventions.** No platform type (`dart:ffi`, `dart:io`, `dart:js_interop`,
+  `package:web`, ...) in a public signature; every task (a class with
+  `static Future<Self> create`) has `Future<void> dispose()`, a `delegate`
+  getter and a `query<Task>Capabilities()` function; every `*Options` class
+  but `TaskOptions` and Gesture Recognizer's `ClassifierOptions` extends
+  `TaskOptions`; no public name collides with `dart:core`, `dart:async`,
+  `dart:typed_data`, `dart:collection`, `dart:math` or Flutter's foundation,
+  services, widgets, material and cupertino libraries.
+- **Snapshots.** `snapshots/<family>.txt` is the API dump; a
+  `<family>.web.txt` exists only while the web API still differs. CI fails
+  when a dump no longer matches, so every API change shows up in review.
+
+`baseline.txt` lists the findings the API still has. The check fails on a
+finding that is not in the baseline, and on a baseline entry that no longer
+holds, so the baseline only shrinks deliberately.
+
+```sh
+cd tool/api_parity && dart pub get
+dart run bin/api_parity.dart            # check
+dart run bin/api_parity.dart --update   # rewrite baseline.txt and snapshots/
+```
+
+The four packages need `flutter pub get` first; the tool reads their package
+configurations.

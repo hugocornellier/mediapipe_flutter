@@ -38,7 +38,7 @@ the upstream Metal delegate creation log. Upstream sources remain unmodified.
 Each task has its own dylib and generated bindings, including its own image
 allocation/free functions. Native pointers never cross task libraries. Tests
 exercise concurrent detector/landmarker inference and independent disposal in
-one process. `FaceLandmarkConnections` is generated from the same release's
+one process. `FaceLandmarksConnections` is generated from the same release's
 official Python drawing topology, retaining every edge and its ordering.
 
 `LICENSE` and `NOTICE` were copied from Google's official MediaPipe 1.0.0

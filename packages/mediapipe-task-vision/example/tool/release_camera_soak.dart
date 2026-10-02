@@ -157,7 +157,7 @@ Future<void> main() async {
         if (knownFace.faceLandmarks.length != 1 ||
             knownFace.faceLandmarks.single.length != 478 ||
             knownFace.faceBlendshapes.single.length != 52 ||
-            knownFace.facialTransformationMatrixes.single.values.length != 16 ||
+            knownFace.facialTransformationMatrixes.single.data.length != 16 ||
             knownFace.faceLandmarks.single.any(
               (p) => !p.x.isFinite || !p.y.isFinite || !p.z.isFinite,
             )) {

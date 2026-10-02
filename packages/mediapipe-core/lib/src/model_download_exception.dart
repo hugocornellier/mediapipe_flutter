@@ -1,5 +1,5 @@
 import 'download_asset.dart';
-import '../mediapipe_exception.dart';
+import 'exceptions.dart';
 
 /// A model could not be downloaded from any configured source.
 final class ModelDownloadException extends MediaPipeException {

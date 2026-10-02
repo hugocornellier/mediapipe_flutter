@@ -1,7 +1,7 @@
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_text/io.dart';
+import 'package:mediapipe_text/src/io/native_text_classifier.dart';
 import 'package:mediapipe_text/src/io/third_party/mediapipe/classic_text_bindings.dart'
     as mp;
 import 'package:test/test.dart';
@@ -10,10 +10,10 @@ void main() {
   test('copies an empty 1.0.1 classification result', () {
     final result = using(
       (arena) =>
-          TextClassifierResult.native(arena<mp.MpClassificationResult>()),
+          textClassifierResultFromNative(arena<mp.MpClassificationResult>()),
     );
     expect(result.classifications, isEmpty);
-    expect(result.timestampMs, isNull);
+    expect(result.timestampMilliseconds, isNull);
   });
   test('copies nested categories before caller frees native memory', () {
     final result = using((arena) {
@@ -32,16 +32,13 @@ void main() {
       output.ref
         ..classifications = heads
         ..classificationsCount = 1;
-      final result = TextClassifierResult.native(output);
+      final result = textClassifierResultFromNative(output);
       categories.ref
         ..index = 99
         ..score = 0;
       name.cast<Uint8>().value = 0;
       return result;
     });
-    result.dispose();
-    result.dispose();
-    expect(result.isClosed, isTrue);
     final head = result.classifications.single;
     expect(head.headName, isNull);
     expect(head.headIndex, 2);

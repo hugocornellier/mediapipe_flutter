@@ -9,17 +9,17 @@ import 'package:mediapipe_segmenter/editor_geometry.dart';
 import 'package:mediapipe_segmenter/mask_overlay.dart';
 
 class FakeBackend implements SegmentationBackend {
-  final calls = <List<SegmentationStroke>>[];
-  final results = <Completer<SegmentationMask>>[];
+  final calls = <List<Stroke>>[];
+  final results = <Completer<ConfidenceMask>>[];
   int images = 0;
   int closed = 0;
 
   @override
   Future<void> setImage(VisionImage image) async => images++;
   @override
-  Future<SegmentationMask> segment(List<SegmentationStroke> strokes) {
+  Future<ConfidenceMask> segment(List<Stroke> strokes) {
     calls.add(strokes);
-    final result = Completer<SegmentationMask>();
+    final result = Completer<ConfidenceMask>();
     results.add(result);
     return result.future;
   }
@@ -28,7 +28,7 @@ class FakeBackend implements SegmentationBackend {
   Future<void> dispose() async => closed++;
 
   void finish(int index, [double confidence = 1]) => results[index].complete(
-    SegmentationMask(
+    ConfidenceMask(
       width: 1,
       height: 1,
       confidence: Float32List.fromList([confidence]),
@@ -37,8 +37,8 @@ class FakeBackend implements SegmentationBackend {
 }
 
 Future<void> tick() => Future<void>.delayed(Duration.zero);
-SegmentationPoint point(double x, [double y = 0.5]) =>
-    SegmentationPoint(x: x, y: y);
+NormalizedKeypoint point(double x, [double y = 0.5]) =>
+    NormalizedKeypoint(x: x, y: y);
 VisionImage input() => VisionImage.fromPixels(
   pixels: Uint8List(3),
   width: 1,
@@ -118,13 +118,13 @@ void main() {
       await tick();
       backend.finish(0);
       await tick();
-      editor.brush = SegmentationBrushMode.negative;
+      editor.brush = BrushMode.negative;
       editor
         ..begin(point(0.4))
         ..end();
       await tick();
       expect(backend.calls.last, hasLength(2));
-      expect(backend.calls.last.last.brushMode, SegmentationBrushMode.negative);
+      expect(backend.calls.last.last.brushMode, BrushMode.negative);
       backend.finish(1);
       await tick();
       editor.undo();
@@ -142,7 +142,7 @@ void main() {
   );
 
   test('lasso waits for a polygon and closes the completed stroke', () async {
-    editor.brush = SegmentationBrushMode.lasso;
+    editor.brush = BrushMode.lasso;
     editor
       ..begin(point(0.1, 0.1))
       ..extend(point(0.9, 0.1));

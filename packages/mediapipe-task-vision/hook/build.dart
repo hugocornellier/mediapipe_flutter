@@ -57,6 +57,9 @@ void main(List<String> arguments) async {
         'hooks.user_defines.mediapipe_core.tasks_runtime: true.',
       );
     }
+    // TODO: Bundle the `models:` list here as data assets once they reach
+    // Flutter stable, retiring `dart run mediapipe_core:bundle_models`. See
+    // tool/MODEL_BUNDLING.md at the repository root.
     final selection =
         input.userDefines['tasks'] ?? ['face_detector', 'face_landmarker'];
     if (selection is! List ||

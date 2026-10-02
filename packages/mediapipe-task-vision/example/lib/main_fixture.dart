@@ -113,8 +113,8 @@ class _FaceFixturePageState extends State<FaceFixturePage> {
         data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
       );
       final image = VisionImage.fromFile(file.path);
-      final detections = await _detector!.detectImage(image);
-      final landmarks = await _landmarker!.detectImage(image);
+      final detections = await _detector!.detect(image);
+      final landmarks = await _landmarker!.detect(image);
       if (mounted) {
         setState(() {
           _detections = detections;

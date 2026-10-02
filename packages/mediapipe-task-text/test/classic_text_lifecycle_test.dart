@@ -5,23 +5,29 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/io.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:test/test.dart';
 
 typedef _Task = (Future<Object> Function(String), Future<void> Function());
 
-_Task _start(String name, BaseOptions model) {
+/// A model as a file path or in memory.
+typedef _Model = ({String? path, Uint8List? bytes});
+
+Future<_Task> _start(String name, _Model model) async {
   switch (name) {
     case 'classifier':
-      final task = TextClassifier(TextClassifierOptions(baseOptions: model));
+      final task = await TextClassifier.create(
+        TextClassifierOptions(modelPath: model.path, modelBytes: model.bytes),
+      );
       return (task.classify, task.dispose);
     case 'embedder':
-      final task = TextEmbedder(TextEmbedderOptions(baseOptions: model));
+      final task = await TextEmbedder.create(
+        TextEmbedderOptions(modelPath: model.path, modelBytes: model.bytes),
+      );
       return (task.embed, task.dispose);
     default:
-      final task = LanguageDetector(
-        LanguageDetectorOptions(baseOptions: model),
+      final task = await LanguageDetector.create(
+        LanguageDetectorOptions(modelPath: model.path, modelBytes: model.bytes),
       );
       return (task.detect, task.dispose);
   }
@@ -51,88 +57,74 @@ void main() {
   };
   for (final entry in models.entries) {
     final name = entry.key;
-    final model = BaseOptions.path(entry.value);
+    final _Model model = (path: entry.value, bytes: null);
     group(name, () {
-      test(
-        'preserves concurrent response order and drains disposal during startup',
-        () async {
-          const inputs = [
-            'Hello, world!',
-            'This is terrible.',
-            'Quiero agua, por favor.',
-            '',
-            'こんにちは',
-          ];
-          final (reference, closeReference) = _start(name, model);
-          final expected = <Object>[];
-          try {
-            for (final text in inputs) {
-              expected.add(_values(await reference(text)));
-            }
-          } finally {
-            await closeReference();
+      test('preserves concurrent response order and drains queued requests on '
+          'disposal', () async {
+        const inputs = [
+          'Hello, world!',
+          'This is terrible.',
+          'Quiero agua, por favor.',
+          '',
+          'こんにちは',
+        ];
+        final (reference, closeReference) = await _start(name, model);
+        final expected = <Object>[];
+        try {
+          for (final text in inputs) {
+            expected.add(_values(await reference(text)));
           }
-          final (run, close) = _start(name, model);
-          final pending = [for (final text in inputs) run(text)];
-          final closing = close();
-          expect(identical(closing, close()), isTrue);
-          await expectLater(run('Too late'), throwsStateError);
-          final results = await Future.wait(pending);
-          await closing;
-          expect(results.map(_values).toList(), expected);
-          await close();
-        },
-      );
+        } finally {
+          await closeReference();
+        }
+        final (run, close) = await _start(name, model);
+        final pending = [for (final text in inputs) run(text)];
+        final closing = close();
+        expect(identical(closing, close()), isTrue);
+        await expectLater(run('Too late'), throwsStateError);
+        final results = await Future.wait(pending);
+        await closing;
+        expect(results.map(_values).toList(), expected);
+        await close();
+      });
 
       test(
         'can dispose before any inference and recreate repeatedly',
         () async {
           for (var i = 0; i < 3; i++) {
-            final (run, close) = _start(name, model);
+            final (run, close) = await _start(name, model);
             await close().timeout(const Duration(seconds: 10));
             await expectLater(run('Late'), throwsStateError);
           }
         },
       );
 
-      test(
-        'initialization errors reach pending calls and disposal without hangs',
-        () async {
-          for (final bad in [
-            BaseOptions.path('/nonexistent/mediapipe-model.tflite'),
-            BaseOptions.memory(Uint8List.fromList([1, 2, 3, 4])),
-          ]) {
-            final (run, close) = _start(name, bad);
-            // Let initialization fail before attaching an inference listener.
-            await Future<void>.delayed(const Duration(milliseconds: 50));
-            final failure = throwsA(
-              isA<TextTaskException>().having(
+      test('creation reports an invalid model and leaves no task', () async {
+        for (final _Model bad in [
+          (path: '/nonexistent/mediapipe-model.tflite', bytes: null),
+          (path: null, bytes: Uint8List.fromList([1, 2, 3, 4])),
+        ]) {
+          await expectLater(
+            _start(name, bad).timeout(const Duration(seconds: 10)),
+            throwsA(
+              isA<TaskException>().having(
                 (e) => e.message,
                 'message',
                 isNotEmpty,
               ),
-            );
-            await expectLater(
-              run('Hello').timeout(const Duration(seconds: 10)),
-              failure,
-            );
-            await expectLater(
-              close().timeout(const Duration(seconds: 10)),
-              failure,
-            );
-            await expectLater(run('Late'), throwsStateError);
-          }
-          final (run, close) = _start(name, model);
-          try {
-            expect(await run('Hello'), isNotNull);
-          } finally {
-            await close();
-          }
-        },
-      );
+            ),
+          );
+        }
+        final (run, close) = await _start(name, model);
+        try {
+          expect(await run('Hello'), isNotNull);
+        } finally {
+          await close();
+        }
+      });
 
       test('rejects NUL without poisoning a valid task', () async {
-        final (run, close) = _start(name, model);
+        final (run, close) = await _start(name, model);
         try {
           await expectLater(run('Hello\u0000ignored'), throwsArgumentError);
           expect(await run('Hello'), isNotNull);
@@ -148,20 +140,14 @@ void main() {
     () async {
       final bytes = File(models['classifier']!).readAsBytesSync();
       final allow = ['positive'];
-      final options = TextClassifierOptions.fromAssetBuffer(
-        bytes,
-        classifierOptions: ClassifierOptions(categoryAllowlist: allow),
+      final options = TextClassifierOptions(
+        modelBytes: bytes,
+        categoryAllowlist: allow,
       );
       bytes.fillRange(0, bytes.length, 0);
       allow[0] = 'negative';
-      expect(
-        () => options.baseOptions.modelAssetBuffer![0] = 0,
-        throwsUnsupportedError,
-      );
-      expect(
-        () => options.classifierOptions.categoryAllowlist!.clear(),
-        throwsUnsupportedError,
-      );
+      expect(() => options.modelBytes![0] = 0, throwsUnsupportedError);
+      expect(() => options.categoryAllowlist.clear(), throwsUnsupportedError);
       for (var i = 0; i < 2; i++) {
         final task = await TextClassifier.create(options);
         try {
@@ -181,89 +167,76 @@ void main() {
   test('async factories report invalid models immediately', () async {
     await expectLater(
       TextClassifier.create(
-        TextClassifierOptions.fromAssetPath('/nonexistent/model'),
+        TextClassifierOptions(modelPath: '/nonexistent/model'),
       ),
-      throwsA(isA<TextTaskException>()),
+      throwsA(isA<TaskException>()),
     );
     await expectLater(
-      TextEmbedder.create(
-        TextEmbedderOptions.fromAssetPath('/nonexistent/model'),
-      ),
-      throwsA(isA<TextTaskException>()),
+      TextEmbedder.create(TextEmbedderOptions(modelPath: '/nonexistent/model')),
+      throwsA(isA<TaskException>()),
     );
     await expectLater(
       LanguageDetector.create(
-        LanguageDetectorOptions.fromAssetPath('/nonexistent/model'),
+        LanguageDetectorOptions(modelPath: '/nonexistent/model'),
       ),
-      throwsA(isA<TextTaskException>()),
+      throwsA(isA<TaskException>()),
     );
   });
 
   test('rejects truncated C strings and unrepresentable option values', () {
     expect(
-      () => TextClassifierOptions.fromAssetPath('model\u0000suffix'),
+      () => TextClassifierOptions(modelPath: 'model\u0000suffix'),
       throwsArgumentError,
     );
     expect(
-      () => TextEmbedderOptions.fromAssetBuffer(Uint8List(0)),
+      () => TextEmbedderOptions(modelBytes: Uint8List(0)),
       throwsArgumentError,
     );
     expect(
-      () => LanguageDetectorOptions.fromAssetPath(
-        'model',
-        classifierOptions: ClassifierOptions(categoryAllowlist: ['en\u0000fr']),
+      () => LanguageDetectorOptions(
+        modelPath: 'model',
+        categoryAllowlist: ['en\u0000fr'],
       ),
       throwsArgumentError,
     );
     expect(
-      () => TextClassifierOptions.fromAssetPath(
-        'model',
-        classifierOptions: ClassifierOptions(maxResults: 0x80000000),
-      ),
+      () => TextClassifierOptions(modelPath: 'model', maxResults: 0x80000000),
       throwsArgumentError,
     );
     expect(
-      () => TextClassifierOptions.fromAssetPath(
-        'model',
-        classifierOptions: ClassifierOptions(scoreThreshold: double.nan),
-      ),
+      () => TextClassifierOptions(modelPath: 'model', maxResults: 0),
+      throwsArgumentError,
+    );
+    expect(
+      () =>
+          TextClassifierOptions(modelPath: 'model', scoreThreshold: double.nan),
       throwsArgumentError,
     );
   });
 
-  test(
-    'similarity works with owned vectors and rejects invalid comparisons',
-    () async {
-      final task = await TextEmbedder.create(
-        TextEmbedderOptions.fromAssetPath(models['embedder']!),
-      );
-      try {
-        final a = Embedding.quantized(
-          Uint8List.fromList([127, 128]),
-          headIndex: 0,
-        );
-        final b = Embedding.quantized(
-          Uint8List.fromList([128, 127]),
-          headIndex: 0,
-        );
-        expect(await task.cosineSimilarity(a, b), lessThan(-.99));
-        await expectLater(
-          task.cosineSimilarity(
-            a,
-            Embedding.float(Float32List.fromList([1, 2]), headIndex: 0),
-          ),
-          throwsArgumentError,
-        );
-        await expectLater(
-          task.cosineSimilarity(
-            a,
-            Embedding.quantized(Uint8List(2), headIndex: 0),
-          ),
-          throwsArgumentError,
-        );
-      } finally {
-        await task.dispose();
-      }
-    },
-  );
+  test('similarity reads quantized bytes as signed and rejects mismatches', () {
+    final a = Embedding(
+      quantizedEmbedding: Uint8List.fromList([127, 128]),
+      headIndex: 0,
+    );
+    final b = Embedding(
+      quantizedEmbedding: Uint8List.fromList([128, 127]),
+      headIndex: 0,
+    );
+    expect(TextEmbedder.cosineSimilarity(a, b), lessThan(-.99));
+    expect(
+      () => TextEmbedder.cosineSimilarity(
+        a,
+        Embedding(floatEmbedding: Float32List.fromList([1, 2]), headIndex: 0),
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => TextEmbedder.cosineSimilarity(
+        a,
+        Embedding(quantizedEmbedding: Uint8List(2), headIndex: 0),
+      ),
+      throwsArgumentError,
+    );
+  });
 }

@@ -43,16 +43,13 @@ void main() {
             ),
           ),
         );
-        SegmentationStroke stroke(
-          SegmentationBrushMode mode,
-          List<(double, double)> points,
-        ) => SegmentationStroke(
+        Stroke stroke(BrushMode mode, List<(double, double)> points) => Stroke(
           brushMode: mode,
-          points: [for (final (x, y) in points) SegmentationPoint(x: x, y: y)],
+          points: [for (final (x, y) in points) NormalizedKeypoint(x: x, y: y)],
         );
         final (x, y) = officialInteractiveReference.point;
-        final cat = stroke(SegmentationBrushMode.positive, [(x, y)]);
-        final dog = stroke(SegmentationBrushMode.positive, [(0.66, 0.55)]);
+        final cat = stroke(BrushMode.positive, [(x, y)]);
+        final dog = stroke(BrushMode.positive, [(0.66, 0.55)]);
         try {
           await task.setImage(VisionImage.fromFile(assets.path('animals.jpg')));
           final file = await task.segment([cat]);
@@ -86,14 +83,14 @@ void main() {
           expect(_foreground(both), greaterThan(_foreground(dogOnly)));
           final negative = await task.segment([
             dog,
-            stroke(SegmentationBrushMode.negative, [(0.42, 0.6)]),
+            stroke(BrushMode.negative, [(0.42, 0.6)]),
           ]);
           expect(
             _foreground(negative),
             lessThanOrEqualTo(_foreground(dogOnly) + 0.001),
           );
           final lasso = await task.segment([
-            stroke(SegmentationBrushMode.lasso, [
+            stroke(BrushMode.lasso, [
               (0.52, 0.2),
               (0.78, 0.2),
               (0.78, 0.98),
@@ -141,13 +138,13 @@ void main() {
         );
         final (x, y) = officialInteractiveReference.point;
         final history = [
-          SegmentationStroke(
-            brushMode: SegmentationBrushMode.positive,
-            points: [SegmentationPoint(x: x, y: y)],
+          Stroke(
+            brushMode: BrushMode.positive,
+            points: [NormalizedKeypoint(x: x, y: y)],
           ),
         ];
-        final masks = <VisionDelegate, SegmentationMask>{};
-        for (final delegate in VisionDelegate.values) {
+        final masks = <Delegate, ConfidenceMask>{};
+        for (final delegate in Delegate.values) {
           // PowerVR accepts the GPU task, then refuses its first segment.
           try {
             final task = await InteractiveSegmenter.create(
@@ -164,14 +161,13 @@ void main() {
             } finally {
               await task.dispose();
             }
-          } on VisionTaskException catch (error) {
-            if (delegate == VisionDelegate.cpu) rethrow;
+          } on TaskException catch (error) {
+            if (delegate == Delegate.cpu) rethrow;
             _report('gpu_unavailable', {'error': error.message});
             return;
           }
         }
-        final cpu = masks[VisionDelegate.cpu]!,
-            gpu = masks[VisionDelegate.gpu]!;
+        final cpu = masks[Delegate.cpu]!, gpu = masks[Delegate.gpu]!;
         _report('cpu_gpu', {
           'agreement': _agreement(cpu, gpu),
           'gpu_grid_error': _gridError(gpu, officialInteractiveReference.grid),
@@ -184,7 +180,7 @@ void main() {
 }
 
 /// Mean difference between [mask]'s cell means and Google's.
-double _gridError(SegmentationMask mask, List<List<double>> grid) {
+double _gridError(ConfidenceMask mask, List<List<double>> grid) {
   final rows = grid.length, columns = grid.first.length;
   var total = 0.0;
   for (var r = 0; r < rows; r++) {
@@ -204,15 +200,15 @@ double _gridError(SegmentationMask mask, List<List<double>> grid) {
   return total / (rows * columns);
 }
 
-double _mean(SegmentationMask mask) =>
+double _mean(ConfidenceMask mask) =>
     mask.confidence.fold(0.0, (sum, v) => sum + v) / mask.confidence.length;
 
 /// The share of pixels above 0.5.
-double _foreground(SegmentationMask mask) =>
+double _foreground(ConfidenceMask mask) =>
     mask.confidence.where((v) => v > 0.5).length / mask.confidence.length;
 
 /// The share of pixels on the same side of 0.5 in two same-sized masks.
-double _agreement(SegmentationMask a, SegmentationMask b) {
+double _agreement(ConfidenceMask a, ConfidenceMask b) {
   expect((a.width, a.height), (b.width, b.height));
   var same = 0;
   for (var i = 0; i < a.confidence.length; i++) {

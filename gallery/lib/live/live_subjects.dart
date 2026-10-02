@@ -46,7 +46,7 @@ List<List<LivePoint>> liveSubjects(Object? result) => switch (result) {
       ),
       // A segmented frame counts as one subject when anything is not
       // background.
-      SegmentationResult(:final categoryMask?) => (
+      ImageSegmenterResult(:final categoryMask?) => (
         subjects: categoryMask.categories.any((c) => c != 0) ? 1 : 0,
         points: 0,
       ),

@@ -1,12 +1,16 @@
-/// Google's official MediaPipe Audio Classifier: on the shared 1.0.1 runtime
-/// natively, and through mediapipe_audio in browsers.
+/// Google's MediaPipe Audio Classifier, with one API on Android, iOS, macOS,
+/// Linux, Windows and the web.
+///
+/// The task has `static create(options)`, Google's verb `classify`, a
+/// `delegate` getter and `dispose()`. What a platform's runtime cannot do
+/// throws `RuntimeUnavailableException`, and the capability query reports
+/// it in advance.
 library;
 
+export 'package:mediapipe_core/mediapipe_core.dart';
+
 export 'models.dart' show AudioModels;
-export 'package:mediapipe_core/capabilities.dart'
-    show TaskCapabilities, TaskPlatform;
-export 'package:mediapipe_core/mediapipe_exception.dart';
-export 'src/audio_types.dart';
-export 'src/audio_classifier_web.dart'
-    if (dart.library.ffi) 'src/audio_classifier.dart';
+export 'src/audio_classifier.dart';
+export 'src/capabilities.dart';
+export 'src/types.dart';
 export 'src/wav.dart';

@@ -37,7 +37,7 @@ void main() {
       );
     }
   });
-  test('Android SDK refuses the task it does not serve', () async {
+  test('the hook refuses a task it does not know', () async {
     await expectLater(
       testCodeBuildHook(
         mainMethod: hook.main,
@@ -45,11 +45,11 @@ void main() {
         targetArchitecture: Architecture.arm64,
         userDefines: _defines({
           'official_android_sdk': true,
-          'tasks': ['interactive_segmenter_legacy', 'face_landmarker'],
+          'tasks': ['not_a_task', 'face_landmarker'],
         }),
         check: (_, _) => fail('Invalid selection succeeded'),
       ),
-      throwsA(isA<UnsupportedError>()),
+      throwsA(isA<FormatException>()),
     );
   });
   test('settings for other platforms are ignored on Android', () async {

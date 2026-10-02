@@ -5,12 +5,16 @@ import 'dart:typed_data';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_vision/src/io/gpu_frame_budget.dart';
 import 'package:mediapipe_vision/src/io/vision_task_worker.dart';
+import 'package:mediapipe_vision/src/runner/native_interface.dart';
 import 'package:test/test.dart';
 
 /// Options whose fake native task reports opening and closing to [events].
-final class _Options extends VisionModelOptions {
-  _Options(this.events, {super.delegate = VisionDelegate.cpu})
-    : super(modelBytes: Uint8List(1), runningMode: RunningMode.video);
+final class _Options extends VisionTaskOptions {
+  _Options(this.events, {super.delegate = Delegate.cpu, super.modelPath})
+    : super(
+        modelBytes: modelPath == null ? Uint8List(1) : null,
+        runningMode: RunningMode.video,
+      );
   final SendPort events;
 }
 
@@ -20,8 +24,10 @@ var _opened = 0;
 /// Answers every frame with its own number, so results show which native
 /// task processed them.
 final class _Native implements NativeVisionTask<int> {
-  _Native(this.options) : number = ++_opened {
-    options.events.send('open $number');
+  _Native(this.options, [String? source]) : number = ++_opened {
+    options.events.send(
+      source == null ? 'open $number' : 'open $number $source',
+    );
   }
 
   final _Options options;
@@ -43,8 +49,19 @@ _Native _open(_Options options) => _Native(options);
 
 /// Opens once, then fails, as a GPU that disappeared would.
 _Native _openOnce(_Options options) {
-  if (_opened == 1) throw const VisionTaskException('No GPU.');
+  if (_opened == 1) throw const TaskException('No GPU.');
   return _Native(options);
+}
+
+/// Opens the way MediaPipe does from a model path: the file must still exist.
+_Native _openFromFile(_Options options) {
+  if (options.modelPath case final path?) {
+    if (!File(path).existsSync()) {
+      throw TaskException('Unable to open file at $path');
+    }
+    return _Native(options, 'from its file');
+  }
+  return _Native(options, 'from ${options.modelBytes!.length} bytes');
 }
 
 /// 4x4 RGBA: 64 bytes for the GPU.
@@ -74,6 +91,7 @@ void main() {
       _Options(events.sendPort),
       _open,
       'reopen',
+      'reopen',
       reopenAfterBytes: 128,
     );
     final answers = [
@@ -97,6 +115,7 @@ void main() {
       _Options(events.sendPort),
       _open,
       'no budget',
+      'no budget',
     );
     final answers = [
       for (var i = 0; i < 5; i++) await worker.processVideo(_frame, 0, i, null),
@@ -112,17 +131,14 @@ void main() {
       _Options(events.sendPort),
       _openOnce,
       'reopen fails',
+      'reopen fails',
       reopenAfterBytes: 64,
     );
     expect(await worker.processVideo(_frame, 0, 0, null), 1);
     await expectLater(
       worker.processVideo(_frame, 0, 1, null),
       throwsA(
-        isA<VisionTaskException>().having(
-          (e) => e.message,
-          'message',
-          'No GPU.',
-        ),
+        isA<TaskException>().having((e) => e.message, 'message', 'No GPU.'),
       ),
     );
     await worker.dispose();
@@ -130,11 +146,44 @@ void main() {
     expect(log, ['open 1', 'close 1']);
   });
 
+  test('reopens from memory after the model file is deleted', () async {
+    final folder = Directory.systemTemp.createTempSync('vision-worker-model-');
+    addTearDown(() => folder.deleteSync(recursive: true));
+    final model = File('${folder.path}/model.tflite')
+      ..writeAsBytesSync([1, 2, 3]);
+    final worker = await VisionTaskWorker.create(
+      _Options(events.sendPort, modelPath: model.path),
+      _openFromFile,
+      'model file deleted',
+      'model file deleted',
+      reopenAfterBytes: 64,
+    );
+    // MediaPipe has read the file once the task exists, so apps may delete it.
+    model.deleteSync();
+    final answers = [
+      for (var i = 0; i < 3; i++) await worker.processVideo(_frame, 0, i, null),
+    ];
+    await worker.dispose();
+    await settle();
+    expect(answers, [1, 2, 3]);
+    expect(log, [
+      'open 1 from its file',
+      'close 1',
+      'open 2 from 3 bytes',
+      'close 2',
+      'open 3 from 3 bytes',
+      'close 3',
+      // The budget is spent again after the last frame.
+      'open 4 from 3 bytes',
+      'close 4',
+    ]);
+  });
+
   group('GpuFrameBudget', () {
     test('applies to GPU tasks on macOS only', () {
       expect(
         GpuFrameBudget(
-          _Options(events.sendPort, delegate: VisionDelegate.gpu),
+          _Options(events.sendPort, delegate: Delegate.gpu),
         ).limitBytes,
         Platform.isMacOS ? 1 << 30 : isNull,
       );

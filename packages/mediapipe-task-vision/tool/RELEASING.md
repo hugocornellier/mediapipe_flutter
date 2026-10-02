@@ -87,19 +87,19 @@ modern stateful C API is not available in the public source build. See
 Apps that set `mediapipe_core.tasks_runtime: true` on macOS get
 Google's official 1.0.0 macOS arm64 wheel runtime, which core bundles once for
 every family (`tasksRuntimeReleases` pins the archive).
-`tool/prepare_official_macos_landmark_runtime.py` verifies the wheel, extracts
+`tool/prepare_macos_tasks_runtime.py` verifies the wheel, extracts
 its library and notices, corrects `LC_ID_DYLIB`, shortens equivalent
 system-framework load paths to leave Flutter install-name capacity, re-signs,
 and proves the native payload stayed unchanged. Apps download the
-`official-landmarks-v1.0.0` release archive, which `--release <dir>` writes
+`macos-tasks-runtime-v1.0.0` release archive, which `--release <dir>` writes
 deterministically. The hook pins the unsigned image,
 so the archive's ad-hoc signature is not part of the pin.
 
 Before publishing a new archive, run
-`python3 -B tool/test_prebuilt_macos.py --official-landmarks --local-release <dir>`;
+`python3 -B tool/test_prebuilt_macos.py --tasks-runtime --local-release <dir>`;
 after publishing, run it again without `--local-release`.
 
-Run `python3 -B tool/test_official_macos_landmark_runtime.py` on macOS arm64 to
+Run `python3 -B tool/test_macos_tasks_runtime.py` on macOS arm64 to
 run Face Landmarker's CPU/GPU comparisons and Hand/Pose's checked-in official
 CPU comparisons through the prepared runtime.
 
@@ -122,7 +122,7 @@ Supporting a new platform means publishing an archive and adding a row; the
 hooks, consumer tests and asset names need no changes. Targets without a row
 fail the build with a message naming the published targets. The runtime-side
 support claim (`TaskCapabilities` and `tasksRuntimeTargets` in core's
-`capabilities.dart`) is kept in step with the build-side table so a platform is
+`src/capabilities/task_capabilities.dart`) is kept in step with the build-side table so a platform is
 never reported supported without a runtime, or bundled without a support claim.
 
 Archives are named per (runtime family, platform, architecture), one release

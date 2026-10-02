@@ -47,7 +47,7 @@ Future<void> runLandmarkTasksSmoke() async {
     numHands: 2,
   ));
   try {
-    final result = await gesture.recognizeImage(hands);
+    final result = await gesture.recognize(hands);
     if (result.gestures.single.single.categoryName != 'Thumb_Up' ||
         result.gestures.single.single.index != -1 ||
         result.gestures.single.single.score <= 0.7 ||
@@ -64,7 +64,7 @@ Future<void> runLandmarkTasksSmoke() async {
     outputSegmentationMasks: true,
   ));
   try {
-    final result = await pose.detectImage(body);
+    final result = await pose.detect(body);
     final mask = result.segmentationMasks?.single;
     if (result.poseLandmarks.length != 1 ||
         result.poseLandmarks.single.length != 33 ||
@@ -84,7 +84,7 @@ Future<void> runLandmarkTasksSmoke() async {
     outputPoseSegmentationMask: true,
   ));
   try {
-    final result = await holistic.detectImage(body);
+    final result = await holistic.detect(body);
     final mask = result.poseSegmentationMask;
     if (result.poseLandmarks.length != 33 ||
         result.poseWorldLandmarks.length != 33 ||

@@ -20,7 +20,7 @@ typedef _Task = (
 // These tasks are validated against the official wheel that ships the same
 // native library on Linux and Windows. Google's macOS CPU output drifts
 // between Apple CPUs, so macOS compares with same-host outputs
-// (tool/test_official_macos_landmark_runtime.py).
+// (tool/test_macos_tasks_runtime.py).
 final _unvalidatedHost =
     Platform.isMacOS &&
         Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] != '1'
@@ -131,7 +131,7 @@ void main() {
         try {
           await expectLater(
             process(VisionImage.fromFile('missing-image.jpg'), 0, null),
-            throwsA(isA<VisionTaskException>()),
+            throwsA(isA<TaskException>()),
           );
           _compare(
             await process(_image(expected), 0, null),
@@ -146,7 +146,7 @@ void main() {
             expected,
             modelBytes: Uint8List(32),
           ).timeout(const Duration(seconds: 10)),
-          throwsA(isA<VisionTaskException>()),
+          throwsA(isA<TaskException>()),
         );
         final (_, validClose) = await _create(expected);
         await validClose();
@@ -167,7 +167,7 @@ void main() {
         () async {
           final (process, close) = await _create(
             expected,
-            delegate: VisionDelegate.gpu,
+            delegate: Delegate.gpu,
           );
           try {
             _compare(
@@ -202,7 +202,7 @@ void main() {
             .toList();
         final (process, close) = await _create(
           frames.first,
-          delegate: VisionDelegate.gpu,
+          delegate: Delegate.gpu,
         );
         try {
           for (final frame in frames) {
@@ -245,14 +245,14 @@ void main() {
         throwsArgumentError,
       );
       expect(
-        () => GestureClassifierOptions(
+        () => ClassifierOptions(
           categoryAllowlist: ['a'],
           categoryDenylist: ['b'],
         ),
         throwsArgumentError,
       );
       expect(
-        () => GestureClassifierOptions(displayNamesLocale: 'en\u0000US'),
+        () => ClassifierOptions(displayNamesLocale: 'en\u0000US'),
         throwsArgumentError,
       );
     },
@@ -306,7 +306,7 @@ VisionImage _image(Map<String, dynamic> expected) {
 Future<_Task> _create(
   Map<String, dynamic> expected, {
   Uint8List? modelBytes,
-  VisionDelegate delegate = VisionDelegate.cpu,
+  Delegate delegate = Delegate.cpu,
 }) async {
   final options = expected['options'] as Map<String, dynamic>;
   final name = expected['task'] as String;
@@ -328,7 +328,7 @@ Future<_Task> _create(
       return (
         (image, rotation, timestamp) async {
           final r = timestamp == null
-              ? await task.detectImage(image, rotationDegrees: rotation)
+              ? await task.detect(image, rotationDegrees: rotation)
               : await task.detectForVideo(
                   image,
                   rotationDegrees: rotation,
@@ -362,7 +362,7 @@ Future<_Task> _create(
       return (
         (image, rotation, timestamp) async {
           final r = timestamp == null
-              ? await task.recognizeImage(image, rotationDegrees: rotation)
+              ? await task.recognize(image, rotationDegrees: rotation)
               : await task.recognizeForVideo(
                   image,
                   rotationDegrees: rotation,
@@ -397,7 +397,7 @@ Future<_Task> _create(
       return (
         (image, rotation, timestamp) async {
           final r = timestamp == null
-              ? await task.detectImage(image, rotationDegrees: rotation)
+              ? await task.detect(image, rotationDegrees: rotation)
               : await task.detectForVideo(
                   image,
                   rotationDegrees: rotation,
@@ -448,7 +448,7 @@ Future<_Task> _create(
       return (
         (image, rotation, timestamp) async {
           final r = timestamp == null
-              ? await task.detectImage(image, rotationDegrees: rotation)
+              ? await task.detect(image, rotationDegrees: rotation)
               : await task.detectForVideo(
                   image,
                   rotationDegrees: rotation,
@@ -498,15 +498,16 @@ void _size(
   expect(actualTimestamp, timestamp);
 }
 
-List<List<Map<String, dynamic>>> _landmarks(List<List<VisionLandmark>> values) {
+List<List<Map<String, dynamic>>> _landmarks(List<List<Object>> values) {
   expect(() => values.clear(), throwsUnsupportedError);
   return values.map(_points).toList();
 }
 
-List<Map<String, dynamic>> _points(List<VisionLandmark> values) {
+/// Image or world landmarks, which share their fields.
+List<Map<String, dynamic>> _points(List<Object> values) {
   expect(() => values.clear(), throwsUnsupportedError);
   return [
-    for (final v in values)
+    for (final dynamic v in values)
       {
         'x': v.x,
         'y': v.y,
@@ -519,13 +520,13 @@ List<Map<String, dynamic>> _points(List<VisionLandmark> values) {
 }
 
 List<List<Map<String, dynamic>>> _categories(
-  List<List<VisionCategory>> values,
+  List<List<MediaPipeCategory>> values,
 ) {
   expect(() => values.clear(), throwsUnsupportedError);
   return values.map(_categoryList).toList();
 }
 
-List<Map<String, dynamic>> _categoryList(List<VisionCategory> values) {
+List<Map<String, dynamic>> _categoryList(List<MediaPipeCategory> values) {
   expect(() => values.clear(), throwsUnsupportedError);
   return [
     for (final v in values)
@@ -538,7 +539,7 @@ List<Map<String, dynamic>> _categoryList(List<VisionCategory> values) {
   ];
 }
 
-Map<String, dynamic> _mask(SegmentationMask mask) {
+Map<String, dynamic> _mask(ConfidenceMask mask) {
   final values = mask.confidence;
   expect(() => values[0] = 0, throwsUnsupportedError);
   var minimum = double.infinity;

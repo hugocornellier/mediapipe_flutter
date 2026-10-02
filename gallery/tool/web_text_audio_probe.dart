@@ -14,21 +14,34 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
-import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
-import 'package:mediapipe_text/web_runtime.dart';
 import 'package:record/record.dart';
 
 @JS('mediapipeTextAudioReport')
 external set _report(JSAny? value);
 
 /// Texts and classifier options, shared with the JavaScript side of the test.
-const classifierCases = <(String, ClassifierOptions)>[
-  ('Hello, world!', ClassifierOptions()),
-  ('This was a terrible movie. I hated every minute.', ClassifierOptions()),
-  ('Hello, world!', ClassifierOptions(maxResults: 1)),
-  ('Hello, world!', ClassifierOptions(categoryDenylist: ['positive'])),
-];
+const classifierCases =
+    <
+      (String, ({int maxResults, double scoreThreshold, List<String> denylist}))
+    >[
+      (
+        'Hello, world!',
+        (maxResults: -1, scoreThreshold: 0.0, denylist: <String>[]),
+      ),
+      (
+        'This was a terrible movie. I hated every minute.',
+        (maxResults: -1, scoreThreshold: 0.0, denylist: <String>[]),
+      ),
+      (
+        'Hello, world!',
+        (maxResults: 1, scoreThreshold: 0.0, denylist: <String>[]),
+      ),
+      (
+        'Hello, world!',
+        (maxResults: -1, scoreThreshold: 0.0, denylist: ['positive']),
+      ),
+    ];
 const embedderTexts = [
   'Hello, world!',
   'Hello there!',
@@ -80,7 +93,7 @@ Future<String> _modelCache() async {
     sha256: digest,
   );
   _require(
-    (await store.get(online)).toString() == bytes.toString(),
+    (await store.get(online)).bytes.toString() == bytes.toString(),
     'The model store did not return verified bytes.',
   );
   final offline = DownloadAsset(
@@ -88,7 +101,7 @@ Future<String> _modelCache() async {
     sha256: digest,
   );
   _require(
-    (await store.get(offline)).toString() == bytes.toString(),
+    (await store.get(offline)).bytes.toString() == bytes.toString(),
     'The model store did not reuse its verified browser cache.',
   );
   await store.clear();
@@ -127,7 +140,12 @@ Future<Object?> _classifier() async {
   final results = [];
   for (final (text, options) in classifierCases) {
     final task = await TextClassifier.create(
-      TextClassifierOptions.fromAssetBuffer(model, classifierOptions: options),
+      TextClassifierOptions(
+        modelBytes: model,
+        maxResults: options.maxResults,
+        scoreThreshold: options.scoreThreshold,
+        categoryDenylist: options.denylist,
+      ),
     );
     try {
       results.add(_categories((await task.classify(text)).classifications));
@@ -137,8 +155,8 @@ Future<Object?> _classifier() async {
   }
   // A model given as a URL, then ordered requests and disposal.
   final byPath = await TextClassifier.create(
-    TextClassifierOptions.fromAssetPath(
-      'assets/assets/models/bert_classifier.tflite',
+    TextClassifierOptions(
+      modelPath: 'assets/assets/models/bert_classifier.tflite',
     ),
   );
   final queued = await Future.wait([
@@ -152,9 +170,9 @@ Future<Object?> _classifier() async {
   await byPath.dispose();
   await byPath.dispose();
   await _rejects<StateError>(() => byPath.classify('Hello'));
-  await _rejects<TextTaskException>(
+  await _rejects<TaskException>(
     () => TextClassifier.create(
-      TextClassifierOptions.fromAssetBuffer(Uint8List.fromList([1, 2, 3])),
+      TextClassifierOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
     ),
   );
   return results;
@@ -165,12 +183,10 @@ Future<Object?> _embedder() async {
   final result = <String, Object?>{};
   for (final quantize in [false, true]) {
     final task = await TextEmbedder.create(
-      TextEmbedderOptions.fromAssetBuffer(
-        model,
-        embedderOptions: EmbedderOptions(
-          l2Normalize: quantize,
-          quantize: quantize,
-        ),
+      TextEmbedderOptions(
+        modelBytes: model,
+        l2Normalize: quantize,
+        quantize: quantize,
       ),
     );
     try {
@@ -187,8 +203,8 @@ Future<Object?> _embedder() async {
         ],
         'head': [embeddings.first.headIndex, embeddings.first.headName],
         'similarity': [
-          await task.cosineSimilarity(embeddings[0], embeddings[1]),
-          await task.cosineSimilarity(embeddings[0], embeddings[2]),
+          TextEmbedder.cosineSimilarity(embeddings[0], embeddings[1]),
+          TextEmbedder.cosineSimilarity(embeddings[0], embeddings[2]),
         ],
       };
     } finally {
@@ -200,9 +216,9 @@ Future<Object?> _embedder() async {
 
 Future<Object?> _language() async {
   final task = await LanguageDetector.create(
-    LanguageDetectorOptions.fromAssetBuffer(
-      await _asset('assets/models/language_detector.tflite'),
-      classifierOptions: const ClassifierOptions(maxResults: 3),
+    LanguageDetectorOptions(
+      modelBytes: await _asset('assets/models/language_detector.tflite'),
+      maxResults: 3,
     ),
   );
   try {
@@ -221,9 +237,10 @@ Future<Object?> _language() async {
 List<Object?> _chunks(List<AudioClassifierResult> result) => [
   for (final chunk in result)
     [
-      chunk.timestampMs,
+      chunk.timestampMilliseconds,
       [
-        for (final c in chunk.categories.take(5)) [c.index, c.score, c.name],
+        for (final c in chunk.classifications.first.categories.take(5))
+          [c.index, c.score, c.categoryName],
       ],
     ],
 ];

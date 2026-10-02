@@ -57,9 +57,7 @@ final class LiveSubject {
         FaceLandmarkerOptions(modelBytes: model, numFaces: 1),
       );
       try {
-        return liveSubjects(
-          await task.detectImage(_image(rgba, width, height)),
-        );
+        return liveSubjects(await task.detect(_image(rgba, width, height)));
       } finally {
         await task.dispose();
       }
@@ -78,9 +76,7 @@ final class LiveSubject {
         HandLandmarkerOptions(modelBytes: model, numHands: 2),
       );
       try {
-        return liveSubjects(
-          await task.detectImage(_image(rgba, width, height)),
-        );
+        return liveSubjects(await task.detect(_image(rgba, width, height)));
       } finally {
         await task.dispose();
       }

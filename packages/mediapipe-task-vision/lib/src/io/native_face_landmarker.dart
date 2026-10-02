@@ -2,16 +2,18 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 
 import '../../third_party/mediapipe/face_landmarker_bindings.dart' as mp;
-import '../interface/face_detector_types.dart';
-import '../interface/face_landmarker_types.dart';
+import '../runner/native_interface.dart';
+import '../types/options.dart';
+import '../types/results.dart';
+import '../types/vision_types.dart';
 import 'face_landmarker_api.dart';
 import 'native_frame_timings.dart';
 import 'native_desktop_runtime.dart';
 import 'native_ios_sdk.dart';
 import 'pixel_conversion.dart';
-import 'vision_task_worker.dart';
 
 FaceLandmarkerApi get _api => FaceLandmarkerApi.current;
 
@@ -20,7 +22,7 @@ final class NativeFaceLandmarker
     implements NativeVisionTask<FaceLandmarkerResult> {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeFaceLandmarker(FaceLandmarkerOptions options)
-    : _gpu = options.delegate == VisionDelegate.gpu,
+    : _gpu = options.delegate == Delegate.gpu,
       _officialIos = hasOfficialIosFaceRuntime() {
     if (!Platform.isMacOS && !Platform.isLinux && !_officialIos && _gpu) {
       throw UnsupportedError(
@@ -34,7 +36,7 @@ final class NativeFaceLandmarker
       final native = arena<mp.MpFaceLandmarkerOptions>();
       final base = native.ref.base_options;
       base.file_descriptor = -1;
-      base.delegate = options.delegate == VisionDelegate.gpu
+      base.delegate = options.delegate == Delegate.gpu
           ? mp.MpDelegate.MP_DELEGATE_GPU
           : mp.MpDelegate.MP_DELEGATE_CPU;
       base.host_system = Platform.isIOS
@@ -72,11 +74,11 @@ final class NativeFaceLandmarker
       final output = arena<mp.MpFaceLandmarkerPtr>();
       try {
         _checked((error) => _api.create(native, output, error));
-      } on VisionTaskException catch (error) {
+      } on TaskException catch (error) {
         // Google's runtime reports every GPU refusal (no EGL display, a
         // software renderer) as its missing GPU service.
         if (!_gpu || !error.message.contains('kGpuService')) rethrow;
-        throw VisionTaskException(
+        throw TaskException(
           error.message,
           statusCode: error.statusCode,
           gpuUnavailable: true,
@@ -259,7 +261,7 @@ void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
   try {
     final status = call(error);
     if (status != mp.MpStatus.kMpOk) {
-      throw VisionTaskException(
+      throw TaskException(
         _string(error.value) ?? 'MediaPipe returned ${status.name}',
         statusCode: status.value,
       );
@@ -277,9 +279,9 @@ String? _string(Pointer<Char> pointer) {
   return value.isEmpty ? null : value;
 }
 
-List<FaceLandmark> _copyLandmarks(mp.MpNormalizedLandmarks value) => [
+List<NormalizedLandmark> _copyLandmarks(mp.MpNormalizedLandmarks value) => [
   for (var i = 0; i < value.landmarks_count; i++)
-    FaceLandmark(
+    NormalizedLandmark(
       x: value.landmarks[i].x,
       y: value.landmarks[i].y,
       z: value.landmarks[i].z,
@@ -293,9 +295,9 @@ List<FaceLandmark> _copyLandmarks(mp.MpNormalizedLandmarks value) => [
     ),
 ];
 
-List<FaceCategory> _copyCategories(mp.MpCategories value) => [
+List<MediaPipeCategory> _copyCategories(mp.MpCategories value) => [
   for (var i = 0; i < value.categories_count; i++)
-    FaceCategory(
+    MediaPipeCategory(
       index: value.categories[i].index,
       score: value.categories[i].score,
       categoryName: _string(value.categories[i].category_name),
@@ -303,9 +305,8 @@ List<FaceCategory> _copyCategories(mp.MpCategories value) => [
     ),
 ];
 
-FaceTransformationMatrix _copyMatrix(mp.MpMatrix value) =>
-    FaceTransformationMatrix(
-      rows: value.rows,
-      columns: value.cols,
-      values: value.data.asTypedList(value.rows * value.cols),
-    );
+Matrix _copyMatrix(mp.MpMatrix value) => Matrix(
+  rows: value.rows,
+  columns: value.cols,
+  data: value.data.asTypedList(value.rows * value.cols),
+);

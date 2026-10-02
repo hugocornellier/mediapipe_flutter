@@ -84,7 +84,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
 
   /// What the panel shows of the controller: whether a restart is under way,
   /// the delegate and a segmenter's labels.
-  (bool, VisionDelegate, int)? _panelState;
+  (bool, Delegate, int)? _panelState;
 
   /// Whether the phone's settings sheet is open over the feed.
   bool _settingsOpen = false;
@@ -99,7 +99,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
       _mode == _VisionInputMode.image ? _imageResult : _controller.result;
 
   List<String> get _labels => switch (_shownResult) {
-    SegmentationResult(:final labels) => labels,
+    ImageSegmenterResult(:final labels) => labels,
     _ => const [],
   };
 
@@ -110,8 +110,8 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
   void _refreshMask() {
     if (!_segmenter) return;
     _masks.show(
-      _shownResult is SegmentationResult
-          ? _shownResult! as SegmentationResult
+      _shownResult is ImageSegmenterResult
+          ? _shownResult! as ImageSegmenterResult
           : null,
       (
         confidence: _confidenceMasks,
@@ -138,7 +138,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
       ),
   ];
 
-  late final List<VisionDelegate> _delegates =
+  late final List<Delegate> _delegates =
       widget.task
           .capabilitiesFor(widget.platform, widget.officialMacosLandmarkTasks)
           .supportedDelegates
@@ -169,7 +169,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
   Size? _imageSize;
   String? _imageName;
   Object? _imageResult;
-  VisionDelegate? _imageDelegate;
+  Delegate? _imageDelegate;
   double? _imageMilliseconds;
   String? _imageError;
   bool _imageBusy = false;
@@ -310,7 +310,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
     _restartCurrentMode();
   }
 
-  void _setDelegate(VisionDelegate delegate) {
+  void _setDelegate(Delegate delegate) {
     setState(() => _controller.delegate = delegate);
     if (_mode == _VisionInputMode.image || _controller.running) {
       _restartCurrentMode();
@@ -505,8 +505,8 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
           await _task.open(delegate, model, mode: RunningMode.image);
         } on Object {
           // GPU is only the default; a platform that refuses it gets CPU.
-          if (delegate != VisionDelegate.gpu) rethrow;
-          delegate = VisionDelegate.cpu;
+          if (delegate != Delegate.gpu) rethrow;
+          delegate = Delegate.cpu;
           _controller.delegate = delegate;
           await _task.open(delegate, model, mode: RunningMode.image);
         }
@@ -577,7 +577,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
       '${detections.length} ${detections.length == 1 ? 'object' : 'objects'} detected',
     ImageClassifierResult(:final classifications) =>
       '${classifications.firstOrNull?.categories.length ?? 0} classes returned',
-    SegmentationResult(:final categoryMask) =>
+    ImageSegmenterResult(:final categoryMask) =>
       categoryMask == null
           ? 'No category mask returned'
           : 'Segmentation complete',
@@ -758,7 +758,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
             'Inference ${_imageMilliseconds!.toStringAsFixed(1)} ms',
         ],
         delegate: result != null && _imageMilliseconds != null
-            ? (_imageDelegate == VisionDelegate.gpu ? 'GPU' : 'CPU')
+            ? (_imageDelegate == Delegate.gpu ? 'GPU' : 'CPU')
             : null,
         trailing: _phone ? _outputButton() : null,
       ),
@@ -879,7 +879,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
                 '${controller.recentInferenceMilliseconds.toStringAsFixed(0)} ms',
               ]
             : [controller.initializing ? 'Model initializing...' : 'Stopped'],
-        delegate: controller.delegate == VisionDelegate.gpu ? 'GPU' : 'CPU',
+        delegate: controller.delegate == Delegate.gpu ? 'GPU' : 'CPU',
         trailing: phone
             ? Row(
                 mainAxisSize: MainAxisSize.min,

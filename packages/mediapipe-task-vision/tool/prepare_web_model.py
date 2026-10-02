@@ -17,7 +17,6 @@ MODELS = {'faceLandmarker': 'face_landmarker.task',
           'efficientNetLite0': 'efficientnet_lite0.tflite',
           'mobileNetV3Small': 'mobilenet_v3_small.tflite',
           'deepLabV3': 'deeplab_v3.tflite',
-          'magicTouch': 'magic_touch.tflite',
           'interactiveSegmenterModel': 'interactive_segmentation.task'}
 for constant, name in MODELS.items():
     block = re.search(constant + r"Url\s*=\s*((?:'[^']*'\s*)+);", source).group(1)

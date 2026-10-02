@@ -1,14 +1,14 @@
 # Google's prebuilt iOS face SDK
 
 The gallery uses Google's MediaPipe Tasks **1.0.1** XCFrameworks for Face
-Detector, Face Landmarker and Hand Landmarker on arm64 iOS. Both `VisionDelegate.cpu` and
-`VisionDelegate.gpu` work; the latter selects the SDK's Metal delegate. iOS 15
+Detector, Face Landmarker and Hand Landmarker on arm64 iOS. Both `Delegate.cpu` and
+`Delegate.gpu` work; the latter selects the SDK's Metal delegate. iOS 15
 or newer is required. Face blendshapes still use XNNPACK, as configured by
 Google's face graph, even when landmark inference uses Metal.
 
 `mediapipe_core`'s hook downloads Google's unchanged Vision, Common,
 Task Graphs, Text and Audio archives, verifies their SHA-256 hashes, and links
-them with core's `native/ios/face_sdk_bridge.mm`, `text_sdk_bridge.mm` and
+them with core's `native/ios/vision_sdk_bridge.mm`, `text_sdk_bridge.mm` and
 `audio_sdk_bridge.mm`. Xcode compiles only that adapter, which maps the
 existing Dart FFI calls to Google's public Objective-C API. Google implements
 every task's classes in MediaPipeTasksCommon (the Text and Audio frameworks

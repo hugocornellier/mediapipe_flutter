@@ -1,7 +1,8 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:mediapipe_core/io.dart' show missingLinuxGraphicsLibraries;
+import 'package:mediapipe_core/platform_interface.dart'
+    show missingLinuxGraphicsLibraries;
 
 @Native<Void Function(Pointer<Char>)>(
   symbol: 'MpErrorFree',

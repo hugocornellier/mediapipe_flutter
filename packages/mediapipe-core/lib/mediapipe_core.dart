@@ -1,24 +1,19 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-/// Package containing core dependencies for MediaPipe's text, vision, and
-/// audio-based tasks.
+/// What every MediaPipe task family shares, identical on Android, iOS, macOS,
+/// Linux, Windows and the web: the options base, the delegate, the value
+/// types results are made of, the exceptions, the model store and the
+/// capability types. Each family's library exports it, so apps need not
+/// import this package directly.
 library;
 
-export 'mediapipe_exception.dart';
-export 'model_store.dart';
-export 'capabilities.dart' show TaskCapabilities, TaskPlatform;
-export 'src/extensions.dart';
-export 'src/interface/containers.dart' show BaseEmbedding, EmbeddingType;
-export 'universal_mediapipe_core.dart'
-    if (dart.library.js_interop) 'src/web/mediapipe_core.dart'
-    if (dart.library.io) 'src/io/mediapipe_core.dart'
-    show
-        BaseOptions,
-        Category,
-        Classifications,
-        ClassifierOptions,
-        ClassifierResult,
-        EmbedderOptions,
-        Embedding;
+export 'src/capabilities/task_capabilities.dart'
+    show RuntimeTargets, TaskCapabilities, TaskPlatform;
+export 'src/delegate.dart';
+export 'src/download_asset.dart' show DownloadAsset, DownloadFailure;
+export 'src/exceptions.dart';
+export 'src/model_download_exception.dart';
+export 'src/model_source.dart';
+export 'src/model_store_io.dart'
+    if (dart.library.js_interop) 'src/model_store_web.dart';
+export 'src/task_options.dart' show TaskOptions;
+export 'src/value_types.dart' hide cosineSimilarity;
+export 'src/web_runtime.dart';

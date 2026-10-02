@@ -57,14 +57,14 @@ DART_COMMAND = 'dart run tool/gallery_builder/bin/prepare_gallery.dart --target 
 OFFICIAL_IOS_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
                       'hand_landmarker', 'holistic_landmarker', 'image_classifier',
                       'image_embedder', 'image_segmenter', 'interactive_segmenter',
-                      'interactive_segmenter_legacy', 'object_detector',
+                      'object_detector',
                       'pose_landmarker'}
 
 # Tasks the browser adapter runs on Google's official web runtime.
 WEB_TASKS = {'face_detector', 'face_landmarker', 'gesture_recognizer',
              'hand_landmarker', 'holistic_landmarker', 'image_classifier',
              'image_embedder', 'image_segmenter', 'interactive_segmenter',
-             'interactive_segmenter_legacy', 'object_detector',
+             'object_detector',
              'pose_landmarker', 'audio_classifier', 'language_detector',
              'text_classifier', 'text_embedder'}
 
@@ -108,7 +108,6 @@ MODELS = {
     'pose_landmarker': ('poseLandmarkerLite', 'pose_landmarker_lite.task'),
     'holistic_landmarker': ('holisticLandmarker', 'holistic_landmarker.task'),
     'image_segmenter': ('deepLabV3', 'deeplab_v3.tflite'),
-    'interactive_segmenter_legacy': ('magicTouch', 'magic_touch.tflite'),
     'interactive_segmenter': ('interactiveSegmentation',
                               'interactive_segmentation.task'),
 }
@@ -242,7 +241,7 @@ def prepare(target, selected):
         'tasks': sorted(bundled),
         'models': bundled,
         'samples': sample_names,
-        'official_macos_landmark_tasks': [],
+        'macos_engine_tasks': [],
         'official_ios_sdk': '1.0.1' if target.startswith('ios') else None,
         'official_android_sdk': None,
         'official_web_sdk': '1.0.1' if target == 'web' else None,

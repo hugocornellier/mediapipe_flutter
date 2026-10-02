@@ -65,10 +65,10 @@ void main() {
         final assets = await GalleryAssets.unpack();
         final model = await _model();
         final frame = await _sample('thumb_up.jpg');
-        final references = <VisionDelegate, HandLandmarkerResult>{};
+        final references = <Delegate, HandLandmarkerResult>{};
         for (final delegate in [
-          VisionDelegate.cpu,
-          if (_gpu != 'skip') VisionDelegate.gpu,
+          Delegate.cpu,
+          if (_gpu != 'skip') Delegate.gpu,
         ]) {
           final HandLandmarker task;
           try {
@@ -79,13 +79,13 @@ void main() {
                 numHands: 2,
               ),
             );
-          } on VisionTaskException catch (error) {
-            if (delegate == VisionDelegate.cpu || _gpu == 'required') rethrow;
+          } on TaskException catch (error) {
+            if (delegate == Delegate.cpu || _gpu == 'required') rethrow;
             _report('gpu_unavailable', {'error': error.message});
             continue;
           }
           try {
-            final file = await task.detectImage(
+            final file = await task.detect(
               VisionImage.fromFile(assets.path('thumb_up.jpg')),
             );
             final official = _official.indexed.fold(0.0, (worst, entry) {
@@ -99,12 +99,12 @@ void main() {
             _hand(file);
             expect(file.handedness.single.first.categoryName, 'Right');
             expect(official, lessThan(_crossRuntime));
-            final reference = await task.detectImage(frame.image);
+            final reference = await task.detect(frame.image);
             _hand(reference);
             references[delegate] = reference;
             final copied = reference.handLandmarks.single.first.x;
             for (final format in VisionPixelFormat.values) {
-              final padded = await task.detectImage(_padded(frame, format));
+              final padded = await task.detect(_padded(frame, format));
               expect(
                 _delta(reference, padded),
                 lessThan(1e-5),
@@ -113,14 +113,11 @@ void main() {
             }
             for (final turn in [90, 180, 270]) {
               final rotated = _rotate(frame, (360 - turn) % 360);
-              final result = await task.detectImage(
-                rotated,
-                rotationDegrees: turn,
-              );
+              final result = await task.detect(rotated, rotationDegrees: turn);
               _hand(result);
               expect(result.imageWidth, rotated.width);
             }
-            final blank = await task.detectImage(_blank());
+            final blank = await task.detect(_blank());
             expect(blank.handLandmarks, isEmpty);
             expect(blank.handWorldLandmarks, isEmpty);
             expect(blank.handedness, isEmpty);
@@ -134,12 +131,12 @@ void main() {
             await task.dispose();
           }
           await task.dispose();
-          await expectLater(task.detectImage(frame.image), throwsStateError);
+          await expectLater(task.detect(frame.image), throwsStateError);
         }
         if (references.length == 2) {
           final delta = _delta(
-            references[VisionDelegate.cpu]!,
-            references[VisionDelegate.gpu]!,
+            references[Delegate.cpu]!,
+            references[Delegate.gpu]!,
           );
           expect(delta, lessThan(_crossRuntime));
           _report('cpu_gpu', {'max_landmark_delta': delta});
@@ -148,7 +145,7 @@ void main() {
           HandLandmarker.create(
             HandLandmarkerOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
           ),
-          throwsA(isA<VisionTaskException>()),
+          throwsA(isA<TaskException>()),
         );
       });
     },
@@ -169,7 +166,7 @@ void main() {
           ),
         );
         try {
-          await expectLater(task.detectImage(frame.image), throwsStateError);
+          await expectLater(task.detect(frame.image), throwsStateError);
           await expectLater(
             task.detectForVideo(frame.image, timestampMilliseconds: -1),
             throwsArgumentError,
@@ -350,11 +347,11 @@ void _hand(HandLandmarkerResult result) {
   expect(result.handLandmarks.single, hasLength(21));
   expect(result.handWorldLandmarks.single, hasLength(21));
   expect(result.handedness.single, isNotEmpty);
-  for (final point in [
-    ...result.handLandmarks.single,
-    ...result.handWorldLandmarks.single,
+  for (final (x, y, z) in [
+    for (final p in result.handLandmarks.single) (p.x, p.y, p.z),
+    for (final p in result.handWorldLandmarks.single) (p.x, p.y, p.z),
   ]) {
-    expect(point.x.isFinite && point.y.isFinite && point.z.isFinite, isTrue);
+    expect(x.isFinite && y.isFinite && z.isFinite, isTrue);
   }
 }
 

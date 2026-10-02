@@ -146,7 +146,7 @@ def main():
     if args.experimental_all_tasks:
         selected += ['object_detector', 'image_classifier', 'image_embedder',
                      'hand_landmarker', 'gesture_recognizer', 'pose_landmarker',
-                     'holistic_landmarker', 'image_segmenter', 'interactive_segmenter_legacy']
+                     'holistic_landmarker', 'image_segmenter']
         suites += ['object_detector', 'image_tasks', 'landmark_tasks', 'segmenter_tasks']
     report = {'target': 'ios-simulator/arm64', 'delegate': 'CPU',
               'device': device['udid'], 'runtime': runtime, 'tasks': selected,
@@ -160,7 +160,7 @@ def main():
             models += ['efficientdet_lite0.tflite', 'efficientnet_lite0.tflite',
                        'mobilenet_v3_small.tflite', 'hand_landmarker.task',
                        'gesture_recognizer.task', 'pose_landmarker_lite.task',
-                       'holistic_landmarker.task', 'deeplab_v3.tflite', 'magic_touch.tflite']
+                       'holistic_landmarker.task', 'deeplab_v3.tflite']
         app, vision = prepare_app(root, 'ios', selected, suites, models, prebuilt=args.prebuilt)
         project = app / 'ios/Runner.xcodeproj/project.pbxproj'
         project.write_text(project.read_text().replace(
@@ -175,11 +175,6 @@ def main():
             report['library_manifest'] = json.loads((source / 'manifest.json').read_text())
             shutil.copytree(source, vision / 'build/native/ios-simulator/arm64')
         if args.experimental_all_tasks:
-            capabilities = vision / 'lib/capabilities.dart'
-            content = capabilities.read_text().replace(
-                "VisionDelegate.cpu: {'linux/x64': null, 'windows/x64': null}",
-                "VisionDelegate.cpu: {'linux/x64': null, 'windows/x64': null, 'ios/arm64': null}")
-            capabilities.write_text(content)
             releases = vision / 'sdk_downloads.dart'
             content = releases.read_text()
             content = re.sub(

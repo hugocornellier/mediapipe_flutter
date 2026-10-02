@@ -20,8 +20,8 @@ Future<void> main() async {
       final cameras = await controller.findCameras();
       if (cameras.isEmpty) throw StateError('No camera is available.');
       final delegates = Platform.isLinux || Platform.isWindows
-          ? [VisionDelegate.cpu, VisionDelegate.cpu]
-          : [VisionDelegate.cpu, VisionDelegate.gpu, VisionDelegate.cpu];
+          ? [Delegate.cpu, Delegate.cpu]
+          : [Delegate.cpu, Delegate.gpu, Delegate.cpu];
       for (final delegate in delegates) {
         await controller.start(
           delegate: delegate,

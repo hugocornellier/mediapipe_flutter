@@ -6,14 +6,15 @@ import 'package:test/test.dart';
 
 void main() {
   test(
-    'macOS GPU video releases the frames MediaPipe keeps (UP-032)',
+    'macOS GPU video releases the frames MediaPipe keeps, without its model '
+    'file (UP-032)',
     () async {
       // The gallery loads both the shared engine and Face Detector's own
       // library. Exercise that combination in this regression as well.
       final classifier = await ImageClassifier.create(
         ImageClassifierOptions(
           modelPath: 'models/mobilenet_v3_small.tflite',
-          delegate: VisionDelegate.gpu,
+          delegate: Delegate.gpu,
         ),
       );
       await classifier.dispose();
@@ -33,13 +34,20 @@ void main() {
         }
       }
 
+      // MediaPipe has read the model once the task exists, so an app may
+      // delete the file. The reopens below must not need it.
+      final folder = Directory.systemTemp.createTempSync('face-gpu-model-');
+      final model = File(
+        'models/blaze_face_short_range.tflite',
+      ).copySync('${folder.path}/model.tflite');
       final detector = await FaceDetector.create(
         FaceDetectorOptions(
-          modelPath: 'models/blaze_face_short_range.tflite',
-          delegate: VisionDelegate.gpu,
+          modelPath: model.path,
+          delegate: Delegate.gpu,
           runningMode: RunningMode.video,
         ),
       );
+      model.deleteSync();
       try {
         int? warmedRss;
         var peakGrowth = 0;
@@ -69,6 +77,7 @@ void main() {
         print('FACE_GPU_MEMORY frames=2000 peak_growth_bytes=$peakGrowth');
       } finally {
         await detector.dispose();
+        folder.deleteSync(recursive: true);
       }
     },
     skip: !Platform.isMacOS,

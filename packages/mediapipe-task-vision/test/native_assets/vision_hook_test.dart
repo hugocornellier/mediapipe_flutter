@@ -79,7 +79,6 @@ void main() {
       'pose_landmarker',
       'holistic_landmarker',
       'image_segmenter',
-      'interactive_segmenter_legacy',
     };
     expect(visionWheelReleases['linux/x64']!.tasks, {
       ...validated,

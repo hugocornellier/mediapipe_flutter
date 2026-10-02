@@ -1,6 +1,6 @@
-import 'package:mediapipe_vision/mediapipe_vision.dart' show VisionDelegate;
+import 'package:mediapipe_vision/mediapipe_vision.dart' show Delegate;
 
-/// One frame's inference time, [seconds] into its delegate's run.
+/// One frame's inference time, `seconds` into its delegate's run.
 typedef SpeedSample = ({double seconds, double milliseconds});
 
 /// Every frame's inference time since the camera started, one series per
@@ -10,11 +10,11 @@ typedef SpeedSample = ({double seconds, double milliseconds});
 /// delegate has been running, so after a switch the other line starts at zero
 /// and the two overlay for comparison, without running both at once.
 final class SpeedHistory {
-  final _series = <VisionDelegate, List<SpeedSample>>{};
-  final _chartSeries = <VisionDelegate, List<SpeedSample>>{};
-  final _running = <VisionDelegate, double>{};
-  final _chartCount = <VisionDelegate, int>{};
-  VisionDelegate? _last;
+  final _series = <Delegate, List<SpeedSample>>{};
+  final _chartSeries = <Delegate, List<SpeedSample>>{};
+  final _running = <Delegate, double>{};
+  final _chartCount = <Delegate, int>{};
+  Delegate? _last;
   Duration? _lastAt;
   double _durationSeconds = 0;
 
@@ -27,16 +27,16 @@ final class SpeedHistory {
   static const _longestGap = 1.0;
 
   /// The samples of [delegate], oldest first.
-  List<SpeedSample> operator [](VisionDelegate delegate) =>
+  List<SpeedSample> operator [](Delegate delegate) =>
       _series[delegate] ?? const [];
 
-  List<SpeedSample> chartSamples(VisionDelegate delegate) =>
+  List<SpeedSample> chartSamples(Delegate delegate) =>
       _chartSeries[delegate] ?? const [];
 
   double get durationSeconds => _durationSeconds;
 
   /// The highest value actually drawn for [delegates].
-  double chartPeak(Iterable<VisionDelegate> delegates) {
+  double chartPeak(Iterable<Delegate> delegates) {
     var peak = 0.0;
     for (final delegate in delegates) {
       for (final sample in chartSamples(delegate)) {
@@ -51,7 +51,7 @@ final class SpeedHistory {
 
   /// Records a frame that took [milliseconds], processed at [at] on any clock
   /// that only moves forward.
-  void add(VisionDelegate delegate, double milliseconds, Duration at) {
+  void add(Delegate delegate, double milliseconds, Duration at) {
     var seconds = _running[delegate] ?? 0;
     var continuous = false;
     if (_last == delegate && _lastAt != null) {
@@ -101,7 +101,7 @@ final class SpeedHistory {
 
   /// The mean inference time of [delegate]'s last [frames] frames, or null
   /// before its first.
-  double? recent(VisionDelegate delegate, {int frames = 30}) {
+  double? recent(Delegate delegate, {int frames = 30}) {
     final samples = this[delegate];
     if (samples.isEmpty) return null;
     final window = samples.length < frames

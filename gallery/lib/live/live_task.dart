@@ -5,7 +5,7 @@ import 'task_settings.dart';
 
 /// The task-specific half of a live demo: how to build it, and how to run one
 /// frame through it. Everything else about live capture is identical between
-/// tasks and lives in [LiveCameraController].
+/// tasks and lives in `LiveCameraController`.
 abstract interface class LiveTask<T> {
   /// Human-readable name, used in errors.
   String get name;
@@ -15,7 +15,7 @@ abstract interface class LiveTask<T> {
 
   /// Creates the task in the requested running mode.
   Future<void> open(
-    VisionDelegate delegate,
+    Delegate delegate,
     Uint8List modelBytes, {
     RunningMode mode = RunningMode.video,
   });
@@ -27,7 +27,7 @@ abstract interface class LiveTask<T> {
   ///
   /// [rotationDegrees] is the clockwise rotation that stands the frame upright;
   /// MediaPipe applies it and still reports coordinates in the frame's own
-  /// space, which is what [PreviewTransform] expects.
+  /// space, which is what `PreviewTransform` expects.
   Future<T> detect(
     VisionImage frame,
     int timestampMilliseconds, {

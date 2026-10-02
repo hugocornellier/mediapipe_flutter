@@ -1,71 +1,8 @@
-import 'package:mediapipe_vision/capabilities.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('image tasks expose desktop x64 CPU and fail closed elsewhere', () {
-    for (final os in ['linux', 'windows']) {
-      expect(
-        imageTaskCapabilitiesForPlatform(
-          TaskPlatform(operatingSystem: os, architecture: 'x64'),
-        ).supportedDelegates,
-        {VisionDelegate.cpu},
-      );
-    }
-    expect(
-      imageTaskCapabilitiesForPlatform(
-        const TaskPlatform(
-          operatingSystem: 'macos',
-          architecture: 'arm64',
-          version: '14.0',
-        ),
-      ).isSupported,
-      isFalse,
-    );
-  });
-
-  test('landmark tasks expose desktop x64 CPU and fail closed elsewhere', () {
-    for (final os in ['linux', 'windows']) {
-      expect(
-        landmarkTaskCapabilitiesForPlatform(
-          TaskPlatform(operatingSystem: os, architecture: 'x64'),
-        ).supportedDelegates,
-        {VisionDelegate.cpu},
-      );
-    }
-    final mac = landmarkTaskCapabilitiesForPlatform(
-      const TaskPlatform(
-        operatingSystem: 'macos',
-        architecture: 'arm64',
-        version: '14.0',
-      ),
-    );
-    expect(mac.isSupported, isFalse);
-    expect(
-      mac.unavailableReasons[VisionDelegate.cpu],
-      contains('tasks_runtime: true'),
-    );
-    expect(mac.runtimeVersion, '1.0.0');
-  });
-
-  test('official and source macOS landmark capability claims stay split', () {
-    const platform = TaskPlatform(
-      operatingSystem: 'macos',
-      architecture: 'arm64',
-      version: '14.0',
-    );
-    expect(
-      landmarkTaskCapabilitiesForPlatform(platform).supportedDelegates,
-      isEmpty,
-    );
-    expect(
-      landmarkTaskCapabilitiesForPlatform(
-        platform,
-        officialMacosRuntime: true,
-      ).supportedDelegates,
-      {VisionDelegate.cpu},
-    );
-  });
   test('Hand Landmarker follows each official runtime and adapter', () {
     TaskPlatform platform(String os, String architecture, [String? version]) =>
         TaskPlatform(
@@ -73,7 +10,7 @@ void main() {
           architecture: architecture,
           version: version,
         );
-    const both = {VisionDelegate.cpu, VisionDelegate.gpu};
+    const both = {Delegate.cpu, Delegate.gpu};
     // Linux's 1.0.1 wheel has GPU built in; Windows' has it compiled out.
     expect(
       handLandmarkerCapabilitiesForPlatform(
@@ -85,7 +22,7 @@ void main() {
       handLandmarkerCapabilitiesForPlatform(
         platform('windows', 'x64'),
       ).supportedDelegates,
-      {VisionDelegate.cpu},
+      {Delegate.cpu},
     );
     // macOS and iOS only with the official runtime or SDK adapter.
     final mac = platform('macos', 'arm64', '14.0');
@@ -114,7 +51,7 @@ void main() {
       final capabilities = handLandmarkerCapabilitiesForPlatform(target);
       expect(capabilities.isSupported, isFalse);
       expect(
-        capabilities.unavailableReasons[VisionDelegate.cpu],
+        capabilities.unavailableReasons[Delegate.cpu],
         contains('adapter'),
       );
     }
@@ -130,14 +67,14 @@ void main() {
       mac,
       officialMacosRuntime: true,
     );
-    expect(result.supportedDelegates, {VisionDelegate.cpu});
-    expect(result.unavailableReasons[VisionDelegate.gpu], contains('GLSL 330'));
+    expect(result.supportedDelegates, {Delegate.cpu});
+    expect(result.unavailableReasons[Delegate.gpu], contains('GLSL 330'));
     expect(result.runtimeVersion, '1.0.0');
     // Without Google's engine the reason names the one setting.
     final off = interactiveSegmenterCapabilitiesForPlatform(mac);
     expect(off.isSupported, isFalse);
     expect(
-      off.unavailableReasons[VisionDelegate.cpu],
+      off.unavailableReasons[Delegate.cpu],
       contains('tasks_runtime: true'),
     );
   });
@@ -152,11 +89,11 @@ void main() {
       mac,
       officialMacosRuntime: true,
     );
-    expect(result.supportedDelegates, {VisionDelegate.cpu, VisionDelegate.gpu});
+    expect(result.supportedDelegates, {Delegate.cpu, Delegate.gpu});
     expect(result.runtimeVersion, '1.0.0');
     final off = objectDetectorCapabilitiesForPlatform(mac);
     expect(off.isSupported, isFalse);
-    for (final delegate in VisionDelegate.values) {
+    for (final delegate in Delegate.values) {
       expect(
         off.unavailableReasons[delegate],
         contains('tasks_runtime: true'),
@@ -166,16 +103,12 @@ void main() {
   });
 
   test('Face Landmarker offers GPU on Linux x64, not Windows', () {
-    TaskCapabilities<VisionDelegate> on(String os) =>
-        faceLandmarkerCapabilitiesForPlatform(
-          TaskPlatform(operatingSystem: os, architecture: 'x64'),
-        );
-    expect(on('linux').supportedDelegates, {
-      VisionDelegate.cpu,
-      VisionDelegate.gpu,
-    });
-    expect(on('windows').supportedDelegates, {VisionDelegate.cpu});
-    expect(on('windows').unavailableReasons[VisionDelegate.gpu], isNotNull);
+    TaskCapabilities on(String os) => faceLandmarkerCapabilitiesForPlatform(
+      TaskPlatform(operatingSystem: os, architecture: 'x64'),
+    );
+    expect(on('linux').supportedDelegates, {Delegate.cpu, Delegate.gpu});
+    expect(on('windows').supportedDelegates, {Delegate.cpu});
+    expect(on('windows').unavailableReasons[Delegate.gpu], isNotNull);
   });
 
   test('Linux reports its official 1.0.1 runtime, Windows 1.0.0', () {
@@ -183,9 +116,9 @@ void main() {
       final platform = TaskPlatform(operatingSystem: os, architecture: 'x64');
       for (final result in [
         faceLandmarkerCapabilitiesForPlatform(platform),
-        landmarkTaskCapabilitiesForPlatform(platform),
-        segmenterTaskCapabilitiesForPlatform(platform),
-        imageTaskCapabilitiesForPlatform(platform),
+        poseLandmarkerCapabilitiesForPlatform(platform),
+        imageSegmenterCapabilitiesForPlatform(platform),
+        imageClassifierCapabilitiesForPlatform(platform),
         objectDetectorCapabilitiesForPlatform(platform),
       ]) {
         expect(result.runtimeVersion, version);
@@ -204,20 +137,20 @@ void main() {
     expect(result.supportedDelegates, isEmpty);
     expect(result.isSupported, isFalse);
     // The platform itself is the blocker, so it explains both delegates.
-    expect(result.unavailableReasons[VisionDelegate.cpu], isNotNull);
-    expect(result.unavailableReasons[VisionDelegate.gpu], isNotNull);
+    expect(result.unavailableReasons[Delegate.cpu], isNotNull);
+    expect(result.unavailableReasons[Delegate.gpu], isNotNull);
   });
 
   test('Object Detector desktop x64: Linux GPU, Windows CPU only', () {
     final linux = objectDetectorCapabilitiesForPlatform(
       const TaskPlatform(operatingSystem: 'linux', architecture: 'x64'),
     );
-    expect(linux.supportedDelegates, {VisionDelegate.cpu, VisionDelegate.gpu});
+    expect(linux.supportedDelegates, {Delegate.cpu, Delegate.gpu});
     final windows = objectDetectorCapabilitiesForPlatform(
       const TaskPlatform(operatingSystem: 'windows', architecture: 'x64'),
     );
-    expect(windows.supportedDelegates, {VisionDelegate.cpu});
-    expect(windows.unavailableReasons[VisionDelegate.gpu], contains('Linux'));
+    expect(windows.supportedDelegates, {Delegate.cpu});
+    expect(windows.unavailableReasons[Delegate.gpu], contains('Linux'));
     expect(
       windows.supportedTargets.keys,
       containsAll(['linux/x64', 'windows/x64']),
@@ -244,31 +177,23 @@ void main() {
       (imageEmbedderCapabilitiesForPlatform, false, true),
       // UP-026: neither runtime opens Holistic's blendshapes model on GPU.
       (holisticLandmarkerCapabilitiesForPlatform, false, false),
-      // The legacy point segmenter's desktop GPU has not been compared.
-      (interactiveSegmenterLegacyCapabilitiesForPlatform, false, false),
     ]) {
-      expect(
-        claim(linux).supportedDelegates.contains(VisionDelegate.gpu),
-        onLinux,
-      );
-      expect(
-        claim(windows).supportedDelegates,
-        isNot(contains(VisionDelegate.gpu)),
-      );
+      expect(claim(linux).supportedDelegates.contains(Delegate.gpu), onLinux);
+      expect(claim(windows).supportedDelegates, isNot(contains(Delegate.gpu)));
       // Metal through the official macOS runtime only.
       expect(claim(macos).supportedDelegates, isEmpty);
       expect(
         claim(
           macos,
           officialMacosRuntime: true,
-        ).supportedDelegates.contains(VisionDelegate.gpu),
+        ).supportedDelegates.contains(Delegate.gpu),
         onMac,
       );
     }
     expect(
       holisticLandmarkerCapabilitiesForPlatform(
         linux,
-      ).unavailableReasons[VisionDelegate.gpu],
+      ).unavailableReasons[Delegate.gpu],
       contains('UP-026'),
     );
   });
@@ -291,11 +216,9 @@ void main() {
         final capabilities = imageSegmenterCapabilitiesForPlatform(
           android(gpu),
         );
-        expect(capabilities.supportedDelegates, {
-          VisionDelegate.cpu,
-        }, reason: gpu);
+        expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: gpu);
         expect(
-          capabilities.unavailableReasons[VisionDelegate.gpu],
+          capabilities.unavailableReasons[Delegate.gpu],
           allOf(contains('UP-023'), contains(gpu)),
         );
       }
@@ -309,7 +232,7 @@ void main() {
           imageSegmenterCapabilitiesForPlatform(
             android(gpu),
           ).supportedDelegates,
-          {VisionDelegate.cpu, VisionDelegate.gpu},
+          {Delegate.cpu, Delegate.gpu},
           reason: gpu,
         );
       }
@@ -320,7 +243,7 @@ void main() {
         imageClassifierCapabilitiesForPlatform(
           android('PowerVR Rogue GE8320 (Imagination Technologies)'),
         ).supportedDelegates,
-        contains(VisionDelegate.gpu),
+        contains(Delegate.gpu),
       );
       const linuxPowerVr = TaskPlatform(
         operatingSystem: 'linux',
@@ -329,7 +252,7 @@ void main() {
       );
       expect(
         imageSegmenterCapabilitiesForPlatform(linuxPowerVr).supportedDelegates,
-        contains(VisionDelegate.gpu),
+        contains(Delegate.gpu),
       );
     },
   );
@@ -348,42 +271,35 @@ void main() {
       version: '26.4',
       simulator: true,
     );
-    final tables =
-        <String, TaskCapabilities<VisionDelegate> Function(TaskPlatform)>{
-          'face landmarker': faceLandmarkerCapabilitiesForPlatform,
-          'face detector': faceDetectorCapabilitiesForPlatform,
-          'hand landmarker': (platform) =>
-              handLandmarkerCapabilitiesForPlatform(
-                platform,
-                officialIosRuntime: true,
-              ),
-          'pose landmarker': (platform) =>
-              poseLandmarkerCapabilitiesForPlatform(
-                platform,
-                officialIosRuntime: true,
-              ),
-          'image segmenter': (platform) =>
-              imageSegmenterCapabilitiesForPlatform(
-                platform,
-                officialIosRuntime: true,
-              ),
-          'object detector': (platform) =>
-              objectDetectorCapabilitiesForPlatform(
-                platform,
-                officialIosRuntime: true,
-              ),
-        };
+    final tables = <String, TaskCapabilities Function(TaskPlatform)>{
+      'face landmarker': faceLandmarkerCapabilitiesForPlatform,
+      'face detector': faceDetectorCapabilitiesForPlatform,
+      'hand landmarker': (platform) => handLandmarkerCapabilitiesForPlatform(
+        platform,
+        officialIosRuntime: true,
+      ),
+      'pose landmarker': (platform) => poseLandmarkerCapabilitiesForPlatform(
+        platform,
+        officialIosRuntime: true,
+      ),
+      'image segmenter': (platform) => imageSegmenterCapabilitiesForPlatform(
+        platform,
+        officialIosRuntime: true,
+      ),
+      'object detector': (platform) => objectDetectorCapabilitiesForPlatform(
+        platform,
+        officialIosRuntime: true,
+      ),
+    };
     for (final MapEntry(key: task, value: table) in tables.entries) {
       expect(table(device).supportedDelegates, {
-        VisionDelegate.cpu,
-        VisionDelegate.gpu,
+        Delegate.cpu,
+        Delegate.gpu,
       }, reason: task);
       final capabilities = table(simulator);
-      expect(capabilities.supportedDelegates, {
-        VisionDelegate.cpu,
-      }, reason: task);
+      expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: task);
       expect(
-        capabilities.unavailableReasons[VisionDelegate.gpu],
+        capabilities.unavailableReasons[Delegate.gpu],
         contains('UP-031'),
         reason: task,
       );
@@ -393,7 +309,7 @@ void main() {
     expect(
       handLandmarkerCapabilitiesForPlatform(
         simulator,
-      ).unavailableReasons[VisionDelegate.gpu],
+      ).unavailableReasons[Delegate.gpu],
       isNot(contains('UP-031')),
     );
   });

@@ -113,7 +113,7 @@ Future<void> _prepare(String target, List<String> tasks) async {
     'tasks': tasks,
     'models': modelNames,
     'samples': sampleNames,
-    'official_macos_landmark_tasks': [
+    'macos_engine_tasks': [
       if (macosEngine) ...tasks.where(macosEngineTasks.contains),
     ],
     'official_ios_sdk': null,

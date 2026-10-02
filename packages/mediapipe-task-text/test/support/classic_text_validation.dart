@@ -1,50 +1,59 @@
 import 'dart:io';
 
-import 'package:mediapipe_core/io.dart';
-import 'package:mediapipe_text/io.dart';
+import 'dart:typed_data';
+
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 typedef _Task = (Future<Object> Function(String), Future<void> Function());
 
-ClassifierOptions _classifierOptions(Map<String, dynamic> values) =>
-    ClassifierOptions(
-      displayNamesLocale: values['display_names_locale'] as String?,
-      maxResults: values['max_results'] as int?,
-      scoreThreshold: (values['score_threshold'] as num?)?.toDouble(),
-      categoryAllowlist: (values['category_allowlist'] as List?)
-          ?.cast<String>(),
-      categoryDenylist: (values['category_denylist'] as List?)?.cast<String>(),
-    );
+/// A model as a file path or in memory.
+typedef _Model = ({String? path, Uint8List? bytes});
 
 Future<_Task> _create(
   String name,
-  BaseOptions model,
+  _Model model,
   Map<String, dynamic> config,
 ) async {
+  // Python's None and an absent option mean Google's default.
+  final maxResults = config['max_results'] as int? ?? -1;
+  final scoreThreshold = (config['score_threshold'] as num?)?.toDouble() ?? 0;
+  final allow = (config['category_allowlist'] as List?)?.cast<String>();
+  final deny = (config['category_denylist'] as List?)?.cast<String>();
+  final locale = config['display_names_locale'] as String?;
   switch (name) {
     case 'classifier':
       final task = await TextClassifier.create(
         TextClassifierOptions(
-          baseOptions: model,
-          classifierOptions: _classifierOptions(config),
+          modelPath: model.path,
+          modelBytes: model.bytes,
+          displayNamesLocale: locale,
+          maxResults: maxResults,
+          scoreThreshold: scoreThreshold,
+          categoryAllowlist: allow,
+          categoryDenylist: deny,
         ),
       );
       return (task.classify, task.dispose);
     case 'language':
       final task = await LanguageDetector.create(
         LanguageDetectorOptions(
-          baseOptions: model,
-          classifierOptions: _classifierOptions(config),
+          modelPath: model.path,
+          modelBytes: model.bytes,
+          displayNamesLocale: locale,
+          maxResults: maxResults,
+          scoreThreshold: scoreThreshold,
+          categoryAllowlist: allow,
+          categoryDenylist: deny,
         ),
       );
       return (task.detect, task.dispose);
     case 'embedder':
       final task = await TextEmbedder.create(
         TextEmbedderOptions(
-          baseOptions: model,
-          embedderOptions: EmbedderOptions(
-            l2Normalize: config['l2_normalize'] == true,
-            quantize: config['quantize'] == true,
-          ),
+          modelPath: model.path,
+          modelBytes: model.bytes,
+          l2Normalize: config['l2_normalize'] == true,
+          quantize: config['quantize'] == true,
         ),
       );
       return (task.embed, task.dispose);
@@ -56,7 +65,7 @@ Future<_Task> _create(
 Object _json(Object value) => switch (value) {
   TextClassifierResult result => {
     // Google's Python converter exposes timestamp_ms=0 for non-timed text.
-    'timestamp_ms': result.timestampMs ?? 0,
+    'timestamp_ms': result.timestampMilliseconds ?? 0,
     'classifications': [
       for (final head in result.classifications)
         {
@@ -81,16 +90,14 @@ Object _json(Object value) => switch (value) {
     ],
   },
   TextEmbedderResult result => {
-    'timestamp_ms': result.timestampMs,
+    'timestamp_ms': result.timestampMilliseconds,
     'embeddings': [
       for (final e in result.embeddings)
         {
           'head_index': e.headIndex,
           'head_name': e.headName,
-          'quantized': e.type == EmbeddingType.quantized,
-          'values': e.type == EmbeddingType.quantized
-              ? e.quantizedEmbedding
-              : e.floatEmbedding,
+          'quantized': e.quantizedEmbedding != null,
+          'values': e.quantizedEmbedding ?? e.floatEmbedding,
         },
     ],
   },
@@ -141,9 +148,9 @@ Future<Map<String, Object>> validateClassicText(
   for (final entry in cases) {
     final name = entry['task'] as String;
     for (final memory in [false, true]) {
-      final source = memory
-          ? BaseOptions.memory(await File(models[name]!).readAsBytes())
-          : BaseOptions.path(models[name]!);
+      final _Model source = memory
+          ? (path: null, bytes: await File(models[name]!).readAsBytes())
+          : (path: models[name]!, bytes: null);
       final (run, dispose) = await _create(name, source, entry['options']);
       late Object result;
       try {
@@ -164,45 +171,35 @@ Future<Map<String, Object>> validateClassicText(
       if (result is TextEmbedderResult) retained[entry['name']] = result;
     }
   }
-  final similarityTask = await TextEmbedder.create(
-    TextEmbedderOptions.fromAssetPath(models['embedder']!),
-  );
-  try {
-    for (final pair in reference['similarities'] as List) {
-      final actual = await similarityTask.cosineSimilarity(
-        retained[pair['a']]!.embeddings.first,
-        retained[pair['b']]!.embeddings.first,
-      );
-      compare(actual, pair['value'], 'cosine');
-    }
-  } finally {
-    await similarityTask.dispose();
+  for (final pair in reference['similarities'] as List) {
+    final actual = TextEmbedder.cosineSimilarity(
+      retained[pair['a']]!.embeddings.first,
+      retained[pair['b']]!.embeddings.first,
+    );
+    compare(actual, pair['value'], 'cosine');
   }
 
   for (final entry in reference['creation_errors'] as List) {
     var rejected = false;
     try {
-      final (_, dispose) = await _create(
-        entry['task'],
-        BaseOptions.path(models[entry['task']]!),
-        entry['options'],
-      );
+      final (_, dispose) = await _create(entry['task'], (
+        path: models[entry['task']]!,
+        bytes: null,
+      ), entry['options']);
       await dispose();
-    } on TextTaskException catch (error) {
+    } on ArgumentError {
+      // Options Google's runtime refuses (its message is entry['error']) are
+      // refused in Dart first, the same way on every platform.
       rejected = true;
-      if (error.message != entry['error']) {
-        throw StateError('Unexpected official error: $error');
-      }
     }
     if (!rejected) throw StateError('Invalid options were accepted.');
   }
 
   for (final entry in models.entries) {
-    final (run, dispose) = await _create(
-      entry.key,
-      BaseOptions.path(entry.value),
-      {},
-    );
+    final (run, dispose) = await _create(entry.key, (
+      path: entry.value,
+      bytes: null,
+    ), {});
     try {
       final sequence = reference['lifecycle_sequences'][entry.key] as List;
       for (var i = 0; i < 2; i++) {

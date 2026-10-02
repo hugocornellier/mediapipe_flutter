@@ -1,8 +1,8 @@
-import 'package:mediapipe_audio/platform_interface.dart';
-import 'package:mediapipe_core/capabilities.dart'
-    show tasksRuntimeTargets, tasksRuntimeVersionOn;
-import 'package:mediapipe_text/platform_interface.dart';
-import 'package:mediapipe_vision/capabilities.dart';
+import 'package:mediapipe_audio/mediapipe_audio.dart'
+    show audioClassifierCapabilitiesForPlatform;
+import 'package:mediapipe_text/mediapipe_text.dart'
+    show textClassifierCapabilitiesForPlatform;
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 /// How a tile demonstrates its task.
 enum GalleryDemo {
@@ -123,9 +123,9 @@ final class GalleryTask {
   final String? experimentalReason;
 
   /// The capability claim this entry earns when the build manifest says the
-  /// official macOS landmark runtime was selected for [runtimeId], if any.
-  final TaskCapabilities<VisionDelegate> Function(TaskPlatform)?
-  officialMacosCapabilities;
+  /// macOS tasks runtime (Google's engine) was selected for [runtimeId], if
+  /// any.
+  final TaskCapabilities Function(TaskPlatform)? officialMacosCapabilities;
 
   bool get isExperimental => experimentalReason != null;
 
@@ -135,9 +135,9 @@ final class GalleryTask {
   /// Sample input shipped for the demo.
   final String sample;
 
-  final TaskCapabilities<VisionDelegate> Function(TaskPlatform) capabilities;
+  final TaskCapabilities Function(TaskPlatform) capabilities;
 
-  TaskCapabilities<VisionDelegate> capabilitiesFor(
+  TaskCapabilities capabilitiesFor(
     TaskPlatform platform,
     Set<String> officialMacosLandmarkTasks,
   ) => switch (officialMacosCapabilities) {
@@ -149,163 +149,123 @@ final class GalleryTask {
 
 // tool/prepare.py builds every iOS target against Google's official SDK, so
 // Hand Landmarker always has the package's official iOS adapter there.
-TaskCapabilities<VisionDelegate> _hand(TaskPlatform platform) =>
+TaskCapabilities _hand(TaskPlatform platform) =>
     handLandmarkerCapabilitiesForPlatform(platform, officialIosRuntime: true);
 
-TaskCapabilities<VisionDelegate> _officialMacosHand(TaskPlatform platform) =>
+TaskCapabilities _officialMacosHand(TaskPlatform platform) =>
     handLandmarkerCapabilitiesForPlatform(
       platform,
       officialMacosRuntime: true,
       officialIosRuntime: true,
     );
 
-TaskCapabilities<VisionDelegate> _pose(TaskPlatform platform) =>
+TaskCapabilities _pose(TaskPlatform platform) =>
     poseLandmarkerCapabilitiesForPlatform(platform, officialIosRuntime: true);
 
-TaskCapabilities<VisionDelegate> _officialMacosPose(TaskPlatform platform) =>
+TaskCapabilities _officialMacosPose(TaskPlatform platform) =>
     poseLandmarkerCapabilitiesForPlatform(
       platform,
       officialMacosRuntime: true,
       officialIosRuntime: true,
     );
 
-TaskCapabilities<VisionDelegate> _objects(TaskPlatform platform) =>
+TaskCapabilities _objects(TaskPlatform platform) =>
     objectDetectorCapabilitiesForPlatform(platform, officialIosRuntime: true);
 
-TaskCapabilities<VisionDelegate> _classifier(TaskPlatform platform) =>
+TaskCapabilities _classifier(TaskPlatform platform) =>
     imageClassifierCapabilitiesForPlatform(platform, officialIosRuntime: true);
 
-TaskCapabilities<VisionDelegate> _officialMacosObjects(TaskPlatform platform) =>
+TaskCapabilities _officialMacosObjects(TaskPlatform platform) =>
     objectDetectorCapabilitiesForPlatform(
       platform,
       officialMacosRuntime: true,
       officialIosRuntime: true,
     );
 
-TaskCapabilities<VisionDelegate> _officialMacosClassifier(
-  TaskPlatform platform,
-) => imageClassifierCapabilitiesForPlatform(
-  platform,
-  officialMacosRuntime: true,
-  officialIosRuntime: true,
-);
+TaskCapabilities _officialMacosClassifier(TaskPlatform platform) =>
+    imageClassifierCapabilitiesForPlatform(
+      platform,
+      officialMacosRuntime: true,
+      officialIosRuntime: true,
+    );
 
-TaskCapabilities<VisionDelegate> _embedder(TaskPlatform platform) =>
+TaskCapabilities _embedder(TaskPlatform platform) =>
     imageEmbedderCapabilitiesForPlatform(platform, officialIosRuntime: true);
 
-TaskCapabilities<VisionDelegate> _officialMacosEmbedder(
-  TaskPlatform platform,
-) => imageEmbedderCapabilitiesForPlatform(
-  platform,
-  officialMacosRuntime: true,
-  officialIosRuntime: true,
-);
+TaskCapabilities _officialMacosEmbedder(TaskPlatform platform) =>
+    imageEmbedderCapabilitiesForPlatform(
+      platform,
+      officialMacosRuntime: true,
+      officialIosRuntime: true,
+    );
 
-TaskCapabilities<VisionDelegate> _segmenter(TaskPlatform platform) =>
+TaskCapabilities _segmenter(TaskPlatform platform) =>
     imageSegmenterCapabilitiesForPlatform(platform, officialIosRuntime: true);
 
-TaskCapabilities<VisionDelegate> _officialMacosSegmenter(
-  TaskPlatform platform,
-) => imageSegmenterCapabilitiesForPlatform(
-  platform,
-  officialMacosRuntime: true,
-  officialIosRuntime: true,
-);
+TaskCapabilities _officialMacosSegmenter(TaskPlatform platform) =>
+    imageSegmenterCapabilitiesForPlatform(
+      platform,
+      officialMacosRuntime: true,
+      officialIosRuntime: true,
+    );
 
-TaskCapabilities<VisionDelegate> _officialMacosLegacySegmenter(
-  TaskPlatform platform,
-) => interactiveSegmenterLegacyCapabilitiesForPlatform(
-  platform,
-  officialMacosRuntime: true,
-  officialIosRuntime: true,
-);
-
-TaskCapabilities<VisionDelegate> _magicTouch(TaskPlatform platform) =>
+TaskCapabilities _magicTouch(TaskPlatform platform) =>
     interactiveSegmenterCapabilitiesForPlatform(
       platform,
       officialIosRuntime: true,
     );
 
-TaskCapabilities<VisionDelegate> _officialMacosMagicTouch(
-  TaskPlatform platform,
-) => interactiveSegmenterCapabilitiesForPlatform(
-  platform,
-  officialMacosRuntime: true,
-  officialIosRuntime: true,
-);
-
-TaskCapabilities<VisionDelegate> _legacySegmenter(TaskPlatform platform) =>
-    interactiveSegmenterLegacyCapabilitiesForPlatform(
+TaskCapabilities _officialMacosMagicTouch(TaskPlatform platform) =>
+    interactiveSegmenterCapabilitiesForPlatform(
       platform,
+      officialMacosRuntime: true,
       officialIosRuntime: true,
     );
 
-TaskCapabilities<VisionDelegate> _gesture(TaskPlatform platform) =>
+TaskCapabilities _gesture(TaskPlatform platform) =>
     gestureRecognizerCapabilitiesForPlatform(
       platform,
       officialIosRuntime: true,
     );
 
-TaskCapabilities<VisionDelegate> _holistic(TaskPlatform platform) =>
+TaskCapabilities _holistic(TaskPlatform platform) =>
     holisticLandmarkerCapabilitiesForPlatform(
       platform,
       officialIosRuntime: true,
     );
 
-TaskCapabilities<VisionDelegate> _officialMacosGesture(TaskPlatform platform) =>
+TaskCapabilities _officialMacosGesture(TaskPlatform platform) =>
     gestureRecognizerCapabilitiesForPlatform(
       platform,
       officialMacosRuntime: true,
       officialIosRuntime: true,
     );
 
-TaskCapabilities<VisionDelegate> _officialMacosHolistic(
-  TaskPlatform platform,
-) => holisticLandmarkerCapabilitiesForPlatform(
-  platform,
-  officialMacosRuntime: true,
-  officialIosRuntime: true,
-);
+TaskCapabilities _officialMacosHolistic(TaskPlatform platform) =>
+    holisticLandmarkerCapabilitiesForPlatform(
+      platform,
+      officialMacosRuntime: true,
+      officialIosRuntime: true,
+    );
 
 /// The delegate a demo opens on: GPU wherever this platform offers it for the
 /// task, as Google's web demo does, otherwise the first supported delegate.
-VisionDelegate preferredDelegate(Iterable<VisionDelegate> supported) =>
-    supported.contains(VisionDelegate.gpu)
-    ? VisionDelegate.gpu
+Delegate preferredDelegate(Iterable<Delegate> supported) =>
+    supported.contains(Delegate.gpu)
+    ? Delegate.gpu
     : supported.isEmpty
-    ? VisionDelegate.cpu
+    ? Delegate.cpu
     : supported.first;
 
-/// The text tasks' support: CPU on core's shared 1.0.1 runtime, and in
-/// browsers and on mobile once a platform plugin has installed its backend.
-TaskCapabilities<VisionDelegate> _text(TaskPlatform platform) =>
-    _cpuTask(platform, backend: textTaskBackendFactory != null);
+/// The classic text tasks' support, from their own capability table: CPU on
+/// core's shared runtime, and in browsers and on mobile once a platform
+/// plugin has installed its backend.
+TaskCapabilities _text(TaskPlatform platform) =>
+    textClassifierCapabilitiesForPlatform(platform);
 
-/// Audio Classifier's support, as for the text tasks.
-TaskCapabilities<VisionDelegate> _audio(TaskPlatform platform) =>
-    _cpuTask(platform, backend: audioTaskBackendFactory != null);
-
-TaskCapabilities<VisionDelegate> _cpuTask(
-  TaskPlatform platform, {
-  required bool backend,
-}) => TaskCapabilities.cpuOnTargets(
-  platform: platform,
-  cpu: VisionDelegate.cpu,
-  gpu: VisionDelegate.gpu,
-  gpuUnavailableReason: 'The official audio and text tasks run on CPU here.',
-  runtimeVersion: tasksRuntimeVersionOn(platform),
-  // Core's runtime serves desktop and iOS; a registered backend is Google's
-  // browser runtime or Android SDK: mediapipe_text/audio's web or
-  // Android plugin.
-  targets: {
-    ...tasksRuntimeTargets,
-    if (backend) ...{
-      'web/unknown': null,
-      'android/arm64': null,
-      'android/x64': null,
-    },
-  },
-);
+/// Audio Classifier's support, from its own capability table.
+TaskCapabilities _audio(TaskPlatform platform) =>
+    audioClassifierCapabilitiesForPlatform(platform);
 
 final _catalog = <GalleryTask>[
   GalleryTask(
@@ -478,22 +438,6 @@ final _catalog = <GalleryTask>[
     sample: 'portrait.jpg',
     capabilities: _segmenter,
     officialMacosCapabilities: _officialMacosSegmenter,
-  ),
-  // TODO: Delete this page with InteractiveSegmenterLegacy; only the modern
-  // InteractiveSegmenter is needed. See InteractiveSegmenterLegacyOptions.
-  // Two different implementations share the MagicTouch name. This is the
-  // stateless legacy API inside the combined vision runtime; the stateful
-  // InteractiveSegmenter below uses core's runtime (the gallery maps it to
-  // the official vision image on macOS), with its own
-  // support table. Their capability queries are not interchangeable.
-  GalleryTask(
-    id: 'interactive_segmenter_legacy',
-    title: 'Interactive Segmenter (legacy)',
-    summary: 'Stateless MagicTouch segmentation from a point or box.',
-    model: 'magic_touch.tflite',
-    sample: 'portrait.jpg',
-    capabilities: _legacySegmenter,
-    officialMacosCapabilities: _officialMacosLegacySegmenter,
   ),
   GalleryTask(
     id: 'interactive_segmenter',

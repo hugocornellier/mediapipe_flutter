@@ -67,8 +67,8 @@ void main() {
         final supported = entry
             .capabilitiesFor(platform, runtimeIds)
             .supportedDelegates;
-        final delegate = supported.contains(VisionDelegate.cpu)
-            ? VisionDelegate.cpu
+        final delegate = supported.contains(Delegate.cpu)
+            ? Delegate.cpu
             : supported.first;
         final demo = liveDemoFor(entry.id)!;
         final task = demo.task();

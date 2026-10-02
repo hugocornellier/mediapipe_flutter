@@ -1,14 +1,16 @@
+/// Flutter's registration of Google's browser runtime behind the vision task
+/// classes. Not for applications: import `mediapipe_vision.dart`.
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:web/web.dart' as web;
-
-import 'web_runtime.dart';
-import 'web_src/result.dart';
 
 @JS('mediapipeVision.create')
 external JSPromise<JSNumber> _create(JSObject options);
@@ -16,10 +18,14 @@ external JSPromise<JSNumber> _create(JSObject options);
 external JSPromise<_Detection> _detect(JSNumber id, JSObject input);
 @JS('mediapipeVision.attachOverlay')
 external JSPromise<JSAny?> _attachOverlay(JSNumber id, JSObject canvas);
+@JS('mediapipeVision.detachOverlay')
+external JSPromise<JSAny?> _detachOverlay(JSNumber id);
 @JS('mediapipeVision.setOverlayOptions')
 external void _setOverlayOptions(JSNumber id, JSObject options);
 @JS('mediapipeVision.overlayActive')
 external JSBoolean _overlayActive(JSNumber id);
+@JS('mediapipeVision.close')
+external JSPromise<JSAny?> _close(JSNumber id);
 
 /// A worker result: JSON, plus the image landmarks packed when possible and
 /// the masks the JSON names by index.
@@ -28,207 +34,114 @@ extension type _Detection(JSObject _) implements JSObject {
   external JSFloat64Array? get landmarks;
   external JSArray<JSArrayBuffer>? get masks;
 }
-@JS('mediapipeVision.close')
-external JSPromise<JSAny?> _close(JSNumber id);
 
 /// Flutter registration for Google's official browser runtime.
 abstract final class MediaPipeVisionWeb {
   /// Installs the browser backends before the first public task is created.
   static void registerWith(Registrar registrar) {
-    faceLandmarkerBackendFactory = (options) => WebVisionTask.create(
-      task: 'face_landmarker',
-      modelBytes: options.modelBytes,
-      modelPath: options.modelPath,
-      delegate: options.delegate,
-      runningMode: options.runningMode,
-      settings: {
-        'numFaces': options.numFaces,
-        'minFaceDetectionConfidence': options.minFaceDetectionConfidence,
-        'minFacePresenceConfidence': options.minFacePresenceConfidence,
-        'minTrackingConfidence': options.minTrackingConfidence,
-        'outputFaceBlendshapes': options.outputFaceBlendshapes,
-        'outputFacialTransformationMatrixes':
-            options.outputFacialTransformationMatrixes,
-      },
-      decode: (data, landmarks) =>
-          decodeWebFaceResult(data, landmarks: landmarks),
-      error: VisionTaskException.new,
-    );
-    handLandmarkerBackendFactory = (options) => WebVisionTask.create(
-      task: 'hand_landmarker',
-      modelBytes: options.modelBytes,
-      modelPath: options.modelPath,
-      delegate: options.delegate,
-      runningMode: options.runningMode,
-      settings: {
-        'numHands': options.numHands,
-        'minHandDetectionConfidence': options.minHandDetectionConfidence,
-        'minHandPresenceConfidence': options.minHandPresenceConfidence,
-        'minTrackingConfidence': options.minTrackingConfidence,
-      },
-      decode: (data, landmarks) =>
-          decodeWebHandResult(data, landmarks: landmarks),
-      error: VisionTaskException.new,
-    );
-    poseLandmarkerBackendFactory = (options) => WebVisionTask.create(
-      task: 'pose_landmarker',
-      modelBytes: options.modelBytes,
-      modelPath: options.modelPath,
-      delegate: options.delegate,
-      runningMode: options.runningMode,
-      settings: {
-        'numPoses': options.numPoses,
-        'minPoseDetectionConfidence': options.minPoseDetectionConfidence,
-        'minPosePresenceConfidence': options.minPosePresenceConfidence,
-        'minTrackingConfidence': options.minTrackingConfidence,
-        'outputSegmentationMasks': options.outputSegmentationMasks,
-      },
-      decode: (data, landmarks) =>
-          decodeWebPoseResult(data, landmarks: landmarks),
-      error: VisionTaskException.new,
-    );
-    gestureRecognizerBackendFactory = (options) => WebVisionTask.create(
-      task: 'gesture_recognizer',
-      modelBytes: options.modelBytes,
-      modelPath: options.modelPath,
-      delegate: options.delegate,
-      runningMode: options.runningMode,
-      settings: {
-        'numHands': options.numHands,
-        'minHandDetectionConfidence': options.minHandDetectionConfidence,
-        'minHandPresenceConfidence': options.minHandPresenceConfidence,
-        'minTrackingConfidence': options.minTrackingConfidence,
-        'cannedGesturesClassifierOptions': _classifier(
-          options.cannedGesturesClassifierOptions,
-        ),
-        'customGesturesClassifierOptions': _classifier(
-          options.customGesturesClassifierOptions,
-        ),
-      },
-      decode: (data, landmarks) =>
-          decodeWebGestureResult(data, landmarks: landmarks),
-      error: VisionTaskException.new,
-    );
-    holisticLandmarkerBackendFactory = (options) => WebVisionTask.create(
-      task: 'holistic_landmarker',
-      modelBytes: options.modelBytes,
-      modelPath: options.modelPath,
-      delegate: options.delegate,
-      runningMode: options.runningMode,
-      settings: {
-        'minFaceDetectionConfidence': options.minFaceDetectionConfidence,
-        'minFaceSuppressionThreshold': options.minFaceSuppressionThreshold,
-        'minFacePresenceConfidence': options.minFacePresenceConfidence,
-        'minHandLandmarksConfidence': options.minHandLandmarksConfidence,
-        'minPoseDetectionConfidence': options.minPoseDetectionConfidence,
-        'minPoseSuppressionThreshold': options.minPoseSuppressionThreshold,
-        'minPosePresenceConfidence': options.minPosePresenceConfidence,
-        'outputFaceBlendshapes': options.outputFaceBlendshapes,
-        'outputPoseSegmentationMasks': options.outputPoseSegmentationMask,
-      },
-      decode: (data, landmarks) =>
-          decodeWebHolisticResult(data, landmarks: landmarks),
-      error: VisionTaskException.new,
-    );
-    faceDetectorBackendFactory = (options) => WebVisionTask.create(
-      task: 'face_detector',
-      modelBytes: options.modelBytes,
-      modelPath: options.modelPath,
-      delegate: options.delegate,
-      runningMode: options.runningMode,
-      settings: {
-        'minDetectionConfidence': options.minDetectionConfidence,
-        'minSuppressionThreshold': options.minSuppressionThreshold,
-      },
-      decode: (data, _) => decodeWebFaceDetectorResult(data),
-      error: VisionTaskException.new,
-    );
-    objectDetectorBackendFactory = (options) => WebVisionTask.create(
-      task: 'object_detector',
-      modelBytes: options.modelBytes,
-      modelPath: options.modelPath,
-      delegate: options.delegate,
-      runningMode: options.runningMode,
-      settings: _limits(
-        maxResults: options.maxResults,
-        scoreThreshold: options.scoreThreshold,
-        displayNamesLocale: options.displayNamesLocale,
-        categoryAllowlist: options.categoryAllowlist,
-        categoryDenylist: options.categoryDenylist,
-      ),
-      decode: (data, _) => decodeWebObjectDetectorResult(data),
-      error: VisionTaskException.new,
-    );
-    imageClassifierBackendFactory = (options) => WebVisionTask.create(
-      task: 'image_classifier',
-      modelBytes: options.modelBytes,
-      modelPath: options.modelPath,
-      delegate: options.delegate,
-      runningMode: options.runningMode,
-      settings: _limits(
-        maxResults: options.maxResults,
-        scoreThreshold: options.scoreThreshold,
-        displayNamesLocale: options.displayNamesLocale,
-        categoryAllowlist: options.categoryAllowlist,
-        categoryDenylist: options.categoryDenylist,
-      ),
-      decode: (data, _) => decodeWebClassifierResult(data),
-      error: VisionTaskException.new,
-    );
-    imageEmbedderBackendFactory = (options) => WebVisionTask.create(
-      task: 'image_embedder',
-      modelBytes: options.modelBytes,
-      modelPath: options.modelPath,
-      delegate: options.delegate,
-      runningMode: options.runningMode,
-      settings: {
-        'l2Normalize': options.l2Normalize,
-        'quantize': options.quantize,
-      },
-      decode: (data, _) => decodeWebEmbedderResult(data),
-      error: VisionTaskException.new,
-    );
-    interactiveSegmenterLegacyBackendFactory = (options) =>
-        WebVisionTask.create(
-          task: 'interactive_segmenter_legacy',
-          modelBytes: options.modelBytes,
-          modelPath: options.modelPath,
-          delegate: options.delegate,
-          runningMode: RunningMode.image,
-          settings: {
-            'outputConfidenceMasks': options.outputConfidenceMasks,
-            'outputCategoryMask': options.outputCategoryMask,
-          },
-          decode: (data, _) => decodeWebSegmenterResult(data),
-          error: VisionTaskException.new,
-        );
-    interactiveSegmenterBackendFactory = (options) async =>
-        _WebInteractiveSegmenter(
-          await WebVisionTask.create(
-            task: 'interactive_segmenter',
-            modelBytes: options.modelBytes,
-            modelPath: options.modelPath,
-            delegate: options.delegate,
-            runningMode: RunningMode.image,
-            settings: const {},
-            decode: (data, _) => data['result'] as Map<String, dynamic>,
-            error: VisionTaskException.new,
+    faceLandmarkerBackendFactory = (o) =>
+        WebVisionTask.create('face_landmarker', o, o.runningMode, {
+          'numFaces': o.numFaces,
+          'minFaceDetectionConfidence': o.minFaceDetectionConfidence,
+          'minFacePresenceConfidence': o.minFacePresenceConfidence,
+          'minTrackingConfidence': o.minTrackingConfidence,
+          'outputFaceBlendshapes': o.outputFaceBlendshapes,
+          'outputFacialTransformationMatrixes':
+              o.outputFacialTransformationMatrixes,
+        }, _browser(decodeFaceLandmarkerResult));
+    handLandmarkerBackendFactory = (o) =>
+        WebVisionTask.create('hand_landmarker', o, o.runningMode, {
+          'numHands': o.numHands,
+          'minHandDetectionConfidence': o.minHandDetectionConfidence,
+          'minHandPresenceConfidence': o.minHandPresenceConfidence,
+          'minTrackingConfidence': o.minTrackingConfidence,
+        }, _browser(decodeHandLandmarkerResult));
+    poseLandmarkerBackendFactory = (o) =>
+        WebVisionTask.create('pose_landmarker', o, o.runningMode, {
+          'numPoses': o.numPoses,
+          'minPoseDetectionConfidence': o.minPoseDetectionConfidence,
+          'minPosePresenceConfidence': o.minPosePresenceConfidence,
+          'minTrackingConfidence': o.minTrackingConfidence,
+          'outputSegmentationMasks': o.outputSegmentationMasks,
+        }, _browser(decodePoseLandmarkerResult));
+    gestureRecognizerBackendFactory = (o) =>
+        WebVisionTask.create('gesture_recognizer', o, o.runningMode, {
+          'numHands': o.numHands,
+          'minHandDetectionConfidence': o.minHandDetectionConfidence,
+          'minHandPresenceConfidence': o.minHandPresenceConfidence,
+          'minTrackingConfidence': o.minTrackingConfidence,
+          'cannedGesturesClassifierOptions': _classifier(
+            o.cannedGesturesClassifierOptions,
           ),
-        );
-    imageSegmenterBackendFactory = (options) => WebVisionTask.create(
-      task: 'image_segmenter',
-      modelBytes: options.modelBytes,
-      modelPath: options.modelPath,
-      delegate: options.delegate,
-      runningMode: options.runningMode,
-      settings: {
-        'outputConfidenceMasks': options.outputConfidenceMasks,
-        'outputCategoryMask': options.outputCategoryMask,
-        'displayNamesLocale': ?options.displayNamesLocale,
-      },
-      decode: (data, _) => decodeWebSegmenterResult(data),
-      error: VisionTaskException.new,
+          'customGesturesClassifierOptions': _classifier(
+            o.customGesturesClassifierOptions,
+          ),
+        }, _browser(decodeGestureRecognizerResult));
+    holisticLandmarkerBackendFactory = (o) =>
+        WebVisionTask.create('holistic_landmarker', o, o.runningMode, {
+          'minFaceDetectionConfidence': o.minFaceDetectionConfidence,
+          'minFaceSuppressionThreshold': o.minFaceSuppressionThreshold,
+          'minFacePresenceConfidence': o.minFacePresenceConfidence,
+          'minHandLandmarksConfidence': o.minHandLandmarksConfidence,
+          'minPoseDetectionConfidence': o.minPoseDetectionConfidence,
+          'minPoseSuppressionThreshold': o.minPoseSuppressionThreshold,
+          'minPosePresenceConfidence': o.minPosePresenceConfidence,
+          'outputFaceBlendshapes': o.outputFaceBlendshapes,
+          'outputPoseSegmentationMasks': o.outputPoseSegmentationMask,
+        }, _browser(decodeHolisticLandmarkerResult));
+    faceDetectorBackendFactory = (o) =>
+        WebVisionTask.create('face_detector', o, o.runningMode, {
+          'minDetectionConfidence': o.minDetectionConfidence,
+          'minSuppressionThreshold': o.minSuppressionThreshold,
+        }, _browser(decodeFaceDetectorResult));
+    objectDetectorBackendFactory = (o) => WebVisionTask.create(
+      'object_detector',
+      o,
+      o.runningMode,
+      _limits(
+        maxResults: o.maxResults,
+        scoreThreshold: o.scoreThreshold,
+        displayNamesLocale: o.displayNamesLocale,
+        categoryAllowlist: o.categoryAllowlist,
+        categoryDenylist: o.categoryDenylist,
+      ),
+      _browser(decodeObjectDetectorResult),
     );
+    imageClassifierBackendFactory = (o) => WebVisionTask.create(
+      'image_classifier',
+      o,
+      o.runningMode,
+      _limits(
+        maxResults: o.maxResults,
+        scoreThreshold: o.scoreThreshold,
+        displayNamesLocale: o.displayNamesLocale,
+        categoryAllowlist: o.categoryAllowlist,
+        categoryDenylist: o.categoryDenylist,
+      ),
+      _browser(decodeImageClassifierResult),
+    );
+    imageEmbedderBackendFactory = (o) => WebVisionTask.create(
+      'image_embedder',
+      o,
+      o.runningMode,
+      {'l2Normalize': o.l2Normalize, 'quantize': o.quantize},
+      _browser(decodeImageEmbedderResult),
+    );
+    interactiveSegmenterBackendFactory = (o) async => _WebInteractiveSegmenter(
+      await WebVisionTask.create(
+        'interactive_segmenter',
+        o,
+        RunningMode.image,
+        const {},
+        (json, _) => json['result'] as Map<String, dynamic>,
+      ),
+    );
+    imageSegmenterBackendFactory = (o) =>
+        WebVisionTask.create('image_segmenter', o, o.runningMode, {
+          'outputConfidenceMasks': o.outputConfidenceMasks,
+          'outputCategoryMask': o.outputCategoryMask,
+          'displayNamesLocale': ?o.displayNamesLocale,
+        }, _browser(decodeImageSegmenterResult));
   }
 
   /// Classifier limits, named as in Google's JavaScript API. A non-positive
@@ -249,35 +162,37 @@ abstract final class MediaPipeVisionWeb {
 
   /// Canned or custom gesture limits, named as in Google's JavaScript API.
   /// Google rejects a non-positive maxResults, so -1 (all) is left unset.
-  static Map<String, Object?> _classifier(GestureClassifierOptions o) => {
-    if (o.maxResults > 0) 'maxResults': o.maxResults,
-    'scoreThreshold': o.scoreThreshold,
-    'displayNamesLocale': ?o.displayNamesLocale,
-    if (o.categoryAllowlist.isNotEmpty)
-      'categoryAllowlist': o.categoryAllowlist,
-    if (o.categoryDenylist.isNotEmpty) 'categoryDenylist': o.categoryDenylist,
-  };
+  static Map<String, Object?> _classifier(ClassifierOptions o) => _limits(
+    maxResults: o.maxResults,
+    scoreThreshold: o.scoreThreshold,
+    displayNamesLocale: o.displayNamesLocale,
+    categoryAllowlist: o.categoryAllowlist,
+    categoryDenylist: o.categoryDenylist,
+  );
 }
+
+/// Reads a task's result: the worker's JSON and its packed landmarks.
+R Function(Map<String, dynamic>, Float64List?) _browser<R>(
+  R Function(VisionResultData data) decode,
+) =>
+    (json, landmarks) =>
+        decode(VisionResultData.fromBrowser(json, landmarks: landmarks));
 
 /// One official browser task on its own worker, with requests serialized.
 final class WebVisionTask<R>
-    implements VisionTaskFrameBackend<R>, VisionTaskOverlayBackend {
-  WebVisionTask._(this._id, this._decode, this._error);
+    implements VisionTaskBackend<R>, VisionTaskOverlayBackend {
+  WebVisionTask._(this._id, this._decode);
   final JSNumber _id;
-  final R Function(Map<String, dynamic> data, Float64List? landmarks) _decode;
-  final Exception Function(String message) _error;
+  final R Function(Map<String, dynamic> json, Float64List? landmarks) _decode;
   Future<void> _tail = Future.value();
   Future<void>? _disposing;
   static Future<void>? _loaded;
 
-  static Future<T> _workerResult<T extends JSAny?>(
-    JSPromise<T> promise,
-    Exception Function(String message) error,
-  ) async {
+  static Future<T> _workerResult<T extends JSAny?>(JSPromise<T> promise) async {
     try {
       return await promise.toDart;
     } catch (cause) {
-      throw error('$cause');
+      throw TaskException('$cause', cause: cause);
     }
   }
 
@@ -287,10 +202,12 @@ final class WebVisionTask<R>
           .resolve('assets/packages/mediapipe_vision/assets/bridge.js')
           .toString();
     final ready = Completer<void>();
-    script.onLoad.first.then((_) => ready.complete());
-    script.onError.first.then((_) {
-      ready.completeError(StateError('Unable to load MediaPipe web bridge.'));
-    });
+    unawaited(script.onLoad.first.then((_) => ready.complete()));
+    unawaited(
+      script.onError.first.then((_) {
+        ready.completeError(StateError('Unable to load MediaPipe web bridge.'));
+      }),
+    );
     web.document.head!.append(script);
     try {
       await ready.future.timeout(const Duration(seconds: 60));
@@ -302,26 +219,24 @@ final class WebVisionTask<R>
     }
   }();
 
-  /// Creates one official browser [task] with the requested CPU or GPU
-  /// delegate; [settings] are the task's own options, named as in Google's
-  /// JavaScript API.
-  static Future<WebVisionTask<R>> create<R>({
-    required String task,
-    required Uint8List? modelBytes,
-    required String? modelPath,
-    required VisionDelegate delegate,
-    required RunningMode runningMode,
-    required Map<String, Object?> settings,
-    required R Function(Map<String, dynamic> data, Float64List? landmarks)
-    decode,
-    required Exception Function(String message) error,
-  }) async {
+  /// Creates one official browser [task] from [options] in [runningMode];
+  /// [settings] are the task's own options, named as in Google's JavaScript
+  /// API, and [decode] reads each result.
+  static Future<WebVisionTask<R>> create<R>(
+    String task,
+    TaskOptions options,
+    RunningMode runningMode,
+    Map<String, Object?> settings,
+    R Function(Map<String, dynamic> json, Float64List? landmarks) decode,
+  ) async {
     await _load();
+    final modelBytes = options.modelBytes;
+    final modelPath = options.modelPath;
     final id = await _workerResult(
       _create(
         {
               'task': task,
-              'delegate': delegate.name.toUpperCase(),
+              'delegate': options.delegate.name.toUpperCase(),
               'modelBytes': modelBytes == null
                   ? null
                   : Uint8List.fromList(modelBytes).toJS,
@@ -334,9 +249,8 @@ final class WebVisionTask<R>
             }.jsify()!
             as JSObject,
       ),
-      error,
     );
-    return WebVisionTask._(id, decode, error);
+    return WebVisionTask._(id, decode);
   }
 
   Future<R> _submit(Map<String, Object?> input) {
@@ -346,11 +260,10 @@ final class WebVisionTask<R>
     final result = _tail.then((_) async {
       final detection = await _workerResult(
         _detect(_id, input.jsify()! as JSObject),
-        _error,
       );
       final data = jsonDecode(detection.json.toDart) as Map<String, dynamic>;
       if (detection.masks?.toDart case final masks?) {
-        attachWebMasks(data['result'] as Map<String, dynamic>, [
+        attachMaskBuffers(data['result'] as Map<String, dynamic>, [
           for (final mask in masks) mask.toDart,
         ]);
       }
@@ -366,51 +279,43 @@ final class WebVisionTask<R>
     int rotationDegrees,
     int? timestampMilliseconds, {
     VisionRegionOfInterest? regionOfInterest,
-    SegmentationPoint? keypoint,
-  }) => _submit({
-    'path': image.path == null
-        ? null
-        : Uri.base.resolve(image.path!).toString(),
-    'pixels': image.pixels == null
-        ? null
-        : Uint8List.fromList(image.pixels!).toJS,
-    'width': image.width,
-    'height': image.height,
-    'format': image.format?.name,
-    'stride': image.bytesPerRow,
-    'rotation': rotationDegrees,
-    'timestamp': timestampMilliseconds,
-    'region': switch (regionOfInterest) {
-      final r? => [r.left, r.top, r.right, r.bottom],
-      null => null,
-    },
-    'keypoint': switch (keypoint) {
-      final k? => [k.x, k.y],
-      null => null,
-    },
-  });
-
-  @override
-  Future<R> detectFrame(
-    Object frame,
-    int width,
-    int height,
-    int rotationDegrees,
-    int timestampMilliseconds,
-  ) => _submit({
-    'bitmap': frame,
-    'width': width,
-    'height': height,
-    'rotation': rotationDegrees,
-    'timestamp': timestampMilliseconds,
-  });
+  }) => _submit(
+    image.browserFrame != null
+        ? {
+            'bitmap': image.browserFrame,
+            'width': image.width,
+            'height': image.height,
+            'rotation': rotationDegrees,
+            'timestamp': timestampMilliseconds,
+          }
+        : {
+            'path': image.path == null
+                ? null
+                : Uri.base.resolve(image.path!).toString(),
+            'pixels': image.pixels == null
+                ? null
+                : Uint8List.fromList(image.pixels!).toJS,
+            'width': image.width,
+            'height': image.height,
+            'format': image.format?.name,
+            'stride': image.bytesPerRow,
+            'rotation': rotationDegrees,
+            'timestamp': timestampMilliseconds,
+            'region': switch (regionOfInterest) {
+              final r? => [r.left, r.top, r.right, r.bottom],
+              null => null,
+            },
+          },
+  );
 
   @override
   Future<void> attachOverlay(Object canvas) async {
-    await _workerResult(
-      _attachOverlay(_id, canvas as web.HTMLCanvasElement),
-      _error,
-    );
+    await _workerResult(_attachOverlay(_id, canvas as web.HTMLCanvasElement));
+  }
+
+  @override
+  Future<void> detachOverlay() async {
+    await _workerResult(_detachOverlay(_id));
   }
 
   @override
@@ -434,9 +339,8 @@ final class WebVisionTask<R>
   bool get overlayActive => _overlayActive(_id).toDart;
 
   @override
-  Future<void> dispose() => _disposing ??= _tail.then((_) async {
-    await _workerResult(_close(_id), _error);
-  });
+  Future<void> dispose() =>
+      _disposing ??= _tail.then((_) => _workerResult(_close(_id)));
 }
 
 /// Google's stateful MagicTouch segmenter on a worker: an image, then complete
@@ -449,7 +353,7 @@ final class _WebInteractiveSegmenter implements InteractiveSegmenterBackend {
   Future<void> setImage(VisionImage image) => _task.detect(image, 0, null);
 
   @override
-  Future<SegmentationMask> segment(List<SegmentationStroke> strokes) async {
+  Future<ConfidenceMask> segment(List<Stroke> strokes) async {
     final result = await _task._submit({
       'strokes': [
         for (final stroke in strokes)
@@ -462,9 +366,9 @@ final class _WebInteractiveSegmenter implements InteractiveSegmenterBackend {
           ],
       ],
     });
-    final [width as int, height as int, values as Float32List] =
-        (result['confidenceMasks'] as List).single as List;
-    return SegmentationMask(width: width, height: height, confidence: values);
+    return confidenceMaskFromList(
+      (result['confidenceMasks'] as List).single as List,
+    );
   }
 
   @override

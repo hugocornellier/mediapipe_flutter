@@ -1,7 +1,7 @@
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_text/io.dart';
+import 'package:mediapipe_text/src/io/native_language_detector.dart';
 import 'package:mediapipe_text/src/io/third_party/mediapipe/classic_text_bindings.dart'
     as mp;
 import 'package:test/test.dart';
@@ -9,8 +9,9 @@ import 'package:test/test.dart';
 void main() {
   test('copies an empty 1.0.1 language result', () {
     final result = using(
-      (arena) =>
-          LanguageDetectorResult.native(arena<mp.MpLanguageDetectorResult>()),
+      (arena) => languageDetectorResultFromNative(
+        arena<mp.MpLanguageDetectorResult>(),
+      ),
     );
     expect(result.predictions, isEmpty);
   });
@@ -25,13 +26,11 @@ void main() {
       output.ref
         ..predictions = predictions
         ..predictionsCount = 1;
-      final result = LanguageDetectorResult.native(output);
+      final result = languageDetectorResultFromNative(output);
       predictions.ref.probability = 0;
       code.cast<Uint8>().value = 0;
       return result;
     });
-    result.dispose();
-    result.dispose();
     expect(result.predictions.single.languageCode, 'es');
     expect(result.predictions.single.probability, .75);
     expect(() => result.predictions.clear(), throwsUnsupportedError);

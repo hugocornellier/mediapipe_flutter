@@ -17,7 +17,9 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // The gallery is a sample that is not distributed through a store, so it
+        // keeps Flutter's template application ID. The same ID is in the Kotlin
+        // package, androidTest, linux/CMakeLists.txt and the tool scripts.
         applicationId = "com.example.mediapipe_gallery"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -34,8 +36,8 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Debug-key signing on purpose: release builds need no keystore, and
+            // the gallery is not distributed through a store.
             signingConfig = signingConfigs.getByName("debug")
         }
     }

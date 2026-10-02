@@ -110,7 +110,7 @@ def test_root(destination, groups):
     on a machine without one. Only the root package's user_defines reach a build
     hook, so an isolated root scoped to the published runtimes keeps this job on
     the public download path it exists to check. On macOS, the non-face tasks
-    run through test_official_macos_landmark_runtime.py instead.
+    run through test_macos_tasks_runtime.py instead.
     """
     if destination.exists():
         shutil.rmtree(destination)
@@ -141,8 +141,8 @@ def test_root(destination, groups):
     if "segmenter" in groups:
         folders.append("fixtures/segmenter_tasks")
         tests.append("segmenter_tasks_test.dart")
-        models += ["deeplab_v3.tflite", "magic_touch.tflite"]
-        tasks += ["image_segmenter", "interactive_segmenter_legacy"]
+        models += ["deeplab_v3.tflite"]
+        tasks += ["image_segmenter"]
     for folder in folders:
         shutil.copytree(PACKAGE / "test" / folder, destination / "test" / folder)
     for name in tests:
@@ -221,7 +221,7 @@ def main():
         raise SystemExit("GPU references require macOS arm64 or Linux x64.")
     if args.test and groups - {"object"} and target != "linux/x64":
         raise SystemExit("On macOS, these tasks run on the official landmark "
-                         "runtime: use tool/test_official_macos_landmark_runtime.py.")
+                         "runtime: use tool/test_macos_tasks_runtime.py.")
     wheel_url, wheel_sha256, library_sha256, version = wheel_pin(target)
     metal = target == "macos/arm64"
     output = args.output_dir.resolve()

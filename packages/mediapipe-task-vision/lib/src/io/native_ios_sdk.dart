@@ -2,9 +2,10 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/capabilities.dart' show runningInIosSimulator;
+import 'package:mediapipe_core/platform_interface.dart'
+    show runningInIosSimulator;
 
-import '../interface/face_detector_types.dart';
+import '../types/vision_types.dart';
 
 const _landmarkerAsset = 'package:mediapipe_vision/face_landmarker.dylib';
 const _detectorAsset = 'package:mediapipe_vision/face_detector.dylib';

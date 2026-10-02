@@ -1,218 +1,68 @@
-import 'dart:ffi';
-import 'dart:io';
-import 'dart:isolate';
-import 'dart:typed_data';
-
-import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/mediapipe_exception.dart';
-import 'package:mediapipe_core/capabilities.dart' show tasksRuntimeUnavailable;
-import 'package:mediapipe_core/io.dart'
-    show missingLinuxGraphicsLibraries, mpHostSystem;
+import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart';
 
 import 'audio_task_backend.dart';
-import 'audio_classifier_backend.dart';
-import 'audio_types.dart';
+import 'capabilities.dart';
+import 'native_tasks.dart';
+import 'runner.dart';
+import 'types.dart';
 
-import 'third_party/mediapipe/audio_classifier_bindings.dart' as mp;
-
-/// Google's official Audio Classifier (for example YAMNet) on audio clips.
+/// Google's Audio Classifier (for example YAMNet): the categories of each
+/// chunk of an audio clip.
 ///
-/// The native task is created once; each [classify] runs on a background
-/// isolate. Where a platform plugin installs Google's mobile SDK
-/// (audio_task_backend.dart), the task runs there instead. Await [dispose]
-/// when finished.
+/// One class on every platform. Google's native runtime serves it on macOS,
+/// Linux, Windows and iOS, classifying on a background isolate; its Android
+/// SDK and browser runtime serve it through the registered platform plugin.
 ///
 /// ```dart
 /// final task = await AudioClassifier.create(
 ///   AudioClassifierOptions(model: AudioModels.yamnet),
 /// );
-/// final result = await task.classify(audio);
+/// final results = await task.classify(audio);
 /// await task.dispose();
 /// ```
-/// Inference futures cannot cancel native work; `Future.timeout` only limits
-/// caller waiting. `dispose()` drains accepted work and is idempotent.
+/// Calls run one at a time, in call order. A `Future` cannot cancel native
+/// work; `dispose()` waits for work already accepted and is idempotent.
 final class AudioClassifier {
-  AudioClassifier._(this._task, this._model) : _backend = null;
-
-  AudioClassifier._onBackend(BackendAudioClassifier this._backend)
-    : _task = 0,
-      _model = null;
-
-  final BackendAudioClassifier? _backend;
-
-  final int _task;
-
-  /// The model bytes, kept alive while the native task may read them.
-  final Pointer<Uint8>? _model;
+  AudioClassifier._(this._runner, this.delegate, this.runningMode);
+  final AudioClassifierRunner _runner;
   Future<void>? _disposing;
-  Future<void> _tail = Future.value();
 
-  /// Creates the task on the calling isolate.
+  /// The processor the task runs on, fixed at creation.
+  final Delegate delegate;
+
+  /// The mode the task was created in.
+  final AudioRunningMode runningMode;
+
+  /// Resolves the model and opens Google's task.
   static Future<AudioClassifier> create(AudioClassifierOptions options) async {
-    options = await options.resolveModel();
-    if (audioTaskBackendFactory != null) {
-      return AudioClassifier._onBackend(
-        await BackendAudioClassifier.create(options),
+    // TODO: Remove this rejection when audio stream mode is implemented. See
+    // AudioRunningMode.audioStream.
+    if (options.runningMode == AudioRunningMode.audioStream) {
+      throw UnsupportedError(
+        'Audio stream mode is not implemented by this runtime.',
       );
     }
-    final support = await queryAudioClassifierCapabilities();
-    if (support.unavailableReasons[AudioDelegate.cpu] case final reason?) {
-      throw RuntimeUnavailableException(
-        'Audio Classifier is unavailable on this platform.',
-        fix: reason,
-      );
-    }
-    _requireRuntime();
-    Pointer<Uint8>? model;
-    if (options.modelBytes case final bytes?) {
-      model = malloc<Uint8>(bytes.length);
-      model.asTypedList(bytes.length).setAll(0, bytes);
-    }
-    try {
-      final task = using((arena) {
-        final native = arena<mp.MpAudioClassifierOptions>();
-        native.ref.baseOptions
-          ..fileDescriptor = -1
-          ..delegate = 0
-          ..hostSystem = mpHostSystem;
-        if (options.modelPath case final path?) {
-          native.ref.baseOptions.modelAssetPath = path
-              .toNativeUtf8(allocator: arena)
-              .cast();
-        }
-        if (model != null) {
-          native.ref.baseOptions
-            ..modelAssetBuffer = model.cast()
-            ..modelAssetBufferCount = options.modelBytes!.length;
-        }
-        native.ref.classifierOptions
-          ..maxResults = options.maxResults
-          ..scoreThreshold = options.scoreThreshold;
-        native.ref.runningMode = 1;
-        final output = arena<Pointer<Void>>();
-        _checked((error) => mp.create(native, output, error));
-        return output.value.address;
-      });
-      return AudioClassifier._(task, model);
-    } catch (error) {
-      if (model != null) malloc.free(model);
-      if (error is MediaPipeException) {
-        throw AudioTaskException(error.message, cause: error);
-      }
-      rethrow;
-    }
+    requireDelegate(await queryAudioClassifierCapabilities(), options.delegate);
+    await resolveTaskModel(options);
+    final runner = switch (audioTaskBackendFactory) {
+      final factory? => await BackendAudioClassifier.open(factory, options),
+      null => await openNativeAudioClassifier(options),
+    };
+    return AudioClassifier._(runner, options.delegate, options.runningMode);
   }
 
-  /// Classifies [audio], one result per chunk the model reads (0.975 s for
-  /// YAMNet), in order.
-  Future<List<AudioClassifierResult>> classify(AudioData audio) {
-    if (_backend case final backend?) return backend.classify(audio);
+  /// Classifies [audio]: one result per chunk the model reads (0.975 s for
+  /// YAMNet), in order. Google's browser and Android tasks read one channel,
+  /// so there several channels are averaged first.
+  Future<List<AudioClassifierResult>> classify(AudioData audio) async {
     if (_disposing != null) {
-      return Future.error(StateError('AudioClassifier has been disposed.'));
+      throw StateError('AudioClassifier has been disposed.');
     }
-    final task = _task;
-    final samples = audio.samples;
-    final rate = audio.sampleRate;
-    final channels = audio.channels;
-    final result = _tail.then(
-      (_) => Isolate.run(() => _classify(task, samples, rate, channels)),
-    );
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return result;
+    return _runner.classify(audio);
   }
 
-  /// Waits for queued classifications, then closes the native task.
-  Future<void> dispose() =>
-      _backend?.dispose() ??
-      (_disposing ??= _tail.then((_) {
-        _checked((error) => mp.close(Pointer.fromAddress(_task), error));
-        if (_model case final model?) malloc.free(model);
-      }));
+  /// Finishes accepted work and releases Google's task. Repeated calls return
+  /// the same completion; any other call afterwards fails with [StateError].
+  Future<void> dispose() => _disposing ??= _runner.dispose();
 }
-
-/// Resolves core's runtime before the first call, to explain a missing one.
-void _requireRuntime() {
-  try {
-    Native.addressOf<
-      NativeFunction<
-        Int32 Function(
-          Pointer<mp.MpAudioClassifierOptions>,
-          Pointer<Pointer<Void>>,
-          Pointer<Pointer<Char>>,
-        )
-      >
-    >(mp.create);
-  } on ArgumentError catch (error) {
-    if (missingLinuxGraphicsLibraries('$error') case final missing?) {
-      throw missing;
-    }
-    throw RuntimeUnavailableException(
-      'Audio Classifier runtime unavailable.',
-      fix: tasksRuntimeUnavailable(
-        'the Audio Classifier',
-        Platform.operatingSystem,
-      ),
-    );
-  }
-}
-
-List<AudioClassifierResult> _classify(
-  int task,
-  Float32List samples,
-  double sampleRate,
-  int channels,
-) => using((arena) {
-  final data = arena<Float>(samples.length);
-  data.asTypedList(samples.length).setAll(0, samples);
-  final audio = arena<mp.MpAudioData>();
-  audio.ref
-    ..numChannels = channels
-    ..sampleRate = sampleRate
-    ..audioData = data
-    ..audioDataSize = samples.length;
-  final result = arena<mp.MpAudioClassifierResult>();
-  _checked(
-    (error) => mp.classify(Pointer.fromAddress(task), audio, result, error),
-  );
-  try {
-    return [
-      for (var i = 0; i < result.ref.resultsCount; i++)
-        _chunk(result.ref.results[i]),
-    ];
-  } finally {
-    mp.closeResult(result);
-  }
-});
-
-AudioClassifierResult _chunk(mp.MpClassificationResult result) {
-  final categories = <AudioClassifierCategory>[];
-  if (result.classificationsCount > 0) {
-    final head = result.classifications[0];
-    for (var i = 0; i < head.categoriesCount; i++) {
-      final category = head.categories[i];
-      categories.add((
-        index: category.index,
-        score: category.score,
-        name: category.categoryName == nullptr
-            ? null
-            : category.categoryName.cast<Utf8>().toDartString(),
-      ));
-    }
-  }
-  return (
-    timestampMs: result.hasTimestampMs ? result.timestampMs : 0,
-    categories: categories,
-  );
-}
-
-void _checked(int Function(Pointer<Pointer<Char>> error) call) =>
-    using((arena) {
-      final error = arena<Pointer<Char>>();
-      final status = call(error);
-      if (status == 0) return;
-      final message = error.value == nullptr
-          ? 'MediaPipe status $status'
-          : error.value.cast<Utf8>().toDartString();
-      if (error.value != nullptr) mp.errorFree(error.value);
-      throw AudioTaskException(message);
-    });

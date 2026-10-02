@@ -3,10 +3,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../interface/landmark_task_types.dart';
-import '../interface/segmenter_task_types.dart';
+import '../types/options.dart';
+import '../types/results.dart';
+import '../types/vision_types.dart';
 import 'native_desktop_runtime.dart';
 import 'native_vision_image.dart';
 
@@ -17,10 +19,10 @@ import 'native_vision_image.dart';
 void setVisionBaseOptions(
   Arena arena,
   mp.MpBaseOptions base,
-  VisionModelOptions options, {
+  VisionTaskOptions options, {
   bool officialGpu = false,
 }) {
-  if (options.delegate == VisionDelegate.gpu &&
+  if (options.delegate == Delegate.gpu &&
       !Platform.isMacOS &&
       !(officialGpu && (Platform.isLinux || Platform.isIOS))) {
     throw UnsupportedError(
@@ -31,7 +33,7 @@ void setVisionBaseOptions(
   }
   loadOfficialDesktopRuntime();
   base.file_descriptor = -1;
-  base.delegate = options.delegate == VisionDelegate.gpu
+  base.delegate = options.delegate == Delegate.gpu
       ? mp.MpDelegate.MP_DELEGATE_GPU
       : mp.MpDelegate.MP_DELEGATE_CPU;
   base.host_system = Platform.isLinux
@@ -52,6 +54,9 @@ void setVisionBaseOptions(
   }
 }
 
+// TODO: Map liveStream here only if LIVE_STREAM goes native rather than being
+// emulated on VIDEO; desktop would need a C shim that copies callback results.
+// See RunningMode.liveStream.
 /// Convert the public running mode into the native task enum.
 mp.MpRunningMode nativeRunningMode(RunningMode mode) =>
     mode == RunningMode.video
@@ -78,19 +83,20 @@ Pointer<mp.MpImageProcessingOptions> visionProcessingOptions(
 }
 
 /// Copy native category labels and scores before closing the result.
-VisionCategory copyVisionCategory(mp.MpCategory category) => VisionCategory(
-  index: category.index,
-  score: category.score,
-  categoryName: nativeString(category.category_name),
-  displayName: nativeString(category.display_name),
-);
+MediaPipeCategory copyVisionCategory(mp.MpCategory category) =>
+    MediaPipeCategory(
+      index: category.index,
+      score: category.score,
+      categoryName: nativeString(category.category_name),
+      displayName: nativeString(category.display_name),
+    );
 
 /// Copy every head and category into immutable Dart values.
-List<VisionClassifications> copyVisionClassifications(
+List<Classifications> copyVisionClassifications(
   mp.MpClassificationResult result,
 ) => [
   for (var i = 0; i < result.classifications_count; i++)
-    VisionClassifications(
+    Classifications(
       headIndex: result.classifications[i].head_index,
       headName: nativeString(result.classifications[i].head_name),
       categories: [
@@ -101,7 +107,7 @@ List<VisionClassifications> copyVisionClassifications(
 ];
 
 /// Copy a native embedding, preserving quantized bytes without sign conversion.
-VisionEmbedding copyVisionEmbedding(mp.MpEmbedding value) => VisionEmbedding(
+Embedding copyVisionEmbedding(mp.MpEmbedding value) => Embedding(
   headIndex: value.head_index,
   headName: nativeString(value.head_name),
   floatEmbedding: value.float_embedding == nullptr
@@ -116,8 +122,7 @@ VisionEmbedding copyVisionEmbedding(mp.MpEmbedding value) => VisionEmbedding(
 void checkVisionCall(mp.MpStatus Function(Pointer<Pointer<Char>>) call) =>
     checkedCall(
       call,
-      onError: (message, status) =>
-          VisionTaskException(message, statusCode: status),
+      onError: (message, status) => TaskException(message, statusCode: status),
     );
 
 /// Create a task, marking Google's GPU refusals (no EGL display, a software
@@ -128,10 +133,10 @@ void checkVisionCreate(
 }) {
   try {
     checkVisionCall(call);
-  } on VisionTaskException catch (error) {
+  } on TaskException catch (error) {
     // Google's runtime reports every GPU refusal as its missing GPU service.
     if (!gpu || !error.message.contains('kGpuService')) rethrow;
-    throw VisionTaskException(
+    throw TaskException(
       error.message,
       statusCode: error.statusCode,
       gpuUnavailable: true,
@@ -149,11 +154,11 @@ Pointer<Pointer<Char>> visionOptionStrings(Arena arena, List<String> values) {
   return array;
 }
 
-/// Own every category in each hand's classification result.
+/// Own every category in each subject's classification result.
 ///
 /// [index] overrides the native index for heads whose raw value carries no
 /// meaning, matching how the official bindings report them.
-List<List<VisionCategory>> copyVisionCategories(
+List<List<MediaPipeCategory>> copyVisionCategories(
   Pointer<mp.MpCategories> values,
   int count, {
   int? index,
@@ -164,7 +169,7 @@ List<List<VisionCategory>> copyVisionCategories(
         if (index == null)
           copyVisionCategory(values[i].categories[j])
         else
-          VisionCategory(
+          MediaPipeCategory(
             index: index,
             score: values[i].categories[j].score,
             categoryName: nativeString(values[i].categories[j].category_name),
@@ -174,11 +179,11 @@ List<List<VisionCategory>> copyVisionCategories(
 ];
 
 /// Own normalized landmarks including optional confidence metadata.
-List<VisionLandmark> copyVisionNormalizedLandmarks(
+List<NormalizedLandmark> copyVisionNormalizedLandmarks(
   mp.MpNormalizedLandmarks values,
 ) => [
   for (var i = 0; i < values.landmarks_count; i++)
-    VisionLandmark(
+    NormalizedLandmark(
       x: values.landmarks[i].x,
       y: values.landmarks[i].y,
       z: values.landmarks[i].z,
@@ -193,9 +198,9 @@ List<VisionLandmark> copyVisionNormalizedLandmarks(
 ];
 
 /// Own world landmarks including optional confidence metadata.
-List<VisionLandmark> copyVisionWorldLandmarks(mp.MpLandmarks values) => [
+List<Landmark> copyVisionWorldLandmarks(mp.MpLandmarks values) => [
   for (var i = 0; i < values.landmarks_count; i++)
-    VisionLandmark(
+    Landmark(
       x: values.landmarks[i].x,
       y: values.landmarks[i].y,
       z: values.landmarks[i].z,
@@ -210,14 +215,14 @@ List<VisionLandmark> copyVisionWorldLandmarks(mp.MpLandmarks values) => [
 ];
 
 /// Read and copy a single-channel float32 mask, including padded native rows.
-SegmentationMask copyVisionConfidenceMask(Arena arena, mp.MpImagePtr image) {
+ConfidenceMask copyVisionConfidenceMask(Arena arena, mp.MpImagePtr image) {
   final width = mp.MpImageGetWidth(image);
   final height = mp.MpImageGetHeight(image);
   if (width < 1 ||
       height < 1 ||
       mp.MpImageGetChannels(image) != 1 ||
       mp.MpImageGetByteDepth(image) != 4) {
-    throw const VisionTaskException(
+    throw const TaskException(
       'Native result is not a float32 confidence mask.',
     );
   }
@@ -240,13 +245,13 @@ SegmentationMask copyVisionConfidenceMask(Arena arena, mp.MpImagePtr image) {
         values[y * width + x] = value.value;
       }
     }
-    return SegmentationMask(width: width, height: height, confidence: values);
+    return ConfidenceMask(width: width, height: height, confidence: values);
   }
   checkVisionCall((error) => mp.MpImageDataFloat32(image, data, error));
   if (data.value == nullptr) {
-    throw const VisionTaskException('Native mask data is missing.');
+    throw const TaskException('Native mask data is missing.');
   }
-  return SegmentationMask(
+  return ConfidenceMask(
     width: width,
     height: height,
     confidence: data.value.asTypedList(width * height),
@@ -264,14 +269,12 @@ CategoryMask copyVisionCategoryMask(Arena arena, mp.MpImagePtr image) {
       height < 1 ||
       mp.MpImageGetChannels(image) != 1 ||
       mp.MpImageGetByteDepth(image) != 1) {
-    throw const VisionTaskException(
-      'Native result is not a uint8 category mask.',
-    );
+    throw const TaskException('Native result is not a uint8 category mask.');
   }
   final data = arena<Pointer<Uint8>>();
   checkVisionCall((error) => mp.MpImageDataUint8(image, data, error));
   if (data.value == nullptr) {
-    throw const VisionTaskException('Native mask data is missing.');
+    throw const TaskException('Native mask data is missing.');
   }
   return CategoryMask(
     width: width,
@@ -280,14 +283,14 @@ CategoryMask copyVisionCategoryMask(Arena arena, mp.MpImagePtr image) {
   );
 }
 
-/// Own every mask and quality score in a shared segmentation result.
-SegmentationResult copyVisionSegmentation(
+/// Own every mask and quality score in a segmentation result.
+ImageSegmenterResult copyVisionSegmentation(
   Arena arena,
   mp.MpImageSegmenterResult result,
   mp.MpImagePtr image,
   int? timestamp, {
   List<String> labels = const [],
-}) => SegmentationResult(
+}) => ImageSegmenterResult(
   labels: labels,
   confidenceMasks: result.confidence_masks_count == 0
       ? null
@@ -310,7 +313,7 @@ SegmentationResult copyVisionSegmentation(
 void setVisionGestureClassifier(
   Arena arena,
   mp.MpClassifierOptions output,
-  GestureClassifierOptions options,
+  ClassifierOptions options,
 ) {
   output
     ..max_results = options.maxResults

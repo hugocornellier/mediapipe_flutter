@@ -7,7 +7,7 @@ XCFrameworks (pinned in `lib/src/native_assets/ios_sdk.dart`). Google's
 the vision, text and audio packages all bind this one image. No MediaPipe code
 is compiled from source here.
 
-- `face_sdk_bridge.mm`: the vision tasks.
+- `vision_sdk_bridge.mm`: the vision tasks.
 - `text_sdk_bridge.mm`: Text Classifier, Text Embedder and Language Detector.
 - `audio_sdk_bridge.mm`: Audio Classifier.
 

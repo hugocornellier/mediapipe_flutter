@@ -278,6 +278,9 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
     }
     // GPU initialization failures propagate; never silently substitute CPU.
     base.setDelegate("gpu".equals(delegate) ? Delegate.GPU : Delegate.CPU);
+    // TODO: Map LIVE_STREAM here only if it goes native on Android rather than
+    // being emulated on VIDEO: detectAsync with a result listener, results sent
+    // over an event channel. See RunningMode.liveStream in mediapipe_vision.
     RunningMode mode = "video".equals(call.argument("mode")) ? RunningMode.VIDEO : RunningMode.IMAGE;
     Task task;
     switch (name == null ? "" : name) {

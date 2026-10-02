@@ -1,7 +1,7 @@
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_text/io.dart';
+import 'package:mediapipe_text/src/io/native_text_embedder.dart';
 import 'package:mediapipe_text/src/io/third_party/mediapipe/embedding_gemma_bindings.dart'
     as mp;
 import 'package:test/test.dart';
@@ -9,10 +9,10 @@ import 'package:test/test.dart';
 void main() {
   test('copies an empty 1.0.1 embedding result', () {
     final result = using(
-      (arena) => TextEmbedderResult.native(arena<mp.MpEmbeddingResult>()),
+      (arena) => textEmbedderResultFromNative(arena<mp.MpEmbeddingResult>()),
     );
     expect(result.embeddings, isEmpty);
-    expect(result.timestampMs, isNull);
+    expect(result.timestampMilliseconds, isNull);
   });
   test('owns immutable float and signed-byte storage after native free', () {
     final result = using((arena) {
@@ -31,13 +31,11 @@ void main() {
       output.ref
         ..embeddings = heads
         ..embeddingsCount = 2;
-      final result = TextEmbedderResult.native(output);
+      final result = textEmbedderResultFromNative(output);
       floats.asTypedList(2).fillRange(0, 2, 99);
       bytes.asTypedList(2).fillRange(0, 2, 0);
       return result;
     });
-    result.dispose();
-    result.dispose();
     expect(result.embeddings[0].floatEmbedding, [.25, -.5]);
     expect(result.embeddings[1].quantizedEmbedding, [127, 128]);
     expect(result.embeddings[0].headName, isNull);

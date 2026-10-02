@@ -37,7 +37,7 @@ Future<void> main(List<String> arguments) async {
   ];
   final cases = [
     for (final spec in specs)
-      for (final delegate in VisionDelegate.values)
+      for (final delegate in Delegate.values)
         for (final direct in [false, true])
           (spec: spec, delegate: delegate, direct: direct),
   ]..shuffle(math.Random(seed));
@@ -132,16 +132,15 @@ final class _Input {
   );
 }
 
-FaceLandmarkerOptions _options(VisionDelegate delegate) =>
-    FaceLandmarkerOptions(
-      modelPath: _model,
-      runningMode: RunningMode.video,
-      delegate: delegate,
-    );
+FaceLandmarkerOptions _options(Delegate delegate) => FaceLandmarkerOptions(
+  modelPath: _model,
+  runningMode: RunningMode.video,
+  delegate: delegate,
+);
 
 Future<Map<String, Object>> _public(
   _Input spec,
-  VisionDelegate delegate,
+  Delegate delegate,
   int frames,
   int warmup,
 ) async {
@@ -178,7 +177,7 @@ Future<Map<String, Object>> _public(
 
 Map<String, Object> _native(
   _Input spec,
-  VisionDelegate delegate,
+  Delegate delegate,
   int frames,
   int warmup,
 ) {

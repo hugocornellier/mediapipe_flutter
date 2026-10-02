@@ -83,11 +83,24 @@ shows which task selections and delegates each platform serves.
 
 ## Quick start: detect face landmarks
 
-Pass one of Google's pinned models as `model:`. It is downloaded the first
-time, checked against its SHA-256 and cached for later runs, including
-offline. Android release builds and sandboxed macOS apps need network
-permission for that download; see
-[platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md).
+Pass one of Google's pinned models as `model:`, bundled with your app at build
+time. List it in your app's pubspec and declare the folder it goes in:
+
+```yaml
+flutter:
+  assets:
+    - assets/mediapipe/
+
+hooks:
+  user_defines:
+    mediapipe_vision:
+      models: [face_landmarker]
+```
+
+Then run `dart run mediapipe_core:bundle_models` from the app's root, and
+again whenever the list changes. It downloads each model once, checks it
+against its pinned SHA-256 and writes it into `assets/mediapipe/`, so nothing
+is downloaded at run time. `VisionModels.byName` lists the accepted names.
 
 ```dart
 import 'dart:typed_data';
@@ -99,7 +112,7 @@ Future<void> detectFaces(Uint8List rgba, int width, int height) async {
     FaceLandmarkerOptions(model: VisionModels.faceLandmarker, numFaces: 1),
   );
   try {
-    final result = await task.detectImage(
+    final result = await task.detect(
       VisionImage.fromPixels(
         pixels: rgba,
         width: width,
@@ -149,15 +162,21 @@ Future<FaceLandmarker> createFromAsset() async {
 }
 ```
 
-To download ahead of time (on an onboarding screen, say), call
-`ModelStore().prefetch(VisionModels.faceLandmarker)` from `mediapipe_core`.
+A model that is not bundled makes `create` throw a
+`RuntimeUnavailableException` whose `fix` names the pubspec entry to add. To
+download models at run time instead, set `ModelStore.allowDownloads = true`
+from `mediapipe_core` before creating tasks; Android release builds and
+sandboxed macOS apps then need network permission, as
+[platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md)
+describes. `ModelStore().prefetch(VisionModels.faceLandmarker)` downloads
+ahead of time, on an onboarding screen say.
 
 ### Errors
 
 Failures are `MediaPipeException`s: `RuntimeUnavailableException` when the
 platform or build settings cannot run the task (its `fix` says what to
 change), `ModelDownloadException` when a model cannot be fetched, and
-`VisionTaskException` when Google's runtime rejects a call, with its native
+`TaskException` when Google's runtime rejects a call, with its native
 `statusCode` and `gpuUnavailable` when a GPU request was refused. Invalid
 options throw `ArgumentError`, and using a disposed task `StateError`.
 
@@ -171,16 +190,16 @@ selector for all ten tasks below on supported platforms.
 
 | Task | Still image method | Video frame method |
 | --- | --- | --- |
-| Face Detector | `detectImage` | `detectForVideo` |
-| Face Landmarker | `detectImage` | `detectForVideo` |
-| Hand Landmarker | `detectImage` | `detectForVideo` |
-| Gesture Recognizer | `recognizeImage` | `recognizeForVideo` |
-| Holistic Landmarker | `detectImage` | `detectForVideo` |
-| Pose Landmarker | `detectImage` | `detectForVideo` |
-| Object Detector | `detectImage` | `detectForVideo` |
-| Image Classifier | `classifyImage` | `classifyForVideo` |
-| Image Embedder | `embedImage` | `embedForVideo` |
-| Image Segmenter | `segmentImage` | `segmentForVideo` |
+| Face Detector | `detect` | `detectForVideo` |
+| Face Landmarker | `detect` | `detectForVideo` |
+| Hand Landmarker | `detect` | `detectForVideo` |
+| Gesture Recognizer | `recognize` | `recognizeForVideo` |
+| Holistic Landmarker | `detect` | `detectForVideo` |
+| Pose Landmarker | `detect` | `detectForVideo` |
+| Object Detector | `detect` | `detectForVideo` |
+| Image Classifier | `classify` | `classifyForVideo` |
+| Image Embedder | `embed` | `embedForVideo` |
+| Image Segmenter | `segment` | `segmentForVideo` |
 
 The stroke-based `InteractiveSegmenter` works on an image with editing strokes
 and has no camera mode. Choose an image in the gallery's still image mode for the
@@ -218,7 +237,7 @@ Future<void> findFaces(VisionImage image) async {
     FaceDetectorOptions(model: VisionModels.faceDetector),
   );
   try {
-    final result = await detector.detectImage(image);
+    final result = await detector.detect(image);
     for (final face in result.detections) {
       final box = face.boundingBox;
       print('Face at ${box.left},${box.top}, ${box.width}x${box.height} px');
@@ -246,7 +265,7 @@ Future<void> readExpression(VisionImage image) async {
     ),
   );
   try {
-    final result = await landmarker.detectImage(image);
+    final result = await landmarker.detect(image);
     if (result.faceBlendshapes.isEmpty) return;
     final strongest = [...result.faceBlendshapes.first]
       ..sort((a, b) => b.score.compareTo(a.score));
@@ -271,7 +290,7 @@ Future<void> findHands(VisionImage image) async {
     HandLandmarkerOptions(model: VisionModels.handLandmarker, numHands: 2),
   );
   try {
-    final result = await landmarker.detectImage(image);
+    final result = await landmarker.detect(image);
     for (var i = 0; i < result.handLandmarks.length; i++) {
       final side = result.handedness[i].first.categoryName;
       final wrist = result.handLandmarks[i].first;
@@ -296,7 +315,7 @@ Future<void> recognizeGestures(VisionImage image) async {
     GestureRecognizerOptions(model: VisionModels.gestureRecognizer),
   );
   try {
-    final result = await recognizer.recognizeImage(image);
+    final result = await recognizer.recognize(image);
     for (final gestures in result.gestures) {
       final top = gestures.first;
       print('${top.categoryName} (${top.score.toStringAsFixed(2)})');
@@ -320,7 +339,7 @@ Future<void> findPoses(VisionImage image) async {
     PoseLandmarkerOptions(model: VisionModels.poseLandmarker),
   );
   try {
-    final result = await landmarker.detectImage(image);
+    final result = await landmarker.detect(image);
     for (final pose in result.poseLandmarks) {
       final nose = pose.first;
       print('Nose at ${nose.x}, ${nose.y}, visibility ${nose.visibility}');
@@ -343,7 +362,7 @@ Future<void> trackPerson(VisionImage image) async {
     HolisticLandmarkerOptions(model: VisionModels.holisticLandmarker),
   );
   try {
-    final result = await landmarker.detectImage(image);
+    final result = await landmarker.detect(image);
     print('Face: ${result.faceLandmarks.length} landmarks');
     print('Pose: ${result.poseLandmarks.length} landmarks');
     print('Left hand: ${result.leftHandLandmarks.length} landmarks');
@@ -372,7 +391,7 @@ Future<void> detectObjects(VisionImage image) async {
     ),
   );
   try {
-    final result = await detector.detectImage(image);
+    final result = await detector.detect(image);
     for (final detection in result.detections) {
       final label = detection.categories.first;
       final box = detection.boundingBox;
@@ -396,7 +415,7 @@ Future<void> classifyPhoto(VisionImage image) async {
     ImageClassifierOptions(model: VisionModels.imageClassifier, maxResults: 3),
   );
   try {
-    final result = await classifier.classifyImage(image);
+    final result = await classifier.classify(image);
     for (final category in result.classifications.first.categories) {
       print('${category.categoryName}: ${category.score.toStringAsFixed(2)}');
     }
@@ -419,8 +438,8 @@ Future<double> compareImages(VisionImage first, VisionImage second) async {
     ImageEmbedderOptions(model: VisionModels.imageEmbedder, l2Normalize: true),
   );
   try {
-    final a = await embedder.embedImage(first);
-    final b = await embedder.embedImage(second);
+    final a = await embedder.embed(first);
+    final b = await embedder.embed(second);
     return ImageEmbedder.cosineSimilarity(
       a.embeddings.first,
       b.embeddings.first,
@@ -448,7 +467,7 @@ Future<void> segmentScene(VisionImage image) async {
     ),
   );
   try {
-    final result = await segmenter.segmentImage(image);
+    final result = await segmenter.segment(image);
     final mask = result.categoryMask!;
     final center =
         mask.categories[mask.height ~/ 2 * mask.width + mask.width ~/ 2];
@@ -472,18 +491,18 @@ shorter history to undo. Not available on Windows.
 ```dart
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
-Future<SegmentationMask> selectObject(VisionImage image) async {
+Future<ConfidenceMask> selectObject(VisionImage image) async {
   final segmenter = await InteractiveSegmenter.create(
     InteractiveSegmenterOptions(model: VisionModels.interactiveSegmenter),
   );
   try {
     await segmenter.setImage(image);
     return await segmenter.segment([
-      SegmentationStroke(
-        brushMode: SegmentationBrushMode.positive,
+      Stroke(
+        brushMode: BrushMode.positive,
         points: [
-          SegmentationPoint(x: 0.45, y: 0.5),
-          SegmentationPoint(x: 0.55, y: 0.5),
+          const NormalizedKeypoint(x: 0.45, y: 0.5),
+          const NormalizedKeypoint(x: 0.55, y: 0.5),
         ],
       ),
     ]);
@@ -529,8 +548,14 @@ come from your camera pipeline. `RunningMode.liveStream` is reserved for
 callback-based delivery; creating a task with it currently throws
 `UnsupportedError`.
 Keep a task alive across frames; do not recreate it for each image. Await
-inference and skip incoming frames while busy to bound camera delay. The
-package does not open a camera or draw an overlay for your app. The
+inference and skip incoming frames while busy to bound camera delay.
+
+In browsers, `VisionImage.fromBrowserFrame(frame, width: w, height: h)` wraps
+an `ImageBitmap` or video frame without copying its pixels, and
+`BrowserOverlay.attach(task, canvas)` lets the task's worker draw landmarks
+and boxes into a canvas. Both exist on every platform and throw
+`RuntimeUnavailableException` off the web, so one code path compiles
+everywhere. The package does not open a camera for your app. The
 [gallery](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery)
 shows camera capture, rotation, mirroring, delegate switching and overlays.
 
@@ -543,7 +568,7 @@ creating the task:
 final task = await FaceLandmarker.create(
   FaceLandmarkerOptions(
     model: VisionModels.faceLandmarker,
-    delegate: VisionDelegate.gpu,
+    delegate: Delegate.gpu,
   ),
 );
 ```

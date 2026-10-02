@@ -19,15 +19,13 @@ const model = 'models/interactive_segmentation.task';
 late Map<String, dynamic> reference;
 late Uint8List rgb;
 
-List<SegmentationStroke> strokes(Map<String, dynamic> entry) => [
+List<Stroke> strokes(Map<String, dynamic> entry) => [
   for (final dynamic stroke in entry['strokes'])
-    SegmentationStroke(
-      brushMode: SegmentationBrushMode.values.byName(
-        stroke['brush_mode'] as String,
-      ),
+    Stroke(
+      brushMode: BrushMode.values.byName(stroke['brush_mode'] as String),
       points: [
         for (final dynamic point in stroke['points'])
-          SegmentationPoint(
+          NormalizedKeypoint(
             x: (point[0] as num).toDouble(),
             y: (point[1] as num).toDouble(),
           ),
@@ -68,7 +66,7 @@ VisionImage input(String kind, {int padding = 0, bool bgra = false}) {
   );
 }
 
-void compare(SegmentationMask mask, Map<String, dynamic> entry) {
+void compare(ConfidenceMask mask, Map<String, dynamic> entry) {
   expect(mask.width, entry['width']);
   expect(mask.height, entry['height']);
   final bytes = Uint8List.fromList(
@@ -119,7 +117,7 @@ void main() {
         InteractiveSegmenterOptions(modelPath: model),
       );
       addTearDown(task.dispose);
-      SegmentationMask? retained;
+      ConfidenceMask? retained;
       Map<String, dynamic>? retainedCase;
       for (final dynamic value in reference['cases']) {
         final entry = value as Map<String, dynamic>;
@@ -176,19 +174,16 @@ void main() {
       addTearDown(task.dispose);
       final entry = (reference['cases'] as List)[1] as Map<String, dynamic>;
       final history = strokes(entry);
-      await expectLater(
-        task.segment(history),
-        throwsA(isA<VisionTaskException>()),
-      );
+      await expectLater(task.segment(history), throwsA(isA<TaskException>()));
       await task.setImage(input('rgb'));
       await expectLater(task.segment([]), throwsArgumentError);
       await expectLater(
         task.setImage(VisionImage.fromFile('missing-segmenter-image.png')),
-        throwsA(isA<VisionTaskException>()),
+        throwsA(isA<TaskException>()),
       );
       compare(await task.segment(history), entry);
       // Snapshot lists when submitted; mutations cannot change queued native work.
-      final mutable = List<SegmentationStroke>.of(history);
+      final mutable = List<Stroke>.of(history);
       final pending = task.segment(mutable);
       mutable.clear();
       final reset = task.setImage(input('rgb'));
@@ -217,8 +212,8 @@ void main() {
       // GPU only where the face GPU suites run: Linux needs a renderer
       // Google accepts, which a plain hosted runner lacks.
       for (final delegate in [
-        VisionDelegate.cpu,
-        if (gpuFaceTestsEnabled) VisionDelegate.gpu,
+        Delegate.cpu,
+        if (gpuFaceTestsEnabled) Delegate.gpu,
       ]) {
         final detector = await FaceDetector.create(
           FaceDetectorOptions(
@@ -238,11 +233,9 @@ void main() {
           final portrait = VisionImage.fromFile(
             'test/fixtures/face_detection/landmark-ex1.jpg',
           );
-          expect((await detector.detectImage(portrait)).detections.length, 1);
+          expect((await detector.detect(portrait)).detections.length, 1);
           expect(
-            (await landmarker.detectImage(
-              portrait,
-            )).faceLandmarks.single.length,
+            (await landmarker.detect(portrait)).faceLandmarks.single.length,
             478,
           );
           compare(await pending, entry);
@@ -259,15 +252,12 @@ void main() {
     () async {
       await expectLater(
         InteractiveSegmenter.create(
-          InteractiveSegmenterOptions(
-            modelPath: model,
-            delegate: VisionDelegate.gpu,
-          ),
+          InteractiveSegmenterOptions(modelPath: model, delegate: Delegate.gpu),
         ),
         throwsA(
-          isA<VisionTaskException>().having(
-            (e) => e.message,
-            'message',
+          isA<RuntimeUnavailableException>().having(
+            (e) => e.fix,
+            'fix',
             contains('CPU only'),
           ),
         ),
@@ -278,7 +268,7 @@ void main() {
             modelBytes: Uint8List.fromList([1, 2, 3]),
           ),
         ),
-        throwsA(isA<VisionTaskException>()),
+        throwsA(isA<TaskException>()),
       );
       final task = await InteractiveSegmenter.create(
         InteractiveSegmenterOptions(modelPath: model),
@@ -299,28 +289,31 @@ void main() {
       ),
       throwsArgumentError,
     );
-    expect(() => SegmentationPoint(x: double.nan, y: .5), throwsArgumentError);
-    expect(() => SegmentationPoint(x: 1.1, y: .5), throwsArgumentError);
     expect(
-      () => SegmentationStroke(
-        brushMode: SegmentationBrushMode.positive,
-        points: [],
+      () => Stroke(
+        brushMode: BrushMode.positive,
+        points: [NormalizedKeypoint(x: double.nan, y: .5)],
       ),
       throwsArgumentError,
     );
-    final points = [SegmentationPoint(x: .5, y: .5)];
-    final stroke = SegmentationStroke(
-      brushMode: SegmentationBrushMode.positive,
-      points: points,
+    expect(
+      () => Stroke(
+        brushMode: BrushMode.positive,
+        points: [NormalizedKeypoint(x: 1.1, y: .5)],
+      ),
+      throwsArgumentError,
     );
+    expect(
+      () => Stroke(brushMode: BrushMode.positive, points: []),
+      throwsArgumentError,
+    );
+    final points = [NormalizedKeypoint(x: .5, y: .5)];
+    final stroke = Stroke(brushMode: BrushMode.positive, points: points);
     points.clear();
     expect(stroke.points.length, 1);
     expect(() => stroke.points.clear(), throwsUnsupportedError);
     expect(
-      () => SegmentationStroke(
-        brushMode: SegmentationBrushMode.lasso,
-        points: stroke.points,
-      ),
+      () => Stroke(brushMode: BrushMode.lasso, points: stroke.points),
       throwsArgumentError,
     );
   });

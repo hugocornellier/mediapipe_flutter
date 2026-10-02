@@ -26,7 +26,7 @@ class FaceCameraController extends ChangeNotifier {
   int processedFrames = 0;
   int skippedFrames = 0;
   double inferenceMilliseconds = 0;
-  VisionDelegate delegate = VisionDelegate.cpu;
+  Delegate delegate = Delegate.cpu;
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
       ? 0
       : processedFrames * 1000000 / _clock.elapsedMicroseconds;
@@ -47,7 +47,7 @@ class FaceCameraController extends ChangeNotifier {
 
   Future<void> start(
     CameraDescription description, {
-    VisionDelegate delegate = VisionDelegate.cpu,
+    Delegate delegate = Delegate.cpu,
   }) {
     if (_closed) return Future.error(StateError('Camera demo is closed.'));
     final generation = ++_generation;
@@ -122,6 +122,9 @@ class FaceCameraController extends ChangeNotifier {
     }
   }
 
+  // TODO: Use live stream mode once LIVE_STREAM is split from VIDEO, and
+  // delete this frame skipping. See RunningMode.liveStream in
+  // mediapipe_vision.
   void _onFrame(CameraImage image, int generation) {
     if (!running || _closed || generation != _generation) return;
     if (_frame != null) {

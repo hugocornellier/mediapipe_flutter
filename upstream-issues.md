@@ -396,7 +396,7 @@ Worked around in the iOS adapter.
 `MPPHolisticLandmarker` fails any image whose orientation is not
 `UIImageOrientationUp` ("Unsupported UIImageOrientation"), unlike the other iOS
 tasks and unlike Holistic on every other platform. The adapter
-(`native/ios/face_sdk_bridge.mm`) turns the pixels itself and maps the points
+(`native/ios/vision_sdk_bridge.mm`) turns the pixels itself and maps the points
 back into the caller's frame. On an iPhone 15 Pro the result is 0.008 (CPU) and
 0.010 (Metal) from Google's rotated desktop reference.
 
@@ -482,8 +482,9 @@ the extension registered and gets all 21 labels in mask order.
 ## UP-020: Android Interactive Segmenter Legacy ignores the region of interest
 
 **Status:** observed September 23 with Android tasks-vision 1.0.0 on the
-emulator (CPU). Unresolved upstream; the Android adapter does not serve the
-task.
+emulator (CPU). Unresolved upstream. The package removed the legacy task on
+October 1 (only the stateful Interactive Segmenter remains); kept for the
+record.
 
 `InteractiveSegmenterLegacy.segment(image, roi, options)` returned the same
 mask for keypoints (0.5, 0.4), (0.05, 0.05), (0.95, 0.95) and (0.2, 0.8), and
@@ -497,7 +498,8 @@ return wrong masks.
 ## UP-021: Browser Interactive Segmenter Legacy drops a model buffer
 
 **Status:** observed September 23 with Google's tasks-vision 1.0.1 web bundle in
-Chrome. Worked around in the browser worker.
+Chrome. Worked around in the browser worker until the package removed the
+legacy task on October 1; kept for the record.
 
 `InteractiveSegmenterLegacy.createFromOptions` with
 `baseOptions.modelAssetBuffer` fails in the graph ("ExternalFile must specify
@@ -539,7 +541,7 @@ The Android adapter now reads the GPU's OpenGL ES renderer and vendor once
 (`TaskPlatform.gpu`). On a PowerVR GPU, `queryImageSegmenterCapabilities()`
 reports GPU unsupported with this issue as the reason, and the plugin refuses to
 create a GPU Image Segmenter there, so `ImageSegmenter.create` throws a
-`VisionTaskException` instead of the app aborting. Other tasks, and other GPUs,
+`TaskException` instead of the app aborting. Other tasks, and other GPUs,
 keep the GPU delegate.
 
 ## UP-024: Android Image Segmenter GPU category mask is one class low on Adreno
@@ -710,13 +712,14 @@ way after nine minutes on the camera.
 Closing the task releases every buffer. On macOS GPU, each vision worker counts
 the bytes it sends to the GPU and, after 1 GiB (about 30 seconds of a 640x480
 camera at 30 fps), closes its native task and opens an identical one
-(`lib/src/io/gpu_frame_budget.dart`). On an M4 Max reopening takes about 20 ms
+(`lib/src/io/gpu_frame_budget.dart`). It holds the model in memory from the
+first open, because the app may delete the model file once the task exists. On an M4 Max reopening takes about 20 ms
 for Face Detector and 250 to 800 ms for the engine's tasks, so one frame in
 each interval waits that long, and a video task resumes tracking from a new
 detection. Hand Landmarker keeps two buffers a frame, so it holds up to 2 GiB
 before reopening. `test/face_detector_gpu_memory_test.dart` runs 2,000 camera
-frames on the GPU with the engine loaded too, and fails if memory grows past
-the budget or a result is lost across a reopen.
+frames on the GPU with the engine loaded too and the model file deleted, and
+fails if memory grows past the budget or a result is lost across a reopen.
 
 ## UP-033: Android tasks read a model buffer they do not keep
 

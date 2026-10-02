@@ -10,7 +10,7 @@ Google's MediaPipe Tasks for Dart and Flutter on Android, iOS, macOS, Linux,
 Windows and the web: detect faces and objects, track face, hand and pose
 landmarks, recognize gestures, classify and embed images, text and audio,
 segment images, and more. Every task runs Google's official MediaPipe
-runtime for its platform, and Google's pinned models download on first use.
+runtime for its platform, with Google's pinned models bundled at build time.
 
 **[Try the live gallery](https://hugocornellier.github.io/mediapipe_flutter/)**
 
@@ -49,8 +49,34 @@ dependencies:
     path: ../mediapipe_flutter/packages/mediapipe-task-vision
 ```
 
-Then create a task with one of Google's pinned models. It is downloaded,
-verified against its SHA-256 and cached the first time:
+List the models your app uses in the same pubspec, and declare the folder
+they are bundled in:
+
+```yaml
+flutter:
+  assets:
+    - assets/mediapipe/
+
+hooks:
+  user_defines:
+    mediapipe_vision:
+      models: [face_landmarker]
+```
+
+Then bundle them from the app's root, and again whenever the list changes:
+
+```sh
+dart run mediapipe_core:bundle_models
+```
+
+It downloads each listed model once, checks it against its pinned SHA-256 and
+writes it into `assets/mediapipe/`, so the model ships inside your app:
+nothing is downloaded at run time, and the app works offline from its first
+launch. In CI, `dart run mediapipe_core:bundle_models --check` fails when the
+folder does not match the list. Each family's `XxxModels.byName` lists the
+names it accepts.
+
+Now create a task with the bundled model:
 
 ```dart
 import 'dart:typed_data';
@@ -62,7 +88,7 @@ Future<int> countFaces(Uint8List rgba, int width, int height) async {
     FaceLandmarkerOptions(model: VisionModels.faceLandmarker),
   );
   try {
-    final result = await landmarker.detectImage(
+    final result = await landmarker.detect(
       VisionImage.fromPixels(
         pixels: rgba,
         width: width,
@@ -77,9 +103,14 @@ Future<int> countFaces(Uint8List rgba, int width, int height) async {
 }
 ```
 
-A few platforms need a setting before the first download: Android the
-`INTERNET` permission, a sandboxed macOS app the network client entitlement,
-and macOS apps using text, audio or most vision tasks
+A model that is not bundled makes `create` throw a
+`RuntimeUnavailableException` whose `fix` names the pubspec entry to add. To
+download models at run time instead, add `mediapipe_core` to your
+dependencies and set `ModelStore.allowDownloads = true` before creating
+tasks; Android then needs the `INTERNET` permission, and a sandboxed macOS
+app the network client entitlement.
+
+macOS apps using text, audio or most vision tasks also need
 `tasks_runtime: true`. See [platform setup](doc/platform_setup.md). Your own
 models work too: pass `modelPath` or `modelBytes` instead of `model`.
 

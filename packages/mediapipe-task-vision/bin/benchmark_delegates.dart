@@ -34,9 +34,7 @@ Future<void> main(List<String> arguments) async {
   }
   for (var round = 0; round < 2; round++) {
     // Reverse order on the second round to expose warm-up/order effects.
-    final delegates = round == 0
-        ? VisionDelegate.values
-        : VisionDelegate.values.reversed;
+    final delegates = round == 0 ? Delegate.values : Delegate.values.reversed;
     for (final delegate in delegates) {
       for (final useLandmarker in [false, true]) {
         final startup = Stopwatch()..start();

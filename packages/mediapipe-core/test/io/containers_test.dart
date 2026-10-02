@@ -4,9 +4,9 @@
 
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/src/io/mediapipe_core.dart';
+import 'package:mediapipe_core/src/legacy/io/mediapipe_core.dart';
 import 'package:test/test.dart';
-import 'package:mediapipe_core/src/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
+import 'package:mediapipe_core/src/legacy/io/third_party/mediapipe/generated/mediapipe_common_bindings.dart'
     as core_bindings;
 import 'test_utils.dart';
 

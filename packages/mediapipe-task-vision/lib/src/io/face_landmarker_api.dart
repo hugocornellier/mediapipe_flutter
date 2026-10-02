@@ -141,7 +141,7 @@ final class FaceLandmarkerApi {
   /// symbols from whatever the process has loaded, and Face Detector's macOS
   /// library exports MpErrorFree and the MpImage functions as well.
   static final FaceLandmarkerApi current =
-      Platform.isMacOS && hasOfficialMacosLandmarkRuntime() ? _shared : _own;
+      Platform.isMacOS && hasMacosTasksRuntime() ? _shared : _own;
 }
 
 const _engine = 'package:mediapipe_core/mediapipe.dylib';

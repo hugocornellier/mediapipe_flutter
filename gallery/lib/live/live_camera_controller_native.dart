@@ -105,7 +105,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// GPU, at 33 ms spacing 9.03 CPU vs 10.80 GPU. The official Python API
   /// inverts the same way on the same runtime, so this is the delegate's
   /// behaviour rather than anything this wrapper does.
-  VisionDelegate delegate = VisionDelegate.cpu;
+  Delegate delegate = Delegate.cpu;
 
   /// Mean inference time since capture last started. Starting is what happens
   /// when the delegate changes, so this compares like with like rather than
@@ -219,7 +219,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// starts; see [_warmUp].
   Future<void> start({
     CameraDescription? description,
-    VisionDelegate? delegate,
+    Delegate? delegate,
     String? modelAsset,
     String? warmUpSample,
   }) {
@@ -236,7 +236,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     running = false;
     changing = true;
     error = null;
-    if (chosen == VisionDelegate.gpu) notice = null;
+    if (chosen == Delegate.gpu) notice = null;
     result = null;
     _changed();
     return _enqueue(() async {
@@ -286,7 +286,7 @@ class LiveCameraController<T> extends ChangeNotifier {
       } catch (failure) {
         if (generation == _generation) {
           // The package never swaps delegates itself; the demo does, visibly.
-          if (chosen == VisionDelegate.gpu && _refusedGpu(failure)) {
+          if (chosen == Delegate.gpu && _refusedGpu(failure)) {
             notice = 'GPU unavailable, using CPU. ${_message(failure)}';
             fallBack = true;
           } else {
@@ -301,7 +301,7 @@ class LiveCameraController<T> extends ChangeNotifier {
         }
       }
       if (fallBack && !_closed && generation == _generation) {
-        unawaited(start(delegate: VisionDelegate.cpu));
+        unawaited(start(delegate: Delegate.cpu));
       }
     });
   }
@@ -350,6 +350,9 @@ class LiveCameraController<T> extends ChangeNotifier {
     }
   }
 
+  // TODO: Use live stream mode once LIVE_STREAM is split from VIDEO, and
+  // delete this hand-rolled copy of Google's frame dropping. See
+  // RunningMode.liveStream in mediapipe_vision.
   void _onFrame(CameraImage image, int generation) {
     if (!running || _closed || generation != _generation) return;
     if (_frame != null) {
@@ -571,7 +574,7 @@ class LiveCameraController<T> extends ChangeNotifier {
 }
 
 bool _refusedGpu(Object error) => switch (error) {
-  VisionTaskException(:final gpuUnavailable) => gpuUnavailable,
+  TaskException(:final gpuUnavailable) => gpuUnavailable,
   _ => false,
 };
 

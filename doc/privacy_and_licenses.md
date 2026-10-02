@@ -20,7 +20,7 @@ At run time:
 
 | What | Host |
 | --- | --- |
-| Pinned models, on first use of `model:` or `ModelStore` | `storage.googleapis.com` |
+| Pinned models, only when the app sets `ModelStore.allowDownloads = true` or calls `ModelStore` itself; bundled models are fetched at build time by `dart run mediapipe_core:bundle_models` instead | `storage.googleapis.com` |
 | Google's browser runtime (web only), unless self-hosted | `cdn.jsdelivr.net` |
 
 `hooks.user_defines.mediapipe_core.asset_source`, `ModelStore(source: ...)`

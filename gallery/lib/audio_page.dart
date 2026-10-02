@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
-import 'package:mediapipe_vision/capabilities.dart';
 import 'package:record/record.dart';
 
 import 'catalog.dart';
@@ -301,8 +300,8 @@ class _AudioPageState extends State<AudioPage> {
     builder: (context, _) => TaskSettingsPanel(
       settings: _settings,
       values: _values,
-      delegates: const [VisionDelegate.cpu],
-      delegate: VisionDelegate.cpu,
+      delegates: const [Delegate.cpu],
+      delegate: Delegate.cpu,
       enabled: !_busy,
       onChanged: _setSetting,
       onDelegate: (_) {},
@@ -461,20 +460,20 @@ class _AudioPageState extends State<AudioPage> {
                       for (final (i, chunk) in chunks.indexed) ...[
                         if (i > 0) const SizedBox(height: 22),
                         Text(
-                          '${(chunk.timestampMs / 1000).toStringAsFixed(2)} s',
+                          '${(chunk.timestampMilliseconds / 1000).toStringAsFixed(2)} s',
                           style: eyebrowStyle(context),
                         ),
                         const SizedBox(height: 12),
-                        if (chunk.categories.isEmpty)
+                        if (_categories(chunk).isEmpty)
                           Text(
                             'Nothing above the score threshold.',
                             style: muted,
                           )
                         else
                           ScoreBars([
-                            for (final category in chunk.categories)
+                            for (final category in _categories(chunk))
                               (
-                                name: category.name ?? '',
+                                name: category.categoryName ?? '',
                                 value: category.score,
                               ),
                           ]),
@@ -486,3 +485,9 @@ class _AudioPageState extends State<AudioPage> {
     );
   }
 }
+
+/// The first head's categories: YAMNet has one.
+List<MediaPipeCategory> _categories(AudioClassifierResult chunk) =>
+    chunk.classifications.isEmpty
+    ? const []
+    : chunk.classifications.first.categories;

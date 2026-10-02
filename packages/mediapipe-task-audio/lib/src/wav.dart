@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'audio_types.dart';
+import 'types.dart';
 
 /// Reads a RIFF WAVE file of 16-bit PCM or 32-bit float samples, as recorded
 /// by most tools and as MediaPipe's own sample clips are.

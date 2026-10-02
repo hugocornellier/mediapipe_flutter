@@ -26,7 +26,7 @@ class LlmResponseContext extends BaseLlmResponseContext with IOTaskResult {
   /// memory.
   ///
   /// See also:
-  ///  * [LlmInferenceEngine.generateResponse] where this is called.
+  ///  * `LlmInferenceEngine.generateResponse` where this is called.
   /// {@endtemplate}
   LlmResponseContext.native(this._pointer);
 

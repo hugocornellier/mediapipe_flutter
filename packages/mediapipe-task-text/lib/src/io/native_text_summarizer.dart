@@ -3,17 +3,21 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
-import '../interface/text_summarizer_types.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
+
+import '../types/options.dart';
+import '../types/results.dart';
 import 'native_text_stream.dart';
 import 'text_task_worker.dart';
 import 'third_party/mediapipe/summarizer_bindings.dart' as mp;
 
 /// Native Summarizer owner, constructed and used on one worker isolate.
 final class NativeTextSummarizer
-    implements NativeTextTask<TextSummarizerResult, TextSummarizerUpdate> {
+    implements
+        NativeTextTask<String, TextSummarizerResult, TextSummarizerUpdate> {
   /// Create the official CPU pipeline without altering prompts or model bytes.
   NativeTextSummarizer(TextSummarizerOptions options) {
-    if (!Platform.isMacOS || options.delegate != TextDelegate.cpu) {
+    if (!Platform.isMacOS || options.delegate != Delegate.cpu) {
       throw UnsupportedError(
         'TextSummarizer currently supports macOS arm64 CPU only.',
       );
@@ -24,7 +28,7 @@ final class NativeTextSummarizer
         ..fileDescriptor = -1
         ..delegate = 0
         ..hostSystem = 2
-        ..modelAssetPath = options.modelPath
+        ..modelAssetPath = options.modelPath!
             .toNativeUtf8(allocator: arena)
             .cast();
       native.ref
@@ -86,7 +90,7 @@ final class NativeTextSummarizer
           done: terminal,
         ),
         emit: emit,
-        exception: TextTaskException.new,
+        exception: TaskException.new,
       );
 
   @override
@@ -103,7 +107,7 @@ void _checked(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
   try {
     final status = call(error);
     if (status != 0) {
-      throw TextTaskException(
+      throw TaskException(
         nativeTextString(error.value) ?? 'MediaPipe operation failed.',
         statusCode: status,
       );

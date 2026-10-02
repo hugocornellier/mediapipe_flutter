@@ -1,62 +1,42 @@
-/// Extension point for platform SDK adapters. Applications use the task classes.
+/// Where a platform plugin plugs Google's browser or Android SDK into the
+/// task classes. Applications use the task classes.
 library;
 
-import 'interface/face_detector_types.dart';
-import 'interface/holistic_landmarker_types.dart';
-import 'interface/image_classifier_types.dart';
-import 'interface/image_embedder_types.dart';
-import 'interface/interactive_segmenter_types.dart';
-import 'interface/object_detector_types.dart';
-import 'interface/segmenter_task_types.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 
-export 'interface/face_detector_types.dart';
-export 'interface/holistic_landmarker_types.dart';
-export 'interface/image_classifier_types.dart';
-export 'interface/image_embedder_types.dart';
-export 'interface/interactive_segmenter_types.dart';
-export 'interface/object_detector_types.dart';
-export 'interface/segmenter_task_types.dart';
-export 'interface/landmark_codec.dart';
-// An adapter that can name the GPU sets this, so capabilities can exclude a
-// GPU family a task fails on.
-export 'package:mediapipe_core/capabilities.dart' show taskPlatformGpuReader;
+import 'types/options.dart';
+import 'types/results.dart';
+import 'types/strokes.dart';
+import 'types/vision_types.dart';
 
-/// A serialized, asynchronous adapter to one task of an official platform SDK.
+/// A serialized, asynchronous adapter to one task of an official platform
+/// SDK: Google's browser runtime on a worker, or its Android SDK on the
+/// plugin's thread.
 abstract interface class VisionTaskBackend<R> {
-  /// Completes with copied results; requests and disposal retain submission order.
-  /// Only tasks that accept a region of interest receive [regionOfInterest],
-  /// and only Interactive Segmenter Legacy receives its [keypoint].
+  /// Completes with copied results; requests and disposal keep their
+  /// submission order. Only the tasks that accept a region of interest
+  /// receive [regionOfInterest]. A browser frame arrives as
+  /// `image.browserFrame`, which the backend releases after inference.
   Future<R> detect(
     VisionImage image,
     int rotationDegrees,
     int? timestampMilliseconds, {
     VisionRegionOfInterest? regionOfInterest,
-    SegmentationPoint? keypoint,
   });
 
-  /// Finishes queued requests and releases the SDK task on its owning thread.
+  /// Finishes queued requests and releases the SDK task on its own thread.
   Future<void> dispose();
 }
 
-/// Optional browser-frame transport, keeping browser objects out of native APIs.
-abstract interface class VisionTaskFrameBackend<R>
-    implements VisionTaskBackend<R> {
-  /// Takes ownership of one browser frame and releases it after inference.
-  Future<R> detectFrame(
-    Object frame,
-    int width,
-    int height,
-    int rotationDegrees,
-    int timestampMilliseconds,
-  );
-}
-
-/// Optional browser canvas drawing on the task's owning worker.
+/// A backend that can draw its results into a browser canvas on its worker.
 abstract interface class VisionTaskOverlayBackend {
   /// Transfers a browser canvas to the task's worker for drawing.
   Future<void> attachOverlay(Object canvas);
 
-  /// Chooses the browser worker's drawing details and preview transform.
+  /// Stops drawing; the transferred canvas stays blank afterwards.
+  Future<void> detachOverlay();
+
+  /// Chooses what the worker draws and how the preview is transformed.
   void setOverlayOptions({
     required bool connections,
     required bool points,
@@ -64,50 +44,56 @@ abstract interface class VisionTaskOverlayBackend {
     required double scale,
   });
 
-  /// False when canvas transfer is unsupported or worker drawing fails.
+  /// False when canvas transfer is unsupported or worker drawing failed.
   bool get overlayActive;
 }
 
-/// Installed by a platform plugin before the first HandLandmarker is created.
-Future<VisionTaskBackend<HandLandmarkerResult>> Function(HandLandmarkerOptions)?
-handLandmarkerBackendFactory;
-
-/// Installed by a platform plugin before the first PoseLandmarker is created.
-Future<VisionTaskBackend<PoseLandmarkerResult>> Function(PoseLandmarkerOptions)?
-poseLandmarkerBackendFactory;
-
-/// Installed by a platform plugin before the first GestureRecognizer is created.
-Future<VisionTaskBackend<GestureRecognizerResult>> Function(
-  GestureRecognizerOptions,
-)?
-gestureRecognizerBackendFactory;
-
-/// Installed by a platform plugin before the first HolisticLandmarker is created.
-Future<VisionTaskBackend<HolisticLandmarkerResult>> Function(
-  HolisticLandmarkerOptions,
-)?
-holisticLandmarkerBackendFactory;
+/// Creates a task's backend from its options. Installed by a platform plugin
+/// before the first task is created; null where the package runs Google's
+/// native runtime itself.
+typedef VisionBackendFactory<R, O> =
+    Future<VisionTaskBackend<R>> Function(O options);
 
 /// Installed by a platform plugin before the first FaceDetector is created.
-Future<VisionTaskBackend<FaceDetectorResult>> Function(FaceDetectorOptions)?
+VisionBackendFactory<FaceDetectorResult, FaceDetectorOptions>?
 faceDetectorBackendFactory;
 
+/// Installed by a platform plugin before the first FaceLandmarker is created.
+VisionBackendFactory<FaceLandmarkerResult, FaceLandmarkerOptions>?
+faceLandmarkerBackendFactory;
+
+/// Installed by a platform plugin before the first HandLandmarker is created.
+VisionBackendFactory<HandLandmarkerResult, HandLandmarkerOptions>?
+handLandmarkerBackendFactory;
+
+/// Installed by a platform plugin before the first GestureRecognizer is
+/// created.
+VisionBackendFactory<GestureRecognizerResult, GestureRecognizerOptions>?
+gestureRecognizerBackendFactory;
+
+/// Installed by a platform plugin before the first PoseLandmarker is created.
+VisionBackendFactory<PoseLandmarkerResult, PoseLandmarkerOptions>?
+poseLandmarkerBackendFactory;
+
+/// Installed by a platform plugin before the first HolisticLandmarker is
+/// created.
+VisionBackendFactory<HolisticLandmarkerResult, HolisticLandmarkerOptions>?
+holisticLandmarkerBackendFactory;
+
 /// Installed by a platform plugin before the first ObjectDetector is created.
-Future<VisionTaskBackend<ObjectDetectorResult>> Function(ObjectDetectorOptions)?
+VisionBackendFactory<ObjectDetectorResult, ObjectDetectorOptions>?
 objectDetectorBackendFactory;
 
 /// Installed by a platform plugin before the first ImageClassifier is created.
-Future<VisionTaskBackend<ImageClassifierResult>> Function(
-  ImageClassifierOptions,
-)?
+VisionBackendFactory<ImageClassifierResult, ImageClassifierOptions>?
 imageClassifierBackendFactory;
 
 /// Installed by a platform plugin before the first ImageEmbedder is created.
-Future<VisionTaskBackend<ImageEmbedderResult>> Function(ImageEmbedderOptions)?
+VisionBackendFactory<ImageEmbedderResult, ImageEmbedderOptions>?
 imageEmbedderBackendFactory;
 
 /// Installed by a platform plugin before the first ImageSegmenter is created.
-Future<VisionTaskBackend<SegmentationResult>> Function(ImageSegmenterOptions)?
+VisionBackendFactory<ImageSegmenterResult, ImageSegmenterOptions>?
 imageSegmenterBackendFactory;
 
 /// One stateful Interactive Segmenter session on an official platform SDK:
@@ -117,7 +103,7 @@ abstract interface class InteractiveSegmenterBackend {
   Future<void> setImage(VisionImage image);
 
   /// Segments with the full, nonempty stroke history.
-  Future<SegmentationMask> segment(List<SegmentationStroke> strokes);
+  Future<ConfidenceMask> segment(List<Stroke> strokes);
 
   /// Finishes queued requests and releases the SDK task.
   Future<void> dispose();
@@ -128,9 +114,6 @@ abstract interface class InteractiveSegmenterBackend {
 Future<InteractiveSegmenterBackend> Function(InteractiveSegmenterOptions)?
 interactiveSegmenterBackendFactory;
 
-/// Installed by a platform plugin before the first InteractiveSegmenterLegacy
-/// is created.
-Future<VisionTaskBackend<SegmentationResult>> Function(
-  InteractiveSegmenterLegacyOptions,
-)?
-interactiveSegmenterLegacyBackendFactory;
+/// The overlay backend behind a task, when its platform has one. Task classes
+/// register theirs when they are created; `BrowserOverlay` looks it up.
+final overlayBackends = Expando<VisionTaskOverlayBackend>('overlay backends');

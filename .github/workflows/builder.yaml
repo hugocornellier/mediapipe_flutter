@@ -45,3 +45,15 @@ jobs:
           dart analyze --fatal-infos
           dart format --output=none --set-exit-if-changed .
           dart test --reporter expanded
+      # The public API must be identical on native and web, follow the shared
+      # conventions and match its reviewed snapshot (tool/api_parity/README.md).
+      - name: Check API parity, conventions and snapshots
+        run: |
+          for family in task-vision task-text task-audio; do
+            (cd packages/mediapipe-$family && flutter pub get)
+          done
+          cd tool/api_parity
+          dart pub get
+          dart analyze --fatal-infos
+          dart format --output=none --set-exit-if-changed .
+          dart run bin/api_parity.dart

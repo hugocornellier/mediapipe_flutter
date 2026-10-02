@@ -1,4 +1,5 @@
-/// Interface for official Android and browser audio platform plugins.
+/// Where the Android and browser plugins plug Google's SDKs into the Audio
+/// Classifier.
 ///
 /// Applications should import `mediapipe_audio.dart` instead.
 library;

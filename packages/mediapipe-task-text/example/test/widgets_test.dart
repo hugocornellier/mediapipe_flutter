@@ -4,48 +4,36 @@ import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:example/language_detection_demo.dart';
 import 'package:example/text_classification_demo.dart';
 
-class FakeTextClassifier implements TextClassifier {
-  @override
-  Future<void> dispose() async {}
-
-  @override
-  Future<TextClassifierResult> classify(String text) {
-    return Future.value(
-      TextClassifierResult(
-        classifications: <Classifications>[
-          Classifications(
-            categories: <Category>[
-              Category(
-                index: 0,
-                score: 0.9,
-                categoryName: 'happy-go-lucky',
-                displayName: 'Happy go Lucky',
-              ),
-            ],
-            headIndex: 0,
-            headName: 'whatever',
-          ),
-        ],
-      ),
-    );
-  }
+Future<TextClassifierResult> fakeClassify(String text) {
+  return Future.value(
+    TextClassifierResult(
+      classifications: <Classifications>[
+        Classifications(
+          categories: <MediaPipeCategory>[
+            MediaPipeCategory(
+              index: 0,
+              score: 0.9,
+              categoryName: 'happy-go-lucky',
+              displayName: 'Happy go Lucky',
+            ),
+          ],
+          headIndex: 0,
+          headName: 'whatever',
+        ),
+      ],
+    ),
+  );
 }
 
-class FakeLanguageDetector implements LanguageDetector {
-  @override
-  Future<void> dispose() async {}
-
-  @override
-  Future<LanguageDetectorResult> detect(String text) {
-    return Future.value(
-      LanguageDetectorResult(
-        predictions: <LanguagePrediction>[
-          LanguagePrediction(languageCode: 'es', probability: 0.99),
-          LanguagePrediction(languageCode: 'en', probability: 0.01),
-        ],
-      ),
-    );
-  }
+Future<LanguageDetectorResult> fakeDetect(String text) {
+  return Future.value(
+    LanguageDetectorResult(
+      predictions: <LanguagePrediction>[
+        LanguagePrediction(languageCode: 'es', probability: 0.99),
+        LanguagePrediction(languageCode: 'en', probability: 0.01),
+      ],
+    ),
+  );
 }
 
 void main() {
@@ -54,7 +42,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final app = MaterialApp(
-      home: TextClassificationDemo(classifier: FakeTextClassifier()),
+      home: TextClassificationDemo(classify: fakeClassify),
     );
 
     await tester.pumpWidget(app);
@@ -70,9 +58,7 @@ void main() {
   testWidgets('LanguageDetectorResult should show results', (
     WidgetTester tester,
   ) async {
-    final app = MaterialApp(
-      home: LanguageDetectionDemo(detector: FakeLanguageDetector()),
-    );
+    final app = MaterialApp(home: LanguageDetectionDemo(detect: fakeDetect));
 
     await tester.pumpWidget(app);
     await tester.tap(find.byType(Icon));

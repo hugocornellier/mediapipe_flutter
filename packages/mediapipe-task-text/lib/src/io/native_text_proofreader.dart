@@ -3,17 +3,21 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
-import '../interface/text_proofreader_types.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
+
+import '../types/options.dart';
+import '../types/results.dart';
 import 'native_text_stream.dart';
 import 'text_task_worker.dart';
 import 'third_party/mediapipe/proofreader_bindings.dart' as mp;
 
 /// Native task owner, used serially by one persistent worker isolate.
 final class NativeTextProofreader
-    implements NativeTextTask<TextProofreaderResult, TextProofreaderUpdate> {
+    implements
+        NativeTextTask<String, TextProofreaderResult, TextProofreaderUpdate> {
   /// Load the official CPU task.
   NativeTextProofreader(TextProofreaderOptions options) {
-    if (!Platform.isMacOS || options.delegate != TextDelegate.cpu) {
+    if (!Platform.isMacOS || options.delegate != Delegate.cpu) {
       throw UnsupportedError(
         'TextProofreader currently supports macOS arm64 CPU only.',
       );
@@ -24,7 +28,7 @@ final class NativeTextProofreader
         ..fileDescriptor = -1
         ..delegate = 0
         ..hostSystem = 2
-        ..modelAssetPath = options.modelPath
+        ..modelAssetPath = options.modelPath!
             .toNativeUtf8(allocator: arena)
             .cast();
       native.ref.maxNumTokens = options.maxNumTokens ?? 0;
@@ -94,7 +98,7 @@ final class NativeTextProofreader
           ),
         ),
         emit: emit,
-        exception: TextTaskException.new,
+        exception: TaskException.new,
       );
 
   /// Close after all native requests have completed.
@@ -131,7 +135,7 @@ void _checked(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
   try {
     final status = call(error);
     if (status != 0) {
-      throw TextTaskException(
+      throw TaskException(
         _string(error.value) ?? 'MediaPipe operation failed.',
         statusCode: status,
       );

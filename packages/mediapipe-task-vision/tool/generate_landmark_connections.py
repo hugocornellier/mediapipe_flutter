@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 VERSION = '1.0.0'
 
 GROUPS = (
-    ('HandLandmarkConnections', 'HandLandmarksConnections', HandLandmarksConnections, {
+    ('HandLandmarksConnections', 'HandLandmarksConnections', HandLandmarksConnections, {
         'all': 'HAND_CONNECTIONS',
         'palm': 'HAND_PALM_CONNECTIONS',
         'thumb': 'HAND_THUMB_CONNECTIONS',
@@ -28,7 +28,7 @@ GROUPS = (
         'ringFinger': 'HAND_RING_FINGER_CONNECTIONS',
         'pinkyFinger': 'HAND_PINKY_FINGER_CONNECTIONS',
     }),
-    ('PoseLandmarkConnections', 'PoseLandmarksConnections', PoseLandmarksConnections, {
+    ('PoseLandmarksConnections', 'PoseLandmarksConnections', PoseLandmarksConnections, {
         'all': 'POSE_LANDMARKS',
     }),
 )
@@ -42,13 +42,13 @@ def main():
         f'// Generated from MediaPipe v{VERSION} Hand/PoseLandmarksConnections.',
         '// Regenerate: tool/generate_landmark_connections.py',
         '',
-        '/// Official hand and pose drawing edges, in the original index order.',
+        "/// Google's hand and pose drawing edges, in the original index order.",
         'library;',
     ]
     for dart_name, upstream_name, source, groups in GROUPS:
         lines.extend([
             '',
-            f'/// Official edges from {upstream_name}.',
+            f"/// Google's `{upstream_name}`.",
             f'abstract final class {dart_name} {{',
         ])
         for name, attribute in groups.items():
@@ -61,7 +61,7 @@ def main():
             ])
         lines.append('}')
     lines.append('')
-    output = ROOT / 'lib/src/interface/landmark_connections.dart'
+    output = ROOT / 'lib/src/types/landmarks_connections.dart'
     output.write_text('\n'.join(lines))
     # Keep the checked-in file in the repository's format, so regenerating it
     # never fails `make check_format`.

@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:mediapipe_text/capabilities.dart';
+import 'package:mediapipe_text/mediapipe_text.dart';
 
 /// Display the package's supported backend and explain disabled GPU selection.
 class TaskSupport extends StatefulWidget {
-  const TaskSupport({super.key, required this.task});
+  const TaskSupport({super.key, required this.query});
 
-  final TextTask task;
+  /// The task's capability query, such as `queryTextSummarizerCapabilities`.
+  final Future<TaskCapabilities> Function() query;
 
   @override
   State<TaskSupport> createState() => _TaskSupportState();
 }
 
 class _TaskSupportState extends State<TaskSupport> {
-  late final _support = queryTextTaskCapabilities(widget.task);
+  late final _support = widget.query();
 
   @override
   Widget build(BuildContext context) => FutureBuilder(
@@ -32,7 +33,7 @@ class _TaskSupportState extends State<TaskSupport> {
               ),
             ),
             Tooltip(
-              message: support.unavailableReasons[TextDelegate.gpu] ?? '',
+              message: support.unavailableReasons[Delegate.gpu] ?? '',
               child: const Chip(label: Text('GPU unavailable')),
             ),
           ],

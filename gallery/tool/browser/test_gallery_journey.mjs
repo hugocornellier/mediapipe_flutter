@@ -103,7 +103,7 @@ try {
   const manifestResponse = await page.request.get(new URL('assets/assets/manifest.json', base).href);
   assert.ok(manifestResponse.ok(), 'release manifest unavailable');
   const manifest = await manifestResponse.json();
-  const expected = manifest.tasks.filter(id => id !== 'interactive_segmenter_legacy');
+  const expected = manifest.tasks;
   assert.ok(expected.length > 0, 'empty release task list');
   for (const id of expected) assert.ok(cases[id], `new bundled task ${id} needs a gallery journey`);
   // Flutter renders sidebar links as <a> without an href, which has no link

@@ -67,10 +67,10 @@ class FaceOverlay extends CustomPainter {
       }
 
       if (showConnections) {
-        edges(FaceLandmarkConnections.tessellation, connections);
-        edges(FaceLandmarkConnections.contours, contour);
-        edges(FaceLandmarkConnections.leftIris, iris);
-        edges(FaceLandmarkConnections.rightIris, iris);
+        edges(FaceLandmarksConnections.tessellation, connections);
+        edges(FaceLandmarksConnections.contours, contour);
+        edges(FaceLandmarksConnections.leftIris, iris);
+        edges(FaceLandmarksConnections.rightIris, iris);
       }
       if (showPoints) {
         for (final position in positions) {

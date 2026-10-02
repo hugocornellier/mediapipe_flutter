@@ -67,13 +67,13 @@ final class _Slot {
 class _EmbedPageState extends State<EmbedPage> {
   static const _id = 'image-embedder';
 
-  late final List<VisionDelegate> _delegates =
+  late final List<Delegate> _delegates =
       widget.task
           .capabilitiesFor(widget.platform, widget.officialMacosLandmarkTasks)
           .supportedDelegates
           .toList()
         ..sort((a, b) => a.index.compareTo(b.index));
-  late VisionDelegate _delegate = preferredDelegate(_delegates);
+  late Delegate _delegate = preferredDelegate(_delegates);
   late final TaskSettingValues _values = TaskSettingValues(
     widget.task.runtimeId,
   );
@@ -102,7 +102,7 @@ class _EmbedPageState extends State<EmbedPage> {
   double? _similarity;
   int? _dimensions;
   double? _milliseconds;
-  VisionDelegate? _ranOn;
+  Delegate? _ranOn;
   String? _error;
 
   /// Bumped on every rebuild, so the settings sheet redraws with the page.
@@ -191,8 +191,8 @@ class _EmbedPageState extends State<EmbedPage> {
       try {
         final embedder = await _open();
         final clock = Stopwatch()..start();
-        final a = (await embedder.embedImage(first)).embeddings.first;
-        final b = (await embedder.embedImage(second)).embeddings.first;
+        final a = (await embedder.embed(first)).embeddings.first;
+        final b = (await embedder.embed(second)).embeddings.first;
         final similarity = ImageEmbedder.cosineSimilarity(a, b);
         clock.stop();
         if (!mounted || comparison != _comparison) return;
@@ -219,23 +219,22 @@ class _EmbedPageState extends State<EmbedPage> {
   Future<ImageEmbedder> _open() async {
     if (_embedder case final embedder?) return embedder;
     final model = _modelBytes ?? await _bundledModel();
-    Future<ImageEmbedder> create(VisionDelegate delegate) =>
-        ImageEmbedder.create(
-          ImageEmbedderOptions(
-            delegate: delegate,
-            modelBytes: model,
-            runningMode: RunningMode.image,
-            l2Normalize: _values.on('l2Normalize'),
-            quantize: _values.on('quantize'),
-          ),
-        );
+    Future<ImageEmbedder> create(Delegate delegate) => ImageEmbedder.create(
+      ImageEmbedderOptions(
+        delegate: delegate,
+        modelBytes: model,
+        runningMode: RunningMode.image,
+        l2Normalize: _values.on('l2Normalize'),
+        quantize: _values.on('quantize'),
+      ),
+    );
     try {
       return _embedder = await create(_delegate);
     } on Object {
       // GPU is only the default; a platform that refuses it gets CPU.
-      if (_delegate != VisionDelegate.gpu) rethrow;
-      if (mounted) setState(() => _delegate = VisionDelegate.cpu);
-      return _embedder = await create(VisionDelegate.cpu);
+      if (_delegate != Delegate.gpu) rethrow;
+      if (mounted) setState(() => _delegate = Delegate.cpu);
+      return _embedder = await create(Delegate.cpu);
     }
   }
 
@@ -268,7 +267,7 @@ class _EmbedPageState extends State<EmbedPage> {
     _reopen();
   }
 
-  void _setDelegate(VisionDelegate delegate) {
+  void _setDelegate(Delegate delegate) {
     if (delegate == _delegate) return;
     setState(() => _delegate = delegate);
     _reopen();
@@ -399,8 +398,8 @@ class _EmbedPageState extends State<EmbedPage> {
             if (ms != null) 'Inference ${ms.toStringAsFixed(1)} ms',
           ],
           delegate: switch (_ranOn) {
-            VisionDelegate.gpu => 'GPU',
-            VisionDelegate.cpu => 'CPU',
+            Delegate.gpu => 'GPU',
+            Delegate.cpu => 'CPU',
             _ => null,
           },
         ),

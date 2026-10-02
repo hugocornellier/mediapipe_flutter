@@ -1,4 +1,4 @@
-import 'package:mediapipe_core/model_store.dart';
+import 'package:mediapipe_core/mediapipe_core.dart';
 
 /// Verified official models accepted by text task options.
 abstract final class TextModels {
@@ -19,6 +19,17 @@ abstract final class TextModels {
 
   /// Summarizer, 200M parameters.
   static const summarizer = summarizerModel;
+
+  /// Every model above by the name an app lists to bundle it, under
+  /// `hooks.user_defines.mediapipe_text.models` in pubspec.yaml.
+  static const byName = <String, DownloadAsset>{
+    'bert_classifier': bertClassifier,
+    'universal_sentence_encoder': universalSentenceEncoder,
+    'language_detector': languageDetector,
+    'embedding_gemma': embeddingGemma,
+    'proofreader': proofreader,
+    'summarizer': summarizer,
+  };
 }
 
 /// Google's unmodified BERT sentiment classifier, float32, version 1.

@@ -36,32 +36,32 @@ TextFormatContext? contextFor(Map<String, dynamic> entry) {
     'CODE_RETRIEVAL',
   ];
   return TextFormatContext(
-    taskType: EmbeddingTaskType.values[types.indexOf(context['task_type'])],
+    taskType: EmbeddingType.values[types.indexOf(context['task_type'])],
     title: context['title'],
     role: context['role'] == 'DOCUMENT' ? TextRole.document : TextRole.query,
   );
 }
 
-void compare(TextEmbeddingResult result, Map<String, dynamic> entry) {
+void compare(TextEmbedderResult result, Map<String, dynamic> entry) {
   final expected = entry['embeddings'] as List;
   expect(result.embeddings, hasLength(expected.length));
   // The library stamps each request; Google's Python ctypes misread it as
   // absent (see tool/official_embedding_layout.py).
-  expect(result.timestampMs, isNotNull);
+  expect(result.timestampMilliseconds, isNotNull);
   for (var i = 0; i < expected.length; i++) {
     final embedding = result.embeddings[i];
     expect(embedding.headIndex, expected[i]['head_index']);
     expect(embedding.headName, expected[i]['head_name']);
-    expect(embedding.dimensions, 768);
+    expect(embedding.length, 768);
     final values = expected[i]['values'] as List;
     if (entry['quantize'] == true) {
-      expect(embedding.floatValues, isNull);
-      expect(embedding.quantizedValues, values);
+      expect(embedding.floatEmbedding, isNull);
+      expect(embedding.quantizedEmbedding, values);
     } else {
-      expect(embedding.quantizedValues, isNull);
+      expect(embedding.quantizedEmbedding, isNull);
       for (var j = 0; j < values.length; j++) {
         expect(
-          embedding.floatValues![j],
+          embedding.floatEmbedding![j],
           closeTo((values[j] as num).toDouble(), 1e-6),
           reason: '${entry['name']} head $i value $j',
         );
@@ -122,8 +122,8 @@ void main() {
 
   for (final quantize in [false, true]) {
     test('official CPU reference embeddings, quantize=$quantize', () async {
-      final task = await EmbeddingGemma.create(
-        EmbeddingGemmaOptions(
+      final task = await TextEmbedder.create(
+        TextEmbedderOptions(
           modelPath: model,
           quantize: quantize,
           l2Normalize: quantize,
@@ -134,7 +134,7 @@ void main() {
           (entry) => entry['quantize'] == quantize,
         )) {
           compare(
-            await task.embed(entry['text'], context: contextFor(entry)),
+            await task.embed(entry['text'], formatContext: contextFor(entry)),
             entry,
           );
         }
@@ -147,13 +147,13 @@ void main() {
   test(
     'concurrent requests keep their own results; disposal drains the queue',
     () async {
-      final task = await EmbeddingGemma.create(
-        EmbeddingGemmaOptions(modelPath: model),
+      final task = await TextEmbedder.create(
+        TextEmbedderOptions(modelPath: model),
       );
       final selected = cases.sublist(1, 4);
       final pending = [
         for (final entry in selected)
-          task.embed(entry['text'], context: contextFor(entry)),
+          task.embed(entry['text'], formatContext: contextFor(entry)),
       ];
       final closing = task.dispose();
       final results = await Future.wait(pending);
@@ -163,24 +163,24 @@ void main() {
         compare(results[i], selected[i]);
       }
       final cat = results[0].embeddings.single;
-      final related = TextEmbedding.cosineSimilarity(
+      final related = TextEmbedder.cosineSimilarity(
         cat,
         results[1].embeddings.single,
       );
-      final unrelated = TextEmbedding.cosineSimilarity(
+      final unrelated = TextEmbedder.cosineSimilarity(
         cat,
         results[2].embeddings.single,
       );
       expect(related, greaterThan(unrelated));
-      expect(TextEmbedding.cosineSimilarity(cat, cat), closeTo(1, 1e-12));
-      expect(() => cat.floatValues![0] = 0, throwsUnsupportedError);
+      expect(TextEmbedder.cosineSimilarity(cat, cat), closeTo(1, 1e-12));
+      expect(() => cat.floatEmbedding![0] = 0, throwsUnsupportedError);
       await expectLater(task.embed('closed'), throwsStateError);
     },
   );
 
   test('buffer model produces the same official embedding', () async {
-    final task = await EmbeddingGemma.create(
-      EmbeddingGemmaOptions(modelBytes: await File(model).readAsBytes()),
+    final task = await TextEmbedder.create(
+      TextEmbedderOptions(modelBytes: await File(model).readAsBytes()),
     );
     try {
       compare(await task.embed(cases.first['text']), cases.first);
@@ -191,18 +191,18 @@ void main() {
 
   test('creation errors propagate instead of hanging the worker', () async {
     await expectLater(
-      EmbeddingGemma.create(EmbeddingGemmaOptions(modelPath: '$model.missing')),
-      throwsA(isA<TextTaskException>()),
+      TextEmbedder.create(TextEmbedderOptions(modelPath: '$model.missing')),
+      throwsA(isA<TaskException>()),
     );
     await expectLater(
-      EmbeddingGemma.create(
-        EmbeddingGemmaOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
+      TextEmbedder.create(
+        TextEmbedderOptions(modelBytes: Uint8List.fromList([1, 2, 3])),
       ),
-      throwsA(isA<TextTaskException>()),
+      throwsA(isA<TaskException>()),
     );
     await expectLater(
-      EmbeddingGemma.create(
-        EmbeddingGemmaOptions(modelPath: model, delegate: TextDelegate.gpu),
+      TextEmbedder.create(
+        TextEmbedderOptions(modelPath: model, delegate: Delegate.gpu),
       ),
       throwsA(
         isA<RuntimeUnavailableException>().having(
@@ -215,21 +215,21 @@ void main() {
   }, timeout: const Timeout(Duration(seconds: 20)));
 
   test('invalid Dart inputs are rejected without poisoning the task', () async {
-    expect(() => EmbeddingGemmaOptions(), throwsArgumentError);
-    expect(() => EmbeddingGemmaOptions(modelPath: ''), throwsArgumentError);
+    expect(() => TextEmbedderOptions(), throwsArgumentError);
+    expect(() => TextEmbedderOptions(modelPath: ''), throwsArgumentError);
     expect(
-      () => EmbeddingGemmaOptions(modelPath: model, modelBytes: Uint8List(1)),
+      () => TextEmbedderOptions(modelPath: model, modelBytes: Uint8List(1)),
       throwsArgumentError,
     );
     expect(
       () => TextFormatContext(
-        taskType: EmbeddingTaskType.retrievalDocument,
+        taskType: EmbeddingType.retrievalDocument,
         title: 'bad\u0000title',
       ),
       throwsArgumentError,
     );
-    final task = await EmbeddingGemma.create(
-      EmbeddingGemmaOptions(modelPath: model),
+    final task = await TextEmbedder.create(
+      TextEmbedderOptions(modelPath: model),
     );
     try {
       await expectLater(task.embed('bad\u0000text'), throwsArgumentError);
@@ -240,26 +240,24 @@ void main() {
   });
 
   test('cosine uses signed quantized bytes and validates vector types', () {
-    TextEmbedding q(List<int> values) => TextEmbedding(
-      quantizedValues: Uint8List.fromList(values),
-      headIndex: 0,
-    );
+    Embedding q(List<int> values) =>
+        Embedding(quantizedEmbedding: Uint8List.fromList(values), headIndex: 0);
     expect(
-      TextEmbedding.cosineSimilarity(q([127, 128]), q([128, 127])),
+      TextEmbedder.cosineSimilarity(q([127, 128]), q([128, 127])),
       lessThan(-.99),
     );
     expect(
-      () => TextEmbedding.cosineSimilarity(q([0]), q([1])),
+      () => TextEmbedder.cosineSimilarity(q([0]), q([1])),
       throwsArgumentError,
     );
     expect(
-      () => TextEmbedding.cosineSimilarity(q([1]), q([1, 2])),
+      () => TextEmbedder.cosineSimilarity(q([1]), q([1, 2])),
       throwsArgumentError,
     );
     expect(
-      () => TextEmbedding.cosineSimilarity(
+      () => TextEmbedder.cosineSimilarity(
         q([1]),
-        TextEmbedding(floatValues: Float32List.fromList([1]), headIndex: 0),
+        Embedding(floatEmbedding: Float32List.fromList([1]), headIndex: 0),
       ),
       throwsArgumentError,
     );
@@ -268,18 +266,18 @@ void main() {
   test(
     'official token-limit failures propagate through inference and close',
     () async {
-      final task = await EmbeddingGemma.create(
-        EmbeddingGemmaOptions(modelPath: model),
+      final task = await TextEmbedder.create(
+        TextEmbedderOptions(modelPath: model),
       );
       await expectLater(
         task.embed(
           List.filled(160, 'A cat sleeps peacefully. ').join(),
-          context: TextFormatContext(
-            taskType: EmbeddingTaskType.semanticSimilarity,
+          formatContext: TextFormatContext(
+            taskType: EmbeddingType.semanticSimilarity,
           ),
         ),
         throwsA(
-          isA<TextTaskException>().having(
+          isA<TaskException>().having(
             (e) => e.message,
             'message',
             contains('too long'),
@@ -288,11 +286,11 @@ void main() {
       );
       await expectLater(
         task.embed('The graph has already failed.'),
-        throwsA(isA<TextTaskException>()),
+        throwsA(isA<TaskException>()),
       );
       final closing = task.dispose();
       expect(identical(closing, task.dispose()), isTrue);
-      await expectLater(closing, throwsA(isA<TextTaskException>()));
+      await expectLater(closing, throwsA(isA<TaskException>()));
       await expectLater(task.embed('closed'), throwsStateError);
     },
     timeout: const Timeout(Duration(seconds: 20)),

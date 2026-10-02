@@ -29,10 +29,13 @@ make test                      # analysis and every package's unit tests
 python3 -B tool/check_docs.py  # README samples compile, links resolve
 python3 -B packages/mediapipe-core/tool/publish_check.py   # pub dry run
 python3 -B packages/mediapipe-core/tool/test_family_consumers.py --platform macos
+python3 -B packages/mediapipe-core/tool/test_bundled_models.py
 ```
 
-The last one builds fresh apps from the packages as pub.dev would ship them;
-it has an `--platform ios-simulator --device <uuid>` form too. CI runs the
+The last two build fresh apps from the packages as pub.dev would ship them.
+`test_family_consumers.py` has an `--platform ios-simulator --device <uuid>`
+form too, and `test_bundled_models.py` bundles one model per family with
+`dart run mediapipe_core:bundle_models` and runs them offline. CI runs the
 rest (Android emulator, Linux, Windows and three browsers).
 
 ## How to add a task
@@ -41,25 +44,40 @@ A task is only complete when it runs Google's official pipeline on every
 platform it claims, and a test proves the output matches Google's.
 
 1. **Pin the model.** Add Google's model URL and SHA-256 to the family's
-   `lib/models.dart` (`XxxModels.name`). `mirror_runtime_assets.py` picks it
-   up; give it a license there if it is not Apache-2.0.
+   `lib/models.dart` (`XxxModels.name`), and its snake_case name to
+   `XxxModels.byName` so apps can bundle it. `mirror_runtime_assets.py` picks
+   it up; give it a license there if it is not Apache-2.0.
 2. **Native platforms.** Bind Google's C API with the family's `ffigen` config
    and wrap it in `lib/src/io/`: create, run and close on a worker isolate,
-   copying results into owned Dart types. On iOS, where Google ships only an
+   copying results into the shared value types from `mediapipe_core`
+   (`MediaPipeCategory`, `Classifications`, `Landmark` and so on). On iOS, where Google ships only an
    Objective-C SDK, add the same C functions to core's adapter in
    `packages/mediapipe-core/native/ios/`.
 3. **Android.** Add the task to the family's Java plugin (Google's Android
-   SDK) and its Dart backend in `lib/mediapipe_<family>_android.dart`.
+   SDK) and its Dart backend in `lib/mediapipe_<family>_android.dart`. The
+   backend only reshapes the plugin's reply into Google's JavaScript result
+   shape; the family's one decoder (`lib/src/results/decoders.dart` in
+   vision and text, `lib/src/decoders.dart` in audio) reads it, for Android
+   and the web alike.
 4. **Web.** Add it to the family's `assets/worker.js`, using Google's bundle,
-   and to the Dart web backend.
+   and to the Dart web backend, which hands the worker's JSON to the same
+   decoder.
 5. **Capabilities.** Declare where it runs and why not elsewhere in the
-   family's `capabilities.dart`. For vision, also add it to the hook's task
+   family's `lib/src/capabilities.dart`: `queryXxxCapabilities()` and a pure
+   `xxxCapabilitiesForPlatform(TaskPlatform)`. For vision, also add it to the hook's task
    lists (`officialAndroidTasks`, `officialIosTasks`, `macosEngineTasks`) and
    to `tool/VISION_TASKS_STATUS.md` in the same commit.
-6. **Public API.** `XxxOptions` taking `model:`, `modelPath` or `modelBytes`;
-   `static Future<Xxx> create(XxxOptions)`; an `XxxResult`; an idempotent
-   `dispose()`; failures as the family's `MediaPipeException` subtype. Export
-   it from the family's main library and record it in `tool/API_REVIEW.md`.
+6. **Public API.** One class for every platform. `XxxOptions` extends core's
+   `TaskOptions` (`model`, `modelPath`, `modelBytes`, `delegate`) with
+   Google's settings and defaults; `static Future<Xxx> create(XxxOptions)`
+   refuses a delegate the capability query rules out (core's
+   `requireDelegate`); Google's verb (`detect`, `classify`, `embed` and so
+   on); an immutable `XxxResult` on the shared value types; a `delegate`
+   getter; an idempotent `Future<void> dispose()`; failures as
+   `TaskException`, errors through the returned `Future`. Export it from the
+   family's main library and run `tool/api_parity`
+   (`dart run bin/api_parity.dart --update`) so the snapshot shows the new
+   API; the check requires it to be identical on native and web.
 7. **Tests.** Generate a reference with Google's own Python for the pinned
    runtime version, check it in as a fixture, and compare every value in unit
    tests; add the task to `test_family_consumers.py`, to the browser suite's

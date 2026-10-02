@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+// TODO: Share the worker thread, model buffers and channel handling with
+// MediaPipeTextPlugin. See tool/SHARED_CODE.md at the repository root.
 /**
  * Google's unmodified Audio Classifier (tasks-audio 1.0.0) for mediapipe_audio, on
  * clips. One worker thread creates, runs and closes every task; results travel in the JSON shape
@@ -107,6 +109,15 @@ public final class MediaPipeAudioPlugin implements FlutterPlugin, MethodChannel.
     }
     if (call.hasArgument("scoreThreshold")) {
       options.setScoreThreshold(((Number) call.argument("scoreThreshold")).floatValue());
+    }
+    if (call.hasArgument("displayNamesLocale")) {
+      options.setDisplayNamesLocale(call.argument("displayNamesLocale"));
+    }
+    if (call.hasArgument("categoryAllowlist")) {
+      options.setCategoryAllowlist(call.argument("categoryAllowlist"));
+    }
+    if (call.hasArgument("categoryDenylist")) {
+      options.setCategoryDenylist(call.argument("categoryDenylist"));
     }
     int id = nextId++;
     tasks.put(id, AudioClassifier.createFromOptions(context, options.build()));

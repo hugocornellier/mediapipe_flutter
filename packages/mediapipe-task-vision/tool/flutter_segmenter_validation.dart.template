@@ -15,15 +15,15 @@ Future<Uint8List> _asset(String name) async {
   return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
 }
 
-List<SegmentationStroke> _strokes(Map<String, dynamic> reference) =>
+List<Stroke> _strokes(Map<String, dynamic> reference) =>
     (reference['strokes'] as List).map((dynamic stroke) {
-      return SegmentationStroke(
-        brushMode: SegmentationBrushMode.values.byName(
+      return Stroke(
+        brushMode: BrushMode.values.byName(
           stroke['brush_mode'] as String,
         ),
         points: (stroke['points'] as List)
             .map(
-              (dynamic p) => SegmentationPoint(
+              (dynamic p) => NormalizedKeypoint(
                 x: (p[0] as num).toDouble(),
                 y: (p[1] as num).toDouble(),
               ),
@@ -133,15 +133,15 @@ Future<Map<String, Object>> validateSegmenter({bool benchmark = false}) async {
       'input_copy_ms': watch.elapsedMicroseconds / 1000,
     });
     image.dispose();
-    List<SegmentationStroke> history(int index) => [
-      SegmentationStroke(
-        brushMode: SegmentationBrushMode.positive,
-        points: [SegmentationPoint(x: index.isEven ? 0.66 : 0.65, y: 0.55)],
+    List<Stroke> history(int index) => [
+      Stroke(
+        brushMode: BrushMode.positive,
+        points: [NormalizedKeypoint(x: index.isEven ? 0.66 : 0.65, y: 0.55)],
       ),
     ];
     final setImage = <double>[];
     final firstStroke = <double>[];
-    late SegmentationMask mask;
+    late ConfidenceMask mask;
     for (var i = 0; i < 5; i++) {
       watch.reset();
       await task.setImage(input);
