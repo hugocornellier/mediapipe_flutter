@@ -4,7 +4,8 @@
 > macOS, Linux, Windows and in browsers; Proofreader and Summarizer on the five
 > native platforms. Each platform is compared with Google's own output for its
 > runtime version, in CI, as described under "How each target is checked".
-> Physical phones (Firebase Test Lab, an iPhone) have not run these tasks yet.
+> The Test Lab phones run them too (Galaxy S24, Pixel 8a and Galaxy A12,
+> see UP-036 for how closely each follows Google's wheel); an iPhone has not.
 
 The rule: if the stable Google runtime a platform already uses supports a
 task, the package supports it there, with the same proof as the classic text

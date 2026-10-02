@@ -842,6 +842,17 @@ cases to match Google's exactly, which a wrong prompt, mode or token budget
 could not produce; the arm64 emulator (10 of 10) and the iOS simulator (8 of
 10) clear that easily.
 
+On the Test Lab phones (run 37048770818 and, for the A12, 37052916414),
+against the macOS arm64 1.0.0 wheel's references: the Galaxy S24 (Adreno,
+API 34) and Pixel 8a (Mali, API 35) reproduced Google's wheel bit for bit,
+all 17 EmbeddingGemma embeddings at error 0.0, 9 of 9 Proofreader and 10 of
+10 Summarizer cases exact. The Galaxy A12 (Cortex-A53 cores, API 31) had an
+EmbeddingGemma error of 0.0061 and matched 5 of 10 summaries exactly, every
+one within the prefix rule, and wrote a different, correct TL;DR for the
+lifecycle test's case, so that test now applies the prefix rule too. The
+generations are therefore reproducible across the arm64 phones whose cores
+compute as the Mac's do, and drift on older cores as on x86_64.
+
 EmbeddingGemma's vectors show the same build dependence: the arm64 emulator
 and the iOS simulator reproduce Google's wheel of their release bit for bit,
 while Google's x86_64 Android 1.0.0 build on the x86_64 emulator differs
