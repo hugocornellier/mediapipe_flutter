@@ -1,8 +1,10 @@
 name: Android devices (Firebase Test Lab)
 
 # Every official SDK suite (gallery/integration_test/sdk_all_test.dart): the
-# vision tasks on CPU and GPU, Face Landmarker's camera checks, and the text
-# and audio tasks, on physical phones covering the three Android GPU families:
+# vision tasks on CPU and GPU, Face Landmarker's camera checks, the text and
+# audio tasks, and EmbeddingGemma, Proofreader and Summarizer against the
+# references from Google's 1.0.0 wheel (the phones are arm64, like the
+# references' Mac), on physical phones covering the three Android GPU families:
 # Mali (Pixel 8a), Adreno (Galaxy S24) and PowerVR (Galaxy A12). Manual only:
 # each run bills physical devices, so it is dispatched for a branch, whose own
 # copy of this file then runs. It signs in with the FIREBASE_TEST_LAB_CREDENTIALS
@@ -94,7 +96,8 @@ jobs:
       # contributor with only Dart, Flutter and the Android SDK builds.
       - name: Prepare the gallery with the official SDK tasks
         run: |
-          dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/arm64
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/arm64 \
+            --tasks audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer
           cd gallery && flutter pub get
       - name: Build the app and instrumentation APKs
         working-directory: gallery
@@ -103,7 +106,7 @@ jobs:
         run: |
           target="$PWD/integration_test/sdk_all_test.dart"
           # A physical GPU must work: a refusal fails its test.
-          defines="$(printf 'SDK_GPU=required' | base64),$(printf 'SDK_GPU_SKIP_TASKS=%s' "$GPU_SKIP" | base64)"
+          defines="$(printf 'SDK_GPU=required' | base64),$(printf 'SDK_GPU_SKIP_TASKS=%s' "$GPU_SKIP" | base64),$(printf 'SDK_MODERN_TEXT=true' | base64)"
           flutter build apk --config-only --debug --target "$target" --target-platform android-arm64
           cd android
           ./gradlew app:assembleAndroidTest -Pmediapipe.testLabAbi=arm64-v8a
@@ -120,9 +123,14 @@ jobs:
                     'efficientdet_lite0.tflite', 'efficientnet_lite0.tflite',
                     'mobilenet_v3_small.tflite', 'deeplab_v3.tflite',
                     'interactive_segmentation.task', 'bert_classifier.tflite',
-                    'universal_sentence_encoder.tflite', 'language_detector.tflite', 'yamnet.tflite']
+                    'universal_sentence_encoder.tflite', 'language_detector.tflite', 'yamnet.tflite',
+                    'embedding_gemma.task', 'proofread_quant_200m.litertlm',
+                    'summarization_quant_200m_2modes.litertlm']
+          references = ['embedding_gemma.json', 'proofreader.json', 'summarizer.json']
           required = {'lib/arm64-v8a/libflutter.so', 'lib/arm64-v8a/libmediapipe_tasks_jni.so',
-                      *[f'assets/flutter_assets/assets/models/{m}' for m in models]}
+                      'lib/arm64-v8a/libmediapipe_tasks_textgenai_jni.so',
+                      *[f'assets/flutter_assets/assets/models/{m}' for m in models],
+                      *[f'assets/flutter_assets/assets/references/modern_text/{r}' for r in references]}
           assert required <= names, sorted(required - names)
           assert not any('libmediapipe.so' in name for name in names), 'Duplicate source runtime'
           PY
@@ -156,7 +164,7 @@ jobs:
           OUTCOME: ${{ steps.testlab.outcome }}
           MODEL: ${{ matrix.model }}
         run: |
-          python3 -B tool/coverage/record.py --tier device --suite "android-$MODEL-cpu" --platform android --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker,audio_classifier,language_detector,text_classifier,text_embedder --outcome "$OUTCOME"
+          python3 -B tool/coverage/record.py --tier device --suite "android-$MODEL-cpu" --platform android --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer --outcome "$OUTCOME"
           # Interactive Segmenter's GPU is not declared on Android: PowerVR refuses
           # its stroke shader and Mali's mask differs from CPU, so its suite only
           # records the GPU.

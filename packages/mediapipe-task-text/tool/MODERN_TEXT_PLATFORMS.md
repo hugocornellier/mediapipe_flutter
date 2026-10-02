@@ -153,8 +153,10 @@ succeeds), errors (bad model path, empty input) and idempotent disposal.
 
 ## Left to do
 
-- Physical devices: a Firebase Test Lab phone (`android-face-testlab.yml`)
-  and an iPhone, with their rows at tier `device`.
+- An iPhone, with its rows at tier `device`. Android phones run the suite
+  through `android-face-testlab.yml` (one execution per phone, the suite
+  joining `sdk_all_test.dart` with `SDK_MODERN_TEXT`), against the macOS
+  1.0.0 references, since the phones are arm64 like the references' Mac.
 - Web Proofreader and Summarizer: when a stable `@mediapipe/tasks-text`
   declares them in `text.d.ts`, run Google's JavaScript on the fixture inputs
   and add whichever passes (UP-034).

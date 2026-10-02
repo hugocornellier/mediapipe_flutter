@@ -9,6 +9,7 @@ import 'sdk_embedder_test.dart' as embedder;
 import 'sdk_hand_landmarker_test.dart' as hand;
 import 'sdk_interactive_segmenter_test.dart' as interactive;
 import 'sdk_landmark_tasks_test.dart' as landmarks;
+import 'sdk_modern_text_test.dart' as modern_text;
 import 'sdk_segmenter_test.dart' as segmenter;
 import 'sdk_text_audio_test.dart' as text_audio;
 
@@ -20,6 +21,10 @@ import 'sdk_text_audio_test.dart' as text_audio;
 // The live tiles run after the suites: they open the camera, which is dark in a
 // device rack. The gallery journey comes last and opens every page the way a
 // user does, through the sidebar.
+// EmbeddingGemma, Proofreader and Summarizer join with SDK_MODERN_TEXT, which
+// the Test Lab build sets: one phone execution covers every suite, while the
+// CI emulator runs them as a launch of their own, since the generative models
+// take minutes on an emulated CPU.
 void main() {
   // The binding reports the run as finished to Android from a tearDownAll it
   // registers when first created. Created inside a suite's group, it would end
@@ -33,6 +38,9 @@ void main() {
   group('segmenter', segmenter.main);
   group('interactive segmenter', interactive.main);
   group('text and audio', text_audio.main);
+  if (const bool.fromEnvironment('SDK_MODERN_TEXT')) {
+    group('modern text', modern_text.main);
+  }
   group('live tiles', runtime.main);
   group('gallery journey', journey.main);
 }
