@@ -64,7 +64,9 @@ declarations.
   `native_text_proofreader.dart` and `native_text_summarizer.dart` take the
   host from core's `mpHostSystem`. The text package's build hook compiles the
   callback-copy bridge (`native/text_stream_bridge.c`) for every target core
-  has a runtime for. On iOS, core's `native/ios/text_sdk_bridge.mm` implements
+  has a runtime for; its functions carry `__declspec(dllexport)` on Windows,
+  where a DLL exports nothing by default (the first Windows run found every
+  streaming call failing to resolve `MpFlutterTextStreamCreate`). On iOS, core's `native/ios/text_sdk_bridge.mm` implements
   `MpTextProofreader*` and `MpTextSummarizer*` over Google's Objective-C
   classes, with streaming completions calling the C callback the bridge
   expects.
