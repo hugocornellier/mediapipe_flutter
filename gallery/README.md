@@ -76,7 +76,9 @@ Three gates, in order:
    and the Summarizer (419 MB of models) are bundled only when `--tasks` names
    them, as the simulator, emulator and browser test builds do, with Google's
    references for their suite from `--modern-text-reference` or the text
-   package's checked-in fixtures.
+   package's checked-in fixtures. Bundled, they are tiles like the classic
+   text tasks: EmbeddingGemma everywhere, the Proofreader and Summarizer
+   wherever Google's runtime has them, so a browser shows their cards.
 2. **Validated**: `lib/catalog.dart` asks the package's own capability query.
    Nothing restates support by hand, so a task validated on a new platform
    appears here with no code change.
