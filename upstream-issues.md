@@ -817,7 +817,13 @@ different text than `summarize` returned for the same input and task (the
 macOS arm64 wheels agree on every case). The reference generators therefore
 record both paths and note whether they agreed (`stream_matches_result`),
 and the desktop tests compare the package's completed and streamed results
-each with Google's own for that path.
+each with Google's own for that path. The text also depends on the requests
+before it on the same task: on the Windows 1.0.0 wheel, the same summary
+streamed as the first request of a fresh task ended "if no critical bugs
+remain" where the reference, recorded after a completed request, ended "if
+no bugs remain". The tests that compare exactly replay the generator's
+request order; the lifecycle tests, which do not, require the text to follow
+Google's for 80 characters or in full when shorter.
 
 `gallery/integration_test/sdk_modern_text_test.dart` therefore requires
 every generated text to follow Google's for at least 80 characters, or in
