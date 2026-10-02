@@ -1,5 +1,8 @@
 ## 0.2.0
 
+- The Android plugin builds on core's `TaskHost` for its worker thread,
+  model buffers and channel handling, keeping only what Google's vision
+  SDK needs; the channel's methods and results are unchanged.
 - Breaking: every task is one class with the same API on Android, iOS,
   macOS, Linux, Windows and the web, and `mediapipe_vision.dart` is the only
   app library. `interface.dart`, `vision_native.dart`, `capabilities.dart` and

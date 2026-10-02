@@ -1,5 +1,8 @@
 ## 0.2.0
 
+- The Android plugin builds on core's `TaskHost` for its worker thread,
+  model buffers and channel handling, keeping only what Google's text
+  SDK needs; the channel's methods and results are unchanged.
 - Breaking: every task is one class with the same API on every platform,
   created with `await Xxx.create(options)`, and `mediapipe_text.dart` is the
   only app library. See MIGRATION.md.

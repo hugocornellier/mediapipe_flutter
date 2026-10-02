@@ -61,6 +61,7 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 import com.google.mediapipe.util.proto.LabelMapProto.LabelMapItem;
 import com.google.protobuf.ExtensionRegistryLite;
 import com.google.protobuf.InvalidProtocolBufferException;
+import dev.mediapipe.flutter.core.TaskHost;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
@@ -79,17 +80,30 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Google's unmodified task graphs, serialized on the thread owning their GPU contexts. */
-public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel.MethodCallHandler {
+/**
+ * Google's unmodified task graphs, serialized on the thread owning their GPU contexts: core's
+ * {@link TaskHost} creates, runs and closes every task on its worker and keeps their model
+ * buffers; this plugin adds the GPU probe and the masks channel.
+ */
+public final class MediaPipeVisionPlugin implements FlutterPlugin {
   /** One official task. Only the worker thread creates, runs and closes it. */
-  private interface Task extends AutoCloseable {
+  private interface Task extends TaskHost.Task {
     /** Runs one image; [timestamp] is null in IMAGE mode. Copies the result. */
     Map<String, Object> detect(MPImage image, ImageProcessingOptions processing, Long timestamp);
+
+    /** The family's methods, which the host hands over on its worker. */
+    @Override default Object call(String method, MethodCall call) throws Exception {
+      switch (method) {
+        case "detect": return MediaPipeVisionPlugin.detect(this, call);
+        case "setImage": setImage(decode(call)); return null;
+        case "segment": return segment(call.argument("strokes"));
+        default: throw new IllegalArgumentException("Unsupported method: " + method);
+      }
+    }
 
     /** Replaces a stateful task's image, which it keeps until the next one. */
     default void setImage(Bitmap bitmap) {
@@ -110,15 +124,10 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
   private static final String TAG = "MediaPipeVision";
   private static final String MASKS = "mediapipe_vision/android/masks";
 
-  private MethodChannel channel;
   private BinaryMessenger messenger;
   private Context context;
-  private ExecutorService worker;
+  private TaskHost host;
   private final Handler main = new Handler(Looper.getMainLooper());
-  // Only the worker accesses tasks, including create and close.
-  private final Map<Integer, Task> tasks = new HashMap<>();
-  private final Map<Integer, ByteBuffer> modelBuffers = new HashMap<>();
-  private int nextId;
   // Masks in native memory, each fetched once, right after the detect reply
   // that names it. The worker adds them; the platform thread takes them.
   private final Map<Integer, ByteBuffer> maskData = new ConcurrentHashMap<>();
@@ -127,61 +136,30 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
 
   @Override public void onAttachedToEngine(FlutterPluginBinding binding) {
     context = binding.getApplicationContext();
-    worker = Executors.newSingleThreadExecutor(r -> new Thread(r, "MediaPipe vision tasks"));
     messenger = binding.getBinaryMessenger();
-    channel = new MethodChannel(messenger, "mediapipe_vision/android");
-    channel.setMethodCallHandler(this);
+    host = new TaskHost(messenger, "mediapipe_vision/android", "MediaPipe vision tasks",
+        this::create, Set.of("detect", "setImage", "segment"), this::gpuRenderer);
     messenger.setMessageHandler(MASKS, (message, reply) -> reply.reply(message == null ? null
         : maskData.remove(message.order(ByteOrder.LITTLE_ENDIAN).getInt(0))));
   }
 
   @Override public void onDetachedFromEngine(FlutterPluginBinding binding) {
-    channel.setMethodCallHandler(null);
+    host.detach();
     messenger.setMessageHandler(MASKS, null);
     maskData.clear();
-    worker.execute(() -> {
-      for (Task task : tasks.values()) {
-        try { task.close(); } catch (RuntimeException ignored) { }
-      }
-      tasks.clear();
-      modelBuffers.clear();
-    });
-    worker.shutdown();
   }
 
-  @Override public void onMethodCall(MethodCall call, MethodChannel.Result reply) {
-    if ("gpuRenderer".equals(call.method)) {
-      // Not on the worker: probing makes a GL context current on its thread.
-      new Thread(() -> {
-        String name = gpuName();
-        main.post(() -> reply.success(name));
-      }, "MediaPipe GPU name").start();
-      return;
-    }
-    if (!Arrays.asList("create", "detect", "setImage", "segment", "close").contains(call.method)) {
+  /** The one method outside the host's: the GPU's name, for the capabilities. */
+  private void gpuRenderer(MethodCall call, MethodChannel.Result reply) {
+    if (!"gpuRenderer".equals(call.method)) {
       reply.notImplemented();
       return;
     }
-    worker.execute(() -> {
-      try {
-        Object value;
-        switch (call.method) {
-          case "create": value = create(call); break;
-          case "detect": value = detect(call); break;
-          case "setImage": task(call).setImage(decode(call)); value = null; break;
-          case "segment": value = task(call).segment(call.argument("strokes")); break;
-          default:
-            int id = number(call, "id").intValue();
-            Task task = tasks.remove(id);
-            try { if (task != null) task.close(); }
-            finally { modelBuffers.remove(id); }
-            value = null;
-        }
-        main.post(() -> reply.success(value));
-      } catch (Exception | LinkageError error) {
-        main.post(() -> reply.error("mediapipe", error.toString(), null));
-      }
-    });
+    // Not on the worker: probing makes a GL context current on its thread.
+    new Thread(() -> {
+      String name = gpuName();
+      main.post(() -> reply.success(name));
+    }, "MediaPipe GPU name").start();
   }
 
   // The GPU's GL renderer and vendor, read once. Empty when no GLES context can
@@ -248,22 +226,18 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
     return name;
   }
 
-  private int create(MethodCall call) {
+  private TaskHost.Task create(MethodCall call, TaskHost.Model model) {
     BaseOptions.Builder base = BaseOptions.builder();
-    byte[] model = call.argument("modelBytes");
     String name = call.argument("task");
-    ByteBuffer buffer = null;
     File modelFile = null;
-    if (model != null && "interactive_segmenter".equals(name)) {
+    if (model.bytes() != null && "interactive_segmenter".equals(name)) {
       // UP-022: this task drops a model buffer, so it gets a private copy on disk.
-      modelFile = writeModel(model);
+      modelFile = writeModel(model.bytes());
       base.setModelAssetPath(modelFile.getAbsolutePath());
-    } else if (model != null) {
-      buffer = ByteBuffer.allocateDirect(model.length);
-      buffer.put(model).rewind();
-      base.setModelAssetBuffer(buffer);
+    } else if (model.bytes() != null) {
+      base.setModelAssetBuffer(model.direct());
     } else {
-      base.setModelAssetPath(call.argument("modelPath"));
+      base.setModelAssetPath(model.path());
     }
     String delegate = call.argument("delegate");
     if (!"cpu".equals(delegate) && !"gpu".equals(delegate)) {
@@ -282,33 +256,26 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
     // being emulated on VIDEO: detectAsync with a result listener, results sent
     // over an event channel. See RunningMode.liveStream in mediapipe_vision.
     RunningMode mode = "video".equals(call.argument("mode")) ? RunningMode.VIDEO : RunningMode.IMAGE;
-    Task task;
     switch (name == null ? "" : name) {
-      case "face_landmarker": task = face(base.build(), mode, call); break;
-      case "hand_landmarker": task = hand(base.build(), mode, call); break;
-      case "pose_landmarker": task = pose(base.build(), mode, call); break;
-      case "gesture_recognizer": task = gesture(base.build(), mode, call); break;
-      case "holistic_landmarker": task = holistic(base.build(), mode, call); break;
-      case "face_detector": task = faceDetector(base.build(), mode, call); break;
-      case "object_detector": task = objectDetector(base.build(), mode, call); break;
-      case "image_classifier": task = imageClassifier(base.build(), mode, call); break;
-      case "image_embedder": task = imageEmbedder(base.build(), mode, call); break;
-      case "image_segmenter": task = imageSegmenter(base.build(), mode, call); break;
+      case "face_landmarker": return face(base.build(), mode, call);
+      case "hand_landmarker": return hand(base.build(), mode, call);
+      case "pose_landmarker": return pose(base.build(), mode, call);
+      case "gesture_recognizer": return gesture(base.build(), mode, call);
+      case "holistic_landmarker": return holistic(base.build(), mode, call);
+      case "face_detector": return faceDetector(base.build(), mode, call);
+      case "object_detector": return objectDetector(base.build(), mode, call);
+      case "image_classifier": return imageClassifier(base.build(), mode, call);
+      case "image_embedder": return imageEmbedder(base.build(), mode, call);
+      case "image_segmenter": return imageSegmenter(base.build(), mode, call);
       case "interactive_segmenter":
         try {
-          task = interactiveSegmenter(base.build(), modelFile);
+          return interactiveSegmenter(base.build(), modelFile);
         } catch (RuntimeException error) {
           if (modelFile != null) modelFile.delete();
           throw error;
         }
-        break;
       default: throw new IllegalArgumentException("Unsupported task: " + name);
     }
-    int id = nextId++;
-    tasks.put(id, task);
-    // Retain direct model storage for the task's entire native lifetime.
-    if (buffer != null) modelBuffers.put(id, buffer);
-    return id;
   }
 
   private Task face(BaseOptions base, RunningMode mode, MethodCall call) {
@@ -316,10 +283,10 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
         FaceLandmarker.FaceLandmarkerOptions.builder()
             .setBaseOptions(base)
             .setRunningMode(mode)
-            .setNumFaces(number(call, "numFaces").intValue())
-            .setMinFaceDetectionConfidence(number(call, "detectionConfidence").floatValue())
-            .setMinFacePresenceConfidence(number(call, "presenceConfidence").floatValue())
-            .setMinTrackingConfidence(number(call, "trackingConfidence").floatValue())
+            .setNumFaces(TaskHost.number(call, "numFaces"))
+            .setMinFaceDetectionConfidence(TaskHost.decimal(call, "detectionConfidence"))
+            .setMinFacePresenceConfidence(TaskHost.decimal(call, "presenceConfidence"))
+            .setMinTrackingConfidence(TaskHost.decimal(call, "trackingConfidence"))
             .setOutputFaceBlendshapes(Boolean.TRUE.equals(call.argument("blendshapes")))
             .setOutputFacialTransformationMatrixes(Boolean.TRUE.equals(call.argument("matrices")))
             .build());
@@ -355,10 +322,10 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
         HandLandmarker.HandLandmarkerOptions.builder()
             .setBaseOptions(base)
             .setRunningMode(mode)
-            .setNumHands(number(call, "numHands").intValue())
-            .setMinHandDetectionConfidence(number(call, "detectionConfidence").floatValue())
-            .setMinHandPresenceConfidence(number(call, "presenceConfidence").floatValue())
-            .setMinTrackingConfidence(number(call, "trackingConfidence").floatValue())
+            .setNumHands(TaskHost.number(call, "numHands"))
+            .setMinHandDetectionConfidence(TaskHost.decimal(call, "detectionConfidence"))
+            .setMinHandPresenceConfidence(TaskHost.decimal(call, "presenceConfidence"))
+            .setMinTrackingConfidence(TaskHost.decimal(call, "trackingConfidence"))
             .build());
     return new Task() {
       @Override public Map<String, Object> detect(MPImage image, ImageProcessingOptions processing,
@@ -383,10 +350,10 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
         PoseLandmarker.PoseLandmarkerOptions.builder()
             .setBaseOptions(base)
             .setRunningMode(mode)
-            .setNumPoses(number(call, "numPoses").intValue())
-            .setMinPoseDetectionConfidence(number(call, "detectionConfidence").floatValue())
-            .setMinPosePresenceConfidence(number(call, "presenceConfidence").floatValue())
-            .setMinTrackingConfidence(number(call, "trackingConfidence").floatValue())
+            .setNumPoses(TaskHost.number(call, "numPoses"))
+            .setMinPoseDetectionConfidence(TaskHost.decimal(call, "detectionConfidence"))
+            .setMinPosePresenceConfidence(TaskHost.decimal(call, "presenceConfidence"))
+            .setMinTrackingConfidence(TaskHost.decimal(call, "trackingConfidence"))
             .setOutputSegmentationMasks(Boolean.TRUE.equals(call.argument("masks")))
             .build());
     return new Task() {
@@ -410,10 +377,10 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
         GestureRecognizer.GestureRecognizerOptions.builder()
             .setBaseOptions(base)
             .setRunningMode(mode)
-            .setNumHands(number(call, "numHands").intValue())
-            .setMinHandDetectionConfidence(number(call, "detectionConfidence").floatValue())
-            .setMinHandPresenceConfidence(number(call, "presenceConfidence").floatValue())
-            .setMinTrackingConfidence(number(call, "trackingConfidence").floatValue())
+            .setNumHands(TaskHost.number(call, "numHands"))
+            .setMinHandDetectionConfidence(TaskHost.decimal(call, "detectionConfidence"))
+            .setMinHandPresenceConfidence(TaskHost.decimal(call, "presenceConfidence"))
+            .setMinTrackingConfidence(TaskHost.decimal(call, "trackingConfidence"))
             .setCannedGesturesClassifierOptions(classifier(call.argument("canned")))
             .setCustomGesturesClassifierOptions(classifier(call.argument("custom")))
             .build());
@@ -443,13 +410,13 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
         HolisticLandmarker.HolisticLandmarkerOptions.builder()
             .setBaseOptions(base)
             .setRunningMode(mode)
-            .setMinFaceDetectionConfidence(number(call, "faceDetectionConfidence").floatValue())
-            .setMinFaceSuppressionThreshold(number(call, "faceSuppressionThreshold").floatValue())
-            .setMinFacePresenceConfidence(number(call, "facePresenceConfidence").floatValue())
-            .setMinHandLandmarksConfidence(number(call, "handLandmarksConfidence").floatValue())
-            .setMinPoseDetectionConfidence(number(call, "poseDetectionConfidence").floatValue())
-            .setMinPoseSuppressionThreshold(number(call, "poseSuppressionThreshold").floatValue())
-            .setMinPosePresenceConfidence(number(call, "posePresenceConfidence").floatValue())
+            .setMinFaceDetectionConfidence(TaskHost.decimal(call, "faceDetectionConfidence"))
+            .setMinFaceSuppressionThreshold(TaskHost.decimal(call, "faceSuppressionThreshold"))
+            .setMinFacePresenceConfidence(TaskHost.decimal(call, "facePresenceConfidence"))
+            .setMinHandLandmarksConfidence(TaskHost.decimal(call, "handLandmarksConfidence"))
+            .setMinPoseDetectionConfidence(TaskHost.decimal(call, "poseDetectionConfidence"))
+            .setMinPoseSuppressionThreshold(TaskHost.decimal(call, "poseSuppressionThreshold"))
+            .setMinPosePresenceConfidence(TaskHost.decimal(call, "posePresenceConfidence"))
             .setOutputFaceBlendshapes(Boolean.TRUE.equals(call.argument("blendshapes")))
             .setOutputPoseSegmentationMasks(Boolean.TRUE.equals(call.argument("masks")))
             .build());
@@ -481,8 +448,8 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
         FaceDetector.FaceDetectorOptions.builder()
             .setBaseOptions(base)
             .setRunningMode(mode)
-            .setMinDetectionConfidence(number(call, "detectionConfidence").floatValue())
-            .setMinSuppressionThreshold(number(call, "suppressionThreshold").floatValue())
+            .setMinDetectionConfidence(TaskHost.decimal(call, "detectionConfidence"))
+            .setMinSuppressionThreshold(TaskHost.decimal(call, "suppressionThreshold"))
             .build());
     return new Task() {
       @Override public Map<String, Object> detect(MPImage image, ImageProcessingOptions processing,
@@ -835,20 +802,14 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
     return options.build();
   }
 
-  private Task task(MethodCall call) {
-    Task task = tasks.get(number(call, "id").intValue());
-    if (task == null) throw new IllegalStateException("MediaPipe task has been disposed");
-    return task;
-  }
-
-  private Object detect(MethodCall call) throws Exception {
-    Task task = task(call);
+  /** Decodes the request's image, runs [task] on it and adds the image's size. */
+  private static Object detect(Task task, MethodCall call) throws Exception {
     Bitmap bitmap = decode(call);
     try {
       MPImage image = new BitmapImageBuilder(bitmap).build();
       try {
         ImageProcessingOptions.Builder options = ImageProcessingOptions.builder()
-            .setRotationDegrees(number(call, "rotation").intValue());
+            .setRotationDegrees(TaskHost.number(call, "rotation"));
         List<Number> region = call.argument("region");
         if (region != null) {
           options.setRegionOfInterest(new RectF(region.get(0).floatValue(),
@@ -909,12 +870,6 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
     return copied;
   }
 
-  private static Number number(MethodCall call, String key) {
-    Number value = call.argument(key);
-    if (value == null) throw new IllegalArgumentException("Missing " + key);
-    return value;
-  }
-
   private static Bitmap decode(MethodCall call) throws Exception {
     String path = call.argument("path");
     if (path != null) {
@@ -939,9 +894,9 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin, MethodChannel
         return oriented;
       } catch (Exception error) { bitmap.recycle(); throw error; }
     }
-    int width = number(call, "width").intValue();
-    int height = number(call, "height").intValue();
-    int stride = number(call, "stride").intValue();
+    int width = TaskHost.number(call, "width");
+    int height = TaskHost.number(call, "height");
+    int stride = TaskHost.number(call, "stride");
     byte[] bytes = call.argument("pixels");
     String format = call.argument("format");
     int channels = "rgb".equals(format) ? 3 : 4;
