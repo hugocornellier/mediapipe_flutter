@@ -1,5 +1,14 @@
 ## 0.2.0
 
+- `RunningMode.liveStream` no longer throws: every camera-capable task
+  creates in live stream mode on every platform, the web included, with
+  `detectAsync` (`recognizeAsync`, `classifyAsync`, `embedAsync`,
+  `segmentAsync`), a `results` stream and `droppedFrames`. Google's flow
+  limiter (one frame in flight, the newest one waiting) runs in front of
+  Google's VIDEO graph, so a frame that runs gets the result Google's
+  LIVE_STREAM gives it, and a dropped frame is never copied to the runtime.
+  `VisionImage.deferred` lets a live stream frame be converted only when the
+  task starts it, so a dropped frame costs no conversion either.
 - The Android plugin builds on core's `TaskHost` for its worker thread,
   model buffers and channel handling, keeping only what Google's vision
   SDK needs; the channel's methods and results are unchanged.

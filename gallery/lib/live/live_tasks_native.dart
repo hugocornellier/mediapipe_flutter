@@ -6,7 +6,7 @@ import 'live_camera_controller.dart';
 import 'task_settings.dart';
 
 /// Each adapter is only the two things that differ between live demos: how the
-/// task is built, and how one frame runs through it.
+/// task is built, and which of its methods takes a frame.
 final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
   @override
   final settings = TaskSettingValues('face_landmarker');
@@ -20,7 +20,7 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await FaceLandmarker.create(
       FaceLandmarkerOptions(
@@ -44,15 +44,23 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
       _task!.detect(image);
 
   @override
-  Future<FaceLandmarkerResult> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.detectForVideo(
+  }) => _task!.detectAsync(
     frame,
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
+
+  @override
+  Stream<LiveResult<FaceLandmarkerResult>> get results => _task!.results.map(
+    (result) => (timestamp: result.timestampMilliseconds!, result: result),
+  );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
 
   @override
   Future<void> close() async {
@@ -75,7 +83,7 @@ final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await HandLandmarker.create(
       HandLandmarkerOptions(
@@ -97,15 +105,23 @@ final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
       _task!.detect(image);
 
   @override
-  Future<HandLandmarkerResult> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.detectForVideo(
+  }) => _task!.detectAsync(
     frame,
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
+
+  @override
+  Stream<LiveResult<HandLandmarkerResult>> get results => _task!.results.map(
+    (result) => (timestamp: result.timestampMilliseconds!, result: result),
+  );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
 
   @override
   Future<void> close() async {
@@ -129,7 +145,7 @@ final class GestureRecognizerLiveTask
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await GestureRecognizer.create(
       GestureRecognizerOptions(
@@ -155,15 +171,23 @@ final class GestureRecognizerLiveTask
       _task!.recognize(image);
 
   @override
-  Future<GestureRecognizerResult> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.recognizeForVideo(
+  }) => _task!.recognizeAsync(
     frame,
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
+
+  @override
+  Stream<LiveResult<GestureRecognizerResult>> get results => _task!.results.map(
+    (result) => (timestamp: result.timestampMilliseconds!, result: result),
+  );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
 
   @override
   Future<void> close() async {
@@ -187,7 +211,7 @@ final class HolisticLandmarkerLiveTask
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await HolisticLandmarker.create(
       HolisticLandmarkerOptions(
@@ -221,15 +245,24 @@ final class HolisticLandmarkerLiveTask
       _task!.detect(image);
 
   @override
-  Future<HolisticLandmarkerResult> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.detectForVideo(
+  }) => _task!.detectAsync(
     frame,
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
+
+  @override
+  Stream<LiveResult<HolisticLandmarkerResult>> get results =>
+      _task!.results.map(
+        (result) => (timestamp: result.timestampMilliseconds!, result: result),
+      );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
 
   @override
   Future<void> close() async {
@@ -252,7 +285,7 @@ final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await PoseLandmarker.create(
       PoseLandmarkerOptions(
@@ -275,15 +308,23 @@ final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
       _task!.detect(image);
 
   @override
-  Future<PoseLandmarkerResult> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.detectForVideo(
+  }) => _task!.detectAsync(
     frame,
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
+
+  @override
+  Stream<LiveResult<PoseLandmarkerResult>> get results => _task!.results.map(
+    (result) => (timestamp: result.timestampMilliseconds!, result: result),
+  );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
 
   @override
   Future<void> close() async {
@@ -306,7 +347,7 @@ final class FaceDetectorLiveTask implements LiveTask<FaceDetectorResult> {
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await FaceDetector.create(
       FaceDetectorOptions(
@@ -324,15 +365,23 @@ final class FaceDetectorLiveTask implements LiveTask<FaceDetectorResult> {
       _task!.detect(image);
 
   @override
-  Future<FaceDetectorResult> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.detectForVideo(
+  }) => _task!.detectAsync(
     frame,
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
+
+  @override
+  Stream<LiveResult<FaceDetectorResult>> get results => _task!.results.map(
+    (result) => (timestamp: result.timestampMilliseconds!, result: result),
+  );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
 
   @override
   Future<void> close() async {
@@ -355,7 +404,7 @@ final class ObjectDetectorLiveTask implements LiveTask<ObjectDetectorResult> {
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await ObjectDetector.create(
       ObjectDetectorOptions(
@@ -373,15 +422,23 @@ final class ObjectDetectorLiveTask implements LiveTask<ObjectDetectorResult> {
       _task!.detect(image);
 
   @override
-  Future<ObjectDetectorResult> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.detectForVideo(
+  }) => _task!.detectAsync(
     frame,
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
+
+  @override
+  Stream<LiveResult<ObjectDetectorResult>> get results => _task!.results.map(
+    (result) => (timestamp: result.timestampMilliseconds!, result: result),
+  );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
 
   @override
   Future<void> close() async {
@@ -404,7 +461,7 @@ final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await ImageClassifier.create(
       ImageClassifierOptions(
@@ -422,15 +479,23 @@ final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
       _task!.classify(image);
 
   @override
-  Future<ImageClassifierResult> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.classifyForVideo(
+  }) => _task!.classifyAsync(
     frame,
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
+
+  @override
+  Stream<LiveResult<ImageClassifierResult>> get results => _task!.results.map(
+    (result) => (timestamp: result.timestampMilliseconds!, result: result),
+  );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
 
   @override
   Future<void> close() async {
@@ -455,7 +520,7 @@ final class ImageSegmenterLiveTask implements LiveTask<ImageSegmenterResult> {
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await ImageSegmenter.create(
       ImageSegmenterOptions(
@@ -473,15 +538,23 @@ final class ImageSegmenterLiveTask implements LiveTask<ImageSegmenterResult> {
       _task!.segment(image);
 
   @override
-  Future<ImageSegmenterResult> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.segmentForVideo(
+  }) => _task!.segmentAsync(
     frame,
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
+
+  @override
+  Stream<LiveResult<ImageSegmenterResult>> get results => _task!.results.map(
+    (result) => (timestamp: result.timestampMilliseconds!, result: result),
+  );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
 
   @override
   Future<void> close() async {

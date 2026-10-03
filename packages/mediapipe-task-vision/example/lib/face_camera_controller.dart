@@ -6,12 +6,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
-/// Owns camera capture and the official VIDEO-mode Face Landmarker for this demo.
+/// Owns camera capture and the official Face Landmarker in live stream mode
+/// for this demo: every camera frame is submitted as it arrives, and the
+/// task drops the frames it has no time for.
 class FaceCameraController extends ChangeNotifier {
   CameraController? _camera;
   FaceLandmarker? _landmarker;
+  StreamSubscription<FaceLandmarkerResult>? _results;
+
+  /// When each frame not yet answered arrived, by timestamp.
+  final _arrived = <int, int>{};
+  int _lastResultMicroseconds = 0;
   Future<void> _operations = Future.value();
-  Future<void>? _frame;
   Future<void>? _closing;
   final _clock = Stopwatch();
   int _generation = 0;
@@ -24,7 +30,11 @@ class FaceCameraController extends ChangeNotifier {
   String? error;
   FaceLandmarkerResult? result;
   int processedFrames = 0;
-  int skippedFrames = 0;
+
+  /// Camera frames the task dropped: one runs and the newest one waits.
+  int get droppedFrames => _landmarker?.droppedFrames ?? 0;
+
+  /// From when the task started the last frame to its result.
   double inferenceMilliseconds = 0;
   Delegate delegate = Delegate.cpu;
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
@@ -69,8 +79,12 @@ class FaceCameraController extends ChangeNotifier {
               data.offsetInBytes,
               data.lengthInBytes,
             ),
-            runningMode: RunningMode.video,
+            runningMode: RunningMode.liveStream,
           ),
+        );
+        _results = _landmarker!.results.listen(
+          (detection) => _onResult(detection, generation),
+          onError: (Object failure) => _onError(failure, generation),
         );
         if (_closed || generation != _generation) {
           await _release();
@@ -90,9 +104,9 @@ class FaceCameraController extends ChangeNotifier {
         }
         camera.addListener(_cameraChanged);
         processedFrames = 0;
-        skippedFrames = 0;
         inferenceMilliseconds = 0;
         _lastTimestamp = -1;
+        _lastResultMicroseconds = 0;
         _clock
           ..reset()
           ..start();
@@ -122,30 +136,12 @@ class FaceCameraController extends ChangeNotifier {
     }
   }
 
-  // TODO: Use live stream mode once LIVE_STREAM is split from VIDEO, and
-  // delete this frame skipping. See RunningMode.liveStream in
-  // mediapipe_vision.
+  /// Stamps and submits every frame as it arrives; the task decides which
+  /// frames run.
   void _onFrame(CameraImage image, int generation) {
     if (!running || _closed || generation != _generation) return;
-    if (_frame != null) {
-      skippedFrames++;
-      return;
-    }
     final timestamp = math.max(_clock.elapsedMilliseconds, _lastTimestamp + 1);
     _lastTimestamp = timestamp;
-    _frame = _process(
-      image,
-      generation,
-      timestamp,
-    ).whenComplete(() => _frame = null);
-  }
-
-  Future<void> _process(
-    CameraImage image,
-    int generation,
-    int timestamp,
-  ) async {
-    final timer = Stopwatch()..start();
     try {
       if (image.format.group != ImageFormatGroup.bgra8888 ||
           image.planes.length != 1) {
@@ -163,20 +159,34 @@ class FaceCameraController extends ChangeNotifier {
             ? VisionPixelFormat.rgba
             : VisionPixelFormat.bgra,
       );
-      final detection = await _landmarker!.detectForVideo(
-        frame,
-        timestampMilliseconds: timestamp,
-      );
-      if (_closed || generation != _generation) return;
-      result = detection;
-      inferenceMilliseconds = timer.elapsedMicroseconds / 1000;
-      processedFrames++;
-      _changed();
+      _arrived[timestamp] = _clock.elapsedMicroseconds;
+      _landmarker!.detectAsync(frame, timestampMilliseconds: timestamp);
     } catch (failure) {
-      if (_closed || generation != _generation) return;
-      error = _message(failure);
-      unawaited(stop());
+      _onError(failure, generation);
     }
+  }
+
+  void _onResult(FaceLandmarkerResult detection, int generation) {
+    final now = _clock.elapsedMicroseconds;
+    final timestamp = detection.timestampMilliseconds!;
+    final arrived = _arrived.remove(timestamp);
+    // The frames before it that got no result were dropped.
+    _arrived.removeWhere((other, _) => other < timestamp);
+    // The task started this frame when it arrived, or when the frame before
+    // it finished.
+    final started = math.max(arrived ?? now, _lastResultMicroseconds);
+    _lastResultMicroseconds = now;
+    if (!running || _closed || generation != _generation) return;
+    result = detection;
+    inferenceMilliseconds = (now - started) / 1000;
+    processedFrames++;
+    _changed();
+  }
+
+  void _onError(Object failure, int generation) {
+    if (_closed || generation != _generation) return;
+    error = _message(failure);
+    unawaited(stop());
   }
 
   Future<void> stop() {
@@ -213,18 +223,21 @@ class FaceCameraController extends ChangeNotifier {
         }
       }
     }
-    await _frame;
     final landmarker = _landmarker;
     _landmarker = null;
     try {
+      // Runs the frames already submitted; their results are not shown.
       await landmarker?.dispose();
     } catch (failure) {
       error ??= _message(failure);
     }
+    await _results?.cancel();
+    _results = null;
+    _arrived.clear();
     _clock.stop();
   }
 
-  /// Waits for capture and in-flight inference to stop before releasing resources.
+  /// Stops capture, then releases the task after the frames it holds.
   Future<void> close() {
     if (_closing != null) return _closing!;
     _closed = true;

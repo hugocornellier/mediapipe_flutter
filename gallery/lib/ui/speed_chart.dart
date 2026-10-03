@@ -88,6 +88,7 @@ class _StatsCardState extends State<StatsCard> {
                             ? !_hidden.contains(delegate)
                             : null,
                         milliseconds: history.recent(delegate),
+                        droppedPerSecond: history.droppedPerSecond(delegate),
                         onChanged: (on) => setState(
                           () => on
                               ? _hidden.remove(delegate)
@@ -193,7 +194,8 @@ class _StatsCardState extends State<StatsCard> {
 }
 
 /// A legend entry: a checkbox in the series color when [checked] is not null,
-/// the delegate, and its recent inference time.
+/// the delegate, its recent inference time and the camera frames it recently
+/// dropped per second.
 class SeriesToggle extends StatelessWidget {
   const SeriesToggle({
     super.key,
@@ -201,6 +203,7 @@ class SeriesToggle extends StatelessWidget {
     required this.color,
     required this.checked,
     required this.milliseconds,
+    this.droppedPerSecond,
     required this.onChanged,
   });
 
@@ -208,6 +211,7 @@ class SeriesToggle extends StatelessWidget {
   final Color color;
   final bool? checked;
   final double? milliseconds;
+  final double? droppedPerSecond;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -256,6 +260,17 @@ class SeriesToggle extends StatelessWidget {
           const SizedBox(width: 7),
           Text(
             '${ms.toStringAsFixed(1)} ms',
+            style: TextStyle(
+              color: c.muted,
+              fontSize: Sizes.sm,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+        if (droppedPerSecond case final dropped?) ...[
+          const SizedBox(width: 7),
+          Text(
+            '${dropped.toStringAsFixed(1)} dropped/s',
             style: TextStyle(
               color: c.muted,
               fontSize: Sizes.sm,

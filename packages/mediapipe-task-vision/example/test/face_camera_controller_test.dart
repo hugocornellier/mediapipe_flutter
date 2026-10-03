@@ -136,48 +136,48 @@ void main() {
     CameraPlatform.instance = previous;
   });
 
-  test(
-    'camera frames reach official VIDEO inference, busy frames are skipped, and capture restarts',
-    () async {
-      await session.start(_description);
-      expect(session.error, isNull);
-      expect(session.running, isTrue);
-      final image = _portrait();
-      for (var i = 0; i < 12; i++) {
-        platform.frames.add(image);
-      }
-      await _until(() => session.processedFrames == 1 || session.error != null);
-      expect(session.error, isNull);
-      expect(session.skippedFrames, 11);
-      expect(session.result!.faceLandmarks, hasLength(1));
-      expect(session.result!.faceLandmarks.single, hasLength(478));
-      final timestamp = session.result!.timestampMilliseconds!;
-      await Future<void>.delayed(const Duration(milliseconds: 2));
+  test('camera frames reach official live stream inference, the task drops '
+      'the ones it has no time for, and capture restarts', () async {
+    await session.start(_description);
+    expect(session.error, isNull);
+    expect(session.running, isTrue);
+    final image = _portrait();
+    for (var i = 0; i < 12; i++) {
       platform.frames.add(image);
-      await _until(() => session.processedFrames == 2);
-      expect(session.result!.timestampMilliseconds, greaterThan(timestamp));
-      // Stop with another inference potentially in flight; late results cannot
-      // restore the stopped UI or keep the camera stream subscribed.
-      platform.frames.add(image);
-      await session.stop();
-      expect(session.running, isFalse);
-      expect(session.result, isNull);
-      expect(platform.frames.hasListener, isFalse);
-      expect(platform.disposed, 1);
-      // Switch backend after draining the old task, then switch back below.
-      await session.start(_description, delegate: Delegate.gpu);
-      expect(session.delegate, Delegate.gpu);
-      expect(session.error, isNull);
-      platform.frames.add(image);
-      await _until(() => session.processedFrames == 1);
-      expect(session.result!.faceLandmarks, hasLength(1));
-      await session.start(_description, delegate: Delegate.cpu);
-      expect(session.delegate, Delegate.cpu);
-      platform.frames.add(image);
-      await _until(() => session.processedFrames == 1);
-      expect(session.result!.faceLandmarks.single, hasLength(478));
-    },
-  );
+    }
+    // The first frame runs and the twelfth waits; the ten between were
+    // each replaced by a newer one.
+    await _until(() => session.processedFrames == 2 || session.error != null);
+    expect(session.error, isNull);
+    expect(session.droppedFrames, 10);
+    expect(session.result!.faceLandmarks, hasLength(1));
+    expect(session.result!.faceLandmarks.single, hasLength(478));
+    final timestamp = session.result!.timestampMilliseconds!;
+    await Future<void>.delayed(const Duration(milliseconds: 2));
+    platform.frames.add(image);
+    await _until(() => session.processedFrames == 3);
+    expect(session.result!.timestampMilliseconds, greaterThan(timestamp));
+    // Stop with another inference potentially in flight; late results cannot
+    // restore the stopped UI or keep the camera stream subscribed.
+    platform.frames.add(image);
+    await session.stop();
+    expect(session.running, isFalse);
+    expect(session.result, isNull);
+    expect(platform.frames.hasListener, isFalse);
+    expect(platform.disposed, 1);
+    // Switch backend after draining the old task, then switch back below.
+    await session.start(_description, delegate: Delegate.gpu);
+    expect(session.delegate, Delegate.gpu);
+    expect(session.error, isNull);
+    platform.frames.add(image);
+    await _until(() => session.processedFrames == 1);
+    expect(session.result!.faceLandmarks, hasLength(1));
+    await session.start(_description, delegate: Delegate.cpu);
+    expect(session.delegate, Delegate.cpu);
+    platform.frames.add(image);
+    await _until(() => session.processedFrames == 1);
+    expect(session.result!.faceLandmarks.single, hasLength(478));
+  });
 
   test(
     'stop during camera initialization cancels capture and releases resources',

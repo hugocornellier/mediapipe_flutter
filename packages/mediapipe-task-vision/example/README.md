@@ -40,10 +40,11 @@ bundle, which includes a short-range face detector; small distant faces can be m
 
 ## Frame handling
 
-The landmarker runs in official VIDEO mode on its worker isolate, with one face
-and MediaPipe's built-in tracking/smoothing. The demo gives
-each submitted frame a strictly increasing elapsed-time timestamp and allows
-one inference at a time, skipping incoming frames while busy. The worker converts
+The landmarker runs in live stream mode on its worker isolate, with one face
+and MediaPipe's built-in tracking/smoothing. The demo gives each camera frame
+a strictly increasing elapsed-time timestamp when it arrives and submits it;
+the task runs one frame at a time, keeps the newest one waiting and drops the
+others, as Google's live stream does. The worker converts
 BGRA to RGBA and removes camera row padding; MediaPipe handles all model
 preprocessing, inference, tracking, and coordinate projection. Blendshapes and
 transformation matrices are available through the package API; this landmark-only
@@ -58,14 +59,14 @@ The example selects both face tasks for its camera and image screens. Verified
 local builds take precedence; macOS downloads are used when local builds are
 absent. The simulator currently requires local CPU libraries. Fixture copies
 and models are prepared from the package's canonical inputs by the command above.
-Native LIVE_STREAM callbacks are not exposed by the Dart wrapper yet; live
-capture here uses the official synchronous VIDEO API off the UI isolate.
+The package runs live stream mode on Google's VIDEO graph, with Google's frame
+dropping in front of it, so a dropped frame never reaches the worker isolate.
 
 ## Tests
 
 `flutter test` exercises the camera controller with padded portrait frames and
 the real native landmarker, including CPU → GPU → CPU switching, 478-point output,
-frame skipping, restart, cancellation during
+frame dropping, restart, cancellation during
 initialization, and recovery after permission denial. These tests need no camera.
 
 To test a real camera, including capture restart:

@@ -252,9 +252,8 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin {
     }
     // GPU initialization failures propagate; never silently substitute CPU.
     base.setDelegate("gpu".equals(delegate) ? Delegate.GPU : Delegate.CPU);
-    // TODO: Map LIVE_STREAM here only if it goes native on Android rather than
-    // being emulated on VIDEO: detectAsync with a result listener, results sent
-    // over an event channel. See RunningMode.liveStream in mediapipe_vision.
+    // The Dart adapter sends LIVE_STREAM as video: it runs on Google's VIDEO
+    // graph, with its flow limiter in the Dart task runner.
     RunningMode mode = "video".equals(call.argument("mode")) ? RunningMode.VIDEO : RunningMode.IMAGE;
     switch (name == null ? "" : name) {
       case "face_landmarker": return face(base.build(), mode, call);

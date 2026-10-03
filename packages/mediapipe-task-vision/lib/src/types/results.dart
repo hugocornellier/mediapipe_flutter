@@ -30,7 +30,8 @@ final class FaceDetectorResult {
   /// Detections in the runtime's order.
   final List<Detection> detections;
 
-  /// The frame's timestamp in video mode, null for a still image.
+  /// The frame's timestamp in video and live stream modes, null for a
+  /// still image.
   final int? timestampMilliseconds;
 
   @override
@@ -59,7 +60,8 @@ final class ObjectDetectorResult {
   /// Detections in the runtime's order.
   final List<Detection> detections;
 
-  /// The frame's timestamp in video mode, null for a still image.
+  /// The frame's timestamp in video and live stream modes, null for a
+  /// still image.
   final int? timestampMilliseconds;
 
   @override
@@ -101,7 +103,8 @@ final class FaceLandmarkerResult {
   /// One 4 x 4 matrix per face; empty when not requested or no face.
   final List<Matrix> facialTransformationMatrixes;
 
-  /// The frame's timestamp in video mode, null for a still image.
+  /// The frame's timestamp in video and live stream modes, null for a
+  /// still image.
   final int? timestampMilliseconds;
 
   @override
@@ -140,7 +143,8 @@ final class HandLandmarkerResult {
   /// Decoded input height.
   final int imageHeight;
 
-  /// The frame's timestamp in video mode, null for a still image.
+  /// The frame's timestamp in video and live stream modes, null for a
+  /// still image.
   final int? timestampMilliseconds;
 
   @override
@@ -187,7 +191,8 @@ final class GestureRecognizerResult {
   /// Decoded input height.
   final int imageHeight;
 
-  /// The frame's timestamp in video mode, null for a still image.
+  /// The frame's timestamp in video and live stream modes, null for a
+  /// still image.
   final int? timestampMilliseconds;
 
   @override
@@ -229,7 +234,8 @@ final class PoseLandmarkerResult {
   /// Decoded input height.
   final int imageHeight;
 
-  /// The frame's timestamp in video mode, null for a still image.
+  /// The frame's timestamp in video and live stream modes, null for a
+  /// still image.
   final int? timestampMilliseconds;
 
   @override
@@ -299,7 +305,8 @@ final class HolisticLandmarkerResult {
   /// Decoded input height.
   final int imageHeight;
 
-  /// The frame's timestamp in video mode, null for a still image.
+  /// The frame's timestamp in video and live stream modes, null for a
+  /// still image.
   final int? timestampMilliseconds;
 
   @override
@@ -330,7 +337,8 @@ final class ImageClassifierResult {
   /// Decoded input height.
   final int imageHeight;
 
-  /// The frame's timestamp in video mode, null for a still image.
+  /// The frame's timestamp in video and live stream modes, null for a
+  /// still image.
   final int? timestampMilliseconds;
 
   @override
@@ -359,7 +367,8 @@ final class ImageEmbedderResult {
   /// Decoded input height.
   final int imageHeight;
 
-  /// The frame's timestamp in video mode, null for a still image.
+  /// The frame's timestamp in video and live stream modes, null for a
+  /// still image.
   final int? timestampMilliseconds;
 
   @override
@@ -412,7 +421,8 @@ final class ImageSegmenterResult {
   /// Height of the processed image.
   final int imageHeight;
 
-  /// The frame's timestamp in video mode, null for a still image.
+  /// The frame's timestamp in video and live stream modes, null for a
+  /// still image.
   final int? timestampMilliseconds;
 
   @override

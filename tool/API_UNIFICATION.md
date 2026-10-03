@@ -1,7 +1,9 @@
 # API unification plan
 
 **Status:** phases 0 to 6 shipped as 0.2.0 on `feat/unified-api`; phase 7
-(streaming) has not started. Core, vision, text and audio now have one public
+(streaming) is under way: vision's live stream mode shipped, the audio stream
+mode has not started
+([LIVE_STREAM.md](../packages/mediapipe-task-vision/tool/LIVE_STREAM.md)). Core, vision, text and audio now have one public
 API that is identical on all six platforms: `tool/api_parity` finds no
 difference between the native and web APIs and no convention gap (its
 baseline is empty), and CI keeps it that way. "Where the API stands" below
@@ -325,10 +327,13 @@ One set of value types in core, named after Google's containers:
 [LIVE_STREAM.md](../packages/mediapipe-task-vision/tool/LIVE_STREAM.md) covers
 vision, and audio's stream mode follows the same design:
 
-- `xxxAsync(input, timestampMilliseconds: ...)` returns at once.
-- Results and errors arrive on the task's `results` stream, a broadcast
-  `Stream`, so nothing is buffered when no one is listening.
-- Dropped frames produce nothing.
+- `xxxAsync(input, timestampMilliseconds: ...)` returns at once; its checks
+  throw there.
+- Results and errors arrive on the task's `results` stream, with the text
+  streams' rules: one subscription, made before the first input as Google
+  requires a result listener; pausing buffers, cancelling discards later
+  results, and an error closes the stream and fails the task.
+- Dropped frames produce nothing; `droppedFrames` counts them.
 
 ## What stays platform-specific
 

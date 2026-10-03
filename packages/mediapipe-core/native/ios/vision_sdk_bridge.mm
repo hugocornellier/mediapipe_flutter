@@ -657,9 +657,7 @@ void CopyDetector(SdkResult *source, MpDetectionResult *out) {
 template <typename SdkOptions>
 MpStatus Configure(SdkOptions *sdk, const MpBaseOptions &base, MpRunningMode mode,
                    NSString **temporary, char **message) {
-  // TODO: Accept LIVE_STREAM here only if it goes native on iOS rather than
-  // being emulated on VIDEO: adopt the SDK's live stream delegates and post
-  // copied results to Dart. See RunningMode.liveStream in mediapipe_vision.
+  // LIVE_STREAM arrives as VIDEO: the Dart task runner holds its flow limiter.
   if (mode != MP_RUNNING_MODE_IMAGE && mode != MP_RUNNING_MODE_VIDEO) {
     return Fail(message, @"The Dart adapter supports IMAGE and VIDEO only", kMpUnimplemented);
   }

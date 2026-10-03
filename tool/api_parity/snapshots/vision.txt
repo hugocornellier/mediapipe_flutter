@@ -88,7 +88,10 @@ final class FaceDetector implements VisionTask
   Future<FaceDetectorResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
   Future<void> dispose()
   RunningMode get runningMode
+  Stream<FaceDetectorResult> get results
+  int get droppedFrames
   static Future<FaceDetector> create(FaceDetectorOptions options)
+  void detectAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
 final class FaceDetectorOptions extends VisionTaskOptions
   Delegate get delegate
   DownloadAsset? get model
@@ -111,7 +114,10 @@ final class FaceLandmarker implements VisionTask
   Future<FaceLandmarkerResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
   Future<void> dispose()
   RunningMode get runningMode
+  Stream<FaceLandmarkerResult> get results
+  int get droppedFrames
   static Future<FaceLandmarker> create(FaceLandmarkerOptions options)
+  void detectAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
 final class FaceLandmarkerOptions extends VisionTaskOptions
   Delegate get delegate
   DownloadAsset? get model
@@ -146,7 +152,10 @@ final class GestureRecognizer implements VisionTask
   Future<GestureRecognizerResult> recognizeForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
   Future<void> dispose()
   RunningMode get runningMode
+  Stream<GestureRecognizerResult> get results
+  int get droppedFrames
   static Future<GestureRecognizer> create(GestureRecognizerOptions options)
+  void recognizeAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
 final class GestureRecognizerOptions extends HandTrackingOptions
   ClassifierOptions get cannedGesturesClassifierOptions
   ClassifierOptions get customGesturesClassifierOptions
@@ -176,7 +185,10 @@ final class HandLandmarker implements VisionTask
   Future<HandLandmarkerResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
   Future<void> dispose()
   RunningMode get runningMode
+  Stream<HandLandmarkerResult> get results
+  int get droppedFrames
   static Future<HandLandmarker> create(HandLandmarkerOptions options)
+  void detectAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
 final class HandLandmarkerOptions extends HandTrackingOptions
   Delegate get delegate
   DownloadAsset? get model
@@ -223,7 +235,10 @@ final class HolisticLandmarker implements VisionTask
   Future<HolisticLandmarkerResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
   Future<void> dispose()
   RunningMode get runningMode
+  Stream<HolisticLandmarkerResult> get results
+  int get droppedFrames
   static Future<HolisticLandmarker> create(HolisticLandmarkerOptions options)
+  void detectAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
 final class HolisticLandmarkerOptions extends VisionTaskOptions
   Delegate get delegate
   DownloadAsset? get model
@@ -261,7 +276,10 @@ final class ImageClassifier implements VisionTask
   Future<ImageClassifierResult> classifyForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0, VisionRegionOfInterest? regionOfInterest})
   Future<void> dispose()
   RunningMode get runningMode
+  Stream<ImageClassifierResult> get results
+  int get droppedFrames
   static Future<ImageClassifier> create(ImageClassifierOptions options)
+  void classifyAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0, VisionRegionOfInterest? regionOfInterest})
 final class ImageClassifierOptions extends VisionTaskOptions
   Delegate get delegate
   DownloadAsset? get model
@@ -287,8 +305,11 @@ final class ImageEmbedder implements VisionTask
   Future<ImageEmbedderResult> embedForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0, VisionRegionOfInterest? regionOfInterest})
   Future<void> dispose()
   RunningMode get runningMode
+  Stream<ImageEmbedderResult> get results
+  int get droppedFrames
   static Future<ImageEmbedder> create(ImageEmbedderOptions options)
   static double cosineSimilarity(Embedding first, Embedding second)
+  void embedAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0, VisionRegionOfInterest? regionOfInterest})
 final class ImageEmbedderOptions extends VisionTaskOptions
   Delegate get delegate
   DownloadAsset? get model
@@ -311,7 +332,10 @@ final class ImageSegmenter implements VisionTask
   Future<ImageSegmenterResult> segmentForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
   Future<void> dispose()
   RunningMode get runningMode
+  Stream<ImageSegmenterResult> get results
+  int get droppedFrames
   static Future<ImageSegmenter> create(ImageSegmenterOptions options)
+  void segmentAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
 final class ImageSegmenterOptions extends VisionTaskOptions
   Delegate get delegate
   DownloadAsset? get model
@@ -433,7 +457,10 @@ final class ObjectDetector implements VisionTask
   Future<ObjectDetectorResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
   Future<void> dispose()
   RunningMode get runningMode
+  Stream<ObjectDetectorResult> get results
+  int get droppedFrames
   static Future<ObjectDetector> create(ObjectDetectorOptions options)
+  void detectAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
 final class ObjectDetectorOptions extends VisionTaskOptions
   Delegate get delegate
   DownloadAsset? get model
@@ -459,7 +486,10 @@ final class PoseLandmarker implements VisionTask
   Future<PoseLandmarkerResult> detectForVideo(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
   Future<void> dispose()
   RunningMode get runningMode
+  Stream<PoseLandmarkerResult> get results
+  int get droppedFrames
   static Future<PoseLandmarker> create(PoseLandmarkerOptions options)
+  void detectAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
 final class PoseLandmarkerOptions extends VisionTaskOptions
   Delegate get delegate
   DownloadAsset? get model
@@ -552,6 +582,7 @@ final class VisionImage
   int? get bytesPerRow
   int? get height
   int? get width
+  new VisionImage.deferred(FutureOr<VisionImage> Function() produce)
   new VisionImage.fromBrowserFrame(Object frame, {required int width, required int height})
   new VisionImage.fromFile(String path)
   new VisionImage.fromPixels({required Uint8List pixels, required int width, required int height, required VisionPixelFormat format, int? bytesPerRow})

@@ -5,6 +5,7 @@ library;
 import '../types/vision_types.dart';
 import '../vision_task_backend.dart';
 import 'checks.dart';
+import 'live_stream.dart';
 
 /// Validation and ordering for every task that runs through a backend.
 final class SdkVisionTask<R> {
@@ -37,8 +38,6 @@ final class SdkVisionTask<R> {
     );
   }
 
-  // TODO: Add LIVE_STREAM beside video() when it is split from VIDEO,
-  // for the Android adapter and the web. See RunningMode.liveStream.
   /// VIDEO inference with a strictly increasing timestamp.
   Future<R> video(
     VisionImage image, {
@@ -52,6 +51,21 @@ final class SdkVisionTask<R> {
       rotationDegrees,
       timestampMilliseconds,
       regionOfInterest: regionOfInterest,
+    );
+  }
+
+  /// The checks every request gets; a live stream applies them itself, when
+  /// each frame is submitted.
+  VisionTaskChecks get checks => _checks;
+
+  /// Runs a live stream frame, whose checks passed when it was submitted.
+  Future<R> liveFrame(LiveFrame frame) {
+    final (image, rotationDegrees, timestampMilliseconds, region) = frame;
+    return _backend.detect(
+      image,
+      rotationDegrees,
+      timestampMilliseconds,
+      regionOfInterest: region,
     );
   }
 

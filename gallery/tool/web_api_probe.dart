@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:js_interop';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -214,6 +215,8 @@ Future<Map<String, Object?>> checkApi() async {
   } finally {
     await video.dispose();
   }
+  await checkLiveStream(delegate, options.modelBytes!, portrait);
+  checks.add('live-stream-equals-video-drops-and-closes-bitmaps');
   await rejects(
     () => FaceLandmarker.create(
       FaceLandmarkerOptions(modelBytes: Uint8List.fromList([1])),
@@ -232,6 +235,115 @@ Future<Map<String, Object?>> checkApi() async {
     'landmark_tasks': landmarkTasks,
     'detection_tasks': detectionTasks,
   };
+}
+
+/// Live stream mode in the browser, where Google has none: the package runs
+/// Google's flow limiter in front of the VIDEO graph. The same frames give
+/// VIDEO's results; a frame that arrives while another waits replaces it, and
+/// the package closes the replaced frame's bitmap.
+Future<void> checkLiveStream(
+  Delegate delegate,
+  Uint8List model,
+  String portrait,
+) async {
+  Future<FaceLandmarker> open(RunningMode mode) => FaceLandmarker.create(
+    FaceLandmarkerOptions(
+      delegate: delegate,
+      modelBytes: model,
+      runningMode: mode,
+    ),
+  );
+  List<double> points(FaceLandmarkerResult result) => [
+    for (final face in result.faceLandmarks)
+      for (final p in face) ...[p.x, p.y, p.z],
+  ];
+  final image = VisionImage.fromFile(portrait);
+  final frames = [(0, 0), (33, 90), (66, 0)];
+  final video = await open(RunningMode.video);
+  final expected = <List<double>>[];
+  try {
+    for (final (timestamp, rotation) in frames) {
+      expected.add(
+        points(
+          await video.detectForVideo(
+            image,
+            timestampMilliseconds: timestamp,
+            rotationDegrees: rotation,
+          ),
+        ),
+      );
+    }
+  } finally {
+    await video.dispose();
+  }
+  final live = await open(RunningMode.liveStream);
+  try {
+    try {
+      live.detectAsync(image, timestampMilliseconds: 0);
+      throw StateError('A frame without a listener was accepted');
+    } on StateError catch (error) {
+      require(
+        error.message.contains('Listen to'),
+        'Unexpected error: ${error.message}',
+      );
+    }
+    final results = <FaceLandmarkerResult>[];
+    var arrived = Completer<void>();
+    final subscription = live.results.listen((result) {
+      results.add(result);
+      if (!arrived.isCompleted) arrived.complete();
+    });
+    for (final (timestamp, rotation) in frames) {
+      live.detectAsync(
+        image,
+        timestampMilliseconds: timestamp,
+        rotationDegrees: rotation,
+      );
+      await arrived.future;
+      arrived = Completer<void>();
+    }
+    for (var i = 0; i < frames.length; i++) {
+      final actual = points(results[i]);
+      require(
+        actual.length == expected[i].length && actual.isNotEmpty,
+        'Live frame $i found other faces than VIDEO',
+      );
+      for (var j = 0; j < actual.length; j++) {
+        require(
+          (actual[j] - expected[i][j]).abs() < 1e-5,
+          'Live frame $i differs from VIDEO',
+        );
+      }
+    }
+    final response = await web.window.fetch(portrait.toJS).toDart;
+    final blob = await response.blob().toDart;
+    final bitmaps = [
+      for (var i = 0; i < 3; i++)
+        await web.window.createImageBitmap(blob).toDart,
+    ];
+    for (var i = 0; i < 3; i++) {
+      live.detectAsync(
+        VisionImage.fromBrowserFrame(
+          bitmaps[i],
+          width: bitmaps[i].width,
+          height: bitmaps[i].height,
+        ),
+        timestampMilliseconds: 100 + i,
+      );
+    }
+    require(live.droppedFrames == 1, 'Expected one dropped frame');
+    require(bitmaps[1].width == 0, 'The dropped bitmap stayed open');
+    await live.dispose();
+    await subscription.cancel();
+    require(
+      [for (final r in results.skip(frames.length)) r.timestampMilliseconds]
+              .join(',') ==
+          '100,102',
+      'Disposal did not deliver the running and the waiting frame',
+    );
+  } finally {
+    await live.dispose();
+  }
 }
 
 /// The same public contract for Hand Landmarker on the official web runtime.

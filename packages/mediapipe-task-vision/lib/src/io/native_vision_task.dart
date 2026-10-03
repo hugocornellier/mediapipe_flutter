@@ -54,14 +54,12 @@ void setVisionBaseOptions(
   }
 }
 
-// TODO: Map liveStream here only if LIVE_STREAM goes native rather than being
-// emulated on VIDEO; desktop would need a C shim that copies callback results.
-// See RunningMode.liveStream.
-/// Convert the public running mode into the native task enum.
+/// Convert the public running mode into the native task enum. LIVE_STREAM
+/// runs on Google's VIDEO graph, with its flow limiter in the task runner.
 mp.MpRunningMode nativeRunningMode(RunningMode mode) =>
-    mode == RunningMode.video
-    ? mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
-    : mp.MpRunningMode.MP_RUNNING_MODE_IMAGE;
+    mode == RunningMode.image
+    ? mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
+    : mp.MpRunningMode.MP_RUNNING_MODE_VIDEO;
 
 /// Populate native rotation and optional normalized region of interest.
 Pointer<mp.MpImageProcessingOptions> visionProcessingOptions(

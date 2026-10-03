@@ -61,6 +61,7 @@ final class InteractiveSegmenter implements VisionTask {
   /// afterwards apply to this image.
   Future<void> setImage(VisionImage image) async {
     _checks.open();
+    refuseDeferredImage(image);
     return _backend.setImage(image);
   }
 

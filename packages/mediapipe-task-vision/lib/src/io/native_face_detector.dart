@@ -56,9 +56,11 @@ final class NativeFaceDetector implements NativeVisionTask<FaceDetectorResult> {
         base.model_asset_buffer_count = bytes.length;
       }
       native.ref
-        ..running_mode = options.runningMode == RunningMode.video
-            ? mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
-            : mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
+        // LIVE_STREAM runs on the VIDEO graph, with its flow limiter in
+        // the task runner.
+        ..running_mode = options.runningMode == RunningMode.image
+            ? mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
+            : mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
         ..min_detection_confidence = options.minDetectionConfidence
         ..min_suppression_threshold = options.minSuppressionThreshold;
       final output = arena<mp.MpFaceDetectorPtr>();

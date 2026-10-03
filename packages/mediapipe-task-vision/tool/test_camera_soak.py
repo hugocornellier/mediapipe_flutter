@@ -46,7 +46,7 @@ def summarize(events):
         'measured_seconds': sum(s['window_seconds'] for s in samples),
         'active_fps': sum(s['window_frames'] for s in samples) /
                       sum(s['window_seconds'] for s in samples),
-        'skipped_frames': sum(s['window_skipped'] for s in samples),
+        'dropped_frames': sum(s['window_dropped'] for s in samples),
         'median_window_p50_ms': statistics.median(s['latency_p50_ms'] for s in samples
                                                 if s['latency_p50_ms'] is not None),
         'maximum_window_p95_ms': max(s['latency_p95_ms'] for s in samples

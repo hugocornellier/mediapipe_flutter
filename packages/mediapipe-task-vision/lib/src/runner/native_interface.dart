@@ -3,10 +3,11 @@
 library;
 
 import '../types/vision_types.dart';
+import 'checks.dart';
 
 /// Input transported to a native task's worker without sharing native
-/// pointers: the image, its rotation, the VIDEO timestamp and the region of
-/// interest of the tasks that accept one.
+/// pointers: the image, its rotation, the timestamp of a VIDEO or live stream
+/// frame and the region of interest of the tasks that accept one.
 typedef VisionTaskInput = (VisionImage, int, int?, VisionRegionOfInterest?);
 
 /// Google's native task, created, used and closed on its worker isolate only.
@@ -20,6 +21,10 @@ abstract interface class NativeVisionTask<R> {
 
 /// Google's native task behind a worker, as the runner drives it.
 abstract interface class NativeTaskRunner<R> {
+  /// The checks every request gets; a live stream applies them itself, when
+  /// each frame is submitted.
+  VisionTaskChecks get checks;
+
   /// Runs a still image.
   Future<R> processImage(
     VisionImage image,
@@ -34,6 +39,9 @@ abstract interface class NativeTaskRunner<R> {
     int timestampMilliseconds,
     VisionRegionOfInterest? regionOfInterest,
   );
+
+  /// Runs a live stream frame, whose checks passed when it was submitted.
+  Future<R> processLiveFrame(VisionTaskInput input);
 
   /// Drains queued requests and releases the task exactly once.
   Future<void> dispose();

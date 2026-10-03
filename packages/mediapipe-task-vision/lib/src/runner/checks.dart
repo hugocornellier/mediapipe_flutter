@@ -10,9 +10,10 @@ final class VisionTaskChecks {
   /// [name] appears in errors.
   VisionTaskChecks(this.name, this.runningMode);
 
-  /// The largest VIDEO timestamp any platform accepts: JavaScript's exact
-  /// integer range in milliseconds (about 285 years), which native runtimes
-  /// exceed, so one limit keeps the same input valid everywhere.
+  /// The largest VIDEO or LIVE_STREAM timestamp any platform accepts:
+  /// JavaScript's exact integer range in milliseconds (about 285 years),
+  /// which native runtimes exceed, so one limit keeps the same input valid
+  /// everywhere.
   static const maxTimestampMilliseconds = 9007199254740;
 
   /// The task's name, as its errors say it.
@@ -36,7 +37,7 @@ final class VisionTaskChecks {
   /// Checks a still-image request.
   void image(int rotationDegrees) {
     _open();
-    _mode(RunningMode.image);
+    requireMode(RunningMode.image);
     _rotation(rotationDegrees);
   }
 
@@ -44,19 +45,29 @@ final class VisionTaskChecks {
   /// then fails, so submission order stays monotonic.
   void video(int rotationDegrees, int timestampMilliseconds) {
     _open();
-    _mode(RunningMode.video);
+    requireMode(RunningMode.video);
     _rotation(rotationDegrees);
-    if (timestampMilliseconds < 0 ||
-        timestampMilliseconds > maxTimestampMilliseconds ||
-        (_lastTimestamp != null && timestampMilliseconds <= _lastTimestamp!)) {
-      throw ArgumentError.value(
-        timestampMilliseconds,
-        'timestampMilliseconds',
-        'Must be nonnegative, strictly increasing and at most '
-            '$maxTimestampMilliseconds',
+    _timestamp(timestampMilliseconds);
+  }
+
+  /// Checks a live stream frame and reserves its timestamp at submission,
+  /// whether the frame then runs or is dropped: Google's runtime records the
+  /// timestamp before its flow limiter sees the frame. A frame needs a
+  /// results listener, since Google's runtime requires one at creation.
+  void liveStream(
+    int rotationDegrees,
+    int timestampMilliseconds, {
+    required bool listening,
+  }) {
+    _open();
+    requireMode(RunningMode.liveStream);
+    if (!listening) {
+      throw StateError(
+        'Listen to $name.results before submitting the first frame.',
       );
     }
-    _lastTimestamp = timestampMilliseconds;
+    _rotation(rotationDegrees);
+    _timestamp(timestampMilliseconds);
   }
 
   /// Checks a request that has no mode of its own, such as a stroke
@@ -68,13 +79,28 @@ final class VisionTaskChecks {
     if (failure case final error?) throw error;
   }
 
-  void _mode(RunningMode expected) {
+  /// Rejects a call that belongs to another running mode.
+  void requireMode(RunningMode expected) {
     if (runningMode != expected) {
       throw StateError(
         '$name was created in ${runningMode.name} mode; this method requires '
         '${expected.name} mode.',
       );
     }
+  }
+
+  void _timestamp(int timestampMilliseconds) {
+    if (timestampMilliseconds < 0 ||
+        timestampMilliseconds > maxTimestampMilliseconds ||
+        (_lastTimestamp != null && timestampMilliseconds <= _lastTimestamp!)) {
+      throw ArgumentError.value(
+        timestampMilliseconds,
+        'timestampMilliseconds',
+        'Must be nonnegative, strictly increasing and at most '
+            '$maxTimestampMilliseconds',
+      );
+    }
+    _lastTimestamp = timestampMilliseconds;
   }
 
   void _rotation(int rotationDegrees) {

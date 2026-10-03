@@ -43,6 +43,12 @@ Behavior that changed:
 - `InteractiveSegmenter.setImage` and `segment` report every error through
   the returned `Future`, and creating it with an unavailable delegate throws
   `RuntimeUnavailableException`, as every other task does.
+- Creating a task with `RunningMode.liveStream` no longer throws
+  `UnsupportedError`. Camera code that awaited `detectForVideo` per frame and
+  skipped frames while busy can create the task in live stream mode, listen
+  to `results` and call `detectAsync` (`recognizeAsync`, `classifyAsync`,
+  `embedAsync`, `segmentAsync`) for every frame; the task drops frames as
+  Google's runtime does and counts them in `droppedFrames`.
 
 ## Before 0.1.0
 
@@ -59,9 +65,10 @@ Behavior that changed:
 | Backend factories and interfaces in application code | Platform plugins import their implementation entrypoints directly. |
 
 Supply exactly one model source. `model:` downloads a verified pinned model on
-first task creation. Live stream mode is reserved and currently throws
-`UnsupportedError` at creation. Inference futures cannot cancel an in-flight
-native call; `Future.timeout` only limits caller waiting. `dispose()` drains
+first task creation. Live stream mode, which threw `UnsupportedError` at
+creation before 0.2.0, works from 0.2.0 on. Inference futures cannot cancel
+an in-flight native call; `Future.timeout` only limits caller waiting.
+`dispose()` drains
 accepted calls and is safe to call again.
 
 Use `queryFaceLandmarkerCapabilities()` and the corresponding

@@ -183,23 +183,25 @@ options throw `ArgumentError`, and using a disposed task `StateError`.
 ### Still images in other vision tasks
 
 Create each task with `RunningMode.image` (the default), then call its
-image method. For camera or video frames, create it with
-`RunningMode.video` and call the corresponding video method with a
-strictly increasing timestamp. The gallery exposes a **Camera / Still image**
-selector for all ten tasks below on supported platforms.
+image method. For a video file's frames, create it with `RunningMode.video`
+and call its video method; for a camera, create it with
+`RunningMode.liveStream` and call its live stream method (see
+[Video files](#video-files) and [Live cameras](#live-cameras)). The gallery
+exposes a **Camera / Still image** selector for all ten tasks below on
+supported platforms.
 
-| Task | Still image method | Video frame method |
-| --- | --- | --- |
-| Face Detector | `detect` | `detectForVideo` |
-| Face Landmarker | `detect` | `detectForVideo` |
-| Hand Landmarker | `detect` | `detectForVideo` |
-| Gesture Recognizer | `recognize` | `recognizeForVideo` |
-| Holistic Landmarker | `detect` | `detectForVideo` |
-| Pose Landmarker | `detect` | `detectForVideo` |
-| Object Detector | `detect` | `detectForVideo` |
-| Image Classifier | `classify` | `classifyForVideo` |
-| Image Embedder | `embed` | `embedForVideo` |
-| Image Segmenter | `segment` | `segmentForVideo` |
+| Task | Still image | Video file frame | Live stream frame |
+| --- | --- | --- | --- |
+| Face Detector | `detect` | `detectForVideo` | `detectAsync` |
+| Face Landmarker | `detect` | `detectForVideo` | `detectAsync` |
+| Hand Landmarker | `detect` | `detectForVideo` | `detectAsync` |
+| Gesture Recognizer | `recognize` | `recognizeForVideo` | `recognizeAsync` |
+| Holistic Landmarker | `detect` | `detectForVideo` | `detectAsync` |
+| Pose Landmarker | `detect` | `detectForVideo` | `detectAsync` |
+| Object Detector | `detect` | `detectForVideo` | `detectAsync` |
+| Image Classifier | `classify` | `classifyForVideo` | `classifyAsync` |
+| Image Embedder | `embed` | `embedForVideo` | `embedAsync` |
+| Image Segmenter | `segment` | `segmentForVideo` | `segmentAsync` |
 
 The stroke-based `InteractiveSegmenter` works on an image with editing strokes
 and has no camera mode. Choose an image in the gallery's still image mode for the
@@ -515,10 +517,12 @@ Future<ConfidenceMask> selectObject(VisionImage image) async {
 The mask holds one confidence per pixel, indexed `y * width + x`, and stays
 valid after the task is disposed.
 
-## Video and live cameras
+## Video files
 
-Create the task in video mode, then submit frames with **strictly increasing
-millisecond timestamps**:
+Video mode processes every frame, in order, and each call completes with its
+frame's result. Use it for frames that do not run away from you, such as a
+decoded video file. Create the task in video mode, then submit frames with
+**strictly increasing millisecond timestamps**:
 
 ```dart
 final task = await FaceLandmarker.create(
@@ -528,36 +532,88 @@ final task = await FaceLandmarker.create(
   ),
 );
 try {
-  final result = await task.detectForVideo(
-    VisionImage.fromPixels(
-      pixels: frameRgba,
-      width: frameWidth,
-      height: frameHeight,
-      format: VisionPixelFormat.rgba,
-    ),
-    timestampMilliseconds: elapsedMilliseconds,
-  );
-  print(result.faceLandmarks.length);
+  for (final frame in decodedFrames) {
+    final result = await task.detectForVideo(
+      VisionImage.fromPixels(
+        pixels: frame.rgba,
+        width: frame.width,
+        height: frame.height,
+        format: VisionPixelFormat.rgba,
+      ),
+      timestampMilliseconds: frame.presentationMilliseconds,
+    );
+    print(result.faceLandmarks.length);
+  }
 } finally {
   await task.dispose();
 }
 ```
 
-Here `frameRgba`, `frameWidth`, `frameHeight` and `elapsedMilliseconds`
-come from your camera pipeline. `RunningMode.liveStream` is reserved for
-callback-based delivery; creating a task with it currently throws
-`UnsupportedError`.
-Keep a task alive across frames; do not recreate it for each image. Await
-inference and skip incoming frames while busy to bound camera delay.
+Here `decodedFrames` comes from your video decoder; the package does not
+decode video. Keep a task alive across frames; do not recreate it for each
+image.
+
+## Live cameras
+
+Live stream mode is Google's mode for cameras: each call returns at once and
+the results arrive on the task's `results` stream. One frame runs at a time
+and the newest one waits; a frame that arrives while another waits replaces
+it, so a task slower than the camera drops frames instead of falling behind.
+`droppedFrames` counts them. Tracking and smoothing are the same as in video
+mode, and a frame that runs gets the result video mode would give it.
+
+```dart
+final task = await FaceLandmarker.create(
+  FaceLandmarkerOptions(
+    model: VisionModels.faceLandmarker,
+    runningMode: RunningMode.liveStream,
+  ),
+);
+// Listen before the first frame, as Google requires a result listener.
+final results = task.results.listen((result) {
+  print('${result.timestampMilliseconds}: ${result.faceLandmarks.length}');
+});
+cameraFrames.listen((frame) {
+  task.detectAsync(
+    VisionImage.fromPixels(
+      pixels: frame.rgba,
+      width: frame.width,
+      height: frame.height,
+      format: VisionPixelFormat.rgba,
+    ),
+    // Stamp each frame when it arrives.
+    timestampMilliseconds: clock.elapsedMilliseconds,
+  );
+});
+// Later: runs the frame in flight and the waiting one, then closes results.
+await task.dispose();
+await results.cancel();
+```
+
+Here `cameraFrames` and `clock` come from your camera pipeline. The checks
+throw from `detectAsync` itself, and a frame's timestamp is reserved even if
+the frame is then dropped. When building a frame costs time, as converting a
+YUV camera image to RGBA does, submit `VisionImage.deferred(() => convert(frame))`
+instead: the task calls it when it starts the frame, so a dropped frame is
+never converted. Hold on to what the producer reads until then. A dropped frame never leaves the calling isolate:
+no copy to the native worker, no Android platform channel call, no transfer
+to the browser worker. `results` has one subscription; pausing it buffers
+results and cancelling it discards later ones. A failure arrives on
+`results` as a `TaskException`, closes the stream and fails every later call.
+Google's browser runtime has no live stream mode, and the package runs the
+same flow limiter on every platform in front of Google's video graph
+(tool/LIVE_STREAM.md).
 
 In browsers, `VisionImage.fromBrowserFrame(frame, width: w, height: h)` wraps
-an `ImageBitmap` or video frame without copying its pixels, and
+an `ImageBitmap` or video frame without copying its pixels; the task closes
+it after inference, or when it drops the frame.
 `BrowserOverlay.attach(task, canvas)` lets the task's worker draw landmarks
 and boxes into a canvas. Both exist on every platform and throw
 `RuntimeUnavailableException` off the web, so one code path compiles
 everywhere. The package does not open a camera for your app. The
-[gallery](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery)
-shows camera capture, rotation, mirroring, delegate switching and overlays.
+[gallery](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery)'s
+camera mode runs every camera-capable task in live stream mode, with
+rotation, mirroring, delegate switching and overlays.
 
 ## CPU and GPU
 

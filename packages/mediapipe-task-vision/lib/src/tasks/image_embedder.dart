@@ -73,6 +73,36 @@ final class ImageEmbedder implements VisionTask {
     regionOfInterest: regionOfInterest,
   );
 
+  /// Embeds a camera frame in [RunningMode.liveStream] and returns at once;
+  /// the result arrives on [results]. As in Google's runtime, one frame runs
+  /// at a time and the newest one waits: a frame submitted while another
+  /// waits replaces it, and [droppedFrames] counts the replaced ones.
+  /// Timestamps are nonnegative milliseconds that strictly increase in call
+  /// order, and a dropped frame's timestamp stays reserved. A failed check
+  /// throws here.
+  void embedAsync(
+    VisionImage image, {
+    required int timestampMilliseconds,
+    int rotationDegrees = 0,
+    VisionRegionOfInterest? regionOfInterest,
+  }) => _task.liveStream(
+    image,
+    rotationDegrees,
+    timestampMilliseconds,
+    regionOfInterest: regionOfInterest,
+  );
+
+  /// The result of each frame [embedAsync] runs, in timestamp order. Listen
+  /// before the first frame. One subscription: pausing buffers results and
+  /// cancelling discards later ones. A failure arrives as a [TaskException],
+  /// ends the stream and fails every later call. `dispose()` delivers the
+  /// frame in flight and the waiting one, then closes the stream. Live
+  /// stream mode only.
+  Stream<ImageEmbedderResult> get results => _task.results;
+
+  /// Frames [embedAsync] accepted but never ran; always 0 in the other modes.
+  int get droppedFrames => _task.droppedFrames;
+
   /// Cosine similarity of two embeddings of the same representation and
   /// size, as Google's API computes it, in Dart so every platform agrees.
   /// Quantized bytes are read as signed 8-bit values.

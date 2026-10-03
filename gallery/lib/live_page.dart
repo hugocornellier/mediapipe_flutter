@@ -228,6 +228,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
           _controller.delegate,
           _controller.inferenceMilliseconds,
           _speedClock.elapsed,
+          dropped: _controller.droppedFrames,
         );
       }
     }

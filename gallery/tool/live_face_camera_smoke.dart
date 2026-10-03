@@ -56,7 +56,8 @@ Future<void> main() async {
           'timestamp_ms': result.timestampMilliseconds,
           'latest_inference_ms': controller.inferenceMilliseconds,
           'average_inference_ms': controller.averageInferenceMilliseconds,
-          'skipped_frames': controller.skippedFrames,
+          'camera_frames': controller.cameraFrames,
+          'dropped_frames': controller.droppedFrames,
         });
       }
     } finally {

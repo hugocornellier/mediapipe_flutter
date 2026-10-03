@@ -4,6 +4,7 @@ import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:mediapipe_gallery/live/live_task.dart';
 import 'package:mediapipe_gallery/live/task_settings.dart';
 
@@ -147,7 +148,10 @@ final class ScriptedCamera extends CameraPlatform {
   }
 }
 
-/// A task whose inference the test completes by hand.
+/// A task whose inference the test completes by hand: a real [FaceDetector]
+/// in live stream mode on a platform backend the test drives, so the
+/// package's own frame dropping runs under the controller. Each result
+/// carries the value its frame was finished with.
 class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
   @override
   final settings = TaskSettingValues('scripted');
@@ -156,19 +160,31 @@ class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
 
   /// Times the controller asked the task to forget the frames it has seen.
   int forgot = 0;
+
+  /// The timestamps and rotations of the frames the task ran, in order.
   final timestamps = <int>[];
   final rotations = <int>[];
-  int closed = 0;
-  int detectCalls = 0;
 
-  /// Pending inferences, oldest first; complete one to release a frame.
+  /// The widths of the frames the task ran.
+  final widths = <int>[];
+  int closed = 0;
+
+  /// Times Google's task (the backend) was released.
+  int released = 0;
+
+  /// Frames the task ran.
+  int get detectCalls => timestamps.length;
+
+  /// Running frames, oldest first; finish one to release it.
   final pending = <Completer<int>>[];
 
-  /// When set, every detect call throws this instead of waiting.
+  /// When set, every frame fails with this instead of waiting.
   Object? failure;
 
   /// When set, opening with that delegate throws this error.
   (Delegate, Object)? openFailure;
+
+  FaceDetector? _task;
 
   @override
   String get name => 'scripted';
@@ -177,7 +193,7 @@ class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     opened.add(delegate);
     if (openFailure case (
@@ -186,27 +202,43 @@ class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
     ) when refused == delegate) {
       throw error;
     }
+    faceDetectorBackendFactory = (_) async => _ScriptedBackend(this);
+    try {
+      _task = await FaceDetector.create(
+        FaceDetectorOptions(
+          modelBytes: modelBytes,
+          runningMode: mode,
+          delegate: delegate,
+        ),
+      );
+    } finally {
+      faceDetectorBackendFactory = null;
+    }
   }
 
   @override
   Future<int> detectImage(VisionImage image) async => 1;
 
   @override
-  Future<int> detect(
+  void submit(
     VisionImage frame,
     int timestampMilliseconds, {
     required int rotationDegrees,
-  }) {
-    detectCalls++;
-    timestamps.add(timestampMilliseconds);
-    rotations.add(rotationDegrees);
-    if (failure != null) return Future.error(failure!);
-    final completer = Completer<int>();
-    pending.add(completer);
-    return completer.future;
-  }
+  }) => _task!.detectAsync(
+    frame,
+    timestampMilliseconds: timestampMilliseconds,
+    rotationDegrees: rotationDegrees,
+  );
 
-  /// Completes the oldest in-flight inference.
+  @override
+  Stream<LiveResult<int>> get results => _task!.results.map(
+    (r) => (timestamp: r.timestampMilliseconds!, result: r.imageHeight),
+  );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
+
+  /// Completes the oldest running frame with [value].
   void finish([int value = 1]) => pending.removeAt(0).complete(value);
 
   @override
@@ -215,5 +247,38 @@ class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
   @override
   Future<void> close() async {
     closed++;
+    final task = _task;
+    _task = null;
+    await task?.dispose();
   }
+}
+
+/// Google's task as [ScriptedTask] drives it.
+final class _ScriptedBackend implements VisionTaskBackend<FaceDetectorResult> {
+  _ScriptedBackend(this._task);
+  final ScriptedTask _task;
+
+  @override
+  Future<FaceDetectorResult> detect(
+    VisionImage image,
+    int rotationDegrees,
+    int? timestampMilliseconds, {
+    VisionRegionOfInterest? regionOfInterest,
+  }) async {
+    _task.timestamps.add(timestampMilliseconds!);
+    _task.rotations.add(rotationDegrees);
+    _task.widths.add(image.width!);
+    if (_task.failure case final failure?) throw failure;
+    final value = Completer<int>();
+    _task.pending.add(value);
+    return FaceDetectorResult(
+      imageWidth: image.width!,
+      imageHeight: await value.future,
+      detections: const [],
+      timestampMilliseconds: timestampMilliseconds,
+    );
+  }
+
+  @override
+  Future<void> dispose() async => _task.released++;
 }

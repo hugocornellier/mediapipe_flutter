@@ -243,7 +243,11 @@ final class WebVisionTask<R>
               'modelPath': modelPath == null
                   ? null
                   : Uri.base.resolve(modelPath).toString(),
-              'runningMode': runningMode.name.toUpperCase(),
+              // Google's browser tasks have no LIVE_STREAM; it runs on their
+              // VIDEO graph, with its flow limiter in the task runner.
+              'runningMode': runningMode == RunningMode.image
+                  ? 'IMAGE'
+                  : 'VIDEO',
               'runtimeBaseUrl': MediaPipeWebRuntime.resolve(Uri.base),
               ...settings,
             }.jsify()!

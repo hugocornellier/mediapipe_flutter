@@ -14,10 +14,12 @@ import 'gpu_frame_budget.dart';
 /// Google's native task on its own isolate: the shared checks, then requests
 /// in submission order, with the task created, used and closed there.
 final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
-  VisionTaskWorker._(this._checks) {
+  VisionTaskWorker._(this.checks) {
     _events.listen(_receive);
   }
-  final VisionTaskChecks _checks;
+
+  @override
+  final VisionTaskChecks checks;
   final int _tag = Random().nextInt(1 << 32);
   final _events = ReceivePort();
   final _ready = Completer<void>();
@@ -25,10 +27,15 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
   final _pending = <int, Completer<R?>>{};
   SendPort? _commands;
   var _nextId = 0;
+
+  /// Whether the worker died or never started, as opposed to the task failing
+  /// a live stream frame, which poisons [checks] while the worker still runs
+  /// and must still be closed.
+  var _workerFailed = false;
   Future<void>? _disposal;
 
   /// The task's name, as its errors say it.
-  String get name => _checks.name;
+  String get name => checks.name;
 
   /// Construct the native owner from a top-level factory on a new isolate.
   ///
@@ -73,7 +80,7 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
     int rotationDegrees,
     VisionRegionOfInterest? regionOfInterest,
   ) async {
-    _checks.image(rotationDegrees);
+    checks.image(rotationDegrees);
     return (await _request((image, rotationDegrees, null, regionOfInterest)))!;
   }
 
@@ -84,13 +91,20 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
     int timestampMilliseconds,
     VisionRegionOfInterest? regionOfInterest,
   ) async {
-    _checks.video(rotationDegrees, timestampMilliseconds);
+    checks.video(rotationDegrees, timestampMilliseconds);
     return (await _request((
       image,
       rotationDegrees,
       timestampMilliseconds,
       regionOfInterest,
     )))!;
+  }
+
+  @override
+  Future<R> processLiveFrame(VisionTaskInput input) async {
+    // A queued frame starts after its checks; the worker may have died since.
+    if (_workerFailed) throw checks.failure!;
+    return (await _request(input))!;
   }
 
   Future<R?> _request(VisionTaskInput? input) {
@@ -103,13 +117,13 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
 
   @override
   Future<void> dispose() {
-    _checks.markDisposing();
+    checks.markDisposing();
     return _disposal ??= _close();
   }
 
   Future<void> _close() async {
     try {
-      if (_checks.failure == null) await _request(null);
+      if (!_workerFailed) await _request(null);
     } finally {
       await _exited.future;
     }
@@ -135,7 +149,7 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
         _fail(TaskException('Worker failed: ${error.join('\n')}'));
       case null:
         _trace(_tag, name, 'exit', 'exited');
-        if (!_ready.isCompleted || _pending.isNotEmpty || !_checks.disposing) {
+        if (!_ready.isCompleted || _pending.isNotEmpty || !checks.disposing) {
           _fail(
             const TaskException('Native vision worker exited unexpectedly.'),
           );
@@ -146,7 +160,8 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
   }
 
   void _fail(TaskException error) {
-    _checks.failure ??= error;
+    _workerFailed = true;
+    checks.failure ??= error;
     if (!_ready.isCompleted) _ready.completeError(error);
     for (final completion in _pending.values) {
       completion.completeError(error);

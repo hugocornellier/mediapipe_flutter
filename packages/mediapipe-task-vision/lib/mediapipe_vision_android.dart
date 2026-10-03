@@ -185,10 +185,12 @@ abstract final class MediaPipeVisionAndroid {
     categoryDenylist: o.categoryDenylist,
   );
 
+  // LIVE_STREAM runs on Google's VIDEO graph, with its flow limiter in the
+  // task runner, so the plugin creates a VIDEO task for it.
   static Map<String, Object?> _base(TaskOptions o, RunningMode mode) => {
     'modelPath': o.modelPath,
     'modelBytes': o.modelBytes,
-    'mode': mode.name,
+    'mode': mode == RunningMode.image ? 'image' : 'video',
     'delegate': o.delegate.name,
   };
 }
