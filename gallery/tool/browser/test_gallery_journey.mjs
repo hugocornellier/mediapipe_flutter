@@ -168,6 +168,17 @@ try {
       // The status line opens with the chosen file's name.
       assert.equal(await page.getByText(new RegExp(`^${spec.sample.replace('.', '\\.')} · `)).count(), 1);
       await page.screenshot({path: path.join(evidence, `${id}-still.png`)});
+      // The video file mode runs the bundled clip in video mode, every frame
+      // in order with the file's own timestamp. The status line names the
+      // count only when every frame answered with its own timestamp and none
+      // repeated one, so this match is the check.
+      enter(`${id}:video`);
+      await page.getByRole('button', {name: 'Video file', exact: true}).click();
+      const finished = page.getByText(/^scene\.mp4 · 90 frames done · \d+\.\d ms per frame · (CPU|GPU)$/);
+      await finished.waitFor({timeout: 300000});
+      console.log(`${id} video file: ${await finished.textContent()}`);
+      report.checks.push(`${id}:video`);
+      await page.screenshot({path: path.join(evidence, `${id}-video.png`)});
     } else if (spec.embed) {
       // The page opens comparing Dog with Cat; each delegate compares them
       // again, and the status line names the delegate that did.

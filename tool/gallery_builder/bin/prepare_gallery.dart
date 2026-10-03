@@ -344,6 +344,8 @@ dependencies:
   crypto: ^3.0.6
   file_selector: ^1.0.3
   image_picker: ^1.2.2
+  video_frames:
+    path: packages/video_frames
   record: ^7.1.1
   url_launcher: ^6.3.2
   lucide_icons_flutter: ^3.1.20

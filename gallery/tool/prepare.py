@@ -108,6 +108,9 @@ SAMPLES = {
 # The photos Google's Image Embedding demo compares, which the gallery keeps
 # with their provenance in samples/README.md.
 EMBEDDER_SAMPLES = ['dog.jpg', 'cat.png', 'elephant.png']
+# The video file mode's clip and the clip that checks a file's rotation, made
+# from the fixtures by tool/make_sample_clip.py.
+VIDEO_SAMPLES = ['scene.mp4', 'rotated.mp4']
 
 MODELS = {
     'face_detector': ('blazeFaceShortRange', 'blaze_face_short_range.tflite'),
@@ -250,9 +253,10 @@ def prepare(target, selected, reference_dir=None):
     for name in audio_samples:
         shutil.copyfile(AUDIO / 'test/fixtures' / name, samples / name)
     embedder_samples = EMBEDDER_SAMPLES if 'image_embedder' in bundled else []
-    for name in embedder_samples:
+    for name in [*embedder_samples, *VIDEO_SAMPLES]:
         shutil.copyfile(GALLERY / 'samples' / name, samples / name)
-    sample_names = sorted([*SAMPLES.values(), *audio_samples, *embedder_samples])
+    sample_names = sorted([*SAMPLES.values(), *audio_samples, *embedder_samples,
+                           *VIDEO_SAMPLES])
     references = GALLERY / 'assets/references/modern_text'
     if references.exists():
         shutil.rmtree(references)
@@ -318,6 +322,8 @@ dependencies:
   crypto: ^3.0.6
   file_selector: ^1.0.3
   image_picker: ^1.2.2
+  video_frames:
+    path: packages/video_frames
   record: ^7.1.1
   url_launcher: ^6.3.2
   # The gallery's icons, as its design uses (ISC).
