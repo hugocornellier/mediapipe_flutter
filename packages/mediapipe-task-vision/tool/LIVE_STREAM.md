@@ -1,5 +1,8 @@
 # Live stream mode (planned)
 
+This note also plans the audio stream mode, at the end: the two are the
+repository's streaming modes, and they share a design.
+
 **Status:** planned, not started. Camera frames run in VIDEO mode today, and
 `RunningMode.liveStream` throws `UnsupportedError` when a task is created. The
 goal is to split LIVE_STREAM from VIDEO properly, as Google's runtimes do. Each
@@ -142,3 +145,59 @@ Going native, platform by platform:
 
 The public API is the same either way, so a platform can move to native later
 if profiling shows a gain.
+
+## Audio stream mode
+
+Google's audio tasks have their own pair of modes, checked on 2026-10-03
+against the same v1.0.0 source:
+
+| | AUDIO_CLIPS | AUDIO_STREAM |
+| --- | --- | --- |
+| Call | `Classify(clip, sampleRate)` blocks and returns one result per model window the clip is split into | `ClassifyAsync(block, sampleRate, timestampMs)` returns at once; the `result_callback` fires once per window, possibly several times per block |
+| Framing | Each clip framed on its own | Blocks accumulated and framed as one continuous signal: a window can straddle two blocks, leftover samples carry into the next block |
+| Sample rate | Per call | Fixed by the first block; timestamps must increase |
+| Dropping | None | None |
+
+- The only graph difference is `AudioToTensorCalculator`'s `stream_mode`
+  ([audio_classifier_graph.cc](https://github.com/google-ai-edge/mediapipe/blob/v1.0.0/mediapipe/tasks/cc/audio/audio_classifier/audio_classifier_graph.cc#L100)):
+  resampling, accumulation and framing across calls, with the model's window
+  and overlap from its metadata (`AudioTensorSpecs`, YAMNet: 15,600 samples
+  at 16 kHz). There is no flow limiter: where vision's LIVE_STREAM is about
+  dropping frames, the audio stream is about continuity.
+- The C API has `MpAudioClassifierClassifyAsync` and a `result_callback` on
+  the options
+  ([audio_classifier.h](https://github.com/google-ai-edge/mediapipe/blob/v1.0.0/mediapipe/tasks/c/audio/audio_classifier/audio_classifier.h#L120)),
+  with the same rule as vision's: the callback runs on a MediaPipe thread and
+  its arguments are valid only during the call. The Android and iOS SDKs
+  have `classifyAsync` with a result listener. The web task has only
+  `classify`; Google's TypeScript carries a TODO for a `classifyStream`.
+
+This repository today: `AudioRunningMode.audioStream` is reserved and
+`AudioClassifier.create` throws for it. The gallery's microphone mode is
+hand-rolled on clips mode: it keeps the last 15,600 samples and classifies
+that window again as audio arrives, so windows are re-run per update rather
+than framed continuously.
+
+Plan, alongside the vision steps:
+
+1. Implement `AudioRunningMode.audioStream` with `classifyAsync(block,
+   timestampMilliseconds)` returning at once and results on the task's
+   `results` stream, one per window with its timestamp, errors on the same
+   stream, as the text package's streaming tasks already deliver theirs.
+   Nothing is dropped: every block is processed, in order.
+2. Decide emulate or native, as for vision. Emulating on clips mode means
+   accumulating samples in Dart and classifying each full window, which
+   matches Google's stream framing exactly when the input is at the model's
+   rate and the model's windows do not overlap, and only approximately when
+   the runtime resamples (its resampler carries state across blocks).
+   Native means `MpAudioClassifierClassifyAsync` on the desktops and iOS
+   through the same C copy shim vision needs, and the SDKs' listeners on
+   Android and iOS; the web stays emulated.
+3. Move the gallery's microphone mode onto it, delete its sliding window,
+   and update the audio README's "Keep one classifier for a live stream"
+   paragraph to the new mode.
+4. Test continuity across blocks (a window straddling two blocks gives the
+   same result as the clip would), a changed sample rate refused, timestamps
+   checked at submission, errors reaching the listener, and disposal with
+   audio buffered.
+
