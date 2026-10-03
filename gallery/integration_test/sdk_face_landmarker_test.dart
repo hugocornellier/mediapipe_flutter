@@ -453,7 +453,10 @@ Future<void> _frames(
   LiveCameraController<FaceLandmarkerResult> controller,
 ) async {
   final deadline = DateTime.now().add(const Duration(seconds: 35));
-  while (controller.processedFrames < 20 &&
+  // At least three seconds of capture, so the rates in the report settle.
+  final measured = DateTime.now().add(const Duration(seconds: 3));
+  while ((controller.processedFrames < 20 ||
+          DateTime.now().isBefore(measured)) &&
       controller.error == null &&
       DateTime.now().isBefore(deadline)) {
     await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -475,6 +478,12 @@ void _cameraReport(LiveCameraController<FaceLandmarkerResult> c) =>
       'height': c.result!.imageHeight,
       'faces': c.result!.faceLandmarks.length,
       'mean_inference_ms': c.averageInferenceMilliseconds,
+      'camera_frames': c.cameraFrames,
+      'skipped_frames': c.skippedFrames,
+      'mean_conversion_ms': c.averageConversionMilliseconds,
+      'mean_frame_ms': c.averageFrameMilliseconds,
+      'fps': c.framesPerSecond,
+      'camera_fps': c.cameraFramesPerSecond,
     });
 
 void _report(String event, Map<String, Object?> data) {

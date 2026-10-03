@@ -91,6 +91,14 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// Camera frames never processed. A frame that arrives during inference
   /// waits for it; it is skipped only if a newer one arrives first.
   int skippedFrames = 0;
+
+  /// Camera frames that arrived while running.
+  int cameraFrames = 0;
+
+  /// Camera frames that arrived per second while running.
+  double get cameraFramesPerSecond => _clock.elapsedMicroseconds == 0
+      ? 0
+      : cameraFrames * 1000000 / _clock.elapsedMicroseconds;
   double inferenceMilliseconds = 0;
   double conversionMilliseconds = 0;
   double frameMilliseconds = 0;
@@ -329,6 +337,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   void _resetTimings() {
     processedFrames = 0;
     skippedFrames = 0;
+    cameraFrames = 0;
     inferenceMilliseconds = 0;
     conversionMilliseconds = 0;
     frameMilliseconds = 0;
@@ -355,6 +364,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   // RunningMode.liveStream in mediapipe_vision.
   void _onFrame(CameraImage image, int generation) {
     if (!running || _closed || generation != _generation) return;
+    cameraFrames++;
     if (_frame != null) {
       // Starting the newest waiting frame as soon as inference finishes keeps
       // the task busy; waiting for the next camera frame instead left it idle
