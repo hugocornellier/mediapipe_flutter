@@ -44,6 +44,17 @@ final class FaceLandmarkerLiveTask implements LiveTask<FaceLandmarkerResult> {
       _task!.detect(image);
 
   @override
+  Future<FaceLandmarkerResult> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.detectForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
+
+  @override
   void submit(
     VisionImage frame,
     int timestamp, {
@@ -103,6 +114,17 @@ final class HandLandmarkerLiveTask implements LiveTask<HandLandmarkerResult> {
   @override
   Future<HandLandmarkerResult> detectImage(VisionImage image) =>
       _task!.detect(image);
+
+  @override
+  Future<HandLandmarkerResult> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.detectForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
 
   @override
   void submit(
@@ -169,6 +191,17 @@ final class GestureRecognizerLiveTask
   @override
   Future<GestureRecognizerResult> detectImage(VisionImage image) =>
       _task!.recognize(image);
+
+  @override
+  Future<GestureRecognizerResult> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.recognizeForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
 
   @override
   void submit(
@@ -245,6 +278,17 @@ final class HolisticLandmarkerLiveTask
       _task!.detect(image);
 
   @override
+  Future<HolisticLandmarkerResult> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.detectForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
+
+  @override
   void submit(
     VisionImage frame,
     int timestamp, {
@@ -308,6 +352,17 @@ final class PoseLandmarkerLiveTask implements LiveTask<PoseLandmarkerResult> {
       _task!.detect(image);
 
   @override
+  Future<PoseLandmarkerResult> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.detectForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
+
+  @override
   void submit(
     VisionImage frame,
     int timestamp, {
@@ -363,6 +418,17 @@ final class FaceDetectorLiveTask implements LiveTask<FaceDetectorResult> {
   @override
   Future<FaceDetectorResult> detectImage(VisionImage image) =>
       _task!.detect(image);
+
+  @override
+  Future<FaceDetectorResult> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.detectForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
 
   @override
   void submit(
@@ -422,6 +488,17 @@ final class ObjectDetectorLiveTask implements LiveTask<ObjectDetectorResult> {
       _task!.detect(image);
 
   @override
+  Future<ObjectDetectorResult> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.detectForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
+
+  @override
   void submit(
     VisionImage frame,
     int timestamp, {
@@ -477,6 +554,17 @@ final class ImageClassifierLiveTask implements LiveTask<ImageClassifierResult> {
   @override
   Future<ImageClassifierResult> detectImage(VisionImage image) =>
       _task!.classify(image);
+
+  @override
+  Future<ImageClassifierResult> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.classifyForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
 
   @override
   void submit(
@@ -536,6 +624,17 @@ final class ImageSegmenterLiveTask implements LiveTask<ImageSegmenterResult> {
   @override
   Future<ImageSegmenterResult> detectImage(VisionImage image) =>
       _task!.segment(image);
+
+  @override
+  Future<ImageSegmenterResult> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.segmentForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
 
   @override
   void submit(

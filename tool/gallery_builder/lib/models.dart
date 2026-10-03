@@ -229,6 +229,10 @@ const samples = <String, String>{
   'gallery/samples/dog.jpg': 'dog.jpg',
   'gallery/samples/cat.png': 'cat.png',
   'gallery/samples/elephant.png': 'elephant.png',
+  // The video file mode's clip and the clip that checks a file's rotation,
+  // made from the fixtures above by gallery/tool/make_sample_clip.py.
+  'gallery/samples/scene.mp4': 'scene.mp4',
+  'gallery/samples/rotated.mp4': 'rotated.mp4',
 };
 
 /// The photos Google's Image Embedding demo compares, bundled only with it.

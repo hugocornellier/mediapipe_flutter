@@ -46,6 +46,67 @@ abstract base class _WebLiveTask<R>
           as Future<R>;
 
   @override
+  Future<R> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) =>
+      switch (_task!) {
+            final FaceLandmarker t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final HandLandmarker t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final PoseLandmarker t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final GestureRecognizer t => t.recognizeForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final HolisticLandmarker t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final FaceDetector t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final ObjectDetector t => t.detectForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final ImageClassifier t => t.classifyForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final ImageEmbedder t => t.embedForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final ImageSegmenter t => t.segmentForVideo(
+              frame,
+              timestampMilliseconds: timestamp,
+              rotationDegrees: rotationDegrees,
+            ),
+            final task => throw UnsupportedError('$task has no video mode.'),
+          }
+          as Future<R>;
+
+  @override
   void submit(
     VisionImage frame,
     int timestamp, {
@@ -441,6 +502,17 @@ final class ImageSegmenterLiveTask implements LiveTask<ImageSegmenterResult> {
   @override
   Future<ImageSegmenterResult> detectImage(VisionImage image) =>
       _task!.segment(image);
+
+  @override
+  Future<ImageSegmenterResult> detectFrame(
+    VisionImage frame,
+    int timestamp, {
+    required int rotationDegrees,
+  }) => _task!.segmentForVideo(
+    frame,
+    timestampMilliseconds: timestamp,
+    rotationDegrees: rotationDegrees,
+  );
 
   @override
   void submit(

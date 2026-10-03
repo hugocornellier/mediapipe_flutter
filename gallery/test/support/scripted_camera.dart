@@ -220,6 +220,13 @@ class ScriptedTask implements LiveTask<int>, StatefulLiveTask {
   Future<int> detectImage(VisionImage image) async => 1;
 
   @override
+  Future<int> detectFrame(
+    VisionImage frame,
+    int timestampMilliseconds, {
+    required int rotationDegrees,
+  }) async => throw UnimplementedError('The camera tests feed no video file.');
+
+  @override
   void submit(
     VisionImage frame,
     int timestampMilliseconds, {

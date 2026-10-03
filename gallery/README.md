@@ -63,7 +63,8 @@ The hook extracts Google's checksum-pinned native library from its official
 wheel; the installed app does not need Python. `camera_desktop` provides native
 Media Foundation capture on Windows and GStreamer/V4L2 capture on Linux.
 Linux builds need `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev` and
-`gstreamer1.0-plugins-good` in addition to Flutter's desktop dependencies.
+`gstreamer1.0-plugins-good` in addition to Flutter's desktop dependencies, and
+video file mode needs `gstreamer1.0-libav` to decode H.264.
 
 ## What decides the tiles
 
@@ -106,7 +107,15 @@ inference time and the frames dropped per second. It handles desktop RGBA,
 Apple BGRA and Android YUV camera buffers. Every camera-based vision page also
 has a **Mode** selector. Choose **Still image** to open a JPG, PNG or WebP file
 and run IMAGE-mode inference with the same model, settings and CPU/GPU
-delegate. Switching back to **Camera** reopens the live stream task. Interactive Segmenter is image-only and uses its own editor.
+delegate. Choose **Video file** to run a clip through the task in video mode:
+every frame in order, with the file's own timestamps and rotation, a bundled
+three-second clip (`samples/scene.mp4`) or a file you pick. Play, pause and
+restart only, since video mode's timestamps cannot go back. The frames come
+from `packages/video_frames`, the gallery's own plugin over each platform's
+decoder: AVFoundation on iOS and macOS, MediaCodec on Android, Media
+Foundation on Windows, GStreamer on Linux, and in browsers a `<video>` element
+stepped one frame at a time. The vision package decodes nothing.
+Switching back to **Camera** reopens the live stream task. Interactive Segmenter is image-only and uses its own editor.
 Windows exposes CPU only. Face and Hand Landmarker also expose GPU on Linux,
 Apple platforms, Android and web.
 Web uses browser-native capture and transferable bitmaps while sharing these

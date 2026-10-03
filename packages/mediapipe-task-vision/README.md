@@ -551,7 +551,19 @@ try {
 
 Here `decodedFrames` comes from your video decoder; the package does not
 decode video. Keep a task alive across frames; do not recreate it for each
-image.
+image. Pass the file's rotation as `rotationDegrees` so results come out in
+display orientation, and since timestamps cannot go back, start a new task to
+play a file again.
+
+The [gallery](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery)'s
+video file mode is a worked example for every camera task on all six
+platforms: its
+[`video_frames`](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery/packages/video_frames)
+plugin decodes frame by frame with each platform's own decoder
+(AVFoundation, MediaCodec, Media Foundation, GStreamer and a browser's
+`<video>` element), and
+[`video_file_controller.dart`](https://github.com/hugocornellier/mediapipe_flutter/blob/main/gallery/lib/live/video_file_controller.dart)
+runs the loop above.
 
 ## Live cameras
 
