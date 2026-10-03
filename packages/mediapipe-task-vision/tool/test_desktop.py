@@ -210,6 +210,10 @@ flutter:
     if args.segmenter_tasks:
         # Both segmenter tasks reuse the checked-in face fixtures.
         shutil.copyfile(PACKAGE / 'test/segmenter_tasks_test.dart', app / 'test/segmenter_tasks_test.dart')
+    if args.object_detector and args.image_tasks and args.landmark_tasks and args.segmenter_tasks:
+        # Every camera-capable task, in VIDEO and LIVE_STREAM on this host's runtime.
+        shutil.copyfile(PACKAGE / 'test/live_stream_runtime_test.dart',
+                        app / 'test/live_stream_runtime_test.dart')
     (app / 'test/native_assets').mkdir()
     # Core owns the official wheel download; its test still runs on each desktop host.
     shutil.copyfile(REPO / 'packages/mediapipe-core/test/native_assets/wheel_library_test.dart',

@@ -53,9 +53,11 @@ final class NativeObjectDetector
         base.model_asset_buffer_count = bytes.length;
       }
       native.ref
-        ..running_mode = options.runningMode == RunningMode.video
-            ? mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
-            : mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
+        // LIVE_STREAM runs on the VIDEO graph, with its flow limiter in
+        // the task runner.
+        ..running_mode = options.runningMode == RunningMode.image
+            ? mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
+            : mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
         ..max_results = options.maxResults
         ..score_threshold = options.scoreThreshold;
       if (options.displayNamesLocale case final locale?) {

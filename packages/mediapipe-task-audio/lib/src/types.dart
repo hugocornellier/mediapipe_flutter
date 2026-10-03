@@ -42,7 +42,8 @@ enum AudioRunningMode {
   /// Independent clips, each classified whole.
   audioClips,
 
-  // TODO: Implement audio stream mode with the vision LIVE_STREAM design
+  // TODO: Implement audio stream mode with the vision LIVE_STREAM design:
+  // packages/mediapipe-task-vision/tool/LIVE_STREAM.md, "Audio stream mode"
   // (tool/API_UNIFICATION.md, phase 7 at the repository root).
   /// Reserved for continuous audio delivered in blocks with a results
   /// stream.

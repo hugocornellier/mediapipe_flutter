@@ -1,11 +1,15 @@
 import 'dart:typed_data';
+
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'task_settings.dart';
 
-/// The task-specific half of a live demo: how to build it, and how to run one
-/// frame through it. Everything else about live capture is identical between
-/// tasks and lives in `LiveCameraController`.
+/// A camera frame's result, with the timestamp the frame was submitted with.
+typedef LiveResult<T> = ({int timestamp, T result});
+
+/// The task-specific half of a live demo: how to build it, and how to hand it
+/// a frame. Everything else about live capture is identical between tasks and
+/// lives in `LiveCameraController`.
 abstract interface class LiveTask<T> {
   /// Human-readable name, used in errors.
   String get name;
@@ -13,28 +17,39 @@ abstract interface class LiveTask<T> {
   /// The values [open] builds the task with; the page edits them and reopens.
   TaskSettingValues get settings;
 
-  /// Creates the task in the requested running mode.
+  /// Creates the task in the requested running mode: live stream for the
+  /// camera, image for a still image.
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   });
 
   /// Processes a still image with a task opened in image mode.
   Future<T> detectImage(VisionImage image);
 
-  /// Runs one frame. Called at most once at a time.
+  /// Hands one camera frame to a task opened in live stream mode and returns
+  /// at once. The task runs it, holds it while another frame runs, or drops
+  /// it for a newer one, as Google's live stream does.
   ///
   /// [rotationDegrees] is the clockwise rotation that stands the frame upright;
   /// MediaPipe applies it and still reports coordinates in the frame's own
   /// space, which is what `PreviewTransform` expects.
-  Future<T> detect(
+  void submit(
     VisionImage frame,
     int timestampMilliseconds, {
     required int rotationDegrees,
   });
 
-  /// Releases native resources. Safe to call when never opened.
+  /// The result of every submitted frame the task ran, in order. Listen once
+  /// per [open], before the first frame.
+  Stream<LiveResult<T>> get results;
+
+  /// Frames the task dropped since [open].
+  int get droppedFrames;
+
+  /// Releases native resources after the frames already submitted run.
+  /// Safe to call when never opened.
   Future<void> close();
 }
 
@@ -46,19 +61,9 @@ abstract interface class StatefulLiveTask {
   void forgetFrames();
 }
 
-/// VIDEO tasks whose temporal state requires every frame to have the same
+/// Tasks whose tracking state requires every frame to have the same
 /// dimensions. A differently sized sample must not seed their state.
 abstract interface class FixedFrameSizeLiveTask {}
-
-/// Optional transport for decoded browser frames.
-abstract interface class BrowserLiveTask<T> implements LiveTask<T> {
-  Future<T> detectBrowserFrame(
-    Object frame,
-    int width,
-    int height,
-    int timestamp,
-  );
-}
 
 /// Optional worker-rendered browser overlay. The regular Flutter painter stays
 /// available when the browser cannot transfer a canvas or drawing fails.

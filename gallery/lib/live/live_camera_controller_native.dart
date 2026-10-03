@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -14,11 +15,29 @@ import 'frame_timings.dart';
 import 'live_task.dart';
 import 'still_image.dart';
 
-/// Owns camera capture and one official VIDEO-mode task.
+/// A submitted camera frame, from its arrival to its result: when it arrived
+/// and when the task started it, on [LiveCameraController]'s clock, what
+/// converting it cost, and how to draw its result.
+final class _Submitted {
+  _Submitted(this.arrived, this.size, this.rotation, this.orientation);
+  final int arrived;
+  final Size size;
+  final int rotation;
+  final DeviceOrientation orientation;
+
+  /// Set when the task starts the frame and converts it; a dropped frame is
+  /// never started.
+  int? started;
+  double conversion = 0;
+}
+
+/// Owns camera capture and one official task in live stream mode.
 ///
-/// Camera lifecycle, the operation queue, generation guards, frame skipping,
-/// timestamp monotonicity, timings and error capture are the same whichever
-/// task is running, so they live here once and the task supplies only [LiveTask].
+/// Camera lifecycle, the operation queue, generation guards, timestamp
+/// monotonicity, timings and error capture are the same whichever task is
+/// running, so they live here once and the task supplies only [LiveTask]. The
+/// task drops frames itself, as Google's live stream does: every camera frame
+/// is submitted as it arrives, and converted only if the task runs it.
 class LiveCameraController<T> extends ChangeNotifier {
   LiveCameraController(this.task);
 
@@ -28,10 +47,15 @@ class LiveCameraController<T> extends ChangeNotifier {
   CameraController? _camera;
   bool _opened = false;
   Future<void> _operations = Future.value();
-  Future<void>? _frame;
+  StreamSubscription<LiveResult<T>>? _results;
 
-  /// The newest frame that arrived while [_frame] ran; it starts next.
-  CameraImage? _pending;
+  /// Frames submitted and not yet answered, by timestamp. A frame the task
+  /// dropped is forgotten when a newer frame's result arrives.
+  final _submitted = SplayTreeMap<int, _Submitted>();
+
+  /// Completes when the warm-up frame in flight returns.
+  Completer<void>? _warmUpFrame;
+  int _droppedBeforeStart = 0;
   Future<void>? _closing;
   final _clock = Stopwatch();
   int _generation = 0;
@@ -88,15 +112,33 @@ class LiveCameraController<T> extends ChangeNotifier {
   bool get canSwitchCamera => hasFrontAndBackCameras(cameras);
   int processedFrames = 0;
 
-  /// Camera frames never processed. A frame that arrives during inference
-  /// waits for it; it is skipped only if a newer one arrives first.
-  int skippedFrames = 0;
+  /// Camera frames submitted to the task since capture last started.
+  int cameraFrames = 0;
+
+  /// Camera frames the task dropped since capture last started: one frame
+  /// runs and the newest one waits, so a frame that arrives while another
+  /// waits replaces it.
+  int get droppedFrames =>
+      _opened ? task.droppedFrames - _droppedBeforeStart : 0;
+
+  /// The task's own time for the last frame: from when it started the frame
+  /// to its result.
   double inferenceMilliseconds = 0;
+
+  /// What building the last frame's [VisionImage] cost, on this isolate, when
+  /// the task started the frame.
   double conversionMilliseconds = 0;
+
+  /// The last frame's conversion and inference together.
   double frameMilliseconds = 0;
+
+  /// The last frame's time from the camera to its result, including its wait
+  /// behind the frame before it.
+  double latencyMilliseconds = 0;
   double _totalInferenceMilliseconds = 0;
   double _totalConversionMilliseconds = 0;
   double _totalFrameMilliseconds = 0;
+  double _totalLatencyMilliseconds = 0;
   final _recent = RecentFrameTimings();
 
   /// CPU by default, deliberately. Metal wins on back-to-back frames but
@@ -113,17 +155,27 @@ class LiveCameraController<T> extends ChangeNotifier {
   double get averageInferenceMilliseconds =>
       processedFrames == 0 ? 0 : _totalInferenceMilliseconds / processedFrames;
 
-  /// Mean time spent building a [VisionImage] from the camera plane.
+  /// Mean time spent building a [VisionImage] from the camera plane. Only
+  /// the frames the task runs are converted.
   double get averageConversionMilliseconds =>
       processedFrames == 0 ? 0 : _totalConversionMilliseconds / processedFrames;
 
-  /// Mean wall time for a whole frame, so plumbing shows up as the gap between
-  /// this and [averageInferenceMilliseconds].
+  /// Mean conversion and inference per processed frame, so plumbing shows up
+  /// as the gap between this and [averageInferenceMilliseconds].
   double get averageFrameMilliseconds =>
       processedFrames == 0 ? 0 : _totalFrameMilliseconds / processedFrames;
+
+  /// Mean time from the camera to a result.
+  double get averageLatencyMilliseconds =>
+      processedFrames == 0 ? 0 : _totalLatencyMilliseconds / processedFrames;
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
       ? 0
       : processedFrames * 1000000 / _clock.elapsedMicroseconds;
+
+  /// Camera frames that arrived per second while running.
+  double get cameraFramesPerSecond => _clock.elapsedMicroseconds == 0
+      ? 0
+      : cameraFrames * 1000000 / _clock.elapsedMicroseconds;
 
   /// The readout's figures, over the last [recentFrames] frames, so they
   /// follow the current speed.
@@ -263,6 +315,7 @@ class LiveCameraController<T> extends ChangeNotifier {
         }
         await task.open(chosen, bytes);
         _opened = true;
+        _results = task.results.listen(_onResult, onError: _onResultError);
         if (_closed || generation != _generation) {
           await _release();
           return;
@@ -328,15 +381,20 @@ class LiveCameraController<T> extends ChangeNotifier {
 
   void _resetTimings() {
     processedFrames = 0;
-    skippedFrames = 0;
+    cameraFrames = 0;
+    _droppedBeforeStart = _opened ? task.droppedFrames : 0;
     inferenceMilliseconds = 0;
     conversionMilliseconds = 0;
     frameMilliseconds = 0;
+    latencyMilliseconds = 0;
     _totalInferenceMilliseconds = 0;
     _totalConversionMilliseconds = 0;
     _totalFrameMilliseconds = 0;
+    _totalLatencyMilliseconds = 0;
     _recent.clear();
-    _pending = null;
+    // Results of frames from before, such as the other camera's, are not
+    // shown.
+    _submitted.clear();
     _clock
       ..reset()
       ..start();
@@ -350,37 +408,106 @@ class LiveCameraController<T> extends ChangeNotifier {
     }
   }
 
-  // TODO: Use live stream mode once LIVE_STREAM is split from VIDEO, and
-  // delete this hand-rolled copy of Google's frame dropping. See
-  // RunningMode.liveStream in mediapipe_vision.
+  /// Stamps and submits every frame as it arrives; the task decides which
+  /// frames run, and converts a frame when it starts it.
   void _onFrame(CameraImage image, int generation) {
     if (!running || _closed || generation != _generation) return;
-    if (_frame != null) {
-      // Starting the newest waiting frame as soon as inference finishes keeps
-      // the task busy; waiting for the next camera frame instead left it idle
-      // for up to a frame interval, halving the rate once inference took just
-      // over one.
-      if (_pending != null) skippedFrames++;
-      _pending = image;
-      return;
-    }
-    _begin(image, generation);
-  }
-
-  void _begin(CameraImage image, int generation) {
     final timestamp = math.max(
       _timestampOffset + _clock.elapsedMilliseconds,
       _lastTimestamp + 1,
     );
     _lastTimestamp = timestamp;
-    _frame = _process(image, generation, timestamp).whenComplete(() {
-      _frame = null;
-      final next = _pending;
-      _pending = null;
-      if (next != null && running && !_closed && generation == _generation) {
-        _begin(next, generation);
-      }
-    });
+    final arrived = _clock.elapsedMicroseconds;
+    try {
+      // The frame arrives in sensor layout on mobile, so work out the turn that
+      // stands it upright. MediaPipe applies it and still answers in the
+      // delivered frame's coordinates, so the overlay takes the same turn.
+      final orientation = _camera?.value.deviceOrientation ?? deviceOrientation;
+      final rotation = uprightRotationDegrees(
+        width: image.width,
+        height: image.height,
+        sensorOrientation: _camera?.description.sensorOrientation ?? 0,
+        isFrontCamera: isFrontCamera,
+        deviceOrientation: orientation,
+      );
+      final submitted = _submitted[timestamp] = _Submitted(
+        arrived,
+        Size(image.width.toDouble(), image.height.toDouble()),
+        rotation,
+        orientation,
+      );
+      cameraFrames++;
+      // Android's YUV conversion takes about as long as inference on a slow
+      // phone, so only the frames the task runs pay for it. The camera
+      // plugin's planes are Dart copies, safe to hold until then.
+      final frame = VisionImage.deferred(() {
+        final conversion = Stopwatch()..start();
+        final converted = visionImageFromCamera(image);
+        submitted
+          ..conversion = conversion.elapsedMicroseconds / 1000
+          ..started = _clock.elapsedMicroseconds;
+        return converted;
+      });
+      task.submit(frame, timestamp, rotationDegrees: rotation);
+    } catch (failure) {
+      error = _message(failure);
+      unawaited(stop());
+    }
+  }
+
+  void _onResult(LiveResult<T> live) {
+    if (_warmUpFrame case final warmUp?) {
+      _warmUpFrame = null;
+      warmUp.complete();
+      return;
+    }
+    final now = _clock.elapsedMicroseconds;
+    // Frames submitted before this one and still unanswered were dropped.
+    final frame = _submitted.remove(live.timestamp);
+    _submitted.removeWhere((timestamp, _) => timestamp < live.timestamp);
+    if (frame == null || !running || _closed) return;
+    result = live.result;
+    frameSize = frame.size;
+    frameRotationDegrees = frame.rotation;
+    deviceOrientation = frame.orientation;
+    // Split so the readout distinguishes the task's own work from what this
+    // demo spends getting a camera frame to it: building the VisionImage
+    // here, and the hop the task makes to its worker or platform thread.
+    conversionMilliseconds = frame.conversion;
+    inferenceMilliseconds = (now - (frame.started ?? frame.arrived)) / 1000;
+    frameMilliseconds = conversionMilliseconds + inferenceMilliseconds;
+    latencyMilliseconds = (now - frame.arrived) / 1000;
+    _totalConversionMilliseconds += conversionMilliseconds;
+    _totalInferenceMilliseconds += inferenceMilliseconds;
+    _totalFrameMilliseconds += frameMilliseconds;
+    _totalLatencyMilliseconds += latencyMilliseconds;
+    _recent.add(
+      inference: inferenceMilliseconds,
+      conversion: conversionMilliseconds,
+      frame: frameMilliseconds,
+      finishedMicroseconds: now,
+    );
+    processedFrames++;
+    _changed();
+  }
+
+  void _onResultError(Object failure) {
+    if (_warmUpFrame case final warmUp?) {
+      _warmUpFrame = null;
+      warmUp.completeError(failure);
+      return;
+    }
+    if (_closed || !running) return;
+    error = _message(failure);
+    unawaited(stop());
+  }
+
+  /// Runs one warm-up frame and waits for its result: nothing else is in
+  /// flight, so the task runs it.
+  Future<void> _warmUpWith(VisionImage image, int timestamp) {
+    final done = _warmUpFrame = Completer<void>();
+    task.submit(image, timestamp, rotationDegrees: 0);
+    return done.future;
   }
 
   /// Runs the task on [sample], then on a blank frame of its size, before the
@@ -405,7 +532,7 @@ class LiveCameraController<T> extends ChangeNotifier {
         format: ui.ImageByteFormat.rawRgba,
       ))!;
       final width = image.width, height = image.height;
-      await task.detect(
+      await _warmUpWith(
         VisionImage.fromPixels(
           pixels: rgba.buffer.asUint8List(
             rgba.offsetInBytes,
@@ -416,9 +543,8 @@ class LiveCameraController<T> extends ChangeNotifier {
           format: VisionPixelFormat.rgba,
         ),
         0,
-        rotationDegrees: 0,
       );
-      await task.detect(
+      await _warmUpWith(
         VisionImage.fromPixels(
           pixels: Uint8List(width * height * 4),
           width: width,
@@ -426,7 +552,6 @@ class LiveCameraController<T> extends ChangeNotifier {
           format: VisionPixelFormat.rgba,
         ),
         1,
-        rotationDegrees: 0,
       );
     } finally {
       image.dispose();
@@ -434,64 +559,6 @@ class LiveCameraController<T> extends ChangeNotifier {
     }
     if (task case final StatefulLiveTask stateful) stateful.forgetFrames();
     return 1;
-  }
-
-  Future<void> _process(
-    CameraImage image,
-    int generation,
-    int timestamp,
-  ) async {
-    final timer = Stopwatch()..start();
-    try {
-      // The frame arrives in sensor layout on mobile, so work out the turn that
-      // stands it upright. MediaPipe applies it and still answers in the
-      // delivered frame's coordinates, so the overlay takes the same turn.
-      final orientation = _camera?.value.deviceOrientation ?? deviceOrientation;
-      final rotation = uprightRotationDegrees(
-        width: image.width,
-        height: image.height,
-        sensorOrientation: _camera?.description.sensorOrientation ?? 0,
-        isFrontCamera: isFrontCamera,
-        deviceOrientation: orientation,
-      );
-      final conversion = Stopwatch()..start();
-      final frame = visionImageFromCamera(image);
-      conversion.stop();
-      final inference = Stopwatch()..start();
-      final detection = await task.detect(
-        frame,
-        timestamp,
-        rotationDegrees: rotation,
-      );
-      inference.stop();
-      if (_closed || generation != _generation) return;
-      result = detection;
-      frameSize = Size(image.width.toDouble(), image.height.toDouble());
-      frameRotationDegrees = rotation;
-      deviceOrientation = orientation;
-      // Split so the readout distinguishes the task's own work from what this
-      // demo spends getting a camera frame to it: building the VisionImage,
-      // and the isolate hop the task worker makes to keep native pointers off
-      // the calling isolate.
-      conversionMilliseconds = conversion.elapsedMicroseconds / 1000;
-      inferenceMilliseconds = inference.elapsedMicroseconds / 1000;
-      frameMilliseconds = timer.elapsedMicroseconds / 1000;
-      _totalConversionMilliseconds += conversionMilliseconds;
-      _totalInferenceMilliseconds += inferenceMilliseconds;
-      _totalFrameMilliseconds += frameMilliseconds;
-      _recent.add(
-        inference: inferenceMilliseconds,
-        conversion: conversionMilliseconds,
-        frame: frameMilliseconds,
-        finishedMicroseconds: _clock.elapsedMicroseconds,
-      );
-      processedFrames++;
-      _changed();
-    } catch (failure) {
-      if (_closed || generation != _generation) return;
-      error = _message(failure);
-      unawaited(stop());
-    }
   }
 
   Future<void> stop() {
@@ -517,7 +584,6 @@ class LiveCameraController<T> extends ChangeNotifier {
   }
 
   Future<void> _releaseCamera() async {
-    _pending = null;
     final camera = _camera;
     _camera = null;
     camera?.removeListener(_cameraChanged);
@@ -538,15 +604,15 @@ class LiveCameraController<T> extends ChangeNotifier {
         }
       }
     }
-    await _frame;
     frameSize = null;
     _clock.stop();
   }
 
+  /// Closes the task once the frames already submitted have run; their results
+  /// are not shown, since capture has stopped.
   Future<void> _releaseTask() async {
-    _pending = null;
-    await _frame;
     if (_opened) {
+      _droppedBeforeStart = 0;
       _opened = false;
       try {
         await task.close();
@@ -554,9 +620,12 @@ class LiveCameraController<T> extends ChangeNotifier {
         error ??= _message(failure);
       }
     }
+    await _results?.cancel();
+    _results = null;
+    _submitted.clear();
   }
 
-  /// Waits for capture and in-flight inference to stop before releasing resources.
+  /// Stops capture, then closes the task after the frames it holds.
   Future<void> close() {
     if (_closing != null) return _closing!;
     _closed = true;

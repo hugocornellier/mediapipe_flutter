@@ -100,7 +100,7 @@ abstract base class HandTrackingOptions extends VisionTaskOptions {
   /// Minimum hand presence confidence from the landmark model.
   final double minHandPresenceConfidence;
 
-  /// Minimum tracking confidence in video mode.
+  /// Minimum tracking confidence in video and live stream modes.
   final double minTrackingConfidence;
 }
 
@@ -214,7 +214,7 @@ final class PoseLandmarkerOptions extends VisionTaskOptions {
   /// Minimum pose presence confidence.
   final double minPosePresenceConfidence;
 
-  /// Minimum tracking confidence in video mode.
+  /// Minimum tracking confidence in video and live stream modes.
   final double minTrackingConfidence;
 
   /// Include one foreground confidence mask per pose.

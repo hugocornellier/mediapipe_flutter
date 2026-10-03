@@ -67,6 +67,30 @@ final class FaceLandmarker implements VisionTask {
     int rotationDegrees = 0,
   }) => _task.video(image, rotationDegrees, timestampMilliseconds);
 
+  /// Locates face landmarks in a camera frame in [RunningMode.liveStream] and
+  /// returns at once; the result arrives on [results]. As in Google's runtime,
+  /// one frame runs at a time and the newest one waits: a frame submitted while
+  /// another waits replaces it, and [droppedFrames] counts the replaced ones.
+  /// Timestamps are nonnegative milliseconds that strictly increase in call
+  /// order, and a dropped frame's timestamp stays reserved. A failed check
+  /// throws here.
+  void detectAsync(
+    VisionImage image, {
+    required int timestampMilliseconds,
+    int rotationDegrees = 0,
+  }) => _task.liveStream(image, rotationDegrees, timestampMilliseconds);
+
+  /// The result of each frame [detectAsync] runs, in timestamp order. Listen
+  /// before the first frame. One subscription: pausing buffers results and
+  /// cancelling discards later ones. A failure arrives as a [TaskException],
+  /// ends the stream and fails every later call. `dispose()` delivers the
+  /// frame in flight and the waiting one, then closes the stream. Live
+  /// stream mode only.
+  Stream<FaceLandmarkerResult> get results => _task.results;
+
+  /// Frames [detectAsync] accepted but never ran; always 0 in the other modes.
+  int get droppedFrames => _task.droppedFrames;
+
   @override
   Future<void> dispose() => _task.dispose();
 }

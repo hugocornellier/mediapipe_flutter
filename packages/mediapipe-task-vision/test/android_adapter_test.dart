@@ -2,6 +2,7 @@
 @Tags(['flutter'])
 library;
 
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
@@ -125,6 +126,58 @@ void main() {
     expect(result.gestures.single.single.categoryName, 'Thumb_Up');
     expect(result.handLandmarks.single, isEmpty);
     await task.dispose();
+  });
+
+  test('a live stream task is a VIDEO task, and only the frames that run '
+      'cross the channel', () async {
+    final replies = <Completer<Map<String, Object?>>>[];
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      calls.add(call);
+      if (call.method != 'detect') return call.method == 'create' ? 7 : null;
+      final reply = Completer<Map<String, Object?>>();
+      replies.add(reply);
+      return reply.future;
+    });
+    Map<String, Object?> hands(int timestamp) => {
+      'width': 2,
+      'height': 2,
+      'landmarks': Float64List(0),
+      'counts': Int32List(0),
+      'worldLandmarks': Float64List(0),
+      'worldCounts': Int32List(0),
+      'handedness': const [],
+      'timestamp': timestamp,
+    };
+    final task = await HandLandmarker.create(
+      HandLandmarkerOptions(
+        modelBytes: model,
+        runningMode: RunningMode.liveStream,
+      ),
+    );
+    expect(calls.single.arguments['mode'], 'video');
+    final results = <int?>[];
+    task.results.listen((r) => results.add(r.timestampMilliseconds));
+    for (var i = 0; i < 4; i++) {
+      task.detectAsync(image, timestampMilliseconds: i, rotationDegrees: 90);
+    }
+    await pumpEventQueue();
+    List<Object?> detected() => [
+      for (final call in calls.where((c) => c.method == 'detect'))
+        call.arguments['timestamp'],
+    ];
+    expect(detected(), [0]);
+    expect(task.droppedFrames, 2);
+    replies[0].complete(hands(0));
+    await pumpEventQueue();
+    expect(detected(), [0, 3]);
+    expect(calls.last.arguments['rotation'], 90);
+    final closing = task.dispose();
+    await pumpEventQueue();
+    expect(calls.last.method, 'detect', reason: 'the queued frame runs first');
+    replies[1].complete(hands(3));
+    await closing;
+    expect(results, [0, 3]);
+    expect(calls.last.method, 'close');
   });
 
   test('face landmarks, blendshapes and column-major matrices', () async {

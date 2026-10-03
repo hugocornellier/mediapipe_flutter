@@ -136,7 +136,7 @@ Future<void> main() async {
       final active = Stopwatch()..start();
       var sampledAt = 0;
       var sampledFrames = session.processedFrames;
-      var sampledSkipped = session.skippedFrames;
+      var sampledDropped = session.droppedFrames;
       var sampledFixtureFrames = fixtureFrames;
       latencies.clear();
       report('capturing', {
@@ -170,15 +170,15 @@ Future<void> main() async {
         if (now - sampledAt >= 15000 || now >= cycleSeconds * 1000) {
           check();
           final frames = session.processedFrames;
-          final skipped = session.skippedFrames;
+          final dropped = session.droppedFrames;
           report('sample', {
             'active_seconds': now / 1000,
             'frames': frames,
             'window_frames': frames - sampledFrames,
             'window_seconds': (now - sampledAt) / 1000,
             'fps': (frames - sampledFrames) * 1000 / (now - sampledAt),
-            'skipped': skipped,
-            'window_skipped': skipped - sampledSkipped,
+            'dropped': dropped,
+            'window_dropped': dropped - sampledDropped,
             'latency_p50_ms': latencies.percentile(0.50),
             'latency_p95_ms': latencies.percentile(0.95),
             'fixture_frames': fixtureFrames,
@@ -188,7 +188,7 @@ Future<void> main() async {
           });
           sampledAt = now;
           sampledFrames = frames;
-          sampledSkipped = skipped;
+          sampledDropped = dropped;
           sampledFixtureFrames = fixtureFrames;
           latencies.clear();
           fixtureLatencies.clear();

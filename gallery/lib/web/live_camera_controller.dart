@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:math' as math;
@@ -32,7 +33,20 @@ extension type _FrameMetadata(JSObject object) implements JSObject {
   external double? get captureTime;
 }
 
-/// Browser capture with the same gallery lifecycle, controls and result painter.
+/// What a submitted camera frame needs when its result arrives: when it
+/// arrived, on [LiveCameraController]'s clock, what converting it cost, its
+/// size, and its pipeline trace when tracing.
+typedef _Submitted = ({
+  int arrived,
+  double conversion,
+  Size size,
+  PipelineFrame? trace,
+});
+
+/// Browser capture with the same gallery lifecycle, controls and result
+/// painter, and one official task in live stream mode: every camera frame is
+/// submitted as it arrives, and the task drops frames as Google's live stream
+/// does.
 class LiveCameraController<T> extends ChangeNotifier {
   LiveCameraController(this.task) {
     _visibility = ((web.Event _) {
@@ -59,10 +73,28 @@ class LiveCameraController<T> extends ChangeNotifier {
   StreamSubscription<web.Event>? _trackEnded;
   late final JSFunction _visibility;
   Future<void> _operations = Future.value();
-  Future<void>? _frame;
+  StreamSubscription<LiveResult<T>>? _results;
 
-  /// The newest camera frame that arrived while [_frame] ran; it starts next.
-  ({double arrived, double? captured})? _pending;
+  /// Frames submitted and not yet answered, by timestamp. A frame the task
+  /// dropped is forgotten when a newer frame's result arrives.
+  final _submitted = SplayTreeMap<int, _Submitted>();
+
+  /// The frame being turned into an `ImageBitmap`, which finishes before the
+  /// task is released.
+  Future<void>? _converting;
+
+  /// The timestamp of the last frame submitted, which a later frame's must
+  /// exceed.
+  int _lastSubmitted = -1;
+
+  /// Completes when the warm-up frame in flight returns.
+  Completer<void>? _warmUpFrame;
+
+  /// When the last result arrived, on [_clock]: the task starts its waiting
+  /// frame then, so a frame's inference began at its arrival or at this,
+  /// whichever came later.
+  int _lastResultMicroseconds = 0;
+  int _droppedBeforeStart = 0;
   Future<void>? _closing;
   final _clock = Stopwatch();
   bool _closed = false;
@@ -118,13 +150,30 @@ class LiveCameraController<T> extends ChangeNotifier {
   Delegate delegate = Delegate.cpu;
   int processedFrames = 0;
 
-  /// Camera frames never processed. A frame that arrives during inference
-  /// waits for it; it is skipped only if a newer one arrives first.
-  int skippedFrames = 0;
+  /// Camera frames submitted to the task since capture last started.
+  int cameraFrames = 0;
+
+  /// Camera frames the task dropped since capture last started: one frame
+  /// runs and the newest one waits, so a frame that arrives while another
+  /// waits replaces it.
+  int get droppedFrames =>
+      _opened ? task.droppedFrames - _droppedBeforeStart : 0;
+
+  /// The task's own time for the last frame: from when it started the frame
+  /// to its result.
   double inferenceMilliseconds = 0;
+
+  /// What turning the last frame into an `ImageBitmap` cost.
   double conversionMilliseconds = 0;
+
+  /// The last frame's conversion and inference together.
   double frameMilliseconds = 0;
+
+  /// The last frame's time from the camera to its result, including its wait
+  /// behind the frame before it.
+  double latencyMilliseconds = 0;
   double _totalInference = 0, _totalConversion = 0, _totalFrame = 0;
+  double _totalLatency = 0, _totalCameraConversion = 0;
   int _lastUiUpdateMilliseconds = 0;
   final _recent = RecentFrameTimings();
   bool get isFrontCamera =>
@@ -161,9 +210,23 @@ class LiveCameraController<T> extends ChangeNotifier {
       processedFrames == 0 ? 0 : _totalConversion / processedFrames;
   double get averageFrameMilliseconds =>
       processedFrames == 0 ? 0 : _totalFrame / processedFrames;
+
+  /// Mean conversion time over every camera frame: each one is converted
+  /// before it is submitted, whether the task then runs it or drops it.
+  double get averageCameraConversionMilliseconds =>
+      cameraFrames == 0 ? 0 : _totalCameraConversion / cameraFrames;
+
+  /// Mean time from the camera to a result.
+  double get averageLatencyMilliseconds =>
+      processedFrames == 0 ? 0 : _totalLatency / processedFrames;
   double get framesPerSecond => _clock.elapsedMicroseconds == 0
       ? 0
       : processedFrames * 1000000 / _clock.elapsedMicroseconds;
+
+  /// Camera frames that arrived per second while running.
+  double get cameraFramesPerSecond => _clock.elapsedMicroseconds == 0
+      ? 0
+      : cameraFrames * 1000000 / _clock.elapsedMicroseconds;
 
   /// The readout's figures, over the last [recentFrames] frames, so they
   /// follow the current speed.
@@ -186,7 +249,6 @@ class LiveCameraController<T> extends ChangeNotifier {
     final pause = ++_pauses;
     _disposePausedFrame();
     if (paused) {
-      _pending = null;
       _cancelCallback();
       video.pause();
       unawaited(_capturePausedFrame(pause));
@@ -498,6 +560,7 @@ class LiveCameraController<T> extends ChangeNotifier {
         : await WebModelCache.load(asset);
     await task.open(chosen, bytes);
     _opened = true;
+    _results = task.results.listen(_onResult, onError: _onResultError);
   }
 
   Future<void> _openCamera(CameraDescription selected, int generation) async {
@@ -548,13 +611,20 @@ class LiveCameraController<T> extends ChangeNotifier {
 
   void _resetTimings() {
     processedFrames = 0;
-    skippedFrames = 0;
+    cameraFrames = 0;
+    _droppedBeforeStart = _opened ? task.droppedFrames : 0;
     _totalInference = 0;
     _totalConversion = 0;
     _totalFrame = 0;
+    _totalLatency = 0;
+    _totalCameraConversion = 0;
     _recent.clear();
     _lastUiUpdateMilliseconds = 0;
-    _pending = null;
+    // Results of frames from before, such as the other camera's, are not
+    // shown.
+    _submitted.clear();
+    _lastSubmitted = -1;
+    _lastResultMicroseconds = 0;
     _lastVideoTime = -1;
     _clock
       ..reset()
@@ -603,9 +673,8 @@ class LiveCameraController<T> extends ChangeNotifier {
     }
   }
 
-  // TODO: Use live stream mode once LIVE_STREAM is split from VIDEO, and
-  // delete this hand-rolled copy of Google's frame dropping. See
-  // RunningMode.liveStream in mediapipe_vision.
+  /// Stamps each new video frame as it arrives, then converts and submits it;
+  /// the task decides which frames run.
   void _onFrame(int generation, double arrived, double? captured) {
     if (_closed || !running || _processingPaused || generation != _generation) {
       return;
@@ -613,163 +682,207 @@ class LiveCameraController<T> extends ChangeNotifier {
     _schedule(generation);
     if (video.currentTime == _lastVideoTime) return;
     _lastVideoTime = video.currentTime;
-    if (_frame != null) {
-      // Starting the newest waiting frame as soon as inference finishes keeps
-      // the worker busy; waiting for the next camera frame instead left it
-      // idle for up to a frame interval, halving the rate once a frame took
-      // just over one.
-      if (_pending != null) skippedFrames++;
-      _pending = (arrived: arrived, captured: captured);
-      return;
-    }
-    _begin(generation, arrived, captured);
-  }
-
-  void _begin(int generation, double arrived, double? captured) {
     final timestamp = math.max(
       _lastTimestamp + 1,
       _timestampOffset + _clock.elapsedMilliseconds,
     );
     _lastTimestamp = timestamp;
-    _frame = () async {
-      web.ImageBitmap? bitmap;
-      final trace = PipelineTrace.enabled
-          ? (PipelineFrame(timestamp, delegate.name, arrived, captured)
-              ..started = PipelineTrace.now())
-          : null;
-      final whole = Stopwatch()..start();
-      try {
-        final conversion = Stopwatch()..start();
-        bitmap = await web.window.createImageBitmap(video).toDart;
-        final width = bitmap.width, height = bitmap.height;
-        if (useCanvasPreview) {
-          // iOS WebKit can composite a live <video> at the wrong scale even
-          // while createImageBitmap and detections see the full frame. Paint
-          // those same pixels into a canvas so preview and overlay agree.
-          if (previewCanvas.width != width || previewCanvas.height != height) {
-            previewCanvas
-              ..width = width
-              ..height = height;
-          }
-          (previewCanvas.getContext('2d') as web.CanvasRenderingContext2D)
-              .drawImage(bitmap, 0, 0);
-          previewCanvas.style.visibility = 'visible';
+    final trace = PipelineTrace.enabled
+        ? (PipelineFrame(timestamp, delegate.name, arrived, captured)
+            ..started = PipelineTrace.now())
+        : null;
+    final converting = _submit(generation, timestamp, trace);
+    _converting = converting;
+    unawaited(
+      converting.whenComplete(() {
+        if (identical(_converting, converting)) _converting = null;
+      }),
+    );
+  }
+
+  Future<void> _submit(
+    int generation,
+    int timestamp,
+    PipelineFrame? trace,
+  ) async {
+    final arrived = _clock.elapsedMicroseconds;
+    web.ImageBitmap? bitmap;
+    try {
+      final conversion = Stopwatch()..start();
+      bitmap = await web.window.createImageBitmap(video).toDart;
+      final width = bitmap.width, height = bitmap.height;
+      if (useCanvasPreview) {
+        // iOS WebKit can composite a live <video> at the wrong scale even
+        // while createImageBitmap and detections see the full frame. Paint
+        // those same pixels into a canvas so preview and overlay agree.
+        if (previewCanvas.width != width || previewCanvas.height != height) {
+          previewCanvas
+            ..width = width
+            ..height = height;
         }
-        conversion.stop();
-        trace?.bitmap = PipelineTrace.now();
-        if (_closed || generation != _generation) return;
-        final browserTask = task;
-        if (browserTask is! BrowserLiveTask<T>) {
-          throw UnsupportedError('Task has no browser frame transport.');
-        }
-        final inference = Stopwatch()..start();
-        final detected = await browserTask.detectBrowserFrame(
-          bitmap,
-          width,
-          height,
-          timestamp,
-        );
-        inference.stop();
-        whole.stop();
-        trace?.detected = PipelineTrace.now();
-        if (_closed || generation != _generation) return;
-        frameSize = Size(width.toDouble(), height.toDouble());
-        result = detected;
-        if (workerOverlayCanvas != null &&
-            task is BrowserOverlayLiveTask &&
-            !(task as BrowserOverlayLiveTask).overlayActive) {
-          workerOverlayCanvas = null;
-        }
-        processedFrames++;
-        if (testHooks) {
-          video.setAttribute(
-            'data-processed-frames',
-            processedFrames.toString(),
-          );
-          video.setAttribute('data-delegate', delegate.name);
-          video.setAttribute('data-timestamp', timestamp.toString());
-          final count = liveSubjectCount(detected);
-          video.setAttribute('data-subjects', count.subjects.toString());
-          video.setAttribute('data-landmarks', count.points.toString());
-          final detections = switch (detected) {
-            FaceDetectorResult(:final detections) => detections.length,
-            ObjectDetectorResult(:final detections) => detections.length,
-            _ => null,
-          };
-          if (detections != null) {
-            video.setAttribute('data-detections', detections.toString());
-          }
-        }
-        conversionMilliseconds = conversion.elapsedMicroseconds / 1000;
-        inferenceMilliseconds = inference.elapsedMicroseconds / 1000;
-        frameMilliseconds = whole.elapsedMicroseconds / 1000;
-        _totalConversion += conversionMilliseconds;
-        _totalInference += inferenceMilliseconds;
-        _totalFrame += frameMilliseconds;
-        _recent.add(
-          inference: inferenceMilliseconds,
-          conversion: conversionMilliseconds,
-          frame: frameMilliseconds,
-          finishedMicroseconds: _clock.elapsedMicroseconds,
-        );
-        // The worker paints landmark overlays at camera rate. Rebuilding the
-        // Flutter page at that same rate competes with touch scrolling on
-        // mobile Safari; its readouts need only a few updates per second.
-        final elapsed = _clock.elapsedMilliseconds;
-        if (PipelineTrace.enabled ||
-            workerOverlayCanvas == null ||
-            processedFrames == 1 ||
-            elapsed - _lastUiUpdateMilliseconds >= 100) {
-          _lastUiUpdateMilliseconds = elapsed;
-          _changed();
-        }
-        if (trace != null) {
-          trace.handled = PipelineTrace.now();
-          trace.faces = detected is FaceLandmarkerResult
-              ? detected.faceLandmarks.length
-              : -1;
-          // The frame that paints this result, then the next browser frame,
-          // by which time the compositor has taken it. The microtask runs once
-          // the frame's task ends, after every post-frame callback.
-          SchedulerBinding.instance.addPostFrameCallback((_) {
-            scheduleMicrotask(() => trace.built = PipelineTrace.now());
-            trace.frame =
-                SchedulerBinding
-                    .instance
-                    .currentSystemFrameTimeStamp
-                    .inMicroseconds /
-                1000;
-            web.window.requestAnimationFrame(
-              ((double _) {
-                trace.painted = PipelineTrace.now();
-                PipelineTrace.add(trace);
-              }).toJS,
-            );
-          });
-        }
-      } catch (failure) {
-        if (!_closed && generation == _generation) {
-          error = _message(failure);
-          running = false;
-          _cancelCallback();
-          _changed();
-          // Queue release behind the current frame; do not await ourselves.
-          unawaited(_enqueue(_release));
-        }
-      } finally {
-        bitmap?.close();
-        _frame = null;
-        final next = _pending;
-        _pending = null;
-        if (next != null &&
-            running &&
-            !_processingPaused &&
-            !_closed &&
-            generation == _generation) {
-          _begin(generation, next.arrived, next.captured);
-        }
+        (previewCanvas.getContext('2d') as web.CanvasRenderingContext2D)
+            .drawImage(bitmap, 0, 0);
+        previewCanvas.style.visibility = 'visible';
       }
-    }();
+      final milliseconds = conversion.elapsedMicroseconds / 1000;
+      trace?.bitmap = PipelineTrace.now();
+      // Bitmaps normally resolve in the order they were requested; one that
+      // did not would carry an older timestamp than a frame already sent.
+      if (_closed ||
+          !running ||
+          generation != _generation ||
+          timestamp <= _lastSubmitted) {
+        return;
+      }
+      _submitted[timestamp] = (
+        arrived: arrived,
+        conversion: milliseconds,
+        size: Size(width.toDouble(), height.toDouble()),
+        trace: trace,
+      );
+      cameraFrames++;
+      _totalCameraConversion += milliseconds;
+      _lastSubmitted = timestamp;
+      final frame = VisionImage.fromBrowserFrame(
+        bitmap,
+        width: width,
+        height: height,
+      );
+      // The task now owns the bitmap: it closes it after inference, or when
+      // it drops the frame.
+      bitmap = null;
+      task.submit(frame, timestamp, rotationDegrees: 0);
+    } catch (failure) {
+      if (!_closed && generation == _generation) _fail(failure);
+    } finally {
+      bitmap?.close();
+    }
+  }
+
+  void _onResult(LiveResult<T> live) {
+    if (_warmUpFrame case final warmUp?) {
+      _warmUpFrame = null;
+      warmUp.complete();
+      return;
+    }
+    final now = _clock.elapsedMicroseconds;
+    final previous = _lastResultMicroseconds;
+    _lastResultMicroseconds = now;
+    // Frames submitted before this one and still unanswered were dropped.
+    final frame = _submitted.remove(live.timestamp);
+    _submitted.removeWhere((timestamp, _) => timestamp < live.timestamp);
+    if (frame == null || _closed || !running) return;
+    final trace = frame.trace;
+    trace?.detected = PipelineTrace.now();
+    final detected = live.result;
+    frameSize = frame.size;
+    result = detected;
+    if (workerOverlayCanvas != null &&
+        task is BrowserOverlayLiveTask &&
+        !(task as BrowserOverlayLiveTask).overlayActive) {
+      workerOverlayCanvas = null;
+    }
+    processedFrames++;
+    if (testHooks) {
+      video.setAttribute('data-processed-frames', processedFrames.toString());
+      video.setAttribute('data-camera-frames', cameraFrames.toString());
+      video.setAttribute('data-dropped-frames', droppedFrames.toString());
+      video.setAttribute('data-delegate', delegate.name);
+      video.setAttribute('data-timestamp', live.timestamp.toString());
+      final count = liveSubjectCount(detected);
+      video.setAttribute('data-subjects', count.subjects.toString());
+      video.setAttribute('data-landmarks', count.points.toString());
+      final detections = switch (detected) {
+        FaceDetectorResult(:final detections) => detections.length,
+        ObjectDetectorResult(:final detections) => detections.length,
+        _ => null,
+      };
+      if (detections != null) {
+        video.setAttribute('data-detections', detections.toString());
+      }
+    }
+    conversionMilliseconds = frame.conversion;
+    inferenceMilliseconds = (now - math.max(frame.arrived, previous)) / 1000;
+    frameMilliseconds = conversionMilliseconds + inferenceMilliseconds;
+    latencyMilliseconds = (now - frame.arrived) / 1000;
+    _totalConversion += conversionMilliseconds;
+    _totalInference += inferenceMilliseconds;
+    _totalFrame += frameMilliseconds;
+    _totalLatency += latencyMilliseconds;
+    _recent.add(
+      inference: inferenceMilliseconds,
+      conversion: conversionMilliseconds,
+      frame: frameMilliseconds,
+      finishedMicroseconds: now,
+    );
+    // The worker paints landmark overlays at camera rate. Rebuilding the
+    // Flutter page at that same rate competes with touch scrolling on
+    // mobile Safari; its readouts need only a few updates per second.
+    final elapsed = _clock.elapsedMilliseconds;
+    if (PipelineTrace.enabled ||
+        workerOverlayCanvas == null ||
+        processedFrames == 1 ||
+        elapsed - _lastUiUpdateMilliseconds >= 100) {
+      _lastUiUpdateMilliseconds = elapsed;
+      _changed();
+    }
+    if (trace != null) {
+      trace.handled = PipelineTrace.now();
+      trace.faces = detected is FaceLandmarkerResult
+          ? detected.faceLandmarks.length
+          : -1;
+      // The frame that paints this result, then the next browser frame,
+      // by which time the compositor has taken it. The microtask runs once
+      // the frame's task ends, after every post-frame callback.
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        scheduleMicrotask(() => trace.built = PipelineTrace.now());
+        trace.frame =
+            SchedulerBinding
+                .instance
+                .currentSystemFrameTimeStamp
+                .inMicroseconds /
+            1000;
+        web.window.requestAnimationFrame(
+          ((double _) {
+            trace.painted = PipelineTrace.now();
+            PipelineTrace.add(trace);
+          }).toJS,
+        );
+      });
+    }
+  }
+
+  void _onResultError(Object failure) {
+    if (_warmUpFrame case final warmUp?) {
+      _warmUpFrame = null;
+      warmUp.completeError(failure);
+      return;
+    }
+    if (!_closed && running) _fail(failure);
+  }
+
+  void _fail(Object failure) {
+    error = _message(failure);
+    running = false;
+    _cancelCallback();
+    _changed();
+    unawaited(_enqueue(_release));
+  }
+
+  /// Runs one warm-up frame and waits for its result: nothing else is in
+  /// flight, so the task runs it. The task takes [bitmap] and closes it.
+  Future<void> _warmUpWith(web.ImageBitmap bitmap, int timestamp) {
+    final done = _warmUpFrame = Completer<void>();
+    task.submit(
+      VisionImage.fromBrowserFrame(
+        bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+      ),
+      timestamp,
+      rotationDegrees: 0,
+    );
+    return done.future;
   }
 
   /// Runs the task on [sample], then on a blank frame of its size, before the
@@ -780,8 +893,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// subject; the blank frame then clears the tracking the sample left.
   /// Returns the last timestamp used, which camera frames continue after.
   Future<int> _warmUp(String? sample) async {
-    final browserTask = task;
-    if (sample == null || browserTask is! BrowserLiveTask<T>) return -1;
+    if (sample == null) return -1;
     final data = await rootBundle.load(sample);
     final bytes = data.buffer.asUint8List(
       data.offsetInBytes,
@@ -811,19 +923,11 @@ class LiveCameraController<T> extends ChangeNotifier {
       }
     }
     final width = image.width, height = image.height;
-    try {
-      await browserTask.detectBrowserFrame(image, width, height, 0);
-    } finally {
-      image.close();
-    }
+    await _warmUpWith(image, 0);
     final blank = await web.window
         .createImageBitmap(web.ImageData(width.toJS, height))
         .toDart;
-    try {
-      await browserTask.detectBrowserFrame(blank, width, height, 1);
-    } finally {
-      blank.close();
-    }
+    await _warmUpWith(blank, 1);
     if (task case final StatefulLiveTask stateful) stateful.forgetFrames();
     return 1;
   }
@@ -834,7 +938,6 @@ class LiveCameraController<T> extends ChangeNotifier {
   }
 
   Future<void> _releaseCamera({bool preservePreview = false}) async {
-    _pending = null;
     _cancelCallback();
     await _trackEnded?.cancel();
     _trackEnded = null;
@@ -846,7 +949,7 @@ class LiveCameraController<T> extends ChangeNotifier {
       }
     }
     video.srcObject = null;
-    await _frame;
+    await _converting;
     // Keep HtmlElementView mounted while a replacement stream opens. Removing
     // the video element can abort play() on a slower browser camera flip.
     if (!preservePreview) frameSize = null;
@@ -854,14 +957,22 @@ class LiveCameraController<T> extends ChangeNotifier {
     _clock.stop();
   }
 
+  /// Closes the task once the frames already submitted have run; their results
+  /// are not shown, since capture has stopped.
   Future<void> _releaseTask() async {
-    _pending = null;
     _cancelCallback();
-    await _frame;
+    await _converting;
     workerOverlayCanvas = null;
     if (_opened) {
+      _droppedBeforeStart = 0;
       _opened = false;
-      await task.close();
+      try {
+        await task.close();
+      } finally {
+        await _results?.cancel();
+        _results = null;
+        _submitted.clear();
+      }
     }
   }
 

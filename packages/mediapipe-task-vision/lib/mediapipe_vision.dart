@@ -30,4 +30,10 @@ export 'src/types/options.dart';
 export 'src/types/results.dart';
 export 'src/types/strokes.dart';
 export 'src/types/vision_types.dart'
-    hide checkConfidence, checkCount, ownNestedLists;
+    hide
+        checkConfidence,
+        checkCount,
+        isDeferredImage,
+        ownNestedLists,
+        producedImage,
+        refuseDeferredImage;

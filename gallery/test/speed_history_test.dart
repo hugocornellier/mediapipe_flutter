@@ -105,4 +105,25 @@ void main() {
     expect(_seconds(history, Delegate.cpu), [0, closeTo(.1, 1e-9)]);
     expect(history[Delegate.gpu], isEmpty);
   });
+
+  test('drops per second count from each run\'s first frame', () {
+    final history = SpeedHistory()
+      ..add(Delegate.cpu, 30, _ms(0), dropped: 0)
+      ..add(Delegate.cpu, 30, _ms(500), dropped: 4)
+      ..add(Delegate.cpu, 30, _ms(1000), dropped: 10);
+    expect(history.droppedPerSecond(Delegate.cpu), closeTo(10, 1e-9));
+    expect(
+      history.droppedPerSecond(Delegate.cpu, frames: 2),
+      closeTo(12, 1e-9),
+    );
+    // A restart (the task's count starts again) after a pause adds no drops
+    // for its first frame, whatever the count it starts from.
+    history
+      ..add(Delegate.cpu, 30, _ms(5000), dropped: 2)
+      ..add(Delegate.cpu, 30, _ms(5500), dropped: 3);
+    expect(history.droppedPerSecond(Delegate.cpu, frames: 2), closeTo(2, 1e-9));
+    expect(history.droppedPerSecond(Delegate.gpu), isNull);
+    history.clear();
+    expect(history.droppedPerSecond(Delegate.cpu), isNull);
+  });
 }

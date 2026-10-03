@@ -161,7 +161,3 @@ succeeds), errors (bad model path, empty input) and idempotent disposal.
 - Web Proofreader and Summarizer: when a stable `@mediapipe/tasks-text`
   declares them in `text.d.ts`, run Google's JavaScript on the fixture inputs
   and add whichever passes (UP-034).
-- The gallery's text page has tiles for all three when the build bundles
-  them: EmbeddingGemma with its prompt formats, the Proofreader with its
-  edits and the Summarizer in both modes, streamed by default. A browser
-  shows the generative pair as cards with Google's reason.

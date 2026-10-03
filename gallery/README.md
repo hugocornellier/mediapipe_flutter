@@ -95,13 +95,18 @@ editor wherever its runtime runs.
 
 ## Live camera
 
-`lib/live/` shares camera capture, serial VIDEO-mode inference, frame skipping,
-timings, camera switching, stop/start, cleanup and overlay geometry across live
-tasks. It handles desktop RGBA, Apple BGRA and Android YUV camera buffers.
-Every camera-based vision page also has a **Mode** selector. Choose **Still
-image** to open a JPG, PNG or WebP file and run IMAGE-mode inference with the
-same model, settings and CPU/GPU delegate. Switching back to **Camera** reopens
-the VIDEO-mode task. Interactive Segmenter is image-only and uses its own editor.
+`lib/live/` shares camera capture, live stream inference, timings, camera
+switching, stop/start, cleanup and overlay geometry across live tasks. Every
+camera frame is stamped when it arrives and submitted to the task in live
+stream mode, which runs one frame at a time with the newest one waiting and
+drops the rest, as Google's live stream does; native frames are converted only
+when the task starts them (`VisionImage.deferred`), browser frames when they
+arrive; the Stats card shows the
+inference time and the frames dropped per second. It handles desktop RGBA,
+Apple BGRA and Android YUV camera buffers. Every camera-based vision page also
+has a **Mode** selector. Choose **Still image** to open a JPG, PNG or WebP file
+and run IMAGE-mode inference with the same model, settings and CPU/GPU
+delegate. Switching back to **Camera** reopens the live stream task. Interactive Segmenter is image-only and uses its own editor.
 Windows exposes CPU only. Face and Hand Landmarker also expose GPU on Linux,
 Apple platforms, Android and web.
 Web uses browser-native capture and transferable bitmaps while sharing these

@@ -66,7 +66,8 @@ void main() {
     expect(controller.changing, isFalse);
   });
 
-  test('runs the newest frame that arrived during inference next', () async {
+  test('submits every frame; the task runs the newest one that arrived '
+      'during inference next and drops the others', () async {
     await started();
     camera.emit();
     await settle();
@@ -75,7 +76,8 @@ void main() {
     camera.emit(ScriptedCamera.smallFrame(width: 8));
     await settle();
     expect(task.detectCalls, 1, reason: 'busy: no second inference');
-    expect(controller.skippedFrames, 1, reason: 'the newer frame replaced it');
+    expect(controller.cameraFrames, 3);
+    expect(controller.droppedFrames, 1, reason: 'the newer frame replaced it');
     expect(controller.processedFrames, 0);
     task.finish(7);
     await settle();
@@ -84,11 +86,33 @@ void main() {
     expect(task.detectCalls, 2, reason: 'the waiting frame runs at once');
     task.finish(8);
     await settle();
-    expect(controller.frameSize!.width, 8, reason: 'the newest frame ran');
+    expect(task.widths, [4, 8], reason: 'the newest frame ran');
+    expect(controller.frameSize!.width, 8);
     expect(controller.recentFrames, 2);
     camera.emit();
     await settle();
     expect(task.detectCalls, 3, reason: 'idle again: the next frame runs');
+  });
+
+  test('stamps frames on arrival, not when they run', () async {
+    await started();
+    final clock = Stopwatch()..start();
+    camera.emit();
+    await settle();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    final arrivedAfter = clock.elapsedMilliseconds;
+    camera.emit();
+    await settle();
+    // The second frame waits behind the first, then runs.
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+    final ranAfter = clock.elapsedMilliseconds;
+    task.finish();
+    await settle();
+    expect(task.timestamps, hasLength(2));
+    final gap = task.timestamps[1] - task.timestamps[0];
+    expect(gap, lessThanOrEqualTo(arrivedAfter + 2));
+    expect(gap, lessThan(ranAfter), reason: 'not stamped when it ran');
+    task.finish();
   });
 
   test('warms up on the sample, then a blank frame, before capture', () async {
@@ -194,7 +218,8 @@ void main() {
     }
   });
 
-  test('stop waits for in-flight inference, then closes the task', () async {
+  test('stop releases capture, then closes the task after its in-flight '
+      'frame', () async {
     await started();
     camera.emit();
     await settle();
@@ -205,10 +230,11 @@ void main() {
     await settle();
     await settle();
     expect(camera.disposed, 1, reason: 'capture is released first');
-    expect(task.closed, 0, reason: 'the task outlives its in-flight frame');
+    expect(task.released, 0, reason: 'the task outlives its in-flight frame');
     task.finish(9);
     await stopping;
     expect(task.closed, 1);
+    expect(task.released, 1);
     expect(controller.changing, isFalse);
     expect(controller.result, isNull, reason: 'a late result is discarded');
     expect(controller.processedFrames, 0);
@@ -389,10 +415,11 @@ void main() {
       expect(identical(controller.close(), closing), isTrue);
       await settle();
       await settle();
-      expect(task.closed, 0, reason: 'still draining the in-flight frame');
+      expect(task.released, 0, reason: 'still draining the in-flight frame');
       task.finish();
       await closing;
       expect(task.closed, 1);
+      expect(task.released, 1);
       expect(camera.disposed, 1);
       expect(camera.activeStreams, 0);
       expect(controller.camera, isNull);

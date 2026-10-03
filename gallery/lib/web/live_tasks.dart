@@ -8,7 +8,7 @@ import '../live/task_settings.dart';
 /// Browser transport shared by every public task on the official web adapter:
 /// each demo supplies only its name and how its task is built.
 abstract base class _WebLiveTask<R>
-    implements BrowserLiveTask<R>, BrowserOverlayLiveTask {
+    implements LiveTask<R>, BrowserOverlayLiveTask {
   VisionTask? _task;
   BrowserOverlay? _overlay;
 
@@ -23,7 +23,7 @@ abstract base class _WebLiveTask<R>
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await create(delegate, modelBytes, mode);
   }
@@ -46,77 +46,117 @@ abstract base class _WebLiveTask<R>
           as Future<R>;
 
   @override
-  Future<R> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) =>
-      switch (_task!) {
-            final FaceLandmarker t => t.detectForVideo(
-              frame,
-              timestampMilliseconds: timestamp,
-              rotationDegrees: rotationDegrees,
-            ),
-            final HandLandmarker t => t.detectForVideo(
-              frame,
-              timestampMilliseconds: timestamp,
-              rotationDegrees: rotationDegrees,
-            ),
-            final PoseLandmarker t => t.detectForVideo(
-              frame,
-              timestampMilliseconds: timestamp,
-              rotationDegrees: rotationDegrees,
-            ),
-            final GestureRecognizer t => t.recognizeForVideo(
-              frame,
-              timestampMilliseconds: timestamp,
-              rotationDegrees: rotationDegrees,
-            ),
-            final HolisticLandmarker t => t.detectForVideo(
-              frame,
-              timestampMilliseconds: timestamp,
-              rotationDegrees: rotationDegrees,
-            ),
-            final FaceDetector t => t.detectForVideo(
-              frame,
-              timestampMilliseconds: timestamp,
-              rotationDegrees: rotationDegrees,
-            ),
-            final ObjectDetector t => t.detectForVideo(
-              frame,
-              timestampMilliseconds: timestamp,
-              rotationDegrees: rotationDegrees,
-            ),
-            final ImageClassifier t => t.classifyForVideo(
-              frame,
-              timestampMilliseconds: timestamp,
-              rotationDegrees: rotationDegrees,
-            ),
-            final ImageEmbedder t => t.embedForVideo(
-              frame,
-              timestampMilliseconds: timestamp,
-              rotationDegrees: rotationDegrees,
-            ),
-            final ImageSegmenter t => t.segmentForVideo(
-              frame,
-              timestampMilliseconds: timestamp,
-              rotationDegrees: rotationDegrees,
-            ),
-            final task => throw UnsupportedError('$task has no video mode.'),
-          }
-          as Future<R>;
+  }) => switch (_task!) {
+    final FaceLandmarker t => t.detectAsync(
+      frame,
+      timestampMilliseconds: timestamp,
+      rotationDegrees: rotationDegrees,
+    ),
+    final HandLandmarker t => t.detectAsync(
+      frame,
+      timestampMilliseconds: timestamp,
+      rotationDegrees: rotationDegrees,
+    ),
+    final PoseLandmarker t => t.detectAsync(
+      frame,
+      timestampMilliseconds: timestamp,
+      rotationDegrees: rotationDegrees,
+    ),
+    final GestureRecognizer t => t.recognizeAsync(
+      frame,
+      timestampMilliseconds: timestamp,
+      rotationDegrees: rotationDegrees,
+    ),
+    final HolisticLandmarker t => t.detectAsync(
+      frame,
+      timestampMilliseconds: timestamp,
+      rotationDegrees: rotationDegrees,
+    ),
+    final FaceDetector t => t.detectAsync(
+      frame,
+      timestampMilliseconds: timestamp,
+      rotationDegrees: rotationDegrees,
+    ),
+    final ObjectDetector t => t.detectAsync(
+      frame,
+      timestampMilliseconds: timestamp,
+      rotationDegrees: rotationDegrees,
+    ),
+    final ImageClassifier t => t.classifyAsync(
+      frame,
+      timestampMilliseconds: timestamp,
+      rotationDegrees: rotationDegrees,
+    ),
+    final ImageEmbedder t => t.embedAsync(
+      frame,
+      timestampMilliseconds: timestamp,
+      rotationDegrees: rotationDegrees,
+    ),
+    final ImageSegmenter t => t.segmentAsync(
+      frame,
+      timestampMilliseconds: timestamp,
+      rotationDegrees: rotationDegrees,
+    ),
+    final task => throw UnsupportedError('$task has no live stream mode.'),
+  };
 
   @override
-  Future<R> detectBrowserFrame(
-    Object frame,
-    int width,
-    int height,
-    int timestamp,
-  ) => detect(
-    VisionImage.fromBrowserFrame(frame, width: width, height: height),
-    timestamp,
-    rotationDegrees: 0,
-  );
+  Stream<LiveResult<R>> get results {
+    LiveResult<R> timed(int? timestamp, Object result) =>
+        (timestamp: timestamp!, result: result as R);
+    return switch (_task!) {
+      final FaceLandmarker t => t.results.map(
+        (r) => timed(r.timestampMilliseconds, r),
+      ),
+      final HandLandmarker t => t.results.map(
+        (r) => timed(r.timestampMilliseconds, r),
+      ),
+      final PoseLandmarker t => t.results.map(
+        (r) => timed(r.timestampMilliseconds, r),
+      ),
+      final GestureRecognizer t => t.results.map(
+        (r) => timed(r.timestampMilliseconds, r),
+      ),
+      final HolisticLandmarker t => t.results.map(
+        (r) => timed(r.timestampMilliseconds, r),
+      ),
+      final FaceDetector t => t.results.map(
+        (r) => timed(r.timestampMilliseconds, r),
+      ),
+      final ObjectDetector t => t.results.map(
+        (r) => timed(r.timestampMilliseconds, r),
+      ),
+      final ImageClassifier t => t.results.map(
+        (r) => timed(r.timestampMilliseconds, r),
+      ),
+      final ImageEmbedder t => t.results.map(
+        (r) => timed(r.timestampMilliseconds, r),
+      ),
+      final ImageSegmenter t => t.results.map(
+        (r) => timed(r.timestampMilliseconds, r),
+      ),
+      final task => throw UnsupportedError('$task has no live stream mode.'),
+    };
+  }
+
+  @override
+  int get droppedFrames => switch (_task) {
+    final FaceLandmarker t => t.droppedFrames,
+    final HandLandmarker t => t.droppedFrames,
+    final PoseLandmarker t => t.droppedFrames,
+    final GestureRecognizer t => t.droppedFrames,
+    final HolisticLandmarker t => t.droppedFrames,
+    final FaceDetector t => t.droppedFrames,
+    final ObjectDetector t => t.droppedFrames,
+    final ImageClassifier t => t.droppedFrames,
+    final ImageEmbedder t => t.droppedFrames,
+    final ImageSegmenter t => t.droppedFrames,
+    _ => 0,
+  };
 
   @override
   Future<void> attachOverlay(Object canvas) async {
@@ -372,8 +412,7 @@ final class ImageClassifierLiveTask
 
 /// Browser Image Segmenter, returning the category mask and, for Output
 /// Type Confidence Mask, the confidence masks.
-final class ImageSegmenterLiveTask
-    implements BrowserLiveTask<ImageSegmenterResult> {
+final class ImageSegmenterLiveTask implements LiveTask<ImageSegmenterResult> {
   @override
   final settings = TaskSettingValues('image_segmenter');
 
@@ -386,7 +425,7 @@ final class ImageSegmenterLiveTask
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
-    RunningMode mode = RunningMode.video,
+    RunningMode mode = RunningMode.liveStream,
   }) async {
     _task = await ImageSegmenter.create(
       ImageSegmenterOptions(
@@ -404,26 +443,23 @@ final class ImageSegmenterLiveTask
       _task!.segment(image);
 
   @override
-  Future<ImageSegmenterResult> detect(
+  void submit(
     VisionImage frame,
     int timestamp, {
     required int rotationDegrees,
-  }) => _task!.segmentForVideo(
+  }) => _task!.segmentAsync(
     frame,
     timestampMilliseconds: timestamp,
     rotationDegrees: rotationDegrees,
   );
 
   @override
-  Future<ImageSegmenterResult> detectBrowserFrame(
-    Object frame,
-    int width,
-    int height,
-    int timestamp,
-  ) => _task!.segmentForVideo(
-    VisionImage.fromBrowserFrame(frame, width: width, height: height),
-    timestampMilliseconds: timestamp,
+  Stream<LiveResult<ImageSegmenterResult>> get results => _task!.results.map(
+    (result) => (timestamp: result.timestampMilliseconds!, result: result),
   );
+
+  @override
+  int get droppedFrames => _task?.droppedFrames ?? 0;
 
   @override
   Future<void> close() async {

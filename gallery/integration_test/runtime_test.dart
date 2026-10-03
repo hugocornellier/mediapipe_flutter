@@ -45,12 +45,16 @@ void main() {
         delegates.contains(Delegate.cpu) ? Delegate.cpu : delegates.first,
         model.buffer.asUint8List(model.offsetInBytes, model.lengthInBytes),
       );
-      final result = await task.detect(
+      // The camera's mode: listen, then submit one frame.
+      final first = task.results.first;
+      task.submit(
         VisionImage.fromFile(assets.path(tile.sample)),
         1,
         rotationDegrees: 0,
       );
-      expect(result, isNotNull, reason: tile.id);
+      final result = await first;
+      expect(result.timestamp, 1, reason: tile.id);
+      expect(result.result, isNotNull, reason: tile.id);
       await task.close();
       visited.add(tile.id);
     }

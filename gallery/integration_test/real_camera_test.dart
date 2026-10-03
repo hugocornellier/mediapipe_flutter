@@ -227,7 +227,8 @@ Future<Map<String, Object?>> _subjectFrames(
     'camera': controller.description?.name,
     'delegate': controller.delegate.name,
     'processed_frames': controller.processedFrames,
-    'skipped_frames': controller.skippedFrames,
+    'camera_frames': controller.cameraFrames,
+    'dropped_frames': controller.droppedFrames,
     'subject_frames': subjectFrames,
     'landmarks': count.points,
     'frame_size': controller.frameSize == null
