@@ -47,6 +47,10 @@ Checked on 2026-10-01 against the MediaPipe v1.0.0 source (`6d31f1e`):
   frame that arrives while it is busy, which is a queue of 0.
 - The native gallery controller stamps a pending frame when it starts, not when
   it arrived. Google's API takes the timestamp at submission.
+- The gallery has one live page with two input modes, camera and still image.
+  Nothing in the repository decodes a video file: the README documents VIDEO
+  for "decoded video", but no demo feeds one, so the gallery shows what
+  LIVE_STREAM is for and nothing that shows what VIDEO is for.
 
 ## Plan
 
@@ -73,6 +77,36 @@ Checked on 2026-10-01 against the MediaPipe v1.0.0 source (`6d31f1e`):
 6. Test frames dropped under load, the newest queued frame winning, no result
    for a dropped frame, timestamps checked at submission, errors reaching the
    listener, and disposal with a frame queued.
+7. Give the gallery a video file mode, so the two modes are shown side by
+   side: the camera on LIVE_STREAM, a file on VIDEO. The face_detection_tflite
+   example is the model: its home screen offers Live Camera, Still Image and
+   Video File, and the Video File screen decodes every frame, runs detection
+   on each, draws the result and writes the annotated clip, which it then
+   plays back. For the gallery:
+   - A third input mode on the live page beside camera and still image, for
+     every camera-capable vision task. The file's frames go through
+     `detectForVideo` with the file's own timestamps (frame index over the
+     frame rate), every frame processed, results drawn per frame, and the
+     processed clip shown as it is produced, with frame count and time per
+     frame on the status line.
+   - A frame source per platform, which is the work. That example reads with
+     OpenCV's `VideoCapture` (the `dartcv`/`opencv_dart` package) on
+     Android, iOS and the desktops and writes with its `VideoWriter`; that
+     adds a large native dependency to the gallery, so weigh it against a
+     small decoding plugin over the platform decoders (AVAssetReader on Apple
+     platforms, MediaCodec on Android, Media Foundation on Windows, GStreamer
+     or ffmpeg on Linux). In browsers a `<video>` element plays the file and
+     `requestVideoFrameCallback` hands over every frame, as the web camera
+     controller already does for a stream; with playback paused and stepped
+     by `seek`, no frame is skipped.
+   - A bundled sample clip of a few seconds (a face, hands and a body in one
+     short scene, a few megabytes) beside the sample images, listed in the
+     manifest like them, so every platform's journey test can open the mode,
+     process the whole clip and check that every frame produced a result and
+     that the timestamps increased strictly.
+   - The README's "Video and live cameras" section becomes two: video files
+     on VIDEO with `detectForVideo`, cameras on LIVE_STREAM with `detectAsync`,
+     each pointing at the gallery mode that demonstrates it.
 
 ## Open decision: emulate on VIDEO, or call native LIVE_STREAM
 
