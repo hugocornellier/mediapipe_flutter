@@ -4,7 +4,4 @@ analyzer:
   exclude:
     - "build/**"
     - "**/mediapipe_vision_bindings.dart"
-    # Retained benchmark evidence: source snapshots and an overlay app that
-    # only compile inside the trees they were captured from.
-    - "tool/benchmarks/**"
     - android/**

@@ -18,10 +18,6 @@ abstract final class GalleryTheme {
   static const _lightNeutral = Color(0xFF3C4446);
   static const _darkNeutral = Color(0xFFD6DCDD);
 
-  /// The selected sidebar item in dark mode: a soft grey, not the near-white
-  /// of selected controls.
-  static const darkNavSelected = Color(0xFF3A4548);
-
   /// Section and field labels ("VISION", "MODE"): small grey caps, so they
   /// read as labels rather than controls.
   static TextStyle? label(ThemeData theme) =>

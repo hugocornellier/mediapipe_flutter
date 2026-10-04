@@ -196,16 +196,17 @@ non-default threshold to the wrong field: pose detection lands on the hand
 threshold, suppression on pose detection, pose landmarks on suppression, and hand
 on pose presence. The defaults are all `0.5` in both APIs, which hides it.
 
-`tool/holistic_threshold_order_probe.py` shows this by setting one threshold at a
-time to an extreme value on `pose.jpg`: only the header's arrangement makes each
-option act on its own field. The Dart wrapper
-(`lib/src/io/holistic_landmarker.dart`) now writes the header's order on every
-platform. It previously copied the Python order on Linux, Windows and the official
-macOS runtime, and CI could not see it because the references came from the same
-Python. `tool/generate_landmark_tasks_reference.py` now rearranges Python's slots
-into the header's order before creating tasks, and asserts the ctypes still use
-the old order so a fixed wheel fails loudly. Its non-default case (hand 0.99)
-now drops both hands, as the option promises.
+A probe, `tool/holistic_threshold_order_probe.py` (in git history at `3e217ac`),
+showed this by setting one threshold at a time to an extreme value on
+`pose.jpg`: only the header's arrangement makes each option act on its own
+field. The Dart wrapper (`lib/src/io/holistic_landmarker.dart`) now writes the
+header's order on every platform. It previously copied the Python order on
+Linux, Windows and the official macOS runtime, and CI could not see it because
+the references came from the same Python.
+`tool/generate_landmark_tasks_reference.py` now rearranges Python's slots into
+the header's order before creating tasks, and asserts the ctypes still use the
+old order so a fixed wheel fails loudly. Its non-default case (hand 0.99) now
+drops both hands, as the option promises.
 
 ## UP-006: Holistic mask smoothing retains dimensions across IMAGE requests
 
@@ -297,7 +298,8 @@ reason. This does not imply that Metal or all MediaPipe GPU tasks are broken.
 
 Evidence and prior validation artifacts are documented in
 `packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md` and
-`packages/mediapipe-task-vision/tool/validations/2026-09-12-interactive-segmenter/`.
+`packages/mediapipe-task-vision/tool/validations/2026-09-12-interactive-segmenter/`
+(in git history at `3e217ac`).
 Morning commit `72711df` corrected attribution to a single runtime version.
 
 ## UP-011: Combined iOS simulator CPU runtime has reference differences beyond face tasks
@@ -372,7 +374,8 @@ Reproduce with `tool/build_android.py` and `tool/test_android_native.py` in the
 vision package; see [the Android guide](packages/mediapipe-task-vision/tool/ANDROID.md).
 The passing runtime has SHA-256
 `1a01c7ebef93f0a113d8c9714c72b0012198d7dfc7dcff12207db67667de3658`.
-Build and smoke receipts are under `tool/validations/2026-09-16-android-native/`.
+Build and smoke receipts are under `tool/validations/2026-09-16-android-native/`
+in git history at `3e217ac`.
 These probes check loading, ABI and result counts, not Flutter packaging,
 numerical reference parity or physical-device performance. Android package
 support remains undeclared. This issue has not been filed upstream.

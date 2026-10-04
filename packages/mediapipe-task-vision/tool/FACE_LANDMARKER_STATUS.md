@@ -57,6 +57,10 @@ cover the projection math and pixel conversion.
 
 ## Records
 
+The record folders below are in git history at `3e217ac`, under
+`packages/mediapipe-task-vision/tool/validations/`; for example
+`git show 3e217ac:packages/mediapipe-task-vision/tool/validations/2026-09-22-ios-real-camera/report.json`.
+
 1. `validations/2026-09-18-web-face-landmarker/` and the Web workflow.
 2. `validations/2026-09-18-web-gpu/` (`physical-camera-gpu-local.json`).
 3. `validations/2026-09-14-face-landmarker-1.0.1/` and the macOS workflow's
@@ -88,7 +92,7 @@ MEDIAPIPE_CAMERA_REPORT=$PWD/../build/codex-tmp/ios-real-camera/report.json \
 ```
 
 The test takes a native screenshot, so the alignment oracle runs on the phone.
-Copy `report.json` to `validations/<date>-ios-real-camera/` and update the row.
+Attach `report.json` to the pull request that updates the row.
 
 **macOS (camera done 2026-09-21; soak still open).** `real_camera_test.dart`
 records capture and face frames but cannot screenshot the preview texture on

@@ -6,8 +6,6 @@ import 'dart:convert';
 import 'dart:io';
 
 extension EasyOutput on Process {
-  Future<List<String>> get processedStdErr => _process(this.stderr);
-
   Future<List<String>> get processedStdOut => _process(this.stdout);
 
   Future<List<String>> _process(Stream<List<int>> stream) async {

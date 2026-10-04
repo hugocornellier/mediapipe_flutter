@@ -58,7 +58,8 @@ process.
    gallery's `desktop_cpu_camera_test.dart` with `GALLERY_LIVE_TASK=hand`.
 6. The Desktop workflow's Linux GPU job, `desktop_gpu_camera_test.dart` with
    `GALLERY_LIVE_TASK=hand`. Not yet run on a physical Linux GPU.
-7. `validations/2026-09-23-iphone-sdk-landmark-tasks/`: GPU required, USB.
+7. `tool/validations/2026-09-23-iphone-sdk-landmark-tasks/`, in git history at
+   `3e217ac`: GPU required, USB.
 
 ## Filling the 🧑 cells
 

@@ -8,7 +8,6 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:web/web.dart' as web;
@@ -17,7 +16,6 @@ import '../live/frame_timings.dart';
 import '../live/live_subjects.dart';
 import '../live/live_task.dart';
 import 'model_cache.dart';
-import 'pipeline_trace.dart';
 import 'test_hooks.dart';
 
 extension type _VideoCallbacks(JSObject object) implements JSObject {
@@ -29,19 +27,10 @@ extension type _TrackSettings(JSObject object) implements JSObject {
   external String? get facingMode;
 }
 
-extension type _FrameMetadata(JSObject object) implements JSObject {
-  external double? get captureTime;
-}
-
 /// What a submitted camera frame needs when its result arrives: when it
-/// arrived, on [LiveCameraController]'s clock, what converting it cost, its
-/// size, and its pipeline trace when tracing.
-typedef _Submitted = ({
-  int arrived,
-  double conversion,
-  Size size,
-  PipelineFrame? trace,
-});
+/// arrived, on [LiveCameraController]'s clock, what converting it cost, and
+/// its size.
+typedef _Submitted = ({int arrived, double conversion, Size size});
 
 /// Browser capture with the same gallery lifecycle, controls and result
 /// painter, and one official task in live stream mode: every camera frame is
@@ -173,7 +162,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// behind the frame before it.
   double latencyMilliseconds = 0;
   double _totalInference = 0, _totalConversion = 0, _totalFrame = 0;
-  double _totalLatency = 0, _totalCameraConversion = 0;
+  double _totalLatency = 0;
   int _lastUiUpdateMilliseconds = 0;
   final _recent = RecentFrameTimings();
   bool get isFrontCamera =>
@@ -210,11 +199,6 @@ class LiveCameraController<T> extends ChangeNotifier {
       processedFrames == 0 ? 0 : _totalConversion / processedFrames;
   double get averageFrameMilliseconds =>
       processedFrames == 0 ? 0 : _totalFrame / processedFrames;
-
-  /// Mean conversion time over every camera frame: each one is converted
-  /// before it is submitted, whether the task then runs it or drops it.
-  double get averageCameraConversionMilliseconds =>
-      cameraFrames == 0 ? 0 : _totalCameraConversion / cameraFrames;
 
   /// Mean time from the camera to a result.
   double get averageLatencyMilliseconds =>
@@ -617,7 +601,6 @@ class LiveCameraController<T> extends ChangeNotifier {
     _totalConversion = 0;
     _totalFrame = 0;
     _totalLatency = 0;
-    _totalCameraConversion = 0;
     _recent.clear();
     _lastUiUpdateMilliseconds = 0;
     // Results of frames from before, such as the other camera's, are not
@@ -640,13 +623,9 @@ class LiveCameraController<T> extends ChangeNotifier {
         web.document.visibilityState == 'hidden') {
       return;
     }
-    final callback = ((JSNumber now, JSObject? metadata) {
+    final callback = ((JSAny? _, JSAny? _) {
       _callback = null;
-      _onFrame(
-        generation,
-        now.toDartDouble,
-        metadata == null ? null : _FrameMetadata(metadata).captureTime,
-      );
+      _onFrame(generation);
     }).toJS;
     if (video.has('requestVideoFrameCallback')) {
       _videoCallback = true;
@@ -654,9 +633,9 @@ class LiveCameraController<T> extends ChangeNotifier {
     } else {
       _videoCallback = false;
       _callback = web.window.requestAnimationFrame(
-        ((double now) {
+        ((double _) {
           _callback = null;
-          _onFrame(generation, now, null);
+          _onFrame(generation);
         }).toJS,
       );
     }
@@ -675,7 +654,7 @@ class LiveCameraController<T> extends ChangeNotifier {
 
   /// Stamps each new video frame as it arrives, then converts and submits it;
   /// the task decides which frames run.
-  void _onFrame(int generation, double arrived, double? captured) {
+  void _onFrame(int generation) {
     if (_closed || !running || _processingPaused || generation != _generation) {
       return;
     }
@@ -687,11 +666,7 @@ class LiveCameraController<T> extends ChangeNotifier {
       _timestampOffset + _clock.elapsedMilliseconds,
     );
     _lastTimestamp = timestamp;
-    final trace = PipelineTrace.enabled
-        ? (PipelineFrame(timestamp, delegate.name, arrived, captured)
-            ..started = PipelineTrace.now())
-        : null;
-    final converting = _submit(generation, timestamp, trace);
+    final converting = _submit(generation, timestamp);
     _converting = converting;
     unawaited(
       converting.whenComplete(() {
@@ -700,11 +675,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     );
   }
 
-  Future<void> _submit(
-    int generation,
-    int timestamp,
-    PipelineFrame? trace,
-  ) async {
+  Future<void> _submit(int generation, int timestamp) async {
     final arrived = _clock.elapsedMicroseconds;
     web.ImageBitmap? bitmap;
     try {
@@ -725,7 +696,6 @@ class LiveCameraController<T> extends ChangeNotifier {
         previewCanvas.style.visibility = 'visible';
       }
       final milliseconds = conversion.elapsedMicroseconds / 1000;
-      trace?.bitmap = PipelineTrace.now();
       // Bitmaps normally resolve in the order they were requested; one that
       // did not would carry an older timestamp than a frame already sent.
       if (_closed ||
@@ -738,10 +708,8 @@ class LiveCameraController<T> extends ChangeNotifier {
         arrived: arrived,
         conversion: milliseconds,
         size: Size(width.toDouble(), height.toDouble()),
-        trace: trace,
       );
       cameraFrames++;
-      _totalCameraConversion += milliseconds;
       _lastSubmitted = timestamp;
       final frame = VisionImage.fromBrowserFrame(
         bitmap,
@@ -772,8 +740,6 @@ class LiveCameraController<T> extends ChangeNotifier {
     final frame = _submitted.remove(live.timestamp);
     _submitted.removeWhere((timestamp, _) => timestamp < live.timestamp);
     if (frame == null || _closed || !running) return;
-    final trace = frame.trace;
-    trace?.detected = PipelineTrace.now();
     final detected = live.result;
     frameSize = frame.size;
     result = detected;
@@ -819,36 +785,11 @@ class LiveCameraController<T> extends ChangeNotifier {
     // Flutter page at that same rate competes with touch scrolling on
     // mobile Safari; its readouts need only a few updates per second.
     final elapsed = _clock.elapsedMilliseconds;
-    if (PipelineTrace.enabled ||
-        workerOverlayCanvas == null ||
+    if (workerOverlayCanvas == null ||
         processedFrames == 1 ||
         elapsed - _lastUiUpdateMilliseconds >= 100) {
       _lastUiUpdateMilliseconds = elapsed;
       _changed();
-    }
-    if (trace != null) {
-      trace.handled = PipelineTrace.now();
-      trace.faces = detected is FaceLandmarkerResult
-          ? detected.faceLandmarks.length
-          : -1;
-      // The frame that paints this result, then the next browser frame,
-      // by which time the compositor has taken it. The microtask runs once
-      // the frame's task ends, after every post-frame callback.
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        scheduleMicrotask(() => trace.built = PipelineTrace.now());
-        trace.frame =
-            SchedulerBinding
-                .instance
-                .currentSystemFrameTimeStamp
-                .inMicroseconds /
-            1000;
-        web.window.requestAnimationFrame(
-          ((double _) {
-            trace.painted = PipelineTrace.now();
-            PipelineTrace.add(trace);
-          }).toJS,
-        );
-      });
     }
   }
 
