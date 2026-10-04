@@ -1,13 +1,13 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
-import 'package:record/record.dart';
 
+import 'audio/microphone.dart';
 import 'catalog.dart';
 import 'live/task_models.dart';
 import 'live/task_settings.dart';
@@ -16,14 +16,23 @@ import 'ui/components.dart';
 import 'ui/design.dart';
 import 'ui/workspace.dart';
 
-/// Audio Classifier on a clip, laid out as the other demos are: the clip and
-/// its results beside the same settings panel, with MediaPipe Studio's
-/// settings and model selection.
+/// Audio Classifier on a clip, or on the microphone as Google's audio stream,
+/// laid out as the other demos are: the audio and its results beside the
+/// same settings panel, with MediaPipe Studio's settings and model selection.
 class AudioPage extends StatefulWidget {
-  const AudioPage({super.key, required this.task, this.onOpenMenu});
+  const AudioPage({
+    super.key,
+    required this.task,
+    this.onOpenMenu,
+    this.microphone,
+  });
 
   final GalleryTask task;
   final VoidCallback? onOpenMenu;
+
+  /// Where microphone mode reads its audio; the device's microphone when
+  /// null.
+  final MicrophoneSource? microphone;
 
   @override
   State<AudioPage> createState() => _AudioPageState();
@@ -58,16 +67,31 @@ class _AudioPageState extends State<AudioPage> {
 
   final _revision = ValueNotifier<int>(0);
 
-  /// Microphone mode: 16 kHz mono PCM, classified one YAMNet window
-  /// (0.975 s) at a time as it arrives, newest first.
+  /// Microphone mode: the recorder's 16 kHz mono PCM as one audio stream,
+  /// each window's result as it completes, newest first.
   bool _microphone = false;
-  AudioRecorder? _recorder;
-  StreamSubscription<Uint8List>? _stream;
-  final _pending = <double>[];
-  bool _classifying = false;
+  AudioClassifier? _stream;
+  StreamSubscription<Uint8List>? _recording;
+  PcmBlocks? _blocks;
+
+  /// Blocks that arrive while a settings change replaces the stream task;
+  /// the new task gets them first, so no audio is lost.
+  final _waiting = <(AudioData, int)>[];
   final _heard = <AudioClassifierResult>[];
   static const _rate = 16000;
-  static const _window = 15600;
+  static const _shown = 8;
+
+  /// When the audio reached each point of the stream: each block's end, in
+  /// the stream's milliseconds, and when it arrived.
+  final _arrivals = <(int, int)>[];
+  final _clock = Stopwatch()..start();
+
+  /// The latest window's start and when its result arrived; its audio ended
+  /// where the next window starts.
+  (int, int)? _latest;
+
+  /// Milliseconds from the end of a window's audio to its result.
+  int? _delay;
 
   @override
   void setState(VoidCallback fn) {
@@ -89,6 +113,9 @@ class _AudioPageState extends State<AudioPage> {
     super.dispose();
   }
 
+  Future<Uint8List> _model() async =>
+      _modelBytes ?? await _asset('assets/models/yamnet.tflite');
+
   Future<Uint8List> _asset(String path) async {
     final data = await rootBundle.load(path);
     return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
@@ -97,12 +124,25 @@ class _AudioPageState extends State<AudioPage> {
   Future<AudioClassifier> _open() async =>
       _task ??= await AudioClassifier.create(
         AudioClassifierOptions(
-          modelBytes:
-              _modelBytes ?? await _asset('assets/models/yamnet.tflite'),
+          modelBytes: await _model(),
           maxResults: _values.count('maxResults'),
           scoreThreshold: _values.share('scoreThreshold'),
         ),
       );
+
+  /// A stream task with the current settings, listened to at once.
+  Future<AudioClassifier> _openStream() async {
+    final task = await AudioClassifier.create(
+      AudioClassifierOptions(
+        modelBytes: await _model(),
+        maxResults: _values.count('maxResults'),
+        scoreThreshold: _values.share('scoreThreshold'),
+        runningMode: AudioRunningMode.audioStream,
+      ),
+    );
+    task.results.listen(_heardWindow, onError: _failed);
+    return task;
+  }
 
   Future<void> _run() async {
     setState(() {
@@ -125,14 +165,17 @@ class _AudioPageState extends State<AudioPage> {
     if (mounted) setState(() => _busy = false);
   }
 
-  /// Rebuilds the task with the changed settings or model, then reruns the
-  /// clip, or goes on classifying the microphone with the new task. Rebuilds
-  /// run one at a time: while listening the settings stay enabled, and two at
-  /// once would open two tasks, keeping whichever finished last.
-  Future<void> _reset() {
-    final reset = _resets.then((_) => _rebuild());
-    _resets = reset.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return reset;
+  /// Rebuilds the tasks with the changed settings or model, then reruns the
+  /// clip, or goes on classifying the microphone with a new stream task.
+  Future<void> _reset() => _inTurn(_rebuild);
+
+  /// Runs [step] after the rebuilds and stream openings before it. While
+  /// listening the settings stay enabled, and two of these at once would
+  /// open two tasks, keeping whichever finished last.
+  Future<void> _inTurn(Future<void> Function() step) {
+    final turn = _resets.then((_) => step());
+    _resets = turn.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return turn;
   }
 
   Future<void> _rebuild() async {
@@ -141,85 +184,121 @@ class _AudioPageState extends State<AudioPage> {
     await task?.dispose();
     if (!mounted) return;
     if (!_microphone) return _run();
-    // Without a task, every window that arrives is dropped.
+    // The old stream delivers its tail as it closes; the audio that arrives
+    // meanwhile waits for the new stream, which continues the timeline.
+    final stream = _stream;
+    _stream = null;
+    await stream?.dispose();
+    if (!mounted || !_microphone) return;
     try {
-      await _open();
-      if (mounted) setState(() => _error = null);
+      final next = await _openStream();
+      if (!mounted || !_microphone) return unawaited(next.dispose());
+      for (final (block, timestamp) in _waiting) {
+        next.classifyAsync(block, timestampMilliseconds: timestamp);
+      }
+      _waiting.clear();
+      _stream = next;
+      setState(() => _error = null);
     } on Object catch (error) {
-      if (mounted) setState(() => _error = '$error');
+      // Without a stream the microphone's audio would wait without end.
+      _failed(error);
     }
   }
 
   Future<void> _listen() async {
-    final recorder = _recorder = AudioRecorder();
+    setState(() {
+      _error = null;
+      _heard.clear();
+      _arrivals.clear();
+      _latest = null;
+      _delay = null;
+    });
+    final blocks = _blocks = PcmBlocks(_rate);
+    // Leaving the mode replaces or clears the blocks, so a start that it
+    // overtook undoes itself.
+    bool left() => !mounted || !identical(_blocks, blocks);
     try {
-      if (!await recorder.hasPermission()) {
-        throw StateError('Microphone access was not granted.');
+      await _inTurn(() async {
+        // A settings change queued first has opened the stream already.
+        if (left() || _stream != null) return;
+        final stream = await _openStream();
+        if (left()) return unawaited(stream.dispose());
+        _stream = stream;
+      });
+      if (left()) return;
+      final audio = await (widget.microphone ?? recorderMicrophone)(_rate);
+      if (left()) {
+        // Cancelling the new subscription stops the recorder again.
+        await audio.listen(null).cancel();
+        return;
       }
-      await _open();
-      final stream = await recorder.startStream(
-        const RecordConfig(
-          encoder: AudioEncoder.pcm16bits,
-          sampleRate: _rate,
-          numChannels: 1,
+      setState(
+        () => _recording = audio.listen(
+          (chunk) => _chunk(blocks, chunk),
+          onError: _failed,
         ),
       );
-      setState(() {
-        _error = null;
-        _heard.clear();
-        _pending.clear();
-      });
-      _stream = stream.listen(_samples);
     } on Object catch (error) {
+      if (left()) return;
       await _stopListening();
       if (mounted) setState(() => _error = '$error');
     }
   }
 
-  /// Appends little-endian 16-bit samples and classifies each full window;
-  /// windows that arrive while one is being classified are dropped, as the
-  /// live camera demos drop frames.
-  void _samples(Uint8List bytes) {
-    final data = ByteData.sublistView(bytes);
-    for (var i = 0; i + 1 < bytes.length; i += 2) {
-      _pending.add(data.getInt16(i, Endian.little) / 32768);
+  /// Hands each block a recorder chunk completes to the stream, stamped with
+  /// its first sample's time in the stream.
+  void _chunk(PcmBlocks blocks, Uint8List chunk) {
+    final block = blocks.add(chunk);
+    if (block == null) return;
+    _arrivals.add((blocks.sentMilliseconds, _clock.elapsedMicroseconds));
+    final stream = _stream;
+    if (stream == null) return _waiting.add(block);
+    try {
+      stream.classifyAsync(block.$1, timestampMilliseconds: block.$2);
+    } on Object catch (error) {
+      _failed(error);
     }
-    if (_pending.length < _window) return;
-    final window = Float32List.fromList(
-      _pending.sublist(_pending.length - _window),
-    );
-    _pending.clear();
-    final task = _task;
-    if (_classifying || task == null) return;
-    _classifying = true;
-    final clock = Stopwatch()..start();
-    task
-        .classify(AudioData(samples: window, sampleRate: _rate.toDouble()))
-        .then(
-          (chunks) {
-            if (!mounted || !_microphone) return;
-            setState(() {
-              _milliseconds = clock.elapsedMicroseconds / 1000;
-              _heard.insertAll(0, chunks);
-              if (_heard.length > 8) _heard.removeRange(8, _heard.length);
-            });
-          },
-          onError: (Object error) {
-            if (mounted) setState(() => _error = '$error');
-          },
-        )
-        .whenComplete(() => _classifying = false);
   }
 
-  Future<void> _stopListening() async {
-    await _stream?.cancel();
-    _stream = null;
-    final recorder = _recorder;
-    _recorder = null;
-    if (recorder != null) {
-      await recorder.stop();
-      await recorder.dispose();
+  void _heardWindow(AudioClassifierResult result) {
+    final now = _clock.elapsedMicroseconds;
+    final start = result.timestampMilliseconds;
+    if (_latest case (_, final arrived)) {
+      // The previous window's audio ended where this one starts: the block
+      // that reached that point completed it.
+      while (_arrivals.isNotEmpty && _arrivals.first.$1 < start) {
+        _arrivals.removeAt(0);
+      }
+      if (_arrivals.isNotEmpty) {
+        _delay = ((arrived - _arrivals.first.$2) / 1000).round();
+      }
     }
+    _latest = (start, now);
+    if (!mounted || !_microphone) return;
+    setState(() {
+      _heard.insert(0, result);
+      if (_heard.length > _shown) _heard.removeRange(_shown, _heard.length);
+    });
+  }
+
+  /// A failure ends the stream, so the microphone stops with it.
+  void _failed(Object error) {
+    if (!mounted) return;
+    setState(() => _error = '$error');
+    unawaited(_stopListening());
+  }
+
+  /// Stops the recorder, then disposes the stream task, which classifies the
+  /// audio short of a window as Google's close does.
+  Future<void> _stopListening() async {
+    final recording = _recording;
+    _recording = null;
+    _blocks = null;
+    _waiting.clear();
+    await recording?.cancel();
+    final stream = _stream;
+    _stream = null;
+    await stream?.dispose();
   }
 
   Future<void> _setMicrophone(bool on) async {
@@ -227,6 +306,7 @@ class _AudioPageState extends State<AudioPage> {
       _microphone = on;
       _chunks = null;
       _milliseconds = null;
+      _error = null;
     });
     if (on) {
       await _listen();
@@ -359,16 +439,24 @@ class _AudioPageState extends State<AudioPage> {
               if (_microphone)
                 Row(
                   children: [
-                    if (_stream != null) ...[
+                    if (_recording != null) ...[
                       const StatusDot(),
                       const SizedBox(width: 8),
                     ],
                     Expanded(
                       child: Text(
-                        _stream == null
+                        _recording == null
                             ? 'Starting the microphone…'
-                            : 'Listening: each 0.975 s window is classified '
-                                  'as it arrives, newest first.',
+                            : kIsWeb
+                            ? 'Listening: the microphone is framed into the '
+                                  "model's windows as Google's audio stream "
+                                  "frames it, and Google's browser task "
+                                  'classifies each window as it completes, '
+                                  'newest first.'
+                            : "Listening: Google's audio stream frames the "
+                                  "microphone into the model's windows and "
+                                  'classifies each one as it completes, '
+                                  'newest first.',
                         style: TextStyle(color: c.soft, fontSize: Sizes.sm),
                       ),
                     ),
@@ -425,8 +513,11 @@ class _AudioPageState extends State<AudioPage> {
         ),
         FeedStatus(
           parts: [
-            if (_busy) 'Classifying…',
-            if (!_busy && _milliseconds != null)
+            if (_microphone && _delay != null)
+              '$_delay ms from the end of a window to its result'
+            else if (!_microphone && _busy)
+              'Classifying…'
+            else if (!_microphone && _milliseconds != null)
               'Done in ${_milliseconds!.toStringAsFixed(1)} ms',
           ],
           delegate: 'CPU',
@@ -460,7 +551,8 @@ class _AudioPageState extends State<AudioPage> {
                       for (final (i, chunk) in chunks.indexed) ...[
                         if (i > 0) const SizedBox(height: 22),
                         Text(
-                          '${(chunk.timestampMilliseconds / 1000).toStringAsFixed(2)} s',
+                          '${(chunk.timestampMilliseconds / 1000).toStringAsFixed(3)} s',
+                          key: ValueKey('audio-window-$i'),
                           style: eyebrowStyle(context),
                         ),
                         const SizedBox(height: 12),
@@ -470,7 +562,7 @@ class _AudioPageState extends State<AudioPage> {
                             style: muted,
                           )
                         else
-                          ScoreBars([
+                          ScoreBars(key: ValueKey('audio-scores-$i'), [
                             for (final category in _categories(chunk))
                               (
                                 name: category.categoryName ?? '',

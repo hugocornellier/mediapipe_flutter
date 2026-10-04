@@ -128,7 +128,9 @@ try {
   // A still image's status line names the delegate that produced it.
   const stillRan = delegate =>
     page.getByText(new RegExp(`Inference \\d+\\.\\d ms · ${delegate.toUpperCase()}$`));
-  await page.goto(base);
+  // CI's browsers have no microphone with speech on it, so the audio page
+  // plays the speech sample through its microphone path instead.
+  await page.goto(base + (base.includes('?') ? '&' : '?') + 'microphone=sample');
   await sidebarItem('Home').waitFor({timeout: 120000});
 
   for (const id of expected) {
@@ -220,6 +222,27 @@ try {
       await page.getByText(/^Speech \d\.\d{2}$/).first().waitFor({timeout: 120000});
       await page.getByText(/Done in \d+\.\d ms/).waitFor();
       report.checks.push(`${id}:cpu:run`);
+      // The microphone mode on the speech sample as it plays: the stream's
+      // windows start 975 ms apart, and each hears speech.
+      enter(`${id}:stream`);
+      await page.getByRole('button', {name: 'Microphone', exact: true}).click();
+      await page.getByText('Waiting for the first window.').waitFor({timeout: 120000});
+      const windowStart = /^\d+\.\d{3} s$/;
+      const deadline = Date.now() + 120000;
+      while (await page.getByText(windowStart).count() < 4) {
+        assert.ok(Date.now() < deadline, 'four windows of the stream');
+        await page.waitForTimeout(250);
+      }
+      const starts = (await page.getByText(windowStart).allInnerTexts())
+        .map(text => Math.round(parseFloat(text) * 1000)).sort((a, b) => a - b);
+      assert.deepEqual(starts.slice(0, 4), [0, 975, 1950, 2925]);
+      assert.ok(await page.getByText(/^Speech \d\.\d{2}$/).count() >= starts.length,
+        'every window of the speech sample hears speech');
+      report.checks.push(`${id}:cpu:stream`);
+      // Leaving the mode flushes the stream; the clip plays again.
+      enter(`${id}:clips`);
+      await page.getByRole('button', {name: 'Clips', exact: true}).click();
+      await page.getByText(/Done in \d+\.\d ms/).waitFor({timeout: 120000});
     } else if (spec.segment) {
       const delegates = delegatesFor(id);
       assert.ok(delegates.length > 0, `${id} has no required web delegate`);

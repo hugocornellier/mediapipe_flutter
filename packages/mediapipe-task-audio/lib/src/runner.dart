@@ -2,12 +2,15 @@
 /// browser runtime or Android SDK), or Google's native runtime.
 library;
 
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
 
 import 'audio_task_backend.dart';
 import 'decoders.dart';
+import 'stream/emulation.dart';
+import 'stream/results.dart';
 import 'types.dart';
 
 /// Audio Classifier's requests on whichever runtime serves it.
@@ -19,9 +22,42 @@ abstract interface class AudioClassifierRunner {
   Future<void> dispose();
 }
 
+/// An Audio Classifier stream on whichever runtime serves it: Google's own
+/// stream on Android, iOS, macOS, Linux and Windows, an emulation on its
+/// clips mode in browsers. Results go to the task's [AudioStreamResults].
+abstract interface class AudioStreamRunner {
+  /// Hands on a block that passed the task's checks and holds samples, after
+  /// every block before it.
+  void send(AudioData block, int timestampMilliseconds);
+
+  /// Flushes the tail as Google's close does, delivers what that yields,
+  /// then releases Google's task. Reports a failure through the results.
+  Future<void> close();
+}
+
 /// Google's failure as the one exception every task reports.
 TaskException taskException(Object error) =>
     error is TaskException ? error : TaskException('$error', cause: error);
+
+/// [options]' model and settings, named as in Google's JavaScript API, with
+/// [modelBytes] in place of the options' model when given.
+Map<String, Object?> backendSettings(
+  AudioClassifierOptions options, {
+  Uint8List? modelBytes,
+}) => {
+  'modelBytes': modelBytes ?? options.modelBytes,
+  'modelPath': modelBytes == null ? options.modelPath : null,
+  'delegate': options.delegate.name.toUpperCase(),
+  'displayNamesLocale': ?options.displayNamesLocale,
+  // -1 (every category) is the JavaScript default; Google's Android SDK
+  // rejects any count that is not positive, so it travels unset.
+  if (options.maxResults > 0) 'maxResults': options.maxResults,
+  'scoreThreshold': options.scoreThreshold,
+  if (options.categoryAllowlist.isNotEmpty)
+    'categoryAllowlist': options.categoryAllowlist,
+  if (options.categoryDenylist.isNotEmpty)
+    'categoryDenylist': options.categoryDenylist,
+};
 
 /// Audio Classifier on a platform plugin's backend: requests run in
 /// submission order and disposal waits for them.
@@ -33,41 +69,31 @@ final class BackendAudioClassifier implements AudioClassifierRunner {
   Future<void>? _disposing;
 
   /// Starts Google's task through [factory] with [options]' model and
-  /// settings, named as in Google's JavaScript API.
+  /// settings, named as in Google's JavaScript API; with [modelBytes] in
+  /// place of the options' model when given.
   static Future<BackendAudioClassifier> open(
     Future<AudioTaskBackend> Function(Map<String, Object?>) factory,
-    AudioClassifierOptions options,
-  ) async {
+    AudioClassifierOptions options, {
+    Uint8List? modelBytes,
+  }) async {
     try {
       return BackendAudioClassifier._(
-        await factory({
-          'modelBytes': options.modelBytes,
-          'modelPath': options.modelPath,
-          'delegate': options.delegate.name.toUpperCase(),
-          'displayNamesLocale': ?options.displayNamesLocale,
-          // -1 (every category) is the JavaScript default; Google's Android
-          // SDK rejects any count that is not positive, so it travels unset.
-          if (options.maxResults > 0) 'maxResults': options.maxResults,
-          'scoreThreshold': options.scoreThreshold,
-          if (options.categoryAllowlist.isNotEmpty)
-            'categoryAllowlist': options.categoryAllowlist,
-          if (options.categoryDenylist.isNotEmpty)
-            'categoryDenylist': options.categoryDenylist,
-        }),
+        await factory(backendSettings(options, modelBytes: modelBytes)),
       );
     } catch (error) {
       throw taskException(error);
     }
   }
 
-  /// Google's browser and mobile tasks read one channel, so several
-  /// channels are averaged first.
+  /// Google's browser tasks read one channel, so several channels are
+  /// averaged first. Its Android SDK reads them as they are, but the plugin
+  /// sends one, the same samples as the browser's.
   @override
   Future<List<AudioClassifierResult>> classify(AudioData audio) {
     if (_disposing != null) {
       return Future.error(StateError('AudioClassifier has been disposed.'));
     }
-    final samples = _mono(audio);
+    final samples = monoSamples(audio.samples, audio.channels);
     final result = _tail.then((_) async {
       final List<Object?> json;
       try {
@@ -91,16 +117,99 @@ final class BackendAudioClassifier implements AudioClassifierRunner {
   });
 }
 
-Float32List _mono(AudioData audio) {
-  if (audio.channels == 1) return Float32List.fromList(audio.samples);
-  final frames = audio.samples.length ~/ audio.channels;
-  final mono = Float32List(frames);
-  for (var frame = 0; frame < frames; frame++) {
-    var sum = 0.0;
-    for (var channel = 0; channel < audio.channels; channel++) {
-      sum += audio.samples[frame * audio.channels + channel];
+/// The stream in browsers: Google's browser runtime has no stream, so the
+/// emulation frames the blocks and classifies each window with the
+/// browser's clips mode.
+final class EmulatedStreamRunner implements AudioStreamRunner {
+  /// Emulates the stream of [results]' model on a clips task, whose
+  /// disposal this runner's close ends with.
+  EmulatedStreamRunner(this._clips, AudioStreamResults results)
+    : _stream = EmulatedAudioStream(
+        results.specs,
+        (samples, sampleRate, channels) => _clips.classify(
+          AudioData(
+            samples: samples,
+            sampleRate: sampleRate,
+            channels: channels,
+          ),
+        ),
+        results,
+      );
+
+  final AudioClassifierRunner _clips;
+  final EmulatedAudioStream _stream;
+
+  @override
+  void send(AudioData block, int timestampMilliseconds) => _stream.add(block);
+
+  @override
+  Future<void> close() async {
+    try {
+      await _stream.close();
+    } finally {
+      await _clips.dispose();
     }
-    mono[frame] = sum / audio.channels;
   }
-  return mono;
+}
+
+/// Google's own stream through a platform plugin's stream backend: its
+/// Android SDK. Google stamps the windows; the results restamp the tail.
+final class BackendStreamRunner implements AudioStreamRunner {
+  BackendStreamRunner._(this._backend, this._results) {
+    _subscription = _backend.results.listen(
+      (json) {
+        for (final result in decodeAudioClassifierResults([json])) {
+          _results.addGoogle(result);
+        }
+      },
+      onError: (Object error, StackTrace stack) =>
+          _results.fail(taskException(error), stack),
+      onDone: _done.complete,
+    );
+  }
+
+  final AudioStreamBackend _backend;
+  final AudioStreamResults _results;
+  late final StreamSubscription<Map<String, Object?>> _subscription;
+  final _done = Completer<void>();
+
+  /// Starts Google's stream through [factory] with [options]' model and
+  /// settings, delivering to [results].
+  static Future<BackendStreamRunner> open(
+    Future<AudioStreamBackend> Function(Map<String, Object?>) factory,
+    AudioClassifierOptions options,
+    AudioStreamResults results,
+  ) async {
+    try {
+      return BackendStreamRunner._(
+        await factory(backendSettings(options)),
+        results,
+      );
+    } catch (error) {
+      throw taskException(error);
+    }
+  }
+
+  @override
+  void send(AudioData block, int timestampMilliseconds) => _backend.send(
+    block.samples,
+    block.sampleRate,
+    block.channels,
+    timestampMilliseconds,
+  );
+
+  @override
+  Future<void> close() async {
+    try {
+      // Google's Android runner reports a graph failure only when it closes
+      // (tool/AUDIO_STREAM.md, correction 6); the backend delivers it on its
+      // results, before they close.
+      await _backend.dispose();
+      await _done.future;
+    } catch (error, stack) {
+      _results.fail(taskException(error), stack);
+    } finally {
+      await _subscription.cancel();
+    }
+  }
 }

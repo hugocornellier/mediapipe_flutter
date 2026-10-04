@@ -842,8 +842,8 @@ async function cameraChecks() {
 
 // Text Classifier, Text Embedder, Language Detector and Audio Classifier
 // through the Dart API, against Google's JavaScript on the same page, runtime
-// and inputs; in Chromium also two seconds of microphone input fed from a
-// speech clip by Chrome's fake capture.
+// and inputs, the audio stream included; in Chromium also two seconds of
+// microphone input fed from a speech clip by Chrome's fake capture.
 async function textAudioChecks() {
   const microphone = browserName === 'chromium';
   const browser = await ({chromium, firefox, webkit}[browserName]).launch({
@@ -968,6 +968,9 @@ async function textAudioChecks() {
     const yamnet = await audio.AudioClassifier.createFromOptions(audioFiles,
       {baseOptions: {modelAssetBuffer: await bytes('assets/models/yamnet.tflite')}});
     const clips = {};
+    const decoded = {};
+    const chunks = result => result.map(chunk => [chunk.timestampMs ?? 0,
+      chunk.classifications[0].categories.slice(0, 5).map(c => [c.index, c.score, c.categoryName || null])]);
     for (const clip of ['speech_16000_hz_mono.wav', 'speech_48000_hz_mono.wav']) {
       // Google's sample clips are 16-bit PCM mono.
       const wav = new DataView((await bytes('assets/samples/' + clip)).buffer);
@@ -979,11 +982,21 @@ async function textAudioChecks() {
         if (tag === 'data') samples = Float32Array.from({length: size >> 1}, (_, i) => wav.getInt16(at + 8 + 2 * i, true) / 32768);
         at += 8 + size + (size & 1);
       }
-      clips[clip] = yamnet.classify(samples, rate).map(chunk => [chunk.timestampMs ?? 0,
-        chunk.classifications[0].categories.slice(0, 5).map(c => [c.index, c.score, c.categoryName || null])]);
+      decoded[clip] = samples;
+      clips[clip] = chunks(yamnet.classify(samples, rate));
     }
+    // Google's answers for the Dart stream, which browsers run emulated on
+    // clips mode: each 48 kHz window's span of 46,800 frames as a clip, its
+    // first chunk, and the lone half second.
+    const speech48 = decoded['speech_48000_hz_mono.wav'];
+    const spans = [];
+    for (let start = 0; start < speech48.length; start += 46800) {
+      spans.push(chunks(yamnet.classify(speech48.subarray(start, start + 46800), 48000))[0]);
+    }
+    const lone = chunks(yamnet.classify(decoded['speech_16000_hz_mono.wav'].subarray(0, 8000), 16000));
     yamnet.close();
-    return {classifier, embedder, embedding_gemma: embeddingGemma, language, audio: clips};
+    return {classifier, embedder, embedding_gemma: embeddingGemma, language, audio: clips,
+      stream: {spans, lone}};
   });
   fs.writeFileSync(path.join(evidence, 'text-audio-official.json'), JSON.stringify(official, null, 2));
   // Same runtime and inputs: every number must match, strings exactly.
@@ -1014,11 +1027,48 @@ async function textAudioChecks() {
     report.embedding_gemma_max_error = errors.embedding_gemma ?? 0;
     report.checks.push('embedding-gemma-match-official-javascript');
   }
+  // The audio stream, which browsers run emulated on Google's clips mode.
+  const stream = api.audio_stream;
+  // At the model's rate the emulation is Google's whole clip, every number,
+  // the tail included.
+  compare('audio_stream', stream['speech-100ms'].chunks, official.audio['speech_16000_hz_mono.wav']);
+  assert.equal(stream['speech-100ms'].before_dispose, 4, 'the tail comes with dispose()');
+  // At 48 kHz each window is Google's clip of its span, every number, which
+  // proves the framing; the stream stamps them 975 ms apart.
+  compare('audio_stream', stream['speech-48k'].chunks.map(([, c]) => c), official.stream.spans.map(([, c]) => c));
+  assert.deepEqual(stream['speech-48k'].chunks.map(([t]) => t), [0, 975, 1950, 2925, 3900]);
+  // Against Google's whole 48 kHz clip: the documented approximation of
+  // resampling each window on its own, the gallery's bound for another
+  // runtime.
+  let approximation = 0;
+  official.audio['speech_48000_hz_mono.wav'].forEach(([, categories], i) => {
+    const mine = stream['speech-48k'].chunks[i][1];
+    assert.equal(mine[0][2], categories[0][2], `48 kHz window ${i}: top category`);
+    const scores = new Map(mine.map(([index, score]) => [index, score]));
+    for (const [index, score, name] of categories.slice(0, 3)) {
+      assert.ok(scores.has(index), `48 kHz window ${i}: ${name} not among the stream's top five`);
+      approximation = Math.max(approximation, Math.abs(scores.get(index) - score));
+    }
+  });
+  assert.ok(approximation <= 2 / 256, 'resampled stream vs whole clip: ' + approximation);
+  report.audio_stream_48k_vs_whole_clip = approximation;
+  assert.equal(stream['lone-half-second'].before_dispose, 0);
+  compare('audio_stream', stream['lone-half-second'].chunks, official.stream.lone);
+  // The checks' messages, as native platforms give them.
+  assert.equal(stream.rate, 'sampleRate: The stream runs at 16000.0 Hz, fixed by its first block');
+  assert.equal(stream.timestamp,
+    'timestampMilliseconds: Must be nonnegative, strictly increasing and at most 9007199254740');
+  assert.equal(stream.stereo, 'accepted');
+  report.audio_stream_max_error = errors.audio_stream;
+  report.checks.push('audio-stream-match-official-javascript');
   if (microphone) {
     const heard = api.microphone.chunks.flatMap(([, categories]) => categories.map(c => c[2]));
+    const stamps = api.microphone.chunks.map(([timestamp]) => timestamp);
     fs.writeFileSync(path.join(evidence, 'microphone.json'), JSON.stringify(api.microphone, null, 2));
     assert.ok(api.microphone.samples >= 32000, 'too little microphone audio');
     assert.ok(heard.includes('Speech'), 'the fake microphone plays speech; heard ' + heard);
+    assert.ok(stamps.length >= 2 && stamps.every((t, i) => i === 0 || t > stamps[i - 1]),
+      'the microphone stream\'s windows in order: ' + stamps);
     report.checks.push('microphone-speech-classified');
   }
   await wait(page, () => mediapipeTasks.stats().activeWorkers === 0);

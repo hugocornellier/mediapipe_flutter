@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -309,6 +310,222 @@ void main() {
       );
     });
   }, skip: !(Platform.isAndroid || Platform.isIOS));
+
+  testWidgets(
+    'official SDK Audio Classifier streams as Google\'s stream does',
+    (tester) async {
+      await tester.runAsync(() async {
+        final model = await asset('assets/models/yamnet.tflite');
+        final speech = decodeWav(
+          await asset('assets/samples/speech_16000_hz_mono.wav'),
+        );
+        final resampled = decodeWav(
+          await asset('assets/samples/speech_48000_hz_mono.wav'),
+        );
+        final google = <int>[];
+        debugGoogleStreamTimestamp = google.add;
+        try {
+          // The same device's clips results, every category.
+          final clips = await AudioClassifier.create(
+            AudioClassifierOptions(modelBytes: model),
+          );
+          final List<AudioClassifierResult> clipChunks;
+          try {
+            clipChunks = await clips.classify(speech);
+          } finally {
+            await clips.dispose();
+          }
+
+          // 16 kHz in 100 ms blocks, a refused 48 kHz block in the middle.
+          final mono = await _stream(model, speech, 1600, refuseRateAt: 5);
+          expect(mono.results.map((r) => r.timestampMilliseconds), [
+            0,
+            975,
+            1950,
+            2925,
+            3900,
+          ]);
+          // Google's own stamps: its stream flushed the tail at the close,
+          // stamped with its sentinel, which no code of ours produces.
+          expect(google, [0, 975, 1950, 2925, 9223372036854775]);
+          expect(mono.beforeDispose, 4);
+          // At the model's rate the stream feeds Google's model the same
+          // floats as clips mode: equal to the last bit.
+          final largest = _largestDifference(mono.results, clipChunks);
+          expect(largest, 0.0);
+          const reference = [
+            ('Speech', 0.917969),
+            ('Speech', 0.992188),
+            ('Speech', 0.984375),
+            ('Speech', 0.996094),
+            ('Tick', 0.261719),
+          ];
+          for (final (i, (name, score)) in reference.indexed) {
+            final top = mono.results[i].classifications.first.categories.first;
+            expect(top.categoryName, name);
+            expect(top.score, closeTo(score, _audioBound));
+          }
+
+          // 48 kHz in blocks of 4801, through Google's streaming resampler,
+          // against its stream reference (speech-48k).
+          google.clear();
+          final fast = await _stream(model, resampled, 4801);
+          const resampledReference = [
+            (0, 'Speech', 0.941406),
+            (975, 'Speech', 0.992188),
+            (1950, 'Speech', 0.988281),
+            (2925, 'Speech', 0.996094),
+            (3900, 'Bouncing', 0.332031),
+          ];
+          expect(fast.results, hasLength(resampledReference.length));
+          for (final (i, (timestamp, name, score))
+              in resampledReference.indexed) {
+            expect(fast.results[i].timestampMilliseconds, timestamp);
+            final scores = {
+              for (final c in fast.results[i].classifications.first.categories)
+                c.categoryName: c.score,
+            };
+            expect(scores[name], closeTo(score, _audioBound), reason: '$i');
+          }
+
+          // Stereo with both channels equal mixes down to the mono stream.
+          final stereo = Float32List(speech.samples.length * 2);
+          for (var i = 0; i < speech.samples.length; i++) {
+            stereo[2 * i] = stereo[2 * i + 1] = speech.samples[i];
+          }
+          final both = await _stream(
+            model,
+            AudioData(samples: stereo, sampleRate: 16000, channels: 2),
+            1600,
+          );
+          expect(_largestDifference(both.results, mono.results), 0.0);
+
+          // The lone half second: nothing until the close flushes it.
+          google.clear();
+          final lone = await _stream(
+            model,
+            AudioData(
+              samples: Float32List.sublistView(speech.samples, 0, 8000),
+              sampleRate: 16000,
+            ),
+            8000,
+          );
+          expect(lone.beforeDispose, 0);
+          expect(lone.results.single.timestampMilliseconds, 0);
+          expect(google, [9223372036854775]);
+
+          _report('audio_stream', {
+            'max_score_delta_vs_clips': largest,
+            'results': mono.results.length,
+            'dispose_ms': mono.disposeMilliseconds,
+            'lone_dispose_ms': lone.disposeMilliseconds,
+          });
+        } finally {
+          debugGoogleStreamTimestamp = null;
+        }
+      });
+    },
+    skip: !(Platform.isAndroid || Platform.isIOS),
+  );
+}
+
+/// Streams [audio] in blocks of [blockFrames] frames, each stamped with its
+/// first frame's time, waits for the full windows, then disposes, which
+/// flushes the tail. With [refuseRateAt], that block is first offered at
+/// 48 kHz, which Dart refuses before the stream goes on.
+Future<
+  ({
+    List<AudioClassifierResult> results,
+    int beforeDispose,
+    int disposeMilliseconds,
+  })
+>
+_stream(
+  Uint8List model,
+  AudioData audio,
+  int blockFrames, {
+  int? refuseRateAt,
+}) async {
+  final task = await AudioClassifier.create(
+    AudioClassifierOptions(
+      modelBytes: model,
+      runningMode: AudioRunningMode.audioStream,
+    ),
+  );
+  final results = <AudioClassifierResult>[];
+  final done = Completer<void>();
+  task.results.listen(
+    results.add,
+    onError: (Object error) => done.completeError(error),
+    onDone: done.complete,
+  );
+  final rate = audio.sampleRate.toInt();
+  final frames = audio.samples.length ~/ audio.channels;
+  for (
+    var start = 0, block = 0;
+    start < frames;
+    start += blockFrames, block++
+  ) {
+    final end = math.min(start + blockFrames, frames);
+    final timestamp = start * 1000 ~/ rate;
+    if (block == refuseRateAt) {
+      expect(
+        () => task.classifyAsync(
+          AudioData(samples: Float32List(4800), sampleRate: 48000),
+          timestampMilliseconds: timestamp,
+        ),
+        throwsArgumentError,
+      );
+    }
+    task.classifyAsync(
+      AudioData(
+        samples: Float32List.sublistView(
+          audio.samples,
+          start * audio.channels,
+          end * audio.channels,
+        ),
+        sampleRate: audio.sampleRate,
+        channels: audio.channels,
+      ),
+      timestampMilliseconds: timestamp,
+    );
+  }
+  final full = frames * 16000 ~/ rate ~/ 15600;
+  for (var i = 0; i < 6000 && results.length < full; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+  await Future<void>.delayed(const Duration(milliseconds: 500));
+  final before = results.length;
+  final clock = Stopwatch()..start();
+  await task.dispose();
+  await done.future;
+  return (
+    results: results,
+    beforeDispose: before,
+    disposeMilliseconds: clock.elapsedMilliseconds,
+  );
+}
+
+/// The largest score difference between two lists of window results, over
+/// every category; the categories and timestamps must match.
+double _largestDifference(
+  List<AudioClassifierResult> a,
+  List<AudioClassifierResult> b,
+) {
+  expect(a, hasLength(b.length));
+  var largest = 0.0;
+  for (var i = 0; i < a.length; i++) {
+    expect(a[i].timestampMilliseconds, b[i].timestampMilliseconds);
+    final scores = {
+      for (final c in b[i].classifications.first.categories) c.index: c.score,
+    };
+    final categories = a[i].classifications.first.categories;
+    expect(categories.map((c) => c.index).toSet(), scores.keys.toSet());
+    for (final c in categories) {
+      largest = math.max(largest, (c.score - scores[c.index]!).abs());
+    }
+  }
+  return largest;
 }
 
 // Kept in the device log (logcat, the simulator console) for the record.

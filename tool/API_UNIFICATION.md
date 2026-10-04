@@ -1,9 +1,11 @@
 # API unification plan
 
 **Status:** phases 0 to 6 shipped as 0.2.0 on `feat/unified-api`; phase 7
-(streaming) is under way: vision's live stream mode shipped, the audio stream
-mode has not started
-([LIVE_STREAM.md](../packages/mediapipe-task-vision/tool/LIVE_STREAM.md)). Core, vision, text and audio now have one public
+(streaming) has shipped too: vision's live stream mode
+([LIVE_STREAM.md](../packages/mediapipe-task-vision/tool/LIVE_STREAM.md)) and
+the audio stream mode
+([AUDIO_STREAM.md](../packages/mediapipe-task-audio/tool/AUDIO_STREAM.md)),
+each with the same API on all six platforms. Core, vision, text and audio now have one public
 API that is identical on all six platforms: `tool/api_parity` finds no
 difference between the native and web APIs and no convention gap (its
 baseline is empty), and CI keeps it that way. "Where the API stands" below
@@ -224,9 +226,9 @@ Methods use Google's verbs:
 - One `Delegate { cpu, gpu }` in core replaces the three family enums, and
   `TaskCapabilities` drops its type parameter.
 - Vision keeps `RunningMode { image, video, liveStream }`. Audio gains
-  `AudioRunningMode { audioClips, audioStream }` (Google's names), with
-  `audioStream` reserved the way `liveStream` is. Text has no running mode,
-  as in Google's APIs.
+  `AudioRunningMode { audioClips, audioStream }` (Google's names); both
+  streaming modes were reserved until phase 7 built them. Text has no running
+  mode, as in Google's APIs.
 
 ### Inputs
 
@@ -394,6 +396,8 @@ tests keep passing), and shrinks the API-difference baseline from phase 0.
    - Release as 0.2.0. The baseline is now empty: the native and web APIs are
      identical.
 7. **Streaming.** Build LIVE_STREAM and audio stream mode on the unified API.
+   Done: vision's `detectAsync` family and the audio stream's
+   `classifyAsync`, each with a `results` stream.
 
 ## Enforcement
 

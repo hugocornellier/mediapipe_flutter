@@ -1,16 +1,16 @@
 # Streaming modes
 
-**Status:** vision's live stream mode has shipped, emulated on Google's VIDEO
-graph on all six platforms, with the gallery and the vision example on it, and
-so has the gallery's video file mode, which shows VIDEO beside it ("What
-shipped" below). The audio stream mode is next and still reserved:
-`AudioRunningMode.audioStream` throws
-`UnsupportedError` when a task is created, and
-`git grep -n "TODO.*audio stream"` lists its code sites. This note covers the
-three streaming pieces, which share one design: vision's LIVE_STREAM split
-from VIDEO, a video file mode in the gallery so VIDEO has a demo of its own,
-and the audio stream mode. Reviewed on 2026-10-03 against Google's v1.0.0
-source and the code as of main `418efdf`.
+**Status:** all three streaming pieces have shipped. Vision's live stream
+mode, emulated on Google's VIDEO graph on all six platforms, with the gallery
+and the vision example on it, and the gallery's video file mode, which shows
+VIDEO beside it, are described below ("What shipped"). The audio stream mode,
+Google's own stream on Android, iOS, macOS, Linux and Windows and an emulation
+in browsers, with the gallery's microphone mode on it, has its own note:
+`packages/mediapipe-task-audio/tool/AUDIO_STREAM.md`. This note covers the
+three pieces, which share one design: vision's LIVE_STREAM split from VIDEO, a
+video file mode in the gallery so VIDEO has a demo of its own, and the audio
+stream mode. Reviewed on 2026-10-03 against Google's v1.0.0 source and the
+code as of main `418efdf`.
 
 ## Google's three vision modes
 
@@ -412,113 +412,13 @@ times with today's gallery numbers on the Test Lab phones.
 
 ## Audio stream mode
 
-Google's audio tasks have their own pair of modes, checked on 2026-10-03
-against the same v1.0.0 source:
-
-| | AUDIO_CLIPS | AUDIO_STREAM |
-| --- | --- | --- |
-| Call | `Classify(clip, sampleRate)` blocks and returns one result per model window the clip is split into | `ClassifyAsync(block, sampleRate, timestampMs)` returns at once; the `result_callback` fires once per window, possibly several times per block |
-| Framing | Each clip framed on its own | Blocks accumulated and framed as one continuous signal: a window can straddle two blocks, leftover samples carry into the next block |
-| Sample rate | Per call | Fixed by the first block; timestamps must increase |
-| Dropping | None | None |
-
-- The only graph difference is `AudioToTensorCalculator`'s `stream_mode`
-  ([audio_classifier_graph.cc](https://github.com/google-ai-edge/mediapipe/blob/v1.0.0/mediapipe/tasks/cc/audio/audio_classifier/audio_classifier_graph.cc#L100)):
-  resampling, accumulation and framing across calls, with the model's window
-  and overlap from its metadata. YAMNet's window is 15,600 samples at 16 kHz
-  with no overlap: the reference fixture's chunks sit at 0, 975, 1950 ms.
-  There is no flow limiter: where vision's LIVE_STREAM is about dropping
-  frames, the audio stream is about continuity.
-- Channels: a model with one channel mixes any input down to mono; otherwise
-  the input's channel count must equal the model's
-  ([audio_to_tensor_calculator.cc](https://github.com/google-ai-edge/mediapipe/blob/v1.0.0/mediapipe/calculators/tensor/audio_to_tensor_calculator.cc#L349)).
-- Timestamps follow `TaskRunner::Send`'s rule, strictly increasing. The
-  calculator's jitter check (`check_inconsistent_timestamps`) only logs a
-  warning when a block's timestamp disagrees with the samples received, so
-  a microphone's clock drift does not fail the stream.
-- Closing flushes: the resampler's remainder and `padding_samples_after`
-  zeros are appended and the tail is processed, so a final short block yields
-  one more result during the close (the iOS SDK documents that the last short
-  block is processed only when the classifier is closed).
-- The C API has `MpAudioClassifierClassifyAsync` and a `result_callback` on
-  the options
-  ([audio_classifier.h](https://github.com/google-ai-edge/mediapipe/blob/v1.0.0/mediapipe/tasks/c/audio/audio_classifier/audio_classifier.h#L120)),
-  with the same rule as vision's: the callback runs on a MediaPipe thread and
-  its arguments are valid only during the call. The Android SDK has
-  `classifyAsync(AudioData, timestampMs)`, which fixes the sample rate on the
-  first block, with a result listener; the iOS SDK has
-  `classifyAsync(audioBlock:timestampInMilliseconds:)` with a stream
-  delegate. The web task has only `classify`; Google's TypeScript carries a
-  TODO for a `classifyStream`.
-
-This repository today: `AudioRunningMode.audioStream` is reserved and
-`AudioClassifier.create` throws for it. The native classifier runs each clip
-through `Isolate.run`, with no persistent worker (the text worker is one);
-core's iOS audio bridge configures clips mode only; the Android plugin creates
-clips mode only; the web worker calls `classify`. The gallery's microphone
-mode records at 16 kHz and is hand-rolled on clips mode: it keeps the last
-15,600 samples and classifies that window again as audio arrives, so windows
-are re-run per update rather than framed continuously, and no window straddles
-two updates.
-
-Design, with the vision contract:
-
-- `AudioClassifier.create` with `runningMode: AudioRunningMode.audioStream`;
-  `void classifyAsync(AudioData block, {required int timestampMilliseconds})`
-  returns at once; `Stream<AudioClassifierResult> get results` delivers one
-  result per window with its timestamp, listener required before the first
-  block, pausing buffers, cancelling discards, an error closes the stream and
-  poisons the task.
-- Nothing is dropped: every block is processed in order, so a caller that
-  feeds faster than real time only queues memory; blocks may be any length,
-  each yielding zero or more results.
-- Checked in Dart before the runtime, with one message on every platform: the
-  sample rate is fixed by the first block (`ArgumentError` on a change, as
-  Google refuses it), a channel count other than the model's is refused
-  unless the model is mono, and timestamps follow the shared rules.
-- `dispose()` flushes the tail as Google does, delivers whatever that yields,
-  then closes `results`.
-
-Emulate or native: emulating on clips mode (accumulate samples in Dart, carry
-the leftovers, classify each full window) reproduces Google's framing exactly
-when the blocks arrive at the model's rate and the model's windows do not
-overlap, which is the gallery's 16 kHz case, and only approximately when the
-runtime resamples, since per-window resampling has no state across windows.
-Native matches Google in every case: the desktops through
-`MpAudioClassifierClassifyAsync` with a copy shim like
-`text_stream_bridge.c` (the result copied inside the callback, received by a
-`NativeCallable.listener`) on a persistent worker, iOS through the SDK's
-stream delegate in core's audio bridge, Android through `classifyAsync` and
-its listener emitting `update` events through `TaskHost.emit`. The web stays
-emulated, since Google has no stream there; its per-window resampling is the
-documented approximation. Recommended: native on the native platforms,
-emulated on the web, with the emulation at the model's rate as the oracle
-the native path is tested against.
-
-Plan, alongside the vision steps:
-
-1. Implement the API above on every platform, the native path first on the
-   desktops, then iOS and Android, then the web emulation.
-2. Move the gallery's microphone mode onto it, delete its sliding window, and
-   update the audio README's "Keep one classifier for a live stream"
-   paragraph to the new mode; note in the CHANGELOG that `audioStream` no
-   longer throws.
-3. Tests, in the audio package with a fake backend and in the gallery's
-   suites against Google's runtime:
-   - Continuity: a reference clip fed as 100 ms blocks gives the clip's
-     results, timestamps included, on every platform; windows that straddle
-     two blocks match the clip's.
-   - Block sizes of one sample and of several windows; a stereo stream to the
-     mono model equals the mono clip; a changed sample rate and a timestamp
-     that does not increase are refused with the shared message, and jitter
-     within a block is tolerated.
-   - The tail: a lone 500 ms block yields exactly one result on disposal,
-     compared with Google's wheel on the desktops.
-   - Errors reach the listener and poison the task; pause buffers; cancel
-     discards; disposal twice is one disposal.
-   - The gallery's microphone mode in the journey: CI has no microphone, so
-     the page's stream path takes blocks from the sample WAV through the same
-     code, and the journey checks results arrive with increasing timestamps.
+Shipped, with its own note: `packages/mediapipe-task-audio/tool/AUDIO_STREAM.md`
+holds the contract, the decisions, what was measured and what shipped. It
+supersedes the section that stood here, which it corrects in eight places;
+three of them changed the design: Google stamps the flushed tail with a
+sentinel instead of a time, Google's C callback carries no user data and no
+error message, and the checks and the emulation need the model's window,
+rate and channels, which only the model's metadata holds.
 
 ## Order of work
 
@@ -527,7 +427,8 @@ Plan, alongside the vision steps:
    by the full CI loop and a Test Lab run for the phones' drop rates.
 2. Done: the gallery's video file mode over its own decoder plugin, its own
    PR.
-3. The audio stream mode and the gallery's microphone mode, its own PR.
+3. Done: the audio stream mode and the gallery's microphone mode, its own PR
+   (`packages/mediapipe-task-audio/tool/AUDIO_STREAM.md`).
 
 ## Decisions
 

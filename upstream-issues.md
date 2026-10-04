@@ -1,6 +1,6 @@
 # Upstream issues and runtime compatibility findings
 
-Last updated: 2026-10-01. These are local observations unless explicitly marked
+Last updated: 2026-10-04. These are local observations unless explicitly marked
 as an external report. No new upstream issues have been filed from this session.
 An exported symbol alone does not establish a working task or platform.
 
@@ -862,6 +862,102 @@ embedding in one run, 0.0073 at most in the next). The mobile suite bounds
 each value at 0.02, requires a cosine similarity of at least 0.995 with
 Google's vector, and logs the largest difference it saw. The desktop suites keep byte-for-byte comparison, since each host
 compares with the wheel its own runtime library comes from.
+
+## UP-037: The audio stream's flushed tail is stamped with a sentinel, not a time
+
+**Status:** observed October 4, 2026 with Google's 1.0.0 macOS wheel and core's
+1.0.0 macOS library, the 1.0.1 iOS SDK on the simulator and the 1.0.0 Android
+SDK on the API 31 emulator; worked around in `mediapipe_audio`. No upstream
+issue filed.
+
+In AUDIO_STREAM mode, closing an Audio Classifier flushes the audio short of a
+window, and its result is stamped 9223372036854775 ms on every platform:
+`Timestamp::Max()` divided by 1000. The calculator's flush mode defaults to
+`ENTIRE_TAIL_AT_TIMESTAMP_MAX`
+(`mediapipe/calculators/tensor/audio_to_tensor_calculator.proto`), which the
+audio graph never changes, so the tail's tensor leaves at `Timestamp::Max()`
+and each SDK divides that time by 1000. The value says only that the result is
+the tail; a caller drawing a timeline cannot use it, and a browser could not
+hold it, since it is above 2^53. Clips mode stamps the same padded chunk with
+where it starts.
+
+`mediapipe_audio` delivers the tail with where its audio starts, the first
+block's timestamp plus the windows before it, which is what clips mode
+reports for the same chunk. Its tests still assert that the raw value from
+Google is the sentinel, through a hook at the adapter, as the proof that the
+result came from Google's flush (packages/mediapipe-task-audio/tool/AUDIO_STREAM.md).
+
+## UP-038: The C audio stream callback carries no user data and no message
+
+**Status:** read in Google's v1.0.0 source and observed October 4, 2026 with
+core's 1.0.0 macOS library; worked around in `mediapipe_audio`. No upstream
+issue filed.
+
+`MpAudioClassifierOptions.result_callback` is
+`void (*)(MpStatus status, MpAudioClassifierResult* result)`
+(`mediapipe/tasks/c/audio/audio_classifier/audio_classifier.h`). Unlike the
+text streams' callbacks, it passes no user data, so a caller with several
+streams cannot tell them apart; `mediapipe_audio`'s bridge compiles 64
+callbacks, one per open stream, and refuses a 65th. A failure arrives as a
+status with a null result and no message (`audio_classifier.cc`), although in
+practice Google's task runner hands the callback only successful packets, and
+a graph failure surfaces instead from the next `MpAudioClassifierClassifyAsync`
+("Graph has errors: ...") and from `MpAudioClassifierClose`, both with
+Google's message. The callback runs on MediaPipe's own threads, never the
+caller's, and not always the same one: a C harness saw three thread changes in
+five callbacks, each call finished before the next began, and none after the
+close returned, even when every call took 300 ms.
+
+## UP-039: Android's audio runner reports graph failures only at its close
+
+**Status:** read in Google's v1.0.0 source; not reproduced, since no graph
+failure could be forced with a valid model on the API 31 emulator. Documented
+in `mediapipe_audio`. No upstream issue filed.
+
+`AudioClassifier.createFromOptions` gives the options' error listener to its
+output handler only, which hears result conversion errors. Its `TaskRunner`
+has no error listener, so `send` logs a graph error ("Mediapipe error: ...")
+and swallows it, and `close` throws it (`TaskRunner.java`). A failure while
+streaming therefore reaches the caller only when the stream closes, and a
+close that throws skips `graph.tearDown()`. Google's checks at the call itself
+do throw: a timestamp that does not increase ("The received packets having a
+smaller timestamp than the processed timestamp.") and a changed sample rate
+("The input audio sample rate: 48000.0 is inconsistent with the previously
+provided: 16000.0"). `mediapipe_audio` checks both in Dart first, and delivers
+a failure Google reports at the close on the stream's results during
+`dispose()`.
+
+## UP-040: The iOS audio stream's close returns before its delegate has the last results
+
+**Status:** observed October 4, 2026 with Google's 1.0.1 iOS SDK on the arm64
+simulator; worked around in core's adapter. No upstream issue filed.
+
+`MPPAudioClassifier` hands every stream result to its delegate with
+`dispatch_async` on a private serial queue (`MPPAudioClassifier.mm`), and
+`closeWithError:` only closes the graph, so it returns before the delegate has
+received the results the close flushed: in 56 of 200 runs of a half-second
+stream, the tail had not arrived when `closeWithError:` returned. The public
+API offers no way to wait for them, and the options hold the delegate weakly.
+Core's adapter keeps the delegate strongly, reads the queue with key-value
+coding (`_callbackQueue`, present in the 1.0.1 binary) when it creates the
+task, and after `closeWithError:` runs an empty block on that queue
+synchronously, after which the tail had arrived in 200 of 200 runs. An SDK
+that hid the queue would make the adapter refuse stream mode at creation.
+
+## UP-041: Two defects in the C Audio Classifier
+
+**Status:** read in Google's v1.0.0 source; not observed to fail. No upstream
+issue filed.
+
+- The stream callback allocates its one result with
+  `std::make_unique<MpClassificationResult>()` and frees it through
+  `MpAudioClassifierCloseResult`, which uses `delete[]`
+  (`mediapipe/tasks/c/audio/audio_classifier/audio_classifier.cc`): `new`
+  freed with `delete[]` is undefined behavior, harmless with the allocators
+  in use but a finding for AddressSanitizer.
+- `MpAudioClassifierClose` deletes the task only when its close succeeds, so a
+  close that fails, as after a graph failure, leaks the task, and nothing can
+  close it again.
 
 ## Integration pitfalls resolved in this repo
 

@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,6 +48,73 @@ void main() {
         );
       } finally {
         await task.dispose();
+      }
+    });
+  }, skip: !(Platform.isMacOS || Platform.isLinux || Platform.isWindows));
+
+  testWidgets('the clip as an audio stream gives the clip\'s five results', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final model = await asset('assets/models/yamnet.tflite');
+      final speech = decodeWav(
+        await asset('assets/samples/speech_16000_hz_mono.wav'),
+      );
+      final clips = await AudioClassifier.create(
+        AudioClassifierOptions(modelBytes: model, maxResults: 3),
+      );
+      final List<AudioClassifierResult> clip;
+      try {
+        clip = await clips.classify(speech);
+      } finally {
+        await clips.dispose();
+      }
+      final stream = await AudioClassifier.create(
+        AudioClassifierOptions(
+          modelBytes: model,
+          maxResults: 3,
+          runningMode: AudioRunningMode.audioStream,
+        ),
+      );
+      final heard = <AudioClassifierResult>[];
+      final done = Completer<void>();
+      stream.results.listen(heard.add, onDone: done.complete);
+      // 100 ms blocks, each stamped with its first sample's time.
+      for (var start = 0; start < speech.samples.length; start += 1600) {
+        stream.classifyAsync(
+          AudioData(
+            samples: Float32List.sublistView(
+              speech.samples,
+              start,
+              math.min(start + 1600, speech.samples.length),
+            ),
+            sampleRate: 16000,
+          ),
+          timestampMilliseconds: start * 1000 ~/ 16000,
+        );
+      }
+      await stream.dispose();
+      await done.future;
+      // At the model's rate Google's stream feeds its model the same floats
+      // as clips mode, the tail's zero padding included: the same results.
+      expect(heard.map((r) => r.timestampMilliseconds), [
+        0,
+        975,
+        1950,
+        2925,
+        3900,
+      ]);
+      for (final (i, result) in heard.indexed) {
+        expect(
+          [
+            for (final c in result.classifications.single.categories)
+              (c.categoryName, c.score),
+          ],
+          [
+            for (final c in clip[i].classifications.single.categories)
+              (c.categoryName, c.score),
+          ],
+        );
       }
     });
   }, skip: !(Platform.isMacOS || Platform.isLinux || Platform.isWindows));

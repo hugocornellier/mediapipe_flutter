@@ -11,6 +11,7 @@ import 'catalog.dart';
 import 'embed_page.dart';
 import 'segment_page.dart';
 import 'text_page.dart';
+import 'audio/microphone.dart';
 import 'audio_page.dart';
 import 'live_page.dart';
 import 'ui/components.dart';
@@ -70,14 +71,25 @@ Future<void> main() async {
   if (kIsWeb && (!phone || testHooks)) {
     _webSemantics ??= WidgetsBinding.instance.ensureSemantics();
   }
-  runApp(const GalleryApp());
+  // The browser tests have no microphone outside Chromium, so their page
+  // plays the speech sample through the same microphone path instead.
+  runApp(
+    GalleryApp(
+      microphone: Uri.base.queryParameters['microphone'] == 'sample'
+          ? sampleMicrophone()
+          : null,
+    ),
+  );
 }
 
 class GalleryApp extends StatelessWidget {
-  const GalleryApp({super.key, this.stillImagePicker});
+  const GalleryApp({super.key, this.stillImagePicker, this.microphone});
 
   /// Lets device tests choose a fixture through the real gallery controls.
   final Future<XFile?> Function()? stillImagePicker;
+
+  /// Lets device tests play a fixture as the audio page's microphone.
+  final MicrophoneSource? microphone;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -85,14 +97,15 @@ class GalleryApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: galleryTheme(Brightness.light),
     themeMode: ThemeMode.light,
-    home: HomePage(stillImagePicker: stillImagePicker),
+    home: HomePage(stillImagePicker: stillImagePicker, microphone: microphone),
   );
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, this.stillImagePicker});
+  const HomePage({super.key, this.stillImagePicker, this.microphone});
 
   final Future<XFile?> Function()? stillImagePicker;
+  final MicrophoneSource? microphone;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -138,6 +151,7 @@ class _HomePageState extends State<HomePage> {
           platform: platform,
           tasks: tasks,
           stillImagePicker: widget.stillImagePicker,
+          microphone: widget.microphone,
         );
       },
     ),
@@ -152,12 +166,14 @@ class _GalleryShell extends StatefulWidget {
     required this.platform,
     required this.tasks,
     this.stillImagePicker,
+    this.microphone,
   });
 
   final GalleryAssets assets;
   final TaskPlatform platform;
   final List<GalleryTask> tasks;
   final Future<XFile?> Function()? stillImagePicker;
+  final MicrophoneSource? microphone;
 
   @override
   State<_GalleryShell> createState() => _GalleryShellState();
@@ -253,7 +269,11 @@ class _GalleryShellState extends State<_GalleryShell> {
         assets: widget.assets,
         onOpenMenu: openMenu,
       ),
-      GalleryDemo.audio => AudioPage(task: task, onOpenMenu: openMenu),
+      GalleryDemo.audio => AudioPage(
+        task: task,
+        onOpenMenu: openMenu,
+        microphone: widget.microphone,
+      ),
       GalleryDemo.none => throw StateError('${task.id} has no demo'),
     };
   }

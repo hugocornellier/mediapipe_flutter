@@ -3,7 +3,9 @@ final class AudioClassifier
   Delegate get delegate
   Future<List<AudioClassifierResult>> classify(AudioData audio)
   Future<void> dispose()
+  Stream<AudioClassifierResult> get results
   static Future<AudioClassifier> create(AudioClassifierOptions options)
+  void classifyAsync(AudioData block, {required int timestampMilliseconds})
 final class AudioClassifierOptions extends TaskOptions
   AudioRunningMode get runningMode
   Delegate get delegate

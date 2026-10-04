@@ -193,6 +193,17 @@ public final class TaskHost implements MethodChannel.MethodCallHandler {
     return value.intValue();
   }
 
+  /**
+   * A whole-number argument that must be present and may need 64 bits, such as a timestamp in
+   * milliseconds: Flutter sends a Dart int above 2^31 as a {@code Long}, which {@link #number}
+   * would truncate.
+   */
+  public static long wholeNumber(MethodCall call, String key) {
+    Number value = call.argument(key);
+    if (value == null) throw new IllegalArgumentException("Missing " + key);
+    return value.longValue();
+  }
+
   /** A decimal argument that must be present. */
   public static float decimal(MethodCall call, String key) {
     Number value = call.argument(key);
