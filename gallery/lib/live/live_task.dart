@@ -18,7 +18,7 @@ abstract interface class LiveTask<T> {
   TaskSettingValues get settings;
 
   /// Creates the task in the requested running mode: live stream for the
-  /// camera, image for a still image.
+  /// camera, image for a still image, video for a video file.
   Future<void> open(
     Delegate delegate,
     Uint8List modelBytes, {
@@ -27,6 +27,14 @@ abstract interface class LiveTask<T> {
 
   /// Processes a still image with a task opened in image mode.
   Future<T> detectImage(VisionImage image);
+
+  /// Processes one frame of a video file with a task opened in video mode:
+  /// every frame runs, in order, so tracking follows the whole file.
+  Future<T> detectFrame(
+    VisionImage frame,
+    int timestampMilliseconds, {
+    required int rotationDegrees,
+  });
 
   /// Hands one camera frame to a task opened in live stream mode and returns
   /// at once. The task runs it, holds it while another frame runs, or drops

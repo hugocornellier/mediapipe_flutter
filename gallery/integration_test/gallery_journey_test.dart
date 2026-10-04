@@ -5,10 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:video_frames/video_frames.dart';
 import 'package:mediapipe_gallery/audio_page.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/embed_page.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
+import 'package:mediapipe_gallery/live/video_frame_image.dart';
 import 'package:mediapipe_gallery/live_page.dart';
 import 'package:mediapipe_gallery/main.dart';
 import 'package:mediapipe_gallery/segment_page.dart';
@@ -26,11 +28,24 @@ const _gpuSkipTasks = String.fromEnvironment('SDK_GPU_SKIP_TASKS');
 
 /// Runs every page exposed by this build through the same shell and sidebar a
 /// user opens: each camera page live on every delegate it offers, switched
-/// while running, then a still image on each; Image Embedder's two images,
-/// and the segmenter, text and audio pages on theirs. The picker supplies bundled image bytes without a device
-/// file dialog; decoding, task creation, inference and rendering stay real.
+/// while running, then a still image on each, then the bundled video clip
+/// frame by frame; Image Embedder's two images, and the segmenter, text and
+/// audio pages on theirs. The picker supplies bundled image bytes without a
+/// device file dialog; decoding, task creation, inference and rendering stay
+/// real.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('video files decode with their timestamps and rotation', (
+    tester,
+  ) async {
+    final assets = await tester.runAsync(GalleryAssets.unpack);
+    if (!assets!.bundledTasks.contains('face_detector')) {
+      markTestSkipped('This build bundles no Face Detector.');
+      return;
+    }
+    await tester.runAsync(() => _videoFiles(assets));
+  });
 
   testWidgets('every sidebar task opens and runs its bundled sample', (
     tester,
@@ -226,6 +241,16 @@ void main() {
             isNotEmpty,
             reason: '${task.id} ran no still image',
           );
+          // The video file mode runs the bundled clip in video mode, every
+          // frame with the file's own timestamp.
+          final video = find.byKey(
+            ValueKey('${task.runtimeId.replaceAll('_', '-')}-mode-video'),
+          );
+          expect(video, findsOneWidget, reason: task.id);
+          await tester.ensureVisible(video);
+          await tester.tap(video);
+          final label = await _videoRan(tester, task.id);
+          checks.add('${task.id}:$label:video');
           break;
         case GalleryDemo.embed:
           // The page opens comparing Dog with Cat; each delegate compares
@@ -376,6 +401,69 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 20)));
 }
 
+/// The platform's decoder reads both bundled clips frame by frame with the
+/// files' own timestamps, and a file's rotation reaches the task: the rotated
+/// clip's face is found only when its frames are turned upright.
+Future<void> _videoFiles(GalleryAssets assets) async {
+  final scene = await VideoFileReader.open(assets.path('scene.mp4'));
+  final sizes = <(int, int)>{};
+  final timestamps = <int>[];
+  try {
+    for (var frame = await scene.next(); frame != null;) {
+      sizes.add((frame.width, frame.height));
+      timestamps.add(frame.timestampMicroseconds);
+      discardFrame(frame);
+      frame = await scene.next();
+    }
+  } finally {
+    await scene.close();
+  }
+  final rotated = await VideoFileReader.open(assets.path('rotated.mp4'));
+  // Everything this platform's decoder reported, in its log, before the
+  // first check can stop the test.
+  debugPrint(
+    'VIDEO_FILES scene.mp4: rotation ${scene.rotationDegrees}, sizes $sizes, '
+    '${timestamps.length} frames from ${timestamps.take(3).toList()} us; '
+    'rotated.mp4: rotation ${rotated.rotationDegrees}, '
+    '${rotated.width}x${rotated.height}',
+  );
+  expect(scene.rotationDegrees, 0);
+  expect(sizes, {(960, 540)});
+  expect(timestamps, hasLength(_clipFrames));
+  for (var i = 0; i < timestamps.length; i++) {
+    // 30 frames a second, to the microsecond of each decoder's rounding.
+    expect((timestamps[i] - i * 1000000 / 30).abs(), lessThan(1000));
+  }
+  expect(rotated.rotationDegrees, 90);
+  final model = (assets.manifest['models'] as Map)['face_detector'] as String;
+  final detector = await FaceDetector.create(
+    FaceDetectorOptions(
+      modelPath: assets.path(model),
+      runningMode: RunningMode.video,
+    ),
+  );
+  var faces = 0, frames = 0;
+  try {
+    for (var frame = await rotated.next(); frame != null;) {
+      final prepared = await prepareFrame(frame);
+      prepared.picture.dispose();
+      final result = await detector.detectForVideo(
+        prepared.input,
+        timestampMilliseconds: (frame.timestampMicroseconds / 1000).round(),
+        rotationDegrees: rotated.rotationDegrees,
+      );
+      frames++;
+      faces += result.detections.length;
+      frame = await rotated.next();
+    }
+  } finally {
+    await rotated.close();
+    await detector.dispose();
+  }
+  expect(frames, 10);
+  expect(faces, frames, reason: 'one face in every upright frame');
+}
+
 /// A still image result that proves inference found something, not merely
 /// that it finished: "0 faces detected" or "No pose detected" fail.
 final _stillResults = <String, RegExp>{
@@ -512,6 +600,47 @@ Future<bool> _stillRan(
   }
   if (optional) return false;
   fail('No $label still image result matching $expected: ${_screen(tester)}');
+}
+
+/// Frames in the bundled clip, gallery/samples/scene.mp4.
+const _clipFrames = 90;
+
+/// Waits for the video file mode to finish the bundled clip: every frame run
+/// once, in order, each result carrying its frame's timestamp, nothing
+/// skipped. Returns the delegate's name.
+Future<String> _videoRan(WidgetTester tester, String id) async {
+  final deadline = DateTime.now().add(const Duration(minutes: 5));
+  while (DateTime.now().isBefore(deadline)) {
+    await tester.pump();
+    for (final status in _status(tester)) {
+      if (!status.parts.contains('scene.mp4')) continue;
+      expect(
+        status.parts.where(
+          (part) => part.contains('out of step') || part.contains('repeated'),
+        ),
+        isEmpty,
+        reason: id,
+      );
+      if (status.parts.contains('$_clipFrames frames done')) {
+        // The time per frame, in every platform's log.
+        debugPrint(
+          '$id video file: ${status.parts.join(' · ')} · '
+          '${status.delegate}',
+        );
+        return status.delegate!.toLowerCase();
+      }
+      final done = status.parts.where(
+        (part) => RegExp(r'^\d+ frames? done$').hasMatch(part),
+      );
+      if (done.isNotEmpty) fail('$id: ${done.single}, not $_clipFrames');
+    }
+    final error = _imageError(tester);
+    if (error != null) fail('$id video file failed: $error');
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 250)),
+    );
+  }
+  fail('$id: the video file did not finish: ${_screen(tester)}');
 }
 
 /// The cosine similarity Image Embedder shows, once it has one.

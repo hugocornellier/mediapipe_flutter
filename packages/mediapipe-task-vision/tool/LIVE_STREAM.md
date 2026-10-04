@@ -1,9 +1,10 @@
 # Streaming modes
 
 **Status:** vision's live stream mode has shipped, emulated on Google's VIDEO
-graph on all six platforms, with the gallery and the vision example on it
-("What shipped" below). The gallery's video file mode is next, then the audio
-stream mode, which is still reserved: `AudioRunningMode.audioStream` throws
+graph on all six platforms, with the gallery and the vision example on it, and
+so has the gallery's video file mode, which shows VIDEO beside it ("What
+shipped" below). The audio stream mode is next and still reserved:
+`AudioRunningMode.audioStream` throws
 `UnsupportedError` when a task is created, and
 `git grep -n "TODO.*audio stream"` lists its code sites. This note covers the
 three streaming pieces, which share one design: vision's LIVE_STREAM split
@@ -289,6 +290,92 @@ How it works:
   opens every live tile in live stream mode, and the controller tests run the
   package's real limiter behind a scripted backend.
 
+### What shipped (step 8)
+
+- **Decoder.** `gallery/packages/video_frames`, the gallery's own plugin (about
+  1,450 lines over six platforms), with one Dart API: `VideoFileReader.open`,
+  `next` and `close`, and the file's size, rotation, duration and frame rate.
+  Each platform's decoder is asked for pixels the gallery already handles:
+  AVAssetReader on iOS and macOS gives BGRA, on its own serial queue, with the
+  rotation from the track's preferred transform; MediaExtractor and MediaCodec
+  on Android give YUV_420_888 planes, which the camera path's `yuv420ToRgba`
+  converts (10-bit P010 is narrowed to 8 bits in Java), on a HandlerThread,
+  with the rotation from `KEY_ROTATION`; Media Foundation's source reader on
+  Windows gives RGB32 through its video processor, cropped to the display
+  aperture, with the rotation from `MF_MT_VIDEO_ROTATION`; GStreamer's playbin on Linux ends in an RGBA appsink,
+  with the rotation from the `image-orientation` tag. Windows and Linux reply
+  on the platform thread, where a frame of the sample clip takes milliseconds.
+  In browsers a hidden `<video>` element is sought to the middle of each slot
+  of a frame grid, its frame duration measured during a moment of muted
+  playback and rounded to a common rate; `requestVideoFrameCallback`'s
+  `mediaTime` is the timestamp where it is a frame's start, the slot's start
+  where it is not, and the frame goes to the task as an `ImageBitmap`; the
+  browser applies the rotation itself. A file comes one frame at a time, never whole into memory, except in
+  browsers, where a URL that is not already a blob is loaded into one first
+  (the last point below).
+- **Gallery.** A third mode, **Video file**, on the live page of every camera
+  task (`lib/live/video_file_controller.dart`): the task opens in video mode,
+  on the page's delegate with the camera's GPU-to-CPU fallback, and every
+  frame runs with its own timestamp in whole milliseconds; a timestamp that
+  repeats the one before is skipped and counted, and a result that carries
+  another timestamp is reported. Play, pause and restart, where restart opens
+  a new task. The view draws each frame, turned upright, with the result over
+  it; the status line shows the file, the frame count, the time per frame and
+  the delegate. The bundled clip (`samples/scene.mp4`, 452 KB) plays when the
+  mode opens; **Choose video file** picks another. `LiveTask` gained
+  `detectFrame`, the video call, for the nine tasks with a live page (Image
+  Embedder compares photos and Interactive Segmenter takes taps instead).
+- **Clips.** `gallery/tool/make_sample_clip.py` makes `scene.mp4` (three
+  seconds at 30 fps, 960 x 540, the pose, portrait and raised-thumb photos
+  drifting, H.264 main profile with a keyframe every 10 frames) and
+  `rotated.mp4` (ten frames of the portrait stored on its side and tagged to
+  be turned upright) from the test fixtures; `samples/README.md` records their
+  sources, licence and digests.
+- **Tests.** The journey test, on every platform CI runs it (macOS, iOS,
+  Android, Linux, Windows, and Chromium, Firefox and WebKit), opens the video
+  file mode of every live page and waits for all 90 frames with no repeated
+  timestamp and no result out of step, and logs the time per frame. A second
+  journey test, which logs what each decoder reported before checking it,
+  decodes `scene.mp4` (90 timestamps, each within a millisecond of its
+  frame's slot at 30 fps) and `rotated.mp4` (rotation 90, and Face Detector
+  in video mode with that rotation finds the face in all ten frames). Unit
+  tests cover the plugin's channel reader and the controller: rounding and
+  repeated timestamps, pause and play, restart, the GPU fallback and a
+  decoder failure.
+- **Where step 8 was wrong.** Seeking a `<video>` frame by frame needs a
+  seekable file, and a file served over HTTP is seekable only when the server
+  answers range requests. Python's `http.server`, which the browser tests
+  serve from, does not: Chromium then reports the clip seekable from 0 to 0,
+  every seek shows the first frame, and the first journey run ended after one
+  frame. The reader now loads a URL that is not a blob into one (a picked file
+  already is), and refuses a file it still cannot seek rather than ending it
+  early. Nor does `mediaTime` mean the same everywhere: Chromium and WebKit
+  report the shown frame's start, and Firefox, it appears, the seek position,
+  so a reader stepping from the last `mediaTime` advanced one and a half
+  frames a step there and finished 60 of 90 frames in CI. A callback can also
+  come too late: WebKit on a loaded CI runner missed the reader's 500 ms wait,
+  and the late callback then fired with the next seek's, in the same round and
+  with the earlier frame's time, which the reader took for a repeated frame
+  (89 of 90). The reader now steps a fixed grid, trusts a `mediaTime` only
+  when it lies clearly before the seek position, waits up to five seconds for
+  a callback, and after a late one finishes the file without callbacks; with
+  every callback forced to miss, WebKit runs the journey's 90 frames on every
+  page. Timestamps need the file's edit list, which delays an H.264 track by
+  the encoder's frame reordering (two frames in the sample clip):
+  AVFoundation, MediaCodec and the browsers apply it, while GStreamer's
+  buffers carry the track's media time and its segment carries the edit, so
+  the Linux reader reports the stream time. Frame sizes need the display
+  aperture: H.264 decodes whole 16-pixel macroblocks, and Media Foundation
+  hands over all 544 rows of the 960 x 540 clip, so the Windows reader crops
+  to `MF_MT_MINIMUM_DISPLAY_APERTURE` (or the track's own size). Conversion is
+  mostly the decoders' own: Apple, Windows and Linux are asked for BGRA or
+  RGBA, so only Android's YUV goes through the camera path's conversion, and
+  browsers hand their bitmap to the task as it is. Linux needs
+  `gstreamer1.0-libav` for H.264, which GStreamer's base and good plugins do
+  not decode. The clip is 452 KB, not a few megabytes; ffmpeg writes a
+  rotation tag only with `-display_rotation` and `-noautorotate` before the
+  input.
+
 ### Native LIVE_STREAM, if profiling asks for it
 
 The public API is the same either way, so a platform can move to native later.
@@ -438,7 +525,8 @@ Plan, alongside the vision steps:
 1. Done: vision live stream in the package (emulated), with its tests, README
    and CHANGELOG, then the gallery and example moved onto it; one PR, verified
    by the full CI loop and a Test Lab run for the phones' drop rates.
-2. The gallery's video file mode, its own PR, after the decoder decision.
+2. Done: the gallery's video file mode over its own decoder plugin, its own
+   PR.
 3. The audio stream mode and the gallery's microphone mode, its own PR.
 
 ## Decisions
@@ -496,6 +584,17 @@ Plan, alongside the vision steps:
   14 to 24 on the Pixel 8a (main skipped about 29% of the front camera's frames)
   and 6 to 10 on the Galaxy A12 (22 to 50%). Frame and drop rates there compare
   the two paths, not a lit room at 30 frames a second.
-- **Still open: the video decoder for the gallery** (piece 2): OpenCV as the
-  face_detection_tflite example, or a small plugin over the platform
-  decoders.
+- **The gallery decodes video with its own plugin over the platform
+  decoders, not OpenCV.** OpenCV, as the face_detection_tflite example uses
+  it (`dartcv4` 2.3.1 behind `opencv_dart`), measured in that example: its
+  library is 10.2 to 10.6 MB on macOS and 9.1 MB on iOS, built from source by
+  its build hook on every build (the example pins versions to keep the hook
+  working), and every one of the gallery's CI platforms would compile it. It
+  decodes in software, and the browsers would need their own path anyway.
+  The owner chose not to add a dependency, so Android, Windows and Linux were
+  not measured. The plugin instead uses decoders every device already has,
+  with their presentation timestamps and rotation metadata, in about 1,450
+  lines; its compiled Swift on macOS is 68 KB of code and data (debug build).
+  The cost is four native readers to maintain where OpenCV would be one
+  dependency. The plugin stays inside the gallery, unpublished, and the vision
+  package still decodes nothing.

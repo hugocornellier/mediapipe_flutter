@@ -8,6 +8,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'catalog.dart';
+import 'gallery_assets_io.dart'
+    if (dart.library.js_interop) 'web/gallery_assets.dart';
 import 'live/live_camera_controller.dart';
 import 'live/camera_geometry.dart';
 import 'live/live_camera_view.dart';
@@ -17,6 +19,7 @@ import 'live/overlay_visibility.dart';
 import 'live/speed_history.dart';
 import 'live/still_image.dart';
 import 'live/task_models.dart';
+import 'live/video_file_controller.dart';
 import 'live/task_settings.dart';
 import 'live/live_output.dart';
 import 'live/task_settings_panel.dart';
@@ -25,11 +28,15 @@ import 'ui/design.dart';
 import 'ui/speed_chart.dart';
 import 'ui/workspace.dart';
 
+/// The bundled clip the video file mode opens with (samples/README.md).
+const sampleClip = 'scene.mp4';
+
 /// One live camera demo, whichever task the tile names.
 ///
-/// Camera capture and timing live in [LiveCameraController]. This page shares
-/// model settings, delegate selection and overlays between camera and image
-/// inference for every vision demo in the live registry.
+/// Camera capture and timing live in [LiveCameraController], a video file's
+/// frames in [VideoFileController]. This page shares model settings, delegate
+/// selection and overlays between the camera, a still image and a video file
+/// for every vision demo in the live registry.
 class LivePage extends StatefulWidget {
   const LivePage({
     super.key,
@@ -59,6 +66,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
   late final LiveTask<Object?> _task = _demo.task();
   late final LiveCameraController<Object?> _controller =
       LiveCameraController<Object?>(_task);
+  late final VideoFileController _video = VideoFileController(_task);
   late final List<TaskSetting> _settings =
       taskSettings[widget.task.runtimeId] ?? const [];
   late final List<TaskModel> _models =
@@ -94,9 +102,13 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
   bool get _segmenter => widget.task.runtimeId == 'image_segmenter';
   final _masks = SegmentationMaskImages();
 
-  /// The result on screen: the still image's, or the camera's newest.
-  Object? get _shownResult =>
-      _mode == _VisionInputMode.image ? _imageResult : _controller.result;
+  /// The result on screen: the still image's, the video file's current
+  /// frame's, or the camera's newest.
+  Object? get _shownResult => switch (_mode) {
+    _VisionInputMode.image => _imageResult,
+    _VisionInputMode.video => _video.result,
+    _VisionInputMode.camera => _controller.result,
+  };
 
   List<String> get _labels => switch (_shownResult) {
     ImageSegmenterResult(:final labels) => labels,
@@ -185,6 +197,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
     super.initState();
     _controller.delegate = preferredDelegate(_delegates);
     _controller.addListener(_onControllerChanged);
+    _video.addListener(_onVideoChanged);
     widget.navigationOpen?.addListener(_onCoverChanged);
     _onCoverChanged();
     WidgetsBinding.instance.addObserver(this);
@@ -244,6 +257,23 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
     _frameRebuild = false;
   }
 
+  void _onVideoChanged() {
+    if (!mounted) return;
+    // A refused GPU leaves the file on CPU; the delegate control follows.
+    if (!_video.loading && _video.delegate != _controller.delegate) {
+      _controller.delegate = _video.delegate;
+    }
+    final panel = (
+      _video.loading,
+      _controller.delegate,
+      Object.hashAll(_labels),
+    );
+    _frameRebuild = panel == _panelState;
+    _panelState = panel;
+    setState(() {});
+    _frameRebuild = false;
+  }
+
   Future<void> _findCameras() async {
     try {
       await _controller.findCameras();
@@ -272,10 +302,12 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
     _imageRevision++;
     _modeRevision++;
     _controller.removeListener(_onControllerChanged);
+    _video.removeListener(_onVideoChanged);
     widget.navigationOpen?.removeListener(_onCoverChanged);
     WidgetsBinding.instance.removeObserver(this);
     _controller.close();
     _controller.dispose();
+    _video.dispose();
     _revision.dispose();
     _masks.dispose();
     _dialogRevision.dispose();
@@ -313,7 +345,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
 
   void _setDelegate(Delegate delegate) {
     setState(() => _controller.delegate = delegate);
-    if (_mode == _VisionInputMode.image || _controller.running) {
+    if (_mode != _VisionInputMode.camera || _controller.running) {
       _restartCurrentMode();
     }
   }
@@ -412,6 +444,8 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
   void _restartCurrentMode({bool startCameraIfStopped = false}) {
     if (_mode == _VisionInputMode.image) {
       if (_imageInput != null) unawaited(_detectImage());
+    } else if (_mode == _VisionInputMode.video) {
+      unawaited(_video.restart(delegate: _controller.delegate));
     } else if (_controller.running || startCameraIfStopped) {
       unawaited(_start());
     }
@@ -419,6 +453,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
 
   Future<void> _setMode(_VisionInputMode mode) async {
     if (_mode == mode) return;
+    final previous = _mode;
     ++_imageRevision;
     ++_modeRevision;
     setState(() {
@@ -427,17 +462,10 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
       _imageError = null;
       _imageBusy = false;
     });
-    if (mode == _VisionInputMode.image) {
-      try {
-        _cameraStopped = _controller.stop();
-        await _cameraStopped;
-        if (mounted && _mode == mode && _imageInput != null && !_imageBusy) {
-          await _detectImage();
-        }
-      } on Object catch (error) {
-        if (mounted && _mode == mode) setState(() => _imageError = '$error');
-      }
-    } else {
+    // Each mode opens the shared task in its own running mode, so the mode
+    // left behind closes it first.
+    if (previous == _VisionInputMode.video) await _video.close();
+    if (mode == _VisionInputMode.camera) {
       await _imageOperations;
       if (mounted && _mode == mode) {
         if (_controller.description == null) {
@@ -446,6 +474,65 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
           await _start();
         }
       }
+      return;
+    }
+    try {
+      _cameraStopped = _controller.stop();
+      await _cameraStopped;
+      await _imageOperations;
+      if (!mounted || _mode != mode) return;
+      if (mode == _VisionInputMode.video) {
+        await _openVideo();
+      } else if (_imageInput != null && !_imageBusy) {
+        await _detectImage();
+      }
+    } on Object catch (error) {
+      if (mounted && _mode == mode) setState(() => _imageError = '$error');
+    }
+  }
+
+  /// The model the page runs: the bundled one, or the one chosen or
+  /// uploaded in the settings.
+  Future<Uint8List> _currentModel() =>
+      (_controller.modelLoader ?? _bundledModelBytes)();
+
+  /// Plays the file already chosen from its start, or the bundled clip.
+  Future<void> _openVideo() async {
+    final delegate = _delegates.contains(_controller.delegate)
+        ? _controller.delegate
+        : preferredDelegate(_delegates);
+    if (_video.path != null) return _video.restart(delegate: delegate);
+    final assets = await GalleryAssets.unpack();
+    if (!mounted || _mode != _VisionInputMode.video) return;
+    await _video.open(
+      assets.path(sampleClip),
+      sampleClip,
+      delegate: delegate,
+      model: _currentModel,
+    );
+  }
+
+  Future<void> _chooseVideo() async {
+    try {
+      final file = await openFile(
+        acceptedTypeGroups: const [
+          XTypeGroup(
+            label: 'Videos',
+            extensions: ['mp4', 'mov', 'm4v', 'webm', 'mkv'],
+            mimeTypes: ['video/*'],
+            uniformTypeIdentifiers: ['public.movie'],
+          ),
+        ],
+      );
+      if (file == null || !mounted || _mode != _VisionInputMode.video) return;
+      await _video.open(
+        file.path,
+        file.name,
+        delegate: _controller.delegate,
+        model: _currentModel,
+      );
+    } on Object catch (error) {
+      if (mounted) setState(() => _video.error = '$error');
     }
   }
 
@@ -620,6 +707,12 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
                       icon: LucideIcons.upload,
                       key: ValueKey('$_id-mode-image'),
                     ),
+                    (
+                      value: _VisionInputMode.video,
+                      label: 'Video file',
+                      icon: LucideIcons.film,
+                      key: ValueKey('$_id-mode-video'),
+                    ),
                   ],
                   selected: _mode,
                   onChanged: (mode) => unawaited(_setMode(mode)),
@@ -628,6 +721,8 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
         ),
         if (_mode == _VisionInputMode.image)
           ..._stillImage()
+        else if (_mode == _VisionInputMode.video)
+          ..._videoFile()
         else
           ..._camera(_controller),
         ..._legend(),
@@ -678,9 +773,12 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
     if (output == null) {
       return OutputCard(
         title: 'Results',
-        empty: _mode == _VisionInputMode.image
-            ? 'Choose an image to see what the task finds.'
-            : 'Results appear once the camera runs.',
+        empty: switch (_mode) {
+          _VisionInputMode.image =>
+            'Choose an image to see what the task finds.',
+          _VisionInputMode.video => 'Results appear once the video plays.',
+          _VisionInputMode.camera => 'Results appear once the camera runs.',
+        },
         onClose: onClose,
       );
     }
@@ -781,6 +879,133 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
           label: 'Change image',
           tooltip: 'Choose another image',
           onPressed: _chooseImage,
+        ),
+      ),
+    ];
+  }
+
+  /// A video file in video mode: every frame runs, in order, and the view
+  /// shows each with its result as the task returns it.
+  List<Widget> _videoFile() {
+    final video = _video;
+    final picture = video.picture;
+    final size = video.frameSize;
+    final turns = video.rotationDegrees ~/ 90;
+    final error = video.error;
+    return [
+      FeedFrame(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (picture != null && size != null)
+              Center(
+                child: AspectRatio(
+                  aspectRatio: turns.isOdd
+                      ? size.height / size.width
+                      : size.width / size.height,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      RotatedBox(
+                        quarterTurns: turns,
+                        child: RawImage(image: picture, fit: BoxFit.fill),
+                      ),
+                      LayoutBuilder(
+                        builder: (context, constraints) => CustomPaint(
+                          key: ValueKey('$_id-video-overlay'),
+                          painter: _overlay(
+                            video.result,
+                            PreviewTransform.fit(
+                              frameSize: size,
+                              rotationDegrees: video.rotationDegrees,
+                              viewSize: constraints.biggest,
+                              mirror: false,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (video.loading)
+              const Center(child: CircularProgressIndicator()),
+            Positioned(
+              left: 14,
+              bottom: 14,
+              child: Row(
+                children: [
+                  FeedButton(
+                    icon: video.playing ? LucideIcons.pause : LucideIcons.play,
+                    tooltip: video.playing ? 'Pause' : 'Play',
+                    onPressed: video.loading || video.done
+                        ? null
+                        : video.playing
+                        ? video.pause
+                        : video.play,
+                  ),
+                  const SizedBox(width: 8),
+                  FeedButton(
+                    icon: LucideIcons.rotateCcw,
+                    tooltip: 'Restart',
+                    onPressed: video.loading || video.path == null
+                        ? null
+                        : () => unawaited(
+                            video.restart(delegate: _controller.delegate),
+                          ),
+                  ),
+                  const SizedBox(width: 8),
+                  FeedButton(
+                    icon: LucideIcons.fileVideo,
+                    tooltip: 'Choose video file',
+                    onPressed: _chooseVideo,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      FeedStatus(
+        parts: [
+          ?video.name,
+          if (video.done)
+            '${video.frames} ${video.frames == 1 ? 'frame' : 'frames'} done'
+          else if (video.frames > 0)
+            switch (video.expectedFrames) {
+              final expected? => 'Frame ${video.frames} of ~$expected',
+              null => 'Frame ${video.frames}',
+            },
+          if (video.frames > 0)
+            '${video.averageFrameMilliseconds.toStringAsFixed(1)} ms per frame',
+          if (video.duplicates > 0)
+            '${video.duplicates} repeated '
+                '${video.duplicates == 1 ? 'timestamp' : 'timestamps'} skipped',
+          if (!video.resultsMatchFrames) 'Results out of step with frames',
+        ],
+        delegate: video.frames > 0
+            ? (video.delegate == Delegate.gpu ? 'GPU' : 'CPU')
+            : null,
+        trailing: _phone ? _outputButton() : null,
+      ),
+      for (final message in [?video.notice, ?error])
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            message,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+              fontSize: Sizes.sm,
+            ),
+          ),
+        ),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlineButton(
+          icon: LucideIcons.fileVideo,
+          label: 'Choose video file',
+          tooltip: 'Run another video file',
+          onPressed: _chooseVideo,
         ),
       ),
     ];
@@ -916,4 +1141,4 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
   );
 }
 
-enum _VisionInputMode { camera, image }
+enum _VisionInputMode { camera, image, video }
