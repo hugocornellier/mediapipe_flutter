@@ -28,8 +28,7 @@ runtime for its platform, with Google's pinned models bundled at build time.
 Add only the families you use. Each one depends on `mediapipe_core`, which
 bundles Google's MediaPipe engine once per app however many families use it,
 and holds the shared model store and browser runtime settings
-([core guide](packages/mediapipe-core/README.md)). `mediapipe_genai` (LLM
-inference) is a separate, experimental package.
+([core guide](packages/mediapipe-core/README.md)).
 
 ## Quick start
 

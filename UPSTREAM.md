@@ -36,6 +36,13 @@ recorded with.
 
 The root marker used by the build tooling is `.mediapipe_flutter-root`.
 
+## `mediapipe_genai` removed
+
+On 2026-10-05 `mediapipe_genai` was removed, with the FFI-era API in core
+(`io.dart`, `interface.dart`) that only it used. It had stayed on Google's 2024
+runtime and never adopted the shared API. Both remain in git history at
+`4b37b72`.
+
 ## Tracking upstream
 
 ```sh

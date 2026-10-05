@@ -35,7 +35,8 @@ Each package's `MIGRATION.md` has the complete old-to-new table.
 
 1. Rename the dependencies and imports: `mediapipe_flutter_vision` becomes
    `mediapipe_vision` (`package:mediapipe_vision/mediapipe_vision.dart`), and
-   likewise for core, text, audio and genai.
+   likewise for core, text and audio. `mediapipe_flutter_genai` has no
+   successor: the package was removed.
 2. Rename the build settings in `pubspec.yaml`:
    `hooks.user_defines.mediapipe_flutter_core` becomes `mediapipe_core`, and
    `mediapipe_flutter_vision` becomes `mediapipe_vision`.

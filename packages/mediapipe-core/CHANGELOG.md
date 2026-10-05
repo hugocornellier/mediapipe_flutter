@@ -22,10 +22,10 @@
   `Matrix`, `ConfidenceMask` and `CategoryMask`.
 - Breaking: `ModelStore` is the same everywhere: `cacheDirectory` replaces the
   native `Directory`, and `get` and `find` return a `ModelSource`.
-- The FFI-era containers (`BaseOptions`, `ClassifierOptions`,
-  `EmbedderOptions`, `Category` and friends) leave the app API; the
-  experimental `mediapipe_genai` keeps them through `io.dart` and
-  `interface.dart`.
+- Breaking: the FFI-era containers (`BaseOptions`, `ClassifierOptions`,
+  `EmbedderOptions`, `Category` and friends) are gone, with the `io.dart` and
+  `interface.dart` libraries that kept them for `mediapipe_genai`, which the
+  repository no longer has.
 - `checkClassifierSettings` and `requireDelegate` give every family the same
   option checks and delegate refusal.
 

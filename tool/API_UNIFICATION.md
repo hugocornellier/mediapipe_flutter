@@ -32,8 +32,8 @@ plans the streaming modes on top of this API, [SHARED_CODE.md](SHARED_CODE.md)
 plans sharing the code behind it, [MODEL_BUNDLING.md](MODEL_BUNDLING.md) plans
 bundling models at build time, and [API_REVIEW.md](API_REVIEW.md) records
 the 0.1.0 symbol review; the decisions this plan changes are listed
-under [Superseded decisions](#superseded-decisions). `mediapipe_genai` is out of
-scope while it is experimental; it adopts these conventions when it returns.
+under [Superseded decisions](#superseded-decisions). `mediapipe_genai` never
+adopted these conventions and was removed; it is in git history at `4b37b72`.
 
 ## Where the API stands
 

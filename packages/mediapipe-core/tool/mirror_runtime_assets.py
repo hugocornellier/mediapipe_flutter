@@ -14,7 +14,6 @@ RUNTIME_SOURCES = {
     'mediapipe-core/lib/src/native_assets/tasks_runtime.dart': None,
     'mediapipe-core/lib/src/native_assets/ios_sdk.dart': ['ios/arm64', 'ios-simulator/arm64'],
     'mediapipe-task-vision/sdk_downloads.dart': None,
-    'mediapipe-task-genai/sdk_downloads.dart': None,
 }
 MODEL_SOURCES = [
     'mediapipe-task-text/lib/models.dart',
@@ -66,10 +65,6 @@ def runtime_assets(items):
             url, digest = literals(fields.group(1)), literals(fields.group(2))
             if fixed:
                 targets = fixed
-            elif 'genai' in relative:
-                preceding = text[:match.start()]
-                platform = re.findall(r"'(android|macos|ios)':\s*\{", preceding)[-1]
-                targets = [f'{platform}/arm64']
             else:
                 preceding = text[:match.start()]
                 targets = [re.findall(r"target: '([^']+)'", preceding)[-1]]
