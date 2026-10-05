@@ -474,7 +474,6 @@ class _NavigationSidebar extends StatelessWidget {
         onTap: onTap,
         child: ExcludeSemantics(
           child: _HoverFill(
-            selected: selected,
             onTap: onTap,
             builder: (hovered) => Container(
               height: 34,
@@ -520,15 +519,10 @@ class _NavigationSidebar extends StatelessWidget {
 
 /// Tracks the pointer over a tappable area, for the design's hover states.
 class _HoverFill extends StatefulWidget {
-  const _HoverFill({
-    required this.builder,
-    required this.onTap,
-    this.selected = false,
-  });
+  const _HoverFill({required this.builder, required this.onTap});
 
   final Widget Function(bool hovered) builder;
   final VoidCallback? onTap;
-  final bool selected;
 
   @override
   State<_HoverFill> createState() => _HoverFillState();

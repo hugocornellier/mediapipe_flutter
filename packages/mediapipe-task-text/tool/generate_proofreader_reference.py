@@ -5,7 +5,6 @@ writes the checked-in fixture unless --output names another file.
 """
 import argparse
 import ctypes
-import dataclasses
 import hashlib
 import json
 import os

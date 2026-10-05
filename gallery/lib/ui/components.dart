@@ -16,65 +16,25 @@ class Eyebrow extends StatelessWidget {
       Text(text.toUpperCase(), style: eyebrowStyle(context));
 }
 
-/// A page's heading: eyebrow, title and summary, with [trailing] beside them.
+/// A page's title.
 class PageHeading extends StatelessWidget {
-  const PageHeading({
-    super.key,
-    this.eyebrow,
-    required this.title,
-    this.summary,
-    this.trailing,
-  });
+  const PageHeading({super.key, required this.title});
 
-  final String? eyebrow;
   final String title;
-  final String? summary;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final c = GalleryColors.of(context);
     final phone = MediaQuery.sizeOf(context).width < Sizes.compact;
-    final text = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (eyebrow case final eyebrow?) ...[
-          Eyebrow(eyebrow),
-          const SizedBox(height: 9),
-        ],
-        Text(
-          title,
-          style: TextStyle(
-            color: c.text,
-            fontSize: phone ? 25 : Sizes.xl,
-            letterSpacing: (phone ? 25 : Sizes.xl) * -0.04,
-            fontWeight: FontWeight.w400,
-            height: 1.15,
-          ),
-        ),
-        if (summary case final summary?) ...[
-          const SizedBox(height: 7),
-          Text(
-            summary,
-            style: TextStyle(color: c.muted, fontSize: Sizes.md, height: 1.5),
-          ),
-        ],
-      ],
-    );
-    if (trailing == null) return text;
-    if (phone) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [text, const SizedBox(height: 22), trailing!],
-      );
-    }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: text),
-        const SizedBox(width: 20),
-        trailing!,
-      ],
+    return Text(
+      title,
+      style: TextStyle(
+        color: c.text,
+        fontSize: phone ? 25 : Sizes.xl,
+        letterSpacing: (phone ? 25 : Sizes.xl) * -0.04,
+        fontWeight: FontWeight.w400,
+        height: 1.15,
+      ),
     );
   }
 }
@@ -293,27 +253,6 @@ class Tag extends StatelessWidget {
           height: 1.2,
         ),
       ),
-    );
-  }
-}
-
-/// A task's icon in its teal tile.
-class IconTile extends StatelessWidget {
-  const IconTile(this.icon, {super.key});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = GalleryColors.of(context);
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: c.tealDim,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, size: 16, color: c.teal),
     );
   }
 }
@@ -538,23 +477,18 @@ class FeedFrame extends StatelessWidget {
   }
 }
 
-/// A translucent button over the feed: square with an icon, or with a
-/// [label] beside it. A [selected] button shows what it opens is showing.
+/// A translucent square icon button over the feed.
 class FeedButton extends StatelessWidget {
   const FeedButton({
     super.key,
     required this.icon,
     required this.tooltip,
     required this.onPressed,
-    this.label,
-    this.selected = false,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
-  final String? label;
-  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -563,43 +497,18 @@ class FeedButton extends StatelessWidget {
         : const Color(0xFFF0F3F2);
     return Tooltip(
       message: tooltip,
-      child: Semantics(
-        selected: selected,
-        child: Material(
-          color: selected ? const Color(0xF0101314) : const Color(0xCC101314),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(Sizes.radiusSmall),
-            side: BorderSide(
-              color: selected
-                  ? const Color(0x8CFFFFFF)
-                  : const Color(0x33FFFFFF),
-            ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onPressed,
-            child: Padding(
-              padding: label == null
-                  ? const EdgeInsets.all(8)
-                  : const EdgeInsets.fromLTRB(9, 8, 11, 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 16, color: color),
-                  if (label case final label?) ...[
-                    const SizedBox(width: 6),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: Sizes.sm,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+      child: Material(
+        color: const Color(0xCC101314),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Sizes.radiusSmall),
+          side: const BorderSide(color: Color(0x33FFFFFF)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(icon, size: 16, color: color),
           ),
         ),
       ),

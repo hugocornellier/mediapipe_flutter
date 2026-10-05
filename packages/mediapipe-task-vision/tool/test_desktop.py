@@ -125,7 +125,6 @@ def main():
     # Package copies exclude source builds, tools, caches and maintenance opt-ins.
     for name in ['mediapipe-core', 'mediapipe-task-vision']:
         copy_package(PACKAGE.parent / name, root / 'packages' / name)
-    vision = root / 'packages/mediapipe-task-vision'
     app = root / 'app'
     run(['flutter', 'create', '--empty', '--no-pub', '--platforms=' + target,
          '--project-name', 'mediapipe_desktop_smoke', app], REPO, root / 'create.log')

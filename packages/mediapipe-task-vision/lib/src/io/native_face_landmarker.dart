@@ -10,7 +10,6 @@ import '../types/options.dart';
 import '../types/results.dart';
 import '../types/vision_types.dart';
 import 'face_landmarker_api.dart';
-import 'native_frame_timings.dart';
 import 'native_desktop_runtime.dart';
 import 'native_ios_sdk.dart';
 import 'native_vision_image.dart' show nativeString, packVisionPixels;
@@ -102,15 +101,12 @@ final class NativeFaceLandmarker
     VisionImage input,
     int rotation, {
     int? timestamp,
-    NativeFrameTimings? timings,
   }) {
-    timings?.start();
-    final detection = using((arena) {
+    return using((arena) {
       final imageOut = arena<mp.MpImagePtr>();
       if (input.path case final path?) {
         final name = path.toNativeUtf8(allocator: arena).cast<Char>();
         _checked((error) => _api.imageFromFile(name, imageOut, error));
-        timings?.mark('image_create');
       } else if (_officialIos && input.format == VisionPixelFormat.bgra) {
         _checked(
           (error) => mp.MpStatus.fromValue(
@@ -123,7 +119,6 @@ final class NativeFaceLandmarker
             ),
           ),
         );
-        timings?.mark('image_create');
       } else {
         // Apple's GPU image upload cannot accept three-channel ImageFrames, so
         // GPU input gets opaque alpha on every host, as in the GPU references.
@@ -134,7 +129,6 @@ final class NativeFaceLandmarker
           input,
           expandRgb: expandRgb,
         );
-        timings?.mark('pixel_pack');
         _checked(
           (error) => _api.imageFromData(
             input.format == VisionPixelFormat.rgb && !expandRgb
@@ -148,14 +142,12 @@ final class NativeFaceLandmarker
             error,
           ),
         );
-        timings?.mark('image_create');
       }
       final image = imageOut.value;
       try {
         final options = arena<mp.MpImageProcessingOptions>();
         options.ref.rotation_degrees = rotation;
         final result = arena<mp.MpFaceLandmarkerResult>();
-        timings?.mark('native_setup');
         if (timestamp == null) {
           _checked(
             (error) =>
@@ -173,9 +165,8 @@ final class NativeFaceLandmarker
             ),
           );
         }
-        timings?.mark('task');
         try {
-          final copied = FaceLandmarkerResult(
+          return FaceLandmarkerResult(
             imageWidth: _api.imageWidth(image),
             imageHeight: _api.imageHeight(image),
             timestampMilliseconds: timestamp,
@@ -196,8 +187,6 @@ final class NativeFaceLandmarker
                 _copyMatrix(result.ref.facial_transformation_matrixes[i]),
             ],
           );
-          timings?.mark('result_copy');
-          return copied;
         } finally {
           // This releases the contents, while Arena owns the outer struct.
           _api.closeResult(result);
@@ -206,8 +195,6 @@ final class NativeFaceLandmarker
         _api.imageFree(image);
       }
     });
-    timings?.mark('cleanup');
-    return detection;
   }
 
   @override
