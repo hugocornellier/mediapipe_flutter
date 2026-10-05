@@ -176,9 +176,6 @@ class PreviewTransform {
     y * uprightSize.height * scale + offsetY,
   );
 
-  /// Scales a length given in upright pixels, for radii and stroke widths.
-  double scaleLength(double length) => length * scale;
-
   @override
   bool operator ==(Object other) =>
       other is PreviewTransform &&

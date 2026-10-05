@@ -10,7 +10,6 @@ import 'package:io/ansi.dart';
 import 'package:path/path.dart' as path;
 import 'package:process/process.dart';
 
-import 'extensions.dart';
 import 'repo_finder.dart';
 
 /// Relative header paths (in both repositories)
@@ -161,26 +160,4 @@ class Options {
   final bool allowOverwrite;
   final io.Directory mediaPipeDir;
   final io.Directory flutterMediaPipeDir;
-}
-
-void relativeIncludes(io.File file) {
-  assert(file.path.endsWith('.h'));
-  Map<String, String> rewrites = {
-    containers: '../../../../../../../mediapipe-core/third_party/$containers',
-    processors: '../../../../../../../mediapipe-core/third_party/$processors',
-    core: '../../../../../../../mediapipe-core/third_party/$core',
-  };
-  String contents = file.readAsStringSync();
-
-  for (final rewrite in rewrites.entries) {
-    contents = contents.replaceAll(rewrite.key, rewrite.value);
-  }
-  file.writeAsStringSync(contents);
-  io.stdout.writeln(
-    wrapWith(
-      'Made includes relative for '
-      '${lastChunk(file.absolute.path, delimiter: io.Platform.pathSeparator)}',
-      [green],
-    ),
-  );
 }

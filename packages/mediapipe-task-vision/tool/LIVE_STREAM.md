@@ -440,7 +440,8 @@ rate and channels, which only the model's metadata holds.
   and every live tile runs in live stream mode on the iOS simulator and Android
   (`runtime_test.dart`). Frame times match the hand-rolled VIDEO path they
   replace. In Chromium on an Apple M4 Max
-  (`tool/benchmarks/2026-09-22-web-live-pipeline/run.mjs`, Holistic Landmarker,
+  (`tool/benchmarks/2026-09-22-web-live-pipeline/run.mjs`, in git history at
+  `3e217ac`, Holistic Landmarker,
   main and this change interleaved, 450 frames a block): CPU 21.6 processed
   frames a second against 21.6 on main, inference 45.6 ms against 45.8, camera
   frame to result 63.3 ms against 64.9; GPU 29.8 against 29.5, inference 29.3

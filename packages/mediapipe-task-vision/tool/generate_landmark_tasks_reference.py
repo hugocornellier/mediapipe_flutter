@@ -32,8 +32,8 @@ def use_header_holistic_order():
 
     The wheels' ctypes declare the three pose thresholds before the hand
     threshold, but the compiled library reads the public header's order (hand
-    first), so every non-default threshold lands on the wrong field (UP-005,
-    tool/holistic_threshold_order_probe.py). Slot i receives the header's i-th
+    first), so every non-default threshold lands on the wrong field (UP-005 in
+    upstream-issues.md). Slot i receives the header's i-th
     threshold, which is what the Dart wrapper writes on every platform.
     """
     from mediapipe.tasks.python.vision import holistic_landmarker as holistic

@@ -1,7 +1,8 @@
 # CPU and Metal comparison
 
-The [2026-09-12 packing experiment](benchmarks/2026-09-12-bgra/README.md)
-retains an ABBA comparison, raw timing logs, and a measured BGRA optimization.
+The 2026-09-12 packing experiment, in git history at `3e217ac` under
+`tool/benchmarks/2026-09-12-bgra/`, retains an ABBA comparison, raw timing logs,
+and a measured BGRA optimization.
 
 ## Face pipeline profiling
 

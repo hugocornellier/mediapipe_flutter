@@ -102,6 +102,7 @@ passing cases before an OpenCV `SIGILL` during an RGBA reference. This does not
 establish arm64 reference parity; the CI suite validates x86_64 independently.
 
 The September 16 Android 16 arm64 emulator run passed both face probes on a
-16 KB-page system. [Build and smoke receipts](validations/2026-09-16-android-native/)
-record the exact runtime and dependency hashes. See UP010 in `upstream-issues.md`
+16 KB-page system. Its build and smoke receipts, which record the exact
+runtime and dependency hashes, are in git history at `3e217ac`, under
+`tool/validations/2026-09-16-android-native/`. See UP010 in `upstream-issues.md`
 for the initial crash and export-isolation workaround.

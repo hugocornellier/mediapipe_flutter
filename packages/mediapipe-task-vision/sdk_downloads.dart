@@ -242,16 +242,3 @@ const _linuxWheelNotices = {
   'LICENSE': '8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8',
   'NOTICE': 'e8e3eddc5c36d7413635455933650d7423b937185180e393f9a006bee60162e7',
 };
-
-/// Kept for callers that pin the face detector archive directly.
-DownloadAsset get faceDetectorArchive => visionRuntimeReleases[0].archive!;
-
-/// Kept for callers that pin the face detector library digest directly.
-String get faceDetectorLibrarySha256 => visionRuntimeReleases[0].librarySha256;
-
-/// Kept for callers that pin the face landmarker archive directly.
-DownloadAsset get faceLandmarkerArchive => visionRuntimeReleases[1].archive!;
-
-/// Kept for callers that pin the face landmarker library digest directly.
-String get faceLandmarkerLibrarySha256 =>
-    visionRuntimeReleases[1].librarySha256;
