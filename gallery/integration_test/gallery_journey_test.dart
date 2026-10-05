@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:video_frames/video_frames.dart';
+import 'package:mediapipe_gallery/audio/microphone.dart';
 import 'package:mediapipe_gallery/audio_page.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/embed_page.dart';
@@ -85,6 +86,9 @@ void main() {
             mimeType: 'image/jpeg',
           );
         },
+        // CI machines have no microphone: the speech sample plays through
+        // the microphone mode's own path instead.
+        microphone: sampleMicrophone(),
       ),
     );
     // The shell's content pane exists in both layouts; the sidebar's "Home"
@@ -353,6 +357,32 @@ void main() {
             () => find.textContaining('Done in').evaluate().isNotEmpty,
           );
           expect(find.text('Speech'), findsWidgets);
+          // The microphone mode, on the speech sample as it plays: Google's
+          // stream frames it into windows 975 ms apart, from the first block.
+          await tester.tap(
+            find.byKey(const ValueKey('audio-source-microphone')),
+          );
+          await _until(tester, () => _audioWindows(tester).length >= 4);
+          final windows = _audioWindows(tester);
+          final starts = windows.values.toList()..sort();
+          expect(starts.take(4), [0, 975, 1950, 2925], reason: task.id);
+          final first = windows.entries.firstWhere((e) => e.value == 0).key;
+          expect(
+            find.descendant(
+              of: find.byKey(ValueKey('audio-scores-$first')),
+              matching: find.text('Speech'),
+            ),
+            findsOneWidget,
+            reason: '${task.id}: the first window hears speech',
+          );
+          checks.add('${task.id}:cpu:stream');
+          // Leaving the mode flushes the stream; the clip plays again.
+          await tester.tap(find.byKey(const ValueKey('audio-source-clips')));
+          await _until(
+            tester,
+            () => find.textContaining('Done in').evaluate().isNotEmpty,
+          );
+          expect(find.text('Speech'), findsWidgets);
           break;
         case GalleryDemo.segment:
           final canvas = find.byKey(const ValueKey('segment-canvas'));
@@ -399,6 +429,18 @@ void main() {
     // ignore: avoid_print
     print('GALLERY_JOURNEY_CHECKS ${checks.join(',')}');
   }, timeout: const Timeout(Duration(minutes: 20)));
+}
+
+/// The audio page's windows: each entry's position in the list, newest
+/// first, and its start in the stream in milliseconds ("0.975 s").
+Map<int, int> _audioWindows(WidgetTester tester) {
+  final windows = <int, int>{};
+  for (var i = 0; ; i++) {
+    final entry = find.byKey(ValueKey('audio-window-$i'));
+    if (entry.evaluate().isEmpty) return windows;
+    final text = tester.widget<Text>(entry).data!;
+    windows[i] = (double.parse(text.replaceAll(' s', '')) * 1000).round();
+  }
 }
 
 /// The platform's decoder reads both bundled clips frame by frame with the

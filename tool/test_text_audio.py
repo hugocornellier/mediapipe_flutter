@@ -2,7 +2,8 @@
 
 Installs Google's pinned official wheel for this host once, generates the text
 and audio references with it, downloads the pinned models, and runs both
-packages' Dart suites against those same-host references. CI runs it on the
+packages' Dart suites against those same-host references, after the audio
+stream bridge's AddressSanitizer test outside Windows. CI runs it on the
 Linux x64 and Windows x64 desktop runners; it runs on macOS arm64 as well.
 Python only prepares the expected outputs; the suites load Google's library
 through the packages, as an app does.
@@ -64,6 +65,17 @@ def main():
     run([sys.executable, '-B', AUDIO / 'tool/prepare_audio_reference.py',
          '--python', python, '--output-dir', audio_reference], REPO,
         evidence / 'audio-reference.log')
+
+    if platform.system() != 'Windows':
+        # The audio stream's callback-copy bridge, under AddressSanitizer, as
+        # make test_audio_stream_bridge runs it on macOS; MSVC compiles it on
+        # Windows inside the package's build hook, which the suite below
+        # exercises.
+        binary = evidence / 'audio_stream_bridge_test'
+        run(['clang', '-Wall', '-Wextra', '-Werror', '-g', '-fsanitize=address', '-pthread',
+             AUDIO / 'native/audio_stream_bridge.c', AUDIO / 'native/audio_stream_bridge_test.c',
+             '-o', binary], REPO, evidence / 'audio-bridge-build.log')
+        run([binary], REPO, evidence / 'audio-bridge-test.log')
 
     env = {**os.environ,
            'MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR': str(text_reference),

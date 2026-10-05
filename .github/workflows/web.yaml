@@ -80,6 +80,26 @@ jobs:
           for family in text audio; do
             (cd packages/mediapipe-task-$family && flutter pub get && flutter analyze lib)
           done
+      # The emulated audio stream, which is what browsers run, and the
+      # decoders, compiled to JavaScript and to WebAssembly: the stream's
+      # clock must hold with JavaScript numbers.
+      - name: Test audio browser code
+        working-directory: packages/mediapipe-task-audio
+        run: |
+          for compiler in javascript wasm; do
+            flags=""
+            if [ "$compiler" = wasm ]; then flags="--wasm"; fi
+            for attempt in 1 2; do
+              status=0
+              timeout 300 flutter test --platform chrome $flags test/web || status=$?
+              if [ "$status" = 124 ] && [ "$attempt" = 1 ]; then
+                echo "flutter test --platform chrome ($compiler) hung; retrying"
+                continue
+              fi
+              [ "$status" = 0 ] || exit "$status"
+              break
+            done
+          done
       - name: Analyze and test gallery geometry
         working-directory: gallery
         run: |

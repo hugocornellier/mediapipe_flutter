@@ -35,6 +35,9 @@ dependencies:
   mediapipe_core:
     path: ../mediapipe-core
   meta: ^1.18.0
+  # Compiles the audio stream bridge (native/audio_stream_bridge.c), as the
+  # text package compiles its own.
+  native_toolchain_c: ^0.19.3
   web: ^1.1.1
 
 dev_dependencies:

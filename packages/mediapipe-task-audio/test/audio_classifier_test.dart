@@ -183,15 +183,21 @@ void main() {
       ),
       throwsArgumentError,
     );
-    await expectLater(
-      AudioClassifier.create(
-        AudioClassifierOptions(
-          modelPath: _model,
-          runningMode: AudioRunningMode.audioStream,
-        ),
+    // A stream task opens, and is a stream task only.
+    final stream = await AudioClassifier.create(
+      AudioClassifierOptions(
+        modelPath: _model,
+        runningMode: AudioRunningMode.audioStream,
       ),
-      throwsUnsupportedError,
     );
+    expect(stream.runningMode, AudioRunningMode.audioStream);
+    await expectLater(
+      stream.classify(
+        AudioData(samples: Float32List(16000), sampleRate: 16000),
+      ),
+      throwsStateError,
+    );
+    await stream.dispose();
     await expectLater(
       AudioClassifier.create(
         AudioClassifierOptions(modelPath: _model, delegate: Delegate.gpu),

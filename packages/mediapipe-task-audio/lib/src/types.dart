@@ -39,17 +39,14 @@ final class AudioData {
 /// How the Audio Classifier is fed, chosen when it is created; Google's
 /// names.
 enum AudioRunningMode {
-  /// Independent clips, each classified whole.
+  /// Independent clips, each classified whole with `classify`.
   audioClips,
 
-  // TODO: Implement audio stream mode with the vision LIVE_STREAM design:
-  // packages/mediapipe-task-vision/tool/LIVE_STREAM.md, "Audio stream mode"
-  // (tool/API_UNIFICATION.md, phase 7 at the repository root).
-  /// Reserved for continuous audio delivered in blocks with a results
-  /// stream.
-  ///
-  /// Task creation throws [UnsupportedError] until the runtime implements
-  /// stream delivery.
+  /// One continuous signal fed in blocks of any length with `classifyAsync`,
+  /// framed into the model's windows across blocks, each window's result on
+  /// `results`. Google's own stream on Android, iOS, macOS, Linux and
+  /// Windows; in browsers, where Google has none, an emulation on its clips
+  /// mode.
   audioStream,
 }
 
@@ -79,7 +76,7 @@ final class AudioClassifierOptions extends TaskOptions {
     );
   }
 
-  /// Clips, or a stream once implemented.
+  /// Clips, each classified whole, or a stream fed in blocks.
   final AudioRunningMode runningMode;
 
   /// Locale of the display names in the model metadata.
@@ -98,7 +95,7 @@ final class AudioClassifierOptions extends TaskOptions {
   final List<String> categoryDenylist;
 }
 
-/// The categories of one chunk of a clip (0.975 s for YAMNet), per model
+/// The categories of one window of audio (0.975 s for YAMNet), per model
 /// head.
 @immutable
 final class AudioClassifierResult {
@@ -111,7 +108,10 @@ final class AudioClassifierResult {
   /// One entry per model head, in the runtime's order.
   final List<Classifications> classifications;
 
-  /// Where the chunk starts in the clip.
+  /// Where the window starts: in a clip, milliseconds from the clip's start;
+  /// in a stream, the first block's timestamp plus the windows before it,
+  /// for the tail too, which Google's native stream stamps with a sentinel
+  /// instead.
   final int timestampMilliseconds;
 
   @override

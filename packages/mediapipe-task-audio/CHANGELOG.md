@@ -1,5 +1,16 @@
 ## 0.2.0
 
+- Audio stream mode on every platform: `AudioClassifierOptions(runningMode:
+  AudioRunningMode.audioStream)` creates a task that takes blocks of any
+  length with `classifyAsync(block, timestampMilliseconds:)` and delivers one
+  result per model window on `results`, stamped with where the window's audio
+  starts; `dispose()` classifies the tail. Google's own stream runs it on
+  Android, iOS, macOS, Linux and Windows; in browsers, where Google has none,
+  the package emulates it on Google's clips mode. The rate, channel and
+  timestamp checks run in Dart with one message on every platform. On iOS,
+  macOS, Linux and Windows at most 64 streams can be open at once.
+- `classify` on a stream task, and `classifyAsync` or `results` on a clips
+  task, throw `StateError`.
 - The Android plugin builds on core's `TaskHost` for its worker thread,
   model buffers and channel handling, keeping only what Google's audio
   SDK needs; the channel's methods and results are unchanged.
@@ -8,8 +19,8 @@
   `AudioClassifierCategory` record is core's `MediaPipeCategory`. See
   MIGRATION.md.
 - Breaking: `AudioClassifierOptions` extends core's `TaskOptions` and adds
-  Google's `runningMode` (`AudioRunningMode.audioClips`; `audioStream` is
-  reserved), `displayNamesLocale`, `categoryAllowlist` and
+  Google's `runningMode` (`AudioRunningMode.audioClips` or `audioStream`),
+  `displayNamesLocale`, `categoryAllowlist` and
   `categoryDenylist`. `AudioDelegate` and `AudioTaskException` are core's
   `Delegate` and `TaskException`; `web_runtime.dart` is gone.
 - `AudioClassifier` has `delegate` and `runningMode` getters.

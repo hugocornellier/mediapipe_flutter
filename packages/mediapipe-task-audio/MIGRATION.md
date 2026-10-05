@@ -16,10 +16,16 @@ everything shared from `mediapipe_core`.
 | `TaskCapabilities<AudioDelegate>` | `TaskCapabilities` |
 
 `AudioClassifierOptions` extends core's `TaskOptions` and gains Google's
-`runningMode` (`AudioRunningMode.audioClips`; `audioStream` is reserved and
-refused at `create`), `displayNamesLocale`, `categoryAllowlist` and
-`categoryDenylist`. `AudioClassifier` has `delegate` and `runningMode`
-getters, and `classify` after `dispose` fails through the returned `Future`.
+`runningMode` (`AudioRunningMode.audioClips`, the default, or `audioStream`),
+`displayNamesLocale`, `categoryAllowlist` and `categoryDenylist`.
+`AudioClassifier` has `delegate` and `runningMode` getters, and `classify`
+after `dispose` fails through the returned `Future`.
+
+`create` no longer throws `UnsupportedError` for `audioStream`: it opens a
+stream task, which takes blocks with `classifyAsync` and delivers results on
+`results`, and whose `classify` throws `StateError`. Code that caught the
+`UnsupportedError` to fall back to clips now gets a stream task; use clips
+mode, or move to the stream (the package README's "Live audio").
 
 ## Before 0.1.0
 

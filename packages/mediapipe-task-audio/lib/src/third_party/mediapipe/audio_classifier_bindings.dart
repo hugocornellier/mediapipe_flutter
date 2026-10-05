@@ -131,6 +131,22 @@ external int classify(
   Pointer<Pointer<Char>> error,
 );
 
+/// Hands one block to a task in stream mode; Google copies the samples.
+@Native<
+  Int32 Function(
+    Pointer<Void>,
+    Pointer<MpAudioData>,
+    Int64,
+    Pointer<Pointer<Char>>,
+  )
+>(symbol: 'MpAudioClassifierClassifyAsync', assetId: _asset)
+external int classifyAsync(
+  Pointer<Void> task,
+  Pointer<MpAudioData> audio,
+  int timestampMs,
+  Pointer<Pointer<Char>> error,
+);
+
 @Native<Void Function(Pointer<MpAudioClassifierResult>)>(
   symbol: 'MpAudioClassifierCloseResult',
   assetId: _asset,

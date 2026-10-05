@@ -97,13 +97,27 @@ test_text:
 	cd packages/mediapipe-task-text && dart test --reporter expanded --exclude-tags flutter
 	cd packages/mediapipe-task-text && flutter test --reporter expanded --tags flutter
 
-.PHONY: test_audio models_audio
+.PHONY: test_audio models_audio test_audio_stream_bridge test_audio_web
 models_audio:
 	cd packages/mediapipe-task-audio && dart run tool/download_model.dart
 
 test_audio:
+	$(MAKE) test_audio_stream_bridge
 	cd packages/mediapipe-task-audio && dart test --reporter expanded --exclude-tags flutter
 	cd packages/mediapipe-task-audio && flutter test --reporter expanded --tags flutter
+
+# The audio stream's callback-copy bridge, its slots and their threads,
+# under AddressSanitizer.
+test_audio_stream_bridge:
+	mkdir -p build/codex-tmp
+	clang -Wall -Wextra -Werror -g -fsanitize=address -pthread packages/mediapipe-task-audio/native/audio_stream_bridge.c packages/mediapipe-task-audio/native/audio_stream_bridge_test.c -o build/codex-tmp/audio_stream_bridge_test
+	build/codex-tmp/audio_stream_bridge_test
+
+# The emulated stream and the decoders in Chrome, compiled to JavaScript and
+# to WebAssembly.
+test_audio_web:
+	cd packages/mediapipe-task-audio && flutter test --platform chrome test/web --reporter expanded
+	cd packages/mediapipe-task-audio && flutter test --platform chrome --wasm test/web --reporter expanded
 
 test_vision:
 	cd packages/mediapipe-task-vision && dart test --reporter expanded --exclude-tags flutter

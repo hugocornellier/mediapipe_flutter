@@ -3,9 +3,10 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:mediapipe_core/platform_interface.dart'
+    show maxStreamTimestampMilliseconds;
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_vision/platform_interface.dart';
-import 'package:mediapipe_vision/src/runner/checks.dart';
 import 'package:mediapipe_vision/src/runner/vision_task_runner.dart';
 import 'package:test/test.dart';
 
@@ -200,7 +201,7 @@ void main() {
       expect(
         () => task.detectAsync(
           _frame(),
-          timestampMilliseconds: VisionTaskChecks.maxTimestampMilliseconds + 1,
+          timestampMilliseconds: maxStreamTimestampMilliseconds + 1,
         ),
         throwsArgumentError,
       );

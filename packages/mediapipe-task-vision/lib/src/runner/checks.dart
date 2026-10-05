@@ -3,18 +3,15 @@
 /// same way everywhere.
 library;
 
+import 'package:mediapipe_core/platform_interface.dart'
+    show checkStreamTimestamp;
+
 import '../types/vision_types.dart';
 
 /// Validates mode, rotation, timestamps and lifecycle for one task.
 final class VisionTaskChecks {
   /// [name] appears in errors.
   VisionTaskChecks(this.name, this.runningMode);
-
-  /// The largest VIDEO or LIVE_STREAM timestamp any platform accepts:
-  /// JavaScript's exact integer range in milliseconds (about 285 years),
-  /// which native runtimes exceed, so one limit keeps the same input valid
-  /// everywhere.
-  static const maxTimestampMilliseconds = 9007199254740;
 
   /// The task's name, as its errors say it.
   final String name;
@@ -90,16 +87,7 @@ final class VisionTaskChecks {
   }
 
   void _timestamp(int timestampMilliseconds) {
-    if (timestampMilliseconds < 0 ||
-        timestampMilliseconds > maxTimestampMilliseconds ||
-        (_lastTimestamp != null && timestampMilliseconds <= _lastTimestamp!)) {
-      throw ArgumentError.value(
-        timestampMilliseconds,
-        'timestampMilliseconds',
-        'Must be nonnegative, strictly increasing and at most '
-            '$maxTimestampMilliseconds',
-      );
-    }
+    checkStreamTimestamp(timestampMilliseconds, _lastTimestamp);
     _lastTimestamp = timestampMilliseconds;
   }
 
