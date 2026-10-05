@@ -382,10 +382,13 @@ The public API is the same either way, so a platform can move to native later.
 The copy problem the C API poses is already solved once in this repository:
 the text package compiles `native/text_stream_bridge.c` with its build hook,
 Google's callback copies each result inside the callback into a struct Dart
-owns, and a `NativeCallable.listener` receives the copy and frees it
-(`packages/mediapipe-task-text/lib/src/io/native_text_stream.dart`). Vision
-would do the same per task, copying landmarks, categories, detections and the
-segmenter's masks, which are valid only during the callback. Going native,
+owns and posts its address to the worker's port, and the worker reads the copy
+and frees it (`packages/mediapipe-task-text/lib/src/io/native_text_stream.dart`).
+A port, not a `NativeCallable.listener`: Google calls back on its own threads,
+also after a hot restart has ended the worker, and a deleted listener then
+aborts the VM where a closed port refuses the message. Vision would do the
+same per task, copying landmarks, categories, detections and the segmenter's
+masks, which are valid only during the callback. Going native,
 platform by platform:
 
 - **Desktop:** Google's C library exports `MpFaceLandmarkerDetectAsync` and the

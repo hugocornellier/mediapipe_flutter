@@ -1,6 +1,10 @@
 ## 0.2.0
 
 - No longer depends on `async`, `logging` or `web`, which it never imported.
+- A hot restart while a Proofreader or Summarizer stream is generating no
+  longer aborts a debug app ("Callback invoked after it has been deleted"):
+  the stream bridge posts each result to its worker's port, which refuses
+  results once the restart has ended the worker.
 - The Android plugin builds on core's `TaskHost` for its worker thread,
   model buffers and channel handling, keeping only what Google's text
   SDK needs; the channel's methods and results are unchanged.

@@ -6,13 +6,18 @@
 #include <string.h>
 
 struct MpFlutterTextStreamContext {
-  MpFlutterTextSink sink;
+  MpFlutterPost post;
+  int64_t port;
 };
 
-MpFlutterTextStreamContext* MpFlutterTextStreamCreate(MpFlutterTextSink sink) {
-  if (!sink) return NULL;
+MpFlutterTextStreamContext* MpFlutterTextStreamCreate(MpFlutterPost post,
+                                                      int64_t port) {
+  if (!post) return NULL;
   MpFlutterTextStreamContext* context = malloc(sizeof(*context));
-  if (context) context->sink = sink;
+  if (context) {
+    context->post = post;
+    context->port = port;
+  }
   return context;
 }
 
@@ -43,12 +48,15 @@ static char* copy_string(const char* value, MpFlutterTextEvent* event) {
 void MpFlutterProofreaderCallback(void* userdata,
                                  const MpFlutterProofreaderStreamView* result,
                                  const char* error) {
-  // Read the sink before notifying Dart. After notification, this callback
-  // never touches context or event again: a terminal receiver may free them.
-  MpFlutterTextSink sink = ((MpFlutterTextStreamContext*)userdata)->sink;
+  // Read the context before posting. After a terminal post this callback
+  // never touches context or event again: the worker may free them.
+  const MpFlutterTextStreamContext* context = userdata;
+  const MpFlutterPost post = context->post;
+  const int64_t port = context->port;
   const bool terminal = error != NULL || result == NULL || result->done;
   MpFlutterTextEvent* event = calloc(1, sizeof(*event));
   if (event) {
+    event->terminal = terminal;
     event->error = copy_string(error, event);
     if (!error && !result) event->copy_error = 2;
     if (result && !error) {
@@ -71,10 +79,20 @@ void MpFlutterProofreaderCallback(void* userdata,
       }
     }
   }
-  // NativeCallable.listener queues this owned pointer to the Dart worker.
-  // Even allocation failure preserves the terminal flag, so the worker can
-  // drain the native request before releasing the callback/context.
-  sink(event, terminal);
+  // The worker's port takes the copy's address; even allocation failure
+  // tells it whether this was the last event, so it can drain the native
+  // request before freeing the context. A port is used rather than a Dart
+  // callback because Google may call back after the worker isolate is gone,
+  // after a hot restart for one: the closed port refuses the message, and the
+  // copy is then this bridge's to free, where calling a deleted callback
+  // would abort the VM.
+  MpFlutterDartMessage message;
+  memset(&message, 0, sizeof(message));
+  message.type = kMpFlutterDartInt64;
+  message.value.as_int64 =
+      event ? (int64_t)(intptr_t)event
+            : (terminal ? kMpFlutterTextLostTerminalEvent : kMpFlutterTextLostEvent);
+  if (!post(port, &message)) MpFlutterTextEventFree(event);
 }
 
 void MpFlutterSummarizerCallback(void* userdata,
