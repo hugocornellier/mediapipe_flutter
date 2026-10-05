@@ -18,17 +18,20 @@ final class MpFlutterTextEvent extends Struct {
   external Pointer<Char> error;
   @Int32()
   external int copyError;
+  @Bool()
+  external bool terminal;
 }
 
-typedef TextEventSink = Void Function(Pointer<MpFlutterTextEvent>, Bool);
+/// What the bridge posts in place of the last event's address when its copy
+/// could not be allocated (kMpFlutterTextLostTerminalEvent); any other lost
+/// copy is -1.
+const lostTerminalEvent = -2;
 
-@Native<Pointer<Void> Function(Pointer<NativeFunction<TextEventSink>>)>(
+@Native<Pointer<Void> Function(Pointer<Void>, Int64)>(
   symbol: 'MpFlutterTextStreamCreate',
   assetId: _bridge,
 )
-external Pointer<Void> streamCreate(
-  Pointer<NativeFunction<TextEventSink>> sink,
-);
+external Pointer<Void> streamCreate(Pointer<Void> post, int port);
 
 @Native<Void Function(Pointer<Void>)>(
   symbol: 'MpFlutterTextStreamFree',

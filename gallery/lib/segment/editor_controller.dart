@@ -48,10 +48,8 @@ class EditorController extends ChangeNotifier {
   int completedRequests = 0;
   int coalescedRequests = 0;
 
-  bool get busy => _draining != null;
   bool get canUndo => _completed.isNotEmpty || _active != null;
   List<NormalizedKeypoint> get activePoints => List.unmodifiable(_active ?? []);
-  BrushMode get activeBrush => _activeBrush;
   List<Stroke> get strokes => List.unmodifiable([
     ..._completed,
     if (_active case final points?

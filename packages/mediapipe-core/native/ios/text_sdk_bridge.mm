@@ -79,28 +79,6 @@ struct MpTextSummarizerInternal {
 
 namespace {
 
-void CopyClassifications(MPPClassificationResult *source, MpClassificationResult *out) {
-  NSArray<MPPClassifications *> *heads = source.classifications;
-  out->classifications = Allocate<MpClassifications>(heads.count);
-  out->classifications_count = static_cast<uint32_t>(heads.count);
-  for (NSUInteger i = 0; i < heads.count; ++i) {
-    MpClassifications &head = out->classifications[i];
-    head.head_index = static_cast<int>(heads[i].headIndex);
-    head.head_name = CopyString(heads[i].headName);
-    NSArray<MPPCategory *> *categories = heads[i].categories;
-    head.categories = Allocate<MpCategory>(categories.count);
-    head.categories_count = static_cast<uint32_t>(categories.count);
-    for (NSUInteger j = 0; j < categories.count; ++j) {
-      head.categories[j].index = static_cast<int>(categories[j].index);
-      head.categories[j].score = categories[j].score;
-      head.categories[j].category_name = CopyString(categories[j].categoryName);
-      head.categories[j].display_name = CopyString(categories[j].displayName);
-    }
-  }
-  out->timestamp_ms = source.timestampInMilliseconds;
-  out->has_timestamp_ms = true;
-}
-
 void CopyEmbeddings(MPPEmbeddingResult *source, MpEmbeddingResult *out) {
   NSArray<MPPEmbedding *> *heads = source.embeddings;
   out->embeddings = Allocate<MpEmbedding>(heads.count);

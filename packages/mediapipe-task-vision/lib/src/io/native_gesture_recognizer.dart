@@ -32,12 +32,12 @@ final class NativeGestureRecognizer
         ..min_hand_detection_confidence = options.minHandDetectionConfidence
         ..min_hand_presence_confidence = options.minHandPresenceConfidence
         ..min_tracking_confidence = options.minTrackingConfidence;
-      setVisionGestureClassifier(
+      setVisionClassifierOptions(
         arena,
         native.ref.canned_gestures_classifier_options,
         options.cannedGesturesClassifierOptions,
       );
-      setVisionGestureClassifier(
+      setVisionClassifierOptions(
         arena,
         native.ref.custom_gestures_classifier_options,
         options.customGesturesClassifierOptions,
@@ -52,9 +52,8 @@ final class NativeGestureRecognizer
   }
   final bool _gpu;
   mp.MpGestureRecognizerPtr _task = nullptr;
-  late final IosBgraStorage? _iosBgra =
-      hasOfficialIosVisionRuntime() && iosImageStorageMode != 0
-      ? IosBgraStorage(iosImageStorageMode)
+  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
+      ? iosBgraStorage()
       : null;
 
   @override

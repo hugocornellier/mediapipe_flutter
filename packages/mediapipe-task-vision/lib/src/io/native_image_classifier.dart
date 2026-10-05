@@ -27,25 +27,7 @@ final class NativeImageClassifier
         officialGpu: true,
       );
       native.ref.running_mode = nativeRunningMode(options.runningMode);
-      final classifier = native.ref.classifier_options;
-      classifier
-        ..max_results = options.maxResults
-        ..score_threshold = options.scoreThreshold
-        ..category_allowlist = visionOptionStrings(
-          arena,
-          options.categoryAllowlist,
-        )
-        ..category_allowlist_count = options.categoryAllowlist.length
-        ..category_denylist = visionOptionStrings(
-          arena,
-          options.categoryDenylist,
-        )
-        ..category_denylist_count = options.categoryDenylist.length;
-      if (options.displayNamesLocale case final locale?) {
-        classifier.display_names_locale = locale
-            .toNativeUtf8(allocator: arena)
-            .cast();
-      }
+      setVisionClassifierOptions(arena, native.ref.classifier_options, options);
       final output = arena<mp.MpImageClassifierPtr>();
       checkVisionCreate(
         (error) => mp.MpImageClassifierCreate(native, output, error),
@@ -56,9 +38,8 @@ final class NativeImageClassifier
   }
   final bool _gpu;
   mp.MpImageClassifierPtr _task = nullptr;
-  late final IosBgraStorage? _iosBgra =
-      hasOfficialIosVisionRuntime() && iosImageStorageMode != 0
-      ? IosBgraStorage(iosImageStorageMode)
+  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
+      ? iosBgraStorage()
       : null;
 
   @override

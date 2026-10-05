@@ -1,4 +1,6 @@
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show classifierSettingsJson;
 
 import '../capabilities.dart';
 import '../results/decoders.dart';
@@ -38,13 +40,7 @@ final class TextClassifier {
             options,
             capabilities: queryTextClassifierCapabilities,
             task: 'text_classifier',
-            settings: classifierSettings(
-              displayNamesLocale: options.displayNamesLocale,
-              maxResults: options.maxResults,
-              scoreThreshold: options.scoreThreshold,
-              categoryAllowlist: options.categoryAllowlist,
-              categoryDenylist: options.categoryDenylist,
-            ),
+            settings: classifierSettingsJson(options),
             decode: decodeTextClassifierResult,
             request: (String text) => (text, const {}),
             native: openNativeTextClassifier,

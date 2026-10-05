@@ -1,10 +1,5 @@
-import 'dart:async';
-import 'dart:io';
-
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
-import '../download_asset.dart';
-import '../verified_download.dart';
 
 export '../download_asset.dart';
 export '../verified_download.dart';
@@ -54,58 +49,4 @@ void requireDynamicLinking(CodeConfig code) {
   if (code.linkModePreference == LinkModePreference.static) {
     throw UnsupportedError('MediaPipe requires dynamic library bundling.');
   }
-}
-
-/// Bundles the pinned library for the exact OS, architecture, and Apple SDK.
-Future<void> buildNativeLibrary(
-  BuildInput input,
-  BuildOutputBuilder output, {
-  required String assetName,
-  required Map<String, Map<String, DownloadAsset>> downloads,
-}) async {
-  if (!input.config.buildCodeAssets) return;
-  final config = input.config.code;
-  final os = config.targetOS.toString();
-  final architecture = config.targetArchitecture.toString();
-  if (config.targetOS == OS.iOS && config.iOS.targetSdk != IOSSdk.iPhoneOS) {
-    throw UnsupportedError(
-      '${input.packageName} has no iOS simulator runtime. '
-      'The pinned iOS library is for arm64 devices only.',
-    );
-  }
-  final asset = downloads[os]?[architecture];
-  if (asset == null) {
-    final targets = [
-      for (final os in downloads.entries)
-        for (final arch in os.value.keys) '${os.key}/$arch',
-    ].join(', ');
-    throw UnsupportedError(
-      '${input.packageName} has no runtime for '
-      '$os/$architecture. Available artifacts: $targets.',
-    );
-  }
-  if (config.linkModePreference == LinkModePreference.static) {
-    throw UnsupportedError(
-      '${input.packageName} provides dynamic libraries only.',
-    );
-  }
-  final filename = Uri.parse(asset.url).pathSegments.last;
-  final destination = File.fromUri(
-    input.outputDirectoryShared.resolve(
-      '$os/$architecture/${asset.sha256}/$filename',
-    ),
-  );
-  await downloadVerified(asset, destination, source: hookAssetSource(input));
-  output.dependencies.addAll([
-    input.packageRoot.resolve('hook/build.dart'),
-    input.packageRoot.resolve('sdk_downloads.dart'),
-  ]);
-  output.assets.code.add(
-    CodeAsset(
-      package: input.packageName,
-      name: assetName,
-      linkMode: DynamicLoadingBundled(),
-      file: destination.uri,
-    ),
-  );
 }

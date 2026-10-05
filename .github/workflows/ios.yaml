@@ -135,7 +135,7 @@ jobs:
             packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
           key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
       # Google's answers for the 1.0.1 iOS SDK: its macOS arm64 1.0.1 wheel on
-      # this arm64 runner (packages/mediapipe-task-text/tool/MODERN_TEXT_PLATFORMS.md).
+      # this arm64 runner.
       - name: Google's 1.0.1 references for EmbeddingGemma, Proofreader and Summarizer
         run: |
           cd packages/mediapipe-task-text

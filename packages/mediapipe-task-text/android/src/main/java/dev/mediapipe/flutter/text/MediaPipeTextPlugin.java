@@ -83,32 +83,15 @@ public final class MediaPipeTextPlugin implements FlutterPlugin {
   }
 
   private TaskHost.Task create(MethodCall call, TaskHost.Model model) {
-    BaseOptions.Builder base = BaseOptions.builder();
-    if (model.bytes() != null) {
-      base.setModelAssetBuffer(model.direct());
-    } else if (model.path() != null) {
-      base.setModelAssetPath(model.path());
-    }
+    BaseOptions.Builder base = model.baseOptions();
     String name = call.argument("task");
     switch (name == null ? "" : name) {
       case "text_classifier": {
         TextClassifierOptions.Builder options =
             TextClassifierOptions.builder().setBaseOptions(base.build());
-        if (call.hasArgument("displayNamesLocale")) {
-          options.setDisplayNamesLocale(call.argument("displayNamesLocale"));
-        }
-        if (call.hasArgument("maxResults")) {
-          options.setMaxResults(TaskHost.number(call, "maxResults"));
-        }
-        if (call.hasArgument("scoreThreshold")) {
-          options.setScoreThreshold(TaskHost.decimal(call, "scoreThreshold"));
-        }
-        if (call.hasArgument("categoryAllowlist")) {
-          options.setCategoryAllowlist(call.argument("categoryAllowlist"));
-        }
-        if (call.hasArgument("categoryDenylist")) {
-          options.setCategoryDenylist(call.argument("categoryDenylist"));
-        }
+        TaskHost.classifierOptions(call, options::setDisplayNamesLocale, options::setMaxResults,
+            options::setScoreThreshold, options::setCategoryAllowlist,
+            options::setCategoryDenylist);
         TextClassifier classifier = TextClassifier.createFromOptions(context, options.build());
         return task(classifier,
             input -> TaskJson.classifications(classifier.classify(text(input)).classificationResult()),
@@ -130,21 +113,9 @@ public final class MediaPipeTextPlugin implements FlutterPlugin {
       case "language_detector": {
         LanguageDetectorOptions.Builder options =
             LanguageDetectorOptions.builder().setBaseOptions(base.build());
-        if (call.hasArgument("displayNamesLocale")) {
-          options.setDisplayNamesLocale(call.argument("displayNamesLocale"));
-        }
-        if (call.hasArgument("maxResults")) {
-          options.setMaxResults(TaskHost.number(call, "maxResults"));
-        }
-        if (call.hasArgument("scoreThreshold")) {
-          options.setScoreThreshold(TaskHost.decimal(call, "scoreThreshold"));
-        }
-        if (call.hasArgument("categoryAllowlist")) {
-          options.setCategoryAllowlist(call.argument("categoryAllowlist"));
-        }
-        if (call.hasArgument("categoryDenylist")) {
-          options.setCategoryDenylist(call.argument("categoryDenylist"));
-        }
+        TaskHost.classifierOptions(call, options::setDisplayNamesLocale, options::setMaxResults,
+            options::setScoreThreshold, options::setCategoryAllowlist,
+            options::setCategoryDenylist);
         LanguageDetector detector = LanguageDetector.createFromOptions(context, options.build());
         return task(detector, input -> {
           List<Object> languages = new ArrayList<>();

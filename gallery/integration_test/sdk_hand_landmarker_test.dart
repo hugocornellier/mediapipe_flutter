@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +13,7 @@ import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/main.dart';
 
 import 'support/gallery_tiles.dart';
+import 'support/sdk_frames.dart';
 
 /// `required` fails when the SDK refuses the GPU, as on a phone; `optional`
 /// records a refusal at creation; `skip` runs CPU only.
@@ -64,7 +64,7 @@ void main() {
         }
         final assets = await GalleryAssets.unpack();
         final model = await _model();
-        final frame = await _sample('thumb_up.jpg');
+        final frame = await loadSample('thumb_up.jpg');
         final references = <Delegate, HandLandmarkerResult>{};
         for (final delegate in [
           Delegate.cpu,
@@ -104,7 +104,7 @@ void main() {
             references[delegate] = reference;
             final copied = reference.handLandmarks.single.first.x;
             for (final format in VisionPixelFormat.values) {
-              final padded = await task.detect(_padded(frame, format));
+              final padded = await task.detect(paddedImage(frame, format));
               expect(
                 _delta(reference, padded),
                 lessThan(1e-5),
@@ -112,12 +112,12 @@ void main() {
               );
             }
             for (final turn in [90, 180, 270]) {
-              final rotated = _rotate(frame, (360 - turn) % 360);
+              final rotated = rotatedImage(frame, (360 - turn) % 360);
               final result = await task.detect(rotated, rotationDegrees: turn);
               _hand(result);
               expect(result.imageWidth, rotated.width);
             }
-            final blank = await task.detect(_blank());
+            final blank = await task.detect(blankImage());
             expect(blank.handLandmarks, isEmpty);
             expect(blank.handWorldLandmarks, isEmpty);
             expect(blank.handedness, isEmpty);
@@ -157,7 +157,7 @@ void main() {
     (tester) async {
       await tester.runAsync(() async {
         final assets = await GalleryAssets.unpack();
-        final frame = await _sample('thumb_up.jpg');
+        final frame = await loadSample('thumb_up.jpg');
         final task = await HandLandmarker.create(
           HandLandmarkerOptions(
             modelPath: assets.path('hand_landmarker.task'),
@@ -190,7 +190,7 @@ void main() {
             expect(result.timestampMilliseconds, i * 33);
           }
           final empty = await task.detectForVideo(
-            _blank(),
+            blankImage(),
             timestampMilliseconds: 400,
           );
           expect(empty.handLandmarks, isEmpty);
@@ -248,97 +248,6 @@ void main() {
 Future<Uint8List> _model() async {
   final bytes = await rootBundle.load('assets/models/hand_landmarker.task');
   return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
-}
-
-typedef _Frame = ({int width, int height, Uint8List pixels, VisionImage image});
-
-Future<_Frame> _sample(String name) async {
-  final bytes = await rootBundle.load('assets/samples/$name');
-  final codec = await ui.instantiateImageCodec(
-    bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
-  );
-  final image = (await codec.getNextFrame()).image;
-  try {
-    final rgba = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
-    final pixels = rgba.buffer.asUint8List(
-      rgba.offsetInBytes,
-      rgba.lengthInBytes,
-    );
-    return (
-      width: image.width,
-      height: image.height,
-      pixels: pixels,
-      image: VisionImage.fromPixels(
-        pixels: pixels,
-        width: image.width,
-        height: image.height,
-        format: VisionPixelFormat.rgba,
-      ),
-    );
-  } finally {
-    image.dispose();
-    codec.dispose();
-  }
-}
-
-/// [frame] in [format], with 16 bytes of row padding and opaque alpha.
-VisionImage _padded(_Frame frame, VisionPixelFormat format) {
-  final channels = format.channels;
-  final stride = frame.width * channels + 16;
-  final pixels = Uint8List(stride * frame.height);
-  final bgra = format == VisionPixelFormat.bgra;
-  for (var y = 0; y < frame.height; y++) {
-    for (var x = 0; x < frame.width; x++) {
-      final src = (y * frame.width + x) * 4;
-      final dst = y * stride + x * channels;
-      pixels[dst] = frame.pixels[src + (bgra ? 2 : 0)];
-      pixels[dst + 1] = frame.pixels[src + 1];
-      pixels[dst + 2] = frame.pixels[src + (bgra ? 0 : 2)];
-      if (channels == 4) pixels[dst + 3] = 255;
-    }
-  }
-  return VisionImage.fromPixels(
-    pixels: pixels,
-    width: frame.width,
-    height: frame.height,
-    format: format,
-    bytesPerRow: stride,
-  );
-}
-
-VisionImage _blank() => VisionImage.fromPixels(
-  pixels: Uint8List(64 * 64 * 3),
-  width: 64,
-  height: 64,
-  format: VisionPixelFormat.rgb,
-);
-
-VisionImage _rotate(_Frame frame, int turn) {
-  final width = turn % 180 == 0 ? frame.width : frame.height;
-  final height = turn % 180 == 0 ? frame.height : frame.width;
-  final pixels = Uint8List(width * height * 4);
-  for (var y = 0; y < frame.height; y++) {
-    for (var x = 0; x < frame.width; x++) {
-      final (dx, dy) = switch (turn) {
-        90 => (frame.height - 1 - y, x),
-        180 => (frame.width - 1 - x, frame.height - 1 - y),
-        270 => (y, frame.width - 1 - x),
-        _ => (x, y),
-      };
-      pixels.setRange(
-        (dy * width + dx) * 4,
-        (dy * width + dx) * 4 + 4,
-        frame.pixels,
-        (y * frame.width + x) * 4,
-      );
-    }
-  }
-  return VisionImage.fromPixels(
-    pixels: pixels,
-    width: width,
-    height: height,
-    format: VisionPixelFormat.rgba,
-  );
 }
 
 /// One hand with 21 finite image and world landmarks and a handedness.

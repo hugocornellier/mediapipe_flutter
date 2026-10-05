@@ -4,9 +4,9 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart' show ClassifierSettings;
 
 import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../types/options.dart';
 import '../types/results.dart';
 import '../types/vision_types.dart';
 import 'native_desktop_runtime.dart';
@@ -307,11 +307,12 @@ ImageSegmenterResult copyVisionSegmentation(
   timestampMilliseconds: timestamp,
 );
 
-/// Populate native canned/custom gesture classification filters.
-void setVisionGestureClassifier(
+/// Populate native classification filters: Image Classifier's, and Gesture
+/// Recognizer's canned and custom ones.
+void setVisionClassifierOptions(
   Arena arena,
   mp.MpClassifierOptions output,
-  ClassifierOptions options,
+  ClassifierSettings options,
 ) {
   output
     ..max_results = options.maxResults

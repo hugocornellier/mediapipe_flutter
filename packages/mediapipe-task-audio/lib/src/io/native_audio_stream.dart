@@ -1,7 +1,7 @@
 /// Google's native audio stream on a worker isolate of its own: the isolate
 /// owns Google's task from creation to close, since a block can wait in
 /// Google's call while its input queue is full and the close runs the
-/// tail's inference (tool/AUDIO_STREAM.md, decisions 8, 9 and 11).
+/// tail's inference.
 library;
 
 import 'dart:async';
@@ -121,7 +121,7 @@ Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
   // The bridge posts each copy's address here from Google's threads, then
   // null for the end. A port, unlike a NativeCallable, refuses a message once
   // this isolate has gone, as at a hot restart, so a graph that outlives the
-  // isolate cannot crash the process (tool/AUDIO_STREAM.md, risk 7).
+  // isolate cannot crash the process.
   final events = ReceivePort();
   final ended = Completer<void>();
   events.listen((message) {
@@ -226,7 +226,7 @@ Object _decode(Pointer<bridge.MpFlutterAudioEvent> pointer) {
   }
   if (event.status != 0) {
     // Google's C callback carries a status and no message
-    // (tool/AUDIO_STREAM.md, correction 3).
+    // (upstream-issues.md UP-038).
     return TaskException(
       "Google's audio stream failed: ${_statusNames[event.status] ?? 'UNKNOWN'} "
       '(status ${event.status}).',

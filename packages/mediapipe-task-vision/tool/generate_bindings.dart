@@ -1,14 +1,18 @@
 import 'dart:io';
 
+/// Google's unmodified MediaPipe C API headers, which core vendors once for
+/// every family; see third_party/README.md.
+const _headers = '../mediapipe-core/native/ios/include';
+
 Future<void> main(List<String> arguments) async {
   // ffigen 21 does not visit C++ LinkageSpec cursors. Remove only the enclosing
   // extern-C blocks in temporary copies; every ABI declaration stays identical.
   await for (final entry in Directory(
-    'third_party/mediapipe',
+    '$_headers/mediapipe',
   ).list(recursive: true)) {
     if (entry is! File || !entry.path.endsWith('.h')) continue;
     final destination = File(
-      entry.path.replaceFirst('third_party/', 'build/ffigen/'),
+      entry.path.replaceFirst('$_headers/', 'build/ffigen/'),
     );
     await destination.parent.create(recursive: true);
     final source = await entry.readAsString();

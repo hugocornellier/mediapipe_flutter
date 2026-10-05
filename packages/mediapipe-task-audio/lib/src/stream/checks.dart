@@ -29,9 +29,6 @@ final class AudioStreamChecks {
   /// A failure that ended the stream; every later block rethrows it.
   TaskException? failure;
 
-  /// Whether disposal has begun.
-  bool get disposing => _disposing;
-
   /// Rejects every later call.
   void markDisposing() => _disposing = true;
 

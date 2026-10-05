@@ -49,17 +49,9 @@ void main(List<String> arguments) async {
     // app's minimum OS.
     // Our arm64 simulator binaries require iOS 14; see tool/IOS_SIMULATOR.md.
     _optionalBool(input, 'prebuilt');
-    if (input.userDefines['official_macos_landmark_tasks'] != null) {
-      throw const FormatException(
-        'mediapipe_vision.official_macos_landmark_tasks was removed: '
-        "on macOS every task except the two face tasks runs on Google's "
-        'engine, which mediapipe_core bundles. Delete the key and set '
-        'hooks.user_defines.mediapipe_core.tasks_runtime: true.',
-      );
-    }
     // TODO: Bundle the `models:` list here as data assets once they reach
-    // Flutter stable, retiring `dart run mediapipe_core:bundle_models`. See
-    // tool/MODEL_BUNDLING.md at the repository root.
+    // Flutter stable, retiring `dart run mediapipe_core:bundle_models`. The
+    // plan is tool/MODEL_BUNDLING.md in git history at `9383185`.
     final selection =
         input.userDefines['tasks'] ?? ['face_detector', 'face_landmarker'];
     if (selection is! List ||

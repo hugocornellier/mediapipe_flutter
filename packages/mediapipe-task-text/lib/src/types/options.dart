@@ -4,14 +4,15 @@ library;
 
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart'
-    show checkClassifierSettings;
+    show ClassifierSettings, checkClassifierSettings;
 
 import '../../models.dart' show TextModels;
 
 const _family = 'mediapipe_text';
 
 /// Options for Google's Text Classifier.
-final class TextClassifierOptions extends TaskOptions {
+final class TextClassifierOptions extends TaskOptions
+    implements ClassifierSettings {
   /// Defaults match Google's: every category, no threshold.
   TextClassifierOptions({
     super.model,
@@ -26,33 +27,33 @@ final class TextClassifierOptions extends TaskOptions {
   }) : categoryAllowlist = List.unmodifiable(categoryAllowlist ?? const []),
        categoryDenylist = List.unmodifiable(categoryDenylist ?? const []),
        super(family: _family, registry: TextModels.byName) {
-    checkClassifierSettings(
-      maxResults: maxResults,
-      scoreThreshold: scoreThreshold,
-      displayNamesLocale: displayNamesLocale,
-      categoryAllowlist: this.categoryAllowlist,
-      categoryDenylist: this.categoryDenylist,
-    );
+    checkClassifierSettings(this);
   }
 
   /// Locale of the display names in the model metadata.
+  @override
   final String? displayNamesLocale;
 
   /// Maximum categories per head; negative returns all of them.
+  @override
   final int maxResults;
 
   /// Categories scoring below this are dropped.
+  @override
   final double scoreThreshold;
 
   /// Category names to keep; exclusive with [categoryDenylist].
+  @override
   final List<String> categoryAllowlist;
 
   /// Category names to drop; exclusive with [categoryAllowlist].
+  @override
   final List<String> categoryDenylist;
 }
 
 /// Options for Google's Language Detector.
-final class LanguageDetectorOptions extends TaskOptions {
+final class LanguageDetectorOptions extends TaskOptions
+    implements ClassifierSettings {
   /// Defaults match Google's Python and C APIs: every language, no
   /// threshold. (Its browser and mobile SDKs apply the model's own threshold
   /// when none is set; this package always sends one, so every platform
@@ -70,28 +71,27 @@ final class LanguageDetectorOptions extends TaskOptions {
   }) : categoryAllowlist = List.unmodifiable(categoryAllowlist ?? const []),
        categoryDenylist = List.unmodifiable(categoryDenylist ?? const []),
        super(family: _family, registry: TextModels.byName) {
-    checkClassifierSettings(
-      maxResults: maxResults,
-      scoreThreshold: scoreThreshold,
-      displayNamesLocale: displayNamesLocale,
-      categoryAllowlist: this.categoryAllowlist,
-      categoryDenylist: this.categoryDenylist,
-    );
+    checkClassifierSettings(this);
   }
 
   /// Locale of the display names in the model metadata.
+  @override
   final String? displayNamesLocale;
 
   /// Maximum languages; negative returns all of them.
+  @override
   final int maxResults;
 
   /// Languages scoring below this are dropped.
+  @override
   final double scoreThreshold;
 
   /// Language codes to keep; exclusive with [categoryDenylist].
+  @override
   final List<String> categoryAllowlist;
 
   /// Language codes to drop; exclusive with [categoryAllowlist].
+  @override
   final List<String> categoryDenylist;
 }
 

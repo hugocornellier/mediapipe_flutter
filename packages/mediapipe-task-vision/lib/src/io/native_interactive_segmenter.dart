@@ -10,7 +10,7 @@ import '../types/options.dart';
 import '../types/strokes.dart';
 import '../types/vision_types.dart';
 import 'native_desktop_runtime.dart';
-import 'pixel_conversion.dart';
+import 'native_vision_image.dart' show packVisionPixels;
 
 /// One Interactive Segmenter session, owned by its persistent worker isolate:
 /// Google's desktop engine, or its iOS SDK through core's adapter.
@@ -173,36 +173,18 @@ Pointer<Void> _createImage(VisionImage input) => using((arena) {
       final name = path.toNativeUtf8(allocator: arena).cast<Char>();
       _checked((error) => mp.imageFromFile(name, output, error));
     } else {
-      final width = input.width!;
-      final height = input.height!;
-      final row = width * input.format!.channels;
-      final pixels = arena<Uint8>(row * height);
-      final packed = pixels.asTypedList(row * height);
-      if (input.format == VisionPixelFormat.bgra) {
-        copyBgraToRgba(
-          source: input.pixels!,
-          target: packed,
-          width: width,
-          height: height,
-          bytesPerRow: input.bytesPerRow!,
-        );
-      } else {
-        for (var y = 0; y < height; y++) {
-          packed.setRange(
-            y * row,
-            (y + 1) * row,
-            input.pixels!,
-            y * input.bytesPerRow!,
-          );
-        }
-      }
+      final (pixels, byteCount) = packVisionPixels(
+        arena,
+        input,
+        expandRgb: false,
+      );
       _checked(
         (error) => mp.imageFromPixels(
           input.format == VisionPixelFormat.rgb ? 1 : 2,
-          width,
-          height,
+          input.width!,
+          input.height!,
           pixels,
-          row * height,
+          byteCount,
           output,
           error,
         ),

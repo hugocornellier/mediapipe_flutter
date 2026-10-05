@@ -28,7 +28,7 @@ void main() {
       );
       final TextClassifierResult result = executor.classify('Hello, world!');
       expect(result.classifications, isNotEmpty);
-      executor.dispose();
+      executor.close();
     });
 
     test('run multiple tasks', () {
@@ -39,7 +39,7 @@ void main() {
       expect(result.classifications, isNotEmpty);
       final TextClassifierResult result2 = executor.classify('Hello, world!');
       expect(result2.classifications, isNotEmpty);
-      executor.dispose();
+      executor.close();
     });
 
     test('unpack a result', () {
@@ -54,7 +54,7 @@ void main() {
       expect(classifications.categories.first.score, closeTo(0.9919, 0.0009));
       expect(classifications.categories.last.categoryName, equals('negative'));
       expect(classifications.categories.last.score, closeTo(0.00804, 0.0009));
-      executor.dispose();
+      executor.close();
     });
 
     test('use the denylist', () {
@@ -70,7 +70,7 @@ void main() {
       expect(classifications.categories, hasLength(1));
       expect(classifications.categories.first.categoryName, equals('negative'));
       expect(classifications.categories.first.score, closeTo(0.00804, 0.0009));
-      executor.dispose();
+      executor.close();
     });
 
     test('use the allowlist', () {
@@ -86,7 +86,7 @@ void main() {
       expect(classifications.categories, hasLength(1));
       expect(classifications.categories.first.categoryName, equals('positive'));
       expect(classifications.categories.first.score, closeTo(0.9919, 0.0009));
-      executor.dispose();
+      executor.close();
     });
   });
 }

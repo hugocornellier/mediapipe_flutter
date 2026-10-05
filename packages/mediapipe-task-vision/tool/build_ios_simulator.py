@@ -4,7 +4,7 @@ Builds the same `//mediapipe/tasks/c:libmediapipe` target the macOS runtime and
 Google's own wheel use, so one library carries every open-source task instead of
 one dylib per task, which each re-embedded the whole graph runtime.
 
-This produces local development artifacts. Run tool/test_ios_simulator.py to
+This produces local development artifacts. Run tool/test_ios_consumer.py to
 verify inference inside Flutter; macOS cannot load simulator dylibs directly.
 No upstream source is modified and no artifact is uploaded.
 """

@@ -31,7 +31,8 @@ runtime. EfficientDet-Lite0 Object Detector and EfficientNet-Lite0 Image
 Classifier reach the fault. Face Detector and Face Landmarker smokes do not.
 
 Object Detector reproduces outside Dart using
-`packages/mediapipe-task-vision/tool/object_detector_probe.cc`. The fault was:
+`packages/mediapipe-task-vision/tool/object_detector_probe.cc`, in git history
+at `9383185`. The fault was:
 
 ```text
 SIGILL
@@ -104,8 +105,9 @@ There is also an apparent `XNN_ENABLE_SRM_SME` typo in the false branch of
 The cached dependency is under
 `build/codex-tmp/bazel/d8fd7dbf830ea5ade71924b0dfe6131d/external/XNNPACK/`.
 See also the earlier investigation in
-`packages/mediapipe-task-vision/tool/OBJECT_DETECTOR.md`; its statement that no
-compiler workaround has been found is now superseded by UP-001.
+`packages/mediapipe-task-vision/tool/OBJECT_DETECTOR.md`, in git history at
+`9383185`; its statement that no compiler workaround has been found is now
+superseded by UP-001.
 
 ## UP-003: MediaPipe 1.0.0 float mask accessor aborts for padded rows
 
@@ -370,8 +372,9 @@ selects CPU delegates for validation. Its probes initialize EGL even with CPU
 delegates; a functioning GL context is therefore part of the tested environment.
 GPU inference remains unvalidated.
 
-Reproduce with `tool/build_android.py` and `tool/test_android_native.py` in the
-vision package; see [the Android guide](packages/mediapipe-task-vision/tool/ANDROID.md).
+Reproduce with `tool/build_android.py` in the vision package, then the probe
+`tool/test_android_native.py` and the Android guide `tool/ANDROID.md`, both in
+git history at `9383185`.
 The passing runtime has SHA-256
 `1a01c7ebef93f0a113d8c9714c72b0012198d7dfc7dcff12207db67667de3658`.
 Build and smoke receipts are under `tool/validations/2026-09-16-android-native/`
@@ -482,47 +485,18 @@ graph config, which `Graph.getCalculatorGraphConfig()` parses with
 holding the labels is never read. The plugin parses those options again with
 the extension registered and gets all 21 labels in mask order.
 
-## UP-020: Android Interactive Segmenter Legacy ignores the region of interest
-
-**Status:** observed September 23 with Android tasks-vision 1.0.0 on the
-emulator (CPU). Unresolved upstream. The package removed the legacy task on
-October 1 (only the stateful Interactive Segmenter remains); kept for the
-record.
-
-`InteractiveSegmenterLegacy.segment(image, roi, options)` returned the same
-mask for keypoints (0.5, 0.4), (0.05, 0.05), (0.95, 0.95) and (0.2, 0.8), and
-for a one-point scribble: 99.6% of the portrait sample selected, where
-Google's Python wheel, the iOS SDK and the browser select the subject (57%)
-under (0.5, 0.4). It is the same with Google's declared protobuf-javalite
-instead of this plugin's protobuf-java (UP-016). On Android,
-`InteractiveSegmenterLegacy.create` throws UnsupportedError rather than
-return wrong masks.
-
-## UP-021: Browser Interactive Segmenter Legacy drops a model buffer
-
-**Status:** observed September 23 with Google's tasks-vision 1.0.1 web bundle in
-Chrome. Worked around in the browser worker until the package removed the
-legacy task on October 1; kept for the record.
-
-`InteractiveSegmenterLegacy.createFromOptions` with
-`baseOptions.modelAssetBuffer` fails in the graph ("ExternalFile must specify
-at least one of 'file_content', 'file_name', ..." from
-`image_segmenter_graph.cc`), while the same model as `modelAssetPath` loads.
-Every other task accepts a buffer. The worker hands this task its bytes as a
-temporary Blob URL.
-
 ## UP-022: Android Interactive Segmenter drops a model buffer
 
 **Status:** observed September 23 with Google's tasks-vision 1.0.0 Android
 library on an x64 emulator. Worked around in the Android plugin.
 
 The stateful `InteractiveSegmenter.createFromOptions` with
-`BaseOptions.setModelAssetBuffer` fails with the same "ExternalFile must
-specify at least one of 'file_content', 'file_name', ..." error as UP-021,
-while the same model as an absolute `setModelAssetPath` loads and matches
-Google's reference. The plugin writes this task's bytes to a private file in
-the app's cache directory and deletes it when the task closes. Unlike UP-020,
-this task follows its strokes.
+`BaseOptions.setModelAssetBuffer` fails in the graph ("ExternalFile must
+specify at least one of 'file_content', 'file_name', ..." from
+`image_segmenter_graph.cc`), while the same model as an absolute
+`setModelAssetPath` loads and matches Google's reference. The plugin writes
+this task's bytes to a private file in the app's cache directory and deletes it
+when the task closes.
 
 ## UP-023: Android Image Segmenter GPU aborts on a PowerVR GPU
 
@@ -888,7 +862,7 @@ where it starts.
 block's timestamp plus the windows before it, which is what clips mode
 reports for the same chunk. Its tests still assert that the raw value from
 Google is the sentinel, through a hook at the adapter, as the proof that the
-result came from Google's flush (packages/mediapipe-task-audio/tool/AUDIO_STREAM.md).
+result came from Google's flush.
 
 ## UP-038: The C audio stream callback carries no user data and no message
 

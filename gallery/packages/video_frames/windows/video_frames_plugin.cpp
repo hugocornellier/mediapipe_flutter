@@ -117,8 +117,6 @@ class VideoFileReader {
 
   EncodableMap Info() const {
     return {
-        {EncodableValue("width"), EncodableValue(static_cast<int32_t>(width_))},
-        {EncodableValue("height"), EncodableValue(static_cast<int32_t>(height_))},
         {EncodableValue("rotation"), EncodableValue(rotation_)},
         {EncodableValue("durationUs"), EncodableValue(duration_us_)},
         {EncodableValue("frameRate"), EncodableValue(frame_rate_)},

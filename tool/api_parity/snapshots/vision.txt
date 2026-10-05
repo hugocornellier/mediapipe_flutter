@@ -37,7 +37,7 @@ final class Classifications
   String? get headName
   int get headIndex
   new Classifications({required List<MediaPipeCategory> categories, required int headIndex, String? headName})
-final class ClassifierOptions
+final class ClassifierOptions implements ClassifierSettings
   List<String> get categoryAllowlist
   List<String> get categoryDenylist
   String? get displayNamesLocale
@@ -280,7 +280,7 @@ final class ImageClassifier implements VisionTask
   int get droppedFrames
   static Future<ImageClassifier> create(ImageClassifierOptions options)
   void classifyAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0, VisionRegionOfInterest? regionOfInterest})
-final class ImageClassifierOptions extends VisionTaskOptions
+final class ImageClassifierOptions extends VisionTaskOptions implements ClassifierSettings
   Delegate get delegate
   DownloadAsset? get model
   List<String> get categoryAllowlist
@@ -461,7 +461,7 @@ final class ObjectDetector implements VisionTask
   int get droppedFrames
   static Future<ObjectDetector> create(ObjectDetectorOptions options)
   void detectAsync(VisionImage image, {required int timestampMilliseconds, int rotationDegrees = 0})
-final class ObjectDetectorOptions extends VisionTaskOptions
+final class ObjectDetectorOptions extends VisionTaskOptions implements ClassifierSettings
   Delegate get delegate
   DownloadAsset? get model
   List<String> get categoryAllowlist
@@ -541,15 +541,12 @@ final class TaskCapabilities
   Map<Delegate, String> get unavailableReasons
   Map<String, String?> get supportedTargets
   Set<Delegate> get supportedDelegates
-  String get requiredArchitecture
-  String get requiredOperatingSystem
   String get runtimeVersion
   String toString()
   String? get minimumOperatingSystemVersion
   TaskPlatform get platform
   bool get isSupported
   factory TaskCapabilities.cpuOnTargets({required TaskPlatform platform, required String gpuUnavailableReason, Map<String, String?> targets = tasksRuntimeTargets, String runtimeVersion = '1.0.1'})
-  factory TaskCapabilities.gpuOnTargets({required TaskPlatform platform, required String cpuUnavailableReason, Map<String, String?> targets = tasksRuntimeTargets, String runtimeVersion = '1.0.1'})
   factory TaskCapabilities.macosCpu({required TaskPlatform platform, required String gpuUnavailableReason})
   factory TaskCapabilities.onTargets({required TaskPlatform platform, required Map<Delegate, Map<String, String?>> delegates, required Map<Delegate, String> unavailableReasons, required String runtimeVersion})
 final class TaskException extends MediaPipeException

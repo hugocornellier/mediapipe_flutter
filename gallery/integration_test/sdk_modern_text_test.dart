@@ -437,7 +437,7 @@ void main() {
       );
       if (Platform.isAndroid) {
         // Google's Android options have no cache directory: refused, not
-        // ignored (MODERN_TEXT_PLATFORMS.md).
+        // ignored.
         await expectLater(
           withCache,
           throwsA(

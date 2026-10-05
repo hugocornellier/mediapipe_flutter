@@ -134,8 +134,6 @@ public final class VideoFramesPlugin implements FlutterPlugin, MethodChannel.Met
       }
       if (format == null) throw new IOException(path + " has no video track.");
       Map<String, Object> info = new HashMap<>();
-      info.put("width", format.getInteger(MediaFormat.KEY_WIDTH));
-      info.put("height", format.getInteger(MediaFormat.KEY_HEIGHT));
       // The clockwise turn the file asks for, as Android documents it.
       info.put("rotation", format.containsKey(MediaFormat.KEY_ROTATION)
           ? ((format.getInteger(MediaFormat.KEY_ROTATION) % 360) + 360) % 360 : 0);

@@ -40,27 +40,18 @@ void main() {
     }
   });
 
-  test(
-    'official SDK option is typed and cannot select two platform runtimes',
-    () async {
-      for (final options in [
-        {'official_ios_sdk': 'yes'},
-        // Removed: macOS tasks now run on core's engine.
-        {'official_ios_sdk': true, 'official_macos_landmark_tasks': true},
-      ]) {
-        await expectLater(
-          testCodeBuildHook(
-            mainMethod: hook.main,
-            targetOS: OS.iOS,
-            targetArchitecture: Architecture.arm64,
-            userDefines: defines(options),
-            check: (_, _) => fail('Invalid SDK selection succeeded'),
-          ),
-          throwsA(anyOf(isA<FormatException>(), isA<StateError>())),
-        );
-      }
-    },
-  );
+  test('official SDK option is typed', () async {
+    await expectLater(
+      testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.iOS,
+        targetArchitecture: Architecture.arm64,
+        userDefines: defines({'official_ios_sdk': 'yes'}),
+        check: (_, _) => fail('Invalid SDK selection succeeded'),
+      ),
+      throwsA(anyOf(isA<FormatException>(), isA<StateError>())),
+    );
+  });
 
   test('every binding ID resolves to core\'s one adapter image', () async {
     await testCodeBuildHook(

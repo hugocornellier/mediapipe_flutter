@@ -180,8 +180,6 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// The readout's figures, over the last [recentFrames] frames, so they
   /// follow the current speed.
   double get recentInferenceMilliseconds => _recent.inferenceMilliseconds;
-  double get recentConversionMilliseconds => _recent.conversionMilliseconds;
-  double get recentFrameMilliseconds => _recent.frameMilliseconds;
   double get recentFramesPerSecond => _recent.framesPerSecond;
   int get recentFrames => _recent.length;
 
@@ -481,12 +479,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     _totalInferenceMilliseconds += inferenceMilliseconds;
     _totalFrameMilliseconds += frameMilliseconds;
     _totalLatencyMilliseconds += latencyMilliseconds;
-    _recent.add(
-      inference: inferenceMilliseconds,
-      conversion: conversionMilliseconds,
-      frame: frameMilliseconds,
-      finishedMicroseconds: now,
-    );
+    _recent.add(inference: inferenceMilliseconds, finishedMicroseconds: now);
     processedFrames++;
     _changed();
   }

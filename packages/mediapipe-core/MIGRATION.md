@@ -1,35 +1,20 @@
-# Core API migration
+# Migrating from Google's mediapipe_core 0.0.1
 
-## 0.1.0 to 0.2.0
+Google published `mediapipe_core` 0.0.1 in May 2024 as the shared containers
+and FFI plumbing of its `mediapipe_text` 0.0.1. This package's first release,
+0.1.0 (not published yet), replaces it. Apps now get core through a family's
+library (`mediapipe_vision.dart`, `mediapipe_text.dart` or
+`mediapipe_audio.dart`), which re-exports `mediapipe_core.dart`; plugins and
+family packages use `platform_interface.dart`.
 
-Apps import their family's library, which re-exports
-`package:mediapipe_core/mediapipe_core.dart`. Plugins and family packages use
-`package:mediapipe_core/platform_interface.dart`.
-
-| 0.1.0 | 0.2.0 |
+| Google's 0.0.1 | 0.1.0 |
 | --- | --- |
-| `capabilities.dart`, `model_store.dart`, `mediapipe_exception.dart`, `web_runtime.dart` | `mediapipe_core.dart` |
-| `VisionDelegate`, `TextDelegate`, `AudioDelegate` | `Delegate` |
-| `TaskCapabilities<D>` | `TaskCapabilities` (non-generic) |
-| `VisionTaskException`, `TextTaskException`, `AudioTaskException` | `TaskException` (`statusCode`, `gpuUnavailable`) |
-| `DownloadException` | `ModelDownloadException` |
-| `ModelStore(directory: Directory(...))` | `ModelStore(cacheDirectory: '...')` |
-| `ModelStore.get` and `find` returning a `File` (native) or bytes (web) | A `ModelSource` with `path` (native) or `bytes` (web) |
-| FFI-era `BaseOptions`, `ClassifierOptions`, `EmbedderOptions`, `Category`, `Classifications`, `Embedding` on the main library | Removed from the app API; the shared value types `MediaPipeCategory`, `Classifications` and `Embedding` replace the containers |
-| Each family's options base | `TaskOptions` (`model`, `modelPath`, `modelBytes`, `delegate`) |
+| `BaseOptions.path(p)`, `BaseOptions.memory(bytes)` | `modelPath: p` or `modelBytes: bytes` on the task's options (core's `TaskOptions`), or a pinned official model with `model:` |
+| `ClassifierOptions(...)`, `EmbedderOptions(...)` | Their settings sit directly on the classifier's or embedder's options |
+| `Category` | `MediaPipeCategory` |
+| `Classifications`, `Embedding` | `Classifications` and `Embedding`, plain values without `dispose()` |
+| `EmbeddingType.float` and `.quantized`, `isFloat`, `isQuantized` | Test whether `floatEmbedding` or `quantizedEmbedding` is non-null |
+| `TaskExecutor`, `TaskResult`, the FFI helpers, `io.dart` and `interface.dart` | Not public |
 
-## Before 0.1.0
-
-| Before | Now |
-| --- | --- |
-| Package `mediapipe_flutter_core`, `import 'package:mediapipe_flutter_core/mediapipe_flutter_core.dart'` | Package `mediapipe_core`, `import 'package:mediapipe_core/mediapipe_core.dart'`; build settings move to `hooks.user_defines.mediapipe_core` |
-| `package:mediapipe_core/io.dart` for app model options | `package:mediapipe_core/mediapipe_core.dart` |
-| Separate download helpers | `ModelStore().get(DownloadAsset(...))` |
-| A separate exception class per task | Catch `MediaPipeException`. Its subtypes: `RuntimeUnavailableException` (the platform or build settings cannot run the task; `fix` says what to change), `ModelDownloadException`, and one native failure type per family (`VisionTaskException`, `TextTaskException`, `AudioTaskException`). |
-| Import FFI helpers from the primary library | Import `io.dart` only in package implementation code. |
-
-`ModelStore.get` returns a verified `File` on native platforms and verified
-bytes in browsers. A task's `model:` option resolves a pinned model on first
-creation. A task future cannot stop an in-flight native call. `Future.timeout`
-limits how long the caller waits; `dispose()` drains work already accepted by
-the task.
+Google's `mediapipe_text` 0.0.1 users: see
+[the text migration guide](../mediapipe-task-text/MIGRATION.md).

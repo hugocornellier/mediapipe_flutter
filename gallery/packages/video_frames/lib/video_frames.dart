@@ -85,12 +85,6 @@ abstract interface class VideoFileReader {
   /// or a picked file's object URL) in browsers.
   static Future<VideoFileReader> open(String path) => platform.open(path);
 
-  /// The frame size the file declares, before rotation.
-  int get width;
-
-  /// The frame size the file declares, before rotation.
-  int get height;
-
   /// The clockwise turn, a multiple of 90, that shows the frames upright, from
   /// the file's metadata. Browsers apply it themselves, so it is 0 there.
   int get rotationDegrees;

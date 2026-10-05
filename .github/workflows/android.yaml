@@ -134,8 +134,7 @@ jobs:
             packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
           key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
       # Google's answers for the 1.0.0 Android SDK on the x86_64 emulator: its
-      # Linux x86_64 1.0.0 wheel on this runner
-      # (packages/mediapipe-task-text/tool/MODERN_TEXT_PLATFORMS.md).
+      # Linux x86_64 1.0.0 wheel on this runner.
       - name: Google's 1.0.0 references for EmbeddingGemma, Proofreader and Summarizer
         run: |
           sudo apt-get update && sudo apt-get install -y libegl1 libgles2

@@ -16,5 +16,5 @@ is compiled from source here.
 `include/mediapipe/tasks/c/` holds unchanged copies of the MediaPipe C API
 headers from https://github.com/google-ai-edge/mediapipe/tree/v1.0.0 (commit
 `6d31f1ebc3284db74d211d62bdc4f0a0c29ea120`), licensed under Apache 2.0 like
-the rest of this repository. They are the same files as
-`packages/mediapipe-task-vision/third_party/mediapipe/`.
+the rest of this repository. The vision package's `tool/generate_bindings.dart`
+generates its bindings from these same files.

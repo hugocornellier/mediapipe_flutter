@@ -92,9 +92,7 @@ final class IosInteractiveSegmenter implements InteractiveSegmenterSession {
 
   Pointer<Void> _task = nullptr;
   bool _hasImage = false;
-  final IosBgraStorage? _storage = iosImageStorageMode != 0
-      ? IosBgraStorage(iosImageStorageMode)
-      : null;
+  final IosBgraStorage? _storage = iosBgraStorage();
 
   @override
   void setImage(VisionImage input) => using((arena) {

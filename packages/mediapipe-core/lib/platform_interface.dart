@@ -18,8 +18,8 @@ export 'src/capabilities/task_capabilities.dart'
 export 'src/classifier_settings.dart';
 export 'src/host_stub.dart' if (dart.library.io) 'src/host_io.dart';
 export 'src/model_source.dart';
-export 'src/model_source_io.dart'
-    if (dart.library.js_interop) 'src/model_source_web.dart';
+export 'src/pinned_model.dart';
+export 'src/sdk_json.dart';
 export 'src/stream_timestamps.dart';
 export 'src/task_options.dart' show holdModelBytes, resolveTaskModel;
 export 'src/value_types.dart' show cosineSimilarity;

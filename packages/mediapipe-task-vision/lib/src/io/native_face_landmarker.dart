@@ -13,7 +13,7 @@ import 'face_landmarker_api.dart';
 import 'native_frame_timings.dart';
 import 'native_desktop_runtime.dart';
 import 'native_ios_sdk.dart';
-import 'pixel_conversion.dart';
+import 'native_vision_image.dart' show nativeString, packVisionPixels;
 
 FaceLandmarkerApi get _api => FaceLandmarkerApi.current;
 
@@ -93,9 +93,8 @@ final class NativeFaceLandmarker
   mp.MpFaceLandmarkerPtr _detector = nullptr;
   final bool _gpu;
   final bool _officialIos;
-  late final IosBgraStorage? _iosBgraStorage =
-      _officialIos && iosImageStorageMode != 0
-      ? IosBgraStorage(iosImageStorageMode)
+  late final IosBgraStorage? _iosBgraStorage = _officialIos
+      ? iosBgraStorage()
       : null;
 
   /// Runs a single image and copies every result before releasing native memory.
@@ -126,44 +125,15 @@ final class NativeFaceLandmarker
         );
         timings?.mark('image_create');
       } else {
-        final bytes = input.pixels!;
         // Apple's GPU image upload cannot accept three-channel ImageFrames, so
         // GPU input gets opaque alpha on every host, as in the GPU references.
         final expandRgb =
             _gpu && !_officialIos && input.format == VisionPixelFormat.rgb;
-        final rowSize = input.width! * (expandRgb ? 4 : input.format!.channels);
-        final byteCount = rowSize * input.height!;
-        final pixels = arena<Uint8>(byteCount);
-        final packed = pixels.asTypedList(byteCount);
-        if (expandRgb) {
-          for (var y = 0; y < input.height!; y++) {
-            for (var x = 0; x < input.width!; x++) {
-              final source = y * input.bytesPerRow! + x * 3;
-              final target = y * rowSize + x * 4;
-              packed[target] = bytes[source];
-              packed[target + 1] = bytes[source + 1];
-              packed[target + 2] = bytes[source + 2];
-              packed[target + 3] = 255;
-            }
-          }
-        } else if (input.format == VisionPixelFormat.bgra) {
-          copyBgraToRgba(
-            source: bytes,
-            target: packed,
-            width: input.width!,
-            height: input.height!,
-            bytesPerRow: input.bytesPerRow!,
-          );
-        } else {
-          for (var y = 0; y < input.height!; y++) {
-            packed.setRange(
-              y * rowSize,
-              (y + 1) * rowSize,
-              bytes,
-              y * input.bytesPerRow!,
-            );
-          }
-        }
+        final (pixels, byteCount) = packVisionPixels(
+          arena,
+          input,
+          expandRgb: expandRgb,
+        );
         timings?.mark('pixel_pack');
         _checked(
           (error) => _api.imageFromData(
@@ -264,7 +234,7 @@ void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
     final status = call(error);
     if (status != mp.MpStatus.kMpOk) {
       throw TaskException(
-        _string(error.value) ?? 'MediaPipe returned ${status.name}',
+        nativeString(error.value) ?? 'MediaPipe returned ${status.name}',
         statusCode: status.value,
       );
     }
@@ -272,13 +242,6 @@ void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
     if (error.value != nullptr) _api.errorFree(error.value);
     calloc.free(error);
   }
-}
-
-String? _string(Pointer<Char> pointer) {
-  if (pointer == nullptr) return null;
-  final value = pointer.cast<Utf8>().toDartString();
-  // The official Python API treats empty optional C strings as absent.
-  return value.isEmpty ? null : value;
 }
 
 List<NormalizedLandmark> _copyLandmarks(mp.MpNormalizedLandmarks value) => [
@@ -293,7 +256,7 @@ List<NormalizedLandmark> _copyLandmarks(mp.MpNormalizedLandmarks value) => [
       presence: value.landmarks[i].has_presence
           ? value.landmarks[i].presence
           : null,
-      name: _string(value.landmarks[i].name),
+      name: nativeString(value.landmarks[i].name),
     ),
 ];
 
@@ -302,8 +265,8 @@ List<MediaPipeCategory> _copyCategories(mp.MpCategories value) => [
     MediaPipeCategory(
       index: value.categories[i].index,
       score: value.categories[i].score,
-      categoryName: _string(value.categories[i].category_name),
-      displayName: _string(value.categories[i].display_name),
+      categoryName: nativeString(value.categories[i].category_name),
+      displayName: nativeString(value.categories[i].display_name),
     ),
 ];
 

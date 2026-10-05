@@ -6,8 +6,6 @@ import 'dart:io' as io;
 
 import 'package:logging/logging.dart';
 
-final log = Logger('TextTask');
-
 void initLogging() {
   Logger.root.level = Level.FINEST;
   Logger.root.onRecord.listen((record) {

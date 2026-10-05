@@ -7,9 +7,8 @@ import 'package:test/test.dart';
 
 /// LIVE_STREAM runs on Google's VIDEO graph with the flow limiter in Dart, so
 /// on Google's runtime the same frames must give the same results in both
-/// modes, tracking included: the emulation's defining property
-/// (tool/LIVE_STREAM.md). Each frame is submitted after the previous result,
-/// so none waits or is dropped.
+/// modes, tracking included: the emulation's defining property. Each frame is
+/// submitted after the previous result, so none waits or is dropped.
 void main() {
   final portrait = _raw('face_detection/portrait-301x209.rgb', 301, 209);
   final hand = _raw('landmark_tasks/thumb_up.rgb', 382, 406);

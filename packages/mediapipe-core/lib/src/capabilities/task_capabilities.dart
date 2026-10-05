@@ -167,31 +167,6 @@ final class TaskCapabilities {
     );
   }
 
-  /// Describe GPU support on every target in [targets], with the CPU explained
-  /// as unavailable by [cpuUnavailableReason] on targets that are supported.
-  ///
-  /// The mirror of [TaskCapabilities.cpuOnTargets], for a task whose CPU path
-  /// is the broken one. Targets not in the table, unknown OS versions and
-  /// versions older than the table's minimum fail closed for every delegate.
-  factory TaskCapabilities.gpuOnTargets({
-    required TaskPlatform platform,
-    required String cpuUnavailableReason,
-    RuntimeTargets targets = tasksRuntimeTargets,
-    String runtimeVersion = '1.0.1',
-  }) {
-    final platformReason = _platformReason(platform, targets);
-    return TaskCapabilities._(
-      platform,
-      Set.unmodifiable({if (platformReason == null) Delegate.gpu}),
-      Map.unmodifiable({
-        Delegate.gpu: ?platformReason,
-        Delegate.cpu: platformReason ?? cpuUnavailableReason,
-      }),
-      targets,
-      runtimeVersion: runtimeVersion,
-    );
-  }
-
   /// Describe the shared 1.0.1 distribution's validated macOS CPU support.
   ///
   /// Equivalent to [TaskCapabilities.cpuOnTargets] with
@@ -233,16 +208,9 @@ final class TaskCapabilities {
   /// Process targets with a validated runtime, and their minimum OS versions.
   RuntimeTargets get supportedTargets => Map.unmodifiable(_targets);
 
-  /// Operating system required by the packaged native runtime.
-  ///
-  /// The current platform's OS when it is supported, otherwise the first
-  /// supported target's OS.
-  String get requiredOperatingSystem => _reference.split('/').first;
-
-  /// Process architecture required by the packaged native runtime.
-  String get requiredArchitecture => _reference.split('/').last;
-
-  /// Minimum product version on [requiredOperatingSystem], if any.
+  /// Minimum product version of the operating system the packaged native
+  /// runtime requires, if any: the current platform's when it is supported,
+  /// otherwise the first supported target's.
   String? get minimumOperatingSystemVersion => _targets[_reference];
 
   String get _reference => _targets.containsKey(platform.target)

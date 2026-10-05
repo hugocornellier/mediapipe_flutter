@@ -227,17 +227,15 @@ public final class MediaPipeVisionPlugin implements FlutterPlugin {
   }
 
   private TaskHost.Task create(MethodCall call, TaskHost.Model model) {
-    BaseOptions.Builder base = BaseOptions.builder();
     String name = call.argument("task");
     File modelFile = null;
+    BaseOptions.Builder base;
     if (model.bytes() != null && "interactive_segmenter".equals(name)) {
       // UP-022: this task drops a model buffer, so it gets a private copy on disk.
       modelFile = writeModel(model.bytes());
-      base.setModelAssetPath(modelFile.getAbsolutePath());
-    } else if (model.bytes() != null) {
-      base.setModelAssetBuffer(model.direct());
+      base = BaseOptions.builder().setModelAssetPath(modelFile.getAbsolutePath());
     } else {
-      base.setModelAssetPath(model.path());
+      base = model.baseOptions();
     }
     String delegate = call.argument("delegate");
     if (!"cpu".equals(delegate) && !"gpu".equals(delegate)) {

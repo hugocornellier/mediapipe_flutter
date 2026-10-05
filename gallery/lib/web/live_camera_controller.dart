@@ -135,7 +135,6 @@ class LiveCameraController<T> extends ChangeNotifier {
   }
 
   int frameRotationDegrees = 0;
-  DeviceOrientation deviceOrientation = DeviceOrientation.landscapeLeft;
   Delegate delegate = Delegate.cpu;
   int processedFrames = 0;
 
@@ -215,8 +214,6 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// The readout's figures, over the last [recentFrames] frames, so they
   /// follow the current speed.
   double get recentInferenceMilliseconds => _recent.inferenceMilliseconds;
-  double get recentConversionMilliseconds => _recent.conversionMilliseconds;
-  double get recentFrameMilliseconds => _recent.frameMilliseconds;
   double get recentFramesPerSecond => _recent.framesPerSecond;
   int get recentFrames => _recent.length;
 
@@ -775,12 +772,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     _totalInference += inferenceMilliseconds;
     _totalFrame += frameMilliseconds;
     _totalLatency += latencyMilliseconds;
-    _recent.add(
-      inference: inferenceMilliseconds,
-      conversion: conversionMilliseconds,
-      frame: frameMilliseconds,
-      finishedMicroseconds: now,
-    );
+    _recent.add(inference: inferenceMilliseconds, finishedMicroseconds: now);
     // The worker paints landmark overlays at camera rate. Rebuilding the
     // Flutter page at that same rate competes with touch scrolling on
     // mobile Safari; its readouts need only a few updates per second.

@@ -48,27 +48,20 @@ To open the image screen on macOS, run with `-t lib/main_fixture.dart`.
 With an iOS simulator already booted:
 
 ```sh
-python3 -B tool/test_ios_simulator.py
 python3 -B tool/test_ios_consumer.py
 ```
 
 Or specify an installed simulator with `--device <uuid>`; the script boots it
 if necessary. From the repository root, `make native_vision_ios_simulator` and
-`make test_vision_ios_simulator` invoke these tools.
+`make test_vision_ios_consumer` invoke these tools, and the iOS workflow runs
+the consumer test on every change.
 
-The Flutter integration suite compares against the existing official CPU
-references with unchanged tolerances: boxes, scores and keypoints; all 478
-3D landmarks; all 52 blendshapes; and 4×4 transforms. It covers file and pixel
-inputs, rotations, blank frames, two faces, video tracking/loss/re-entry, padded
-RGB/RGBA/BGRA, both libraries in the same app, error recovery and queued disposal.
-Model and input hashes are verified before inference. GPU requests must fail
-without preventing subsequent CPU creation.
-
-The runner saves the Flutter log and a report with the device/runtime, source
-revision and exact local-library manifests under root
-`build/ios-simulator-test-<timestamp>/`. The tests run inside the simulator as a
-Flutter debug app. Native C++ is compiled with optimizations. Simulator timing
-does not represent an iPhone's CPU, GPU, camera or thermal behavior.
+It builds a fresh Flutter app against the local runtime and compares its
+results with the official CPU references. It saves the Flutter log and a report
+with the runtime manifest under `build/codex-tmp/ios-consumer-*/`. The tests run
+inside the simulator as a Flutter debug app. Native C++ is compiled with
+optimizations. Simulator timing does not represent an iPhone's CPU, GPU, camera
+or thermal behavior.
 
 ## Artifact selection and current limits
 
@@ -140,6 +133,4 @@ python3 -B tool/build_ios_simulator.py --sdk iphoneos
 This writes `build/native/ios/arm64/libmediapipe.dylib` and verifies the physical
 device platform, architecture, exports and dependencies. No physical-device
 inference claim follows from those checks, and the package still rejects device
-builds. `tool/prepare_ios_release.py --simulator-report <report.json>` prepares
-deterministic simulator and device development archives, requiring a passing
-simulator report for the exact library hash.
+builds.

@@ -159,12 +159,6 @@ final class _WebReader implements VideoFileReader {
   var _closed = false;
 
   @override
-  int get width => _video.videoWidth;
-
-  @override
-  int get height => _video.videoHeight;
-
-  @override
   int get rotationDegrees => 0;
 
   @override

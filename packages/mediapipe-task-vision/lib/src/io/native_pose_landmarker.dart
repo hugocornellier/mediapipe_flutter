@@ -45,9 +45,8 @@ final class NativePoseLandmarker
   final bool _gpu;
   final bool _masks;
   mp.MpPoseLandmarkerPtr _task = nullptr;
-  late final IosBgraStorage? _iosBgra =
-      hasOfficialIosVisionRuntime() && iosImageStorageMode != 0
-      ? IosBgraStorage(iosImageStorageMode)
+  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
+      ? iosBgraStorage()
       : null;
 
   @override
