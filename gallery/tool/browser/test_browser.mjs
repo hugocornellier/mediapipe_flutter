@@ -135,11 +135,19 @@ async function alignmentCheck(page) {
   // The gallery has no overlay switch; `?test-hooks` installs this one.
   const showOverlay = show => page.evaluate(hide => window.__hideOverlay(hide), !show);
   const processed = () => Number(document.querySelector('video')?.getAttribute('data-processed-frames'));
+  // A worker overlay's canvas reaches the screen on its own schedule, which on
+  // a slow runner lags its drawing by more than a frame: with only the switch,
+  // a capture taken after the worker drew a frame without the overlay could
+  // still show an older frame with it. So its element is hidden too, a style
+  // change the page's next frame shows.
+  const showWorkerOverlays = shown => page.evaluate(visible => document
+    .querySelectorAll('[data-worker-overlay]')
+    .forEach(canvas => { canvas.style.visibility = visible ? '' : 'hidden'; }), shown);
   const hiddenAt = await page.evaluate(processed);
   await showOverlay(false);
-  // The page reads the switch when the next result rebuilds it, and a worker
-  // overlay receives it with the following frame's input, so the third frame
-  // is the first drawn without the overlay.
+  await showWorkerOverlays(false);
+  // Flutter's painter, where the worker cannot draw, reads the switch when the
+  // next result rebuilds the page; three results are enough for that.
   await wait(page, since => Number(document.querySelector('video')?.getAttribute('data-processed-frames')) >= since + 3,
     hiddenAt);
   // Keep the pointer, and any tooltip it raises, away from the preview.
@@ -209,6 +217,7 @@ async function alignmentCheck(page) {
       return measurement;
     }
   } finally {
+    await showWorkerOverlays(true);
     await showOverlay(true);
   }
 }
