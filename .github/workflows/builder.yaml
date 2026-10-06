@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # Core is a Flutter package (path_provider for the model store), so
-      # it needs Flutter's SDK; the maintainer tools use the Dart it ships.
+      # it needs Flutter's SDK; the Dart tools use the Dart it ships.
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.47.5'
@@ -29,13 +29,6 @@ jobs:
           flutter analyze --fatal-infos
           dart format --output=none --set-exit-if-changed .
           flutter test --reporter expanded
-      - name: Check maintainer tools
-        working-directory: tool/builder
-        run: |
-          dart pub get
-          dart analyze --fatal-infos
-          dart format --output=none --set-exit-if-changed .
-          dart bin/main.dart -h
       # Prepares the Android and macOS galleries with nothing but Dart; its
       # model pins and macOS task list must match the packages'.
       - name: Check the gallery builder

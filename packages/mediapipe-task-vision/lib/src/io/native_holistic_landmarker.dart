@@ -51,9 +51,8 @@ final class NativeHolisticLandmarker
   }
   final bool _gpu;
   mp.MpHolisticLandmarkerPtr _task = nullptr;
-  late final IosBgraStorage? _iosBgra =
-      hasOfficialIosVisionRuntime() && iosImageStorageMode != 0
-      ? IosBgraStorage(iosImageStorageMode)
+  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
+      ? iosBgraStorage()
       : null;
 
   @override

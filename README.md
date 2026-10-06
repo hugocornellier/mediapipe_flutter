@@ -28,8 +28,7 @@ runtime for its platform, with Google's pinned models bundled at build time.
 Add only the families you use. Each one depends on `mediapipe_core`, which
 bundles Google's MediaPipe engine once per app however many families use it,
 and holds the shared model store and browser runtime settings
-([core guide](packages/mediapipe-core/README.md)). `mediapipe_genai` (LLM
-inference) is a separate, experimental package.
+([core guide](packages/mediapipe-core/README.md)).
 
 ## Quick start
 
@@ -142,8 +141,8 @@ supported delegates and why any other is unavailable.
   OS versions, offline builds and browser hosting.
 - [Privacy and licenses](doc/privacy_and_licenses.md): what is downloaded, from
   where, and under which license.
-- [Migration](MIGRATION.md) from `mediapipe_flutter_*` and from Google's
-  `mediapipe_text` 0.0.1.
+- [Migration](MIGRATION.md) from Google's `mediapipe_text` and
+  `mediapipe_core` 0.0.1 previews.
 - [Gallery](gallery/README.md): the full demo app, also
   [live on GitHub Pages](https://hugocornellier.github.io/mediapipe_flutter/).
 - [Contributing](CONTRIBUTING.md), including how to add a task.

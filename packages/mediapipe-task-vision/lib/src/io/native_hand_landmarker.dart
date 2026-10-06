@@ -42,9 +42,8 @@ final class NativeHandLandmarker
   }
   final bool _gpu;
   mp.MpHandLandmarkerPtr _task = nullptr;
-  late final IosBgraStorage? _iosBgra =
-      hasOfficialIosVisionRuntime() && iosImageStorageMode != 0
-      ? IosBgraStorage(iosImageStorageMode)
+  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
+      ? iosBgraStorage()
       : null;
 
   @override

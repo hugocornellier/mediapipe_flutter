@@ -49,9 +49,7 @@ APK. `flutter run` builds, installs and launches the release app on the
 connected phone; the APK remains at `gallery/build/app/outputs/flutter-apk/app-release.apk`.
 It selects Google's released vision SDK and its Flutter plugin. Face Landmarker
 and Hand Landmarker support CPU and GPU, with Android YUV camera conversion.
-Hand has run on an emulator's CPU only so far; see
-[its status](../packages/mediapipe-task-vision/tool/HAND_LANDMARKER_STATUS.md). A physical Pixel 7
-Test Lab run validates both delegates and front/back camera capture; see
+A physical Pixel 7 Test Lab run validates both delegates and front/back camera capture; see
 [the Android Test Lab guide](tool/ANDROID_FACE_TESTLAB.md) to reproduce it
 without owning an Android device.
 
@@ -150,9 +148,5 @@ registers a Media Foundation virtual camera showing it (`tool/windows/vcam`).
 Both run `integration_test/real_camera_test.dart`, which checks capture, a face
 across stop/restart, and overlay alignment against the on-screen preview; the
 status matrix links the records. A physical webcam still differs in formats and
-exposure, so a manual pass remains useful. To check capture, prepare the target
-then use `flutter run -d windows --release -t tool/live_face_camera_smoke.dart`
-(or `-d linux`). It processes twenty CPU camera frames twice and records JSON in
-the system temporary directory; put a face in view and check the face count.
-Run the normal gallery's Face Landmarker page to check preview mirroring and
-visual landmark alignment; the smoke test displays counts rather than an overlay.
+exposure, so a manual pass remains useful: run the gallery's Face Landmarker page
+to check capture, preview mirroring and visual landmark alignment.

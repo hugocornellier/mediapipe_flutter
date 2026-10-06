@@ -49,9 +49,8 @@ final class NativeImageSegmenter
   final bool _gpu;
   mp.MpImageSegmenterPtr _task = nullptr;
   List<String> _labels = const [];
-  late final IosBgraStorage? _iosBgra =
-      hasOfficialIosVisionRuntime() && iosImageStorageMode != 0
-      ? IosBgraStorage(iosImageStorageMode)
+  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
+      ? iosBgraStorage()
       : null;
 
   /// The model's category order, read once while the task is initialized.

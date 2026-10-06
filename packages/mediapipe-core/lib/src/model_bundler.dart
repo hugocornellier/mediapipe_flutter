@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:http/http.dart' as http;
 
 import 'download_asset.dart';
 import 'model_bundle.dart';
@@ -127,7 +126,6 @@ Future<BundleResult> bundleModels(
   required bool declared,
   String? source,
   bool check = false,
-  http.Client? client,
 }) async {
   final lines = <String>[];
   final problems = <String>[];
@@ -180,7 +178,7 @@ Future<BundleResult> bundleModels(
       }
     } else if (!current) {
       try {
-        await downloadVerified(model, file, client: client, source: source);
+        await downloadVerified(model, file, source: source);
       } on DownloadException catch (error) {
         problems.add('Could not download $label. $error');
         continue;

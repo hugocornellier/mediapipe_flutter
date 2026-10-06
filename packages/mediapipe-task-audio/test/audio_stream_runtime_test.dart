@@ -18,10 +18,10 @@ import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart'
     show tasksRuntimeWheel;
 import 'package:test/test.dart';
 
-/// Audio stream mode on Google's native runtime (tool/AUDIO_STREAM.md,
-/// "Tests"): every case against Google's own stream on this host, the tail
-/// proven to be Google's flush, the emulation at the model's rate equal to
-/// the native stream to the last bit, and the stream's lifetime.
+/// Audio stream mode on Google's native runtime: every case against Google's
+/// own stream on this host, the tail proven to be Google's flush, the
+/// emulation at the model's rate equal to the native stream to the last bit,
+/// and the stream's lifetime.
 const _fixtures = 'test/fixtures';
 const _model = 'models/yamnet.tflite';
 
@@ -145,7 +145,7 @@ void main() {
           if (spec['rate'] == specs.sampleRate) name: spec,
         // Google's buffer is fed one sample at a time: a timestamp bound with
         // no packet would reach Google's converter, which reads the packet
-        // unchecked (tool/AUDIO_STREAM.md, risk 5).
+        // unchecked.
         'one-sample-blocks': {
           'clip': 'speech_16000_hz_mono.wav',
           'frames': 16000,

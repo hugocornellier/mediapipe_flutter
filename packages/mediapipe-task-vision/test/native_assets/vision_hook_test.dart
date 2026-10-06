@@ -194,28 +194,6 @@ void main() {
     },
   );
 
-  test('official_macos_landmark_tasks was removed, with the replacement', () {
-    expect(
-      testCodeBuildHook(
-        mainMethod: hook.main,
-        targetOS: OS.macOS,
-        targetArchitecture: Architecture.arm64,
-        userDefines: defines({
-          'tasks': ['hand_landmarker'],
-          'official_macos_landmark_tasks': true,
-        }),
-        check: (_, _) => fail('A removed setting was accepted'),
-      ),
-      throwsA(
-        isA<FormatException>().having(
-          (error) => error.message,
-          'message',
-          allOf(contains('was removed'), contains('tasks_runtime: true')),
-        ),
-      ),
-    );
-  });
-
   test("without core's opt-in, macOS leaves the engine tasks out", () async {
     // Not a build error: `dart run` builds an iOS or Android app's hooks for
     // a Mac host too. Creating such a task names the opt-in instead.

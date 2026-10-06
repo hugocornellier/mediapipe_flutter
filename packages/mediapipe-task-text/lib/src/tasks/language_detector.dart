@@ -1,4 +1,6 @@
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show classifierSettingsJson;
 
 import '../capabilities.dart';
 import '../results/decoders.dart';
@@ -39,13 +41,7 @@ final class LanguageDetector {
         options,
         capabilities: queryLanguageDetectorCapabilities,
         task: 'language_detector',
-        settings: classifierSettings(
-          displayNamesLocale: options.displayNamesLocale,
-          maxResults: options.maxResults,
-          scoreThreshold: options.scoreThreshold,
-          categoryAllowlist: options.categoryAllowlist,
-          categoryDenylist: options.categoryDenylist,
-        ),
+        settings: classifierSettingsJson(options),
         decode: decodeLanguageDetectorResult,
         request: (String text) => (text, const {}),
         native: openNativeLanguageDetector,

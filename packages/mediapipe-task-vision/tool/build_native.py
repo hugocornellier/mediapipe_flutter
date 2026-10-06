@@ -44,13 +44,6 @@ FLAGS = [
 # The C entry points live in static archives the linker would otherwise drop,
 # because nothing inside the shared object references them.
 FORCED = "MpImageCreateFromFile"
-# Legacy face smoke entry points.
-SYMBOLS = [
-    "MpFaceDetectorCreate", "MpFaceDetectorDetectImage",
-    "MpFaceDetectorCloseResult", "MpFaceDetectorClose",
-    "MpImageCreateFromFile", "MpImageCreateFromUint8Data",
-    "MpImageGetWidth", "MpImageGetHeight", "MpImageFree", "MpErrorFree",
-]
 # Objective-C names are process-global even when the linker hides C symbols.
 # One library removes the task-versus-task collision, but an app that also
 # loads LiteRT or MediaPipe directly still brings its own copies of these

@@ -6,7 +6,7 @@ import 'dart:typed_data';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart'
-    show checkClassifierSettings;
+    show ClassifierSettings, checkClassifierSettings;
 import 'package:meta/meta.dart';
 
 import '../models.dart' show AudioModels;
@@ -51,7 +51,8 @@ enum AudioRunningMode {
 }
 
 /// Options for Google's Audio Classifier.
-final class AudioClassifierOptions extends TaskOptions {
+final class AudioClassifierOptions extends TaskOptions
+    implements ClassifierSettings {
   /// Defaults match Google's: every category, no threshold.
   AudioClassifierOptions({
     super.model,
@@ -67,31 +68,30 @@ final class AudioClassifierOptions extends TaskOptions {
   }) : categoryAllowlist = List.unmodifiable(categoryAllowlist ?? const []),
        categoryDenylist = List.unmodifiable(categoryDenylist ?? const []),
        super(family: 'mediapipe_audio', registry: AudioModels.byName) {
-    checkClassifierSettings(
-      maxResults: maxResults,
-      scoreThreshold: scoreThreshold,
-      displayNamesLocale: displayNamesLocale,
-      categoryAllowlist: this.categoryAllowlist,
-      categoryDenylist: this.categoryDenylist,
-    );
+    checkClassifierSettings(this);
   }
 
   /// Clips, each classified whole, or a stream fed in blocks.
   final AudioRunningMode runningMode;
 
   /// Locale of the display names in the model metadata.
+  @override
   final String? displayNamesLocale;
 
   /// Maximum categories per head and chunk; negative returns all of them.
+  @override
   final int maxResults;
 
   /// Categories scoring below this are dropped.
+  @override
   final double scoreThreshold;
 
   /// Category names to keep; exclusive with [categoryDenylist].
+  @override
   final List<String> categoryAllowlist;
 
   /// Category names to drop; exclusive with [categoryAllowlist].
+  @override
   final List<String> categoryDenylist;
 }
 

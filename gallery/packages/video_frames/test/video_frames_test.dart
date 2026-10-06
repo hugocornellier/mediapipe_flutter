@@ -13,14 +13,7 @@ void main() {
 
   setUp(() {
     calls = [];
-    info = {
-      'id': 7,
-      'width': 640,
-      'height': 360,
-      'rotation': 90,
-      'durationUs': 2000000,
-      'frameRate': 30,
-    };
+    info = {'id': 7, 'rotation': 90, 'durationUs': 2000000, 'frameRate': 30};
     frames = [
       {
         'timestampUs': 33367,
@@ -62,7 +55,6 @@ void main() {
   test('open reports the file and next returns frames, then null', () async {
     final reader = await VideoFileReader.open('/clips/a.mp4');
     expect(calls.single.arguments, {'path': '/clips/a.mp4'});
-    expect((reader.width, reader.height), (640, 360));
     expect(reader.rotationDegrees, 90);
     expect(reader.duration, const Duration(seconds: 2));
     // An integer rate from the channel still reads as a double.

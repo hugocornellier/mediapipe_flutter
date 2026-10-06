@@ -7,9 +7,9 @@
 /// getters.
 library;
 
-import 'dart:typed_data';
-
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show decodeClassifications, decodeEmbedding;
 
 import '../types/results.dart';
 
@@ -26,23 +26,7 @@ TextEmbedderResult decodeTextEmbedderResult(Map<String, dynamic> json) =>
       timestampMilliseconds: _timestamp(json),
       embeddings: [
         for (final head in (json['embeddings'] as List).cast<Map>())
-          switch (head['floatEmbedding']) {
-            final List floats => Embedding(
-              floatEmbedding: Float32List.fromList([
-                for (final v in floats) (v as num).toDouble(),
-              ]),
-              headIndex: (head['headIndex'] as num).toInt(),
-              headName: _label(head['headName']),
-            ),
-            _ => Embedding(
-              quantizedEmbedding: Uint8List.fromList([
-                for (final v in head['quantizedEmbedding'] as List)
-                  (v as num).toInt(),
-              ]),
-              headIndex: (head['headIndex'] as num).toInt(),
-              headName: _label(head['headName']),
-            ),
-          },
+          decodeEmbedding(head),
       ],
     );
 
@@ -99,25 +83,8 @@ List<ProofreadingCorrection> _corrections(Object? value) => [
 
 List<Classifications> _classifications(Map<String, dynamic> json) => [
   for (final head in (json['classifications'] as List).cast<Map>())
-    Classifications(
-      categories: [
-        for (final value in (head['categories'] as List).cast<Map>())
-          MediaPipeCategory(
-            index: (value['index'] as num?)?.toInt() ?? -1,
-            score: (value['score'] as num).toDouble(),
-            categoryName: _label(value['categoryName']),
-            displayName: _label(value['displayName']),
-          ),
-      ],
-      headIndex: (head['headIndex'] as num).toInt(),
-      headName: _label(head['headName']),
-    ),
+    decodeClassifications(head),
 ];
 
 int? _timestamp(Map<String, dynamic> json) =>
     (json['timestampMs'] as num?)?.toInt();
-
-/// Google's browser and Android SDKs report an absent label as an empty
-/// string; its C, Python and iOS APIs report none, as the Dart API does.
-String? _label(Object? value) =>
-    value is String && value.isNotEmpty ? value : null;

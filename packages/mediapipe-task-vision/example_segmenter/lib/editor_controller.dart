@@ -44,7 +44,6 @@ class EditorController extends ChangeNotifier {
   Future<void>? _loading;
   Future<void>? _closing;
   double? lastInferenceMs;
-  int completedRequests = 0;
   int coalescedRequests = 0;
 
   bool get busy => _draining != null;
@@ -170,7 +169,6 @@ class EditorController extends ChangeNotifier {
         final watch = Stopwatch()..start();
         try {
           final result = await _backend.segment(request.strokes);
-          completedRequests++;
           if (!_closed &&
               request.generation == _generation &&
               request.revision == _revision) {

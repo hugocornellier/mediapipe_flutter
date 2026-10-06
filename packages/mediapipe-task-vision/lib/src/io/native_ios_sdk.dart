@@ -21,6 +21,11 @@ const iosImageStorageMode = int.fromEnvironment(
   defaultValue: 2,
 );
 
+/// A task's own BGRA storage on the official iOS SDK adapter, or null when
+/// [iosImageStorageMode] turns it off. The task closes it.
+IosBgraStorage? iosBgraStorage() =>
+    iosImageStorageMode == 0 ? null : IosBgraStorage(iosImageStorageMode);
+
 @Native<Int Function()>(symbol: 'MpIosSdkVersion', assetId: _landmarkerAsset)
 external int _landmarkerSdkVersion();
 

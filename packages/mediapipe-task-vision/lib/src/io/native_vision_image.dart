@@ -1,9 +1,10 @@
 /// Shared native plumbing for every task served by the combined runtime.
 ///
-/// The two face tasks keep their own copies while their own per-task libraries
-/// are published: each generated binding set declares its own `MpImageFormat`
-/// and `MpImagePtr`, so the Dart types do not interchange even though the ABI
-/// is identical.
+/// The two face tasks create their images through their own bindings while
+/// their own per-task libraries are published: each generated binding set
+/// declares its own `MpImageFormat` and `MpImagePtr`, so the Dart types do not
+/// interchange even though the ABI is identical. They share the pixel packing
+/// and [nativeString].
 library;
 
 import 'dart:ffi';
@@ -44,8 +45,37 @@ mp.MpImagePtr createVisionImage(
     );
     return imageOut.value;
   }
-  final bytes = input.pixels!;
   final expandRgb = expandRgbForGpu && input.format == VisionPixelFormat.rgb;
+  final (pixels, byteCount) = packVisionPixels(
+    arena,
+    input,
+    expandRgb: expandRgb,
+  );
+  checked(
+    (error) => mp.MpImageCreateFromUint8Data(
+      input.format == VisionPixelFormat.rgb && !expandRgb
+          ? mp.MpImageFormat.kMpImageFormatSrgb
+          : mp.MpImageFormat.kMpImageFormatSrgba,
+      input.width!,
+      input.height!,
+      pixels,
+      byteCount,
+      imageOut,
+      error,
+    ),
+  );
+  return imageOut.value;
+}
+
+/// Copies [input]'s pixels into [arena] without row padding, as Google's C API
+/// takes them: BGRA becomes RGBA, and RGB gains opaque alpha when [expandRgb]
+/// is set. Returns the buffer and its length in bytes.
+(Pointer<Uint8>, int) packVisionPixels(
+  Arena arena,
+  VisionImage input, {
+  required bool expandRgb,
+}) {
+  final bytes = input.pixels!;
   final rowSize = input.width! * (expandRgb ? 4 : input.format!.channels);
   final byteCount = rowSize * input.height!;
   final pixels = arena<Uint8>(byteCount);
@@ -79,20 +109,7 @@ mp.MpImagePtr createVisionImage(
       );
     }
   }
-  checked(
-    (error) => mp.MpImageCreateFromUint8Data(
-      input.format == VisionPixelFormat.rgb && !expandRgb
-          ? mp.MpImageFormat.kMpImageFormatSrgb
-          : mp.MpImageFormat.kMpImageFormatSrgba,
-      input.width!,
-      input.height!,
-      pixels,
-      byteCount,
-      imageOut,
-      error,
-    ),
-  );
-  return imageOut.value;
+  return (pixels, byteCount);
 }
 
 /// Calls [call] and turns a non-OK status into an exception from [onError].

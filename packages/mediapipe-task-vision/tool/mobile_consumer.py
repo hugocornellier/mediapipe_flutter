@@ -1,6 +1,5 @@
 """Create isolated Flutter apps containing the existing vision test suites."""
 import json
-from pathlib import Path
 import re
 import shutil
 

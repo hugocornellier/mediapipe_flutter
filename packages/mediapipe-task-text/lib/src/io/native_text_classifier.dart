@@ -17,15 +17,7 @@ final class NativeTextClassifier
     using((arena) {
       final native = arena<mp.MpTextClassifierOptions>();
       fillTextBaseOptions(native.ref.baseOptions, options, arena);
-      fillTextClassifierOptions(
-        native.ref.classifierOptions,
-        arena,
-        displayNamesLocale: options.displayNamesLocale,
-        maxResults: options.maxResults,
-        scoreThreshold: options.scoreThreshold,
-        categoryAllowlist: options.categoryAllowlist,
-        categoryDenylist: options.categoryDenylist,
-      );
+      fillTextClassifierOptions(native.ref.classifierOptions, arena, options);
       final output = arena<Pointer<Void>>();
       checkTextStatus((error) => mp.classifierCreate(native, output, error));
       handle = output.value;

@@ -100,8 +100,6 @@ class VideoFileReader {
       *error = path + " has no video track.";
       return false;
     }
-    width_ = GST_VIDEO_INFO_WIDTH(&info);
-    height_ = GST_VIDEO_INFO_HEIGHT(&info);
     if (GST_VIDEO_INFO_FPS_D(&info) > 0) {
       frame_rate_ = static_cast<double>(GST_VIDEO_INFO_FPS_N(&info)) /
                     GST_VIDEO_INFO_FPS_D(&info);
@@ -128,8 +126,6 @@ class VideoFileReader {
 
   FlValue* Info() const {
     FlValue* info = fl_value_new_map();
-    fl_value_set_string_take(info, "width", fl_value_new_int(width_));
-    fl_value_set_string_take(info, "height", fl_value_new_int(height_));
     fl_value_set_string_take(info, "rotation", fl_value_new_int(rotation_));
     fl_value_set_string_take(info, "durationUs", fl_value_new_int(duration_us_));
     fl_value_set_string_take(info, "frameRate", fl_value_new_float(frame_rate_));
@@ -192,8 +188,6 @@ class VideoFileReader {
  private:
   GstElement* pipeline_ = nullptr;
   GstAppSink* appsink_ = nullptr;
-  int width_ = 0;
-  int height_ = 0;
   int rotation_ = 0;
   int64_t duration_us_ = 0;
   double frame_rate_ = 0;

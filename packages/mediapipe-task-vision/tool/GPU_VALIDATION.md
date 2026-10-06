@@ -70,8 +70,8 @@ sets Mesa's `force_gl_renderer` to rename the same software renderer, plus
 `EGL_PLATFORM=surfaceless` because the runner has no display. The receipt
 records the override as `renderer_override`. The job then runs the face suite's
 refusal test without the rename, which must fail with `gpuUnavailable` and never
-fall back to CPU. For a physical GPU, run
-[`test_linux_gpu.sh`](test_linux_gpu.sh), which uses no override.
+fall back to CPU. A physical GPU needs no override; the script for that run,
+`test_linux_gpu.sh`, is in git history at `9383185`.
 
 This validates equivalence to the official task on the tested host. It is not a
 claim of bit-identical GPU output across hardware/drivers, universal model

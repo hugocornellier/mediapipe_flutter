@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_core/platform_interface.dart' show ClassifierSettings;
 import 'package:mediapipe_vision/platform_interface.dart';
 
 import 'src/capabilities/official_runtime_io.dart'
@@ -87,8 +88,8 @@ abstract final class MediaPipeVisionAndroid {
       'detectionConfidence': o.minHandDetectionConfidence,
       'presenceConfidence': o.minHandPresenceConfidence,
       'trackingConfidence': o.minTrackingConfidence,
-      'canned': _classifier(o.cannedGesturesClassifierOptions),
-      'custom': _classifier(o.customGesturesClassifierOptions),
+      'canned': _limits(o.cannedGesturesClassifierOptions),
+      'custom': _limits(o.customGesturesClassifierOptions),
     }, (r, t) => decodeGestureRecognizerResult(_hands(r, t)));
     holisticLandmarkerBackendFactory = (o) => AndroidVisionTask.create({
       'task': 'holistic_landmarker',
@@ -112,24 +113,12 @@ abstract final class MediaPipeVisionAndroid {
     objectDetectorBackendFactory = (o) => AndroidVisionTask.create({
       'task': 'object_detector',
       ..._base(o, o.runningMode),
-      'classifier': _limits(
-        maxResults: o.maxResults,
-        scoreThreshold: o.scoreThreshold,
-        displayNamesLocale: o.displayNamesLocale,
-        categoryAllowlist: o.categoryAllowlist,
-        categoryDenylist: o.categoryDenylist,
-      ),
+      'classifier': _limits(o),
     }, (r, t) => decodeObjectDetectorResult(_detections(r, t)));
     imageClassifierBackendFactory = (o) => AndroidVisionTask.create({
       'task': 'image_classifier',
       ..._base(o, o.runningMode),
-      'classifier': _limits(
-        maxResults: o.maxResults,
-        scoreThreshold: o.scoreThreshold,
-        displayNamesLocale: o.displayNamesLocale,
-        categoryAllowlist: o.categoryAllowlist,
-        categoryDenylist: o.categoryDenylist,
-      ),
+      'classifier': _limits(o),
     }, (r, t) => decodeImageClassifierResult(_classifications(r, t)));
     imageEmbedderBackendFactory = (o) => AndroidVisionTask.create({
       'task': 'image_embedder',
@@ -163,27 +152,13 @@ abstract final class MediaPipeVisionAndroid {
     }
   }
 
-  static Map<String, Object?> _limits({
-    required int maxResults,
-    required double scoreThreshold,
-    required String? displayNamesLocale,
-    required List<String> categoryAllowlist,
-    required List<String> categoryDenylist,
-  }) => {
-    'maxResults': maxResults,
-    'scoreThreshold': scoreThreshold,
-    'displayNamesLocale': displayNamesLocale,
-    'allowlist': categoryAllowlist,
-    'denylist': categoryDenylist,
+  static Map<String, Object?> _limits(ClassifierSettings o) => {
+    'maxResults': o.maxResults,
+    'scoreThreshold': o.scoreThreshold,
+    'displayNamesLocale': o.displayNamesLocale,
+    'allowlist': o.categoryAllowlist,
+    'denylist': o.categoryDenylist,
   };
-
-  static Map<String, Object?> _classifier(ClassifierOptions o) => _limits(
-    maxResults: o.maxResults,
-    scoreThreshold: o.scoreThreshold,
-    displayNamesLocale: o.displayNamesLocale,
-    categoryAllowlist: o.categoryAllowlist,
-    categoryDenylist: o.categoryDenylist,
-  );
 
   // LIVE_STREAM runs on Google's VIDEO graph, with its flow limiter in the
   // task runner, so the plugin creates a VIDEO task for it.

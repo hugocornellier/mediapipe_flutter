@@ -24,13 +24,6 @@ Future<void> main(List<String> arguments) => build(arguments, (
       'mediapipe_core.tasks_runtime must be a boolean.',
     );
   }
-  if (input.userDefines['use_macos_vision_runtime'] != null) {
-    throw const FormatException(
-      'mediapipe_core.use_macos_vision_runtime was removed: core now '
-      "bundles Google's macOS engine and the vision tasks use it. Delete the "
-      'key; set tasks_runtime: true instead.',
-    );
-  }
   // Family hooks download through the same source (hookAssetSource).
   final source = hookAssetSource(input);
   if (source != null) output.metadata['asset_source'] = source;

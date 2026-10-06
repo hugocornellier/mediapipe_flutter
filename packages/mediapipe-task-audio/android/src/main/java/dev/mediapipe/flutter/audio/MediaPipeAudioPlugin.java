@@ -40,12 +40,7 @@ public final class MediaPipeAudioPlugin implements FlutterPlugin {
   }
 
   private TaskHost.Task create(MethodCall call, TaskHost.Model model) {
-    BaseOptions.Builder base = BaseOptions.builder();
-    if (model.bytes() != null) {
-      base.setModelAssetBuffer(model.direct());
-    } else {
-      base.setModelAssetPath(model.path());
-    }
+    BaseOptions.Builder base = model.baseOptions();
     boolean stream = "AUDIO_STREAM".equals(call.argument("runningMode"));
     AudioClassifierOptions.Builder options = AudioClassifierOptions.builder()
         .setBaseOptions(base.build())
@@ -58,21 +53,8 @@ public final class MediaPipeAudioPlugin implements FlutterPlugin {
       options.setResultListener(result -> host.emit(request, streamResult(result), null));
       options.setErrorListener(error -> host.emit(request, null, error.toString()));
     }
-    if (call.hasArgument("maxResults")) {
-      options.setMaxResults(TaskHost.number(call, "maxResults"));
-    }
-    if (call.hasArgument("scoreThreshold")) {
-      options.setScoreThreshold(TaskHost.decimal(call, "scoreThreshold"));
-    }
-    if (call.hasArgument("displayNamesLocale")) {
-      options.setDisplayNamesLocale(call.argument("displayNamesLocale"));
-    }
-    if (call.hasArgument("categoryAllowlist")) {
-      options.setCategoryAllowlist(call.argument("categoryAllowlist"));
-    }
-    if (call.hasArgument("categoryDenylist")) {
-      options.setCategoryDenylist(call.argument("categoryDenylist"));
-    }
+    TaskHost.classifierOptions(call, options::setDisplayNamesLocale, options::setMaxResults,
+        options::setScoreThreshold, options::setCategoryAllowlist, options::setCategoryDenylist);
     AudioClassifier classifier = AudioClassifier.createFromOptions(context, options.build());
     return new TaskHost.Task() {
       @Override public Object call(String method, MethodCall request) {

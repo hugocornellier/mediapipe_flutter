@@ -28,7 +28,7 @@ void main() {
       );
       final TextEmbedderResult result = executor.embed('Hello, world!');
       expect(result.embeddings, isNotEmpty);
-      executor.dispose();
+      executor.close();
     });
 
     test('run multiple tasks', () {
@@ -39,7 +39,7 @@ void main() {
       expect(result.embeddings, isNotEmpty);
       final TextEmbedderResult result2 = executor.embed('Hello, world!');
       expect(result2.embeddings, isNotEmpty);
-      executor.dispose();
+      executor.close();
     });
 
     test('unpack a result', () {
@@ -54,7 +54,7 @@ void main() {
       expect(embedding.length, 100);
       expect(embedding.floatEmbedding, isNotNull);
       expect(embedding.floatEmbedding![0], closeTo(1.7475, 0.0001));
-      executor.dispose();
+      executor.close();
     });
 
     test('quantize results when requested', () {
@@ -69,7 +69,7 @@ void main() {
       expect(embedding.quantizedEmbedding![0], 127);
       expect(embedding.length, 100);
       expect(embedding.quantizedEmbedding, isNotNull);
-      executor.dispose();
+      executor.close();
     });
 
     test('normalize', () {
@@ -84,7 +84,7 @@ void main() {
       expect(embedding.floatEmbedding![0], closeTo(0.1560, 0.0001));
       expect(embedding.length, 100);
       expect(embedding.floatEmbedding, isNotNull);
-      executor.dispose();
+      executor.close();
     });
   });
 }

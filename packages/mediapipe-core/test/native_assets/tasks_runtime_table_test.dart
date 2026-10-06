@@ -189,30 +189,6 @@ void main() {
     }
   });
 
-  test('use_macos_vision_runtime was removed, with the replacement', () {
-    expect(
-      testCodeBuildHook(
-        mainMethod: hook.main,
-        targetOS: OS.macOS,
-        targetArchitecture: Architecture.arm64,
-        userDefines: PackageUserDefines(
-          workspacePubspec: PackageUserDefinesSource(
-            defines: {'tasks_runtime': true, 'use_macos_vision_runtime': true},
-            basePath: Uri.directory('.'),
-          ),
-        ),
-        check: (_, _) => fail('A removed setting was accepted'),
-      ),
-      throwsA(
-        isA<FormatException>().having(
-          (error) => error.message,
-          'message',
-          allOf(contains('was removed'), contains('tasks_runtime: true')),
-        ),
-      ),
-    );
-  });
-
   test('macOS stays inert until the app opts in', () async {
     await testCodeBuildHook(
       mainMethod: hook.main,

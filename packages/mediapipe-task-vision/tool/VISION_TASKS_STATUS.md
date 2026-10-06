@@ -3,9 +3,9 @@
 Where each MediaPipe vision task runs, on which delegate, and what proves it.
 The capability queries in `lib/src/capabilities.dart` are the source of truth;
 this table restates them for readers and must change in the same commit.
-Hand and Face Landmarker have deeper per-platform evidence in
-[HAND_LANDMARKER_STATUS.md](HAND_LANDMARKER_STATUS.md) and
-[FACE_LANDMARKER_STATUS.md](FACE_LANDMARKER_STATUS.md).
+Hand and Face Landmarker's deeper per-platform evidence pages,
+`HAND_LANDMARKER_STATUS.md` and `FACE_LANDMARKER_STATUS.md`, are in git history
+at `9383185`.
 
 Every target uses Google's official runtime, with no rebuild of MediaPipe
 except the macOS face tasks' default archives:
@@ -75,8 +75,7 @@ emulator's software GL cannot run it.
   runs a Flutter app. Linux GPU (Face, Hand, Pose, Gesture, Object Detector,
   Image Classifier and Image Segmenter) matches Google's own GPU output on a CI
   runner whose Mesa renderer is renamed past Google's software-GPU check
-  (`tool/prepare_gpu_reference.py --test`); a physical GPU run is pending
-  ([`test_linux_gpu.sh`](test_linux_gpu.sh)).
+  (`tool/prepare_gpu_reference.py --test`); a physical GPU run is pending.
 
 ## Upstream limits
 
@@ -104,8 +103,7 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
   GPU on an Adreno GPU (Galaxy S24): person reads 14, not 15. Confidence masks
   are right, so the most confident class recovers it.
 - UP-022: Google's Android stateful Interactive Segmenter drops a model given
-  as bytes; the plugin passes it a private file instead. UP-021 is the web
-  equivalent for the point-based task.
+  as bytes; the plugin passes it a private file instead.
 - UP-025: Google's Windows runtime uploads usage logs to
   `play.googleapis.com`, and closing a task waits for the upload: usually one
   round trip, sometimes 20 to 34 s. CI blocks the host so tests do not depend

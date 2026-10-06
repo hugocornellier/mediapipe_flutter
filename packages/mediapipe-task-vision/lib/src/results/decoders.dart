@@ -9,6 +9,8 @@ library;
 import 'dart:typed_data';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show decodeCategory, decodeClassifications, decodeEmbedding, decodeLabel;
 
 import '../types/results.dart';
 import 'landmark_codec.dart';
@@ -221,7 +223,7 @@ FaceDetectorResult decodeFaceDetectorResult(VisionResultData data) =>
                 NormalizedKeypoint(
                   x: _number((k as Map)['x']),
                   y: _number(k['y']),
-                  label: _label(k['label']),
+                  label: decodeLabel(k['label']),
                   score: _optional(k['score']),
                 ),
             ],
@@ -252,11 +254,7 @@ ImageClassifierResult decodeImageClassifierResult(VisionResultData data) =>
       timestampMilliseconds: data.timestamp,
       classifications: [
         for (final head in data.result['classifications'] as List)
-          Classifications(
-            categories: _categories((head as Map)['categories']),
-            headIndex: head['headIndex'] as int,
-            headName: _label(head['headName']),
-          ),
+          decodeClassifications(head as Map),
       ],
     );
 
@@ -268,22 +266,7 @@ ImageEmbedderResult decodeImageEmbedderResult(VisionResultData data) =>
       timestampMilliseconds: data.timestamp,
       embeddings: [
         for (final head in data.result['embeddings'] as List)
-          Embedding(
-            floatEmbedding: switch ((head as Map)['floatEmbedding']) {
-              final Float32List values => values,
-              final List values => Float32List.fromList([
-                for (final v in values) _number(v),
-              ]),
-              _ => null,
-            },
-            quantizedEmbedding: switch (head['quantizedEmbedding']) {
-              final Uint8List values => values,
-              final List values => Uint8List.fromList(values.cast<int>()),
-              _ => null,
-            },
-            headIndex: head['headIndex'] as int,
-            headName: _label(head['headName']),
-          ),
+          decodeEmbedding(head as Map),
       ],
     );
 
@@ -379,10 +362,6 @@ BoundingBox _box(Object? json) {
   );
 }
 
-/// Google's browser API reports an absent label as an empty string.
-String? _label(Object? value) =>
-    value is String && value.isNotEmpty ? value : null;
-
 double _number(Object? value) => (value as num).toDouble();
 double? _optional(Object? value) => value == null ? null : _number(value);
 
@@ -423,11 +402,5 @@ List<List<MediaPipeCategory>> _categoryLists(Object? json) => [
 ];
 
 List<MediaPipeCategory> _categories(Object? json) => [
-  for (final raw in json as List)
-    MediaPipeCategory(
-      index: (raw as Map)['index'] as int? ?? -1,
-      score: _number(raw['score']),
-      categoryName: _label(raw['categoryName']),
-      displayName: _label(raw['displayName']),
-    ),
+  for (final raw in json as List) decodeCategory(raw as Map),
 ];

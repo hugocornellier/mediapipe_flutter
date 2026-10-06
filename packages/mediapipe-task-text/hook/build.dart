@@ -5,12 +5,6 @@ import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
 import 'package:native_toolchain_c/native_toolchain_c.dart';
 
 Future<void> main(List<String> args) => build(args, (input, output) async {
-  if (input.userDefines['legacy_runtime'] == true) {
-    throw UnsupportedError(
-      'The 2024 text runtime has been retired. Enable '
-      'mediapipe_core.tasks_runtime: true and remove legacy_runtime.',
-    );
-  }
   if (!input.config.buildCodeAssets) return;
   if (input.metadata['mediapipe_core']['tasks_runtime'] != true) {
     // Browsers and Android run Google's own SDKs through this plugin instead.

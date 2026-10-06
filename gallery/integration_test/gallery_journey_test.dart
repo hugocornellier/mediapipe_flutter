@@ -466,8 +466,7 @@ Future<void> _videoFiles(GalleryAssets assets) async {
   debugPrint(
     'VIDEO_FILES scene.mp4: rotation ${scene.rotationDegrees}, sizes $sizes, '
     '${timestamps.length} frames from ${timestamps.take(3).toList()} us; '
-    'rotated.mp4: rotation ${rotated.rotationDegrees}, '
-    '${rotated.width}x${rotated.height}',
+    'rotated.mp4: rotation ${rotated.rotationDegrees}',
   );
   expect(scene.rotationDegrees, 0);
   expect(sizes, {(960, 540)});

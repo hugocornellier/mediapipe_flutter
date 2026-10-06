@@ -15,8 +15,6 @@ Future<VideoFileReader> open(String path) async {
 final class _ChannelReader implements VideoFileReader {
   _ChannelReader(Map<String, Object?> info)
     : _id = info['id']! as int,
-      width = info['width']! as int,
-      height = info['height']! as int,
       rotationDegrees = info['rotation']! as int,
       duration = switch (info['durationUs']) {
         final int microseconds when microseconds > 0 => Duration(
@@ -31,12 +29,6 @@ final class _ChannelReader implements VideoFileReader {
 
   final int _id;
   var _closed = false;
-
-  @override
-  final int width;
-
-  @override
-  final int height;
 
   @override
   final int rotationDegrees;

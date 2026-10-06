@@ -9,7 +9,7 @@ import '../runner/native_interface.dart';
 import '../types/options.dart';
 import '../types/results.dart';
 import '../types/vision_types.dart';
-import 'pixel_conversion.dart';
+import 'native_vision_image.dart' show nativeString, packVisionPixels;
 import 'native_ios_sdk.dart';
 import 'native_desktop_runtime.dart';
 
@@ -98,44 +98,15 @@ final class NativeFaceDetector implements NativeVisionTask<FaceDetectorResult> {
           ),
         );
       } else {
-        final bytes = input.pixels!;
         // Apple's GPU image upload cannot accept three-channel ImageFrames, so
         // GPU input gets opaque alpha on every host, as in the GPU references.
         final expandRgb =
             _gpu && !_officialIos && input.format == VisionPixelFormat.rgb;
-        final rowSize = input.width! * (expandRgb ? 4 : input.format!.channels);
-        final byteCount = rowSize * input.height!;
-        final pixels = arena<Uint8>(byteCount);
-        final packed = pixels.asTypedList(byteCount);
-        if (expandRgb) {
-          for (var y = 0; y < input.height!; y++) {
-            for (var x = 0; x < input.width!; x++) {
-              final source = y * input.bytesPerRow! + x * 3;
-              final target = y * rowSize + x * 4;
-              packed[target] = bytes[source];
-              packed[target + 1] = bytes[source + 1];
-              packed[target + 2] = bytes[source + 2];
-              packed[target + 3] = 255;
-            }
-          }
-        } else if (input.format == VisionPixelFormat.bgra) {
-          copyBgraToRgba(
-            source: bytes,
-            target: packed,
-            width: input.width!,
-            height: input.height!,
-            bytesPerRow: input.bytesPerRow!,
-          );
-        } else {
-          for (var y = 0; y < input.height!; y++) {
-            packed.setRange(
-              y * rowSize,
-              (y + 1) * rowSize,
-              bytes,
-              y * input.bytesPerRow!,
-            );
-          }
-        }
+        final (pixels, byteCount) = packVisionPixels(
+          arena,
+          input,
+          expandRgb: expandRgb,
+        );
         _checked(
           (error) => mp.MpImageCreateFromUint8Data(
             input.format == VisionPixelFormat.rgb && !expandRgb
@@ -217,7 +188,7 @@ void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
     final status = call(error);
     if (status != mp.MpStatus.kMpOk) {
       throw TaskException(
-        _string(error.value) ?? 'MediaPipe returned ${status.name}',
+        nativeString(error.value) ?? 'MediaPipe returned ${status.name}',
         statusCode: status.value,
       );
     }
@@ -225,13 +196,6 @@ void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
     if (error.value != nullptr) mp.MpErrorFree(error.value);
     calloc.free(error);
   }
-}
-
-String? _string(Pointer<Char> pointer) {
-  if (pointer == nullptr) return null;
-  final value = pointer.cast<Utf8>().toDartString();
-  // The official Python API treats empty optional C strings as absent.
-  return value.isEmpty ? null : value;
 }
 
 Detection _copyDetection(mp.MpDetection value) => Detection(
@@ -246,8 +210,8 @@ Detection _copyDetection(mp.MpDetection value) => Detection(
       MediaPipeCategory(
         index: value.categories[i].index,
         score: value.categories[i].score,
-        categoryName: _string(value.categories[i].category_name),
-        displayName: _string(value.categories[i].display_name),
+        categoryName: nativeString(value.categories[i].category_name),
+        displayName: nativeString(value.categories[i].display_name),
       ),
   ],
   keypoints: [
@@ -255,7 +219,7 @@ Detection _copyDetection(mp.MpDetection value) => Detection(
       NormalizedKeypoint(
         x: value.keypoints[i].x,
         y: value.keypoints[i].y,
-        label: _string(value.keypoints[i].label),
+        label: nativeString(value.keypoints[i].label),
         score: value.keypoints[i].has_score ? value.keypoints[i].score : null,
       ),
   ],

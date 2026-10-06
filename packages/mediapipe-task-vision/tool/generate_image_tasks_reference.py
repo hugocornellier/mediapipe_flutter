@@ -37,7 +37,6 @@ def use_header_embedding_layout():
     allocation on every embed (under glibc this surfaced as "corrupted size vs.
     prev_size" on GPU) and reads the timestamp flag from padding.
     """
-    global vision
     import ctypes
     import importlib
     from mediapipe.tasks.python.components.containers import embedding_result_c as module

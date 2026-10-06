@@ -1,6 +1,5 @@
 /// Google's audio stream, emulated on its clips mode: the stream in browsers,
-/// where Google has none, and the oracle the native stream is tested against
-/// (tool/AUDIO_STREAM.md, decisions 3 and 6).
+/// where Google has none, and the oracle the native stream is tested against.
 library;
 
 import 'dart:async';
@@ -28,7 +27,7 @@ typedef ClipClassifier =
 /// resamples each window on its own, unlike its streaming resampler: some
 /// windows then differ from Google's stream by steps of 1/256 of a score, at
 /// most one on speech and up to 22 on a noisy signal, as Google's own clips
-/// mode does (tool/AUDIO_STREAM.md, "What shipped").
+/// mode does.
 final class EmulatedAudioStream {
   /// Emulates the stream of a model with [_specs] over [_classify],
   /// delivering to [_results].

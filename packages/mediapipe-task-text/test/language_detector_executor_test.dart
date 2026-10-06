@@ -28,7 +28,7 @@ void main() {
       );
       final LanguageDetectorResult result = executor.detect('Hello, world!');
       expect(result.predictions, isNotEmpty);
-      executor.dispose();
+      executor.close();
     });
 
     test('run multiple tasks', () {
@@ -41,7 +41,7 @@ void main() {
         'Hello, world, again!',
       );
       expect(result2.predictions, isNotEmpty);
-      executor.dispose();
+      executor.close();
     });
 
     test('unpack a result', () {
@@ -52,7 +52,7 @@ void main() {
       final prediction = result.predictions.first;
       expect(prediction.languageCode, equals('en'));
       expect(prediction.probability, greaterThan(0.99));
-      executor.dispose();
+      executor.close();
     });
 
     test('unpack a Spanish result', () {
@@ -63,7 +63,7 @@ void main() {
       final prediction = result.predictions.first;
       expect(prediction.languageCode, equals('es'));
       expect(prediction.probability, greaterThan(0.99));
-      executor.dispose();
+      executor.close();
     });
 
     test('use the denylist', () {
@@ -77,7 +77,7 @@ void main() {
       final prediction = result.predictions.first;
       expect(prediction.languageCode, 'de');
       expect(prediction.probability, closeTo(0.0011, 0.0001));
-      executor.dispose();
+      executor.close();
     });
 
     test('use the allowlist', () {
@@ -91,7 +91,7 @@ void main() {
       expect(result.predictions, hasLength(1));
       final prediction = result.predictions.first;
       expect(prediction.languageCode, equals('en'));
-      executor.dispose();
+      executor.close();
     });
   });
 }

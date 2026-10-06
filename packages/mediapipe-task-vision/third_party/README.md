@@ -9,11 +9,11 @@
 - Models: official BlazeFace short-range and Face Landmarker float16 version 1; URLs and digests are in
   `lib/models.dart`.
 
-The headers under `mediapipe/` are unchanged copies from that commit: the
-vision tasks' and, for the iOS adapter's text and audio bridge, the Text
-Classifier, Text Embedder, Language Detector and Audio Classifier ones.
-They define the modern C ABI separately from the legacy 2024 core/text/GenAI
-bindings. Do not substitute those packages' base options or image structs.
+`tool/generate_bindings.dart` binds the vision tasks' C API headers from that
+commit, unchanged, which mediapipe_core vendors once for every family in
+`packages/mediapipe-core/native/ios/include/`. They define the modern C ABI.
+Do not substitute the base options or image structs of the retired 2024 core,
+text or GenAI headers, which are in git history.
 
 `tool/build_native.py` compiles the official CPU/Metal task with static OpenCV core
 and imgproc. Its external-repository override supplies those static libraries;

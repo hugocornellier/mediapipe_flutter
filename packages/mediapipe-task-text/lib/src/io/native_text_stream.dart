@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ffi';
+import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
 
@@ -10,6 +11,11 @@ String? nativeTextString(Pointer<Char> pointer) =>
     pointer == nullptr ? null : pointer.cast<Utf8>().toDartString();
 
 /// Receive owned copies from the C adapter and drain through the terminal event.
+///
+/// The adapter posts each copy's address to a port rather than calling a Dart
+/// callback: Google may call back after this isolate is gone, after a hot
+/// restart for one, and a closed port refuses the message (the adapter then
+/// frees the copy) where a deleted callback would abort the VM.
 Future<void> receiveNativeTextStream<U>({
   required void Function(Pointer<Void>) submit,
   required U Function(mp.MpFlutterTextEvent, bool) decode,
@@ -18,10 +24,15 @@ Future<void> receiveNativeTextStream<U>({
 }) async {
   final complete = Completer<void>();
   Object? failure;
-  final callback = NativeCallable<mp.TextEventSink>.listener((
-    Pointer<mp.MpFlutterTextEvent> event,
-    bool terminal,
-  ) {
+  final events = ReceivePort();
+  events.listen((message) {
+    final address = message as int;
+    final event = address > 0
+        ? Pointer<mp.MpFlutterTextEvent>.fromAddress(address)
+        : nullptr;
+    final terminal = event == nullptr
+        ? address == mp.lostTerminalEvent
+        : event.ref.terminal;
     try {
       if (event == nullptr) {
         throw exception('Could not allocate a streaming result copy.');
@@ -51,14 +62,17 @@ Future<void> receiveNativeTextStream<U>({
   });
   Pointer<Void> context = nullptr;
   try {
-    context = mp.streamCreate(callback.nativeFunction);
+    context = mp.streamCreate(
+      NativeApi.postCObject.cast(),
+      events.sendPort.nativePort,
+    );
     if (context == nullptr) {
       throw StateError('Could not allocate a streaming context.');
     }
     submit(context);
     await complete.future;
   } finally {
-    callback.close();
+    events.close();
     if (context != nullptr) mp.streamFree(context);
   }
 }

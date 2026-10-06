@@ -62,7 +62,7 @@ def macos_engine():
 # generate Google's answers for a mobile runtime of that version on the same
 # architecture: the macOS arm64 1.0.1 wheel for the iOS 1.0.1 SDK on the arm64
 # simulator, and the Linux x86_64 1.0.0 wheel for the Android 1.0.0 SDK on the
-# x86_64 emulator (packages/mediapipe-task-text/tool/MODERN_TEXT_PLATFORMS.md).
+# x86_64 emulator.
 ORACLES = {
     ('Darwin', 'arm64', '1.0.1'): {
         'version': '1.0.1',

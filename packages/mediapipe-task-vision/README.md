@@ -613,8 +613,7 @@ to the browser worker. `results` has one subscription; pausing it buffers
 results and cancelling it discards later ones. A failure arrives on
 `results` as a `TaskException`, closes the stream and fails every later call.
 Google's browser runtime has no live stream mode, and the package runs the
-same flow limiter on every platform in front of Google's video graph
-(tool/LIVE_STREAM.md).
+same flow limiter on every platform in front of Google's video graph.
 
 In browsers, `VisionImage.fromBrowserFrame(frame, width: w, height: h)` wraps
 an `ImageBitmap` or video frame without copying its pixels; the task closes

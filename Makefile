@@ -1,6 +1,6 @@
 SHELL := /bin/bash
-DART_PACKAGES := packages/mediapipe-core packages/mediapipe-task-genai tool/builder tool/task_benchmarks
-FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-genai/example packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter
+DART_PACKAGES := packages/mediapipe-core tool/task_benchmarks
+FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 # The gallery's pubspec is generated per target by tool/gallery_builder or
 # gallery/tool/prepare.py, so it is format-checked without package resolution
@@ -12,7 +12,7 @@ GALLERY_FORMAT := dart format --language-version=3.12
 ANALYZE_PACKAGES := $(ALL_PACKAGES)
 VISION_NATIVE_ARGS ?=
 
-.PHONY: get models native_vision release_vision analyze format check_format generate generate_core generate_text generate_genai generate_vision test test_only test_core test_text test_vision test_vision_flutter test_vision_prebuilt test_examples build_text build_vision_camera example_text example_vision ci headers sdks
+.PHONY: get models native_vision release_vision analyze format check_format generate generate_text generate_vision test test_only test_core test_text test_vision test_vision_flutter test_vision_prebuilt test_examples build_text build_vision_camera example_text example_vision ci
 
 get:
 	@for package in $(DART_PACKAGES); do (cd "$$package" && dart pub get) || exit $$?; done
@@ -56,21 +56,13 @@ check_format:
 
 # Regenerate against the checked-in headers, never a floating upstream checkout.
 generate:
-	$(MAKE) generate_core
 	$(MAKE) generate_text
-	$(MAKE) generate_genai
 	$(MAKE) generate_vision
-
-generate_core:
-	cd packages/mediapipe-core && dart run ffigen --config=ffigen.yaml
 
 # 1.0.1 text bindings are adapted from the pinned wheel's ctypes definitions;
 # the retired 2024 headers must not regenerate them.
 generate_text:
 	cd packages/mediapipe-task-text && dart test test/classic_text_abi_test.dart --reporter expanded
-
-generate_genai:
-	cd packages/mediapipe-task-genai && dart run ffigen --config=ffigen.yaml
 
 generate_vision:
 	cd packages/mediapipe-task-vision && dart tool/generate_bindings.dart
@@ -133,16 +125,9 @@ test_vision_flutter:
 test_vision_prebuilt:
 	cd packages/mediapipe-task-vision && python3 tool/test_prebuilt_macos.py
 
-# Opt-in hardware soak; never runs on a hosted CI runner.
-.PHONY: test_vision_camera_soak
-test_vision_camera_soak:
-	cd packages/mediapipe-task-vision && python3 tool/test_camera_soak.py
-
-# GenAI example tests cover Dart state only; they do not validate LLM inference.
 test_examples:
 	cd packages/mediapipe-task-text/example && flutter test --reporter expanded
 	cd packages/mediapipe-task-text/example_embedding && flutter test --reporter expanded
-	cd packages/mediapipe-task-genai/example && flutter test --reporter expanded
 	cd packages/mediapipe-task-vision/example && flutter test --reporter expanded
 	cd packages/mediapipe-task-vision/example_segmenter && flutter test --reporter expanded
 
@@ -170,15 +155,12 @@ example_vision:
 	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
 	cd packages/mediapipe-task-vision/example && flutter run -d macos --release
 
-.PHONY: native_vision_ios_simulator native_vision_ios_device test_vision_ios_simulator test_vision_ios_consumer
+.PHONY: native_vision_ios_simulator native_vision_ios_device test_vision_ios_consumer
 native_vision_ios_simulator:
 	cd packages/mediapipe-task-vision && python3 -B tool/build_ios_simulator.py
 
 native_vision_ios_device:
 	cd packages/mediapipe-task-vision && python3 -B tool/build_ios_simulator.py --sdk iphoneos
-
-test_vision_ios_simulator:
-	cd packages/mediapipe-task-vision && python3 -B tool/test_ios_simulator.py
 
 test_vision_ios_consumer:
 	cd packages/mediapipe-task-vision && python3 -B tool/test_ios_consumer.py
@@ -246,11 +228,3 @@ ci:
 	$(MAKE) build_vision_camera
 	$(MAKE) build_segmenter
 	$(MAKE) test_vision_flutter
-
-# Maintainer tools: review headers, ABI, URLs and checksums as one runtime update.
-headers:
-	cd tool/builder && dart bin/main.dart headers
-
-# Writes candidate manifests; never overwrites the reviewed runtime pins.
-sdks:
-	cd tool/builder && dart bin/main.dart sdks

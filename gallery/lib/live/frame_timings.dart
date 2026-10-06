@@ -1,11 +1,6 @@
 import 'dart:collection';
 
-typedef _Frame = ({
-  double inference,
-  double conversion,
-  double frame,
-  int finishedMicroseconds,
-});
+typedef _Frame = ({double inference, int finishedMicroseconds});
 
 /// The last [capacity] processed frames' timings, so the live readout follows
 /// the current speed instead of an average still carrying the first, slower
@@ -23,24 +18,18 @@ class RecentFrameTimings {
 
   /// Records one frame; [finishedMicroseconds] is when it finished, on any
   /// clock that only moves forward.
-  void add({
-    required double inference,
-    required double conversion,
-    required double frame,
-    required int finishedMicroseconds,
-  }) {
+  void add({required double inference, required int finishedMicroseconds}) {
     _frames.addLast((
       inference: inference,
-      conversion: conversion,
-      frame: frame,
       finishedMicroseconds: finishedMicroseconds,
     ));
     if (_frames.length > capacity) _frames.removeFirst();
   }
 
-  double get inferenceMilliseconds => _mean((frame) => frame.inference);
-  double get conversionMilliseconds => _mean((frame) => frame.conversion);
-  double get frameMilliseconds => _mean((frame) => frame.frame);
+  double get inferenceMilliseconds => _frames.isEmpty
+      ? 0
+      : _frames.map((frame) => frame.inference).reduce((a, b) => a + b) /
+            _frames.length;
 
   /// Frames finished per second across the window.
   double get framesPerSecond {
@@ -49,8 +38,4 @@ class RecentFrameTimings {
         _frames.last.finishedMicroseconds - _frames.first.finishedMicroseconds;
     return span <= 0 ? 0 : (_frames.length - 1) * 1000000 / span;
   }
-
-  double _mean(double Function(_Frame) value) => _frames.isEmpty
-      ? 0
-      : _frames.map(value).reduce((a, b) => a + b) / _frames.length;
 }

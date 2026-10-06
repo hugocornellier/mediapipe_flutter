@@ -2,15 +2,18 @@ package dev.mediapipe.flutter.core;
 
 import android.os.Handler;
 import android.os.Looper;
+import com.google.mediapipe.tasks.core.BaseOptions;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /**
  * What the family plugins share on Android: one worker thread that creates, runs and closes
@@ -67,6 +70,17 @@ public final class TaskHost implements MethodChannel.MethodCallHandler {
         buffer.put(bytes).rewind();
       }
       return buffer;
+    }
+
+    /** Google's base options reading this model: its {@link #direct} buffer, or its path. */
+    public BaseOptions.Builder baseOptions() {
+      BaseOptions.Builder base = BaseOptions.builder();
+      if (bytes != null) {
+        base.setModelAssetBuffer(direct());
+      } else if (path != null) {
+        base.setModelAssetPath(path);
+      }
+      return base;
     }
   }
 
@@ -209,5 +223,31 @@ public final class TaskHost implements MethodChannel.MethodCallHandler {
     Number value = call.argument(key);
     if (value == null) throw new IllegalArgumentException("Missing " + key);
     return value.floatValue();
+  }
+
+  /**
+   * Passes the classifier settings a request sent, named as in Google's JavaScript API, to the
+   * setters of a task's options builder. A setting the request left out keeps Google's default.
+   */
+  public static void classifierOptions(
+      MethodCall call,
+      Consumer<String> displayNamesLocale,
+      Consumer<Integer> maxResults,
+      Consumer<Float> scoreThreshold,
+      Consumer<List<String>> categoryAllowlist,
+      Consumer<List<String>> categoryDenylist) {
+    if (call.hasArgument("displayNamesLocale")) {
+      displayNamesLocale.accept(call.argument("displayNamesLocale"));
+    }
+    if (call.hasArgument("maxResults")) maxResults.accept(number(call, "maxResults"));
+    if (call.hasArgument("scoreThreshold")) {
+      scoreThreshold.accept(decimal(call, "scoreThreshold"));
+    }
+    if (call.hasArgument("categoryAllowlist")) {
+      categoryAllowlist.accept(call.argument("categoryAllowlist"));
+    }
+    if (call.hasArgument("categoryDenylist")) {
+      categoryDenylist.accept(call.argument("categoryDenylist"));
+    }
   }
 }

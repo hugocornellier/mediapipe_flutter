@@ -6,6 +6,8 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show classifierSettingsJson;
 
 import 'audio_task_backend.dart';
 import 'decoders.dart';
@@ -48,15 +50,7 @@ Map<String, Object?> backendSettings(
   'modelBytes': modelBytes ?? options.modelBytes,
   'modelPath': modelBytes == null ? options.modelPath : null,
   'delegate': options.delegate.name.toUpperCase(),
-  'displayNamesLocale': ?options.displayNamesLocale,
-  // -1 (every category) is the JavaScript default; Google's Android SDK
-  // rejects any count that is not positive, so it travels unset.
-  if (options.maxResults > 0) 'maxResults': options.maxResults,
-  'scoreThreshold': options.scoreThreshold,
-  if (options.categoryAllowlist.isNotEmpty)
-    'categoryAllowlist': options.categoryAllowlist,
-  if (options.categoryDenylist.isNotEmpty)
-    'categoryDenylist': options.categoryDenylist,
+  ...classifierSettingsJson(options),
 };
 
 /// Audio Classifier on a platform plugin's backend: requests run in
@@ -202,7 +196,7 @@ final class BackendStreamRunner implements AudioStreamRunner {
   Future<void> close() async {
     try {
       // Google's Android runner reports a graph failure only when it closes
-      // (tool/AUDIO_STREAM.md, correction 6); the backend delivers it on its
+      // (upstream-issues.md UP-039); the backend delivers it on its
       // results, before they close.
       await _backend.dispose();
       await _done.future;

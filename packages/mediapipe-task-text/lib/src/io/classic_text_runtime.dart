@@ -77,13 +77,9 @@ void fillTextBaseOptions(
 /// Allocate all nested strings in the same short-lived arena.
 void fillTextClassifierOptions(
   mp.MpClassifierOptions target,
-  Arena arena, {
-  required String? displayNamesLocale,
-  required int maxResults,
-  required double scoreThreshold,
-  required List<String> categoryAllowlist,
-  required List<String> categoryDenylist,
-}) {
+  Arena arena,
+  ClassifierSettings settings,
+) {
   Pointer<Pointer<Char>> strings(List<String> values) {
     if (values.isEmpty) return nullptr;
     final array = arena<Pointer<Char>>(values.length);
@@ -95,13 +91,14 @@ void fillTextClassifierOptions(
 
   target
     ..displayNamesLocale =
-        displayNamesLocale?.toNativeUtf8(allocator: arena).cast() ?? nullptr
-    ..maxResults = maxResults
-    ..scoreThreshold = scoreThreshold
-    ..categoryAllowlist = strings(categoryAllowlist)
-    ..categoryAllowlistCount = categoryAllowlist.length
-    ..categoryDenylist = strings(categoryDenylist)
-    ..categoryDenylistCount = categoryDenylist.length;
+        settings.displayNamesLocale?.toNativeUtf8(allocator: arena).cast() ??
+        nullptr
+    ..maxResults = settings.maxResults
+    ..scoreThreshold = settings.scoreThreshold
+    ..categoryAllowlist = strings(settings.categoryAllowlist)
+    ..categoryAllowlistCount = settings.categoryAllowlist.length
+    ..categoryDenylist = strings(settings.categoryDenylist)
+    ..categoryDenylistCount = settings.categoryDenylist.length;
 }
 
 /// Copy an optional C string into Dart.
@@ -142,7 +139,4 @@ abstract class NativeClassicTextTask<I, R>
   @override
   Future<void> stream(I input, void Function(Never) emit) =>
       throw UnsupportedError('This task has no native streaming API.');
-
-  /// Close synchronously when using an executor directly.
-  void dispose() => close();
 }

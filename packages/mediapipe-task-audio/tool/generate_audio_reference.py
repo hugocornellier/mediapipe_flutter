@@ -5,7 +5,7 @@ the Dart suite on each desktop CI runner compares against Google's own library
 on that runner. Never derive expected values from the Dart implementation.
 
 One run writes two references: each clip in clips mode, and the clips fed as
-blocks in audio stream mode (tool/AUDIO_STREAM.md, "Tests").
+blocks in audio stream mode.
 """
 import argparse
 import hashlib

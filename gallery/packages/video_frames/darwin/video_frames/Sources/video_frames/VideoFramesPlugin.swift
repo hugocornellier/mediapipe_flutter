@@ -95,8 +95,7 @@ private final class VideoFileReader: @unchecked Sendable {
     guard let track = try await asset.loadTracks(withMediaType: .video).first else {
       throw VideoFileError("\(url.lastPathComponent) has no video track.")
     }
-    let (size, transform, rate) = try await track.load(
-      .naturalSize, .preferredTransform, .nominalFrameRate)
+    let (transform, rate) = try await track.load(.preferredTransform, .nominalFrameRate)
     let duration = try await asset.load(.duration)
     let reader = try AVAssetReader(asset: asset)
     let output = AVAssetReaderTrackOutput(
@@ -110,8 +109,6 @@ private final class VideoFileReader: @unchecked Sendable {
     self.reader = reader
     self.output = output
     return [
-      "width": Int(size.width),
-      "height": Int(size.height),
       "rotation": Self.clockwiseDegrees(transform),
       "durationUs": Self.microseconds(duration) ?? 0,
       "frameRate": Double(rate),

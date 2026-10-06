@@ -61,8 +61,6 @@ final class _Backend<R> implements VisionTaskBackend<R> {
     error == null ? done.complete() : done.completeError(error);
   }
 
-  int get running => _pending.length;
-
   @override
   Future<void> dispose() async => disposed = true;
 }

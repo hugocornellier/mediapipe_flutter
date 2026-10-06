@@ -9,6 +9,8 @@ import 'dart:typed_data';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show classifierSettingsJson;
 import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:web/web.dart' as web;
 
@@ -70,10 +72,10 @@ abstract final class MediaPipeVisionWeb {
           'minHandDetectionConfidence': o.minHandDetectionConfidence,
           'minHandPresenceConfidence': o.minHandPresenceConfidence,
           'minTrackingConfidence': o.minTrackingConfidence,
-          'cannedGesturesClassifierOptions': _classifier(
+          'cannedGesturesClassifierOptions': classifierSettingsJson(
             o.cannedGesturesClassifierOptions,
           ),
-          'customGesturesClassifierOptions': _classifier(
+          'customGesturesClassifierOptions': classifierSettingsJson(
             o.customGesturesClassifierOptions,
           ),
         }, _browser(decodeGestureRecognizerResult));
@@ -98,26 +100,14 @@ abstract final class MediaPipeVisionWeb {
       'object_detector',
       o,
       o.runningMode,
-      _limits(
-        maxResults: o.maxResults,
-        scoreThreshold: o.scoreThreshold,
-        displayNamesLocale: o.displayNamesLocale,
-        categoryAllowlist: o.categoryAllowlist,
-        categoryDenylist: o.categoryDenylist,
-      ),
+      classifierSettingsJson(o),
       _browser(decodeObjectDetectorResult),
     );
     imageClassifierBackendFactory = (o) => WebVisionTask.create(
       'image_classifier',
       o,
       o.runningMode,
-      _limits(
-        maxResults: o.maxResults,
-        scoreThreshold: o.scoreThreshold,
-        displayNamesLocale: o.displayNamesLocale,
-        categoryAllowlist: o.categoryAllowlist,
-        categoryDenylist: o.categoryDenylist,
-      ),
+      classifierSettingsJson(o),
       _browser(decodeImageClassifierResult),
     );
     imageEmbedderBackendFactory = (o) => WebVisionTask.create(
@@ -143,32 +133,6 @@ abstract final class MediaPipeVisionWeb {
           'displayNamesLocale': ?o.displayNamesLocale,
         }, _browser(decodeImageSegmenterResult));
   }
-
-  /// Classifier limits, named as in Google's JavaScript API. A non-positive
-  /// maxResults means all, which is Google's default, so it is left unset.
-  static Map<String, Object?> _limits({
-    required int maxResults,
-    required double scoreThreshold,
-    required String? displayNamesLocale,
-    required List<String> categoryAllowlist,
-    required List<String> categoryDenylist,
-  }) => {
-    if (maxResults > 0) 'maxResults': maxResults,
-    'scoreThreshold': scoreThreshold,
-    'displayNamesLocale': ?displayNamesLocale,
-    if (categoryAllowlist.isNotEmpty) 'categoryAllowlist': categoryAllowlist,
-    if (categoryDenylist.isNotEmpty) 'categoryDenylist': categoryDenylist,
-  };
-
-  /// Canned or custom gesture limits, named as in Google's JavaScript API.
-  /// Google rejects a non-positive maxResults, so -1 (all) is left unset.
-  static Map<String, Object?> _classifier(ClassifierOptions o) => _limits(
-    maxResults: o.maxResults,
-    scoreThreshold: o.scoreThreshold,
-    displayNamesLocale: o.displayNamesLocale,
-    categoryAllowlist: o.categoryAllowlist,
-    categoryDenylist: o.categoryDenylist,
-  );
 }
 
 /// Reads a task's result: the worker's JSON and its packed landmarks.

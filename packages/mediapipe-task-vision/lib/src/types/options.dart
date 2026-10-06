@@ -3,7 +3,7 @@
 library;
 
 import 'package:mediapipe_core/platform_interface.dart'
-    show checkClassifierSettings, checkLabel;
+    show ClassifierSettings, checkClassifierSettings, checkLabel;
 
 import 'vision_types.dart';
 
@@ -122,7 +122,7 @@ final class HandLandmarkerOptions extends HandTrackingOptions {
 
 /// Classification filters for a model head, as Gesture Recognizer nests them
 /// for its canned and custom gestures.
-final class ClassifierOptions {
+final class ClassifierOptions implements ClassifierSettings {
   /// A negative [maxResults] returns every category.
   ClassifierOptions({
     this.maxResults = -1,
@@ -132,28 +132,27 @@ final class ClassifierOptions {
     List<String>? categoryDenylist,
   }) : categoryAllowlist = List.unmodifiable(categoryAllowlist ?? const []),
        categoryDenylist = List.unmodifiable(categoryDenylist ?? const []) {
-    checkClassifierSettings(
-      maxResults: maxResults,
-      scoreThreshold: scoreThreshold,
-      displayNamesLocale: displayNamesLocale,
-      categoryAllowlist: this.categoryAllowlist,
-      categoryDenylist: this.categoryDenylist,
-    );
+    checkClassifierSettings(this);
   }
 
   /// Maximum categories per head; negative returns all of them.
+  @override
   final int maxResults;
 
   /// Categories scoring below this are dropped.
+  @override
   final double scoreThreshold;
 
   /// Locale of the display names in the model metadata.
+  @override
   final String? displayNamesLocale;
 
   /// Category names to keep; exclusive with [categoryDenylist].
+  @override
   final List<String> categoryAllowlist;
 
   /// Category names to drop; exclusive with [categoryAllowlist].
+  @override
   final List<String> categoryDenylist;
 }
 
@@ -282,7 +281,8 @@ final class HolisticLandmarkerOptions extends VisionTaskOptions {
 }
 
 /// Options for the official Object Detector.
-final class ObjectDetectorOptions extends VisionTaskOptions {
+final class ObjectDetectorOptions extends VisionTaskOptions
+    implements ClassifierSettings {
   /// Defaults match Google's.
   ObjectDetectorOptions({
     super.model,
@@ -297,33 +297,33 @@ final class ObjectDetectorOptions extends VisionTaskOptions {
     List<String>? categoryDenylist,
   }) : categoryAllowlist = List.unmodifiable(categoryAllowlist ?? const []),
        categoryDenylist = List.unmodifiable(categoryDenylist ?? const []) {
-    checkClassifierSettings(
-      maxResults: maxResults,
-      scoreThreshold: scoreThreshold,
-      displayNamesLocale: displayNamesLocale,
-      categoryAllowlist: this.categoryAllowlist,
-      categoryDenylist: this.categoryDenylist,
-    );
+    checkClassifierSettings(this);
   }
 
   /// Locale of the display names in the model metadata.
+  @override
   final String? displayNamesLocale;
 
   /// Maximum detections; negative for Google's own limit.
+  @override
   final int maxResults;
 
   /// Detections scoring below this are dropped.
+  @override
   final double scoreThreshold;
 
   /// Category names to keep; exclusive with [categoryDenylist].
+  @override
   final List<String> categoryAllowlist;
 
   /// Category names to drop; exclusive with [categoryAllowlist].
+  @override
   final List<String> categoryDenylist;
 }
 
 /// Options for the official Image Classifier.
-final class ImageClassifierOptions extends VisionTaskOptions {
+final class ImageClassifierOptions extends VisionTaskOptions
+    implements ClassifierSettings {
   /// Defaults match Google's.
   ImageClassifierOptions({
     super.model,
@@ -338,28 +338,27 @@ final class ImageClassifierOptions extends VisionTaskOptions {
     List<String>? categoryDenylist,
   }) : categoryAllowlist = List.unmodifiable(categoryAllowlist ?? const []),
        categoryDenylist = List.unmodifiable(categoryDenylist ?? const []) {
-    checkClassifierSettings(
-      maxResults: maxResults,
-      scoreThreshold: scoreThreshold,
-      displayNamesLocale: displayNamesLocale,
-      categoryAllowlist: this.categoryAllowlist,
-      categoryDenylist: this.categoryDenylist,
-    );
+    checkClassifierSettings(this);
   }
 
   /// Locale of the display names in the model metadata.
+  @override
   final String? displayNamesLocale;
 
   /// Maximum categories per head; negative returns all of them.
+  @override
   final int maxResults;
 
   /// Categories scoring below this are dropped.
+  @override
   final double scoreThreshold;
 
   /// Category names to keep; exclusive with [categoryDenylist].
+  @override
   final List<String> categoryAllowlist;
 
   /// Category names to drop; exclusive with [categoryAllowlist].
+  @override
   final List<String> categoryDenylist;
 }
 

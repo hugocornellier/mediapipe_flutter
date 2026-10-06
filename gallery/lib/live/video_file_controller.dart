@@ -77,16 +77,11 @@ class VideoFileController extends ChangeNotifier {
   int? expectedFrames;
 
   double _totalFrameMilliseconds = 0;
-  double _totalInferenceMilliseconds = 0;
 
   /// Mean time per frame: conversion for the task and the view, then
   /// inference.
   double get averageFrameMilliseconds =>
       frames == 0 ? 0 : _totalFrameMilliseconds / frames;
-
-  /// Mean time the task took per frame.
-  double get averageInferenceMilliseconds =>
-      frames == 0 ? 0 : _totalInferenceMilliseconds / frames;
 
   void _changed() {
     if (!_disposed) notifyListeners();
@@ -181,7 +176,6 @@ class VideoFileController extends ChangeNotifier {
     resultsMatchFrames = true;
     expectedFrames = null;
     _totalFrameMilliseconds = 0;
-    _totalInferenceMilliseconds = 0;
   }
 
   /// Stops after the frame in progress.
@@ -228,13 +222,11 @@ class VideoFileController extends ChangeNotifier {
         lastTimestamp = timestamp;
         final clock = Stopwatch()..start();
         final prepared = await prepareFrame(frame);
-        final inference = Stopwatch()..start();
         final detection = await task.detectFrame(
           prepared.input,
           timestamp,
           rotationDegrees: reader.rotationDegrees,
         );
-        inference.stop();
         clock.stop();
         if (generation != _generation) {
           prepared.picture.dispose();
@@ -247,7 +239,6 @@ class VideoFileController extends ChangeNotifier {
         if (_timestampOf(detection) != timestamp) resultsMatchFrames = false;
         frames++;
         _totalFrameMilliseconds += clock.elapsedMicroseconds / 1000;
-        _totalInferenceMilliseconds += inference.elapsedMicroseconds / 1000;
         _changed();
       }
     } catch (failure) {

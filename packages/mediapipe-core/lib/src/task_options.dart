@@ -6,8 +6,7 @@ import 'dart:typed_data';
 import 'delegate.dart';
 import 'download_asset.dart';
 import 'model_source.dart';
-import 'model_source_io.dart'
-    if (dart.library.js_interop) 'model_source_web.dart';
+import 'pinned_model.dart';
 
 /// Model and delegate shared by every task's options, in every family.
 ///

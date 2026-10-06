@@ -8,6 +8,8 @@
 #import <MediaPipeTasksVision/MediaPipeTasksVision.h>
 #import <UIKit/UIKit.h>
 
+#include "sdk_bridge_support.h"
+
 #include <cstring>
 #include <new>
 
@@ -119,63 +121,6 @@ struct MpIosStrokes {
 };
 
 namespace {
-MpStatus Fail(char **message, NSString *description,
-              MpStatus status = kMpInvalidArgument) {
-  if (message) *message = strdup(description.UTF8String ?: "iOS SDK error");
-  return status;
-}
-
-MpStatus SdkError(char **message, NSError *error) {
-  // The public SDK error codes follow absl::StatusCode, like the C API.
-  const NSInteger code = error.code;
-  return Fail(message, error.localizedDescription ?: @"MediaPipe iOS SDK failed",
-              code > 0 && code <= 16 ? static_cast<MpStatus>(code) : kMpInternal);
-}
-
-template <typename T> T *Allocate(size_t count) {
-  if (!count) return nullptr;
-  T *result = static_cast<T *>(calloc(count, sizeof(T)));
-  if (!result) throw std::bad_alloc();
-  return result;
-}
-
-char *CopyString(NSString *value) {
-  if (!value.length) return nullptr;
-  char *result = strdup(value.UTF8String);
-  if (!result) throw std::bad_alloc();
-  return result;
-}
-
-NSString *ModelPath(const MpBaseOptions &base, NSString **temporary,
-                    char **message) {
-  if (base.delegate != MP_DELEGATE_CPU && base.delegate != MP_DELEGATE_GPU) {
-    Fail(message, @"The iOS SDK supports CPU and GPU delegates only");
-    return nil;
-  }
-  if (base.model_asset_buffer && base.model_asset_buffer_count) {
-    NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:
-        [NSString stringWithFormat:@"mediapipe-%@.task", NSUUID.UUID.UUIDString]];
-    NSError *error = nil;
-    NSData *data = [NSData dataWithBytes:base.model_asset_buffer
-                                length:base.model_asset_buffer_count];
-    if (![data writeToFile:path options:NSDataWritingAtomic error:&error]) {
-      SdkError(message, error);
-      return nil;
-    }
-    *temporary = path;
-    return path;
-  }
-  if (base.model_asset_path) {
-    return [NSString stringWithUTF8String:base.model_asset_path];
-  }
-  Fail(message, @"Supply a model path or model bytes");
-  return nil;
-}
-
-void RemoveModel(NSString *path) {
-  if (path) [NSFileManager.defaultManager removeItemAtPath:path error:nil];
-}
-
 MPPImage *SdkImage(MpImagePtr image, const MpImageProcessingOptions *options,
                    char **message) {
   if (!image) {
@@ -661,23 +606,11 @@ MpStatus Configure(SdkOptions *sdk, const MpBaseOptions &base, MpRunningMode mod
   if (mode != MP_RUNNING_MODE_IMAGE && mode != MP_RUNNING_MODE_VIDEO) {
     return Fail(message, @"The Dart adapter supports IMAGE and VIDEO only", kMpUnimplemented);
   }
-  NSString *path = ModelPath(base, temporary, message);
+  NSString *path = ModelPath(base, temporary, message, /*vision=*/true);
   if (!path) return kMpInvalidArgument;
   sdk.baseOptions.modelAssetPath = path;
   sdk.baseOptions.delegate = base.delegate == MP_DELEGATE_GPU ? MPPDelegateGPU : MPPDelegateCPU;
   sdk.runningMode = mode == MP_RUNNING_MODE_VIDEO ? MPPRunningModeVideo : MPPRunningModeImage;
-  return kMpOk;
-}
-
-// Creates the SDK task and hands ownership of it and its model copy to C.
-template <typename Handle, typename Task, typename SdkOptions>
-MpStatus Own(SdkOptions *sdk, NSString *temporary, Handle **out, char **message) {
-  NSError *error = nil;
-  Task *task = [[Task alloc] initWithOptions:sdk error:&error];
-  if (!task) { RemoveModel(temporary); return SdkError(message, error); }
-  auto *handle = new (std::nothrow) Handle{task, temporary};
-  if (!handle) { RemoveModel(temporary); return Fail(message, @"Cannot allocate task", kMpResourceExhausted); }
-  *out = handle;
   return kMpOk;
 }
 
@@ -897,15 +830,6 @@ MpStatus Segment(Handle *task, MpImagePtr image, const MpImageProcessingOptions 
   }
 }
 
-template <typename Handle> MpStatus CloseTask(Handle *task) {
-  @autoreleasepool {
-    if (!task) return kMpOk;
-    task->task = nil;
-    RemoveModel(task->temporaryModel);
-    delete task;
-    return kMpOk;
-  }
-}
 }  // namespace
 
 extern "C" {
@@ -1062,7 +986,7 @@ MpStatus MpFaceLandmarkerCreate(MpFaceLandmarkerOptions *options,
     sdk.minTrackingConfidence = options->min_tracking_confidence;
     sdk.outputFaceBlendshapes = options->output_face_blendshapes;
     sdk.outputFacialTransformationMatrixes = options->output_facial_transformation_matrixes;
-    return Own<MpFaceLandmarkerInternal, MPPFaceLandmarker>(sdk, temporary, out, message);
+    return OwnTask<MpFaceLandmarkerInternal, MPPFaceLandmarker>(sdk, temporary, out, message);
   }
 }
 
@@ -1087,7 +1011,7 @@ MpStatus MpFaceLandmarkerDetectForVideo(MpFaceLandmarkerPtr task, MpImagePtr ima
                                          CopyLandmarker, MpFaceLandmarkerCloseResult);
 }
 MpStatus MpFaceLandmarkerClose(MpFaceLandmarkerPtr task, char **message) {
-  return CloseTask(task);
+  return CloseHandle(task);
 }
 
 MpStatus MpFaceDetectorCreate(MpFaceDetectorOptions *options, MpFaceDetectorPtr *out, char **message) {
@@ -1100,7 +1024,7 @@ MpStatus MpFaceDetectorCreate(MpFaceDetectorOptions *options, MpFaceDetectorPtr 
     if (status != kMpOk) return status;
     sdk.minDetectionConfidence = options->min_detection_confidence;
     sdk.minSuppressionThreshold = options->min_suppression_threshold;
-    return Own<MpFaceDetectorInternal, MPPFaceDetector>(sdk, temporary, out, message);
+    return OwnTask<MpFaceDetectorInternal, MPPFaceDetector>(sdk, temporary, out, message);
   }
 }
 
@@ -1128,7 +1052,7 @@ MpStatus MpFaceDetectorDetectForVideo(MpFaceDetectorPtr task, MpImagePtr image,
                                        CopyDetector<MPPFaceDetectorResult>, MpFaceDetectorCloseResult);
 }
 MpStatus MpFaceDetectorClose(MpFaceDetectorPtr task, char **message) {
-  return CloseTask(task);
+  return CloseHandle(task);
 }
 
 MpStatus MpHandLandmarkerCreate(MpHandLandmarkerOptions *options,
@@ -1144,7 +1068,7 @@ MpStatus MpHandLandmarkerCreate(MpHandLandmarkerOptions *options,
     sdk.minHandDetectionConfidence = options->min_hand_detection_confidence;
     sdk.minHandPresenceConfidence = options->min_hand_presence_confidence;
     sdk.minTrackingConfidence = options->min_tracking_confidence;
-    return Own<MpHandLandmarkerInternal, MPPHandLandmarker>(sdk, temporary, out, message);
+    return OwnTask<MpHandLandmarkerInternal, MPPHandLandmarker>(sdk, temporary, out, message);
   }
 }
 
@@ -1168,7 +1092,7 @@ MpStatus MpHandLandmarkerDetectForVideo(MpHandLandmarkerPtr task, MpImagePtr ima
                                          CopyHandLandmarker, MpHandLandmarkerCloseResult);
 }
 MpStatus MpHandLandmarkerClose(MpHandLandmarkerPtr task, char **message) {
-  return CloseTask(task);
+  return CloseHandle(task);
 }
 MpStatus MpPoseLandmarkerCreate(MpPoseLandmarkerOptions *options,
     MpPoseLandmarkerPtr *out, char **message) {
@@ -1184,7 +1108,7 @@ MpStatus MpPoseLandmarkerCreate(MpPoseLandmarkerOptions *options,
     sdk.minPosePresenceConfidence = options->min_pose_presence_confidence;
     sdk.minTrackingConfidence = options->min_tracking_confidence;
     sdk.shouldOutputSegmentationMasks = options->output_segmentation_masks;
-    status = Own<MpPoseLandmarkerInternal, MPPPoseLandmarker>(sdk, temporary, out, message);
+    status = OwnTask<MpPoseLandmarkerInternal, MPPPoseLandmarker>(sdk, temporary, out, message);
     if (status == kMpOk) (*out)->cpu = options->base_options.delegate != MP_DELEGATE_GPU;
     return status;
   }
@@ -1216,7 +1140,7 @@ MpStatus MpPoseLandmarkerDetectForVideo(MpPoseLandmarkerPtr task, MpImagePtr ima
       task, out);
 }
 MpStatus MpPoseLandmarkerClose(MpPoseLandmarkerPtr task, char **message) {
-  return CloseTask(task);
+  return CloseHandle(task);
 }
 
 MpStatus MpGestureRecognizerCreate(const MpGestureRecognizerOptions *options,
@@ -1234,7 +1158,7 @@ MpStatus MpGestureRecognizerCreate(const MpGestureRecognizerOptions *options,
     sdk.minTrackingConfidence = options->min_tracking_confidence;
     sdk.cannedGesturesClassifierOptions = SdkClassifier(options->canned_gestures_classifier_options);
     sdk.customGesturesClassifierOptions = SdkClassifier(options->custom_gestures_classifier_options);
-    return Own<MpGestureRecognizerInternal, MPPGestureRecognizer>(sdk, temporary, out, message);
+    return OwnTask<MpGestureRecognizerInternal, MPPGestureRecognizer>(sdk, temporary, out, message);
   }
 }
 
@@ -1259,7 +1183,7 @@ MpStatus MpGestureRecognizerRecognizeForVideo(MpGestureRecognizerPtr task, MpIma
   return Recognize(task, image, options, true, timestamp, out, message);
 }
 MpStatus MpGestureRecognizerClose(MpGestureRecognizerPtr task, char **message) {
-  return CloseTask(task);
+  return CloseHandle(task);
 }
 
 MpStatus MpHolisticLandmarkerCreate(MpHolisticLandmarkerOptions *options,
@@ -1280,7 +1204,7 @@ MpStatus MpHolisticLandmarkerCreate(MpHolisticLandmarkerOptions *options,
     sdk.minPosePresenceConfidence = options->min_pose_presence_confidence;
     sdk.outputFaceBlendshapes = options->output_face_blendshapes;
     sdk.outputPoseSegmentationMasks = options->output_pose_segmentation_masks;
-    status = Own<MpHolisticLandmarkerInternal, MPPHolisticLandmarker>(sdk, temporary, out, message);
+    status = OwnTask<MpHolisticLandmarkerInternal, MPPHolisticLandmarker>(sdk, temporary, out, message);
     if (status == kMpOk) (*out)->cpu = options->base_options.delegate != MP_DELEGATE_GPU;
     return status;
   }
@@ -1318,7 +1242,7 @@ MpStatus MpHolisticLandmarkerDetectForVideo(MpHolisticLandmarkerPtr task, MpImag
       task, options, out, message);
 }
 MpStatus MpHolisticLandmarkerClose(MpHolisticLandmarkerPtr task, char **message) {
-  return CloseTask(task);
+  return CloseHandle(task);
 }
 MpStatus MpObjectDetectorCreate(MpObjectDetectorOptions *options,
     MpObjectDetectorPtr *out, char **message) {
@@ -1333,7 +1257,7 @@ MpStatus MpObjectDetectorCreate(MpObjectDetectorOptions *options,
                           options->score_threshold, options->category_allowlist,
                           options->category_allowlist_count, options->category_denylist,
                           options->category_denylist_count);
-    return Own<MpObjectDetectorInternal, MPPObjectDetector>(sdk, temporary, out, message);
+    return OwnTask<MpObjectDetectorInternal, MPPObjectDetector>(sdk, temporary, out, message);
   }
 }
 
@@ -1355,7 +1279,7 @@ MpStatus MpObjectDetectorDetectForVideo(MpObjectDetectorPtr task, MpImagePtr ima
                                          MpObjectDetectorCloseResult);
 }
 MpStatus MpObjectDetectorClose(MpObjectDetectorPtr task, char **message) {
-  return CloseTask(task);
+  return CloseHandle(task);
 }
 
 MpStatus MpImageClassifierCreate(MpImageClassifierOptions *options,
@@ -1371,7 +1295,7 @@ MpStatus MpImageClassifierCreate(MpImageClassifierOptions *options,
     ApplyClassifierLimits(sdk, c.display_names_locale, c.max_results, c.score_threshold,
                           c.category_allowlist, c.category_allowlist_count,
                           c.category_denylist, c.category_denylist_count);
-    return Own<MpImageClassifierInternal, MPPImageClassifier>(sdk, temporary, out, message);
+    return OwnTask<MpImageClassifierInternal, MPPImageClassifier>(sdk, temporary, out, message);
   }
 }
 
@@ -1397,7 +1321,7 @@ MpStatus MpImageClassifierClassifyForVideo(MpImageClassifierPtr task, MpImagePtr
   return Classify(task, image, options, true, timestamp, out, message);
 }
 MpStatus MpImageClassifierClose(MpImageClassifierPtr task, char **message) {
-  return CloseTask(task);
+  return CloseHandle(task);
 }
 MpStatus MpImageEmbedderCreate(ImageEmbedderOptions *options, MpImageEmbedderPtr *out,
     char **message) {
@@ -1410,7 +1334,7 @@ MpStatus MpImageEmbedderCreate(ImageEmbedderOptions *options, MpImageEmbedderPtr
     if (status != kMpOk) return status;
     sdk.l2Normalize = options->embedder_options.l2_normalize;
     sdk.quantize = options->embedder_options.quantize;
-    return Own<MpImageEmbedderInternal, MPPImageEmbedder>(sdk, temporary, out, message);
+    return OwnTask<MpImageEmbedderInternal, MPPImageEmbedder>(sdk, temporary, out, message);
   }
 }
 
@@ -1435,7 +1359,7 @@ MpStatus MpImageEmbedderEmbedForVideo(MpImageEmbedderPtr task, MpImagePtr image,
   return Embed(task, image, options, true, timestamp, out, message);
 }
 MpStatus MpImageEmbedderClose(MpImageEmbedderPtr task, char **message) {
-  return CloseTask(task);
+  return CloseHandle(task);
 }
 MpStatus MpImageSegmenterCreate(MpImageSegmenterOptions *options, MpImageSegmenterPtr *out,
     char **message) {
@@ -1451,7 +1375,7 @@ MpStatus MpImageSegmenterCreate(MpImageSegmenterOptions *options, MpImageSegment
     }
     sdk.shouldOutputConfidenceMasks = options->output_confidence_masks;
     sdk.shouldOutputCategoryMask = options->output_category_mask;
-    return Own<MpImageSegmenterInternal, MPPImageSegmenter>(sdk, temporary, out, message);
+    return OwnTask<MpImageSegmenterInternal, MPPImageSegmenter>(sdk, temporary, out, message);
   }
 }
 
@@ -1487,7 +1411,7 @@ MpStatus MpImageSegmenterSegmentForVideo(MpImageSegmenterPtr task, MpImagePtr im
   return Segment(task, image, options, true, timestamp, out, message);
 }
 MpStatus MpImageSegmenterClose(MpImageSegmenterPtr task, char **message) {
-  return CloseTask(task);
+  return CloseHandle(task);
 }
 // Copies the single-channel mask image Google's stateful segmenter returns
 // into an owned float32 mask, row by row from its pixel buffer.
@@ -1542,13 +1466,13 @@ MP_EXPORT MpStatus MpIosInteractiveSegmenterCreate(const MpBaseOptions *base, vo
     if (!base || !out) return Fail(message, @"Supply options and output");
     *out = nullptr;
     NSString *temporary = nil;
-    NSString *path = ModelPath(*base, &temporary, message);
+    NSString *path = ModelPath(*base, &temporary, message, /*vision=*/true);
     if (!path) return kMpInvalidArgument;
     MPPInteractiveSegmenterOptions *sdk = [MPPInteractiveSegmenterOptions new];
     sdk.baseOptions.modelAssetPath = path;
     sdk.baseOptions.delegate = base->delegate == MP_DELEGATE_GPU ? MPPDelegateGPU : MPPDelegateCPU;
     MpIosInteractiveSegmenterInternal *handle = nullptr;
-    MpStatus status = Own<MpIosInteractiveSegmenterInternal, MPPInteractiveSegmenter>(
+    MpStatus status = OwnTask<MpIosInteractiveSegmenterInternal, MPPInteractiveSegmenter>(
         sdk, temporary, &handle, message);
     *out = handle;
     return status;
@@ -1600,6 +1524,6 @@ MP_EXPORT MpStatus MpIosInteractiveSegmenterSegment(void *task, const MpIosStrok
 }
 
 MP_EXPORT MpStatus MpIosInteractiveSegmenterClose(void *task, char **message) {
-  return CloseTask(static_cast<MpIosInteractiveSegmenterInternal *>(task));
+  return CloseHandle(static_cast<MpIosInteractiveSegmenterInternal *>(task));
 }
 }  // extern C

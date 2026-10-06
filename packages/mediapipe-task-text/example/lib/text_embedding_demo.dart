@@ -15,11 +15,7 @@ import 'enumerate.dart';
 final _log = Logger('TextEmbeddingDemo');
 
 class TextEmbeddingDemo extends StatefulWidget {
-  const TextEmbeddingDemo({super.key, this.embedder});
-
-  /// Overriding [BaseTextEmbedder] object. If supplied, the Embedder
-  /// configuration controls cannot be used.
-  final TextEmbedder? embedder;
+  const TextEmbeddingDemo({super.key});
 
   @override
   State<TextEmbeddingDemo> createState() => _TextEmbeddingDemoState();
@@ -54,9 +50,6 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
   }
 
   Future<TextEmbedder> get embedder {
-    if (widget.embedder != null) {
-      return Future.value(widget.embedder!);
-    }
     if (_completer == null) {
       _initEmbedder();
     }
@@ -64,30 +57,16 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
   }
 
   void toggleMode() {
-    assert(
-      widget.embedder == null,
-      'Changing embedder configuration not supported when an embedder is '
-      'supplied to the widget.',
-    );
     setState(() => quantize = !quantize);
     _initEmbedder();
   }
 
   void toggleL2Normalize() {
-    assert(
-      widget.embedder == null,
-      'Changing embedder configuration not supported when an embedder is '
-      'supplied to the widget.',
-    );
     setState(() => l2Normalize = !l2Normalize);
     _initEmbedder();
   }
 
   Future<void> _initEmbedder() async {
-    if (widget.embedder != null) {
-      _initializing = false;
-      return;
-    }
     final revision = ++_revision;
     final completion = Completer<TextEmbedder>();
     _completer = completion;
@@ -248,10 +227,7 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
                             const Text('Float:'),
                             Checkbox(
                               value: !quantize,
-                              onChanged:
-                                  widget.embedder != null ||
-                                      _initializing ||
-                                      isProcessing
+                              onChanged: _initializing || isProcessing
                                   ? null
                                   : (_) {
                                       toggleMode();
@@ -265,10 +241,7 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
                             const Text('Quantize:'),
                             Checkbox(
                               value: quantize,
-                              onChanged:
-                                  widget.embedder != null ||
-                                      _initializing ||
-                                      isProcessing
+                              onChanged: _initializing || isProcessing
                                   ? null
                                   : (bool? newValue) {
                                       toggleMode();
@@ -286,10 +259,7 @@ class _TextEmbeddingDemoState extends State<TextEmbeddingDemo>
                             const Text('L2 Normalize:'),
                             Checkbox(
                               value: l2Normalize,
-                              onChanged:
-                                  widget.embedder != null ||
-                                      _initializing ||
-                                      isProcessing
+                              onChanged: _initializing || isProcessing
                                   ? null
                                   : (_) {
                                       toggleL2Normalize();

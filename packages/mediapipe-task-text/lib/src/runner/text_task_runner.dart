@@ -142,28 +142,6 @@ openGenerativeTextTask<R, U, O extends TaskOptions>(
   return native(options);
 }
 
-/// Classifier settings named as in Google's JavaScript API.
-///
-/// The threshold is always sent, as Google's Python and C APIs apply it:
-/// left unset, its JavaScript and mobile SDKs apply the model's own
-/// threshold (the language detector's drops all but the top language), so
-/// the same options would answer differently from the native runtime. A
-/// negative count means every category, which Google's Android SDK only
-/// accepts as an unset option.
-Map<String, Object?> classifierSettings({
-  required String? displayNamesLocale,
-  required int maxResults,
-  required double scoreThreshold,
-  required List<String> categoryAllowlist,
-  required List<String> categoryDenylist,
-}) => {
-  'displayNamesLocale': ?displayNamesLocale,
-  if (maxResults > 0) 'maxResults': maxResults,
-  'scoreThreshold': scoreThreshold,
-  if (categoryAllowlist.isNotEmpty) 'categoryAllowlist': categoryAllowlist,
-  if (categoryDenylist.isNotEmpty) 'categoryDenylist': categoryDenylist,
-};
-
 /// A format context named as Google's JavaScript `TextFormatOptions`, which
 /// its Android SDK's `TextFormatContext` reads by the same names.
 Map<String, Object?> formatContextSettings(TextFormatContext context) => {

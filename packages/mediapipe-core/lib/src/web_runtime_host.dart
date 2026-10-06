@@ -83,14 +83,9 @@ final class WebRuntimePin {
 Future<Directory> hostWebRuntime(
   WebRuntimePin pin,
   Directory output, {
-  Uri? registry,
   http.Client? client,
 }) async {
-  final entries = await _verifiedEntries(
-    pin,
-    registry: registry,
-    client: client,
-  );
+  final entries = await _verifiedEntries(pin, client: client);
   final target = Directory.fromUri(output.uri.resolve(pin.directory));
   await target.parent.create(recursive: true);
   final staging = await target.parent.createTemp('.staging-');
@@ -119,14 +114,9 @@ Future<Directory> hostWebRuntime(
 /// Computes file pins from the npm tarball after checking its SRI digest.
 Future<Map<String, String>> webRuntimeHashes(
   WebRuntimePin pin, {
-  Uri? registry,
   http.Client? client,
 }) async {
-  final entries = await _verifiedEntries(
-    pin,
-    registry: registry,
-    client: client,
-  );
+  final entries = await _verifiedEntries(pin, client: client);
   return {
     for (final name in pin.files)
       name: base64.encode(
@@ -144,10 +134,9 @@ Future<Map<String, String>> webRuntimeHashes(
 
 Future<Map<String, ArchiveFile>> _verifiedEntries(
   WebRuntimePin pin, {
-  Uri? registry,
   http.Client? client,
 }) async {
-  final url = pin.tarball(registry ?? Uri.parse('https://registry.npmjs.org/'));
+  final url = pin.tarball(Uri.parse('https://registry.npmjs.org/'));
   final effective = client ?? http.Client();
   final http.Response response;
   try {
