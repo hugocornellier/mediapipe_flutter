@@ -11,8 +11,6 @@ dependencies:
   camera_desktop: ^1.2.2
   mediapipe_vision:
     path: ..
-  mediapipe_core:
-    path: ../../mediapipe-core
   flutter:
     sdk: flutter
 

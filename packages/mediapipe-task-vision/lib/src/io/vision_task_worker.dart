@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:math' show Random;
 
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart';
@@ -20,7 +19,6 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
 
   @override
   final VisionTaskChecks checks;
-  final int _tag = Random().nextInt(1 << 32);
   final _events = ReceivePort();
   final _ready = Completer<void>();
   final _exited = Completer<void>();
@@ -51,17 +49,10 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
     final worker = VisionTaskWorker<R>._(
       VisionTaskChecks(name, options.runningMode),
     );
-    _trace(worker._tag, debugName, 'spawn', 'start');
     try {
       await Isolate.spawn(
         _runWorker<R, O>,
-        (
-          worker._events.sendPort,
-          options,
-          factory,
-          worker._tag,
-          reopenAfterBytes,
-        ),
+        (worker._events.sendPort, options, factory, reopenAfterBytes),
         onError: worker._events.sendPort,
         onExit: worker._events.sendPort,
         debugName: debugName,
@@ -132,11 +123,9 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
   void _receive(dynamic event) {
     switch (event) {
       case SendPort port:
-        _trace(_tag, name, 'spawn', 'end');
         _commands = port;
         _ready.complete();
       case (int id, Object? result, TaskException? error):
-        _trace(_tag, name, id, 'received');
         final completion = _pending.remove(id);
         if (error != null) {
           completion?.completeError(error);
@@ -148,7 +137,6 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
       case List<dynamic> error:
         _fail(TaskException('Worker failed: ${error.join('\n')}'));
       case null:
-        _trace(_tag, name, 'exit', 'exited');
         if (!_ready.isCompleted || _pending.isNotEmpty || !checks.disposing) {
           _fail(
             const TaskException('Native vision worker exited unexpectedly.'),
@@ -171,24 +159,20 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
 }
 
 Future<void> _runWorker<R, O extends VisionTaskOptions>(
-  (SendPort, O, NativeVisionTask<R> Function(O), int, int?) initial,
+  (SendPort, O, NativeVisionTask<R> Function(O), int?) initial,
 ) async {
-  final (parent, options, factory, tag, reopenAfterBytes) = initial;
-  final name = Isolate.current.debugName ?? 'worker';
+  final (parent, options, factory, reopenAfterBytes) = initial;
   final commands = ReceivePort();
   final budget = GpuFrameBudget(options, limitBytes: reopenAfterBytes);
   NativeVisionTask<R>? native;
   try {
-    _trace(tag, name, 'create', 'start');
     var task = native = factory(options);
-    _trace(tag, name, 'create', 'end');
     if (budget.limitBytes != null) _holdModel(options);
     parent.send(commands.sendPort);
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, VisionTaskInput?);
       R? result;
       TaskException? failure;
-      _trace(tag, name, id, 'start');
       try {
         if (input == null) {
           task.close();
@@ -200,18 +184,14 @@ Future<void> _runWorker<R, O extends VisionTaskOptions>(
             ? error
             : TaskException(error.toString());
       }
-      _trace(tag, name, id, failure == null ? 'end' : 'error');
       parent.send((id, result, failure));
       if (input == null) break;
       if (budget.spend(input.$1)) {
-        _trace(tag, name, 'reopen', 'start');
         task.close();
         task = native = factory(options);
-        _trace(tag, name, 'reopen', 'end');
       }
     }
   } catch (error) {
-    _trace(tag, name, 'create', 'error');
     parent.send(
       error is TaskException ? error : TaskException(error.toString()),
     );
@@ -220,23 +200,8 @@ Future<void> _runWorker<R, O extends VisionTaskOptions>(
       native?.close();
     } finally {
       commands.close();
-      _trace(tag, name, 'exit', 'return');
     }
   }
-}
-
-/// With MEDIAPIPE_VISION_TRACE=1, each worker's spawn, native creation,
-/// native calls, result delivery and exit, tagged per worker, with a
-/// millisecond clock, so a stall shows as a phase that never completes.
-/// For diagnosing hangs; off by default.
-final bool _tracing = Platform.environment['MEDIAPIPE_VISION_TRACE'] == '1';
-
-void _trace(int tag, String name, Object id, String phase) {
-  if (!_tracing) return;
-  stderr.writeln(
-    'MPTRACE ${DateTime.now().millisecondsSinceEpoch} pid=$pid tag=$tag '
-    '$name #$id $phase',
-  );
 }
 
 /// Reopening reads the model again, but MediaPipe has read it by the time a

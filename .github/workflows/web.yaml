@@ -100,12 +100,13 @@ jobs:
               break
             done
           done
-      - name: Analyze and test gallery geometry
+      - name: Analyze and test gallery geometry and the video file reader
         working-directory: gallery
         run: |
           flutter pub get
           flutter analyze lib tool/web_api_probe.dart tool/web_text_audio_probe.dart
           flutter test --platform chrome test/camera_geometry_test.dart test/camera_frame_test.dart test/camera_selection_test.dart
+          cd packages/video_frames && flutter test --reporter expanded
       - name: Build release gallery and API probe
         id: build
         working-directory: gallery

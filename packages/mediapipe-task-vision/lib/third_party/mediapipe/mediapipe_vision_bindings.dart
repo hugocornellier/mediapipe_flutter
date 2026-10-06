@@ -66,41 +66,6 @@ MpStatus MpFaceDetectorCreate(
     MpImagePtr,
     ffi.Pointer<MpImageProcessingOptions>,
     ffi.Int64,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpFaceDetectorDetectAsync')
-external int _MpFaceDetectorDetectAsync(
-  MpFaceDetectorPtr detector,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpFaceDetectorDetectAsync(
-  MpFaceDetectorPtr detector,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpFaceDetectorDetectAsync(
-      detector,
-      image,
-      options,
-      timestamp_ms,
-      error_msg,
-    ),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpFaceDetectorPtr,
-    MpImagePtr,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Int64,
     ffi.Pointer<MpFaceDetectorResult>,
     ffi.Pointer<ffi.Pointer<ffi.Char>>,
   )

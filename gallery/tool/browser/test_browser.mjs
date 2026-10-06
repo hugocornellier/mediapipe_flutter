@@ -916,7 +916,8 @@ async function textAudioChecks() {
     const heads = result => result.classifications.map(h => h.categories.map(c =>
       [c.index, c.score, c.categoryName || null, c.displayName || null]));
     // The package sends an unset score threshold as 0, as Google's Python and
-    // C APIs do (backend_text_task.dart), so the reference passes it too.
+    // C APIs do (mediapipe_text's default in lib/src/types/options.dart), so
+    // the reference passes it too.
     const classifier = [];
     for (const [input, options] of [['Hello, world!', {}],
         ['This was a terrible movie. I hated every minute.', {}],

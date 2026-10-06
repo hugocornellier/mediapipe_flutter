@@ -189,19 +189,16 @@ self.onmessage = ({data}) => {
   // Serialize initialization, frames and shutdown on the owning worker.
   operations = operations.then(async () => {
     try {
-      const timing = {received: performance.timeOrigin + performance.now()};
-      const result = await run(data.type, data.input, timing);
-      timing.sent = performance.timeOrigin + performance.now();
+      const result = await run(data.type, data.input);
       const transfers = result?.masks ? [...result.masks] : [];
       if (result?.landmarks) transfers.push(result.landmarks.buffer);
-      self.postMessage({id: data.id, result, timing,
-        overlayFailed: result?.overlayFailed}, transfers);
+      self.postMessage({id: data.id, result, overlayFailed: result?.overlayFailed}, transfers);
     } catch (error) {
       self.postMessage({id: data.id, error: error?.message || String(error)});
     }
   });
 };
-async function run(type, input, timing) {
+async function run(type, input) {
   if (type === 'overlay') {
     if (!input.overlay) {
       overlay = drawing = undefined;
@@ -270,7 +267,7 @@ async function run(type, input, timing) {
   let owned = input.bitmap;
   try {
     if (!task) throw new Error(spec.name + ' is closed');
-    if (spec.stateful && input.strokes) return segmentStrokes(input.strokes, timing);
+    if (spec.stateful && input.strokes) return segmentStrokes(input.strokes);
     if (input.path) {
       const response = await fetch(input.path);
       if (!response.ok) throw new Error('Image load failed: ' + response.status);
@@ -300,11 +297,9 @@ async function run(type, input, timing) {
       const [left, top, right, bottom] = input.region;
       processing.regionOfInterest = {left, top, right, bottom};
     }
-    const started = performance.now();
     const result = input.timestamp == null
         ? task[spec.image ?? 'detect'](source, processing)
         : task[spec.video ?? 'detectForVideo'](source, input.timestamp, processing);
-    const inferred = performance.now();
     const packed = spec.landmarks ? pack(result[spec.landmarks] ?? [])
       : spec.parts ? packParts(result, spec.parts) : null;
     const masks = [];
@@ -320,9 +315,6 @@ async function run(type, input, timing) {
     const json = JSON.stringify({width: source.width, height: source.height,
       timestamp: input.timestamp, counts: packed?.counts, parts: packed?.parts,
       result: {...plain, ...emptied}});
-    timing.inference = inferred - started;
-    timing.serialize = performance.now() - inferred;
-    timing.timestamp = input.timestamp;
     let overlayFailed = false;
     if (drawing && input.overlayOptions && (spec.landmarks || spec.parts || spec.boxes)) {
       try {
@@ -342,14 +334,12 @@ async function run(type, input, timing) {
 }
 // Each stroke arrives as [brush mode, [x, y, ...], completed]; the modes are
 // Google's numeric BrushMode values.
-function segmentStrokes(strokes, timing) {
-  const started = performance.now();
+function segmentStrokes(strokes) {
   const mask = task.segment(strokes.map(([brushMode, xy, isCompleted]) => ({
     brushMode, isCompleted,
     point: Array.from({length: xy.length >> 1}, (_, i) => ({x: xy[2 * i], y: xy[2 * i + 1]})),
   })));
   try {
-    timing.inference = performance.now() - started;
     const values = mask.getAsFloat32Array().slice();
     return {json: JSON.stringify({result: {confidenceMasks: [[mask.width, mask.height, 4, 0]]}}),
       masks: [values.buffer]};

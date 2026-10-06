@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show debugPrintSynchronously;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -18,7 +16,6 @@ import 'segment/mask_overlay.dart';
 import 'ui/components.dart';
 import 'ui/design.dart';
 import 'ui/workspace.dart';
-import 'web/test_hooks.dart';
 
 /// MagicTouch segmentation: drag over a subject to select it.
 ///
@@ -174,7 +171,6 @@ class _SegmentPageState extends State<SegmentPage> {
     final revision = Object.hash(mask, _threshold);
     if (revision == _paintedRevision) return;
     _paintedRevision = revision;
-    if (testHooks) _logMask(mask);
     final rgba = maskRgba(mask.confidence, _threshold);
     final image = await _decode(rgba, mask.width, mask.height);
     if (!mounted) {
@@ -185,67 +181,6 @@ class _SegmentPageState extends State<SegmentPage> {
       _maskImage?.dispose();
       _maskImage = image;
     });
-  }
-
-  /// For the browser tests (`?test-hooks`): the strokes sent and the mask's
-  /// area, bounding box and centroid, normalized to the image, as one line.
-  void _logMask(ConfidenceMask mask) {
-    final confidence = mask.confidence;
-    var count = 0, minX = mask.width, minY = mask.height, maxX = -1, maxY = -1;
-    var sumX = 0.0, sumY = 0.0;
-    for (var y = 0; y < mask.height; y++) {
-      for (var x = 0; x < mask.width; x++) {
-        if (confidence[y * mask.width + x] < _threshold) continue;
-        count++;
-        sumX += x;
-        sumY += y;
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      }
-    }
-    String n(num value, int size) => (value / size).toStringAsFixed(2);
-    final strokes = [
-      for (final stroke in _editor?.strokes ?? const <Stroke>[])
-        '${stroke.brushMode.name}@'
-            '${stroke.points.map((p) => '${p.x.toStringAsFixed(2)},'
-                '${p.y.toStringAsFixed(2)}').join(' ')}',
-    ];
-    debugPrint(
-      'SEGMENT_MASK delegate=${_delegate.name} strokes=[${strokes.join('; ')}] '
-      'size=${mask.width}x${mask.height} '
-      'area=${(count / (mask.width * mask.height)).toStringAsFixed(3)} '
-      '${count == 0 ? 'empty' : 'bbox=${n(minX, mask.width)},${n(minY, mask.height)}-'
-                '${n(maxX, mask.width)},${n(maxY, mask.height)} '
-                'centroid=${n(sumX / count, mask.width)},'
-                '${n(sumY / count, mask.height)}'}',
-    );
-    // `?test-hooks=mask` also logs the exact strokes and the mask, one byte
-    // per pixel, for comparison with Google's Python reference.
-    if (Uri.base.queryParameters['test-hooks'] == 'mask') {
-      final bytes = Uint8List(confidence.length);
-      for (var i = 0; i < confidence.length; i++) {
-        bytes[i] = (confidence[i] * 255).round().clamp(0, 255);
-      }
-      debugPrintSynchronously(
-        'SEGMENT_MASK_DATA ${jsonEncode({
-          'delegate': _delegate.name,
-          'width': mask.width,
-          'height': mask.height,
-          'strokes': [
-            for (final stroke in _editor?.strokes ?? const <Stroke>[]) {
-                'brush': stroke.brushMode.name,
-                'completed': stroke.isCompleted,
-                'points': [
-                  for (final p in stroke.points) [p.x, p.y],
-                ],
-              },
-          ],
-          'mask': base64Encode(bytes),
-        })}',
-      );
-    }
   }
 
   Future<ui.Image> _decode(Uint8List rgba, int width, int height) {

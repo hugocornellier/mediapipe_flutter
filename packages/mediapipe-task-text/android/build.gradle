@@ -12,8 +12,8 @@ android {
     compileSdk = 36
     defaultConfig {
         minSdk = 24
-        // Applied to every app's release build; see the file.
-        consumerProguardFiles 'proguard-rules.pro'
+        // The release build's R8 rules come from mediapipe_core, which every
+        // app using this plugin also depends on.
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

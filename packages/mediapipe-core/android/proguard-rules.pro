@@ -1,6 +1,6 @@
 # Google's MediaPipe Android SDKs ship no R8 rules, and Flutter shrinks every
-# release build, so without these a release app cannot create a task. The
-# family plugins carry the same rules; R8 merges them.
+# release build, so without these a release app cannot create a task. They
+# cover every family: the vision, text and audio plugins depend on this one.
 #
 # Their native code reaches the Java classes by name (JNI), and Graph's logger
 # (Flogger) finds its caller by class name on the stack.

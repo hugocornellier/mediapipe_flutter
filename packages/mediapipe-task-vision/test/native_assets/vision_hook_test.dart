@@ -24,10 +24,12 @@ void main() {
 
   test('release rows are the source-built face runtimes', () {
     // Google's engine is core's; this package only builds the face pair.
-    final assets = visionRuntimeReleases.map(
-      (release) => (release.target, release.assetName),
-    );
-    expect(assets.toSet().length, assets.length);
+    // At most one release per target provides each task.
+    final provided = [
+      for (final release in visionRuntimeReleases)
+        for (final task in release.tasks) (release.target, task),
+    ];
+    expect(provided.toSet().length, provided.length);
     for (final release in visionRuntimeReleases) {
       expect(release.tasks, isNotEmpty);
       expect(

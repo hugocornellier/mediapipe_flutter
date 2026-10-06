@@ -5,8 +5,6 @@ environment:
   sdk: ^3.12.0
 dependencies:
   crypto: ^3.0.6
-  mediapipe_core:
-    path: ../../packages/mediapipe-core
   mediapipe_text:
     path: ../../packages/mediapipe-task-text
   mediapipe_vision:

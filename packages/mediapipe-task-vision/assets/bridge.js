@@ -89,10 +89,6 @@
         if (!pending) return;
         clearTimeout(pending.timer);
         state.pending.delete(data.id);
-        // Benchmarks set onTiming to collect the worker's per-request timings.
-        if (data.timing && globalThis.mediapipeVision.onTiming) {
-          globalThis.mediapipeVision.onTiming(data.timing);
-        }
         if (data.overlayFailed) state.overlayActive = false;
         if (data.error) pending.reject(new Error(data.error));
         else pending.resolve(data.result);
