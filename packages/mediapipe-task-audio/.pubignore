@@ -2,7 +2,6 @@
 models/
 .dart_tool/
 build/
-/assets/runtime/
 
 # Maintainer-only: tests and their fixtures, reference generators,
 # validation evidence and benchmarks live in the repository, not the package.

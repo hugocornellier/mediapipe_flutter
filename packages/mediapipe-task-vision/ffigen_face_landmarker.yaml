@@ -19,6 +19,10 @@ functions:
     - 'MpFaceLandmarker.*'
     - 'MpImage(CreateFromFile|CreateFromUint8Data|Free|GetWidth|GetHeight)'
     - MpErrorFree
+  # The package runs live streams through VIDEO calls, never the C API's
+  # LIVE_STREAM entry points.
+  exclude:
+    - '.*Async'
 structs:
   include:
     - 'Mp.*'

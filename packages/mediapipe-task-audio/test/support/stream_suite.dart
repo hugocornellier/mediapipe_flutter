@@ -25,9 +25,6 @@ import 'audio_model.dart';
 /// Google's browser task, faked. A clip's frames carry their index in the
 /// stream as their value, so each result names the frames it was given.
 final class FakeClips implements AudioTaskBackend {
-  FakeClips(this.options);
-
-  final Map<String, Object?> options;
   final clips = <(Float32List, double)>[];
 
   /// Chunks clips mode returns per clip: Google's returns two for a window at
@@ -162,8 +159,8 @@ void streamSuite() {
   setUp(() {
     clipBackends.clear();
     streamBackends.clear();
-    audioTaskBackendFactory = (options) async {
-      final backend = FakeClips(options);
+    audioTaskBackendFactory = (_) async {
+      final backend = FakeClips();
       clipBackends.add(backend);
       return backend;
     };

@@ -104,17 +104,19 @@ double shareError(Map<int, double> actual, Map<int, double> expected) {
       _ => (x, y),
     };
 
-/// The share of [upright]'s pixels (every [step]th in each direction) whose
-/// class [turned] repeats where rotatedImage moved them by [turn] degrees.
+/// The mask comparisons below sample every fourth pixel in each direction.
+const _step = 4;
+
+/// The share of [upright]'s sampled pixels whose class [turned] repeats where
+/// rotatedImage moved them by [turn] degrees.
 double turnedCategoryAgreement(
   CategoryMask upright,
   CategoryMask turned,
-  int turn, {
-  int step = 4,
-}) {
+  int turn,
+) {
   var same = 0, total = 0;
-  for (var y = 0; y < upright.height; y += step) {
-    for (var x = 0; x < upright.width; x += step) {
+  for (var y = 0; y < upright.height; y += _step) {
+    for (var x = 0; x < upright.width; x += _step) {
       final (tx, ty) = turnedPixel(x, y, upright.width, upright.height, turn);
       if (upright.categories[y * upright.width + x] ==
           turned.categories[ty * turned.width + tx]) {
@@ -127,17 +129,16 @@ double turnedCategoryAgreement(
 }
 
 /// The mean confidence difference between [upright] and [turned] at the
-/// pixels rotatedImage moved by [turn] degrees (every [step]th).
+/// sampled pixels rotatedImage moved by [turn] degrees.
 double turnedConfidenceError(
   ConfidenceMask upright,
   ConfidenceMask turned,
-  int turn, {
-  int step = 4,
-}) {
+  int turn,
+) {
   var error = 0.0;
   var total = 0;
-  for (var y = 0; y < upright.height; y += step) {
-    for (var x = 0; x < upright.width; x += step) {
+  for (var y = 0; y < upright.height; y += _step) {
+    for (var x = 0; x < upright.width; x += _step) {
       final (tx, ty) = turnedPixel(x, y, upright.width, upright.height, turn);
       error +=
           (upright.confidence[y * upright.width + x] -
@@ -149,21 +150,20 @@ double turnedConfidenceError(
   return error / total;
 }
 
-/// The share of [stretched]'s pixels (every [step]th in each direction) whose
-/// class [upright] has at the same relative position.
+/// The share of [stretched]'s sampled pixels whose class [upright] has at the
+/// same relative position.
 ///
 /// Google's Image Segmenter answers a rotated input with the upright mask
 /// resized to the input's dimensions, not turned back (upstream-issues.md
 /// UP-017), so this is how a rotated result matches the upright one.
 double stretchedCategoryAgreement(
   CategoryMask upright,
-  CategoryMask stretched, {
-  int step = 4,
-}) {
+  CategoryMask stretched,
+) {
   var same = 0, total = 0;
-  for (var y = 0; y < stretched.height; y += step) {
+  for (var y = 0; y < stretched.height; y += _step) {
     final uy = y * upright.height ~/ stretched.height;
-    for (var x = 0; x < stretched.width; x += step) {
+    for (var x = 0; x < stretched.width; x += _step) {
       final ux = x * upright.width ~/ stretched.width;
       if (upright.categories[uy * upright.width + ux] ==
           stretched.categories[y * stretched.width + x]) {
@@ -178,14 +178,13 @@ double stretchedCategoryAgreement(
 /// The mean confidence difference measured as [stretchedCategoryAgreement].
 double stretchedConfidenceError(
   ConfidenceMask upright,
-  ConfidenceMask stretched, {
-  int step = 4,
-}) {
+  ConfidenceMask stretched,
+) {
   var error = 0.0;
   var total = 0;
-  for (var y = 0; y < stretched.height; y += step) {
+  for (var y = 0; y < stretched.height; y += _step) {
     final uy = y * upright.height ~/ stretched.height;
-    for (var x = 0; x < stretched.width; x += step) {
+    for (var x = 0; x < stretched.width; x += _step) {
       final ux = x * upright.width ~/ stretched.width;
       error +=
           (upright.confidence[uy * upright.width + ux] -

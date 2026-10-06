@@ -29,11 +29,9 @@ migrate_working_dir/
 .dart_tool/
 build/
 /models/
-/assets/runtime/
 
 # Maintainer-only: tests and their fixtures, reference generators,
 # validation evidence and benchmarks live in the repository, not the package.
 /tool/
 /test/
-/bin/
 /example_segmenter/

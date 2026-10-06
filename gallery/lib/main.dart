@@ -442,7 +442,6 @@ class _NavigationSidebar extends StatelessWidget {
                                 task.title,
                                 selectedTask?.id == task.id,
                                 () => onSelect(task),
-                                experimental: task.isExperimental,
                               ),
                         ],
                     ],
@@ -460,9 +459,8 @@ class _NavigationSidebar extends StatelessWidget {
     BuildContext context,
     String title,
     bool selected,
-    VoidCallback onTap, {
-    bool experimental = false,
-  }) {
+    VoidCallback onTap,
+  ) {
     final c = GalleryColors.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
@@ -478,6 +476,7 @@ class _NavigationSidebar extends StatelessWidget {
             builder: (hovered) => Container(
               height: 34,
               padding: const EdgeInsets.symmetric(horizontal: 12),
+              alignment: AlignmentDirectional.centerStart,
               decoration: BoxDecoration(
                 color: selected || hovered ? c.surface2 : null,
                 borderRadius: BorderRadius.circular(Sizes.radiusSmall),
@@ -485,29 +484,14 @@ class _NavigationSidebar extends StatelessWidget {
                     ? Border(left: BorderSide(color: c.teal, width: 2))
                     : null,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: selected || hovered ? c.text : c.muted,
-                        fontSize: Sizes.sm,
-                      ),
-                    ),
-                  ),
-                  if (experimental)
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: c.teal,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                ],
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: selected || hovered ? c.text : c.muted,
+                  fontSize: Sizes.sm,
+                ),
               ),
             ),
           ),
@@ -627,7 +611,6 @@ class _Gallery extends StatelessWidget {
                                   key: ValueKey('gallery-card-${task.title}'),
                                   title: task.title,
                                   summary: task.summary,
-                                  experimental: task.experimentalReason,
                                   gpu: _gpu(task),
                                   onTap: () => onTaskSelected(task),
                                 ),
@@ -731,7 +714,6 @@ class _TaskCard extends StatelessWidget {
     required this.summary,
     required this.gpu,
     required this.onTap,
-    this.experimental,
   });
 
   final String title;
@@ -740,9 +722,6 @@ class _TaskCard extends StatelessWidget {
 
   /// Null for a task this build does not bundle.
   final VoidCallback? onTap;
-
-  /// Why the task is experimental, or null.
-  final String? experimental;
 
   @override
   Widget build(BuildContext context) {
@@ -767,25 +746,13 @@ class _TaskCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          color: c.text,
-                          fontSize: Sizes.md,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (experimental case final reason?)
-                        Tooltip(
-                          message: reason,
-                          child: const Tag('Experimental', accent: true),
-                        ),
-                    ],
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: c.text,
+                      fontSize: Sizes.md,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(

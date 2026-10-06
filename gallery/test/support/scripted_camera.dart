@@ -52,8 +52,10 @@ final class ScriptedCamera extends CameraPlatform {
     }
   }
 
-  /// A 4x4 padded BGRA frame, small enough to build hundreds of.
-  static CameraImageData smallFrame({int width = 4, int height = 4}) {
+  /// A padded BGRA frame, 4 pixels high and [width] (4 by default) wide,
+  /// small enough to build hundreds of.
+  static CameraImageData smallFrame({int width = 4}) {
+    const height = 4;
     final stride = width * 4 + 8;
     return CameraImageData(
       format: const CameraImageFormat(ImageFormatGroup.bgra8888, raw: 'BGRA'),

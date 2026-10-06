@@ -5,6 +5,7 @@ import 'dart:js_interop_unsafe';
 import 'package:web/web.dart' as web;
 
 import '../video_frames.dart';
+import 'frame_rate.dart';
 
 extension type _VideoCallbacks(JSObject object) implements JSObject {
   external int requestVideoFrameCallback(JSFunction callback);
@@ -75,27 +76,8 @@ Future<VideoFileReader> open(String url) async {
   }
 }
 
-/// Common frame rates, which a measured rate within 2% is taken to be.
-const _standardRates = [
-  24000 / 1001,
-  24.0,
-  25.0,
-  30000 / 1001,
-  30.0,
-  48.0,
-  50.0,
-  60000 / 1001,
-  60.0,
-  90.0,
-  100.0,
-  120.0,
-];
-
-/// How long one frame shows, measured from a moment of muted playback: the
-/// media time covered per presented frame, rounded to a common rate when it
-/// is one. The average, not the shortest step: browsers report media time
-/// with a display frame's jitter, and a step that comes out short would visit
-/// every frame twice.
+/// How long one frame shows, measured from a moment of muted playback; see
+/// [frameSecondsFrom].
 Future<double> _frameSeconds(web.HTMLVideoElement video) async {
   if (!video.has('requestVideoFrameCallback')) return _fallbackFrameSeconds;
   final times = <(double, int)>[];
@@ -123,17 +105,7 @@ Future<double> _frameSeconds(web.HTMLVideoElement video) async {
   } finally {
     video.pause();
   }
-  if (times.length < 2) return _fallbackFrameSeconds;
-  final (firstTime, firstPresented) = times.first;
-  final (lastTime, lastPresented) = times.last;
-  final frames = lastPresented - firstPresented;
-  final span = lastTime - firstTime;
-  if (frames <= 0 || span <= 0) return _fallbackFrameSeconds;
-  final rate = frames / span;
-  for (final standard in _standardRates) {
-    if ((rate - standard).abs() < standard * 0.02) return 1 / standard;
-  }
-  return 1 / rate;
+  return frameSecondsFrom(times) ?? _fallbackFrameSeconds;
 }
 
 final class _WebReader implements VideoFileReader {

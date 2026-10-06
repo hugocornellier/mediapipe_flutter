@@ -92,6 +92,7 @@ def main():
               'cases': []}
     options = api.InteractiveSegmenterOptions(mp.tasks.BaseOptions(
         model_asset_path=str(model), delegate=mp.tasks.BaseOptions.Delegate.CPU))
+    written = {}
     with api.InteractiveSegmenter.create_from_options(options) as task:
         for name, kind, set_image, strokes in scenarios:
             image = images[kind]
@@ -108,8 +109,10 @@ def main():
             assert mask.shape == (image.height, image.width, 1)
             assert np.isfinite(mask).all() and mask.min() >= 0 and mask.max() <= 1
             data = mask.tobytes()
-            filename = f'{name}.f32.gz'
-            (fixtures / filename).write_bytes(gzip.compress(data, mtime=0))
+            # Cases with the same mask share the first one's file.
+            filename = written.setdefault(digest(data), f'{name}.f32.gz')
+            if filename == f'{name}.f32.gz':
+                (fixtures / filename).write_bytes(gzip.compress(data, mtime=0))
             report['cases'].append({'name': name, 'input': kind, 'set_image': set_image,
                 'strokes': strokes, 'width': image.width, 'height': image.height,
                 'mask': filename, 'sha256': digest(data),

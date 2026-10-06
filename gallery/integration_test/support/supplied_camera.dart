@@ -19,11 +19,10 @@ import 'live_subject.dart';
 Future<void> selectDelegate(
   WidgetTester tester,
   LiveCameraController<Object?> controller,
-  Delegate delegate, {
-  Duration timeout = const Duration(minutes: 3),
-}) async {
+  Delegate delegate,
+) async {
   Future<void> settle() async {
-    final deadline = DateTime.now().add(timeout);
+    final deadline = DateTime.now().add(const Duration(minutes: 3));
     while ((controller.changing || !controller.running) &&
         controller.error == null &&
         DateTime.now().isBefore(deadline)) {

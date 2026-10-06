@@ -161,8 +161,10 @@ RgbaImage cropImage(RgbaImage source, Rect region) {
   return (rgba: out, width: width, height: height);
 }
 
-/// Bounding box of pixels close to [color], or null when none match.
-Rect? boundsOfColor(RgbaImage image, Color color, {int slack = 8}) {
+/// Bounding box of pixels within 8 of [color] in each channel, or null when
+/// none match.
+Rect? boundsOfColor(RgbaImage image, Color color) {
+  const slack = 8;
   var minX = image.width, minY = image.height, maxX = -1, maxY = -1;
   final r = (color.r * 255).round(),
       g = (color.g * 255).round(),

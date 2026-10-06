@@ -334,8 +334,6 @@ dependencies:
     sdk: flutter
   mediapipe_vision:
     path: ../packages/mediapipe-task-vision
-  mediapipe_core:
-    path: ../packages/mediapipe-core
   mediapipe_text:
     path: ../packages/mediapipe-task-text
   mediapipe_audio:

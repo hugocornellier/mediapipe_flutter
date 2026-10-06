@@ -90,7 +90,6 @@ final class GalleryTask {
     required this.sample,
     required this.capabilities,
     this.demo = GalleryDemo.none,
-    this.experimentalReason,
     this.officialMacosCapabilities,
     this.category = GalleryCategory.vision,
     String? runtimeId,
@@ -117,19 +116,10 @@ final class GalleryTask {
   /// Whether this entry has a screen of its own, and so can be a tile.
   bool get hasOwnPage => demo != GalleryDemo.none;
 
-  /// Why this tile's task is not validated on the platforms it appears on.
-  ///
-  /// A tile with a reason runs real inference but has never been checked
-  /// against Google's outputs here, so it is shown apart from the validated
-  /// ones and never counted among them.
-  final String? experimentalReason;
-
   /// The capability claim this entry earns when the build manifest says the
   /// macOS tasks runtime (Google's engine) was selected for [runtimeId], if
   /// any.
   final TaskCapabilities Function(TaskPlatform)? officialMacosCapabilities;
-
-  bool get isExperimental => experimentalReason != null;
 
   /// Model asset name, as the gallery's preparer bundles it.
   final String model;

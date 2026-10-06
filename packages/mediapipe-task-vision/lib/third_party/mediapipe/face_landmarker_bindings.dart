@@ -66,41 +66,6 @@ MpStatus MpFaceLandmarkerCreate(
     MpImagePtr,
     ffi.Pointer<MpImageProcessingOptions>,
     ffi.Int64,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpFaceLandmarkerDetectAsync')
-external int _MpFaceLandmarkerDetectAsync(
-  MpFaceLandmarkerPtr landmarker,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpFaceLandmarkerDetectAsync(
-  MpFaceLandmarkerPtr landmarker,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpFaceLandmarkerDetectAsync(
-      landmarker,
-      image,
-      options,
-      timestamp_ms,
-      error_msg,
-    ),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpFaceLandmarkerPtr,
-    MpImagePtr,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Int64,
     ffi.Pointer<MpFaceLandmarkerResult>,
     ffi.Pointer<ffi.Pointer<ffi.Char>>,
   )

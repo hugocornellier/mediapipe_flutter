@@ -29,12 +29,3 @@ migrate_working_dir/
 .packages
 build/
 /models/
-/assets/runtime/
-
-
-# Test artifacts (these are re-compiled before running tests)
-test/c/fake_text_classifier
-test/c/fake_text_classifier.dylib
-test/c/fake_text_classifier.o
-
-**/assets/libtext_classifier.dylib

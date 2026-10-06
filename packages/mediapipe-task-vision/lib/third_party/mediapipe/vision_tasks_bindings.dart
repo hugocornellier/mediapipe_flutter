@@ -66,41 +66,6 @@ MpStatus MpGestureRecognizerCreate(
     MpImagePtr,
     ffi.Pointer<MpImageProcessingOptions>,
     ffi.Int64,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpGestureRecognizerRecognizeAsync')
-external int _MpGestureRecognizerRecognizeAsync(
-  MpGestureRecognizerPtr recognizer,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> image_processing_options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpGestureRecognizerRecognizeAsync(
-  MpGestureRecognizerPtr recognizer,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> image_processing_options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpGestureRecognizerRecognizeAsync(
-      recognizer,
-      image,
-      image_processing_options,
-      timestamp_ms,
-      error_msg,
-    ),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpGestureRecognizerPtr,
-    MpImagePtr,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Int64,
     ffi.Pointer<MpGestureRecognizerResult>,
     ffi.Pointer<ffi.Pointer<ffi.Char>>,
   )
@@ -212,41 +177,6 @@ MpStatus MpHandLandmarkerCreate(
 ) {
   return MpStatus.fromValue(
     _MpHandLandmarkerCreate(options, landmarker, error_msg),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpHandLandmarkerPtr,
-    MpImagePtr,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Int64,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpHandLandmarkerDetectAsync')
-external int _MpHandLandmarkerDetectAsync(
-  MpHandLandmarkerPtr landmarker,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpHandLandmarkerDetectAsync(
-  MpHandLandmarkerPtr landmarker,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpHandLandmarkerDetectAsync(
-      landmarker,
-      image,
-      options,
-      timestamp_ms,
-      error_msg,
-    ),
   );
 }
 
@@ -370,41 +300,6 @@ MpStatus MpHolisticLandmarkerCreate(
     MpImagePtr,
     ffi.Pointer<MpImageProcessingOptions>,
     ffi.Int64,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpHolisticLandmarkerDetectAsync')
-external int _MpHolisticLandmarkerDetectAsync(
-  MpHolisticLandmarkerPtr landmarker,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpHolisticLandmarkerDetectAsync(
-  MpHolisticLandmarkerPtr landmarker,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpHolisticLandmarkerDetectAsync(
-      landmarker,
-      image,
-      options,
-      timestamp_ms,
-      error_msg,
-    ),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpHolisticLandmarkerPtr,
-    MpImagePtr,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Int64,
     ffi.Pointer<MpHolisticLandmarkerResult>,
     ffi.Pointer<ffi.Pointer<ffi.Char>>,
   )
@@ -468,41 +363,6 @@ MpStatus MpHolisticLandmarkerDetectImage(
       image,
       options,
       result,
-      error_msg,
-    ),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpImageClassifierPtr,
-    MpImagePtr,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Int64,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpImageClassifierClassifyAsync')
-external int _MpImageClassifierClassifyAsync(
-  MpImageClassifierPtr classifier,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> image_processing_options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpImageClassifierClassifyAsync(
-  MpImageClassifierPtr classifier,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> image_processing_options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpImageClassifierClassifyAsync(
-      classifier,
-      image,
-      image_processing_options,
-      timestamp_ms,
       error_msg,
     ),
   );
@@ -784,41 +644,6 @@ MpStatus MpImageEmbedderCreate(
     MpImagePtr,
     ffi.Pointer<MpImageProcessingOptions>,
     ffi.Int64,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpImageEmbedderEmbedAsync')
-external int _MpImageEmbedderEmbedAsync(
-  MpImageEmbedderPtr embedder,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> image_processing_options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpImageEmbedderEmbedAsync(
-  MpImageEmbedderPtr embedder,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> image_processing_options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpImageEmbedderEmbedAsync(
-      embedder,
-      image,
-      image_processing_options,
-      timestamp_ms,
-      error_msg,
-    ),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpImageEmbedderPtr,
-    MpImagePtr,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Int64,
     ffi.Pointer<MpEmbeddingResult>,
     ffi.Pointer<ffi.Pointer<ffi.Char>>,
   )
@@ -1009,41 +834,6 @@ MpStatus MpImageSegmenterGetLabels(
     MpImagePtr,
     ffi.Pointer<MpImageProcessingOptions>,
     ffi.Int64,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpImageSegmenterSegmentAsync')
-external int _MpImageSegmenterSegmentAsync(
-  MpImageSegmenterPtr segmenter,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpImageSegmenterSegmentAsync(
-  MpImageSegmenterPtr segmenter,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpImageSegmenterSegmentAsync(
-      segmenter,
-      image,
-      options,
-      timestamp_ms,
-      error_msg,
-    ),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpImageSegmenterPtr,
-    MpImagePtr,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Int64,
     ffi.Pointer<MpImageSegmenterResult>,
     ffi.Pointer<ffi.Pointer<ffi.Char>>,
   )
@@ -1158,41 +948,6 @@ MpStatus MpObjectDetectorCreate(
     MpImagePtr,
     ffi.Pointer<MpImageProcessingOptions>,
     ffi.Int64,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpObjectDetectorDetectAsync')
-external int _MpObjectDetectorDetectAsync(
-  MpObjectDetectorPtr detector,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpObjectDetectorDetectAsync(
-  MpObjectDetectorPtr detector,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpObjectDetectorDetectAsync(
-      detector,
-      image,
-      options,
-      timestamp_ms,
-      error_msg,
-    ),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpObjectDetectorPtr,
-    MpImagePtr,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Int64,
     ffi.Pointer<MpObjectDetectorResult>,
     ffi.Pointer<ffi.Pointer<ffi.Char>>,
   )
@@ -1298,41 +1053,6 @@ MpStatus MpPoseLandmarkerCreate(
 ) {
   return MpStatus.fromValue(
     _MpPoseLandmarkerCreate(options, landmarker_out, error_msg),
-  );
-}
-
-@ffi.Native<
-  ffi.UnsignedInt Function(
-    MpPoseLandmarkerPtr,
-    MpImagePtr,
-    ffi.Pointer<MpImageProcessingOptions>,
-    ffi.Int64,
-    ffi.Pointer<ffi.Pointer<ffi.Char>>,
-  )
->(symbol: 'MpPoseLandmarkerDetectAsync')
-external int _MpPoseLandmarkerDetectAsync(
-  MpPoseLandmarkerPtr landmarker,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-);
-
-MpStatus MpPoseLandmarkerDetectAsync(
-  MpPoseLandmarkerPtr landmarker,
-  MpImagePtr image,
-  ffi.Pointer<MpImageProcessingOptions> options,
-  int timestamp_ms,
-  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
-) {
-  return MpStatus.fromValue(
-    _MpPoseLandmarkerDetectAsync(
-      landmarker,
-      image,
-      options,
-      timestamp_ms,
-      error_msg,
-    ),
   );
 }
 

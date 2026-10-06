@@ -33,7 +33,6 @@ final class VisionRuntimeRelease {
     required this.archive,
     required this.libraryName,
     required this.librarySha256,
-    required this.assetName,
     required this.localBuildDirectory,
   });
 
@@ -61,10 +60,6 @@ final class VisionRuntimeRelease {
 
   /// SHA-256 of the library, pinned independently of the downloaded manifest.
   final String librarySha256;
-
-  /// Primary code asset name, without the package prefix. Combined runtimes
-  /// are also bundled under the other selected tasks' binding asset names.
-  final String assetName;
 
   /// Package-relative directory where `tool/build_native.py` writes the same
   /// library, so maintainers can test a source build before publishing it.
@@ -106,7 +101,6 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     libraryName: 'libface_detector.dylib',
     librarySha256:
         'c57d0698684e0abcb6a2cfb5a7d38855a7044a43c9714add50f92f36525c9497',
-    assetName: 'face_detector.dylib',
     localBuildDirectory: 'build/native/',
   ),
   VisionRuntimeRelease(
@@ -124,7 +118,6 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     libraryName: 'libface_landmarker.dylib',
     librarySha256:
         '825cdbb58d763d87a0e35b8c38406ac738841ac7bbe1af6888de5b7e1074f4f9',
-    assetName: 'face_landmarker.dylib',
     localBuildDirectory: 'build/native/face_landmarker/',
   ),
   // Built with the device SDK, so it is a separate artifact from the simulator
@@ -146,7 +139,6 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     libraryName: 'libmediapipe.dylib',
     librarySha256:
         'a060f2d1f503e938e4e21432170c1b788563ed7123a6e1a71a9ab3185bae3654',
-    assetName: 'face_detector.dylib',
     localBuildDirectory: 'build/native/ios/arm64/',
   ),
   VisionRuntimeRelease(
@@ -164,7 +156,6 @@ const visionRuntimeReleases = <VisionRuntimeRelease>[
     libraryName: 'libmediapipe.dylib',
     librarySha256:
         'a4fea1f2abddb6d656b043b5471a09a64df1308475422da9800c8f880cd2aa9e',
-    assetName: 'face_detector.dylib',
     localBuildDirectory: 'build/native/ios-simulator/arm64/',
   ),
 ];
