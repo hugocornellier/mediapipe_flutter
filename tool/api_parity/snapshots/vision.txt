@@ -546,8 +546,7 @@ final class TaskCapabilities
   String? get minimumOperatingSystemVersion
   TaskPlatform get platform
   bool get isSupported
-  factory TaskCapabilities.cpuOnTargets({required TaskPlatform platform, required String gpuUnavailableReason, Map<String, String?> targets = tasksRuntimeTargets, String runtimeVersion = '1.0.1'})
-  factory TaskCapabilities.macosCpu({required TaskPlatform platform, required String gpuUnavailableReason})
+  factory TaskCapabilities.cpuOnTargets({required TaskPlatform platform, required String gpuUnavailableReason, required String runtimeVersion, Map<String, String?> targets = tasksRuntimeTargets})
   factory TaskCapabilities.onTargets({required TaskPlatform platform, required Map<Delegate, Map<String, String?>> delegates, required Map<Delegate, String> unavailableReasons, required String runtimeVersion})
 final class TaskException extends MediaPipeException
   Object? get cause
@@ -628,15 +627,15 @@ abstract base class VisionTaskOptions extends TaskOptions
   new VisionTaskOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, Delegate delegate = Delegate.cpu, RunningMode runningMode = RunningMode.image})
 function TaskCapabilities faceDetectorCapabilitiesForPlatform(TaskPlatform platform)
 function TaskCapabilities faceLandmarkerCapabilitiesForPlatform(TaskPlatform platform)
-function TaskCapabilities gestureRecognizerCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
-function TaskCapabilities handLandmarkerCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
-function TaskCapabilities holisticLandmarkerCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
-function TaskCapabilities imageClassifierCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
-function TaskCapabilities imageEmbedderCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
-function TaskCapabilities imageSegmenterCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
-function TaskCapabilities interactiveSegmenterCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
-function TaskCapabilities objectDetectorCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
-function TaskCapabilities poseLandmarkerCapabilitiesForPlatform(TaskPlatform platform, {bool officialMacosRuntime = false, bool officialIosRuntime = false})
+function TaskCapabilities gestureRecognizerCapabilitiesForPlatform(TaskPlatform platform)
+function TaskCapabilities handLandmarkerCapabilitiesForPlatform(TaskPlatform platform)
+function TaskCapabilities holisticLandmarkerCapabilitiesForPlatform(TaskPlatform platform)
+function TaskCapabilities imageClassifierCapabilitiesForPlatform(TaskPlatform platform)
+function TaskCapabilities imageEmbedderCapabilitiesForPlatform(TaskPlatform platform)
+function TaskCapabilities imageSegmenterCapabilitiesForPlatform(TaskPlatform platform)
+function TaskCapabilities interactiveSegmenterCapabilitiesForPlatform(TaskPlatform platform)
+function TaskCapabilities objectDetectorCapabilitiesForPlatform(TaskPlatform platform)
+function TaskCapabilities poseLandmarkerCapabilitiesForPlatform(TaskPlatform platform)
 function Future<TaskCapabilities> queryFaceDetectorCapabilities()
 function Future<TaskCapabilities> queryFaceLandmarkerCapabilities()
 function Future<TaskCapabilities> queryGestureRecognizerCapabilities()

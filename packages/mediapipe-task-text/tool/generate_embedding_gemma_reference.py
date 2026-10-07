@@ -17,9 +17,10 @@ import sys
 import time
 
 PACKAGE = Path(__file__).resolve().parents[1]
-MODEL_SHA256 = '913b7a1edc7c7c3d1da3979ec1d0648ed9e0a370f181bb59ab177ca4b97707ad'
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
 from official_wheels import host_runtime  # noqa: E402
+from model_pins import model_sha256  # noqa: E402
+MODEL_SHA256 = model_sha256('embedding_gemma.task')
 
 
 def main():
@@ -27,8 +28,6 @@ def main():
     parser.add_argument('--python-package-root', type=Path)
     parser.add_argument('--output', type=Path,
                         default=PACKAGE / 'test/fixtures/embedding_gemma/official_reference.json')
-    parser.add_argument('--runtime-version',
-                        help="Google's release to compare with instead of this host's pin")
     args = parser.parse_args()
     if args.python_package_root:
         sys.path.insert(0, str(args.python_package_root.resolve()))
@@ -42,7 +41,7 @@ def main():
     from mediapipe.tasks.python.components.containers.embedding_result_c import (
         MpEmbeddingC, MpEmbeddingResultC)
 
-    runtime = host_runtime(args.runtime_version)
+    runtime = host_runtime()
     assert mp.__version__ == runtime['version'], mp.__version__
     library = Path(mp.__file__).parent / 'tasks/c' / runtime['library']
     assert hashlib.sha256(library.read_bytes()).hexdigest() == runtime['library_sha256']

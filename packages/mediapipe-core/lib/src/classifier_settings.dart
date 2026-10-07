@@ -60,15 +60,13 @@ void checkClassifierSettings(ClassifierSettings settings) {
   }
 }
 
-/// [settings] named as in Google's JavaScript API, which the Android adapters
-/// read by the same names.
+/// [settings] named as in Google's JavaScript API, for the browser adapters.
 ///
 /// The threshold is always sent, as Google's Python and C APIs apply it:
-/// left unset, its JavaScript and mobile SDKs apply the model's own
-/// threshold (the language detector's drops all but the top language), so
-/// the same options would answer differently from the native runtime. A
-/// negative count means every category, which Google's Android SDK only
-/// accepts as an unset option.
+/// left unset, its JavaScript API applies the model's own threshold (the
+/// language detector's drops all but the top language), so the same options
+/// would answer differently from the native runtime. A count of zero or
+/// less is left unset, which Google reads as every category.
 Map<String, Object?> classifierSettingsJson(ClassifierSettings settings) => {
   'displayNamesLocale': ?settings.displayNamesLocale,
   if (settings.maxResults > 0) 'maxResults': settings.maxResults,

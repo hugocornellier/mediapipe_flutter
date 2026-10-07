@@ -9,7 +9,6 @@ export 'src/capabilities/platform_stub.dart'
     if (dart.library.io) 'src/capabilities/platform_io.dart';
 export 'src/capabilities/task_capabilities.dart'
     show
-        macosTasksRuntimeTargets,
         requireDelegate,
         taskPlatformGpuReader,
         tasksRuntimeTargets,

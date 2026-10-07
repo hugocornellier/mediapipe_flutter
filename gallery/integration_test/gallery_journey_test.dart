@@ -67,7 +67,6 @@ void main() {
         supportedTasks(
           platform,
           assets.bundledTasks,
-          assets.officialMacosLandmarkTasks,
         ).where((task) => task.hasOwnPage).toList()..sort((a, b) {
           final category = a.category.index.compareTo(b.category.index);
           return category != 0 ? category : a.title.compareTo(b.title);
@@ -99,9 +98,8 @@ void main() {
     );
 
     var gpuRefused = false;
-    Set<Delegate> offered(GalleryTask task) => task
-        .capabilitiesFor(platform, assets.officialMacosLandmarkTasks)
-        .supportedDelegates;
+    Set<Delegate> offered(GalleryTask task) =>
+        task.capabilities(platform).supportedDelegates;
     // The delegates this run exercises, in the order a user would try them.
     List<Delegate> delegatesFor(GalleryTask task) => [
       if (offered(task).contains(Delegate.cpu)) Delegate.cpu,
@@ -417,6 +415,35 @@ void main() {
             );
             checks.add('${task.id}:${delegate.name}:tap');
           }
+          // Undo drops the stroke; a new stroke, then Clear, drops that one.
+          FeedButton button(String tooltip) => tester.widget<FeedButton>(
+            find.byWidgetPredicate(
+              (widget) => widget is FeedButton && widget.tooltip == tooltip,
+            ),
+          );
+          await _until(tester, () => button('Undo stroke').onPressed != null);
+          await tester.tap(find.byTooltip('Undo stroke'));
+          // Undoing the only stroke reloads the image, as Clear does.
+          await _until(
+            tester,
+            () =>
+                button('Undo stroke').onPressed == null &&
+                canvas.evaluate().isNotEmpty,
+          );
+          await _settle(tester);
+          await tester.tap(canvas);
+          await _until(
+            tester,
+            () => button('Clear selection').onPressed != null,
+          );
+          await tester.tap(find.byTooltip('Clear selection'));
+          await _until(
+            tester,
+            () =>
+                button('Undo stroke').onPressed == null &&
+                button('Clear selection').onPressed == null,
+          );
+          checks.add('${task.id}:undo-clear');
           break;
         case GalleryDemo.none:
           fail('${task.id} has no page');
@@ -476,10 +503,9 @@ Future<void> _videoFiles(GalleryAssets assets) async {
     expect((timestamps[i] - i * 1000000 / 30).abs(), lessThan(1000));
   }
   expect(rotated.rotationDegrees, 90);
-  final model = (assets.manifest['models'] as Map)['face_detector'] as String;
   final detector = await FaceDetector.create(
     FaceDetectorOptions(
-      modelPath: assets.path(model),
+      model: VisionModels.faceDetector,
       runningMode: RunningMode.video,
     ),
   );

@@ -1,10 +1,10 @@
-"""Generate masks and ABI facts through Google's unmodified Python 1.0.1 API.
+"""Generate masks and ABI facts through Google's unmodified Python API.
 
+It runs Google's wheel pinned for this host (core's tool/official_wheels.py).
 The checked-in fixtures come from the macOS arm64 wheel. The Linux x64 desktop
-job regenerates them in place with the pinned Linux wheel, whose library the
-package bundles there, because CPU results drift between hosts.
-Use a separate environment from the face-task reference environment (1.0.0).
---python-package-root may point at an extracted, checksum-verified 1.0.1 wheel.
+job regenerates them in place with the pinned Linux wheel, because CPU results
+drift between hosts. --python-package-root may point at an extracted,
+checksum-verified copy of that wheel.
 Ordinary Dart tests need neither Python nor network access for their fixtures.
 """
 import argparse
@@ -15,10 +15,16 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import sys
 import time
 
-from prepare_interactive_segmenter import PACKAGE, LIBRARY_SHA256, MODEL_SHA256
+from official_face_runtime import LIBRARY_NAME, LIBRARY_SHA256, RUNTIME, VERSION
+
+PACKAGE = Path(__file__).resolve().parents[1]
+# The model pin the package itself uses (VisionModels.interactiveSegmenter).
+MODEL_SHA256 = re.search(r"const interactiveSegmenterModelSha256\s*=\s*'([0-9a-f]{64})'",
+                         (PACKAGE / 'lib/models.dart').read_text()).group(1)
 
 
 def digest(data):
@@ -37,15 +43,11 @@ def main():
     from mediapipe.tasks.python.vision import interactive_segmenter as api
     from mediapipe.tasks.python.core.base_options_c import MpBaseOptionsC
 
-    assert mp.__version__ == '1.0.1', mp.__version__
+    assert mp.__version__ == VERSION, mp.__version__
     host = (platform.system(), platform.machine().lower())
-    if host == ('Darwin', 'arm64'):
-        library, library_sha256 = 'libmediapipe.dylib', LIBRARY_SHA256
-    elif host in (('Linux', 'x86_64'), ('Linux', 'amd64')):
-        from cpu_reference import wheel_pin
-        library, library_sha256 = 'libmediapipe.so', wheel_pin('linux/x64')[2]
-    else:
-        raise SystemExit('The stateful API is pinned for macOS arm64 and Linux x64.')
+    if host not in (('Darwin', 'arm64'), ('Linux', 'x86_64'), ('Linux', 'amd64')):
+        raise SystemExit('The stateful API is validated on macOS arm64 and Linux x64.')
+    library, library_sha256 = LIBRARY_NAME, LIBRARY_SHA256
     library = Path(mp.__file__).parent / 'tasks/c' / library
     assert digest(library.read_bytes()) == library_sha256
     model = PACKAGE / 'models/interactive_segmentation.task'
@@ -82,7 +84,7 @@ def main():
         ('replaced-image', 'rgb', True, [dog]),
     ]
     images = {'file': source, 'rgb': raw, 'rgba': rgba, 'blank': blank}
-    report = {'runtime': 'mediapipe==1.0.1', 'delegate': 'CPU',
+    report = {'runtime': RUNTIME, 'delegate': 'CPU',
               'library_sha256': library_sha256, 'model_sha256': MODEL_SHA256,
               'image': {'file': photo.name, 'sha256': digest(photo.read_bytes()),
                         'source': 'https://storage.googleapis.com/mediapipe-assets/cats_and_dogs.jpg'},

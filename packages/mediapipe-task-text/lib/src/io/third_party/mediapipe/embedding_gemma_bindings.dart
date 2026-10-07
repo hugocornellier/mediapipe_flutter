@@ -1,30 +1,15 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache 2.0.
-// Adapted from mediapipe==1.0.1 Python ctypes: text/text_embedder.py,
-// core/base_options_c.py, components/containers/embedding_result_c.py.
+// Adapted from mediapipe==1.0.1 Python ctypes: text/text_embedder.py and
+// components/containers/embedding_result_c.py; MpBaseOptions is core's.
 // Sizes and field offsets are checked against the pinned official definitions.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
 
-const _asset = 'package:mediapipe_core/mediapipe.dylib';
+import 'package:mediapipe_core/native_structs.dart';
 
-final class MpBaseOptions extends Struct {
-  external Pointer<Char> modelAssetBuffer;
-  @Uint32()
-  external int modelAssetBufferCount;
-  external Pointer<Char> modelAssetPath;
-  @Int32()
-  external int fileDescriptor;
-  @Int32()
-  external int delegate;
-  @Int32()
-  external int hostEnvironment;
-  @Int32()
-  external int hostSystem;
-  external Pointer<Char> hostVersion;
-  external Pointer<Char> caBundlePath;
-  external Pointer<Char> appId;
-  external Pointer<Char> appVersion;
-}
+export 'package:mediapipe_core/native_structs.dart' show MpBaseOptions;
+
+const _asset = 'package:mediapipe_text/mediapipe.dylib';
 
 final class MpEmbedderOptions extends Struct {
   @Bool()

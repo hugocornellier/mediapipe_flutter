@@ -1,9 +1,9 @@
-/// One decoder from the platform SDK adapters' results to the Dart types.
+/// One decoder from the browser adapter's results to the Dart types.
 ///
-/// Google's browser runtime and Android SDK both deliver results through
-/// [VisionResultData]: the result fields in the JSON shape of Google's
-/// JavaScript API, with landmarks and masks kept as packed typed arrays.
-/// The adapters only reshape; every value is read here.
+/// Google's browser runtime delivers results through [VisionResultData]: the
+/// result fields in the JSON shape of its JavaScript API, with image
+/// landmarks and masks kept as packed typed arrays. The adapter only
+/// reshapes; every value is read here.
 library;
 
 import 'dart:typed_data';
@@ -19,11 +19,10 @@ import 'landmark_codec.dart';
 final class VisionResultData {
   /// [result] holds the task's fields in Google's JavaScript shape, except
   /// that masks arrive as `[width, height, Float32List or Uint8List]` and
-  /// that packed landmarks replace their JSON lists: [landmarks] with
-  /// [counts] (points per subject) for the image-space landmarks, and
-  /// [worldLandmarks] with [worldCounts] for the world landmarks when the
-  /// adapter packs those too. Holistic packs every part into [landmarks] in
-  /// the order of [parts], each entry a part name and its points per subject.
+  /// that packed landmarks replace the image-space landmarks' JSON lists:
+  /// [landmarks] with [counts] (points per subject). Holistic packs every
+  /// part into [landmarks] in the order of [parts], each entry a part name
+  /// and its points per subject.
   const VisionResultData({
     required this.result,
     required this.width,
@@ -31,8 +30,6 @@ final class VisionResultData {
     this.timestamp,
     this.landmarks,
     this.counts,
-    this.worldLandmarks,
-    this.worldCounts,
     this.parts,
   });
 
@@ -75,12 +72,6 @@ final class VisionResultData {
 
   /// Points per subject in [landmarks].
   final List<int>? counts;
-
-  /// Packed world landmarks, five doubles per point.
-  final Float64List? worldLandmarks;
-
-  /// Points per subject in [worldLandmarks].
-  final List<int>? worldCounts;
 
   /// Holistic's packed parts, in the order they appear in [landmarks].
   final List<(String, List<int>)>? parts;
@@ -341,18 +332,9 @@ List<ConfidenceMask>? _confidenceMasks(Object? masks) => masks is List
     : null;
 
 /// A box as Google's browser API reports it (`originX`, `originY`, `width`,
-/// `height`), or as its Android SDK does (`left`, `top`, `right`, `bottom`),
-/// which is read directly so a whole-pixel edge is never rounded away.
+/// `height`).
 BoundingBox _box(Object? json) {
   final box = json as Map;
-  if (box.containsKey('left')) {
-    return BoundingBox(
-      left: _number(box['left']).toInt(),
-      top: _number(box['top']).toInt(),
-      right: _number(box['right']).toInt(),
-      bottom: _number(box['bottom']).toInt(),
-    );
-  }
   final left = _number(box['originX']), top = _number(box['originY']);
   return BoundingBox(
     left: left.toInt(),
@@ -375,12 +357,8 @@ List<List<NormalizedLandmark>> _imageLandmarks(
   return _jsonLandmarks(data.result[key], NormalizedLandmark.new);
 }
 
-List<List<Landmark>> _worldLandmarks(VisionResultData data, String key) {
-  if (data.worldLandmarks case final packed?) {
-    return unpackLandmarks(packed, data.worldCounts!, Landmark.new);
-  }
-  return _jsonLandmarks(data.result[key], Landmark.new);
-}
+List<List<Landmark>> _worldLandmarks(VisionResultData data, String key) =>
+    _jsonLandmarks(data.result[key], Landmark.new);
 
 List<List<T>> _jsonLandmarks<T>(Object? json, LandmarkBuilder<T> point) => [
   for (final subject in (json as List?) ?? const [])

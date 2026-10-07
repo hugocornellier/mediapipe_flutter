@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:isolate';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
@@ -9,11 +8,10 @@ import '../types/strokes.dart';
 import '../types/vision_types.dart';
 import '../vision_task_backend.dart';
 import 'native_interactive_segmenter.dart';
-import 'native_ios_interactive_segmenter.dart';
 
 /// Google's stateful MagicTouch segmenter on a persistent worker isolate:
 /// the image and stroke histories travel to the worker in submission order,
-/// where Google's desktop engine or its iOS SDK keeps the session.
+/// where Google's vision library keeps the session.
 final class NativeInteractiveSegmenterRunner
     implements InteractiveSegmenterBackend {
   NativeInteractiveSegmenterRunner._() {
@@ -129,9 +127,7 @@ Future<void> _runWorker((SendPort, InteractiveSegmenterOptions) initial) async {
   final commands = ReceivePort();
   InteractiveSegmenterSession? native;
   try {
-    native = Platform.isIOS
-        ? IosInteractiveSegmenter(options)
-        : NativeInteractiveSegmenter(options);
+    native = NativeInteractiveSegmenter(options);
     parent.send(commands.sendPort);
     await for (final dynamic message in commands) {
       final (id, input) = message as (int, Object?);

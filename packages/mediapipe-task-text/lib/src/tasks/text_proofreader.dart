@@ -1,7 +1,6 @@
 import 'package:mediapipe_core/mediapipe_core.dart';
 
 import '../capabilities.dart';
-import '../results/decoders.dart';
 import '../runner/native_tasks.dart';
 import '../runner/text_task_runner.dart';
 import '../types/options.dart';
@@ -10,10 +9,9 @@ import '../types/results.dart';
 /// Google's Proofreader: corrected text and the edits that make it.
 ///
 /// One class on every platform. Google's native runtime serves it on a
-/// worker isolate on macOS, Linux, Windows and iOS, and its Android SDK
-/// through the registered platform plugin; Google's browser runtime has no
-/// Proofreader, which `queryTextProofreaderCapabilities()` reports, and
-/// there [create] throws [RuntimeUnavailableException].
+/// worker isolate on Android, iOS, macOS, Linux and Windows; Google's browser
+/// runtime has no Proofreader, which `queryTextProofreaderCapabilities()`
+/// reports, and there [create] throws [RuntimeUnavailableException].
 ///
 /// ```dart
 /// final task = await TextProofreader.create(
@@ -38,11 +36,6 @@ final class TextProofreader {
     final runner = await openGenerativeTextTask(
       options,
       capabilities: queryTextProofreaderCapabilities,
-      task: 'text_proofreader',
-      settings: {'maxNumTokens': ?options.maxNumTokens},
-      cacheDirectory: options.cacheDirectory,
-      decodeResult: decodeTextProofreaderResult,
-      decodeUpdate: decodeTextProofreaderUpdate,
       native: openNativeTextProofreader,
     );
     return TextProofreader._(

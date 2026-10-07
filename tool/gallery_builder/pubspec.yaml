@@ -7,8 +7,6 @@ environment:
 
 dependencies:
   args: ^2.7.0
-  crypto: ^3.0.6
-  http: ^1.6.0
   path: ^1.9.1
 
 dev_dependencies:

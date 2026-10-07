@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:mediapipe_core/src/native_assets/reference_wheels.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
@@ -32,10 +33,11 @@ Future<void> main(List<String> args) async {
   final payload = gzip.decode(await reference.readAsBytes());
   final golden = jsonDecode(utf8.decode(payload)) as Json;
   cases = (golden['cases'] as List).cast<Json>();
+  // Google's macOS reference wheel, the release the family libraries come from.
+  final runtime = referenceWheel('macos/arm64')!.version;
   report.addAll({
     'started_utc': DateTime.now().toUtc().toIso8601String(),
-    // Google's 1.0.0 macOS library, the engine mediapipe_core bundles.
-    'runtime': '1.0.0',
+    'runtime': runtime,
     'dart': Platform.version,
     'execution':
         Platform.executable.endsWith('dartaotruntime') ||
@@ -52,7 +54,7 @@ Future<void> main(List<String> args) async {
     'status': 'running',
   });
   try {
-    check(golden['runtime'] == '1.0.0', 'Wrong reference runtime');
+    check(golden['runtime'] == runtime, 'Wrong reference runtime');
     for (final entry in (golden['models'] as Json).entries) {
       final actual = await sha256.bind(File(model(entry.key)).openRead()).first;
       check(actual.toString() == entry.value, 'Model hash: ${entry.key}');
@@ -132,6 +134,33 @@ void compare(Object? actual, Object? expected, String label) {
   } else {
     check(actual == expected, '$label: $actual != $expected');
   }
+}
+
+/// Google's long key-point summaries are not reproducible: its macOS wheel
+/// wrote three or four different summaries for each of these requests across
+/// three runs, and its C library's varied from run to run too, all alike for at
+/// least their first 98 characters (upstream-issues.md UP-036). Those cases
+/// must follow Google's text from the start, as the text package requires
+/// where it cannot replay Google's requests, and the report records whether
+/// they matched exactly; every other case must match exactly.
+bool unreproducible(Json entry) =>
+    entry['task'] == 'summarizer' &&
+    entry['name'] == 'long' &&
+    entry['options']['mode'] == 'KEYPOINTS';
+
+/// Requires [actual] to match [expected] for its first 80 characters, or in
+/// full when [expected] is shorter.
+void follows(Object? actual, Object? expected, String label) {
+  final a = expected as String;
+  final b = actual as String? ?? '';
+  var prefix = 0;
+  while (prefix < a.length && prefix < b.length && a[prefix] == b[prefix]) {
+    prefix++;
+  }
+  check(
+    prefix >= (a.length < 80 ? a.length : 80),
+    '$label: $actual does not follow $expected',
+  );
 }
 
 final class Loaded {
@@ -281,17 +310,25 @@ Future<void> validateOptions() async {
         final errorKey = streaming ? 'stream_error' : 'error';
         final outputKey = streaming ? 'stream_output' : 'output';
         if (entry.containsKey(errorKey)) {
+          // Google's C library can append the cause to the message its Python
+          // API reports (the Summarizer's over-budget error does).
+          final expected = entry[errorKey] as String;
           check(
-            error != null && error == entry[errorKey],
+            error != null &&
+                (error == expected || error.startsWith('$expected ')),
             'Unexpected native error: $error; expected ${entry[errorKey]}',
           );
         } else {
           check(error == null, 'Unexpected native error: $error');
-          compare(
-            actual,
-            entry[outputKey],
-            '${entry['task']}/${entry['name']}/stream=$streaming',
-          );
+          final label = '${entry['task']}/${entry['name']}/stream=$streaming';
+          if (unreproducible(entry)) {
+            follows(actual, entry[outputKey], label);
+            result['compared_by_prefix'] = true;
+            result[streaming ? 'stream_exact' : 'exact'] =
+                actual == entry[outputKey];
+          } else {
+            compare(actual, entry[outputKey], label);
+          }
         }
       }
       if (entry['task'] != 'embedding' && entry.containsKey('error')) {
@@ -309,6 +346,8 @@ Future<void> validateOptions() async {
         result['recovered_after_error'] = true;
       }
       result['passed'] = true;
+    } catch (failure) {
+      result['failure'] = '$failure';
     } finally {
       try {
         await task.dispose();
@@ -322,9 +361,19 @@ Future<void> validateOptions() async {
       results.add(result);
     }
     stdout.writeln(
-      'Validated ${entry['task']} ${entry['name']} ${entry['options']}',
+      '${result['passed'] == true ? 'Validated' : 'FAILED'} '
+      '${entry['task']} ${entry['name']} ${entry['options']}',
     );
   }
+  final failures = [
+    for (final result in results)
+      if (result['failure'] case final String failure) failure,
+  ];
+  check(
+    failures.isEmpty,
+    '${failures.length} of ${results.length} option cases failed, the first: '
+    '${failures.firstOrNull}',
+  );
 }
 
 Json sample(String task) => cases.firstWhere(

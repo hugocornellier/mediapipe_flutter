@@ -24,8 +24,9 @@ See [README.md](README.md) for the current development scope and
 From the repository root, run what applies to your change:
 
 ```sh
+make analyze                   # dart analyze, every package and example
 make check_format
-make test                      # analysis and every package's unit tests
+make test                      # downloads the test models, runs every package's tests
 python3 -B tool/check_docs.py  # README samples compile, links resolve
 python3 -B packages/mediapipe-core/tool/publish_check.py   # pub dry run
 python3 -B packages/mediapipe-core/tool/test_bundled_models.py
@@ -77,24 +78,21 @@ platform it claims, and a test proves the output matches Google's.
 2. **Native platforms.** Bind Google's C API with the family's `ffigen` config
    and wrap it in `lib/src/io/`: create, run and close on a worker isolate,
    copying results into the shared value types from `mediapipe_core`
-   (`MediaPipeCategory`, `Classifications`, `Landmark` and so on). On iOS, where Google ships only an
-   Objective-C SDK, add the same C functions to core's adapter in
-   `packages/mediapipe-core/native/ios/`.
-3. **Android.** Add the task to the family's Java plugin (Google's Android
-   SDK) and its Dart backend in `lib/mediapipe_<family>_android.dart`. The
-   backend only reshapes the plugin's reply into Google's JavaScript result
-   shape; the family's one decoder (`lib/src/results/decoders.dart` in
-   vision and text, `lib/src/decoders.dart` in audio) reads it, for Android
-   and the web alike.
-4. **Web.** Add it to the family's `assets/worker.js`, using Google's bundle,
-   and to the Dart web backend, which hands the worker's JSON to the same
-   decoder.
-5. **Capabilities.** Declare where it runs and why not elsewhere in the
+   (`MediaPipeCategory`, `Classifications`, `Landmark` and so on). The same
+   bindings serve Android, iOS, macOS, Linux and Windows: each family's hook
+   bundles Google's C library for that family there. Pass a model path
+   through core's `nativeModelPath`, since Google's Android resolver reads a
+   relative path as an APK asset.
+3. **Web.** Add it to the family's `assets/worker.js`, using Google's bundle,
+   and to the Dart web backend, which hands the worker's JSON to the family's
+   one decoder (`lib/src/results/decoders.dart` in vision and text,
+   `lib/src/decoders.dart` in audio).
+4. **Capabilities.** Declare where it runs and why not elsewhere in the
    family's `lib/src/capabilities.dart`: `queryXxxCapabilities()` and a pure
-   `xxxCapabilitiesForPlatform(TaskPlatform)`. For vision, also add it to the hook's task
-   lists (`officialAndroidTasks`, `officialIosTasks`, `macosEngineTasks`) and
-   to `tool/VISION_TASKS_STATUS.md` in the same commit.
-6. **Public API.** One class for every platform. `XxxOptions` extends core's
+   `xxxCapabilitiesForPlatform(TaskPlatform)`. For vision, also add it to
+   `visionRuntimeTasks` in `vision_tasks.dart` and to
+   `tool/VISION_TASKS_STATUS.md` in the same commit.
+5. **Public API.** One class for every platform. `XxxOptions` extends core's
    `TaskOptions` (`model`, `modelPath`, `modelBytes`, `delegate`) with
    Google's settings and defaults; `static Future<Xxx> create(XxxOptions)`
    refuses a delegate the capability query rules out (core's
@@ -105,12 +103,12 @@ platform it claims, and a test proves the output matches Google's.
    family's main library and run `tool/api_parity`
    (`dart run bin/api_parity.dart --update`) so the snapshot shows the new
    API; the check requires it to be identical on native and web.
-7. **Tests.** Generate a reference with Google's own Python for the pinned
+6. **Tests.** Generate a reference with Google's own Python for the pinned
    runtime version, check it in as a fixture, and compare every value in unit
    tests; add the task to the browser suite's comparison with Google's
    JavaScript and to the CI coverage rows (`tool/coverage/`). A task whose
    output differs between Google's releases (the generative text tasks) is
    compared with the wheel of each platform's own version, generated on the
    runner (`packages/mediapipe-task-text/tool/prepare_modern_text_reference.py`).
-8. **Docs.** The family README's task table, the CHANGELOG, and any platform
+7. **Docs.** The family README's task table, the CHANGELOG, and any platform
    limit with its upstream issue in `upstream-issues.md`.

@@ -20,9 +20,10 @@ import wave
 PACKAGE = Path(__file__).resolve().parents[1]
 FIXTURES = PACKAGE / 'test/fixtures'
 CLIPS = ['speech_16000_hz_mono.wav', 'speech_48000_hz_mono.wav', 'two_heads_16000_hz_mono.wav']
-MODEL_SHA256 = '4d8b4a53282dc83ef04e3e7dbc4fbc98082e34e44ed798e16c3a0cdd4c584faf'
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
 from official_wheels import host_runtime  # noqa: E402
+from model_pins import model_sha256  # noqa: E402
+MODEL_SHA256 = model_sha256('yamnet.tflite')
 HOST_NAMES = {'Darwin': 'macOS arm64', 'Linux': 'Linux x64', 'Windows': 'Windows x64'}
 
 # YAMNet's input, from its metadata: windows of 15,600 mono samples at 16 kHz.

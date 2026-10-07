@@ -16,91 +16,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  emulator-consumer:
-    name: Face tasks / fresh x64 Android emulator consumer
-    runs-on: ubuntu-24.04
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools
-          log-accepted-android-sdk-licenses: false
-      - uses: bazel-contrib/setup-bazel@0.19.0
-        with:
-          bazelisk-cache: true
-          disk-cache: false
-          repository-cache: false
-      - name: Install the pinned Android NDK
-        run: sdkmanager 'ndk;28.2.13676358'
-      # The source build is pinned: the same scripts, notices and NDK build the
-      # same runtime, so it is rebuilt only when one of them changes. The
-      # validation below tests the runtime exactly as after a fresh build.
-      - uses: actions/cache/restore@v6
-        id: x64-runtime
-        with:
-          path: packages/mediapipe-task-vision/build/native/android/x86_64
-          key: android-x86_64-face-runtime-${{ runner.os }}-ndk28.2.13676358-${{ hashFiles('packages/mediapipe-task-vision/tool/build_native.py', 'packages/mediapipe-task-vision/tool/build_android.py', 'packages/mediapipe-task-vision/third_party/LICENSE', 'packages/mediapipe-task-vision/third_party/NOTICE', 'packages/mediapipe-task-vision/third_party/OPENCV_CAROTENE_NOTICES') }}
-      - name: Build the pinned x64 runtime
-        if: steps.x64-runtime.outputs.cache-hit != 'true'
-        run: python3 -B packages/mediapipe-task-vision/tool/build_android.py --ndk "$ANDROID_HOME/ndk/28.2.13676358" --abi x86_64 --jobs 4
-      - uses: actions/cache/save@v6
-        if: steps.x64-runtime.outputs.cache-hit != 'true'
-        with:
-          path: packages/mediapipe-task-vision/build/native/android/x86_64
-          key: ${{ steps.x64-runtime.outputs.cache-primary-key }}
-      - name: Download the pinned face models
-        working-directory: packages/mediapipe-task-vision
-        run: |
-          dart pub get
-          dart tool/download_model.dart
-          dart tool/download_face_landmarker.dart
-      - name: Generate this host's official CPU reference
-        # The official Linux 1.0.1 library links EGL and OpenGL ES, CPU included.
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq libegl1 libgles2
-          python3 -B packages/mediapipe-task-vision/tool/cpu_reference.py --output-dir build/codex-tmp/android-reference
-      - name: Enable Android emulator hardware acceleration
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: Validate CPU references, APK payloads and debug/release app inference
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
-          disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: python3 -B packages/mediapipe-task-vision/tool/test_android_consumer.py --device emulator-5554 --reference-dir build/codex-tmp/android-reference
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: android-emulator-cpu-validation
-          path: |
-            build/codex-tmp/android-consumer-*/*.log
-            build/codex-tmp/android-consumer-*/report.json
-            build/codex-tmp/android-reference/*.log
-            build/codex-tmp/android-reference/provenance.json
-          if-no-files-found: warn
-
   # Text Classifier, Text Embedder, Language Detector and Audio Classifier run
-  # through the text and audio packages' Android SDK plugins in the same app.
+  # through Google's Android text and audio libraries in the same app.
   # Face and Hand Landmarker, Pose, Gesture, Holistic, Face and Object Detector, Image Classifier
-  # and Image Embedder run through Google's Android SDK (tasks-vision 1.0.0) and
+  # and Image Embedder run through Google's Android vision library and
   # mediapipe_vision, so this job needs no source build. The emulator runs them on the CPU only; see
   # gallery/tool/test_android_sdk_tasks.sh.
   sdk-tasks:
@@ -133,9 +52,9 @@ jobs:
             packages/mediapipe-task-text/models/proofread_quant_200m.litertlm
             packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
           key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
-      # Google's answers for the 1.0.0 Android SDK on the x86_64 emulator: its
-      # Linux x86_64 1.0.0 wheel on this runner.
-      - name: Google's 1.0.0 references for EmbeddingGemma, Proofreader and Summarizer
+      # Google's answers for its Android libraries on the x86_64 emulator: its
+      # Linux x86_64 wheel of the same release on this runner.
+      - name: Google's references for EmbeddingGemma, Proofreader and Summarizer
         run: |
           sudo apt-get update && sudo apt-get install -y libegl1 libgles2
           cd packages/mediapipe-task-text
@@ -145,7 +64,7 @@ jobs:
           dart tool/download_summarizer.dart
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
-            --venv build/codex-tmp/official-python-1.0.0 --runtime-version 1.0.0 \
+            --venv build/codex-tmp/official-python \
             --output-dir build/modern-text-reference
       # The same two commands a clean checkout runs, so CI builds what a
       # contributor with only Dart, Flutter and the Android SDK builds; the

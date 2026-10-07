@@ -12,8 +12,8 @@ import '../types/results.dart';
 /// Google's Language Detector: the languages a text may be in.
 ///
 /// One class on every platform. Google's native runtime serves it on a
-/// worker isolate on macOS, Linux, Windows and iOS; its Android SDK and
-/// browser runtime serve it through the registered platform plugin.
+/// worker isolate on Android, iOS, macOS, Linux and Windows; its browser
+/// runtime serves it through the registered web plugin.
 ///
 /// ```dart
 /// final task = await LanguageDetector.create(

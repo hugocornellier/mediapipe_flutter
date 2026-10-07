@@ -5,7 +5,8 @@ Not published yet. The first release.
 - Face Detector, Face Landmarker, Hand Landmarker, Gesture Recognizer, Pose
   Landmarker, Holistic Landmarker, Object Detector, Image Classifier, Image
   Embedder, Image Segmenter and Interactive Segmenter on Android, iOS, macOS,
-  Linux, Windows and the web, through Google's official runtimes.
+  Linux, Windows and the web, through Google's official runtimes. Windows has
+  no Interactive Segmenter, since Google's Windows runtime lacks it.
 - Every task is one class with the same API on every platform, and
   `mediapipe_vision.dart` is the only app library. Tasks use Google's verbs
   (`detect`, `recognize`, `classify`, `embed` and `segment`, and their
@@ -34,7 +35,8 @@ Not published yet. The first release.
   `dart run mediapipe_core:bundle_models` bundles into the app. `model:` uses
   the bundled copy and downloads at run time only when
   `ModelStore.allowDownloads` is true; app-supplied paths and bytes work too.
-- The `tasks` build setting bundles only the native runtimes an app uses.
+- The `tasks` build setting leaves the face tasks' own macOS libraries out of
+  apps that do not use them.
 - On macOS, a GPU task reopens its native task after converting 1 GiB of
   frames, since Google's macOS GPU path keeps every frame until the task
   closes (UP-032 in upstream-issues.md). Tasks that reopen hold their model

@@ -11,10 +11,7 @@ At build time, the build hooks fetch the native runtime for the target:
 
 | What | Host |
 | --- | --- |
-| Google's MediaPipe wheels (Linux, Windows) | `files.pythonhosted.org` |
-| Google's MediaPipe iOS SDK archives | `dl.google.com` |
-| Google's macOS engine repackaged for Flutter, the macOS face runtimes, and the iOS face runtime an app gets only with `official_ios_sdk: false` | `github.com/hugocornellier/mediapipe_flutter_native` releases |
-| Google's MediaPipe Android SDKs | Google's Maven repository, through Gradle |
+| Google's per-family MediaPipe libraries (Android, iOS, macOS, Linux, Windows), development builds posted unmodified for testing as a pre-release of `hugocornellier/mediapipe_flutter_native` until Google publishes them | `github.com`, which redirects to `release-assets.githubusercontent.com` |
 
 At run time:
 

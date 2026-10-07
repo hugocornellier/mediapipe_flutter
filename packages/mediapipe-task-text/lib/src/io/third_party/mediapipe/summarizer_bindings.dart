@@ -1,11 +1,11 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache-2.0.
-// Adapted from mediapipe==1.0.1 text/text_summarizer.py ctypes definitions.
+// Adapted from mediapipe 1.1.0 text/text_summarizer.py ctypes definitions.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
 
-import 'embedding_gemma_bindings.dart' show MpBaseOptions;
+import 'package:mediapipe_core/native_structs.dart';
 
-const _runtime = 'package:mediapipe_core/mediapipe.dylib';
+const _runtime = 'package:mediapipe_text/mediapipe.dylib';
 const _bridge = 'package:mediapipe_text/text_stream_bridge.dylib';
 
 final class MpTextSummarizerOptions extends Struct {
@@ -15,6 +15,10 @@ final class MpTextSummarizerOptions extends Struct {
   @Int32()
   external int maxNumTokens;
   external Pointer<Char> cacheDir;
+
+  /// Added in 1.1.0; earlier engines read only the fields above.
+  @Int32()
+  external int minLogSeverity;
 }
 
 final class MpTextSummarizerResult extends Struct {

@@ -1,14 +1,13 @@
 /// The result containers every family shares, read from the JSON shape of
-/// Google's JavaScript API, in which the browser workers and the Android
-/// plugins (core's `TaskJson`) deliver them.
+/// Google's JavaScript API, in which the browser workers deliver them.
 library;
 
 import 'dart:typed_data';
 
 import 'value_types.dart';
 
-/// Google's browser and Android SDKs report an absent label as an empty
-/// string; its C, Python and iOS APIs report none, as the Dart API does.
+/// Google's browser runtime reports an absent label as an empty string; its
+/// C and Python APIs report none, as the Dart API does.
 String? decodeLabel(Object? value) =>
     value is String && value.isNotEmpty ? value : null;
 

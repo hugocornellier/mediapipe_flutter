@@ -32,9 +32,6 @@ final class VisionTaskWorker<R> implements NativeTaskRunner<R> {
   var _workerFailed = false;
   Future<void>? _disposal;
 
-  /// The task's name, as its errors say it.
-  String get name => checks.name;
-
   /// Construct the native owner from a top-level factory on a new isolate.
   ///
   /// [reopenAfterBytes] overrides the [GpuFrameBudget] that bounds what

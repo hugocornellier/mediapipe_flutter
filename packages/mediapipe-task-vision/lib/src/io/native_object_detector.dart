@@ -3,13 +3,10 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 
-import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../capabilities/official_runtime_io.dart';
+import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../runner/native_interface.dart';
 import '../types/options.dart';
 import '../types/results.dart';
-import 'native_ios_sdk.dart';
-import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 
 /// Google's Object Detector on its worker isolate.
@@ -55,85 +52,41 @@ final class NativeObjectDetector
   }
   final bool _gpu;
   mp.MpObjectDetectorPtr _task = nullptr;
-  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
-      ? iosBgraStorage()
-      : null;
 
+  /// Runs one IMAGE or VIDEO request and copies every result.
   @override
-  ObjectDetectorResult process(VisionTaskInput input) => using((arena) {
-    final (source, rotation, timestamp, _) = input;
-    final image = createVisionImage(
-      arena,
-      source,
-      expandRgbForGpu: _gpu,
-      checked: checkVisionCall,
-      iosBgra: _iosBgra,
-    );
-    try {
-      final processing = visionProcessingOptions(arena, rotation, null);
-      final result = arena<mp.MpObjectDetectorResult>();
-      if (timestamp == null) {
-        checkVisionCall(
-          (error) => mp.MpObjectDetectorDetectImage(
-            _task,
-            image,
-            processing,
-            result,
-            error,
-          ),
-        );
-      } else {
-        checkVisionCall(
-          (error) => mp.MpObjectDetectorDetectForVideo(
-            _task,
-            image,
-            processing,
-            timestamp,
-            result,
-            error,
-          ),
-        );
-      }
-      try {
-        return ObjectDetectorResult(
-          imageWidth: mp.MpImageGetWidth(image),
-          imageHeight: mp.MpImageGetHeight(image),
-          timestampMilliseconds: timestamp,
-          detections: [
-            for (var i = 0; i < result.ref.detections_count; i++)
-              _copyDetection(result.ref.detections[i]),
-          ],
-        );
-      } finally {
-        mp.MpObjectDetectorCloseResult(result);
-      }
-    } finally {
-      mp.MpImageFree(image);
-    }
-  });
+  ObjectDetectorResult process(VisionTaskInput input) => runVisionRequest(
+    input,
+    gpu: _gpu,
+    allocate: (arena) => arena<mp.MpObjectDetectorResult>(),
+    image: (image, processing, result, error) =>
+        mp.MpObjectDetectorDetectImage(_task, image, processing, result, error),
+    video: (image, processing, timestamp, result, error) =>
+        mp.MpObjectDetectorDetectForVideo(
+          _task,
+          image,
+          processing,
+          timestamp,
+          result,
+          error,
+        ),
+    closeResult: mp.MpObjectDetectorCloseResult,
+    copy: (request, result) => ObjectDetectorResult(
+      imageWidth: mp.MpImageGetWidth(request.image),
+      imageHeight: mp.MpImageGetHeight(request.image),
+      timestampMilliseconds: request.timestamp,
+      detections: [
+        for (var i = 0; i < result.ref.detections_count; i++)
+          copyVisionDetection(result.ref.detections[i]),
+      ],
+    ),
+  );
 
   @override
   void close() {
     if (_task == nullptr) return;
     final task = _task;
     _task = nullptr;
-    try {
-      checkVisionCall((error) => mp.MpObjectDetectorClose(task, error));
-    } finally {
-      _iosBgra?.close();
-    }
+    checkVisionCall((error) => mp.MpObjectDetectorClose(task, error));
   }
 }
-
-Detection _copyDetection(mp.MpDetection value) => Detection(
-  boundingBox: BoundingBox(
-    left: value.bounding_box.left,
-    top: value.bounding_box.top,
-    right: value.bounding_box.right,
-    bottom: value.bounding_box.bottom,
-  ),
-  categories: [
-    for (var i = 0; i < value.categories_count; i++)
-      copyVisionCategory(value.categories[i]),
-  ],
-);

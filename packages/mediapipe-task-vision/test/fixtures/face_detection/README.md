@@ -21,8 +21,8 @@ application assets.
 
 ## Reference outputs
 
-`official_reference.json` contains results generated through Google's official
-`mediapipe==1.0.0` Python API, on macOS arm64 with the CPU delegate and IMAGE
+`official_reference.json` contains results generated through the official
+Python API of Google's 1.1.0 release candidate wheel (`mediapipe-nightly` 1.1.0rc20260925 for macOS arm64, core's `referenceWheels`), on macOS arm64 with the CPU delegate and IMAGE
 mode. It records the runtime, model, library and input hashes, confidence 0.5,
 suppression 0.3, and per-case rotation. Goldens are independent of the Dart wrapper.
 
@@ -44,7 +44,7 @@ while Python exposes the C field's 0.0 default. No geometry is adjusted to match
 The suite also exercises model buffers, initialization errors, image errors,
 immutable copied results, repeated queued inference and idempotent disposal.
 Regenerate deliberately with `tool/generate_face_detector_reference.py` in a
-separate Python 3.12 environment with `mediapipe==1.0.0`; review numerical changes
+separate Python 3.12 environment holding that wheel; review numerical changes
 before accepting new goldens. Ordinary tests consume these checked-in files.
 
 `official_video_reference.json` records a seven-frame sequence through Google's

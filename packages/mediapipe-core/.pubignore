@@ -11,3 +11,7 @@ pubspec.lock
 # validation evidence and benchmarks live in the repository, not the package.
 /tool/
 /test/
+# The C API headers the vision package's bindings are generated from.
+/native/
+# It includes the repository's shared options, which are not published.
+/analysis_options.yaml

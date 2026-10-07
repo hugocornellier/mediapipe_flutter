@@ -17,7 +17,6 @@ void main() {
         version: '15',
       ),
       const {'face_detector'},
-      const {},
     ).single;
     await tester.pumpWidget(
       MaterialApp(

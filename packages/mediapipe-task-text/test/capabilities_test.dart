@@ -45,10 +45,7 @@ void main() {
         expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
         expect(
           result.runtimeVersion,
-          platform.operatingSystem == 'linux' ||
-                  platform.operatingSystem == 'ios'
-              ? '1.0.1'
-              : '1.0.0',
+          '1.1.0',
           reason: '$name on ${platform.target}',
         );
         expect(
@@ -69,24 +66,24 @@ void main() {
     );
   });
 
-  test('nothing runs on Android or in browsers without the plugin', () {
-    for (final platform in [..._android, _web]) {
-      for (final MapEntry(key: name, value: claim) in every.entries) {
-        expect(claim(platform).isSupported, isFalse, reason: name);
-      }
+  test('nothing runs in browsers without the plugin', () {
+    for (final MapEntry(key: name, value: claim) in every.entries) {
+      expect(claim(_web).isSupported, isFalse, reason: name);
     }
   });
 
-  test("Google's Android SDK serves every task once the plugin registers", () {
-    textTaskBackendFactory = _unused;
-    for (final platform in _android) {
-      for (final MapEntry(key: name, value: claim) in every.entries) {
-        final result = claim(platform);
-        expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
-        expect(result.runtimeVersion, '1.0.0');
+  test(
+    "Google's text library serves every task on Android, with no plugin",
+    () {
+      for (final platform in _android) {
+        for (final MapEntry(key: name, value: claim) in every.entries) {
+          final result = claim(platform);
+          expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
+          expect(result.runtimeVersion, '1.1.0');
+        }
       }
-    }
-  });
+    },
+  );
 
   test('browsers run the classic tasks and EmbeddingGemma, not the '
       'generative tasks (UP-034)', () {

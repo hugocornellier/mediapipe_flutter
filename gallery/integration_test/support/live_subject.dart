@@ -24,8 +24,8 @@ final class LiveSubject {
   /// The gallery tile that opens the demo.
   final String tile;
 
-  /// Model asset, as the gallery's preparer bundles it.
-  final String model;
+  /// The pinned model the demo runs.
+  final DownloadAsset model;
 
   /// Bundled sample with exactly one subject, used for supplied frames.
   final String sample;
@@ -48,7 +48,7 @@ final class LiveSubject {
   static final face = LiveSubject._(
     task: 'face',
     tile: 'Face Landmarker',
-    model: 'face_landmarker.task',
+    model: VisionModels.faceLandmarker,
     sample: 'portrait.jpg',
     points: 478,
     probes: AlignmentProbes.face,
@@ -67,7 +67,7 @@ final class LiveSubject {
   static final hand = LiveSubject._(
     task: 'hand',
     tile: 'Hand Landmarker',
-    model: 'hand_landmarker.task',
+    model: VisionModels.handLandmarker,
     sample: 'thumb_up.jpg',
     points: 21,
     probes: AlignmentProbes.hand,

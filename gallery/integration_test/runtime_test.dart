@@ -7,6 +7,7 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/live/live_registry.dart';
 import 'package:mediapipe_gallery/main.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 /// Opening one tile and then another must not take the process down.
 ///
@@ -27,7 +28,6 @@ void main() {
     final tiles = supportedTasks(
       platform,
       assets.bundledTasks,
-      assets.officialMacosLandmarkTasks,
     ).where((task) => task.demo == GalleryDemo.live).toList();
     expect(tiles.length, greaterThan(1), reason: 'need two live tiles');
 
@@ -37,10 +37,8 @@ void main() {
     final visited = <String>[];
     for (final tile in tiles) {
       final task = liveDemoFor(tile.id)!.task();
-      final model = await rootBundle.load('assets/models/${tile.model}');
-      final delegates = tile
-          .capabilitiesFor(platform, assets.officialMacosLandmarkTasks)
-          .supportedDelegates;
+      final model = await rootBundle.load(bundledModelAsset(tile.model));
+      final delegates = tile.capabilities(platform).supportedDelegates;
       await task.open(
         delegates.contains(Delegate.cpu) ? Delegate.cpu : delegates.first,
         model.buffer.asUint8List(model.offsetInBytes, model.lengthInBytes),
@@ -83,7 +81,7 @@ void main() {
       if (bundled.contains('text_classifier')) {
         final classifier = await TextClassifier.create(
           TextClassifierOptions(
-            modelBytes: await asset('assets/models/bert_classifier.tflite'),
+            modelBytes: await asset(bundledModelFile('bert_classifier.tflite')),
           ),
         );
         try {
@@ -99,7 +97,7 @@ void main() {
       if (bundled.contains('audio_classifier')) {
         final classifier = await AudioClassifier.create(
           AudioClassifierOptions(
-            modelBytes: await asset('assets/models/yamnet.tflite'),
+            modelBytes: await asset(bundledModelFile('yamnet.tflite')),
           ),
         );
         try {
@@ -127,7 +125,7 @@ void main() {
     }
     await tester.runAsync(() async {
       final model = await rootBundle.load(
-        'assets/models/interactive_segmentation.task',
+        bundledModelFile('interactive_segmentation.task'),
       );
       final task = await InteractiveSegmenter.create(
         InteractiveSegmenterOptions(

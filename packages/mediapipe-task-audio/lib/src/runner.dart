@@ -1,5 +1,5 @@
-/// Where Audio Classifier runs: a registered platform SDK adapter (Google's
-/// browser runtime or Android SDK), or Google's native runtime.
+/// Where Audio Classifier runs: the registered browser adapter (Google's
+/// JavaScript runtime), or Google's native runtime.
 library;
 
 import 'dart:async';
@@ -80,8 +80,7 @@ final class BackendAudioClassifier implements AudioClassifierRunner {
   }
 
   /// Google's browser tasks read one channel, so several channels are
-  /// averaged first. Its Android SDK reads them as they are, but the plugin
-  /// sends one, the same samples as the browser's.
+  /// averaged first.
   @override
   Future<List<AudioClassifierResult>> classify(AudioData audio) {
     if (_disposing != null) {
@@ -142,68 +141,6 @@ final class EmulatedStreamRunner implements AudioStreamRunner {
       await _stream.close();
     } finally {
       await _clips.dispose();
-    }
-  }
-}
-
-/// Google's own stream through a platform plugin's stream backend: its
-/// Android SDK. Google stamps the windows; the results restamp the tail.
-final class BackendStreamRunner implements AudioStreamRunner {
-  BackendStreamRunner._(this._backend, this._results) {
-    _subscription = _backend.results.listen(
-      (json) {
-        for (final result in decodeAudioClassifierResults([json])) {
-          _results.addGoogle(result);
-        }
-      },
-      onError: (Object error, StackTrace stack) =>
-          _results.fail(taskException(error), stack),
-      onDone: _done.complete,
-    );
-  }
-
-  final AudioStreamBackend _backend;
-  final AudioStreamResults _results;
-  late final StreamSubscription<Map<String, Object?>> _subscription;
-  final _done = Completer<void>();
-
-  /// Starts Google's stream through [factory] with [options]' model and
-  /// settings, delivering to [results].
-  static Future<BackendStreamRunner> open(
-    Future<AudioStreamBackend> Function(Map<String, Object?>) factory,
-    AudioClassifierOptions options,
-    AudioStreamResults results,
-  ) async {
-    try {
-      return BackendStreamRunner._(
-        await factory(backendSettings(options)),
-        results,
-      );
-    } catch (error) {
-      throw taskException(error);
-    }
-  }
-
-  @override
-  void send(AudioData block, int timestampMilliseconds) => _backend.send(
-    block.samples,
-    block.sampleRate,
-    block.channels,
-    timestampMilliseconds,
-  );
-
-  @override
-  Future<void> close() async {
-    try {
-      // Google's Android runner reports a graph failure only when it closes
-      // (upstream-issues.md UP-039); the backend delivers it on its
-      // results, before they close.
-      await _backend.dispose();
-      await _done.future;
-    } catch (error, stack) {
-      _results.fail(taskException(error), stack);
-    } finally {
-      await _subscription.cancel();
     }
   }
 }

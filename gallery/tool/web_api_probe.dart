@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:web/web.dart' as web;
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 @JS('mediapipeApiTestReport')
 external set _report(JSObject value);
@@ -39,7 +40,7 @@ Future<Map<String, Object?>> checkApi() async {
   final delegate = Uri.base.queryParameters['delegate'] == 'gpu'
       ? Delegate.gpu
       : Delegate.cpu;
-  final data = await rootBundle.load('assets/models/face_landmarker.task');
+  final data = await rootBundle.load(bundledModelFile('face_landmarker.task'));
   final sourceModel = Uint8List.fromList(
     data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
   );
@@ -351,7 +352,7 @@ Future<Map<String, Object?>> checkHandApi(
   Delegate delegate,
   List<String> checks,
 ) async {
-  final data = await rootBundle.load('assets/models/hand_landmarker.task');
+  final data = await rootBundle.load(bundledModelFile('hand_landmarker.task'));
   final model = Uint8List.fromList(
     data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
   );
@@ -453,7 +454,7 @@ Future<Map<String, Object?>> checkLandmarkTasksApi(
   List<String> checks,
 ) async {
   Future<Uint8List> model(String name) async {
-    final data = await rootBundle.load('assets/models/$name');
+    final data = await rootBundle.load(bundledModelFile(name));
     return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   }
 
@@ -596,7 +597,7 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
   List<String> checks,
 ) async {
   Future<Uint8List> model(String name) async {
-    final data = await rootBundle.load('assets/models/$name');
+    final data = await rootBundle.load(bundledModelFile(name));
     return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   }
 

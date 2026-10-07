@@ -51,36 +51,6 @@ void main() {
     ]);
   });
 
-  test('proofreader and summarizer results and updates', () {
-    final result = decodeTextProofreaderResult(
-      _json('''{"proofreadText": "She goes home.", "corrections": [
-        {"type": "SAME", "text": "She "}, {"type": "DELETION", "text": "go"},
-        {"type": "INSERTION", "text": "goes"}]}'''),
-    );
-    expect(result.proofreadText, 'She goes home.');
-    expect(result.corrections.map((c) => c.type), [
-      ProofreadingCorrectionType.same,
-      ProofreadingCorrectionType.deletion,
-      ProofreadingCorrectionType.insertion,
-    ]);
-    expect(() => result.corrections.clear(), throwsUnsupportedError);
-    final update = decodeTextProofreaderUpdate(
-      _json('{"chunk": null, "corrections": null, "done": true}'),
-    );
-    expect(update.chunk, isNull);
-    expect(update.done, isTrue);
-    expect(update.corrections, isEmpty);
-    expect(
-      decodeTextSummarizerResult(_json('{"summary": "- A point"}')).summary,
-      '- A point',
-    );
-    final chunk = decodeTextSummarizerUpdate(
-      _json('{"chunk": "- A", "done": false}'),
-    );
-    expect(chunk.chunk, '- A');
-    expect(chunk.done, isFalse);
-  });
-
   test('generative tasks report their platforms before loading', () async {
     final support = await queryTextSummarizerCapabilities();
     expect(support.isSupported, isFalse);

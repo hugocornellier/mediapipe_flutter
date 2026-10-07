@@ -11,11 +11,12 @@ import 'package:mediapipe_audio/platform_interface.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:mediapipe_text/platform_interface.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 /// Text Classifier, Text Embedder, Language Detector and Audio Classifier
-/// through Google's official mobile SDKs (the text and audio packages' Android
-/// plugins; on iOS the SDK adapter core's runtime builds), against Google's own 1.0.1 outputs for the same inputs (the
-/// packages' checked-in references, from the macOS wheel).
+/// through Google's mobile text and audio libraries, against Google's own
+/// outputs for the same inputs (the packages' checked-in references, from the
+/// macOS wheel).
 /// Another runtime build on another CPU, so scores get a cross-runtime bound.
 /// Runs on the Android emulator and iOS simulator in CI, and on phones.
 const _scoreBound = 2e-3;
@@ -36,13 +37,13 @@ void main() {
   ) async {
     await tester.runAsync(() async {
       expect(Platform.isAndroid || Platform.isIOS, isTrue);
-      // Android's plugin registers a backend; iOS runs the native bindings.
       expect(
-        textTaskBackendFactory != null,
-        Platform.isAndroid,
-        reason: 'the text SDK plugin must register automatically on Android',
+        textTaskBackendFactory,
+        isNull,
+        reason:
+            "Android and iOS run Google's C library through FFI, not a plugin backend",
       );
-      final bert = await asset('assets/models/bert_classifier.tflite');
+      final bert = await asset(bundledModelFile('bert_classifier.tflite'));
       for (final (text, options, expected)
           in <
             (
@@ -128,7 +129,7 @@ void main() {
       );
 
       final use = await asset(
-        'assets/models/universal_sentence_encoder.tflite',
+        bundledModelFile('universal_sentence_encoder.tflite'),
       );
       final embedder = await TextEmbedder.create(
         TextEmbedderOptions(modelBytes: use),
@@ -181,7 +182,7 @@ void main() {
 
       final detector = await LanguageDetector.create(
         LanguageDetectorOptions(
-          modelBytes: await asset('assets/models/language_detector.tflite'),
+          modelBytes: await asset(bundledModelFile('language_detector.tflite')),
           maxResults: 3,
         ),
       );
@@ -223,13 +224,14 @@ void main() {
   ) async {
     await tester.runAsync(() async {
       expect(
-        audioTaskBackendFactory != null,
-        Platform.isAndroid,
-        reason: 'the audio SDK plugin must register automatically on Android',
+        audioTaskBackendFactory,
+        isNull,
+        reason:
+            "Android and iOS run Google's C library through FFI, not a plugin backend",
       );
       final task = await AudioClassifier.create(
         AudioClassifierOptions(
-          modelBytes: await asset('assets/models/yamnet.tflite'),
+          modelBytes: await asset(bundledModelFile('yamnet.tflite')),
           maxResults: 3,
         ),
       );
@@ -284,7 +286,7 @@ void main() {
       // The default options: every category, as the native API returns.
       final every = await AudioClassifier.create(
         AudioClassifierOptions(
-          modelBytes: await asset('assets/models/yamnet.tflite'),
+          modelBytes: await asset(bundledModelFile('yamnet.tflite')),
         ),
       );
       try {
@@ -315,7 +317,7 @@ void main() {
     'official SDK Audio Classifier streams as Google\'s stream does',
     (tester) async {
       await tester.runAsync(() async {
-        final model = await asset('assets/models/yamnet.tflite');
+        final model = await asset(bundledModelFile('yamnet.tflite'));
         final speech = decodeWav(
           await asset('assets/samples/speech_16000_hz_mono.wav'),
         );

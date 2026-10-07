@@ -1,46 +1,17 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache 2.0.
-// Adapted from mediapipe==1.0.1 Python ctypes audio/audio_classifier.py,
-// components/containers/audio_data_c.py, classification_result_c.py,
-// processors/classifier_options_c.py and core/base_options_c.py. Every
-// status-returning function takes a trailing error-message argument.
+// Adapted from mediapipe==1.0.1 Python ctypes audio/audio_classifier.py and
+// components/containers/audio_data_c.py; the structs every family shares are
+// core's native_structs.dart. Every status-returning function takes a
+// trailing error-message argument.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
 
-/// Core's shared official 1.0.1 runtime, which exports the audio C API.
-const _asset = 'package:mediapipe_core/mediapipe.dylib';
+import 'package:mediapipe_core/native_structs.dart';
 
-final class MpBaseOptions extends Struct {
-  external Pointer<Char> modelAssetBuffer;
-  @Uint32()
-  external int modelAssetBufferCount;
-  external Pointer<Char> modelAssetPath;
-  @Int32()
-  external int fileDescriptor;
-  @Int32()
-  external int delegate;
-  @Int32()
-  external int hostEnvironment;
-  @Int32()
-  external int hostSystem;
-  external Pointer<Char> hostVersion;
-  external Pointer<Char> caBundlePath;
-  external Pointer<Char> appId;
-  external Pointer<Char> appVersion;
-}
+export 'package:mediapipe_core/native_structs.dart';
 
-final class MpClassifierOptions extends Struct {
-  external Pointer<Char> displayNamesLocale;
-  @Int32()
-  external int maxResults;
-  @Float()
-  external double scoreThreshold;
-  external Pointer<Pointer<Char>> categoryAllowlist;
-  @Uint32()
-  external int categoryAllowlistCount;
-  external Pointer<Pointer<Char>> categoryDenylist;
-  @Uint32()
-  external int categoryDenylistCount;
-}
+/// Google's audio library, which the audio hook bundles.
+const _asset = 'package:mediapipe_audio/mediapipe.dylib';
 
 final class MpAudioClassifierOptions extends Struct {
   external MpBaseOptions baseOptions;
@@ -66,34 +37,6 @@ final class MpAudioData extends Struct {
   /// Every float, frames times channels.
   @Size()
   external int audioDataSize;
-}
-
-final class MpCategory extends Struct {
-  @Int32()
-  external int index;
-  @Float()
-  external double score;
-  external Pointer<Char> categoryName;
-  external Pointer<Char> displayName;
-}
-
-final class MpClassifications extends Struct {
-  external Pointer<MpCategory> categories;
-  @Uint32()
-  external int categoriesCount;
-  @Int32()
-  external int headIndex;
-  external Pointer<Char> headName;
-}
-
-final class MpClassificationResult extends Struct {
-  external Pointer<MpClassifications> classifications;
-  @Uint32()
-  external int classificationsCount;
-  @Int64()
-  external int timestampMs;
-  @Bool()
-  external bool hasTimestampMs;
 }
 
 /// One classification result per chunk of the clip.

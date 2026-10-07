@@ -4,8 +4,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart'
-    show tasksRuntimeWheel;
+import 'package:mediapipe_core/src/native_assets/reference_wheels.dart'
+    show referenceWheel;
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 import 'package:mediapipe_audio/models.dart';
 import 'package:mediapipe_audio/src/third_party/mediapipe/audio_classifier_bindings.dart'
@@ -40,9 +40,7 @@ Map<String, dynamic> _loadReference() {
             File.fromUri(root.resolve('provenance.json')).readAsStringSync(),
           )
           as Map<String, dynamic>;
-  final wheel = tasksRuntimeWheel(
-    Abi.current().toString().replaceFirst('_', '/'),
-  );
+  final wheel = referenceWheel(Abi.current().toString().replaceFirst('_', '/'));
   final runtime = 'mediapipe==${wheel?.version}';
   if (wheel == null ||
       receipt['source'] != 'official-python-api' ||

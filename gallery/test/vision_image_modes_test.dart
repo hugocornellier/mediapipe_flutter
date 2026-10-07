@@ -28,7 +28,6 @@ void main() {
   final liveTasks = supportedTasks(
     platform,
     runtimeIds,
-    runtimeIds,
   ).where((task) => task.live).toList();
 
   test('every camera vision task has an image-capable gallery page', () {
@@ -48,7 +47,6 @@ void main() {
           home: LivePage(
             task: task,
             platform: platform,
-            officialMacosLandmarkTasks: runtimeIds,
             initialStillImage: true,
           ),
         ),

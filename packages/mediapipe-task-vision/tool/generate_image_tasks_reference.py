@@ -13,14 +13,15 @@ from mediapipe.tasks.python.components.containers import rect
 from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
+from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'test/fixtures/face_detection'
 MODELS = {
     'classifier': ('efficientnet_lite0.tflite',
-        '6c7ab0a6e5dcbf38a8c33b960996a55a3b4300b36a018c4545801de3a3c8bde0'),
+        model_sha256('efficientnet_lite0.tflite')),
     'embedder': ('mobilenet_v3_small.tflite',
-        'bbbb4c51a55a53905af1daec995ca1aae355046f8839bb8c9f5ce9271394bc40'),
+        model_sha256('mobilenet_v3_small.tflite')),
 }
 
 

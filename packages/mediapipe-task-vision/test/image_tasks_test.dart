@@ -193,7 +193,7 @@ void main() {
       );
     },
     // Google's CPU output drifts between Apple CPUs, so macOS compares with
-    // same-host outputs (tool/test_macos_tasks_runtime.py).
+    // same-host outputs (tool/test_macos_references.py).
     skip:
         Platform.isMacOS &&
             Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=

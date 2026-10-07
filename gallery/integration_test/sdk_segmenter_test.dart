@@ -11,6 +11,7 @@ import 'package:mediapipe_gallery/main.dart';
 import 'support/mask_grids.dart';
 import 'support/official_mask_references.dart';
 import 'support/sdk_frames.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 /// As in sdk_hand_landmarker_test.dart: `required` fails when the SDK refuses
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
@@ -41,9 +42,12 @@ void main() {
     (tester) async {
       await tester.runAsync(() async {
         expect(Platform.isAndroid || Platform.isIOS, isTrue);
-        if (Platform.isAndroid) {
-          expect(imageSegmenterBackendFactory, isNotNull);
-        }
+        expect(
+          imageSegmenterBackendFactory,
+          isNull,
+          reason:
+              "Android and iOS run Google's C library through FFI, not a plugin backend",
+        );
         final assets = await GalleryAssets.unpack();
         final model = await _model();
         final frame = await loadSample('portrait.jpg');
@@ -65,7 +69,7 @@ void main() {
             capabilities.unavailableReasons[Delegate.gpu],
             contains('UP-023'),
           );
-          // Asked for anyway, the plugin refuses it before Google's task
+          // Asked for anyway, the package refuses it before Google's task
           // exists, so the app lives on to run the CPU checks below.
           await expectLater(
             ImageSegmenter.create(
@@ -76,9 +80,9 @@ void main() {
               ),
             ),
             throwsA(
-              isA<TaskException>().having(
-                (error) => error.message,
-                'message',
+              isA<RuntimeUnavailableException>().having(
+                (error) => error.fix,
+                'fix',
                 contains('UP-023'),
               ),
             ),
@@ -348,7 +352,7 @@ Map<String, Object?> _summary(MaskMatch match) => {
 };
 
 Future<Uint8List> _model() async {
-  final bytes = await rootBundle.load('assets/models/deeplab_v3.tflite');
+  final bytes = await rootBundle.load(bundledModelFile('deeplab_v3.tflite'));
   return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
 }
 

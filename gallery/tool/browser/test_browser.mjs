@@ -41,6 +41,20 @@ const report = {browser: browserName, delegate, suite, task: taskName, checks: [
 const logs = [];
 const browsers = [];
 
+// Google's model files by name, at the SHA-256 names `dart run
+// mediapipe_core:bundle_models` gives them in the gallery's assets.
+const bundledModelsScript = () => {
+  let manifest;
+  const key = async file => {
+    manifest ??= fetch(new URL('assets/assets/mediapipe/manifest.json', document.baseURI)).then(r => r.json());
+    const entry = (await manifest).models.find(m => m.url.endsWith('/' + file));
+    if (!entry) throw new Error(file + ' is not bundled in this build');
+    return 'assets/mediapipe/' + entry.file;
+  };
+  window.bundledModelKey = key;
+  window.bundledModelUrl = async file => new URL('assets/' + await key(file), document.baseURI).href;
+};
+
 async function launch(deviceCount = 2, useFile = true) {
   const options = browserName === 'chromium' ? {
     // The lightweight headless shell rejects getUserMedia. Full Chromium's
@@ -97,7 +111,7 @@ async function detectScreenshot(page, png) {
     const bundle = await import(new URL('vision_bundle.mjs', runtime));
     const files = await bundle.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const task = await bundle[spec.task].createFromOptions(files, {
-      baseOptions: {delegate: 'CPU', modelAssetPath: new URL('assets/assets/models/' + spec.model, document.baseURI).href},
+      baseOptions: {delegate: 'CPU', modelAssetPath: await window.bundledModelUrl(spec.model)},
       runningMode: 'IMAGE', ...spec.options,
     });
     const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
@@ -225,6 +239,7 @@ async function alignmentCheck(page) {
 async function apiChecks() {
   const browser = await launch();
   const page = await browser.newPage();
+  await page.addInitScript(bundledModelsScript);
   observe(page);
   await page.goto(apiBase + (delegate === 'GPU' ? '?delegate=gpu' : ''));
   // The probe runs every browser task. Hosted runners emulate WebGL in
@@ -239,7 +254,7 @@ async function apiChecks() {
     const {FilesetResolver, FaceLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
     const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const task = await FaceLandmarker.createFromOptions(files, {
-      baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/face_landmarker.task', document.baseURI).href},
+      baseOptions: {delegate, modelAssetPath: await window.bundledModelUrl('face_landmarker.task')},
       runningMode: 'IMAGE', numFaces: 1, outputFaceBlendshapes: true, outputFacialTransformationMatrixes: true,
     });
     const response = await fetch(new URL('assets/assets/samples/portrait.jpg', document.baseURI));
@@ -273,7 +288,7 @@ async function apiChecks() {
     const {FilesetResolver, HandLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
     const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const task = await HandLandmarker.createFromOptions(files, {
-      baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/hand_landmarker.task', document.baseURI).href},
+      baseOptions: {delegate, modelAssetPath: await window.bundledModelUrl('hand_landmarker.task')},
       runningMode: 'IMAGE', numHands: 2,
     });
     const response = await fetch(new URL('assets/assets/samples/hands.jpg', document.baseURI));
@@ -311,7 +326,7 @@ async function apiChecks() {
     const points = list => (list ?? []).map(p => [p.x, p.y, p.z]);
     const run = async (type, model, sample, options, method, parts) => {
       const task = await vision[type].createFromOptions(files, {
-        baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/' + model, document.baseURI).href},
+        baseOptions: {delegate, modelAssetPath: await window.bundledModelUrl(model)},
         runningMode: 'IMAGE', ...options,
       });
       const response = await fetch(new URL('assets/assets/samples/' + sample, document.baseURI));
@@ -360,8 +375,8 @@ async function apiChecks() {
     const files = await vision.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const response = await fetch(new URL('assets/assets/samples/portrait.jpg', document.baseURI));
     const bitmap = await createImageBitmap(await response.blob());
-    const open = (type, model, options) => vision[type].createFromOptions(files, {
-      baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/' + model, document.baseURI).href},
+    const open = async (type, model, options) => vision[type].createFromOptions(files, {
+      baseOptions: {delegate, modelAssetPath: await window.bundledModelUrl(model)},
       runningMode: 'IMAGE', ...options,
     });
     const boxes = detections => detections.map(d => {
@@ -418,7 +433,7 @@ async function apiChecks() {
         {outputSegmentationMasks: true});
       // Stateful MagicTouch runs on CPU only, in both delegate passes.
       const magic = await vision.InteractiveSegmenter.createFromOptions(files, {
-        baseOptions: {delegate, modelAssetPath: new URL('assets/assets/models/interactive_segmentation.task', document.baseURI).href},
+        baseOptions: {delegate, modelAssetPath: await window.bundledModelUrl('interactive_segmentation.task')},
       });
       // A stroke history's mask, sampled on the same 16 x 12 grid.
       const strokes = history => {
@@ -502,6 +517,7 @@ async function iosUserAgentCpuCheck() {
   const browser = await launch();
   const context = await browser.newContext({userAgent});
   const page = await context.newPage();
+  await page.addInitScript(bundledModelsScript);
   observe(page);
   // Failed creation terminates the worker before Playwright can inspect it.
   // Hold only the create request, then release it unchanged after observation.
@@ -629,6 +645,7 @@ async function cameraChecks() {
   const context = await browser.newContext({viewport: {width: 1280, height: 720}});
   await context.grantPermissions(['camera'], {origin: new URL(base).origin});
   const page = await context.newPage();
+  await page.addInitScript(bundledModelsScript);
   observe(page);
   await installCaptureObservations(page);
   await page.goto(gallery);
@@ -726,6 +743,7 @@ async function cameraChecks() {
   const denied = await browser.newContext();
   await denied.grantPermissions([], {origin: new URL(base).origin});
   const deniedPage = await denied.newPage();
+  await deniedPage.addInitScript(bundledModelsScript);
   observe(deniedPage);
   await deniedPage.goto(gallery);
   await deniedPage.getByRole('button', {name: /Face Landmarker/}).click();
@@ -744,6 +762,7 @@ async function cameraChecks() {
   });
   await multipleContext.grantPermissions(['camera'], {origin: new URL(base).origin});
   const multiplePage = await multipleContext.newPage();
+  await multiplePage.addInitScript(bundledModelsScript);
   observe(multiplePage);
   await installCaptureObservations(multiplePage, true);
   await multiplePage.goto(gallery);
@@ -840,6 +859,7 @@ async function cameraChecks() {
   const missingContext = await missing.newContext();
   await missingContext.grantPermissions(['camera'], {origin: new URL(base).origin});
   const missingPage = await missingContext.newPage();
+  await missingPage.addInitScript(bundledModelsScript);
   observe(missingPage);
   await missingPage.goto(gallery);
   await missingPage.getByRole('button', {name: /Face Landmarker/}).click();
@@ -864,6 +884,7 @@ async function textAudioChecks() {
   report.browser_version = browser.version();
   const context = await browser.newContext(microphone ? {permissions: ['microphone']} : {});
   const page = await context.newPage();
+  await page.addInitScript(bundledModelsScript);
   observe(page);
   // Where the package's workers load Google's runtimes from: jsDelivr, or with
   // --runtime=<url> a root the probe's bundle serves (MediaPipeWebRuntime).
@@ -894,6 +915,7 @@ async function textAudioChecks() {
   if (argumentsMap.runtime && browserName === 'chromium') {
     // The same pinned SHA-384 must reject a changed file from a self-hosted root.
     const tampered = await context.newPage();
+    await tampered.addInitScript(bundledModelsScript);
     await tampered.route('**/text_bundle.mjs', route =>
       route.fulfill({status: 200, contentType: 'text/javascript', body: 'tampered'}));
     await tampered.goto(textAudioBase + '?runtime=' + encodeURIComponent(argumentsMap.runtime));
@@ -923,14 +945,14 @@ async function textAudioChecks() {
         ['This was a terrible movie. I hated every minute.', {}],
         ['Hello, world!', {maxResults: 1}], ['Hello, world!', {categoryDenylist: ['positive']}]]) {
       const task = await text.TextClassifier.createFromOptions(textFiles,
-        {scoreThreshold: 0, ...options, baseOptions: {modelAssetBuffer: await bytes('assets/models/bert_classifier.tflite')}});
+        {scoreThreshold: 0, ...options, baseOptions: {modelAssetBuffer: await bytes(await window.bundledModelKey('bert_classifier.tflite'))}});
       classifier.push(heads(task.classify(input)));
       task.close();
     }
     const embedder = {};
     for (const quantize of [false, true]) {
       const task = await text.TextEmbedder.createFromOptions(textFiles, {l2Normalize: quantize, quantize,
-        baseOptions: {modelAssetBuffer: await bytes('assets/models/universal_sentence_encoder.tflite')}});
+        baseOptions: {modelAssetBuffer: await bytes(await window.bundledModelKey('universal_sentence_encoder.tflite'))}});
       const e = ['Hello, world!', 'Hello there!', 'The spacecraft landed on Mars.'].map(t => task.embed(t).embeddings[0]);
       embedder[quantize ? 'quantized' : 'float'] = {
         values: e.map(v => Array.from(quantize ? v.quantizedEmbedding : v.floatEmbedding)),
@@ -953,7 +975,7 @@ async function textAudioChecks() {
         ['Sort a list of integers.', {type: 'CODE_RETRIEVAL', textRole: 'QUERY'}],
       ];
       embeddingGemma = {};
-      const gemma = await bytes('assets/models/embedding_gemma.task');
+      const gemma = await bytes(await window.bundledModelKey('embedding_gemma.task'));
       for (const quantize of [false, true]) {
         const task = await text.TextEmbedder.createFromOptions(textFiles, {l2Normalize: quantize, quantize,
           baseOptions: {modelAssetBuffer: gemma}});
@@ -967,7 +989,7 @@ async function textAudioChecks() {
       }
     }
     const detector = await text.LanguageDetector.createFromOptions(textFiles,
-      {maxResults: 3, scoreThreshold: 0, baseOptions: {modelAssetBuffer: await bytes('assets/models/language_detector.tflite')}});
+      {maxResults: 3, scoreThreshold: 0, baseOptions: {modelAssetBuffer: await bytes(await window.bundledModelKey('language_detector.tflite'))}});
     const language = ['Hello, world!', 'Quiero agua, por favor.', 'こんにちは、元気ですか？'].map(t =>
       detector.detect(t).languages.map(l => [l.languageCode, l.probability]));
     detector.close();
@@ -976,7 +998,7 @@ async function textAudioChecks() {
     const audio = await import(new URL('audio_bundle.mjs', audioRuntime).href);
     const audioFiles = await audio.FilesetResolver.forAudioTasks(new URL('wasm', audioRuntime).href);
     const yamnet = await audio.AudioClassifier.createFromOptions(audioFiles,
-      {baseOptions: {modelAssetBuffer: await bytes('assets/models/yamnet.tflite')}});
+      {baseOptions: {modelAssetBuffer: await bytes(await window.bundledModelKey('yamnet.tflite'))}});
     const clips = {};
     const decoded = {};
     const chunks = result => result.map(chunk => [chunk.timestampMs ?? 0,

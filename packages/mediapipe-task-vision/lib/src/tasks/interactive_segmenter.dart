@@ -12,7 +12,7 @@ import '../vision_task_backend.dart';
 /// mask of the object a stroke history selects.
 ///
 /// One class on every platform. Google's native runtime serves it on a
-/// worker isolate on macOS and Linux and through its iOS SDK; its Android
+/// worker isolate on macOS, Linux and iOS; its Android
 /// SDK and browser runtime serve it through the registered platform plugin.
 /// Google's Windows build lacks it, which the capability query reports.
 ///

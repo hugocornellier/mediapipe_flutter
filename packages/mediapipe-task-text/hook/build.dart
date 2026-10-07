@@ -1,25 +1,17 @@
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
 import 'package:mediapipe_core/native_assets.dart';
-import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
 import 'package:native_toolchain_c/native_toolchain_c.dart';
 
+/// Bundles Google's MediaPipe text library and this package's stream bridge.
+/// Browsers run Google's JavaScript runtime through this package's plugin
+/// instead.
 Future<void> main(List<String> args) => build(args, (input, output) async {
   if (!input.config.buildCodeAssets) return;
-  if (input.metadata['mediapipe_core']['tasks_runtime'] != true) {
-    // Browsers and Android run Google's own SDKs through this plugin instead.
-    // On macOS the engine is opt-in, and creating a task names the fix.
-    final target = buildTarget(input.config.code);
-    if (tasksRuntimeMissing(target, enabled: false)) {
-      throw StateError(tasksRuntimeRequired('mediapipe_text', target));
-    }
-    return;
-  }
+  final code = input.config.code;
+  await bundleFamilyRuntime(input, output, family: 'text');
   // Only copies ephemeral generative callbacks; does not link/modify MediaPipe.
-  // The bridge is plain C and is compiled for whichever target core has a
-  // runtime for; core's hook has already rejected unsupported targets.
-  final windows =
-      input.config.buildCodeAssets && input.config.code.targetOS == OS.windows;
+  final windows = code.targetOS == OS.windows;
   await CBuilder.library(
     name: 'mediapipe_text_stream',
     assetName: 'text_stream_bridge.dylib',

@@ -8,25 +8,20 @@ import 'package:mediapipe_core/platform_interface.dart';
 import 'text_task_worker.dart';
 import 'third_party/mediapipe/classic_text_bindings.dart' as mp;
 
-/// Where core's shared runtime serves the text tasks, the Proofreader and
-/// Summarizer included: Google's macOS 1.0.0 library, its Linux 1.0.1 and
-/// Windows 1.0.0 wheel libraries, and its iOS 1.0.1 SDK through the adapter
-/// mediapipe_core builds.
-const _runtimeAbis = {
-  Abi.macosArm64,
-  Abi.linuxX64,
-  Abi.windowsX64,
-  Abi.iosArm64,
-};
+/// This process's target, named as core's [tasksRuntimeTargets] names the
+/// targets where Google's text library serves the text tasks, the
+/// Proofreader and Summarizer included.
+final _target =
+    '${Platform.operatingSystem}/${Abi.current().toString().split('_').last}';
 
 /// Validate availability before starting a worker or resolving inference calls.
 void requireTextTasksRuntime() {
-  if (!_runtimeAbis.contains(Abi.current())) {
+  if (!tasksRuntimeTargets.containsKey(_target)) {
     throw const RuntimeUnavailableException(
       "Google's text runtime is unavailable on this platform.",
       fix:
-          'Use macOS arm64, Linux x64, Windows x64 or iOS arm64, or install '
-          'the browser or Android platform plugin.',
+          'Use Android (arm64 or x64), iOS arm64, macOS arm64, Linux x64 or '
+          'Windows x64, or a browser.',
     );
   }
   try {
@@ -68,9 +63,9 @@ void fillTextBaseOptions(
       ..modelAssetBuffer = buffer.cast()
       ..modelAssetBufferCount = bytes.length;
   } else {
-    target.modelAssetPath = options.modelPath!
-        .toNativeUtf8(allocator: arena)
-        .cast();
+    target.modelAssetPath = nativeModelPath(
+      options.modelPath!,
+    ).toNativeUtf8(allocator: arena).cast();
   }
 }
 

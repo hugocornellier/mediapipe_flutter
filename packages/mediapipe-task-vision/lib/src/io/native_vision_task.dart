@@ -4,9 +4,11 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_core/platform_interface.dart' show ClassifierSettings;
+import 'package:mediapipe_core/platform_interface.dart'
+    show ClassifierSettings, nativeModelPath;
 
-import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
+import '../runner/native_interface.dart' show VisionTaskInput;
+import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../types/results.dart';
 import '../types/vision_types.dart';
 import 'native_desktop_runtime.dart';
@@ -15,7 +17,7 @@ import 'native_vision_image.dart';
 /// Initialize the shared base options with owned model bytes or a model path.
 ///
 /// [officialGpu] marks a task whose GPU path is validated on Google's official
-/// Linux runtime and iOS SDK too; other tasks allow GPU on macOS only.
+/// Linux, iOS and Android too; other tasks allow GPU on macOS only.
 void setVisionBaseOptions(
   Arena arena,
   mp.MpBaseOptions base,
@@ -24,10 +26,11 @@ void setVisionBaseOptions(
 }) {
   if (options.delegate == Delegate.gpu &&
       !Platform.isMacOS &&
-      !(officialGpu && (Platform.isLinux || Platform.isIOS))) {
+      !(officialGpu &&
+          (Platform.isLinux || Platform.isIOS || Platform.isAndroid))) {
     throw UnsupportedError(
       officialGpu
-          ? 'GPU vision inference requires macOS, Linux or iOS.'
+          ? 'GPU vision inference requires macOS, Linux, iOS or Android.'
           : 'GPU vision inference is validated on macOS only.',
     );
   }
@@ -42,9 +45,13 @@ void setVisionBaseOptions(
       ? mp.MpHostSystem.MP_HOST_SYSTEM_WINDOWS
       : Platform.isIOS
       ? mp.MpHostSystem.MP_HOST_SYSTEM_IOS
+      : Platform.isAndroid
+      ? mp.MpHostSystem.MP_HOST_SYSTEM_ANDROID
       : mp.MpHostSystem.MP_HOST_SYSTEM_MAC;
   if (options.modelPath case final path?) {
-    base.model_asset_path = path.toNativeUtf8(allocator: arena).cast();
+    base.model_asset_path = nativeModelPath(
+      path,
+    ).toNativeUtf8(allocator: arena).cast();
   }
   if (options.modelBytes case final bytes?) {
     final buffer = arena<Uint8>(bytes.length);
@@ -114,6 +121,96 @@ Embedding copyVisionEmbedding(mp.MpEmbedding value) => Embedding(
   quantizedEmbedding: value.quantized_embedding == nullptr
       ? null
       : value.quantized_embedding.cast<Uint8>().asTypedList(value.values_count),
+);
+
+/// What a request's copy step reads: the arena that owns the request's native
+/// memory, the image Google ran (for its size) and the frame's timestamp, null
+/// for IMAGE requests.
+typedef VisionRequest = ({Arena arena, mp.MpImagePtr image, int? timestamp});
+
+/// Runs one IMAGE or VIDEO request, as [input]'s timestamp says, and returns
+/// what [copy] makes of the result before Google's memory is released.
+///
+/// [allocate] takes the task's result struct from the request's arena (FFI
+/// needs its concrete type); [image] and [video] are the task's two calls,
+/// with the task bound; [closeResult] releases what Google wrote into the
+/// result. Only tasks that accept a region of interest set [region].
+R runVisionRequest<T extends Struct, R>(
+  VisionTaskInput input, {
+  required bool gpu,
+  required Pointer<T> Function(Arena arena) allocate,
+  required mp.MpStatus Function(
+    mp.MpImagePtr image,
+    Pointer<mp.MpImageProcessingOptions> processing,
+    Pointer<T> result,
+    Pointer<Pointer<Char>> error,
+  )
+  image,
+  required mp.MpStatus Function(
+    mp.MpImagePtr image,
+    Pointer<mp.MpImageProcessingOptions> processing,
+    int timestamp,
+    Pointer<T> result,
+    Pointer<Pointer<Char>> error,
+  )
+  video,
+  required void Function(Pointer<T> result) closeResult,
+  required R Function(VisionRequest request, Pointer<T> result) copy,
+  bool region = false,
+}) => using((arena) {
+  final (source, rotation, timestamp, roi) = input;
+  final native = createVisionImage(
+    arena,
+    source,
+    expandRgbForGpu: gpu,
+    checked: checkVisionCall,
+  );
+  try {
+    final processing = visionProcessingOptions(
+      arena,
+      rotation,
+      region ? roi : null,
+    );
+    final result = allocate(arena);
+    if (timestamp == null) {
+      checkVisionCall((error) => image(native, processing, result, error));
+    } else {
+      checkVisionCall(
+        (error) => video(native, processing, timestamp, result, error),
+      );
+    }
+    try {
+      return copy((arena: arena, image: native, timestamp: timestamp), result);
+    } finally {
+      // This releases the contents, while the arena owns the outer struct.
+      closeResult(result);
+    }
+  } finally {
+    mp.MpImageFree(native);
+  }
+});
+
+/// Copy a detection's box, categories and any keypoints.
+Detection copyVisionDetection(mp.MpDetection value) => Detection(
+  boundingBox: BoundingBox(
+    left: value.bounding_box.left,
+    top: value.bounding_box.top,
+    right: value.bounding_box.right,
+    bottom: value.bounding_box.bottom,
+  ),
+  categories: [
+    for (var i = 0; i < value.categories_count; i++)
+      copyVisionCategory(value.categories[i]),
+  ],
+  keypoints: [
+    for (var i = 0; i < value.keypoints_count; i++)
+      NormalizedKeypoint(
+        x: value.keypoints[i].x,
+        y: value.keypoints[i].y,
+        label: nativeString(value.keypoints[i].label),
+        score: value.keypoints[i].has_score ? value.keypoints[i].score : null,
+      ),
+  ],
 );
 
 /// Release native errors and throw an owned diagnostic on non-OK status.
@@ -225,26 +322,6 @@ ConfidenceMask copyVisionConfidenceMask(Arena arena, mp.MpImagePtr image) {
     );
   }
   final data = arena<Pointer<Float>>();
-  // The pinned 1.0.0 float accessor aborts while copying padded rows because
-  // its ImageFrame copy selects the uint8 overload. Use the checked scalar
-  // API for those images, preserving dimensions and every float32 value.
-  if (!mp.MpImageIsContiguous(image)) {
-    final values = Float32List(width * height);
-    final position = arena<Int>(2);
-    final value = arena<Float>();
-    for (var y = 0; y < height; y++) {
-      position[0] = y;
-      for (var x = 0; x < width; x++) {
-        position[1] = x;
-        checkVisionCall(
-          (error) =>
-              mp.MpImageGetValueFloat32(image, position, 2, value, error),
-        );
-        values[y * width + x] = value.value;
-      }
-    }
-    return ConfidenceMask(width: width, height: height, confidence: values);
-  }
   checkVisionCall((error) => mp.MpImageDataFloat32(image, data, error));
   if (data.value == nullptr) {
     throw const TaskException('Native mask data is missing.');
@@ -256,18 +333,36 @@ ConfidenceMask copyVisionConfidenceMask(Arena arena, mp.MpImagePtr image) {
   );
 }
 
-/// Read and copy a single-channel uint8 category mask.
+/// Read and copy a category mask, one class index per pixel.
 ///
-/// The contiguous-copy path is correct for uint8 images, unlike the float32
-/// accessor in UP-003, so the official accessor handles padded rows here.
+/// Google's accessor returns padded rows as one contiguous copy. Its CPU
+/// path returns uint8 classes, but its OpenGL ES postprocessing (Android and
+/// Linux GPUs) renders one float32 channel holding each class divided by
+/// 255 (a one-class model's 0 or 255 as 0.0 or 1.0), which is rounded back
+/// to the class here.
 CategoryMask copyVisionCategoryMask(Arena arena, mp.MpImagePtr image) {
   final width = mp.MpImageGetWidth(image);
   final height = mp.MpImageGetHeight(image);
-  if (width < 1 ||
-      height < 1 ||
-      mp.MpImageGetChannels(image) != 1 ||
-      mp.MpImageGetByteDepth(image) != 1) {
-    throw const TaskException('Native result is not a uint8 category mask.');
+  final channels = mp.MpImageGetChannels(image);
+  final depth = mp.MpImageGetByteDepth(image);
+  if (width < 1 || height < 1 || channels != 1 || (depth != 1 && depth != 4)) {
+    throw TaskException(
+      'Native category mask has $channels channel(s) of $depth byte(s) at '
+      '${width}x$height; expected one uint8 or float32 channel.',
+    );
+  }
+  if (depth == 4) {
+    final data = arena<Pointer<Float>>();
+    checkVisionCall((error) => mp.MpImageDataFloat32(image, data, error));
+    if (data.value == nullptr) {
+      throw const TaskException('Native mask data is missing.');
+    }
+    final values = data.value.asTypedList(width * height);
+    final categories = Uint8List(values.length);
+    for (var i = 0; i < values.length; i++) {
+      categories[i] = (values[i] * 255).round().clamp(0, 255);
+    }
+    return CategoryMask(width: width, height: height, categories: categories);
   }
   final data = arena<Pointer<Uint8>>();
   checkVisionCall((error) => mp.MpImageDataUint8(image, data, error));

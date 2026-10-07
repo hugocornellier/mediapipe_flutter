@@ -7,16 +7,10 @@ Google's text package; [MIGRATION.md](MIGRATION.md) maps that API.
 - The shared layer of every task family. `mediapipe_core.dart` is the one
   library apps see, through each family's library, which re-exports it;
   `platform_interface.dart` is for family packages and plugins.
-- Bundles Google's MediaPipe engine once per app for every family: an adapter
-  over Google's iOS SDK (including the Proofreader and Summarizer C API, over
-  `MPPTextProofreader` and `MPPTextSummarizer`), the official wheel libraries
-  on Linux x64 and Windows x64, and Google's macOS arm64 library (opt-in with
-  `tasks_runtime: true`, since it is about 95 MB).
-- An Android library, `dev.mediapipe.flutter.core`, that the family plugins
-  build on: `TaskHost` runs Google's tasks on one worker thread, keeps their
-  model buffers alive, answers the method channel and sends a streamed
-  request's updates, and `TaskJson` shapes Google's classification and
-  embedding containers as its JavaScript API does.
+- Downloads, verifies and prepares Google's MediaPipe 1.1.0 C library for
+  each family (`bundleFamilyRuntime`), which the vision, text and audio
+  hooks bundle on Android 9+, iOS, macOS arm64, Linux x64 and Windows x64, so
+  an app ships only the families it uses.
 - Shared types: `TaskOptions` (the base of every options class, with `model`,
   `modelPath`, `modelBytes` and `delegate`), one `Delegate`,
   `TaskCapabilities`, and the value types `MediaPipeCategory`,
@@ -29,8 +23,8 @@ Google's text package; [MIGRATION.md](MIGRATION.md) maps that API.
   family the same option checks and delegate refusal. Every classifier's
   options implement `ClassifierSettings`, which `classifierSettingsJson`
   names as Google's JavaScript API does, and `decodeClassifications`,
-  `decodeEmbedding` and `decodeCategory` read the results the browser and
-  Android adapters deliver.
+  `decodeEmbedding` and `decodeCategory` read the results the browser
+  adapters deliver.
 - Models are bundled with the app at build time.
   `dart run mediapipe_core:bundle_models` downloads the models an app lists
   under `hooks.user_defines.<family>.models`, verifies each against its pin,

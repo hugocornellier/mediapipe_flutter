@@ -16,6 +16,7 @@ import 'package:mediapipe_gallery/ui/components.dart';
 import 'support/alignment_oracle.dart';
 import 'support/gallery_tiles.dart';
 import 'support/live_subject.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 // A real camera must be in front of this test, showing one face, or one hand
 // with --dart-define=GALLERY_LIVE_TASK=hand. On hosted Linux that is a
@@ -118,7 +119,7 @@ void main() {
             geometry.box.height * pixelsPerLogical,
           );
           final model = await tester.runAsync(
-            () => rootBundle.load('assets/models/${subject.model}'),
+            () => rootBundle.load(bundledModelAsset(subject.model)),
           );
           final measurement = await tester.runAsync(
             () => measureAlignment(

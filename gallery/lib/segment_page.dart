@@ -68,13 +68,7 @@ class _SegmentPageState extends State<SegmentPage> {
   int _openRevision = 0;
 
   late final List<Delegate> _delegates =
-      widget.task
-          .capabilitiesFor(
-            widget.platform,
-            widget.assets.officialMacosLandmarkTasks,
-          )
-          .supportedDelegates
-          .toList()
+      widget.task.capabilities(widget.platform).supportedDelegates.toList()
         ..sort((a, b) => a.index.compareTo(b.index));
   late Delegate _delegate = preferredDelegate(_delegates);
 
@@ -102,13 +96,9 @@ class _SegmentPageState extends State<SegmentPage> {
   Future<void> _open() async {
     final revision = ++_openRevision;
     try {
-      final model = await rootBundle.load('assets/models/${widget.task.model}');
       final task = await InteractiveSegmenter.create(
         InteractiveSegmenterOptions(
-          modelBytes: model.buffer.asUint8List(
-            model.offsetInBytes,
-            model.lengthInBytes,
-          ),
+          model: widget.task.model,
           delegate: _delegate,
         ),
       );
@@ -239,7 +229,7 @@ class _SegmentPageState extends State<SegmentPage> {
     modelStatus: null,
     onModel: (_) {},
     onUpload: null,
-    bundledModel: widget.task.model,
+    bundledModel: widget.task.modelFile,
   );
 
   @override
@@ -381,10 +371,8 @@ class _SegmentPageState extends State<SegmentPage> {
           ],
           delegate: _delegate == Delegate.gpu ? 'GPU' : 'CPU',
         ),
-        // TODO: finish Exclude (negative) and Lasso strokes on every
-        // platform, then restore the Include/Exclude/Lasso selector (a
-        // Segmented<BrushMode> setting editor.brush). Until then
-        // the gallery offers Include only.
+        // TODO: Restore the Exclude and Lasso brushes. Only Include is offered
+        // today. See packages/mediapipe-task-vision/tool/SEGMENTER_BRUSHES.md.
         const SizedBox(height: 11),
         OutputCard(
           title: 'Selection',

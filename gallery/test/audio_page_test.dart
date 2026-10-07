@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -108,7 +109,14 @@ void main() {
 
     // Core caches its platform query, and a future first made inside one
     // test's fake clock would never complete in the next test: make it here.
-    setUpAll(queryAudioClassifierCapabilities);
+    setUpAll(() async {
+      await queryAudioClassifierCapabilities();
+      // The page passes YAMNet's pin, which core copies out of the bundle
+      // into its cache; tests have no application support directory.
+      ModelStore.debugCacheDirectory = Directory.systemTemp
+          .createTempSync('gallery-models-')
+          .path;
+    });
 
     setUp(() {
       backends = [];
@@ -129,7 +137,7 @@ void main() {
 
     Future<bool> bundled() async {
       try {
-        await rootBundle.load('assets/models/yamnet.tflite');
+        await rootBundle.load('assets/mediapipe/${AudioModels.yamnet.sha256}');
         return true;
       } on Object {
         return false;
@@ -146,7 +154,6 @@ void main() {
           version: '15.0',
         ),
         {'audio_classifier'},
-        const {},
       ).single;
       await tester.pumpWidget(
         MaterialApp(

@@ -24,18 +24,9 @@ const generatedTextKey = ValueKey('generated_text');
 /// or compare the input; the Proofreader and Summarizer write text, streamed
 /// as Google generates it.
 class TextPage extends StatefulWidget {
-  const TextPage({
-    super.key,
-    required this.task,
-    required this.assets,
-    this.onOpenMenu,
-  });
+  const TextPage({super.key, required this.task, this.onOpenMenu});
 
   final GalleryTask task;
-
-  /// Where this build's models are: the generative models and EmbeddingGemma
-  /// are hundreds of megabytes, so Google's tasks read them in place.
-  final GalleryAssets assets;
   final VoidCallback? onOpenMenu;
 
   @override
@@ -160,38 +151,35 @@ class _TextPageState extends State<TextPage> {
     }
   }
 
-  Future<Uint8List> _bytes() async {
-    if (_modelBytes case final bytes?) return bytes;
-    final data = await rootBundle.load('assets/models/${widget.task.model}');
-    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-  }
-
   Future<Object> _open() async {
     if (_task case final task?) return task;
-    // Google's generative tasks read their model from a file, and
-    // EmbeddingGemma's is large enough to read in place too.
-    final path = widget.assets.path(widget.task.model);
+    // The bundled model by its pin, as an app passes it, unless a chosen or
+    // uploaded one replaces it.
+    final bytes = _modelBytes;
+    final model = bytes == null ? widget.task.model : null;
     return _task = switch (_id) {
       'text_classifier' => await TextClassifier.create(
         TextClassifierOptions(
-          modelBytes: await _bytes(),
+          model: model,
+          modelBytes: bytes,
           maxResults: _values.count('maxResults'),
           scoreThreshold: _values.share('scoreThreshold'),
         ),
       ),
       'language_detector' => await LanguageDetector.create(
         LanguageDetectorOptions(
-          modelBytes: await _bytes(),
+          model: model,
+          modelBytes: bytes,
           maxResults: _values.count('maxResults'),
           scoreThreshold: _values.share('scoreThreshold'),
         ),
       ),
       'text_proofreader' => await TextProofreader.create(
-        TextProofreaderOptions(modelPath: path),
+        TextProofreaderOptions(model: widget.task.model),
       ),
       'text_summarizer' => await TextSummarizer.create(
         TextSummarizerOptions(
-          modelPath: path,
+          model: widget.task.model,
           mode: _values.choice('mode') == 1
               ? TextSummarizerMode.tldr
               : TextSummarizerMode.keypoints,
@@ -199,15 +187,20 @@ class _TextPageState extends State<TextPage> {
       ),
       'embedding_gemma' => await TextEmbedder.create(
         TextEmbedderOptions(
-          modelBytes: _modelBytes,
-          modelPath: _modelBytes == null ? path : null,
+          modelBytes: bytes,
+          // A file on native platforms; in browsers its URL, which Google's
+          // runtime fetches itself, so 184 MB never passes through Dart.
+          modelPath: bytes == null
+              ? await GalleryAssets.modelPath(widget.task.model)
+              : null,
           l2Normalize: _values.on('l2Normalize'),
           quantize: _values.on('quantize'),
         ),
       ),
       _ => await TextEmbedder.create(
         TextEmbedderOptions(
-          modelBytes: await _bytes(),
+          model: model,
+          modelBytes: bytes,
           l2Normalize: _values.on('l2Normalize'),
           quantize: _values.on('quantize'),
         ),
@@ -386,7 +379,7 @@ class _TextPageState extends State<TextPage> {
       onModel: _chooseModel,
       // Google's generative tasks read a `.litertlm` file, not bytes.
       onUpload: _generative ? null : _upload,
-      bundledModel: widget.task.model,
+      bundledModel: widget.task.modelFile,
     ),
   );
 
@@ -555,6 +548,10 @@ class _TextPageState extends State<TextPage> {
             ],
             empty: 'Run the task to see its results.',
           ),
+        if (widget.task.gemmaModel) ...[
+          const SizedBox(height: 22),
+          const GemmaNotice(),
+        ],
       ],
     );
   }

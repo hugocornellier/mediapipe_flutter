@@ -11,8 +11,8 @@ import '../vision_task_backend.dart';
 /// Google's Object Detector: a box and categories per object.
 ///
 /// One class on every platform. Google's native runtime serves it on a
-/// worker isolate on macOS, Linux, Windows and iOS; its Android SDK and
-/// browser runtime serve it through the registered platform plugin. Metal
+/// worker isolate on Android, iOS, macOS, Linux and Windows; its browser
+/// runtime serves it through the registered web plugin. Metal
 /// needs a float model, such as the pinned EfficientDet-Lite0 float32 one.
 ///
 /// ```dart

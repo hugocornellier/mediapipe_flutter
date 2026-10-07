@@ -13,6 +13,7 @@ import 'support/mask_grids.dart';
 import 'support/official_landmark_references.dart';
 import 'support/official_mask_references.dart';
 import 'support/sdk_frames.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 /// As in sdk_hand_landmarker_test.dart: `required` fails when the SDK refuses
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
@@ -40,20 +41,40 @@ void main() {
       (tester) async {
         await tester.runAsync(() async {
           expect(Platform.isAndroid || Platform.isIOS, isTrue);
-          if (Platform.isAndroid) {
-            expect(
-              subject.registered(),
-              isTrue,
-              reason: 'the Android SDK plugin must register automatically',
-            );
-          }
+          expect(
+            subject.registered(),
+            isFalse,
+            reason:
+                "Android and iOS run Google's C library through FFI, not a plugin backend",
+          );
           final assets = await GalleryAssets.unpack();
           final model = await _model(subject.model);
           final frame = await loadSample(subject.sample);
           final references = <Delegate, _Parts>{};
+          // The package withdraws Holistic's GPU where Google's runtime cannot
+          // open its face blendshapes model (UP-026, iPhones included) and
+          // refuses it before Google's graph exists. A phone that must run the
+          // GPU may lose it only to that documented gap.
+          final capabilities = await subject.capabilities();
+          final gpuDeclared = capabilities.supportedDelegates.contains(
+            Delegate.gpu,
+          );
+          if (!gpuDeclared && _gpu == 'required') {
+            expect(
+              capabilities.unavailableReasons[Delegate.gpu],
+              contains('UP-026'),
+            );
+            await expectLater(
+              subject.open(model, Delegate.gpu, RunningMode.image),
+              throwsA(isA<RuntimeUnavailableException>()),
+            );
+            _report(subject, 'gpu_withdrawn', {
+              'reason': capabilities.unavailableReasons[Delegate.gpu],
+            });
+          }
           for (final delegate in [
             Delegate.cpu,
-            if (_gpu != 'skip') Delegate.gpu,
+            if (_gpu != 'skip' && gpuDeclared) Delegate.gpu,
           ]) {
             final _Task task;
             try {
@@ -236,6 +257,7 @@ final class _Subject {
     required this.model,
     required this.sample,
     required this.registered,
+    required this.capabilities,
     required this.open,
     required this.check,
     this.maskOf,
@@ -248,6 +270,10 @@ final class _Subject {
   final String model;
   final String sample;
   final bool Function() registered;
+
+  /// The package's capability query, which withdraws a GPU Google's runtime
+  /// cannot open on this platform.
+  final Future<TaskCapabilities> Function() capabilities;
   final Future<_Task> Function(
     Uint8List model,
     Delegate delegate,
@@ -302,6 +328,7 @@ final _subjects = <_Subject>[
     model: 'pose_landmarker_lite.task',
     sample: 'pose.jpg',
     registered: () => poseLandmarkerBackendFactory != null,
+    capabilities: queryPoseLandmarkerCapabilities,
     open: (model, delegate, mode) async {
       final task = await PoseLandmarker.create(
         PoseLandmarkerOptions(
@@ -350,6 +377,7 @@ final _subjects = <_Subject>[
     model: 'gesture_recognizer.task',
     sample: 'thumb_up.jpg',
     registered: () => gestureRecognizerBackendFactory != null,
+    capabilities: queryGestureRecognizerCapabilities,
     open: (model, delegate, mode) async {
       final task = await GestureRecognizer.create(
         GestureRecognizerOptions(
@@ -397,6 +425,7 @@ final _subjects = <_Subject>[
     model: 'holistic_landmarker.task',
     sample: 'pose.jpg',
     registered: () => holisticLandmarkerBackendFactory != null,
+    capabilities: queryHolisticLandmarkerCapabilities,
     open: (model, delegate, mode) async {
       final task = await HolisticLandmarker.create(
         HolisticLandmarkerOptions(
@@ -488,26 +517,8 @@ Future<void> _checkMasks(
   }
   // As officialLandmarkReferences' rotated case: the upright pixels turned a
   // quarter turn counterclockwise, then rotation_degrees 90. That mask is 667
-  // wide, so its rows are padded, and Google's Android Pose Landmarker fails
-  // to convert it (upstream-issues.md UP-018).
-  if (Platform.isAndroid && subject.name == 'pose') {
-    await expectLater(
-      maskOf(model, rotatedImage(frame, 270), 90),
-      throwsA(
-        isA<TaskException>().having(
-          (e) => e.message,
-          'message',
-          contains('contiguously'),
-        ),
-      ),
-    );
-    _report(subject, 'mask', {
-      'official_mean_delta': meanDelta,
-      'rotated': 'UP-018',
-      'body': body,
-    });
-    return;
-  }
+  // wide, so its rows are padded, which Google's Java Android SDK failed to
+  // convert (upstream-issues.md UP-018); its C library does not.
   final turned = await maskOf(model, rotatedImage(frame, 270), 90);
   expect((turned.mask.width, turned.mask.height), (frame.height, frame.width));
   final turnedError = turnedConfidenceError(upright.mask, turned.mask, 270);
@@ -527,7 +538,7 @@ double _mean(ConfidenceMask mask) =>
     mask.confidence.fold(0.0, (sum, v) => sum + v) / mask.confidence.length;
 
 Future<Uint8List> _model(String name) async {
-  final bytes = await rootBundle.load('assets/models/$name');
+  final bytes = await rootBundle.load(bundledModelFile(name));
   return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
 }
 

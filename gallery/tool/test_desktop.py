@@ -9,6 +9,8 @@ import sys
 
 GALLERY = Path(__file__).resolve().parents[1]
 REPO = GALLERY.parent
+sys.path.insert(0, str(REPO / 'packages/mediapipe-core/tool'))
+from consumer_packages import family_runtime  # noqa: E402
 
 
 def main():
@@ -35,7 +37,7 @@ def main():
                   flush=True)
             raise RuntimeError(f'{name} failed ({result.returncode})')
 
-    run([sys.executable, '-B', GALLERY / 'tool/prepare.py',
+    run(['dart', 'run', REPO / 'tool/gallery_builder/bin/prepare_gallery.dart',
          '--target', f'{target}/x64'], 'prepare')
     manifest = json.loads((GALLERY / 'assets/manifest.json').read_text())
     required = {'face_landmarker', 'hand_landmarker', 'pose_landmarker',
@@ -65,18 +67,23 @@ def main():
     run(['flutter', 'build', target, '--release'], 'release')
     bundle = GALLERY / ('build/linux/x64/release/bundle' if target == 'linux'
                          else 'build/windows/x64/runner/Release')
-    runtime_name = 'libmediapipe.so' if target == 'linux' else 'libmediapipe.dll'
-    libraries = list(bundle.rglob(runtime_name))
-    if len(libraries) != 1:
-        raise RuntimeError(f'Expected one official runtime, got {libraries}')
-    library = libraries[0]
-    sha = hashlib.sha256(library.read_bytes()).hexdigest()
+    # One library per family, each the one core pins for this target.
+    runtimes = {}
+    for family in ('vision', 'text', 'audio'):
+        pin = family_runtime(family, f'{target}/x64')
+        libraries = list(bundle.rglob(pin['file']))
+        if len(libraries) != 1:
+            raise RuntimeError(f'Expected one {family} library, got {libraries}')
+        sha = hashlib.sha256(libraries[0].read_bytes()).hexdigest()
+        if sha != pin['sha256']:
+            raise RuntimeError(f'{libraries[0]} is not the pinned {family} library')
+        runtimes[family] = {'file': str(libraries[0].relative_to(bundle)),
+                            'sha256': sha}
     (evidence / 'report.json').write_text(json.dumps({
-        'target': f'{target}/x64', 'delegates': ['cpu'],
-        'runtime': str(library.relative_to(bundle)), 'runtime_sha256': sha,
+        'target': f'{target}/x64', 'delegates': ['cpu'], 'runtimes': runtimes,
         'checks': ['native-camera-registration-and-enumeration',
                    'assets', 'cross-task-runtime-coexistence',
-                   'text-and-audio-share-the-vision-runtime',
+                   'one-pinned-library-per-family',
                    'gallery-supplied-camera-rgba-bgra-switch-restart-cleanup',
                    'face-landmarker-still-image-inference-and-overlay',
                    'every-sidebar-task-gallery-journey',

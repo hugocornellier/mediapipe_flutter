@@ -11,9 +11,7 @@ void main() {
     'public classifier returns the reference scores through its isolate',
     () async {
       final classifier = await TextClassifier.create(
-        TextClassifierOptions(
-          modelPath: 'example/assets/bert_classifier.tflite',
-        ),
+        TextClassifierOptions(modelPath: 'models/bert_classifier.tflite'),
       );
       addTearDown(classifier.dispose);
       final result = await classifier.classify('Hello, world!');
@@ -28,9 +26,7 @@ void main() {
     'public detector handles consecutive languages through its isolate',
     () async {
       final detector = await LanguageDetector.create(
-        LanguageDetectorOptions(
-          modelPath: 'example/assets/language_detector.tflite',
-        ),
+        LanguageDetectorOptions(modelPath: 'models/language_detector.tflite'),
       );
       addTearDown(detector.dispose);
       final english = await detector.detect('Hello, world!');
@@ -44,7 +40,7 @@ void main() {
   test('public embedder embeds and compares owned vectors', () async {
     final embedder = await TextEmbedder.create(
       TextEmbedderOptions(
-        modelPath: 'example/assets/universal_sentence_encoder.tflite',
+        modelPath: 'models/universal_sentence_encoder.tflite',
       ),
     );
     addTearDown(embedder.dispose);
@@ -64,7 +60,7 @@ void main() {
     await expectLater(
       TextClassifier.create(
         TextClassifierOptions(
-          modelPath: 'example/assets/bert_classifier.tflite',
+          modelPath: 'models/bert_classifier.tflite',
           delegate: Delegate.gpu,
         ),
       ),

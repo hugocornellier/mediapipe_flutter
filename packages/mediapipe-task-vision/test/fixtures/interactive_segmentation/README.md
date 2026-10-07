@@ -12,8 +12,8 @@ The report records uncompressed hashes, dimensions, exact complete stroke
 histories and native/API/model provenance. The models are never modified.
 
 Regenerate with `tool/generate_interactive_segmenter_reference.py` using a
-separate Python environment containing the official `mediapipe==1.0.1` macOS
-ARM64 wheel. The generator refuses a different native library or model hash.
+Python environment containing Google's 1.1.0 release candidate wheel (`mediapipe-nightly` 1.1.0rc20260925 for macOS arm64, core's `referenceWheels`). The generator refuses a different
+native library or model hash.
 It can also import an extracted wheel using `--python-package-root`.
 
 Coverage includes file and raw inputs, repeated requests, partial strokes,

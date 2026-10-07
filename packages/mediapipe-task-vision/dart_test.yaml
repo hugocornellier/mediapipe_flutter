@@ -1,3 +1,4 @@
 tags:
-  # Tests that need Flutter's test binding; run them with `flutter test`.
-  flutter:
+  # Tests that measure the whole process (resident memory), so they run
+  # alone: `dart test --tags isolated`.
+  isolated:

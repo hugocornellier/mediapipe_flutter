@@ -44,6 +44,8 @@ typedef struct {
 
 // What the bridge posts instead of a copy's address when the copy itself
 // could not be allocated, so the worker still learns which event was last.
+// Only these two values are markers: an address can be negative as an
+// int64_t, since Android tags heap pointers in their top byte.
 enum { kMpFlutterTextLostEvent = -1, kMpFlutterTextLostTerminalEvent = -2 };
 
 // The layout of the Dart VM's Dart_CObject (dart_native_api.h), for the one

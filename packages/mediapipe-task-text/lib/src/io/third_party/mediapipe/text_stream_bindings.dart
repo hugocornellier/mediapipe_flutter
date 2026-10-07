@@ -22,9 +22,12 @@ final class MpFlutterTextEvent extends Struct {
   external bool terminal;
 }
 
+/// What the bridge posts in place of an event's address when its copy could
+/// not be allocated (kMpFlutterTextLostEvent).
+const lostEvent = -1;
+
 /// What the bridge posts in place of the last event's address when its copy
-/// could not be allocated (kMpFlutterTextLostTerminalEvent); any other lost
-/// copy is -1.
+/// could not be allocated (kMpFlutterTextLostTerminalEvent).
 const lostTerminalEvent = -2;
 
 @Native<Pointer<Void> Function(Pointer<Void>, Int64)>(

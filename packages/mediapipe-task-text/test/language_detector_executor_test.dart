@@ -17,7 +17,7 @@ import 'package:test/test.dart';
 void main() {
   final pathToModel = path.joinAll([
     io.Directory.current.absolute.path,
-    'example/assets/language_detector.tflite',
+    'models/language_detector.tflite',
   ]);
   final modelBytes = io.File(pathToModel).readAsBytesSync();
 

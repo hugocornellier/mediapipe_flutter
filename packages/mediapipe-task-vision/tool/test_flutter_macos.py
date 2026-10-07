@@ -4,12 +4,17 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 
 PACKAGE = Path(__file__).resolve().parents[1]
 APP = PACKAGE.parents[1] / "build/flutter_vision_smoke"
+sys.path.insert(0, str(PACKAGE.parent / "mediapipe-core/tool"))
+from consumer_packages import consumer_environment, core_hook_defines  # noqa: E402
 
 
-def test_app(app=APP, package=PACKAGE, env=None, hooks=''):
+def test_app(app=APP, package=PACKAGE):
+    env = consumer_environment()
+
     def run(args):
         subprocess.run(args, cwd=app, env=env, check=True)
 
@@ -38,7 +43,8 @@ flutter:
     - assets/model.tflite
     - assets/face_landmarker.task
     - assets/portrait.rgb
-""" + hooks)
+""" + (f"hooks:\n  user_defines:\n{defines}"
+       if (defines := core_hook_defines()) else ""))
     (app / "assets").mkdir(exist_ok=True)
     shutil.copyfile(PACKAGE / "models/blaze_face_short_range.tflite",
                     app / "assets/model.tflite")

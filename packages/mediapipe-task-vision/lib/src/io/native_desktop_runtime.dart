@@ -6,14 +6,13 @@ import 'package:mediapipe_core/platform_interface.dart'
 
 @Native<Void Function(Pointer<Char>)>(
   symbol: 'MpErrorFree',
-  assetId: 'package:mediapipe_core/mediapipe.dylib',
+  assetId: 'package:mediapipe_vision/mediapipe.dylib',
 )
 external void _errorFree(Pointer<Char> error);
 
-/// Loads core's copy of Google's desktop library before the face aliases
-/// resolve. The face assets name that library's file, and the OS loader
-/// reuses the image already loaded under that name rather than loading a
-/// second copy with another MediaPipe graph registry.
+/// Loads Google's vision library on Linux and Windows before a task uses it,
+/// so a library that cannot load (on Linux, usually missing EGL or GLES)
+/// fails with the fix rather than a bare symbol lookup error.
 void loadOfficialDesktopRuntime() {
   if (Platform.isLinux || Platform.isWindows) {
     final Pointer<NativeFunction<Void Function(Pointer<Char>)>> errorFree;

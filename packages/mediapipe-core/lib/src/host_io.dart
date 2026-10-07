@@ -17,6 +17,12 @@ int get mpHostSystem => Platform.isLinux
     ? 5
     : 0;
 
+/// [path] as Google's C API should receive it: absolute on Android, whose
+/// MediaPipe resource resolver reads a relative path as an asset inside the
+/// app's APK rather than as a file.
+String nativeModelPath(String path) =>
+    Platform.isAndroid ? File(path).absolute.path : path;
+
 /// Google's Linux runtime links EGL and OpenGL ES even for CPU inference, so a
 /// system without them cannot load it at all. Names the packages to install.
 StateError? missingLinuxGraphicsLibraries(String loaderError) {

@@ -3,12 +3,10 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 
-import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../capabilities/official_runtime_io.dart';
+import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../runner/native_interface.dart';
 import '../types/options.dart';
 import '../types/results.dart';
-import 'native_ios_sdk.dart';
 import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 
@@ -49,9 +47,6 @@ final class NativeImageSegmenter
   final bool _gpu;
   mp.MpImageSegmenterPtr _task = nullptr;
   List<String> _labels = const [];
-  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
-      ? iosBgraStorage()
-      : null;
 
   /// The model's category order, read once while the task is initialized.
   List<String> _readLabels(Arena arena) {
@@ -69,66 +64,44 @@ final class NativeImageSegmenter
     }
   }
 
+  /// Runs one IMAGE or VIDEO request and copies every result.
   @override
-  ImageSegmenterResult process(VisionTaskInput input) => using((arena) {
-    final (source, rotation, timestamp, _) = input;
-    final image = createVisionImage(
-      arena,
-      source,
-      expandRgbForGpu: _gpu,
-      checked: checkVisionCall,
-      iosBgra: _iosBgra,
-    );
-    try {
-      final processing = visionProcessingOptions(arena, rotation, null);
-      final result = arena<mp.MpImageSegmenterResult>();
-      if (timestamp == null) {
-        checkVisionCall(
-          (error) => mp.MpImageSegmenterSegmentImage(
-            _task,
-            image,
-            processing,
-            result,
-            error,
-          ),
-        );
-      } else {
-        checkVisionCall(
-          (error) => mp.MpImageSegmenterSegmentForVideo(
-            _task,
-            image,
-            processing,
-            timestamp,
-            result,
-            error,
-          ),
-        );
-      }
-      try {
-        return copyVisionSegmentation(
-          arena,
-          result.ref,
+  ImageSegmenterResult process(VisionTaskInput input) => runVisionRequest(
+    input,
+    gpu: _gpu,
+    allocate: (arena) => arena<mp.MpImageSegmenterResult>(),
+    image: (image, processing, result, error) =>
+        mp.MpImageSegmenterSegmentImage(
+          _task,
           image,
+          processing,
+          result,
+          error,
+        ),
+    video: (image, processing, timestamp, result, error) =>
+        mp.MpImageSegmenterSegmentForVideo(
+          _task,
+          image,
+          processing,
           timestamp,
-          labels: _labels,
-        );
-      } finally {
-        mp.MpImageSegmenterCloseResult(result);
-      }
-    } finally {
-      mp.MpImageFree(image);
-    }
-  });
+          result,
+          error,
+        ),
+    closeResult: mp.MpImageSegmenterCloseResult,
+    copy: (request, result) => copyVisionSegmentation(
+      request.arena,
+      result.ref,
+      request.image,
+      request.timestamp,
+      labels: _labels,
+    ),
+  );
 
   @override
   void close() {
     if (_task == nullptr) return;
     final task = _task;
     _task = nullptr;
-    try {
-      checkVisionCall((error) => mp.MpImageSegmenterClose(task, error));
-    } finally {
-      _iosBgra?.close();
-    }
+    checkVisionCall((error) => mp.MpImageSegmenterClose(task, error));
   }
 }

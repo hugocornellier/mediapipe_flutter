@@ -9,9 +9,7 @@ Future<void> main() async {
     TextModels.universalSentenceEncoder,
     TextModels.languageDetector,
   ]) {
-    final target = File(
-      'example/assets/${Uri.parse(model.url).pathSegments.last}',
-    );
+    final target = File('models/${Uri.parse(model.url).pathSegments.last}');
     await downloadVerified(model, target);
     stdout.writeln('Verified ${target.path}');
   }

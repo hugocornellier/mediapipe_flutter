@@ -1,7 +1,6 @@
 import 'package:mediapipe_core/mediapipe_core.dart';
 
 import '../capabilities.dart';
-import '../results/decoders.dart';
 import '../runner/native_tasks.dart';
 import '../runner/text_task_runner.dart';
 import '../types/options.dart';
@@ -10,10 +9,9 @@ import '../types/results.dart';
 /// Google's Summarizer: a paragraph or key points for a text.
 ///
 /// One class on every platform. Google's native runtime serves it on a
-/// worker isolate on macOS, Linux, Windows and iOS, and its Android SDK
-/// through the registered platform plugin; Google's browser runtime has no
-/// Summarizer, which `queryTextSummarizerCapabilities()` reports, and there
-/// [create] throws [RuntimeUnavailableException].
+/// worker isolate on Android, iOS, macOS, Linux and Windows; Google's browser
+/// runtime has no Summarizer, which `queryTextSummarizerCapabilities()`
+/// reports, and there [create] throws [RuntimeUnavailableException].
 ///
 /// ```dart
 /// final task = await TextSummarizer.create(
@@ -42,15 +40,6 @@ final class TextSummarizer {
     final runner = await openGenerativeTextTask(
       options,
       capabilities: queryTextSummarizerCapabilities,
-      task: 'text_summarizer',
-      settings: {
-        // Google's Java `Mode` names.
-        'mode': options.mode.name.toUpperCase(),
-        'maxNumTokens': ?options.maxNumTokens,
-      },
-      cacheDirectory: options.cacheDirectory,
-      decodeResult: decodeTextSummarizerResult,
-      decodeUpdate: decodeTextSummarizerUpdate,
       native: openNativeTextSummarizer,
     );
     return TextSummarizer._(

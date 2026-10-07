@@ -49,52 +49,40 @@ Future<String?> Function()? taskPlatformGpuReader;
 /// A null version means any version of that operating system is accepted.
 typedef RuntimeTargets = Map<String, String?>;
 
-/// Process targets where core bundles Google's MediaPipe engine, which serves
-/// the Audio Classifier and every text task: the classifier, embedder
-/// (EmbeddingGemma included), language detector, Proofreader and Summarizer
-/// (on macOS once the app sets `tasks_runtime: true`).
+/// Process targets where each task family bundles Google's MediaPipe library
+/// for that family, which serves the Audio Classifier and every text task:
+/// the classifier, embedder (EmbeddingGemma included), language detector,
+/// Proofreader and Summarizer.
 ///
-/// This mirrors the build-time release tables in core's hook code; the two are
-/// kept in step so that a platform is never reported supported without a
-/// runtime, or bundled without a validated support claim.
+/// This mirrors core's build-time table of Google's libraries
+/// (`familyRuntimes`); the two are kept in step so that a platform is never
+/// reported supported without a library, or bundled without a validated
+/// support claim.
 const tasksRuntimeTargets = <String, String?>{
   'macos/arm64': '14.0',
   'linux/x64': null,
   'windows/x64': null,
-  // Through the adapter over Google's iOS SDK that core builds.
   'ios/arm64': '15.0',
+  // Android 9 (API 28) and later; the hooks refuse a lower minSdk.
+  'android/arm64': null,
+  'android/x64': null,
 };
 
 /// Why [task] cannot run in this process on [operatingSystem]
-/// ([TaskPlatform.operatingSystem]): core did not bundle Google's engine.
+/// ([TaskPlatform.operatingSystem]): the build bundled no MediaPipe library
+/// for it, as happens when the app was built without its package's build
+/// hook running.
 String tasksRuntimeUnavailable(String task, String operatingSystem) =>
-    operatingSystem == 'macos'
-    ? "On macOS, $task runs on Google's MediaPipe engine, which "
-          'mediapipe_core bundles only when the app opts in, since it '
-          "is about 95 MB. Add this to the app's pubspec.yaml:\n"
-          '  hooks:\n'
-          '    user_defines:\n'
-          '      mediapipe_core:\n'
-          '        tasks_runtime: true'
-    : "$task runs on Google's MediaPipe engine, which "
-          'mediapipe_core bundles by default on $operatingSystem. '
-          'Remove tasks_runtime: false from '
-          "hooks.user_defines.mediapipe_core in the app's pubspec.yaml.";
+    "$task runs on Google's MediaPipe library, which its package's build "
+    'hook bundles on $operatingSystem, but this build has none. Build the '
+    'app with flutter run or flutter build (or dart run and dart test for a '
+    'Dart program), which run the hook.';
 
-/// The part of [tasksRuntimeTargets] whose engine also serves the stateful
-/// Interactive Segmenter: Google's macOS library. That task is validated
-/// there only.
-const macosTasksRuntimeTargets = <String, String?>{'macos/arm64': '14.0'};
-
-/// The official MediaPipe release behind core's engine on [platform]:
-/// Google's Android SDKs, the pinned Windows wheel and the macOS library are
-/// 1.0.0 (1.0.1's macOS detector graphs abort on some Macs), its other
-/// runtimes (iOS included) 1.0.1.
+/// The official MediaPipe release behind the tasks on [platform]: Google's
+/// 1.1.0 per-family libraries on Android, iOS, macOS, Linux and Windows, and
+/// its browser runtime 1.0.1.
 String tasksRuntimeVersionOn(TaskPlatform platform) =>
-    switch (platform.operatingSystem) {
-      'android' || 'windows' || 'macos' => '1.0.0',
-      _ => '1.0.1',
-    };
+    platform.operatingSystem == 'web' ? '1.0.1' : '1.1.0';
 
 /// Declared package support for one task on a platform: which [Delegate]s run
 /// there and why the others do not. This is not an inference self-test.
@@ -151,8 +139,8 @@ final class TaskCapabilities {
   factory TaskCapabilities.cpuOnTargets({
     required TaskPlatform platform,
     required String gpuUnavailableReason,
+    required String runtimeVersion,
     RuntimeTargets targets = tasksRuntimeTargets,
-    String runtimeVersion = '1.0.1',
   }) {
     final platformReason = _platformReason(platform, targets);
     return TaskCapabilities._(
@@ -166,19 +154,6 @@ final class TaskCapabilities {
       runtimeVersion: runtimeVersion,
     );
   }
-
-  /// Describe the shared 1.0.1 distribution's validated macOS CPU support.
-  ///
-  /// Equivalent to [TaskCapabilities.cpuOnTargets] with
-  /// [macosTasksRuntimeTargets].
-  factory TaskCapabilities.macosCpu({
-    required TaskPlatform platform,
-    required String gpuUnavailableReason,
-  }) => TaskCapabilities.cpuOnTargets(
-    platform: platform,
-    gpuUnavailableReason: gpuUnavailableReason,
-    targets: macosTasksRuntimeTargets,
-  );
 
   const TaskCapabilities._(
     this.platform,

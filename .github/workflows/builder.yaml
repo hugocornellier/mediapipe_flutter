@@ -29,8 +29,8 @@ jobs:
           flutter analyze --fatal-infos
           dart format --output=none --set-exit-if-changed .
           flutter test --reporter expanded
-      # Prepares the Android and macOS galleries with nothing but Dart; its
-      # model pins and macOS task list must match the packages'.
+      # Prepares the gallery for every target with nothing but Dart; its model
+      # pins must match the packages', and its task lists come from vision's.
       - name: Check the gallery builder
         working-directory: tool/gallery_builder
         run: |

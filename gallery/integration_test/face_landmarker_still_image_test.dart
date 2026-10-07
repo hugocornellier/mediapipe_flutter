@@ -22,7 +22,7 @@ void main() {
     });
     expect(setup, isNotNull);
     final (bytes, platform) = setup!;
-    final tasks = supportedTasks(platform, {'face_landmarker'}, const {});
+    final tasks = supportedTasks(platform, {'face_landmarker'});
     expect(tasks, hasLength(1));
 
     await tester.pumpWidget(
@@ -30,7 +30,6 @@ void main() {
         home: LivePage(
           task: tasks.single,
           platform: platform,
-          officialMacosLandmarkTasks: const {},
           initialStillImage: true,
           stillImagePicker: () async => XFile.fromData(
             bytes,

@@ -36,8 +36,8 @@ enum VisionPixelFormat {
   /// Red, green, blue, alpha. This is not BGRA.
   rgba(4),
 
-  /// Blue, green, red, alpha, as Apple cameras supply it. Google's iOS SDK
-  /// accepts BGRA directly; the other runtimes convert it to RGBA.
+  /// Blue, green, red, alpha, as Apple cameras supply it. Native tasks
+  /// convert it to RGBA for Google's C API.
   bgra(4);
 
   const VisionPixelFormat(this.channels);

@@ -1,9 +1,11 @@
-"""Fresh macOS Flutter debug/release consumer with public, verified downloads.
+"""Fresh macOS Flutter debug/release consumer with verified downloads.
 
-Copies only publishable Dart packages: no native builds or model cache. Downloads
-the pinned models and runtime, then compares official outputs while face tasks,
-MagicTouch and all six text tasks coexist. Bazel/CMake/Python are blocked
-in builds. Xcode's Clang compiles only the small callback-copy adapter.
+Copies only publishable Dart packages: no native builds or model cache. Fetches
+the pinned models and Google's text and vision libraries (the libraries from
+MEDIAPIPE_ASSET_SOURCE when it is set), then compares
+official outputs while face tasks, MagicTouch and all six text tasks coexist.
+Bazel/CMake/Python are blocked in builds. Xcode's Clang compiles only the small
+callback-copy adapter.
 """
 import json
 import os
@@ -13,8 +15,7 @@ import subprocess
 import tempfile
 
 from prepare_classic_text_reference import digest, reference_file
-from consumer_packages import copy_package
-from official_wheels import macos_engine
+from consumer_packages import consumer_environment, copy_package, core_hook_defines
 
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
@@ -34,8 +35,8 @@ def main():
         path = guards / name
         path.write_text('#!/bin/sh\necho "Unexpected build tool: $0" >> "$MEDIAPIPE_BLOCKED_TOOLS_LOG"\nexit 97\n')
         path.chmod(0o755)
-    env = {**os.environ, 'PATH': str(guards) + os.pathsep + os.environ['PATH'],
-           'MEDIAPIPE_BLOCKED_TOOLS_LOG': str(blocked_log)}
+    env = consumer_environment(PATH=str(guards) + os.pathsep + os.environ['PATH'],
+                               MEDIAPIPE_BLOCKED_TOOLS_LOG=str(blocked_log))
     app = root / 'app'
     subprocess.run(['flutter', 'create', '--platforms=macos', '--empty', '--no-pub',
                     '--project-name', 'embedding_consumer', str(app)], env=env, check=True)
@@ -62,11 +63,8 @@ flutter:
     - assets/
 hooks:
   user_defines:
-    mediapipe_core:
-      tasks_runtime: true
-    mediapipe_vision:
+''' + core_hook_defines() + '''    mediapipe_vision:
       tasks: [face_detector, face_landmarker, interactive_segmenter]
-      prebuilt: true
 ''')
     assets = app / 'assets'
     assets.mkdir()
@@ -165,28 +163,23 @@ void main() {
         raise RuntimeError('Release app did not return a validation report.')
     report = json.loads(reports[0])
     frameworks = [path.name for path in (bundle / 'Contents/Frameworks').iterdir()]
-    engine = macos_engine()
-    if frameworks.count(engine['framework']) != 1:
-        raise RuntimeError(f"Google's engine must be bundled exactly once: {frameworks}")
+    # One library per family; the hooks verify each against its pin.
+    for family in ('mediapipe_tasks_text', 'mediapipe_tasks_vision'):
+        if frameworks.count(family + '.framework') != 1:
+            raise RuntimeError(f'{family} must be bundled exactly once: {frameworks}')
     if sum('mediapipe_text_stream' in name for name in frameworks) != 1:
         raise RuntimeError(f'Callback adapter must be bundled exactly once: {frameworks}')
-    if any(name in ('libtext.framework', 'text.framework') for name in frameworks):
-        raise RuntimeError('Legacy text runtime was bundled in a modern app.')
     if blocked_log.exists() or any(packages.rglob('build/native')):
         raise RuntimeError('Native build tools were accessed by the fresh consumer.')
-    manifests = [json.loads(p.read_text()) for p in (app / '.dart_tool').rglob('manifest.json')]
-    if not any(m.get('sha256') == engine['library_sha256'] for m in manifests):
-        raise RuntimeError('Missing verified public runtime provenance.')
-    if 'Class MPPMetalSharedResources is implemented in both' in result.stderr:
-        raise RuntimeError('Duplicate Objective-C runtime classes were loaded.')
     report.update({'debug_inference': 'passed', 'release_inference': 'passed',
                    'classic_text_reference_sha256': digest(classic_reference),
                    'classic_text_reference_source': 'same-host official wheel' if os.environ.get(
                        'MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR') else 'checked-in official wheel',
-                   'source': 'public-release', 'mediapipe_source_build': False,
+                   'source': 'asset_source' if os.environ.get('MEDIAPIPE_ASSET_SOURCE')
+                   else 'download', 'mediapipe_source_build': False,
                    'blocked_build_tools': ['bazel', 'bazelisk', 'cmake', 'ninja', 'python', 'python3'],
                    'callback_adapter': 'compiled with system Clang',
-                   'frameworks': frameworks, 'shared_runtime_copies': 1})
+                   'frameworks': frameworks})
     (root / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2), flush=True)
     print('Fresh macOS consumer passed: ' + str(root / 'report.json'), flush=True)

@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 
 import 'support/stream_suite.dart';
 
-/// The audio stream's contract on fake backends (support/stream_suite.dart),
-/// and the model reader on the pinned YAMNet.
+/// The audio stream's contract on a fake backend
+/// (support/stream_suite.dart), and the model reader on the pinned YAMNet.
 void main() {
   streamSuite();
 

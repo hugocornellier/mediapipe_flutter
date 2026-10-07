@@ -1,10 +1,10 @@
 """Regenerate reviewed goldens with Google's official macOS arm64 Python API.
 
 Run from the package root in a Python 3.12 venv with the host's pinned runtime
-from official_face_runtime.py. On macOS that is mediapipe==1.0.0, the revision
-our pinned source build uses, and deliberately not the 1.0.1 wheel: every graph
-with a TensorsToDetectionsCalculator aborts on macOS CPU there (upstream
-#6356), which includes this task. Linux uses 1.0.1, which has no such abort.
+from official_face_runtime.py (core's referenceWheels row for this host).
+Google's 1.0.1 macOS wheel is avoided: every graph with a
+TensorsToDetectionsCalculator aborts on macOS CPU there (upstream #6356), which
+includes this task; 1.1.0 has the fix.
 
 The Dart tests consume the checked-in JSON; they do not need Python.
 """
@@ -16,6 +16,7 @@ from pathlib import Path
 import platform
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
+from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
 
 import mediapipe as mp
 import numpy as np
@@ -27,7 +28,7 @@ FIXTURES = ROOT / "test/fixtures/object_detection"
 # The input images are shared with the face fixtures; only the goldens differ.
 IMAGES = ROOT / "test/fixtures/face_detection"
 MODEL = ROOT / "models/efficientdet_lite0.tflite"
-MODEL_SHA256 = "40338edf5ec70d43e318b0a716a84d4564cd1802759a7a07170c7e43796dbf58"
+MODEL_SHA256 = model_sha256('efficientdet_lite0.tflite')
 SCORE_THRESHOLD = 0.3
 MAX_RESULTS = 5
 

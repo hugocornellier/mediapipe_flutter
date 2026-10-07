@@ -2,8 +2,8 @@
 
 Installs Google's pinned official wheel for this host once (the same environment
 tool/test_text_audio.py uses), downloads the three pinned models, generates the
-three references with that wheel, and runs the text package's example_embedding
-suite against them: Google's completed and streamed outputs for the same model,
+three references with that wheel, and runs the text package's `modern-text`
+tests against them: Google's completed and streamed outputs for the same model,
 runtime and inputs, each option, stream lifecycle, errors and disposal. CI runs
 it on the Linux x64 and Windows x64 desktop runners; it runs on macOS arm64 as
 well. Python only prepares the expected outputs; the suite loads Google's
@@ -19,7 +19,6 @@ import sys
 
 REPO = Path(__file__).resolve().parents[1]
 TEXT = REPO / 'packages/mediapipe-task-text'
-EXAMPLE = TEXT / 'example_embedding'
 sys.path.insert(0, str(REPO / 'packages/mediapipe-core/tool'))
 from official_wheels import host_runtime, venv_python  # noqa: E402
 
@@ -73,8 +72,8 @@ def main():
         run([binary], REPO, evidence / 'bridge-test.log')
 
     env = {**os.environ, 'MEDIAPIPE_MODERN_TEXT_REFERENCE_DIR': str(reference)}
-    run(['flutter', 'pub', 'get'], EXAMPLE, evidence / 'example-pub.log')
-    run(['dart', 'test', '--reporter', 'expanded'], EXAMPLE, evidence / 'example-tests.log', env)
+    run(['dart', 'test', '--tags', 'modern-text', '--reporter', 'expanded'], TEXT,
+        evidence / 'modern-text-tests.log', env)
     receipt = json.loads((reference / 'provenance.json').read_text(encoding='utf-8'))
     (evidence / 'report.json').write_text(json.dumps({
         'runtime': 'mediapipe==' + runtime['version'],

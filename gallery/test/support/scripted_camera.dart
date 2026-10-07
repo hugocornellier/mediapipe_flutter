@@ -28,6 +28,7 @@ final class ScriptedCamera extends CameraPlatform {
 
   final List<CameraDescription> cameras;
   final _initialized = <int, StreamController<CameraInitializedEvent>>{};
+  final _ready = <int>{};
   final _errors = StreamController<CameraErrorEvent>.broadcast();
   final _streams = <int, StreamController<CameraImageData>>{};
   final created = <String>[];
@@ -37,6 +38,9 @@ final class ScriptedCamera extends CameraPlatform {
 
   /// When set, `initializeCamera` waits on it before reporting ready.
   Completer<void>? initializeGate;
+
+  /// When set, `initializeCamera` fails as a camera the user refused does.
+  bool denyAccess = false;
 
   /// Delivers one frame to every active stream.
   void emit([CameraImageData? frame]) {
@@ -92,6 +96,10 @@ final class ScriptedCamera extends CameraPlatform {
     ImageFormatGroup imageFormatGroup = ImageFormatGroup.unknown,
   }) async {
     await initializeGate?.future;
+    if (denyAccess) {
+      throw CameraException('CameraAccessDenied', 'Camera access was denied.');
+    }
+    _ready.add(cameraId);
     _initialized[cameraId]!.add(
       CameraInitializedEvent(
         cameraId,
@@ -146,7 +154,10 @@ final class ScriptedCamera extends CameraPlatform {
   @override
   Future<void> dispose(int cameraId) async {
     disposed++;
-    await _initialized.remove(cameraId)?.close();
+    // A platform's initialization stream never closes, so a camera that
+    // failed to initialize leaves the plugin waiting rather than failing.
+    final initialized = _initialized.remove(cameraId);
+    if (_ready.remove(cameraId)) await initialized?.close();
   }
 }
 

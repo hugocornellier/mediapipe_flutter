@@ -7,16 +7,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 /// EmbeddingGemma, Proofreader and Summarizer through Google's official mobile
-/// runtimes (the text package's Android plugin over tasks-text 1.0.0; on iOS
-/// the SDK adapter core's runtime builds over the 1.0.1 XCFrameworks), against
-/// Google's own outputs for the same model, runtime version and inputs: the
-/// references the gallery's preparers bundle under assets/references when
-/// these tasks are selected (tool/prepare_modern_text_reference.py, from
-/// Google's wheel of that version on the same architecture, else the text
-/// package's macOS fixtures). Generated text must match exactly; embeddings
-/// come from another build of the same runtime on another CPU and get a bound.
+/// runtime (its 1.1.0 text library, which the text package's hook bundles on
+/// Android and iOS), against Google's own outputs for the same model, runtime
+/// version and inputs: the references the gallery's preparers bundle under
+/// assets/references when these tasks are selected
+/// (tool/prepare_modern_text_reference.py, from Google's wheel of that
+/// version on the same architecture, else the text package's macOS
+/// fixtures). Generated text must match exactly; embeddings come from another
+/// build of the same runtime on another CPU and get a bound.
 /// Runs on the Android emulator and iOS simulator in CI, and on phones.
 ///
 /// EmbeddingGemma's vectors come from another build of the same release on
@@ -79,7 +80,7 @@ void main() {
     );
     if (!await file.exists()) {
       await file.parent.create(recursive: true);
-      final data = await rootBundle.load('assets/models/$name');
+      final data = await rootBundle.load(bundledModelFile(name));
       await file.writeAsBytes(
         data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
         flush: true,
@@ -89,18 +90,20 @@ void main() {
   }
 
   /// A reference is Google's answer here only when it came from the runtime
-  /// version this device's SDK has: 1.0.0 on Android, 1.0.1 on iOS.
+  /// version this device's library has.
   Future<void> expectReferenceRuntime(
     Map<String, dynamic> reference,
     TaskCapabilities support,
   ) async {
     expect(support.supportedDelegates, {Delegate.cpu});
+    // A reference from Google's 1.1.0 release candidate wheel counts for the
+    // 1.1.0 library.
     expect(
       reference['runtime'],
-      'mediapipe==${support.runtimeVersion}',
+      startsWith('mediapipe==${support.runtimeVersion}'),
       reason:
-          'bundle references generated with the wheel of this SDK\'s '
-          'release (prepare.py --modern-text-reference)',
+          'bundle references generated with the wheel of this runtime\'s '
+          'release (prepare_gallery.dart --modern-text-reference)',
     );
   }
 
@@ -435,31 +438,14 @@ void main() {
       final withCache = TextProofreader.create(
         TextProofreaderOptions(modelPath: model, cacheDirectory: cache.path),
       );
-      if (Platform.isAndroid) {
-        // Google's Android options have no cache directory: refused, not
-        // ignored.
-        await expectLater(
-          withCache,
-          throwsA(
-            isA<RuntimeUnavailableException>().having(
-              (e) => e.fix,
-              'fix',
-              contains('cacheDirectory'),
-            ),
-          ),
-        );
-      } else {
-        final task = await withCache;
-        try {
-          final result = await task.proofread('She go home.');
-          expect(result.proofreadText, isNotEmpty);
-          await expectLater(
-            task.proofread('bad\u0000text'),
-            throwsArgumentError,
-          );
-        } finally {
-          await task.dispose();
-        }
+      // Google's C API takes the cache directory on every native platform.
+      final task = await withCache;
+      try {
+        final result = await task.proofread('She go home.');
+        expect(result.proofreadText, isNotEmpty);
+        await expectLater(task.proofread('bad\u0000text'), throwsArgumentError);
+      } finally {
+        await task.dispose();
       }
       await expectLater(
         TextProofreader.create(

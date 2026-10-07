@@ -1,3 +1,8 @@
+// Reads the process's resident memory, which other test files running in
+// the same process would inflate; `make test_vision` runs it alone.
+@Tags(['isolated'])
+library;
+
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -51,7 +56,7 @@ void main() {
       try {
         int? warmedRss;
         var peakGrowth = 0;
-        // 2,000 frames are 2.4 GB of input, so the task reopens twice.
+        // 2,000 frames are 2.4 GB of input, so the task reopens four times.
         for (var frame = 0; frame < 2000; frame++) {
           final result = await detector.detectForVideo(
             VisionImage.fromPixels(
@@ -68,13 +73,17 @@ void main() {
           if (frame > 200 && frame % 100 == 0) {
             final growth = ProcessInfo.currentRss - warmedRss!;
             if (growth > peakGrowth) peakGrowth = growth;
-            // Without the reopen this grows by about 1.2 MB a frame, past
-            // 2 GB by the end. The reopen holds it under the 1 GiB budget;
-            // the margin covers allocator and Dart GC variation.
-            expect(growth, lessThan(1280 * 1024 * 1024));
+            // Each checkpoint is logged, so a failure shows the whole curve.
+            print('FACE_GPU_MEMORY frame=$frame growth_bytes=$growth');
           }
         }
         print('FACE_GPU_MEMORY frames=2000 peak_growth_bytes=$peakGrowth');
+        // Without the reopen this grows by about 1.2 MB a frame, past 2 GB by
+        // the end, and twice that where LiteRT keeps a second copy of each
+        // frame (GitHub's virtual Mac). Reopening after 512 MiB of frames
+        // holds it under this limit there too; the margin covers allocator
+        // and Dart GC variation.
+        expect(peakGrowth, lessThan(1280 * 1024 * 1024));
       } finally {
         await detector.dispose();
         folder.deleteSync(recursive: true);

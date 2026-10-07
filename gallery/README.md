@@ -7,8 +7,8 @@ bundled, its support is validated here, and it has a screen to show.
 ## Running it
 
 **Web:** [try the gallery](https://hugocornellier.github.io/mediapipe_flutter/),
-or run `python3.12 -B gallery/tool/prepare.py --target web` from the root, then
-`cd gallery && flutter run -d chrome --release`. Supported vision tasks use
+or run `dart run tool/gallery_builder/bin/prepare_gallery.dart --target web`
+from the root, then `cd gallery && flutter run -d chrome --release`. Supported vision tasks use
 Google's pinned official JS/WASM runtime on a worker; GPU tasks use WebGL 2.
 Allow camera
 access on HTTPS or localhost. See [web tests and deployment](tool/WEB_FACE.md).
@@ -23,17 +23,25 @@ cd gallery
 flutter run -d macos --release
 ```
 
-The Dart preparer downloads and verifies every model the target needs, and
-fails rather than build an incomplete app. For macOS it also sets
-`mediapipe_core.tasks_runtime: true`, so vision, text and audio all run on
-Google's 1.0.0 macOS engine, which core bundles once for the whole app, as it
-would for any app that opts in. The checked-in macOS project already pins the
-build to arm64 and declares the camera entitlement and usage description.
+The gallery bundles its models the way the packages ask any app to: the
+preparer lists each task's model under `hooks.user_defines.<family>.models` in
+the generated pubspec and runs `dart run mediapipe_core:bundle_models`, which
+downloads each one, verifies it against its pinned SHA-256 and writes it into
+`assets/mediapipe/`. The demos pass the pins (`VisionModels`, `TextModels`,
+`AudioModels`) and core finds the bundled copies, so nothing is downloaded at
+run time. A failed download fails the preparation rather than building an
+incomplete app; a rerun keeps the models already verified. Vision, text and
+audio each bundle Google's MediaPipe library for that family. Until Google
+publishes those libraries, pass `--asset-source <directory>` (a directory
+holding them named by SHA-256) to the preparer. The checked-in macOS
+project already pins the build to arm64 and declares the camera entitlement
+and usage description.
 
-`python3.12 -B gallery/tool/prepare.py --target <platform>` prepares iOS,
-Linux, Windows and the web, for example `ios-simulator/arm64`. For iOS it
-also excludes the x86_64 simulator slice and adds the camera and photo usage
-descriptions, none of which `flutter create` provides.
+The same command prepares every target: `ios/arm64`, `ios-simulator/arm64`,
+`linux/x64`, `windows/x64`, `android/arm64`, `android/x64` and `web`. The
+checked-in iOS project already excludes the x86_64 simulator slice and
+declares the camera and photo usage descriptions, none of which
+`flutter create` provides.
 
 For Android, a clean checkout needs only Dart, Flutter and the Android SDK:
 
@@ -43,22 +51,23 @@ cd gallery
 flutter run -d <device-id> --release
 ```
 
-The Dart preparer downloads and verifies every required model, generates the
-gallery assets and configuration, and fails rather than building an incomplete
+The Dart preparer generates the gallery's configuration and bundles every
+required model the same way, and fails rather than building an incomplete
 APK. `flutter run` builds, installs and launches the release app on the
 connected phone; the APK remains at `gallery/build/app/outputs/flutter-apk/app-release.apk`.
-It selects Google's released vision SDK and its Flutter plugin. Face Landmarker
-and Hand Landmarker support CPU and GPU, with Android YUV camera conversion.
-A physical Pixel 7 Test Lab run validates both delegates and front/back camera capture; see
-[the Android Test Lab guide](tool/ANDROID_FACE_TESTLAB.md) to reproduce it
+Every task runs on Google's MediaPipe library for its family, and camera
+frames are converted from YUV in Dart. Phones offer the GPU where a task has
+one; an emulator offers only the CPU. Test Lab runs on a physical Pixel 7
+validated both delegates and front/back camera capture on Google's earlier
+Java SDK; [the Android Test Lab guide](tool/ANDROID_FACE_TESTLAB.md) runs them
 without owning an Android device.
 
 For Windows x64 and Linux x64, prepare with `--target windows/x64` or
 `--target linux/x64`, then run `flutter run -d windows --release` or
 `flutter run -d linux --release`. Linux offers GPU for the live Face and Hand
 Landmarker demos; Windows and the Pose demo use CPU only.
-The hook extracts Google's checksum-pinned native library from its official
-wheel; the installed app does not need Python. `camera_desktop` provides native
+Each family's hook bundles Google's checksum-pinned library for that family.
+`camera_desktop` provides native
 Media Foundation capture on Windows and GStreamer/V4L2 capture on Linux.
 Linux builds need `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev` and
 `gstreamer1.0-plugins-good` in addition to Flutter's desktop dependencies, and
@@ -69,15 +78,18 @@ video file mode needs `gstreamer1.0-libav` to decode H.264.
 Three gates, in order:
 
 1. **Bundled**: the preparer selects the tasks whose runtime this target can
-   actually obtain. `tool/prepare.py` reads them from `sdk_downloads.dart`;
-   `tool/gallery_builder` lists Android's and macOS's, and its tests check the
-   macOS list against `sdk_downloads.dart`. EmbeddingGemma, the Proofreader
-   and the Summarizer (419 MB of models) are bundled only when `--tasks` names
-   them, as the simulator, emulator and browser test builds do, with Google's
-   references for their suite from `--modern-text-reference` or the text
-   package's checked-in fixtures. Bundled, they are tiles like the classic
-   text tasks: EmbeddingGemma everywhere, the Proofreader and Summarizer
-   wherever Google's runtime has them, so a browser shows their cards.
+   actually obtain: the vision tasks `vision_tasks.dart` validates there, the
+   text and audio tasks, and in browsers the tasks Google's JavaScript runtime
+   serves. Every target bundles every task it can, `--tasks` narrows the
+   list. EmbeddingGemma, the Proofreader and the
+   Summarizer add 419 MB of models, so a native gallery is about 770 MB;
+   their integration suite compares with Google's references from
+   `--modern-text-reference` or the text package's checked-in fixtures.
+   **The web gallery has no Proofreader or Summarizer**: Google's browser
+   runtime does not include them
+   ([UP-034](../upstream-issues.md#up-034-browser-text-runtime-omits-proofreader-and-summarizer)),
+   so the web build bundles EmbeddingGemma alone and shows the other two as
+   cards that say why.
 2. **Validated**: `lib/catalog.dart` asks the package's own capability query.
    Nothing restates support by hand, so a task validated on a new platform
    appears here with no code change.
@@ -91,6 +103,16 @@ The visible tiles depend on the target and follow the package's
 [status table](../packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md):
 each validated task with a screen appears, including the MagicTouch stroke
 editor wherever its runtime runs.
+
+## Gemma models
+
+EmbeddingGemma, the Proofreader and the Summarizer are Gemma models, under the
+[Gemma Terms of Use](https://ai.google.dev/gemma/terms) and its
+[Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy)
+rather than Apache 2.0. The gallery passes the terms on as the terms ask:
+each of these pages, and its Info dialog, says that Gemma is provided under
+and subject to them and links to both. Anyone redistributing a gallery build
+takes on the same terms.
 
 ## Live camera
 
@@ -115,7 +137,7 @@ Foundation on Windows, GStreamer on Linux, and in browsers a `<video>` element
 stepped one frame at a time. The vision package decodes nothing.
 Switching back to **Camera** reopens the live stream task. Interactive Segmenter is image-only and uses its own editor.
 Windows exposes CPU only. Face and Hand Landmarker also expose GPU on Linux,
-Apple platforms, Android and web.
+Apple platforms, Android phones and web.
 Web uses browser-native capture and transferable bitmaps while sharing these
 controls and the same overlay painter. Web GPU requires worker WebGL 2 support.
 

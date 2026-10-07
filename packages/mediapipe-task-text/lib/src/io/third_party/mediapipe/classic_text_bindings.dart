@@ -1,60 +1,20 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache 2.0.
-// Adapted from mediapipe==1.0.1 Python ctypes text_classifier.py,
-// language_detector.py and components/containers/classification_result_c.py.
+// Adapted from mediapipe==1.0.1 Python ctypes text_classifier.py and
+// language_detector.py; the classification structs are core's.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
 
-import 'embedding_gemma_bindings.dart' show MpBaseOptions;
-export 'embedding_gemma_bindings.dart' show MpBaseOptions, errorFree;
+import 'package:mediapipe_core/native_structs.dart';
 
-const _asset = 'package:mediapipe_core/mediapipe.dylib';
+export 'package:mediapipe_core/native_structs.dart';
+export 'embedding_gemma_bindings.dart' show errorFree;
 
-final class MpClassifierOptions extends Struct {
-  external Pointer<Char> displayNamesLocale;
-  @Int32()
-  external int maxResults;
-  @Float()
-  external double scoreThreshold;
-  external Pointer<Pointer<Char>> categoryAllowlist;
-  @Uint32()
-  external int categoryAllowlistCount;
-  external Pointer<Pointer<Char>> categoryDenylist;
-  @Uint32()
-  external int categoryDenylistCount;
-}
+const _asset = 'package:mediapipe_text/mediapipe.dylib';
 
 /// Identical layout for TextClassifierOptions and LanguageDetectorOptions.
 final class MpTextClassifierOptions extends Struct {
   external MpBaseOptions baseOptions;
   external MpClassifierOptions classifierOptions;
-}
-
-final class MpCategory extends Struct {
-  @Int32()
-  external int index;
-  @Float()
-  external double score;
-  external Pointer<Char> categoryName;
-  external Pointer<Char> displayName;
-}
-
-final class MpClassifications extends Struct {
-  external Pointer<MpCategory> categories;
-  @Uint32()
-  external int categoriesCount;
-  @Int32()
-  external int headIndex;
-  external Pointer<Char> headName;
-}
-
-final class MpClassificationResult extends Struct {
-  external Pointer<MpClassifications> classifications;
-  @Uint32()
-  external int classificationsCount;
-  @Int64()
-  external int timestampMs;
-  @Bool()
-  external bool hasTimestampMs;
 }
 
 final class MpLanguagePrediction extends Struct {

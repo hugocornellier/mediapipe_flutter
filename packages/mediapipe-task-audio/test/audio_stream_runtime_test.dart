@@ -14,8 +14,8 @@ import 'package:mediapipe_audio/src/stream/model_specs.dart';
 import 'package:mediapipe_audio/src/stream/results.dart';
 import 'package:mediapipe_audio/src/third_party/mediapipe/audio_stream_bindings.dart'
     as bridge;
-import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart'
-    show tasksRuntimeWheel;
+import 'package:mediapipe_core/src/native_assets/reference_wheels.dart'
+    show referenceWheel;
 import 'package:test/test.dart';
 
 /// Audio stream mode on Google's native runtime: every case against Google's
@@ -54,9 +54,7 @@ Map<String, dynamic> _loadReference() {
             File.fromUri(root.resolve('provenance.json')).readAsStringSync(),
           )
           as Map<String, dynamic>;
-  final wheel = tasksRuntimeWheel(
-    Abi.current().toString().replaceFirst('_', '/'),
-  );
+  final wheel = referenceWheel(Abi.current().toString().replaceFirst('_', '/'));
   final runtime = 'mediapipe==${wheel?.version}';
   if (wheel == null ||
       receipt['source'] != 'official-python-api' ||

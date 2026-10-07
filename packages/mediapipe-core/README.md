@@ -4,33 +4,22 @@ The shared layer of the MediaPipe task packages (`mediapipe_vision`,
 `mediapipe_text`, `mediapipe_audio`); apps normally get it through them rather
 than depending on it directly. It owns everything the
 task families share, so each of vision, text and audio works alone and an app
-using several loads one copy of each shared piece. That includes Google's
-verified MediaPipe engine, which every family binds:
+using several loads one copy of each shared piece. That includes the code that
+downloads and verifies Google's MediaPipe libraries, which each family's build
+hook uses to bundle its own:
 
-| Platform | Engine | Setting |
-| --- | --- | --- |
-| iOS (device, arm64 simulator) | an adapter core builds over Google's 1.0.1 iOS SDK | on by default |
-| Linux x64 | the official 1.0.1 wheel's library | on by default |
-| Windows x64 | the official 1.0.0 wheel's library | on by default |
-| macOS 14+ arm64 | the official 1.0.0 wheel's library (about 95 MB) | opt-in |
-| Android, web | Google's own SDKs, through each family's plugin (on Android, built on core's `TaskHost` library) | none |
+| Platform | Runtime |
+| --- | --- |
+| Android 9+ (arm64-v8a, x86_64), iOS 15+ (device, arm64 simulator), macOS 14+ arm64, Linux x64, Windows x64 | Google's MediaPipe 1.1.0 C library for each family (`MediaPipeTasksVisionC`, `libmediapipe_tasks_text`, and so on), bundled by that family's hook |
+| Web | Google's JavaScript runtime, through each family's web plugin |
 
-On macOS, text, audio and every vision task except Face Detector and Face
-Landmarker need the engine, so the app opts in:
-
-```yaml
-hooks:
-  user_defines:
-    mediapipe_core:
-      tasks_runtime: true
-```
-
-Without it a macOS build still succeeds, so `dart run` keeps working in an
-app that only ships iOS or Android. Capability queries then report those tasks
-unavailable, and creating one throws a `RuntimeUnavailableException` whose
-`fix` names this setting.
-`tasks_runtime: false` turns the engine off where it is on by default; a
-family that needs it there fails the build with the fix instead.
+An app ships only the libraries of the families it depends on, and needs no
+setting to get them. The hooks download them from a pre-release of
+`hugocornellier/mediapipe_flutter_native`, where Google's development builds
+are posted unmodified until Google publishes them, and check every file's
+SHA-256 and size (`lib/src/native_assets/family_runtimes.dart`).
+`hooks.user_defines.mediapipe_core.asset_source` can point at a directory
+holding them, named by SHA-256, instead.
 
 ## What every family shares
 

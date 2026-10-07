@@ -11,6 +11,7 @@ import 'package:mediapipe_gallery/main.dart';
 
 import 'support/official_detection_references.dart';
 import 'support/sdk_frames.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 /// As in sdk_hand_landmarker_test.dart: `required` fails when the SDK refuses
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
@@ -40,20 +41,40 @@ void main() {
       (tester) async {
         await tester.runAsync(() async {
           expect(Platform.isAndroid || Platform.isIOS, isTrue);
-          if (Platform.isAndroid) {
-            expect(
-              subject.registered(),
-              isTrue,
-              reason: 'the Android SDK plugin must register automatically',
-            );
-          }
+          expect(
+            subject.registered(),
+            isFalse,
+            reason:
+                "Android and iOS run Google's C library through FFI, not a plugin backend",
+          );
           final assets = await GalleryAssets.unpack();
           final model = await _model(subject.model);
           final frame = await loadSample('portrait.jpg');
           final references = <Delegate, List<_Item>>{};
+          // The package withdraws Face Detector's GPU where Google's library
+          // lacks LiteRT's GPU plugin (UP-046, every Android phone) and
+          // refuses it before Google's graph exists. A phone that must run the
+          // GPU may lose it only to that documented gap.
+          final capabilities = await subject.capabilities();
+          final gpuDeclared = capabilities.supportedDelegates.contains(
+            Delegate.gpu,
+          );
+          if (!gpuDeclared && _gpu == 'required') {
+            expect(
+              capabilities.unavailableReasons[Delegate.gpu],
+              contains('UP-046'),
+            );
+            await expectLater(
+              subject.open(model, Delegate.gpu, RunningMode.image),
+              throwsA(isA<RuntimeUnavailableException>()),
+            );
+            _report(subject, 'gpu_withdrawn', {
+              'reason': capabilities.unavailableReasons[Delegate.gpu],
+            });
+          }
           for (final delegate in [
             Delegate.cpu,
-            if (_gpu != 'skip') Delegate.gpu,
+            if (_gpu != 'skip' && gpuDeclared) Delegate.gpu,
           ]) {
             final _Task task;
             try {
@@ -223,6 +244,7 @@ final class _Subject {
     required this.model,
     required this.samples,
     required this.registered,
+    required this.capabilities,
     required this.open,
     this.cutoff = 0,
     this.maxResults,
@@ -235,6 +257,9 @@ final class _Subject {
   /// Gallery samples with an official reference.
   final List<String> samples;
   final bool Function() registered;
+
+  /// What the package declares for this task here.
+  final Future<TaskCapabilities> Function() capabilities;
 
   /// The score below which the task drops detections.
   final double cutoff;
@@ -337,6 +362,7 @@ final _subjects = <_Subject>[
     model: 'blaze_face_short_range.tflite',
     samples: const ['portrait.jpg', 'group.jpeg'],
     registered: () => faceDetectorBackendFactory != null,
+    capabilities: queryFaceDetectorCapabilities,
     // FaceDetectorOptions' default minDetectionConfidence.
     cutoff: 0.5,
     open: (model, delegate, mode) async {
@@ -380,6 +406,7 @@ final _subjects = <_Subject>[
     model: 'efficientdet_lite0.tflite',
     samples: const ['portrait.jpg', 'group.jpeg'],
     registered: () => objectDetectorBackendFactory != null,
+    capabilities: queryObjectDetectorCapabilities,
     cutoff: 0.3,
     maxResults: 5,
     open: (model, delegate, mode) async {
@@ -425,6 +452,7 @@ final _subjects = <_Subject>[
     model: 'efficientnet_lite0.tflite',
     samples: const ['portrait.jpg'],
     registered: () => imageClassifierBackendFactory != null,
+    capabilities: queryImageClassifierCapabilities,
     open: (model, delegate, mode) async {
       final task = await ImageClassifier.create(
         ImageClassifierOptions(
@@ -468,7 +496,7 @@ final _subjects = <_Subject>[
 ];
 
 Future<Uint8List> _model(String name) async {
-  final bytes = await rootBundle.load('assets/models/$name');
+  final bytes = await rootBundle.load(bundledModelFile(name));
   return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
 }
 

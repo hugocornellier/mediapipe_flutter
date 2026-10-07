@@ -32,14 +32,12 @@ class EmbedPage extends StatefulWidget {
     super.key,
     required this.task,
     required this.platform,
-    required this.officialMacosLandmarkTasks,
     this.imagePicker,
     this.onOpenMenu,
   });
 
   final GalleryTask task;
   final TaskPlatform platform;
-  final Set<String> officialMacosLandmarkTasks;
 
   /// Lets device tests upload a fixture through the real Upload buttons.
   final Future<XFile?> Function()? imagePicker;
@@ -68,10 +66,7 @@ class _EmbedPageState extends State<EmbedPage> {
   static const _id = 'image-embedder';
 
   late final List<Delegate> _delegates =
-      widget.task
-          .capabilitiesFor(widget.platform, widget.officialMacosLandmarkTasks)
-          .supportedDelegates
-          .toList()
+      widget.task.capabilities(widget.platform).supportedDelegates.toList()
         ..sort((a, b) => a.index.compareTo(b.index));
   late Delegate _delegate = preferredDelegate(_delegates);
   late final TaskSettingValues _values = TaskSettingValues(
@@ -218,11 +213,12 @@ class _EmbedPageState extends State<EmbedPage> {
 
   Future<ImageEmbedder> _open() async {
     if (_embedder case final embedder?) return embedder;
-    final model = _modelBytes ?? await _bundledModel();
+    final bytes = _modelBytes;
     Future<ImageEmbedder> create(Delegate delegate) => ImageEmbedder.create(
       ImageEmbedderOptions(
         delegate: delegate,
-        modelBytes: model,
+        model: bytes == null ? widget.task.model : null,
+        modelBytes: bytes,
         runningMode: RunningMode.image,
         l2Normalize: _values.on('l2Normalize'),
         quantize: _values.on('quantize'),
@@ -236,11 +232,6 @@ class _EmbedPageState extends State<EmbedPage> {
       if (mounted) setState(() => _delegate = Delegate.cpu);
       return _embedder = await create(Delegate.cpu);
     }
-  }
-
-  Future<Uint8List> _bundledModel() async {
-    final data = await rootBundle.load('assets/models/${widget.task.model}');
-    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   }
 
   /// Releases the task once whatever is running has finished, so the next
@@ -348,7 +339,7 @@ class _EmbedPageState extends State<EmbedPage> {
       modelStatus: _modelStatus,
       onModel: _chooseModel,
       onUpload: _uploadModel,
-      bundledModel: widget.task.model,
+      bundledModel: widget.task.modelFile,
       standardModel: standardModelNames[widget.task.runtimeId] ?? 'Standard',
     ),
   );

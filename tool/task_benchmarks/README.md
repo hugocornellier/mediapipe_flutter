@@ -1,8 +1,8 @@
 # Modern macOS task validation and benchmarks
 
 This maintainer tool exercises the public Dart APIs for EmbeddingGemma,
-Proofreader, Summarizer and stateful MagicTouch using the pinned MediaPipe 1.0.0
-runtime. It builds a native AOT executable with `dart build cli`; no Bazel,
+Proofreader, Summarizer and stateful MagicTouch on Google's per-family 1.1.0
+libraries. It builds a native AOT executable with `dart build cli`; no Bazel,
 CMake or custom inference implementation is involved.
 
 From the repository root, run:
@@ -35,10 +35,16 @@ but does not impose hardware-dependent latency or RSS thresholds.
   Long text cases replay the reference generator's preceding short completed
   and streamed requests. The official Summarizer can change wording depending
   on previous requests; its completed and streaming references are recorded
-  independently. No fuzzy text matching is used.
+  independently.
 - Floating-point vectors and every mask pixel use an absolute tolerance of
   `1e-6`. Quantized bytes, generated text and proofreading corrections match
-  exactly. Expected native errors are checked rather than treated as successes.
+  exactly, with one exception: Google's own wheel and C library give different
+  long key-point summaries for the same request from run to run, alike for
+  their first 98 characters ([UP-036](../../upstream-issues.md#up-036-ios-summarizer-generations-drift-from-googles-wheel-late-in-long-summaries)),
+  so those four cases must follow Google's text for 80 characters, and the
+  report records whether each matched exactly. Expected native errors are
+  checked rather than treated as successes. Every case is checked, and the
+  report lists each one that failed.
 - Three warmups followed by repeated inference with all four tasks alive,
   alternating completed and streamed generation. Every output is validated.
 - Separate task creation, first segmentation, repeated segmentation, image reset
@@ -59,9 +65,10 @@ from warmed inference. The report includes all samples, median and p95.
 
 ## Official reference provenance
 
-`fixtures/options-reference.json.gz` is lossless JSON generated from Google's
-unmodified Python 1.0.0 API and original macOS arm64 dylib. The generator verifies
-the original library and all model hashes. It leaves the existing package
+`fixtures/options-reference.json.gz` is lossless JSON generated through the
+official Python API of Google's macOS arm64 reference wheel (core's
+`referenceWheels`, `mediapipe-nightly` 1.1.0rc20260925). The generator verifies
+the wheel's library and all model hashes. It leaves the existing package
 fixtures unchanged. The segmentation input and mask come from the vision
 package's attributed official fixtures.
 
@@ -73,7 +80,7 @@ build/codex-tmp/mediapipe-reference/bin/python -B \
 ```
 
 Reference generation needs a Python environment with the official wheel's
-dependencies and an extracted, hash-verified 1.0.0 wheel. Normal validation uses
+dependencies and an extracted, hash-verified copy of that wheel. Normal validation uses
 the saved references and has no MediaPipe Python dependency. The intentionally
 failed EmbeddingGemma graph is generated in a bounded child process: Google's
 Python finalizer can attempt to close the failed native handle again. The Dart
@@ -81,12 +88,13 @@ wrapper reports the original error and owns its handle's close operation once.
 
 ## GPU investigation
 
-Run the official API independently from the Dart wrapper:
+Run the official API independently from the Dart wrapper, with an
+interpreter that has core's pinned reference wheel installed:
 
 ```sh
-build/codex-tmp/mediapipe-reference/bin/python -B \
+<venv>/bin/python -B \
   packages/mediapipe-task-text/tool/probe_text_gpu.py \
-  --python-package-root build/codex-tmp/segmenter-wheel \
+  --python-package-root <venv>/lib/python3.12/site-packages \
   --output build/task-benchmarks/gpu-probe
 ```
 
@@ -95,7 +103,8 @@ before reaching the actual GPU backend. Each CPU/GPU request runs in a separate
 process with a timeout; CPU controls must pass. Successful output alone would
 not establish GPU execution, so native delegate-selection logs are retained.
 
-The pinned runtime rejects Proofreader and Summarizer GPU requests with
+The pinned runtime (re-run on October 7, 2026 with the 1.1.0rc20260925
+wheel) rejects Proofreader and Summarizer GPU requests with
 `Only CPU delegate is supported.` EmbeddingGemma reaches Metal but fails delegate
 preparation with `Input tensor is not found in the graph`; its log also lists
 unsupported operators and tensor shapes. MagicTouch's separate GLSL shader

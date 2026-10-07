@@ -1,4 +1,4 @@
-"""Generate the option/long-input matrix using unmodified MediaPipe, the wheel core's macOS engine comes from.
+"""Generate the option/long-input matrix using unmodified MediaPipe: Google's macOS reference wheel.
 
 This is separate from the existing fixtures, which remain unchanged. The Dart
 runner checks these official outputs, including observed native errors. Timing
@@ -20,7 +20,7 @@ TEXT = ROOT / 'packages/mediapipe-task-text'
 sys.path.insert(0, str(TEXT / 'tool'))
 from probe_text_gpu import MODELS
 sys.path.insert(0, str(ROOT / 'packages/mediapipe-core/tool'))
-from official_wheels import MACOS  # noqa: E402  the engine core bundles on macOS
+from official_wheels import MACOS  # noqa: E402  core's referenceWheels row for macOS
 LIBRARY_SHA = MACOS['library_sha256']
 
 

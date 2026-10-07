@@ -1,5 +1,6 @@
 import 'package:mediapipe_core/mediapipe_core.dart';
 
+import '../capabilities.dart';
 import '../runner/native_tasks.dart';
 import '../runner/vision_task_runner.dart';
 import '../types/options.dart';
@@ -11,8 +12,8 @@ import '../vision_task_backend.dart';
 /// blendshapes and transformation matrixes.
 ///
 /// One class on every platform. Google's native runtime serves it on a
-/// worker isolate on macOS, Linux, Windows and iOS; its Android SDK and
-/// browser runtime serve it through the registered platform plugin.
+/// worker isolate on Android, iOS, macOS, Linux and Windows; its browser
+/// runtime serves it through the registered web plugin.
 ///
 /// ```dart
 /// final task = await FaceLandmarker.create(
@@ -41,6 +42,7 @@ final class FaceLandmarker implements VisionTask {
       debugName: 'MediaPipe Face Landmarker',
       backend: faceLandmarkerBackendFactory,
       native: nativeFaceLandmarker,
+      capabilities: queryFaceLandmarkerCapabilities,
     );
     final task = FaceLandmarker._(runner, options.delegate);
     if (runner.overlayBackend case final overlay?) {

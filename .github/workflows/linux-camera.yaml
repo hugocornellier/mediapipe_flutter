@@ -82,7 +82,7 @@ jobs:
           dart pub get
           dart tool/download_face_landmarker.dart
       - name: Prepare the Linux gallery with the face task only
-        run: python3 -B gallery/tool/prepare.py --target linux/x64 --tasks face_landmarker
+        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target linux/x64 --tasks face_landmarker
       - name: Analyze the camera test and oracle
         working-directory: gallery
         run: |

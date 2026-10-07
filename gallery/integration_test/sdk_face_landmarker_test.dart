@@ -16,6 +16,7 @@ import 'package:mediapipe_gallery/main.dart';
 import 'support/delegate_control.dart';
 import 'support/gallery_tiles.dart';
 import 'support/sdk_frames.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 /// `skip` on emulators: SwiftShader GL accepts a GPU task, then TFLite's GL
 /// delegate fails on the first frame (see test_android_sdk_tasks.sh). GPU is
@@ -39,13 +40,13 @@ void main() {
     (tester) async {
       await tester.runAsync(() async {
         expect(Platform.isAndroid || Platform.isIOS, isTrue);
-        if (Platform.isAndroid) {
-          expect(
-            faceLandmarkerBackendFactory,
-            isNotNull,
-            reason: 'Android SDK plugin must register automatically',
-          );
-        }
+        expect(
+          faceLandmarkerBackendFactory,
+          isNull,
+          reason:
+              "Android and iOS run Google's C library through FFI, not a "
+              'plugin backend',
+        );
         final assets = await GalleryAssets.unpack();
         final model = await _model();
         final frame = await loadSample('portrait.jpg');
@@ -145,12 +146,11 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
-      final assets = await GalleryAssets.unpack();
       final frame = await loadSample('portrait.jpg');
       for (final delegate in _switches) {
         final task = await FaceLandmarker.create(
           FaceLandmarkerOptions(
-            modelPath: assets.path('face_landmarker.task'),
+            model: VisionModels.faceLandmarker,
             delegate: delegate,
             runningMode: RunningMode.video,
           ),
@@ -244,7 +244,7 @@ void main() {
         for (final delegate in _switches) {
           await controller.start(
             delegate: delegate,
-            modelAsset: 'assets/models/face_landmarker.task',
+            model: VisionModels.faceLandmarker,
           );
           await _frames(controller);
           _cameraReport(controller);
@@ -343,7 +343,7 @@ void main() {
 }
 
 Future<Uint8List> _model() async {
-  final bytes = await rootBundle.load('assets/models/face_landmarker.task');
+  final bytes = await rootBundle.load(bundledModelFile('face_landmarker.task'));
   return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
 }
 

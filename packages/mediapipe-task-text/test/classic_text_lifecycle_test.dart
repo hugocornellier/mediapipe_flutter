@@ -51,9 +51,9 @@ Object _values(Object result) => switch (result) {
 
 void main() {
   const models = {
-    'classifier': 'example/assets/bert_classifier.tflite',
-    'embedder': 'example/assets/universal_sentence_encoder.tflite',
-    'language': 'example/assets/language_detector.tflite',
+    'classifier': 'models/bert_classifier.tflite',
+    'embedder': 'models/universal_sentence_encoder.tflite',
+    'language': 'models/language_detector.tflite',
   };
   for (final entry in models.entries) {
     final name = entry.key;

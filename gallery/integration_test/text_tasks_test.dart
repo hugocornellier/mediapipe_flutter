@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 // The text demos' three tasks, from the gallery's bundled models, in the same
 // app as the vision runtimes: core's shared runtime must load and answer beside
@@ -13,7 +14,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   Future<Uint8List> model(String name) async {
-    final data = await rootBundle.load('assets/models/$name');
+    final data = await rootBundle.load(bundledModelFile(name));
     return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   }
 

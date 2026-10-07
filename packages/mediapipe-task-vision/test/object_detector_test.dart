@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_vision/models.dart';
-import 'package:mediapipe_vision/src/capabilities/official_runtime_io.dart';
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart';
@@ -20,7 +19,7 @@ void main() {
       delegate.name,
       () => _testDelegate(delegate),
       // Google's CPU output drifts between Apple CPUs, so macOS CPU compares
-      // with same-host outputs (tool/test_macos_tasks_runtime.py).
+      // with same-host outputs (tool/test_macos_references.py).
       skip:
           delegate == Delegate.cpu &&
               Platform.isMacOS &&
@@ -41,11 +40,11 @@ void main() {
     expect(ObjectDetectorOptions(modelPath: _model).delegate, Delegate.cpu);
   });
 
-  // Core bundles Google's macOS engine for this package's tests, so the CPU
-  // path passes the capability gate and reaches Google's own model loader.
+  // The hook bundles Google's vision library for this package's tests, so
+  // the CPU path passes the capability gate and reaches Google's own model
+  // loader.
   if (Platform.isMacOS) {
-    test("macOS CPU runs in Google's engine from core", () async {
-      expect(hasMacosTasksRuntime(), isTrue);
+    test("macOS CPU runs on Google's vision library", () async {
       await expectLater(
         ObjectDetector.create(
           ObjectDetectorOptions(modelPath: 'missing-model.tflite'),

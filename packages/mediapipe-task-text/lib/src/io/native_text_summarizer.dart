@@ -2,7 +2,8 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_core/platform_interface.dart' show mpHostSystem;
+import 'package:mediapipe_core/platform_interface.dart'
+    show mpHostSystem, nativeModelPath;
 
 import '../types/options.dart';
 import '../types/results.dart';
@@ -25,12 +26,14 @@ final class NativeTextSummarizer
         ..fileDescriptor = -1
         ..delegate = 0
         ..hostSystem = mpHostSystem
-        ..modelAssetPath = options.modelPath!
-            .toNativeUtf8(allocator: arena)
-            .cast();
+        ..modelAssetPath = nativeModelPath(
+          options.modelPath!,
+        ).toNativeUtf8(allocator: arena).cast();
       native.ref
         ..mode = options.mode.index
-        ..maxNumTokens = options.maxNumTokens ?? 0;
+        ..maxNumTokens = options.maxNumTokens ?? 0
+        // Google's default: errors only.
+        ..minLogSeverity = 4;
       if (options.cacheDirectory case final directory?) {
         native.ref.cacheDir = directory.toNativeUtf8(allocator: arena).cast();
       }

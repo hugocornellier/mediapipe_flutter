@@ -1,9 +1,8 @@
-/// The audio stream's contract through the public class, on fake backends
+/// The audio stream's contract through the public class, on a fake backend
 /// installed through the platform interface: the browser's clips backend,
-/// which the stream emulates on, and Android's stream backend. Shared by the
-/// VM suite and the browser suite, which runs it as JavaScript and as
-/// WebAssembly, since the clock's arithmetic must hold with JavaScript
-/// numbers.
+/// which the stream emulates on. Shared by the VM suite and the browser
+/// suite, which runs it as JavaScript and as WebAssembly, since the clock's
+/// arithmetic must hold with JavaScript numbers.
 library;
 
 import 'dart:async';
@@ -12,10 +11,6 @@ import 'dart:typed_data';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 import 'package:mediapipe_audio/platform_interface.dart';
 import 'package:mediapipe_audio/src/stream/checks.dart';
-// Google's tail sentinel where a platform can receive it, natively; browsers
-// never receive it, and their numbers could not hold it.
-import 'package:mediapipe_audio/src/stream/google_tail_web.dart'
-    if (dart.library.io) 'package:mediapipe_audio/src/stream/google_tail_io.dart';
 import 'package:mediapipe_audio/src/stream/model_specs.dart';
 import 'package:mediapipe_audio/src/stream/results.dart';
 import 'package:test/test.dart';
@@ -71,49 +66,6 @@ final class FakeClips implements AudioTaskBackend {
   Future<void> dispose() async => disposed = true;
 }
 
-/// Google's Android stream, faked: the test emits its results.
-final class FakeStream implements AudioStreamBackend {
-  FakeStream(this.options);
-
-  final Map<String, Object?> options;
-  final blocks = <(Float32List, double, int, int)>[];
-  final _results = StreamController<Map<String, Object?>>();
-  var disposed = false;
-
-  /// What Google's close does before the results end: emit the tail, or
-  /// fail as Google's Android runner reports a graph failure.
-  void Function(FakeStream stream)? onClose;
-
-  @override
-  void send(Float32List samples, double rate, int channels, int timestamp) =>
-      blocks.add((samples, rate, channels, timestamp));
-
-  @override
-  Stream<Map<String, Object?>> get results => _results.stream;
-
-  void emit(int timestamp, String name) => _results.add({
-    'timestampMs': timestamp,
-    'classifications': [
-      {
-        'headIndex': 0,
-        'headName': '',
-        'categories': [
-          {'index': 0, 'score': 0.5, 'categoryName': name, 'displayName': ''},
-        ],
-      },
-    ],
-  });
-
-  void fail(Object error) => _results.addError(error);
-
-  @override
-  Future<void> dispose() async {
-    disposed = true;
-    onClose?.call(this);
-    await _results.close();
-  }
-}
-
 /// [frames] frames of [channels] values from frame [first] on, each value
 /// the frame's index in the stream.
 AudioData frames(
@@ -154,28 +106,16 @@ const _timestampRule =
 
 void streamSuite() {
   final clipBackends = <FakeClips>[];
-  final streamBackends = <FakeStream>[];
 
   setUp(() {
     clipBackends.clear();
-    streamBackends.clear();
     audioTaskBackendFactory = (_) async {
       final backend = FakeClips();
       clipBackends.add(backend);
       return backend;
     };
-    audioStreamBackendFactory = null;
   });
-  tearDown(() {
-    audioTaskBackendFactory = null;
-    audioStreamBackendFactory = null;
-  });
-
-  void installStreamBackend() => audioStreamBackendFactory = (options) async {
-    final backend = FakeStream(options);
-    streamBackends.add(backend);
-    return backend;
-  };
+  tearDown(() => audioTaskBackendFactory = null);
 
   /// A stream task on a model reading [window] frames of [channels] values
   /// at [rate]; 8 frames at 8 kHz make windows one millisecond apart.
@@ -481,54 +421,6 @@ void streamSuite() {
     });
   });
 
-  group('Google\'s stream, through a stream backend', () {
-    test(
-      'results in order, the tail restamped, and the close\'s result first',
-      () async {
-        installStreamBackend();
-        final task = await open(window: 15600, rate: 16000);
-        final backend = streamBackends.single;
-        expect(backend.options['modelBytes'], isNotNull);
-        final (arrived, errors, done) = listen(task);
-        task
-          ..classifyAsync(
-            frames(0, 1600, rate: 16000, channels: 2),
-            timestampMilliseconds: 3000000000,
-          )
-          ..classifyAsync(
-            AudioData(samples: Float32List(0), sampleRate: 16000),
-            timestampMilliseconds: 3000000050,
-          )
-          ..classifyAsync(
-            frames(1600, 64000, rate: 16000),
-            timestampMilliseconds: 3000000100,
-          );
-        // Each block as it was given, with a timestamp past 2^31; the empty
-        // block never reaches Google.
-        expect(
-          [for (final b in backend.blocks) (b.$2, b.$3, b.$4)],
-          [(16000.0, 2, 3000000000), (16000.0, 1, 3000000100)],
-        );
-        expect(backend.blocks.first.$1, hasLength(3200));
-        backend
-          ..emit(3000000000, 'first')
-          ..emit(3000000975, 'second');
-        if (googleTailTimestamp case final tail?) {
-          backend.onClose = (stream) => stream.emit(tail, 'tail');
-        }
-        await task.dispose();
-        await done;
-        expect(errors, isEmpty);
-        expect(heard(arrived), [
-          (3000000000, 'first'),
-          (3000000975, 'second'),
-          if (googleTailTimestamp != null) (3000001950, 'tail'),
-        ]);
-        expect(backend.disposed, isTrue);
-      },
-    );
-  });
-
   group('failures', () {
     test('a failed window ends the stream once and poisons the task', () async {
       final task = await open();
@@ -548,37 +440,6 @@ void streamSuite() {
       expect(clipBackends.single.disposed, isTrue);
       expect(clipBackends.single.clips, hasLength(2));
     });
-
-    test(
-      'a stream backend\'s failure, during the stream or its close',
-      () async {
-        installStreamBackend();
-        final task = await open();
-        final (_, errors, done) = listen(task);
-        task.classifyAsync(frames(0, 8), timestampMilliseconds: 0);
-        streamBackends.single.fail(const TaskException('Graph has errors.'));
-        await done;
-        expect(errors, [
-          isA<TaskException>().having(
-            (e) => e.message,
-            'message',
-            'Graph has errors.',
-          ),
-        ]);
-        await task.dispose();
-        expect(streamBackends.single.disposed, isTrue);
-
-        final closing = await open();
-        final (_, closeErrors, closed) = listen(closing);
-        closing.classifyAsync(frames(0, 8), timestampMilliseconds: 0);
-        // Google's Android runner reports a graph failure at its close.
-        streamBackends.last.onClose = (stream) =>
-            stream.fail(const TaskException('Closed with errors.'));
-        await closing.dispose();
-        await closed;
-        expect(closeErrors, [isA<TaskException>()]);
-      },
-    );
 
     test(
       'dispose twice is one disposal, and a paused listener does not hold it',

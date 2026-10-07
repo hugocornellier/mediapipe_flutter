@@ -14,6 +14,10 @@ const _model = 'models/blaze_face_short_range.tflite';
 
 void main() {
   for (final delegate in Delegate.values) {
+    // Google's Linux library cannot run Face Detector's GPU (UP-046), so its
+    // wheel writes no same-host GPU reference for a group to load there; the
+    // refusal test below covers the Linux GPU instead.
+    if (delegate == Delegate.gpu && Platform.isLinux) continue;
     group(
       delegate.name,
       () => _testDelegate(delegate),
@@ -25,6 +29,20 @@ void main() {
   test('CPU is the default delegate', () {
     expect(FaceDetectorOptions(modelPath: _model).delegate, Delegate.cpu);
   });
+  test("Linux refuses Face Detector's GPU with its reason (UP-046)", () async {
+    // Google's Linux library lacks the LiteRT GPU plugin that Face
+    // Detector's GPU inference needs, so the package withdraws the GPU and
+    // refuses it before Google's graph exists.
+    final capabilities = await queryFaceDetectorCapabilities();
+    expect(capabilities.supportedDelegates, {Delegate.cpu});
+    expect(capabilities.unavailableReasons[Delegate.gpu], contains('UP-046'));
+    await expectLater(
+      FaceDetector.create(
+        FaceDetectorOptions(delegate: Delegate.gpu, modelPath: _model),
+      ),
+      throwsA(isA<RuntimeUnavailableException>()),
+    );
+  }, skip: Platform.isLinux ? false : 'Linux only');
   tearDownAll(() => reportReferenceDeltas('face_detector'));
 }
 

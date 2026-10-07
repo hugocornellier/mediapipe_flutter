@@ -3,13 +3,10 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 
-import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../capabilities/official_runtime_io.dart';
+import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../runner/native_interface.dart';
 import '../types/options.dart';
 import '../types/results.dart';
-import 'native_ios_sdk.dart';
-import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 
 /// Google's Image Embedder on its worker isolate.
@@ -40,72 +37,42 @@ final class NativeImageEmbedder
   }
   final bool _gpu;
   mp.MpImageEmbedderPtr _task = nullptr;
-  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
-      ? iosBgraStorage()
-      : null;
 
+  /// Runs one IMAGE or VIDEO request and copies every result.
   @override
-  ImageEmbedderResult process(VisionTaskInput input) => using((arena) {
-    final (source, rotation, timestamp, region) = input;
-    final image = createVisionImage(
-      arena,
-      source,
-      expandRgbForGpu: _gpu,
-      checked: checkVisionCall,
-      iosBgra: _iosBgra,
-    );
-    try {
-      final processing = visionProcessingOptions(arena, rotation, region);
-      final result = arena<mp.MpEmbeddingResult>();
-      if (timestamp == null) {
-        checkVisionCall(
-          (error) => mp.MpImageEmbedderEmbedImage(
-            _task,
-            image,
-            processing,
-            result,
-            error,
-          ),
-        );
-      } else {
-        checkVisionCall(
-          (error) => mp.MpImageEmbedderEmbedForVideo(
-            _task,
-            image,
-            processing,
-            timestamp,
-            result,
-            error,
-          ),
-        );
-      }
-      try {
-        return ImageEmbedderResult(
-          embeddings: [
-            for (var i = 0; i < result.ref.embeddings_count; i++)
-              copyVisionEmbedding(result.ref.embeddings[i]),
-          ],
-          imageWidth: mp.MpImageGetWidth(image),
-          imageHeight: mp.MpImageGetHeight(image),
-          timestampMilliseconds: timestamp,
-        );
-      } finally {
-        mp.MpImageEmbedderCloseResult(result);
-      }
-    } finally {
-      mp.MpImageFree(image);
-    }
-  });
+  ImageEmbedderResult process(VisionTaskInput input) => runVisionRequest(
+    input,
+    gpu: _gpu,
+    allocate: (arena) => arena<mp.MpEmbeddingResult>(),
+    image: (image, processing, result, error) =>
+        mp.MpImageEmbedderEmbedImage(_task, image, processing, result, error),
+    video: (image, processing, timestamp, result, error) =>
+        mp.MpImageEmbedderEmbedForVideo(
+          _task,
+          image,
+          processing,
+          timestamp,
+          result,
+          error,
+        ),
+    closeResult: mp.MpImageEmbedderCloseResult,
+    copy: (request, result) => ImageEmbedderResult(
+      embeddings: [
+        for (var i = 0; i < result.ref.embeddings_count; i++)
+          copyVisionEmbedding(result.ref.embeddings[i]),
+      ],
+      imageWidth: mp.MpImageGetWidth(request.image),
+      imageHeight: mp.MpImageGetHeight(request.image),
+      timestampMilliseconds: request.timestamp,
+    ),
+    region: true,
+  );
 
   @override
   void close() {
     if (_task == nullptr) return;
     final task = _task;
     _task = nullptr;
-    try {
-      checkVisionCall((error) => mp.MpImageEmbedderClose(task, error));
-    } finally {
-      _iosBgra?.close();
-    }
+    checkVisionCall((error) => mp.MpImageEmbedderClose(task, error));
   }
 }

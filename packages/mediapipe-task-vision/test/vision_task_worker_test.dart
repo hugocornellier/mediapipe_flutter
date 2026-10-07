@@ -188,6 +188,13 @@ void main() {
         Platform.isMacOS ? 1 << 30 : isNull,
       );
       expect(GpuFrameBudget(_Options(events.sendPort)).limitBytes, isNull);
+      // Face Detector's LiteRT GPU can keep twice each frame.
+      expect(
+        GpuFrameBudget(
+          FaceDetectorOptions(modelPath: 'face.tflite', delegate: Delegate.gpu),
+        ).limitBytes,
+        Platform.isMacOS ? 1 << 29 : isNull,
+      );
     });
 
     test('counts four bytes a pixel, and a 12 MP photo for a file', () {

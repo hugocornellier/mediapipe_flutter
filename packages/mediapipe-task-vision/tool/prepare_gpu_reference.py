@@ -2,7 +2,7 @@
 
 Does not change checked-in goldens, models, task code or test tolerances.
 The default creates an isolated Python environment from the host's checksum-pinned
-wheel (macOS arm64: 1.0.0 on Metal; Linux x64: 1.0.1 on OpenGL ES).
+wheel (core's referenceWheels: Metal on macOS arm64, OpenGL ES on Linux x64).
 --python reuses an existing environment; the generators still verify its native
 library, runtime version, model digests and input fixture bytes.
 """
@@ -20,6 +20,9 @@ import sys
 
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
+sys.path.insert(0, str(REPO / "packages/mediapipe-core/tool"))
+from consumer_packages import core_hook_defines  # noqa: E402
+
 FACE_TASKS = (("face_detector", "face_detection"),
               ("face_landmarker", "face_landmarker"))
 FACE_FILES = (
@@ -105,12 +108,10 @@ def test_root(destination, groups):
     """Builds a root package for the Dart suites of the face tasks and [groups]
     (object, hand, landmark, image, segmenter).
 
-    This package's own pubspec selects tasks whose macOS runtime exists only in
-    a maintainer source build, so `dart test` run here cannot resolve its assets
-    on a machine without one. Only the root package's user_defines reach a build
-    hook, so an isolated root scoped to the published runtimes keeps this job on
-    the public download path it exists to check. On macOS, the non-face tasks
-    run through test_macos_tasks_runtime.py instead.
+    Only the root package's user_defines reach a build hook, so an isolated
+    root selects exactly these tasks, and a local library folder when
+    MEDIAPIPE_ASSET_SOURCE names one. On macOS the other tasks' suites run
+    through test_macos_references.py.
     """
     if destination.exists():
         shutil.rmtree(destination)
@@ -162,7 +163,7 @@ dev_dependencies:
   test: ^1.31.0
 hooks:
   user_defines:
-    mediapipe_vision:
+{core_hook_defines()}    mediapipe_vision:
       tasks: [{", ".join(tasks)}]
 """)
     return destination, ["test/" + name for name in tests]
@@ -204,9 +205,10 @@ def main():
              + (IMAGE_FILES if "image" in groups else ())
              + (SEGMENTER_FILES if "segmenter" in groups else ()))
     # The tasks the package offers on this GPU: no Holistic on either (its
-    # blendshapes model does not open on GPU, UP-026), no embedder on Linux
-    # (aborts, UP-027), and Pose without masks (Metal fails, UP-028; OpenGL
-    # ES returns 8-bit RGBA masks, UP-030).
+    # blendshapes model does not open on GPU, UP-026), no embedder or Face
+    # Detector on Linux (aborts, UP-027; no LiteRT GPU plugin, UP-046), and
+    # Pose without masks (Metal fails, UP-028; OpenGL ES returns 8-bit RGBA
+    # masks, UP-030).
     from cpu_reference import host_target as _host
     on_metal = _host() == "macos/arm64"
     generator_arguments = {
@@ -220,10 +222,17 @@ def main():
     if target not in ("macos/arm64", "linux/x64"):
         raise SystemExit("GPU references require macOS arm64 or Linux x64.")
     if args.test and groups - {"object"} and target != "linux/x64":
-        raise SystemExit("On macOS, these tasks run on the official landmark "
-                         "runtime: use tool/test_macos_tasks_runtime.py.")
+        raise SystemExit("On macOS, run these tasks' suites with "
+                         "tool/test_macos_references.py.")
     wheel_url, wheel_sha256, library_sha256, version = wheel_pin(target)
     metal = target == "macos/arm64"
+    # Face Detector's GPU runs on LiteRT since 1.1.0, and Google's Linux
+    # library lacks LiteRT's GPU plugin (UP-046): the package withdraws that
+    # GPU there, and the Face Detector suite checks the refusal instead.
+    if not metal:
+        tasks = tuple(task for task in tasks if task[0] != "face_detector")
+        files = tuple(name for name in files
+                      if not name.startswith("face_detection/"))
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
     # Do not leave a stale receipt if generation or model verification fails.
@@ -257,7 +266,11 @@ def main():
         print("\n".join(log.splitlines()[-12:]), flush=True)
         result.check_returncode()
         graphics[task] = sorted(set(re.findall(r"GL version:.*", log)))
-        if metal and "Created TensorFlow Lite delegate for Metal." not in log:
+        # 1.0.x runs inference on TensorFlow Lite's Metal delegate; 1.1.0's
+        # LiteRT GPU accelerator logs the Metal API it initializes instead.
+        if metal and not any(line in log for line in (
+                "Created TensorFlow Lite delegate for Metal.",
+                "Initializing Metal-based API from graph.")):
             raise RuntimeError(f"Official {task} did not confirm Metal creation")
         # Linux tasks run inference through TensorFlow Lite's OpenGL ES backend
         # directly (use_advanced_gpu_api), so no delegate line is logged; the

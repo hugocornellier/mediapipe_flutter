@@ -14,11 +14,14 @@ import sys
 import time
 
 PACKAGE = Path(__file__).resolve().parents[1]
-LIBRARY_SHA = '9cffc37134d98bdbbcc4b5811d2e2acd66361d05b89761e68a5cb72e0406b53a'
+sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
+from model_pins import model_sha256  # noqa: E402
+from official_wheels import MACOS  # noqa: E402  core's referenceWheels row for macOS
+LIBRARY_SHA = MACOS['library_sha256']
 MODELS = {
-    'embedding': ('embedding_gemma.task', '913b7a1edc7c7c3d1da3979ec1d0648ed9e0a370f181bb59ab177ca4b97707ad'),
-    'proofreader': ('proofread_quant_200m.litertlm', '2caa317d5a6f951af6e437edce3bb3a9fdedc85a7a8c2a8fcaec96318d7708cc'),
-    'summarizer': ('summarization_quant_200m_2modes.litertlm', '8b2d4ef09236adb9ead3127325526ba1aa5a59feb7c5de2d3f5958f27479de59'),
+    'embedding': ('embedding_gemma.task', model_sha256('embedding_gemma.task')),
+    'proofreader': ('proofread_quant_200m.litertlm', model_sha256('proofread_quant_200m.litertlm')),
+    'summarizer': ('summarization_quant_200m_2modes.litertlm', model_sha256('summarization_quant_200m_2modes.litertlm')),
 }
 
 
@@ -26,7 +29,7 @@ def child(args):
     sys.path.insert(0, str(args.python_package_root.resolve()))
     os.environ.setdefault('MPLCONFIGDIR', str(PACKAGE / 'build/matplotlib'))
     import mediapipe as mp
-    assert mp.__version__ == '1.0.1', mp.__version__
+    assert mp.__version__ == MACOS['version'], mp.__version__
     library = Path(mp.__file__).parent / 'tasks/c/libmediapipe.dylib'
     assert hashlib.sha256(library.read_bytes()).hexdigest() == LIBRARY_SHA
     filename, digest = MODELS[args.task]
@@ -76,7 +79,7 @@ def main():
         return
     assert platform.system() == 'Darwin' and platform.machine() == 'arm64'
     args.output.mkdir(parents=True, exist_ok=True)
-    report = {'runtime': '1.0.1', 'library_sha256': LIBRARY_SHA,
+    report = {'runtime': MACOS['version'], 'library_sha256': LIBRARY_SHA,
               'macos': platform.mac_ver()[0], 'machine': platform.machine(),
               'python': platform.python_version(), 'probes': [],
               'note': 'Delegate requests are not proof of GPU execution; inspect native logs.'}

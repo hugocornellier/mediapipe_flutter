@@ -10,7 +10,18 @@ instead.
 
 ## Android
 
-- `minSdk` 24 or higher.
+- `minSdk` 28 (Android 9) or higher, in `android/app/build.gradle(.kts)`.
+  Google's MediaPipe libraries need it, and a lower value fails the build
+  with this fix.
+- Each family bundles Google's MediaPipe library for that family
+  (`libmediapipe_tasks_vision.so`, `libmediapipe_tasks_text.so`,
+  `libmediapipe_tasks_audio.so`), so an app ships only the families it uses:
+  about 13 MB for vision, 15 MB for text and 8 MB for audio on arm64-v8a. No
+  Google AAR or other Gradle dependency is involved. Tasks run on arm64-v8a
+  and x86_64; the armeabi-v7a library is bundled, since Flutter's release
+  builds include that ABI, but no task claims it yet.
+- On an emulator only the CPU is offered: it renders OpenGL ES in software
+  (SwiftShader), where Google's GPU inference fails. Phones keep the GPU.
 - To download models at run time, add the `INTERNET` permission to
   `android/app/src/main/AndroidManifest.xml`. Flutter adds it only to debug
   and profile builds, so a release build without it cannot download models:
@@ -21,36 +32,40 @@ instead.
 
   When the connection fails, the `ModelDownloadException` names this
   permission.
-- Tasks run through Google's MediaPipe Android SDKs (`tasks-vision`,
-  `tasks-text`, `tasks-audio` 1.0.0), which Gradle fetches with the app.
 
 ## iOS
 
-- iOS 15.0 or newer. Tasks run through an adapter over Google's MediaPipe
-  1.0.1 iOS SDK that `mediapipe_core` builds; no CocoaPods or native plugin is
-  involved. The first build downloads the SDK (about 1.4 GB of archives,
-  cached afterwards) and extracts only the device or simulator slice it needs.
-- On the iOS Simulator only the CPU is offered: Google's SDK aborts on the
-  simulator's GPU path. Devices keep Metal.
+- iOS 15.0 or newer. Each family bundles Google's MediaPipe library for that
+  family (`MediaPipeTasksVisionC`, `MediaPipeTasksTextC`,
+  `MediaPipeTasksAudioC`), so an app ships only the families it uses; no
+  CocoaPods or native plugin is involved. The build extracts only the device
+  or simulator slice it needs.
+- On the iOS Simulator only the CPU is offered: Google's MediaPipe aborts on
+  the simulator's GPU path. Devices keep Metal.
 - Downloaded models live in the app's Application Support folder, excluded
   from iCloud backup.
 
 ## macOS
 
 - macOS 14.0 or newer on Apple Silicon.
-- Text, audio and every vision task except Face Detector and Face Landmarker
-  run on Google's macOS engine, which is opt-in because it adds about 95 MB:
+- Build the app for Apple Silicon only. Flutter's release and profile builds
+  (`flutter build macos`, `flutter run --release`) also build an Intel
+  (x86_64) slice by default, and Google's MediaPipe libraries have none, so
+  such a build fails with these instructions. Add these lines to
+  `macos/Runner/Configs/AppInfo.xcconfig`:
 
-  ```yaml
-  hooks:
-    user_defines:
-      mediapipe_core:
-        tasks_runtime: true
+  ```text
+  ARCHS = arm64
+  EXCLUDED_ARCHS = x86_64
   ```
 
-  Without it the app still builds (so `dart run` keeps working in iOS and
-  Android apps developed on a Mac); creating one of those tasks then throws a
-  `RuntimeUnavailableException` whose `fix` shows these lines.
+  Or run `flutter config --enable-macos-arm64-only`, which does the same for
+  every app that machine builds, CI runners included. Debug builds target
+  only the Mac they run on, so they work either way. Setting the Runner's
+  deployment target (`MACOSX_DEPLOYMENT_TARGET`) to 14.0 also keeps the app
+  off older macOS, where the libraries cannot load.
+- Each family bundles Google's MediaPipe library for that family: about
+  27 MB for vision, 26 MB for text and 13 MB for audio.
 - To download models at run time, a sandboxed app needs the network client
   entitlement in `macos/Runner/DebugProfile.entitlements` and
   `Release.entitlements`:
@@ -77,8 +92,9 @@ instead.
 
 - Workers load Google's pinned `@mediapipe/tasks-*` runtime from jsDelivr by
   default and check every file against its SHA-384 before running it, then
-  load it from a `blob:` URL. Models download from `storage.googleapis.com`
-  and are kept in Cache Storage.
+  load it from a `blob:` URL. Bundled models load from the app's own assets.
+  Models downloaded at run time (`ModelStore.allowDownloads = true`) come from
+  `storage.googleapis.com` and are kept in Cache Storage.
 - To serve the runtimes yourself (offline, an intranet, or a strict policy),
   run `dart run mediapipe_core:web_runtime web/mediapipe` from the app root
   and set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';` before creating the
@@ -86,9 +102,9 @@ instead.
 - If the site sends a Content Security Policy, it has to allow what the
   loader does: `script-src` and `worker-src` for `'self'` and `blob:`,
   `'wasm-unsafe-eval'` for the WebAssembly runtime, and `connect-src` for
-  `https://cdn.jsdelivr.net` (unless self-hosted) and
-  `https://storage.googleapis.com` (for pinned models). CI runs without a
-  policy, so test yours in the browsers you support.
+  `'self'` (bundled models), `https://cdn.jsdelivr.net` (unless self-hosted)
+  and `https://storage.googleapis.com` (only for models downloaded at run
+  time). CI runs without a policy, so test yours in the browsers you support.
 
 ## Build settings
 
@@ -97,9 +113,8 @@ and applies to all of the app's platforms.
 
 | Key | Values | Effect |
 | --- | --- | --- |
-| `mediapipe_core.tasks_runtime` | `true` / `false` | macOS opt-in to Google's engine; `false` turns it off where it is on by default (iOS, Linux, Windows) |
 | `mediapipe_core.asset_source` | directory or `http(s)` URL | Downloads every pinned runtime from there instead of its URLs; see below |
-| `mediapipe_vision.tasks` | list of task names | Bundles native runtimes only for these vision tasks (default: `face_detector`, `face_landmarker`) |
+| `mediapipe_vision.tasks` | list of task names | Checks the names against the tasks validated on the target (a Windows build fails on `interactive_segmenter`) |
 | `mediapipe_vision.models`, `mediapipe_text.models`, `mediapipe_audio.models` | list of model names from `XxxModels.byName` | The models `dart run mediapipe_core:bundle_models` bundles into `assets/mediapipe/`, which the app declares under `flutter: assets:` |
 
 ### Bundling models

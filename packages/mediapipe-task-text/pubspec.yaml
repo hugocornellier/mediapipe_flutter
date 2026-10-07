@@ -49,11 +49,6 @@ dev_dependencies:
 flutter:
   plugin:
     platforms:
-      android:
-        package: dev.mediapipe.flutter.text
-        pluginClass: MediaPipeTextPlugin
-        dartPluginClass: MediaPipeTextAndroid
-        dartFileName: mediapipe_text_android.dart
       web:
         pluginClass: MediaPipeTextWeb
         fileName: mediapipe_text_web.dart
@@ -62,10 +57,3 @@ flutter:
       platforms: [web]
     - path: assets/runtime.json
       platforms: [web]
-
-# Used when this package is the root (Dart tests/tools). Consumers opt in in
-# their own pubspec, keeping the shared runtime optional for vision-only apps.
-hooks:
-  user_defines:
-    mediapipe_core:
-      tasks_runtime: true

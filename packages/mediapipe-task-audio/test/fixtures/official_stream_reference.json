@@ -1,5 +1,5 @@
 {
- "runtime": "mediapipe==1.0.0",
+ "runtime": "mediapipe==1.1.0rc20260925",
  "source": "official Python AudioClassifier in AUDIO_STREAM mode, macOS arm64 wheel, max_results 3",
  "model": "yamnet.tflite",
  "model_sha256": "4d8b4a53282dc83ef04e3e7dbc4fbc98082e34e44ed798e16c3a0cdd4c584faf",
