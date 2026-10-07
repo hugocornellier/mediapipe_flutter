@@ -268,7 +268,8 @@ Future<TaskCapabilities> queryInteractiveSegmenterCapabilities() async =>
 
 /// Evaluate support for an explicit process platform snapshot: CPU on Google's
 /// vision library on Android, iOS, macOS and Linux, and the web adapter.
-/// Google's Windows library lacks the stateful API.
+/// Google's Windows library exports the stateful API too, but a stroke takes
+/// about 25 seconds on it (upstream-issues.md UP-048), so Windows stays off.
 TaskCapabilities interactiveSegmenterCapabilitiesForPlatform(
   TaskPlatform platform,
 ) {
@@ -293,7 +294,8 @@ TaskCapabilities interactiveSegmenterCapabilitiesForPlatform(
     unavailableReasons: {
       Delegate.cpu:
           'InteractiveSegmenter requires macOS arm64, Linux x64, iOS, '
-          'Android, or the web adapter package.',
+          "Android, or the web adapter package. Google's Windows library "
+          'runs it too slowly to offer (upstream-issues.md UP-048).',
       Delegate.gpu: platform.operatingSystem == 'macos'
           ? 'The official MediaPipe macOS GPU stroke shader requests GLSL 330 in '
                 'an OpenGL 2.1 context and fails to compile. Confirmed on both '

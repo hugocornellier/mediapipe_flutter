@@ -69,7 +69,10 @@ def main():
     dog = stroke('positive', [[.66, .55]])
     partial = stroke('positive', [[.66, .55], [.65, .65]], False)
     negative = stroke('negative', [[.42, .6]])
+    negative_partial = stroke('negative', [[.42, .6]], False)
     lasso = stroke('lasso', [[.52, .2], [.78, .2], [.78, .98], [.52, .98], [.52, .2]])
+    lasso_open = stroke('lasso', [[.52, .2], [.78, .2], [.78, .98], [.52, .98]])
+    lasso_corners = stroke('lasso', [[.52, .2], [.78, .98]])
     scenarios = [
         ('file-cat', 'file', True, [cat]),
         ('raw-dog', 'rgb', True, [dog]),
@@ -78,6 +81,13 @@ def main():
         ('raw-two-positive', 'rgb', False, [dog, cat]),
         ('raw-negative', 'rgb', False, [dog, negative]),
         ('raw-lasso', 'rgb', False, [lasso]),
+        # Google's graph reads a lasso as the bounding box of its points: the
+        # open outline and the two opposite corners give the rectangle's mask,
+        # and an unfinished Exclude stroke reads as the finished one. Cases
+        # with the same mask share one file, so these cost no fixture bytes.
+        ('raw-lasso-open', 'rgb', False, [lasso_open]),
+        ('raw-lasso-corners', 'rgb', False, [lasso_corners]),
+        ('raw-negative-partial', 'rgb', False, [dog, negative_partial]),
         ('raw-undo', 'rgb', False, [dog]),
         ('rgba-cat', 'rgba', True, [cat]),
         ('blank', 'blank', True, [dog]),
@@ -95,6 +105,19 @@ def main():
     options = api.InteractiveSegmenterOptions(mp.tasks.BaseOptions(
         model_asset_path=str(model), delegate=mp.tasks.BaseOptions.Delegate.CPU))
     written = {}
+
+    def native(strokes):
+        return [api.Stroke(
+            getattr(api.BrushMode, s['brush_mode'].upper()),
+            [api.StrokePoint(*p) for p in s['points']], s['is_completed']) for s in strokes]
+
+    def grid(mask, columns=16, rows=8):
+        """Cell means on a columns x rows grid, as the gallery reduces a mask."""
+        height, width = mask.shape[:2]
+        return [[float(mask[r * height // rows:(r + 1) * height // rows,
+                            c * width // columns:(c + 1) * width // columns].mean())
+                 for c in range(columns)] for r in range(rows)]
+
     with api.InteractiveSegmenter.create_from_options(options) as task:
         for name, kind, set_image, strokes in scenarios:
             image = images[kind]
@@ -102,9 +125,7 @@ def main():
             if set_image:
                 task.set_image(image)
             set_ms = (time.perf_counter() - t) * 1000 if set_image else None
-            native_strokes = [api.Stroke(
-                getattr(api.BrushMode, s['brush_mode'].upper()),
-                [api.StrokePoint(*p) for p in s['points']], s['is_completed']) for s in strokes]
+            native_strokes = native(strokes)
             t = time.perf_counter()
             result = task.segment(native_strokes)
             mask = np.ascontiguousarray(result.numpy_view(), dtype='<f4')
@@ -121,6 +142,23 @@ def main():
                 'foreground_pixels': int((mask > .5).sum()), 'mean': float(mask.mean()),
                 'set_image_ms': set_ms, 'segment_and_copy_ms': (time.perf_counter()-t)*1000})
             print(name, report['cases'][-1]['foreground_pixels'], flush=True)
+        # Phones and browsers compare Exclude and Lasso on the whole photo with
+        # these reductions, as they compare Include with file-cat's mask:
+        # cell means on a 16 x 8 grid, the mean and the share above 0.5. The
+        # masks themselves are not stored.
+        task.set_image(source)
+        report['summaries'] = []
+        for name, strokes in [('file-dog-negative', [dog, negative]),
+                              ('file-lasso', [lasso]),
+                              ('file-lasso-corners', [lasso_corners])]:
+            mask = np.ascontiguousarray(task.segment(native(strokes)).numpy_view(), dtype='<f4')
+            assert mask.shape == (source.height, source.width, 1)
+            report['summaries'].append({
+                'name': name, 'input': 'file', 'strokes': strokes,
+                'width': source.width, 'height': source.height,
+                'grid': grid(mask), 'mean': float(mask.mean()),
+                'foreground': float((mask > .5).mean()), 'sha256': digest(mask.tobytes())})
+            print(name, report['summaries'][-1]['foreground'], flush=True)
     report['abi'] = {
         cls.__name__: {'size': ctypes.sizeof(cls), 'alignment': ctypes.alignment(cls),
                       'offsets': {f[0]: getattr(cls, f[0]).offset for f in cls._fields_}}

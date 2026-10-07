@@ -238,7 +238,7 @@
         "gpu": "unsupported: Google's Linux 1.0.1 runtime aborts the stroke segmenter on OpenGL ES (upstream-issues.md UP-029)"
       },
       "windows": {
-        "cpu": "unsupported: Google's Windows wheels do not export the stroke API (step 6)",
+        "cpu": "unsupported: Google's Windows library runs the stateful segmenter at about 25 s a stroke on GitHub's runner (upstream-issues.md UP-048)",
         "gpu": "unsupported: Google builds the Windows runtime without GPU"
       }
     },

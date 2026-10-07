@@ -25,7 +25,11 @@ class NativeSegmentationBackend implements SegmentationBackend {
 /// One active inference and one replaceable pending stroke snapshot.
 ///
 /// Image changes, clear and undo invalidate obsolete results immediately.
-/// MediaPipe always receives the complete history, including partial strokes.
+/// MediaPipe always receives the complete history. Include and Exclude
+/// strokes are sent while they are drawn, since Google reads them the same
+/// finished or not; a lasso is sent when the pointer lifts, as Google's
+/// samples do, because Google's CPU graph reads an unfinished lasso
+/// differently from the finished one.
 class EditorController extends ChangeNotifier {
   EditorController(this._backend);
   final SegmentationBackend _backend;
@@ -50,29 +54,39 @@ class EditorController extends ChangeNotifier {
 
   bool get canUndo => _completed.isNotEmpty || _active != null;
   List<NormalizedKeypoint> get activePoints => List.unmodifiable(_active ?? []);
+
+  /// The brush of the stroke being drawn, else the selected one.
+  BrushMode get activeBrush => _active != null ? _activeBrush : brush;
+
+  /// The strokes the pointer has finished, in order.
+  List<Stroke> get completedStrokes => List.unmodifiable(_completed);
+
+  /// How many finished strokes each brush drew, for brushes that drew any.
+  Map<BrushMode, int> get strokeCounts => {
+    for (final mode in BrushMode.values)
+      if (_completed.any((stroke) => stroke.brushMode == mode))
+        mode: _completed.where((stroke) => stroke.brushMode == mode).length,
+  };
+
+  /// The history MediaPipe receives: finished strokes, and an Include or
+  /// Exclude stroke still being drawn. A lasso waits for the pointer to lift.
   List<Stroke> get strokes => List.unmodifiable([
     ..._completed,
     if (_active case final points?
-        when points.isNotEmpty &&
-            (_activeBrush != BrushMode.lasso || points.length >= 3))
+        when points.isNotEmpty && _activeBrush != BrushMode.lasso)
       Stroke(
         brushMode: _activeBrush,
-        points: _brushPoints(_activeBrush, points),
+        points: _brushPoints(points),
         isCompleted: false,
       ),
   ]);
 
-  /// Google's sample drops strokes shorter than this (normalized length).
+  /// Google's web sample drops strokes shorter than this (normalized length).
+  /// A shorter Include or Exclude stroke is sent as a ring around its points;
+  /// a shorter lasso is dropped, so a tap in lasso mode selects nothing.
   static const minimumStrokeLength = 0.05;
 
-  /// A tap or short brush stroke as a small ring around its points. The GPU
-  /// graph draws strokes as line segments, so a single point draws nothing
-  /// and the segmenter falls back to its default subject; CPU marks it anyway.
-  static List<NormalizedKeypoint> _brushPoints(
-    BrushMode brush,
-    List<NormalizedKeypoint> points,
-  ) {
-    if (brush == BrushMode.lasso) return points;
+  static double _length(List<NormalizedKeypoint> points) {
     var length = 0.0;
     for (var i = 1; i < points.length; i++) {
       length += math.sqrt(
@@ -80,7 +94,18 @@ class EditorController extends ChangeNotifier {
             math.pow(points[i].y - points[i - 1].y, 2),
       );
     }
-    if (length >= minimumStrokeLength) return points;
+    return length;
+  }
+
+  /// A tap or short brush stroke as a small ring around its points. Google's
+  /// WebGL graph draws strokes as line segments, so a single point draws
+  /// nothing there and the segmenter returns its default mask; the CPU graph
+  /// reads the ring and the point alike on all but a few hundredths of a
+  /// percent of pixels.
+  static List<NormalizedKeypoint> _brushPoints(
+    List<NormalizedKeypoint> points,
+  ) {
+    if (_length(points) >= minimumStrokeLength) return points;
     final x = points.map((p) => p.x).reduce((a, b) => a + b) / points.length;
     final y = points.map((p) => p.y).reduce((a, b) => a + b) / points.length;
     const radius = 0.01;
@@ -123,7 +148,12 @@ class EditorController extends ChangeNotifier {
     if (!ready || _closed || _active != null) return;
     _activeBrush = brush;
     _active = [point];
-    _changed();
+    // A lasso is drawn, not segmented, until the pointer lifts.
+    if (_activeBrush == BrushMode.lasso) {
+      _notify();
+    } else {
+      _changed();
+    }
   }
 
   void extend(NormalizedKeypoint point) {
@@ -132,23 +162,32 @@ class EditorController extends ChangeNotifier {
     final previous = points.last;
     if (previous.x == point.x && previous.y == point.y) return;
     points.add(point);
-    _changed();
+    if (_activeBrush == BrushMode.lasso) {
+      _notify();
+    } else {
+      _changed();
+    }
   }
 
   void end() {
     final points = _active;
     if (points == null || _closed) return;
-    if (_activeBrush != BrushMode.lasso || points.length >= 3) {
+    _active = null;
+    if (_activeBrush == BrushMode.lasso) {
+      if (_length(points) < minimumStrokeLength) {
+        // A tap or a tiny drag is no lasso. Nothing was sent, so nothing
+        // changes but the drawing.
+        _notify();
+        return;
+      }
+      // Sent as drawn: Google reads the box around the points, so closing
+      // the outline would change nothing.
+      _completed.add(Stroke(brushMode: BrushMode.lasso, points: points));
+    } else {
       _completed.add(
-        Stroke(
-          brushMode: _activeBrush,
-          points: _activeBrush == BrushMode.lasso
-              ? [...points, points.first]
-              : _brushPoints(_activeBrush, points),
-        ),
+        Stroke(brushMode: _activeBrush, points: _brushPoints(points)),
       );
     }
-    _active = null;
     _changed();
   }
 

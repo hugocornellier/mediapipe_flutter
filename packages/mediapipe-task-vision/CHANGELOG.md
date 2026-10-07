@@ -6,7 +6,8 @@ Not published yet. The first release.
   Landmarker, Holistic Landmarker, Object Detector, Image Classifier, Image
   Embedder, Image Segmenter and Interactive Segmenter on Android, iOS, macOS,
   Linux, Windows and the web, through Google's official runtimes. Windows has
-  no Interactive Segmenter, since Google's Windows runtime lacks it.
+  no Interactive Segmenter: Google's Windows runtime takes about 25 seconds
+  a stroke (UP-048).
 - Every task is one class with the same API on every platform, and
   `mediapipe_vision.dart` is the only app library. Tasks use Google's verbs
   (`detect`, `recognize`, `classify`, `embed` and `segment`, and their
@@ -23,7 +24,8 @@ Not published yet. The first release.
   converts a live stream frame only when the task starts it.
 - `VisionImage.fromBrowserFrame` and `BrowserOverlay` for browser camera
   frames; both exist on every platform.
-- The Interactive Segmenter takes Google's `Stroke` and `BrushMode` and
+- The Interactive Segmenter takes Google's `Stroke` and `BrushMode`, with
+  Google's rule that a stroke of any mode has at least one point, and
   returns a `ConfidenceMask`. Image Classifier and Image Embedder take a
   region of interest.
 - `queryXxxCapabilities()` reports the supported delegates and why any other

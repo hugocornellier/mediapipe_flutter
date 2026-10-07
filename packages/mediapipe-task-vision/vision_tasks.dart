@@ -28,6 +28,8 @@ const visionRuntimeTasks = <String, Set<String>>{
   // Flutter's release builds include 32-bit ARM, so the hook accepts every
   // task there, though no capability claims it.
   'android/arm': visionTasks,
+  // Google's Windows library exports the stateful Interactive Segmenter but
+  // runs a stroke in about 25 seconds (upstream-issues.md UP-048).
   'windows/x64': {
     'face_detector',
     'face_landmarker',

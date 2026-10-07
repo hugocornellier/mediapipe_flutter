@@ -62,7 +62,8 @@ def main():
     parser.add_argument('--image-tasks', action='store_true')
     parser.add_argument('--landmark-tasks', action='store_true')
     parser.add_argument('--segmenter-tasks', action='store_true')
-    # Linux only: Google's Windows wheel does not export the stateful API.
+    # Linux only: Google's Windows wheel lacks the stateful API, and its
+    # library runs a stroke in about 25 s (upstream-issues.md UP-048).
     parser.add_argument('--interactive-segmenter', action='store_true')
     args = parser.parse_args()
     system = platform.system()
@@ -115,7 +116,8 @@ def main():
     library_sha = oracle['library_sha256']
     if args.interactive_segmenter:
         if target != 'linux':
-            raise SystemExit('Google exports the stateful Interactive Segmenter on Linux only.')
+            raise SystemExit('The stateful Interactive Segmenter is validated on Linux only '
+                             '(upstream-issues.md UP-048).')
         # Rewrites the checked-in fixtures with this host's wheel, as above.
         run([oracle['python'], '-u', '-X', 'faulthandler', '-B',
              PACKAGE / 'tool/generate_interactive_segmenter_reference.py'],

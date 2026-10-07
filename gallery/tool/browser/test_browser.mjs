@@ -435,10 +435,12 @@ async function apiChecks() {
       const magic = await vision.InteractiveSegmenter.createFromOptions(files, {
         baseOptions: {delegate, modelAssetPath: await window.bundledModelUrl('interactive_segmentation.task')},
       });
-      // A stroke history's mask, sampled on the same 16 x 12 grid.
+      // A stroke history's mask, sampled on the same 16 x 12 grid. Each
+      // stroke is [brush mode, [[x, y], ...], completed], multi-point since
+      // WebGL draws nothing for a single point.
       const strokes = history => {
-        const mask = magic.segment(history.map(([brushMode, x, y]) =>
-          ({brushMode, isCompleted: true, point: [{x, y}]})));
+        const mask = magic.segment(history.map(([brushMode, points, isCompleted = true]) =>
+          ({brushMode, isCompleted, point: points.map(([x, y]) => ({x, y}))})));
         try {
           const confidence = mask.getAsFloat32Array();
           const values = [];
@@ -466,8 +468,13 @@ async function apiChecks() {
           image_embedder: [{values: Array.from(embedder.embed(bitmap).embeddings[0].floatEmbedding)}],
           image_embedder_quantized: [{values: Array.from(quantizer.embed(bitmap).embeddings[0].quantizedEmbedding)}],
           image_segmenter: [segmentation(segmenter.segment(bitmap))],
-          interactive_segmenter: (magic.setImage(bitmap),
-            [strokes([[1, 0.5, 0.4]]), strokes([[1, 0.5, 0.4], [2, 0.5, 0.8]])]),
+          interactive_segmenter: (magic.setImage(bitmap), [
+            strokes([[1, [[0.5, 0.4], [0.5, 0.45]]]]),
+            strokes([[1, [[0.5, 0.4], [0.5, 0.45]]], [2, [[0.45, 0.8], [0.55, 0.8]]]]),
+            strokes([[3, [[0.25, 0.1], [0.75, 0.1], [0.75, 0.9], [0.25, 0.9]]]]),
+            strokes([[3, [[0.25, 0.1], [0.75, 0.9]]]]),
+            strokes([[1, [[0.5, 0.4], [0.5, 0.45]], false]]),
+          ]),
           pose_mask: [poseMask(pose.detect(figure), 'segmentationMasks')],
           holistic_mask: [poseMask(holistic.detect(figure), 'poseSegmentationMasks')],
         };
@@ -501,6 +508,15 @@ async function apiChecks() {
     assert.ok(error < 1e-5, name + ' differs from official JavaScript: ' + error);
   }
   report.official_js_detection_tasks_maximum_absolute_error = detectionErrors;
+  // Google reads a lasso as the box around its points on this delegate too:
+  // the rectangle's outline and its two opposite corners give one mask.
+  {
+    const [, , outline, corners] = detectionTasks.interactive_segmenter;
+    let error = 0;
+    outline.values.forEach((value, i) => { error = Math.max(error, Math.abs(value - corners.values[i])); });
+    assert.ok(error < 1e-5, 'lasso outline and corners differ in official JavaScript: ' + error);
+    report.official_js_lasso_box_maximum_absolute_error = error;
+  }
   assert.deepEqual(await page.evaluate(() => mediapipeVision.stats().activeWorkers), 0);
   report.official_js_maximum_absolute_error = errors;
   report.official_js_hand_maximum_absolute_error = handErrors;

@@ -415,7 +415,83 @@ void main() {
             );
             checks.add('${task.id}:${delegate.name}:tap');
           }
-          // Undo drops the stroke; a new stroke, then Clear, drops that one.
+          // Exclude and Lasso through the page: a drag with each brush,
+          // counted on the Selection card and segmented. Controls are
+          // scrolled into view before each gesture, since a tap that lands
+          // elsewhere fails this test.
+          final brushControl = find.byWidgetPredicate(
+            (widget) => widget is Segmented<BrushMode>,
+          );
+          Future<void> pickBrush(String name) async {
+            await _until(
+              tester,
+              () =>
+                  brushControl.evaluate().isNotEmpty &&
+                  tester.widget<Segmented<BrushMode>>(brushControl).onChanged !=
+                      null,
+            );
+            final segment = find.byKey(ValueKey('brush-$name'));
+            await tester.ensureVisible(segment);
+            await tester.tap(segment);
+            await tester.pump();
+            await tester.ensureVisible(canvas);
+            await _settle(tester);
+          }
+
+          int requests() {
+            var count = 0;
+            for (final status in _status(tester)) {
+              for (final part in status.parts) {
+                final match = RegExp(r'^(\d+) requests$').firstMatch(part);
+                if (match != null) count = int.parse(match.group(1)!);
+              }
+            }
+            return count;
+          }
+
+          var before = requests();
+          await pickBrush('negative');
+          var size = tester.getSize(canvas);
+          await tester.timedDrag(
+            canvas,
+            Offset(size.width * 0.2, 0),
+            const Duration(milliseconds: 400),
+          );
+          await _until(
+            tester,
+            () =>
+                requests() > before &&
+                find.text('1 include · 1 exclude').evaluate().isNotEmpty,
+          );
+          checks.add('${task.id}:exclude');
+          before = requests();
+          await pickBrush('lasso');
+          size = tester.getSize(canvas);
+          final center = tester.getCenter(canvas);
+          final lasso = await tester.startGesture(
+            center + Offset(-size.width * 0.2, -size.height * 0.2),
+          );
+          for (final corner in [
+            Offset(size.width * 0.2, -size.height * 0.2),
+            Offset(size.width * 0.2, size.height * 0.2),
+            Offset(-size.width * 0.2, size.height * 0.2),
+          ]) {
+            await lasso.moveTo(center + corner);
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+          await lasso.up();
+          await _until(
+            tester,
+            () =>
+                requests() > before &&
+                find
+                    .text('1 include · 1 exclude · 1 lasso')
+                    .evaluate()
+                    .isNotEmpty,
+          );
+          checks.add('${task.id}:lasso');
+          await pickBrush('positive');
+          // Undo drops the last stroke; Clear drops the rest.
           FeedButton button(String tooltip) => tester.widget<FeedButton>(
             find.byWidgetPredicate(
               (widget) => widget is FeedButton && widget.tooltip == tooltip,
@@ -423,18 +499,9 @@ void main() {
           );
           await _until(tester, () => button('Undo stroke').onPressed != null);
           await tester.tap(find.byTooltip('Undo stroke'));
-          // Undoing the only stroke reloads the image, as Clear does.
           await _until(
             tester,
-            () =>
-                button('Undo stroke').onPressed == null &&
-                canvas.evaluate().isNotEmpty,
-          );
-          await _settle(tester);
-          await tester.tap(canvas);
-          await _until(
-            tester,
-            () => button('Clear selection').onPressed != null,
+            () => find.text('1 include · 1 exclude').evaluate().isNotEmpty,
           );
           await tester.tap(find.byTooltip('Clear selection'));
           await _until(

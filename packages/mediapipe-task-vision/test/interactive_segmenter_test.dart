@@ -314,9 +314,11 @@ void main() {
     points.clear();
     expect(stroke.points.length, 1);
     expect(() => stroke.points.clear(), throwsUnsupportedError);
+    // Google's API takes a lasso of any length; its graph reads the box
+    // around the points.
     expect(
-      () => Stroke(brushMode: BrushMode.lasso, points: stroke.points),
-      throwsArgumentError,
+      Stroke(brushMode: BrushMode.lasso, points: stroke.points).points,
+      hasLength(1),
     );
   });
 

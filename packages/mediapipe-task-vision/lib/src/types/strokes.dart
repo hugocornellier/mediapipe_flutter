@@ -12,7 +12,10 @@ enum BrushMode {
   /// Exclude the indicated area from the selection.
   negative(2),
 
-  /// Select the object enclosed by a polygonal stroke.
+  /// Select what lies inside the box around the stroke's points. Google's
+  /// graph reads a lasso as the bounding box of its points, not as the shape
+  /// they trace: an open or closed outline and its two opposite corners give
+  /// the same mask, and a tiny box selects only what it covers.
   lasso(3);
 
   const BrushMode(this.nativeValue);
@@ -25,7 +28,8 @@ enum BrushMode {
 /// and its points, normalized to the input image.
 @immutable
 final class Stroke {
-  /// Owns an unmodifiable copy of [points]; a lasso needs at least three.
+  /// Owns an unmodifiable copy of [points], at least one in any mode, as
+  /// Google's API takes them. A one-point lasso has no area.
   Stroke({
     required this.brushMode,
     required List<NormalizedKeypoint> points,
@@ -33,9 +37,6 @@ final class Stroke {
   }) : points = List.unmodifiable(points) {
     if (points.isEmpty || points.length > 0xffffffff) {
       throw ArgumentError('A stroke requires at least one point.');
-    }
-    if (brushMode == BrushMode.lasso && points.length < 3) {
-      throw ArgumentError('A lasso requires at least three points.');
     }
     for (final point in points) {
       if (!point.x.isFinite ||
@@ -56,6 +57,9 @@ final class Stroke {
   final List<NormalizedKeypoint> points;
 
   /// False while the pointer is still down, true once it was released.
+  /// Include and Exclude strokes read the same either way; Google's CPU
+  /// graph reads an unfinished lasso differently from the finished one, so
+  /// send a lasso when the pointer lifts, as Google's samples do.
   final bool isCompleted;
 
   @override
