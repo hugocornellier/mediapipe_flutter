@@ -12,8 +12,8 @@ Not published yet. The first release.
   starts; `dispose()` classifies the tail. Google's own stream runs it on
   Android, iOS, macOS, Linux and Windows; in browsers, where Google has none,
   the package emulates it on Google's clips mode. The rate, channel and
-  timestamp checks run in Dart with one message on every platform. On iOS,
-  macOS, Linux and Windows at most 64 streams can be open at once.
+  timestamp checks run in Dart with one message on every platform. Outside
+  browsers at most 64 streams can be open at once.
   `classify` on a stream task, and `classifyAsync` or `results` on a clips
   task, throw `StateError`.
 - `AudioClassifierResult` has `classifications` (one `Classifications` per
@@ -24,5 +24,3 @@ Not published yet. The first release.
   `dart run mediapipe_core:bundle_models` bundles into the app. `model:` uses
   the bundled copy and downloads at run time only when
   `ModelStore.allowDownloads` is true; app-supplied paths and bytes work too.
-- On Android, a task made from model bytes keeps them until it closes, since
-  Google's SDK reads them in place (UP-033 in upstream-issues.md).

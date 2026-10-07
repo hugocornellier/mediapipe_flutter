@@ -3,13 +3,10 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 
-import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../capabilities/official_runtime_io.dart';
+import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../runner/native_interface.dart';
 import '../types/options.dart';
 import '../types/results.dart';
-import 'native_ios_sdk.dart';
-import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 
 /// Google's Pose Landmarker on its worker isolate.
@@ -45,85 +42,54 @@ final class NativePoseLandmarker
   final bool _gpu;
   final bool _masks;
   mp.MpPoseLandmarkerPtr _task = nullptr;
-  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
-      ? iosBgraStorage()
-      : null;
 
+  /// Runs one IMAGE or VIDEO request and copies every result.
   @override
-  PoseLandmarkerResult process(VisionTaskInput input) => using((arena) {
-    final (source, rotation, timestamp, _) = input;
-    final image = createVisionImage(
-      arena,
-      source,
-      expandRgbForGpu: _gpu,
-      checked: checkVisionCall,
-      iosBgra: _iosBgra,
-    );
-    try {
-      final processing = visionProcessingOptions(arena, rotation, null);
-      final result = arena<mp.MpPoseLandmarkerResult>();
-      if (timestamp == null) {
-        checkVisionCall(
-          (error) => mp.MpPoseLandmarkerDetectImage(
-            _task,
-            image,
-            processing,
-            result,
-            error,
-          ),
-        );
-      } else {
-        checkVisionCall(
-          (error) => mp.MpPoseLandmarkerDetectForVideo(
-            _task,
-            image,
-            processing,
-            timestamp,
-            result,
-            error,
-          ),
-        );
-      }
-      try {
-        return PoseLandmarkerResult(
-          poseLandmarks: [
-            for (var i = 0; i < result.ref.pose_landmarks_count; i++)
-              copyVisionNormalizedLandmarks(result.ref.pose_landmarks[i]),
-          ],
-          poseWorldLandmarks: [
-            for (var i = 0; i < result.ref.pose_world_landmarks_count; i++)
-              copyVisionWorldLandmarks(result.ref.pose_world_landmarks[i]),
-          ],
-          segmentationMasks: _masks && result.ref.segmentation_masks_count > 0
-              ? [
-                  for (var i = 0; i < result.ref.segmentation_masks_count; i++)
-                    copyVisionConfidenceMask(
-                      arena,
-                      result.ref.segmentation_masks[i],
-                    ),
-                ]
-              : null,
-          imageWidth: mp.MpImageGetWidth(image),
-          imageHeight: mp.MpImageGetHeight(image),
-          timestampMilliseconds: timestamp,
-        );
-      } finally {
-        mp.MpPoseLandmarkerCloseResult(result);
-      }
-    } finally {
-      mp.MpImageFree(image);
-    }
-  });
+  PoseLandmarkerResult process(VisionTaskInput input) => runVisionRequest(
+    input,
+    gpu: _gpu,
+    allocate: (arena) => arena<mp.MpPoseLandmarkerResult>(),
+    image: (image, processing, result, error) =>
+        mp.MpPoseLandmarkerDetectImage(_task, image, processing, result, error),
+    video: (image, processing, timestamp, result, error) =>
+        mp.MpPoseLandmarkerDetectForVideo(
+          _task,
+          image,
+          processing,
+          timestamp,
+          result,
+          error,
+        ),
+    closeResult: mp.MpPoseLandmarkerCloseResult,
+    copy: (request, result) => PoseLandmarkerResult(
+      poseLandmarks: [
+        for (var i = 0; i < result.ref.pose_landmarks_count; i++)
+          copyVisionNormalizedLandmarks(result.ref.pose_landmarks[i]),
+      ],
+      poseWorldLandmarks: [
+        for (var i = 0; i < result.ref.pose_world_landmarks_count; i++)
+          copyVisionWorldLandmarks(result.ref.pose_world_landmarks[i]),
+      ],
+      segmentationMasks: _masks && result.ref.segmentation_masks_count > 0
+          ? [
+              for (var i = 0; i < result.ref.segmentation_masks_count; i++)
+                copyVisionConfidenceMask(
+                  request.arena,
+                  result.ref.segmentation_masks[i],
+                ),
+            ]
+          : null,
+      imageWidth: mp.MpImageGetWidth(request.image),
+      imageHeight: mp.MpImageGetHeight(request.image),
+      timestampMilliseconds: request.timestamp,
+    ),
+  );
 
   @override
   void close() {
     if (_task == nullptr) return;
     final task = _task;
     _task = nullptr;
-    try {
-      checkVisionCall((error) => mp.MpPoseLandmarkerClose(task, error));
-    } finally {
-      _iosBgra?.close();
-    }
+    checkVisionCall((error) => mp.MpPoseLandmarkerClose(task, error));
   }
 }

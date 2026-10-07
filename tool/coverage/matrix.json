@@ -15,7 +15,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "device"
+        "gpu": "unsupported: Google's Android library does not ship the LiteRT GPU plugin Face Detector's GPU needs (upstream-issues.md UP-046)"
       },
       "ios": {
         "cpu": "required",
@@ -27,7 +27,7 @@
       },
       "linux": {
         "cpu": "required",
-        "gpu": "required"
+        "gpu": "unsupported: Google's Linux library does not ship the LiteRT GPU plugin Face Detector's GPU needs (upstream-issues.md UP-046)"
       },
       "windows": {
         "cpu": "required",
@@ -119,7 +119,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "device"
+        "gpu": "unsupported: Google's Android library cannot open Holistic's face blendshapes model on the GPU (upstream-issues.md UP-026)"
       },
       "ios": {
         "cpu": "required",

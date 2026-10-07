@@ -1,37 +1,22 @@
 import 'dart:convert';
+import 'dart:ffi' show Abi;
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:mediapipe_core/src/native_assets/reference_wheels.dart';
 
 /// Official runtimes a same-host reference may come from, by library digest:
 /// the `mediapipe` release and the upstream revision its outputs record.
-/// Upstream never tagged 1.0.1, so its references carry no revision.
-const _officialRuntimes = <String, (String, String?)>{
-  // macOS arm64.
-  'aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f': (
-    'mediapipe==1.0.0',
-    '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120',
-  ),
-  // Linux x64.
-  'b72e6d61a79d1080d29a96ba95e3cfa3e43f6c433c0acc3bc9b3eb7ac0ba103a': (
-    'mediapipe==1.0.1',
-    null,
-  ),
-  // Windows x64.
-  'a8970c645c8c87c25ec9965cb5c898e803c6c42f7192b7de9a0541c62ae48cef': (
-    'mediapipe==1.0.0',
-    '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120',
-  ),
+/// Google's wheels name no revision, so the references record none.
+final _officialRuntimes = <String, (String, String?)>{
+  for (final wheel in referenceWheels.values)
+    wheel.librarySha256: ('mediapipe==${wheel.version}', null),
 };
 
-/// The official library this host's native tests load.
-String? get _hostLibrary => Platform.isLinux
-    ? 'b72e6d61a79d1080d29a96ba95e3cfa3e43f6c433c0acc3bc9b3eb7ac0ba103a'
-    : Platform.isWindows
-    ? 'a8970c645c8c87c25ec9965cb5c898e803c6c42f7192b7de9a0541c62ae48cef'
-    : Platform.isMacOS
-    ? 'aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f'
-    : null;
+/// The official library this host's references come from.
+String? get _hostLibrary => referenceWheel(
+  Abi.current().toString().replaceFirst('_', '/'),
+)?.librarySha256;
 
 /// macOS compares GPU output with its checked-in physical-Mac references, or
 /// with same-host ones. Linux has no checked-in GPU references, so it runs the

@@ -7,7 +7,7 @@ MediaPipe task runtimes on supported platforms.
 
 **[Try the live gallery](https://hugocornellier.github.io/mediapipe_flutter/)** ·
 **[See every task and platform](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)** ·
-**[Browse the Flutter example](https://github.com/hugocornellier/mediapipe_flutter/tree/main/packages/mediapipe-task-vision/example)**
+**[Browse the gallery's source](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery)**
 
 > **Not published yet:** This package currently has
 > `publish_to: none`. The checkout instructions below work now. Once the
@@ -46,9 +46,9 @@ dependencies:
     path: ../mediapipe_flutter/packages/mediapipe-task-vision
 ```
 
-The package registers its Android and web backends automatically. The official
-iOS SDK is the default on iOS devices and arm64 simulators. Browser builds load
-the pinned JavaScript/WASM runtime from jsDelivr. For offline use or a strict
+On Android, iOS, macOS, Linux and Windows the package's build hook bundles
+Google's MediaPipe vision library. In browsers its web plugin registers
+automatically and loads the pinned JavaScript/WASM runtime from jsDelivr. For offline use or a strict
 Content Security Policy, see [Self-hosting the web runtime](#self-hosting-the-web-runtime).
 
 ### Self-hosting the web runtime
@@ -56,30 +56,30 @@ Content Security Policy, see [Self-hosting the web runtime](#self-hosting-the-we
 One setting in `mediapipe_core` covers every task family. From the app
 root, `dart run mediapipe_core:web_runtime web/mediapipe` writes the
 verified runtimes; then set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';`
-(from `package:mediapipe_vision/web_runtime.dart`) before creating a
-task. See [core's README](../mediapipe-core/README.md#web-runtime).
+before creating a task (`mediapipe_vision.dart` exports the class). See
+[core's README](../mediapipe-core/README.md#web-runtime).
 
-### Choose native tasks at build time
+### Native runtimes and the task list
 
-The default native selection contains Face Detector and Face Landmarker. To
-bundle only the tasks you use, add a task list to your app's `pubspec.yaml`:
+Every vision task runs on Google's MediaPipe vision library with no setting
+(Windows has no Interactive Segmenter), which this package's hook bundles
+(see [core's README](../mediapipe-core/README.md)).
+
+The `tasks` list only checks the names against the tasks validated on the
+target: a Windows build fails if it names `interactive_segmenter`, which
+Google's Windows library lacks.
 
 ```yaml
 hooks:
   user_defines:
     mediapipe_vision:
-      tasks: [face_landmarker]
+      tasks: [hand_landmarker]
 ```
 
-Task selection is a **build-time** choice: creating an omitted task will not
-make its native runtime appear later. On macOS Apple Silicon, tasks beyond the
-default face pair run on Google's engine, which `mediapipe_core`
-bundles once for every family when the app sets
-`hooks.user_defines.mediapipe_core.tasks_runtime: true` (see
-[core's README](../mediapipe-core/README.md)). Other platforms need nothing
-more than the task list. The
+The list is separate from `models` (below): every task needs its model listed
+there, on every platform. The
 [support matrix](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
-shows which task selections and delegates each platform serves.
+shows which tasks and delegates each platform serves.
 
 ## Quick start: detect face landmarks
 
@@ -473,7 +473,7 @@ Future<void> segmentScene(VisionImage image) async {
     final mask = result.categoryMask!;
     final center =
         mask.categories[mask.height ~/ 2 * mask.width + mask.width ~/ 2];
-    // Google's Android SDK reports no labels (upstream-issues.md UP-019).
+    // Labels come from the model's metadata, which may have none.
     final label = center < result.labels.length
         ? result.labels[center]
         : 'category $center';
@@ -608,8 +608,7 @@ the frame is then dropped. When building a frame costs time, as converting a
 YUV camera image to RGBA does, submit `VisionImage.deferred(() => convert(frame))`
 instead: the task calls it when it starts the frame, so a dropped frame is
 never converted. Hold on to what the producer reads until then. A dropped frame never leaves the calling isolate:
-no copy to the native worker, no Android platform channel call, no transfer
-to the browser worker. `results` has one subscription; pausing it buffers
+no copy to the native worker, no transfer to the browser worker. `results` has one subscription; pausing it buffers
 results and cancelling it discards later ones. A failure arrives on
 `results` as a `TaskException`, closes the stream and fails every later call.
 Google's browser runtime has no live stream mode, and the package runs the
@@ -651,11 +650,11 @@ before offering a GPU toggle.
 | Platform | CPU | GPU path |
 | --- | --- | --- |
 | Web | WASM | WebGL 2 in a worker, when supported |
-| iOS | Official SDK | Metal for supported tasks |
-| Android | Official SDK | Supported Android GPUs; arm64 devices |
-| macOS Apple Silicon | Official native runtime | Metal for supported tasks |
-| Linux x64 | Official wheel runtime | OpenGL ES for supported tasks; EGL and a GPU driver required |
-| Windows x64 | Official wheel runtime | Not available |
+| iOS | Official library | Metal for supported tasks |
+| Android | Official library | Supported GPUs on arm64 devices; CPU only on emulators |
+| macOS Apple Silicon | Official library | Metal for supported tasks |
+| Linux x64 | Official library | OpenGL ES for supported tasks; EGL and a GPU driver required |
+| Windows x64 | Official library | Not available |
 
 The Interactive Segmenter is unavailable on Windows. Some GPU paths have
 upstream limits. Read the
@@ -672,15 +671,14 @@ tasks load the pinned JavaScript/WASM distribution from jsDelivr by default.
 - [Live gallery](https://hugocornellier.github.io/mediapipe_flutter/): try
   vision, audio and text tasks in a browser.
 - [Gallery setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/gallery/README.md): run the full Flutter application on a target device.
-- [Face camera example](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/example/README.md): smaller native app with CPU/GPU switching.
 - [Platform status and known upstream limits](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md): exact task availability.
 
 If a Linux container cannot load EGL or OpenGL ES even for CPU inference,
 install `libegl1` and `libgles2`. Windows builds use CPU; Google's Windows
 runtime may wait for a usage-log upload during `dispose()` (see
 [UP-025](https://github.com/hugocornellier/mediapipe_flutter/blob/main/upstream-issues.md#up-025-windows-task-closes-wait-for-googles-usage-logging-upload)).
-If you remove a previously bundled native task from an existing Flutter app,
-run `flutter clean` once to clear old bundled frameworks.
+If you remove a face task from the `tasks` list of an existing macOS app, run
+`flutter clean` once to clear its old bundled framework.
 
 This is an independent fork of
 [google/flutter-mediapipe](https://github.com/google/flutter-mediapipe), not

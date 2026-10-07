@@ -6,6 +6,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/live/live_registry.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -29,12 +30,11 @@ void main() {
       final tasks = supportedTasks(
         platform,
         runtimeIds,
-        runtimeIds,
       ).where((task) => task.live).toList();
       expect(tasks.map((task) => task.runtimeId).toSet(), runtimeIds);
 
       for (final entry in tasks) {
-        final model = await rootBundle.load('assets/models/${entry.model}');
+        final model = await rootBundle.load(bundledModelAsset(entry.model));
         final sample = await rootBundle.load('assets/samples/${entry.sample}');
         final codec = await ui.instantiateImageCodec(
           sample.buffer.asUint8List(sample.offsetInBytes, sample.lengthInBytes),
@@ -64,9 +64,7 @@ void main() {
           codec.dispose();
         }
 
-        final supported = entry
-            .capabilitiesFor(platform, runtimeIds)
-            .supportedDelegates;
+        final supported = entry.capabilities(platform).supportedDelegates;
         final delegate = supported.contains(Delegate.cpu)
             ? Delegate.cpu
             : supported.first;

@@ -34,4 +34,8 @@ build/
 # validation evidence and benchmarks live in the repository, not the package.
 /tool/
 /test/
-/example_segmenter/
+/dart_test.yaml
+# Inputs to tool/generate_bindings.dart.
+/ffigen*.yaml
+# It includes the repository's shared options, which are not published.
+/analysis_options.yaml

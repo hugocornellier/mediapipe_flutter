@@ -10,8 +10,7 @@ const _platform = TaskPlatform(
   version: '15.0',
 );
 
-GalleryTask get _task =>
-    supportedTasks(_platform, {'image_embedder'}, {'image_embedder'}).single;
+GalleryTask get _task => supportedTasks(_platform, {'image_embedder'}).single;
 
 Future<void> _pumpEmbedPage(WidgetTester tester, Size size) async {
   tester.view.physicalSize = size;
@@ -22,11 +21,7 @@ Future<void> _pumpEmbedPage(WidgetTester tester, Size size) async {
   });
   await tester.pumpWidget(
     MaterialApp(
-      home: EmbedPage(
-        task: _task,
-        platform: _platform,
-        officialMacosLandmarkTasks: const {'image_embedder'},
-      ),
+      home: EmbedPage(task: _task, platform: _platform),
     ),
   );
   await tester.pump();

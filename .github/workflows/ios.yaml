@@ -16,84 +16,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  simulator-consumer:
-    name: Face tasks / fresh arm64 iOS simulator consumer
-    runs-on: macos-15
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - name: Make flutter test wait for the simulator log reader
-        run: python3 -B tool/ci/patch_flutter_simulator_launch.py
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - name: Install native build tools
-        run: brew install bazelisk cmake ninja
-      - name: Identify the Xcode toolchain
-        id: xcode
-        run: |
-          python3 - <<'PY'
-          import hashlib, os, subprocess
-          version = subprocess.check_output(['xcodebuild', '-version'])
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('digest=' + hashlib.sha256(version).hexdigest()[:16] + '\n')
-          PY
-      # The source build is pinned: the same scripts, notices and Xcode build
-      # the same runtime, so it is rebuilt only when one of them changes. The
-      # validation below tests the runtime exactly as after a fresh build.
-      - uses: actions/cache/restore@v6
-        id: simulator-runtime
-        with:
-          path: packages/mediapipe-task-vision/build/native/ios-simulator/arm64
-          key: ios-simulator-face-runtime-${{ runner.arch }}-${{ steps.xcode.outputs.digest }}-${{ hashFiles('packages/mediapipe-task-vision/tool/build_native.py', 'packages/mediapipe-task-vision/tool/build_ios_simulator.py', 'packages/mediapipe-task-vision/third_party/LICENSE', 'packages/mediapipe-task-vision/third_party/NOTICE', 'packages/mediapipe-task-vision/third_party/OPENCV_CAROTENE_NOTICES') }}
-      - name: Build the pinned simulator runtime
-        if: steps.simulator-runtime.outputs.cache-hit != 'true'
-        run: python3 -B packages/mediapipe-task-vision/tool/build_ios_simulator.py --jobs 3
-      - uses: actions/cache/save@v6
-        if: steps.simulator-runtime.outputs.cache-hit != 'true'
-        with:
-          path: packages/mediapipe-task-vision/build/native/ios-simulator/arm64
-          key: ${{ steps.simulator-runtime.outputs.cache-primary-key }}
-      - name: Download the pinned face models
-        working-directory: packages/mediapipe-task-vision
-        run: |
-          dart pub get
-          dart tool/download_model.dart
-          dart tool/download_face_landmarker.dart
-      - name: Select an installed iPhone simulator
-        id: simulator
-        run: |
-          python3 - <<'PY'
-          import json, os, subprocess
-          devices = json.loads(subprocess.check_output(
-              ['xcrun', 'simctl', 'list', 'devices', 'available', '--json'], text=True))['devices']
-          candidates = [d for runtime, entries in devices.items() if '.iOS-' in runtime
-                        for d in entries if d['name'].startswith('iPhone')]
-          if not candidates:
-              raise SystemExit('No installed iPhone simulator runtime')
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('device=' + candidates[0]['udid'] + '\n')
-          PY
-      - name: Validate CPU references, framework payloads and standalone app inference
-        run: python3 -B packages/mediapipe-task-vision/tool/test_ios_consumer.py --device ${{ steps.simulator.outputs.device }}
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ios-simulator-cpu-validation
-          path: |
-            build/codex-tmp/ios-consumer-*/*.log
-            build/codex-tmp/ios-consumer-*/report.json
-          if-no-files-found: warn
-
   # Hand, Pose, Gesture, Holistic, Face and Object Detector, Image Classifier
-  # and Image Embedder run through Google's prebuilt 1.0.1 iOS SDK, so this job needs
+  # and Image Embedder run through Google's prebuilt iOS vision library, so this job needs
   # no source build. The simulator runs them on the CPU
-  # only: Google's SDK aborts in its Metal preprocessing there. Metal is a
+  # only: Google's MediaPipe aborts in its Metal preprocessing there. Metal is a
   # phone check.
   sdk-tasks:
     name: Landmark, detection and classification tasks / official iOS SDK on an arm64 simulator
@@ -122,10 +48,6 @@ jobs:
           dart tool/download_object_detector.dart
           dart tool/download_segmenter_tasks.dart
           dart tool/download_interactive_segmenter.dart
-      - uses: actions/cache@v6
-        with:
-          path: gallery/.dart_tool/hooks_runner/shared/mediapipe_core/build/official-ios-sdk/*/sdk.zip
-          key: official-ios-sdk-${{ hashFiles('packages/mediapipe-core/lib/src/native_assets/ios_sdk.dart') }}
       # The generative text models, 419 MB in all, by their pinned SHA-256.
       - uses: actions/cache@v6
         with:
@@ -134,9 +56,9 @@ jobs:
             packages/mediapipe-task-text/models/proofread_quant_200m.litertlm
             packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
           key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
-      # Google's answers for the 1.0.1 iOS SDK: its macOS arm64 1.0.1 wheel on
-      # this arm64 runner.
-      - name: Google's 1.0.1 references for EmbeddingGemma, Proofreader and Summarizer
+      # Google's answers for its iOS libraries: its macOS arm64 wheel of the
+      # same release on this arm64 runner.
+      - name: Google's references for EmbeddingGemma, Proofreader and Summarizer
         run: |
           cd packages/mediapipe-task-text
           dart pub get
@@ -145,11 +67,11 @@ jobs:
           dart tool/download_summarizer.dart
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
-            --venv build/codex-tmp/official-python-1.0.1 --runtime-version 1.0.1 \
+            --venv build/codex-tmp/official-python \
             --output-dir build/modern-text-reference
       - name: Prepare the gallery with the official SDK tasks
         run: |
-          python3 -B gallery/tool/prepare.py --target ios-simulator/arm64 \
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target ios-simulator/arm64 \
             --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer \
             --modern-text-reference build/modern-text-reference
           cd gallery && flutter pub get
@@ -229,7 +151,7 @@ jobs:
         if: always()
         run: python3 -B tool/coverage/record.py --suite ios-sdk-simulator-text-audio --platform ios --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.text_audio.outcome }}
       # The generative text tasks and EmbeddingGemma through the same adapter,
-      # against Google's 1.0.1 wheel's answers generated above.
+      # against Google's wheel's answers generated above.
       - name: EmbeddingGemma, Proofreader and Summarizer through Google's iOS SDK
         id: modern_text
         if: ${{ !cancelled() && steps.simulator.outcome == 'success' }}

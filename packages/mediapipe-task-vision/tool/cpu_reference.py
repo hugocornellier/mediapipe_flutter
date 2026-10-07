@@ -10,29 +10,19 @@ import argparse
 import json
 from pathlib import Path
 import platform
-import re
 import sys
 
 from prepare_gpu_reference import difference
-from test_desktop import PACKAGE, REPO, dart_strings, digest, run
+from test_desktop import PACKAGE, REPO, digest, run
+
+sys.path.insert(0, str(REPO / 'packages/mediapipe-core/tool'))
+from official_wheels import reference_wheel  # noqa: E402
 
 FACE_TASKS = [('face_detector', 'face_detection'),
               ('face_landmarker', 'face_landmarker')]
 FACE_FILES = ['face_detection/official_reference.json',
               'face_detection/official_video_reference.json',
               'face_landmarker/official_reference.json']
-
-# The macOS wheel has no consumer download row because macOS consumers use the
-# published native archives. The GPU oracle already pins it for this same use.
-MACOS_WHEEL = (
-    'https://files.pythonhosted.org/packages/42/d7/'
-    '3a5dfaa86128db110c62a4d0f0c948304817932c9dd3257313bbdf24f7d5/'
-    'mediapipe-1.0.0-py3-none-macosx_11_0_arm64.whl',
-    '7ee4783be41b2de345e1eb71e2f7e7c159a50ed5c283e60ccb8f5a6027c70a82',
-    'aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f',
-    '1.0.0',
-)
-
 
 def host_target():
     """The pinned wheel target matching this host, or None when unsupported."""
@@ -47,15 +37,9 @@ def host_target():
 
 def wheel_pin(target):
     """Returns the pinned wheel URL, wheel and native library digests, and version."""
-    if target == 'macos/arm64':
-        return MACOS_WHEEL
-    pins = (PACKAGE / 'sdk_downloads.dart').read_text()
-    row = re.search(r"'" + target + r"': VisionWheelRelease\((.*?)\n  \),",
-                    pins, re.S).group(1)
-    return (dart_strings(re.search(r'url:(.*?),', row, re.S).group(1)),
-            re.search(r"sha256:\s*'([a-f0-9]+)'", row).group(1),
-            re.search(r"librarySha256:\s*'([a-f0-9]+)'", row).group(1),
-            re.search(r"version:\s*'([0-9.]+)'", row).group(1))
+    wheel = reference_wheel(target)
+    return (wheel['wheel_url'], wheel['wheel_sha256'], wheel['library_sha256'],
+            wheel['version'])
 
 
 def install(root, target):

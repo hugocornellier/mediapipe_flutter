@@ -30,9 +30,7 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  archive: ^4.2.0
   code_assets: ^1.2.1
-  crypto: ^3.0.6
   ffi: ^2.1.4
   hooks: ^2.2.0
   mediapipe_core:
@@ -41,6 +39,7 @@ dependencies:
   web: ^1.1.1
 
 dev_dependencies:
+  crypto: ^3.0.6
   ffigen: ^21.0.0
   flutter_test:
     sdk: flutter
@@ -70,8 +69,6 @@ flutter:
 # Consumer apps choose their own tasks; the hook's default remains face-only.
 hooks:
   user_defines:
-    mediapipe_core:
-      tasks_runtime: true
     mediapipe_vision:
       tasks:
         [face_detector, face_landmarker, interactive_segmenter, object_detector]

@@ -28,8 +28,10 @@ void main() {
     camera = ScriptedCamera();
     CameraPlatform.instance = camera;
     task = ScriptedTask();
-    controller = LiveCameraController<int>(task);
-    // Any asset will do for the fake task; the controller only loads it.
+    controller = LiveCameraController<int>(task)
+      // Any bytes will do for the fake task; the controller only loads them.
+      ..modelLoader = () async => Uint8List.fromList([1, 2, 3]);
+    // Any asset will do for the warm-up sample.
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMessageHandler(
           'flutter/assets',
@@ -50,7 +52,10 @@ void main() {
 
   Future<void> started({Delegate? delegate}) async {
     await controller.findCameras();
-    await controller.start(delegate: delegate, modelAsset: 'model.task');
+    await controller.start(
+      delegate: delegate,
+      model: VisionModels.faceLandmarker,
+    );
     expect(controller.error, isNull);
     expect(controller.running, isTrue);
   }
@@ -165,7 +170,7 @@ void main() {
         );
     await controller.findCameras();
     final starting = controller.start(
-      modelAsset: 'model.task',
+      model: VisionModels.faceLandmarker,
       warmUpSample: 'sample.png',
     );
     for (var frame = 0; frame < 2; frame++) {
@@ -188,10 +193,11 @@ void main() {
   test('fixed-size video tasks start with a camera frame', () async {
     await controller.close();
     task = FixedSizeScriptedTask();
-    controller = LiveCameraController<int>(task);
+    controller = LiveCameraController<int>(task)
+      ..modelLoader = () async => Uint8List.fromList([1, 2, 3]);
     await controller.findCameras();
     await controller.start(
-      modelAsset: 'model.task',
+      model: VisionModels.faceLandmarker,
       warmUpSample: 'sample.png',
     );
     expect(controller.running, isTrue);
@@ -246,7 +252,7 @@ void main() {
     camera.initializeGate = Completer<void>();
     final first = controller.start(
       delegate: Delegate.cpu,
-      modelAsset: 'model.task',
+      model: VisionModels.faceLandmarker,
     );
     await settle();
     expect(task.opened, [Delegate.cpu]);
@@ -287,7 +293,10 @@ void main() {
       ),
     );
     await controller.findCameras();
-    await controller.start(delegate: Delegate.gpu, modelAsset: 'model.task');
+    await controller.start(
+      delegate: Delegate.gpu,
+      model: VisionModels.faceLandmarker,
+    );
     // The CPU restart is queued behind the refused start; let it run.
     for (var i = 0; i < 20 && !controller.running; i++) {
       await settle();
@@ -311,7 +320,10 @@ void main() {
         ),
       );
       await controller.findCameras();
-      await controller.start(delegate: Delegate.gpu, modelAsset: 'model.task');
+      await controller.start(
+        delegate: Delegate.gpu,
+        model: VisionModels.faceLandmarker,
+      );
       for (var i = 0; i < 20 && !controller.running; i++) {
         await settle();
       }
@@ -324,11 +336,27 @@ void main() {
   test('other GPU failures are errors, never a silent fallback', () async {
     task.openFailure = (Delegate.gpu, const TaskException('model is corrupt'));
     await controller.findCameras();
-    await controller.start(delegate: Delegate.gpu, modelAsset: 'model.task');
+    await controller.start(
+      delegate: Delegate.gpu,
+      model: VisionModels.faceLandmarker,
+    );
     expect(task.opened, [Delegate.gpu]);
     expect(controller.running, isFalse);
     expect(controller.error, contains('model is corrupt'));
     expect(controller.notice, isNull);
+  });
+
+  test('a denied camera stops cleanly, and a later start works', () async {
+    camera.denyAccess = true;
+    await controller.findCameras();
+    await controller.start(model: VisionModels.faceLandmarker);
+    expect(controller.running, isFalse);
+    expect(controller.error, contains('Allow this app'));
+    expect(camera.activeStreams, 0);
+    camera.denyAccess = false;
+    await controller.start(model: VisionModels.faceLandmarker);
+    expect(controller.error, isNull);
+    expect(controller.running, isTrue);
   });
 
   test('a camera error while running stops capture', () async {
@@ -377,7 +405,8 @@ void main() {
         ],
       );
       CameraPlatform.instance = camera;
-      controller = LiveCameraController<int>(task);
+      controller = LiveCameraController<int>(task)
+        ..modelLoader = () async => Uint8List.fromList([1, 2, 3]);
 
       await started();
       await controller.switchCamera();
@@ -439,7 +468,7 @@ void main() {
   test('dispose during a start in progress leaves nothing open', () async {
     await controller.findCameras();
     camera.initializeGate = Completer<void>();
-    final starting = controller.start(modelAsset: 'model.task');
+    final starting = controller.start(model: VisionModels.faceLandmarker);
     await settle();
     controller.dispose();
     camera.initializeGate!.complete();

@@ -3,13 +3,10 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 
-import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../capabilities/official_runtime_io.dart';
+import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../runner/native_interface.dart';
 import '../types/options.dart';
 import '../types/results.dart';
-import 'native_ios_sdk.dart';
-import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 
 /// Google's Gesture Recognizer on its worker isolate.
@@ -52,87 +49,62 @@ final class NativeGestureRecognizer
   }
   final bool _gpu;
   mp.MpGestureRecognizerPtr _task = nullptr;
-  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
-      ? iosBgraStorage()
-      : null;
 
+  /// Runs one IMAGE or VIDEO request and copies every result.
   @override
-  GestureRecognizerResult process(VisionTaskInput input) => using((arena) {
-    final (source, rotation, timestamp, _) = input;
-    final image = createVisionImage(
-      arena,
-      source,
-      expandRgbForGpu: _gpu,
-      checked: checkVisionCall,
-      iosBgra: _iosBgra,
-    );
-    try {
-      final processing = visionProcessingOptions(arena, rotation, null);
-      final result = arena<mp.MpGestureRecognizerResult>();
-      if (timestamp == null) {
-        checkVisionCall(
-          (error) => mp.MpGestureRecognizerRecognizeImage(
-            _task,
-            image,
-            processing,
-            result,
-            error,
-          ),
-        );
-      } else {
-        checkVisionCall(
-          (error) => mp.MpGestureRecognizerRecognizeForVideo(
-            _task,
-            image,
-            processing,
-            timestamp,
-            result,
-            error,
-          ),
-        );
-      }
-      try {
-        return GestureRecognizerResult(
-          gestures: copyVisionCategories(
-            result.ref.gestures,
-            result.ref.gestures_count,
-            // Canned and custom classifiers number their own labels, so the
-            // merged index is meaningless. The official bindings report -1.
-            index: -1,
-          ),
-          handedness: copyVisionCategories(
-            result.ref.handedness,
-            result.ref.handedness_count,
-          ),
-          handLandmarks: [
-            for (var i = 0; i < result.ref.hand_landmarks_count; i++)
-              copyVisionNormalizedLandmarks(result.ref.hand_landmarks[i]),
-          ],
-          handWorldLandmarks: [
-            for (var i = 0; i < result.ref.hand_world_landmarks_count; i++)
-              copyVisionWorldLandmarks(result.ref.hand_world_landmarks[i]),
-          ],
-          imageWidth: mp.MpImageGetWidth(image),
-          imageHeight: mp.MpImageGetHeight(image),
-          timestampMilliseconds: timestamp,
-        );
-      } finally {
-        mp.MpGestureRecognizerCloseResult(result);
-      }
-    } finally {
-      mp.MpImageFree(image);
-    }
-  });
+  GestureRecognizerResult process(VisionTaskInput input) => runVisionRequest(
+    input,
+    gpu: _gpu,
+    allocate: (arena) => arena<mp.MpGestureRecognizerResult>(),
+    image: (image, processing, result, error) =>
+        mp.MpGestureRecognizerRecognizeImage(
+          _task,
+          image,
+          processing,
+          result,
+          error,
+        ),
+    video: (image, processing, timestamp, result, error) =>
+        mp.MpGestureRecognizerRecognizeForVideo(
+          _task,
+          image,
+          processing,
+          timestamp,
+          result,
+          error,
+        ),
+    closeResult: mp.MpGestureRecognizerCloseResult,
+    copy: (request, result) => GestureRecognizerResult(
+      gestures: copyVisionCategories(
+        result.ref.gestures,
+        result.ref.gestures_count,
+        // Canned and custom classifiers number their own labels, so the
+        // merged index is meaningless. The official bindings report -1.
+        index: -1,
+      ),
+      handedness: copyVisionCategories(
+        result.ref.handedness,
+        result.ref.handedness_count,
+      ),
+      handLandmarks: [
+        for (var i = 0; i < result.ref.hand_landmarks_count; i++)
+          copyVisionNormalizedLandmarks(result.ref.hand_landmarks[i]),
+      ],
+      handWorldLandmarks: [
+        for (var i = 0; i < result.ref.hand_world_landmarks_count; i++)
+          copyVisionWorldLandmarks(result.ref.hand_world_landmarks[i]),
+      ],
+      imageWidth: mp.MpImageGetWidth(request.image),
+      imageHeight: mp.MpImageGetHeight(request.image),
+      timestampMilliseconds: request.timestamp,
+    ),
+  );
 
   @override
   void close() {
     if (_task == nullptr) return;
     final task = _task;
     _task = nullptr;
-    try {
-      checkVisionCall((error) => mp.MpGestureRecognizerClose(task, error));
-    } finally {
-      _iosBgra?.close();
-    }
+    checkVisionCall((error) => mp.MpGestureRecognizerClose(task, error));
   }
 }

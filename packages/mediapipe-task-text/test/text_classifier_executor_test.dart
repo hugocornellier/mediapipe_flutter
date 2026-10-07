@@ -17,7 +17,7 @@ import 'package:test/test.dart';
 void main() {
   final pathToModel = path.joinAll([
     io.Directory.current.absolute.path,
-    'example/assets/bert_classifier.tflite',
+    'models/bert_classifier.tflite',
   ]);
   final modelBytes = io.File(pathToModel).readAsBytesSync();
 

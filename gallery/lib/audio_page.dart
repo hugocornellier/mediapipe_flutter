@@ -113,9 +113,6 @@ class _AudioPageState extends State<AudioPage> {
     super.dispose();
   }
 
-  Future<Uint8List> _model() async =>
-      _modelBytes ?? await _asset('assets/models/yamnet.tflite');
-
   Future<Uint8List> _asset(String path) async {
     final data = await rootBundle.load(path);
     return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
@@ -124,7 +121,8 @@ class _AudioPageState extends State<AudioPage> {
   Future<AudioClassifier> _open() async =>
       _task ??= await AudioClassifier.create(
         AudioClassifierOptions(
-          modelBytes: await _model(),
+          model: _modelBytes == null ? AudioModels.yamnet : null,
+          modelBytes: _modelBytes,
           maxResults: _values.count('maxResults'),
           scoreThreshold: _values.share('scoreThreshold'),
         ),
@@ -134,7 +132,8 @@ class _AudioPageState extends State<AudioPage> {
   Future<AudioClassifier> _openStream() async {
     final task = await AudioClassifier.create(
       AudioClassifierOptions(
-        modelBytes: await _model(),
+        model: _modelBytes == null ? AudioModels.yamnet : null,
+        modelBytes: _modelBytes,
         maxResults: _values.count('maxResults'),
         scoreThreshold: _values.share('scoreThreshold'),
         runningMode: AudioRunningMode.audioStream,

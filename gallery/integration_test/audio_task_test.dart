@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 // The Audio Classifier demo's task, from the gallery's bundled YAMNet and
 // sample clip, in the same app as the vision and text runtimes: core's shared
@@ -26,7 +27,7 @@ void main() {
     await tester.runAsync(() async {
       final task = await AudioClassifier.create(
         AudioClassifierOptions(
-          modelBytes: await asset('assets/models/yamnet.tflite'),
+          modelBytes: await asset(bundledModelFile('yamnet.tflite')),
           maxResults: 3,
         ),
       );
@@ -56,7 +57,7 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
-      final model = await asset('assets/models/yamnet.tflite');
+      final model = await asset(bundledModelFile('yamnet.tflite'));
       final speech = decodeWav(
         await asset('assets/samples/speech_16000_hz_mono.wav'),
       );

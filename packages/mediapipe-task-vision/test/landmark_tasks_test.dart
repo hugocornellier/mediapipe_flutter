@@ -20,7 +20,7 @@ typedef _Task = (
 // These tasks are validated against the official wheel that ships the same
 // native library on Linux and Windows. Google's macOS CPU output drifts
 // between Apple CPUs, so macOS compares with same-host outputs
-// (tool/test_macos_tasks_runtime.py).
+// (tool/test_macos_references.py).
 final _unvalidatedHost =
     Platform.isMacOS &&
         Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] != '1'

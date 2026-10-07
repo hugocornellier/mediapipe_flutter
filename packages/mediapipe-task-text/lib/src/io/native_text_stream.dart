@@ -27,10 +27,13 @@ Future<void> receiveNativeTextStream<U>({
   final events = ReceivePort();
   events.listen((message) {
     final address = message as int;
-    final event = address > 0
-        ? Pointer<mp.MpFlutterTextEvent>.fromAddress(address)
-        : nullptr;
-    final terminal = event == nullptr
+    // Only the bridge's two markers are not addresses. An address can be
+    // negative: Android tags heap pointers in their top byte.
+    final lost = address == mp.lostEvent || address == mp.lostTerminalEvent;
+    final event = lost
+        ? nullptr
+        : Pointer<mp.MpFlutterTextEvent>.fromAddress(address);
+    final terminal = lost
         ? address == mp.lostTerminalEvent
         : event.ref.terminal;
     try {

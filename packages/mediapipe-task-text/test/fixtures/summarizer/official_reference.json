@@ -1,10 +1,11 @@
 {
-  "runtime": "mediapipe==1.0.0",
+  "runtime": "mediapipe==1.1.0rc20260925",
   "delegate": "CPU",
-  "library_sha256": "aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f",
+  "library_sha256": "a9d0e783f1aef73aae4a0e2df46154ced7d3dcb9ccd36989c092592921afcad6",
   "model_sha256": "8b2d4ef09236adb9ead3127325526ba1aa5a59feb7c5de2d3f5958f27479de59",
   "model_url": "https://storage.googleapis.com/mediapipe-models/text_summarizer/200m/1/summarization_quant_200m_2modes.litertlm",
-  "macos": "27.0",
+  "os": "macOS-27.0-arm64-arm-64bit",
+  "machine": "arm64",
   "cases": [
     {
       "name": "tldr-meeting",
@@ -12,7 +13,7 @@
       "mode": "TLDR",
       "max_num_tokens": null,
       "result": {
-        "summary": "The team met to plan the next app release, Maya will finish the camera interface by Thursday, and Leo will investigate the startup crash. Testing starts Friday, and the release is scheduled for Tuesday if no critical bugs remain.",
+        "summary": "The team met to plan the next app release, Maya will finish the camera interface by Thursday, and Leo will investigate a startup crash. Testing starts Friday, and the new settings screen will be delayed until the next release.",
         "done": true
       },
       "stream": [
@@ -97,10 +98,6 @@
           "done": false
         },
         {
-          "chunk": " and",
-          "done": false
-        },
-        {
           "chunk": " Leo",
           "done": false
         },
@@ -125,15 +122,15 @@
           "done": false
         },
         {
-          "chunk": ".",
+          "chunk": ",",
           "done": false
         },
         {
-          "chunk": " Test",
+          "chunk": " and",
           "done": false
         },
         {
-          "chunk": "ing",
+          "chunk": " testing",
           "done": false
         },
         {
@@ -145,11 +142,39 @@
           "done": false
         },
         {
-          "chunk": ",",
+          "chunk": ".",
           "done": false
         },
         {
-          "chunk": " and",
+          "chunk": " The",
+          "done": false
+        },
+        {
+          "chunk": " new",
+          "done": false
+        },
+        {
+          "chunk": " settings",
+          "done": false
+        },
+        {
+          "chunk": " screen",
+          "done": false
+        },
+        {
+          "chunk": " will",
+          "done": false
+        },
+        {
+          "chunk": " be",
+          "done": false
+        },
+        {
+          "chunk": " delayed",
+          "done": false
+        },
+        {
+          "chunk": " until",
           "done": false
         },
         {
@@ -157,43 +182,11 @@
           "done": false
         },
         {
+          "chunk": " next",
+          "done": false
+        },
+        {
           "chunk": " release",
-          "done": false
-        },
-        {
-          "chunk": " is",
-          "done": false
-        },
-        {
-          "chunk": " scheduled",
-          "done": false
-        },
-        {
-          "chunk": " for",
-          "done": false
-        },
-        {
-          "chunk": " Tuesday",
-          "done": false
-        },
-        {
-          "chunk": " if",
-          "done": false
-        },
-        {
-          "chunk": " no",
-          "done": false
-        },
-        {
-          "chunk": " critical",
-          "done": false
-        },
-        {
-          "chunk": " bugs",
-          "done": false
-        },
-        {
-          "chunk": " remain",
           "done": false
         },
         {
@@ -205,8 +198,9 @@
           "done": true
         }
       ],
-      "sync_ms": 298.8072080188431,
-      "stream_ms": 149.63766699656844
+      "stream_matches_result": false,
+      "sync_ms": 156.3159580109641,
+      "stream_ms": 148.49233301356435
     },
     {
       "name": "tldr-garden",
@@ -415,8 +409,9 @@
           "done": true
         }
       ],
-      "sync_ms": 156.1310830002185,
-      "stream_ms": 161.61175002343953
+      "stream_matches_result": true,
+      "sync_ms": 157.96470799250528,
+      "stream_ms": 160.0882500060834
     },
     {
       "name": "tldr-unicode",
@@ -569,8 +564,9 @@
           "done": true
         }
       ],
-      "sync_ms": 127.7829579776153,
-      "stream_ms": 129.72008300130256
+      "stream_matches_result": true,
+      "sync_ms": 127.01712496345863,
+      "stream_ms": 125.21495798137039
     },
     {
       "name": "tldr-short",
@@ -631,8 +627,9 @@
           "done": true
         }
       ],
-      "sync_ms": 44.629208015976474,
-      "stream_ms": 42.63366598752327
+      "stream_matches_result": true,
+      "sync_ms": 44.38666603527963,
+      "stream_ms": 43.059582996647805
     },
     {
       "name": "tldr-short-limit-64",
@@ -693,8 +690,9 @@
           "done": true
         }
       ],
-      "sync_ms": 43.60020800959319,
-      "stream_ms": 40.16054200474173
+      "stream_matches_result": true,
+      "sync_ms": 43.3100420050323,
+      "stream_ms": 41.069041995797306
     },
     {
       "name": "keypoints-meeting",
@@ -1035,8 +1033,9 @@
           "done": true
         }
       ],
-      "sync_ms": 264.650208002422,
-      "stream_ms": 258.68716699187644
+      "stream_matches_result": true,
+      "sync_ms": 252.37112498143688,
+      "stream_ms": 246.70783296460286
     },
     {
       "name": "keypoints-garden",
@@ -1044,7 +1043,7 @@
       "mode": "KEYPOINTS",
       "max_num_tokens": null,
       "result": {
-        "summary": "* A community garden was opened next to the town library in April.\n* Volunteers built twelve raised beds and planted tomatoes, carrots, and herbs.\n* Rainwater from the library roof supplied most of the irrigation.\n* Residents can join a Saturday workshop to learn composting and share tools.\n* Half of the vegetables harvested this summer will be donated to the local food bank.",
+        "summary": "* A community garden opened in April near the town library.\n* Volunteers built twelve raised beds and planted tomatoes, carrots, and herbs.\n* Rainwater from the library roof supplied most of the irrigation.\n* Residents can join a Saturday workshop to learn composting and share tools.\n* Half of the vegetables harvested this summer will be donated to the local food bank.",
         "done": true
       },
       "stream": [
@@ -1065,19 +1064,19 @@
           "done": false
         },
         {
-          "chunk": " was",
-          "done": false
-        },
-        {
           "chunk": " opened",
           "done": false
         },
         {
-          "chunk": " next",
+          "chunk": " in",
           "done": false
         },
         {
-          "chunk": " to",
+          "chunk": " April",
+          "done": false
+        },
+        {
+          "chunk": " near",
           "done": false
         },
         {
@@ -1090,14 +1089,6 @@
         },
         {
           "chunk": " library",
-          "done": false
-        },
-        {
-          "chunk": " in",
-          "done": false
-        },
-        {
-          "chunk": " April",
           "done": false
         },
         {
@@ -1405,8 +1396,9 @@
           "done": true
         }
       ],
-      "sync_ms": 290.1359579991549,
-      "stream_ms": 273.99270798196085
+      "stream_matches_result": true,
+      "sync_ms": 258.4694999968633,
+      "stream_ms": 260.9273749985732
     },
     {
       "name": "keypoints-unicode",
@@ -1414,7 +1406,7 @@
       "mode": "KEYPOINTS",
       "max_num_tokens": null,
       "result": {
-        "summary": "* Mar\u00eda and Andr\u00e9 opened a caf\u00e9 in Montr\u00e9al last spring.\n* They serve coffee and fresh pastries daily.\n* They added vegan sandwiches and extended their opening hours on weekends.\n* They plan to hire two employees before the winter season.",
+        "summary": "* Mar\u00eda and Andr\u00e9 opened a caf\u00e9 in Montr\u00e9al last spring.\n* They serve coffee and fresh pastries daily.\n* They have expanded their hours on weekends.\n* They plan to hire two employees before the winter season.",
         "done": true
       },
       "stream": [
@@ -1555,31 +1547,15 @@
           "done": false
         },
         {
-          "chunk": " added",
+          "chunk": " have",
           "done": false
         },
         {
-          "chunk": " vegan",
-          "done": false
-        },
-        {
-          "chunk": " sandwiches",
-          "done": false
-        },
-        {
-          "chunk": " and",
-          "done": false
-        },
-        {
-          "chunk": " extended",
+          "chunk": " expanded",
           "done": false
         },
         {
           "chunk": " their",
-          "done": false
-        },
-        {
-          "chunk": " opening",
           "done": false
         },
         {
@@ -1655,8 +1631,9 @@
           "done": true
         }
       ],
-      "sync_ms": 188.74808301916346,
-      "stream_ms": 189.9817920057103
+      "stream_matches_result": true,
+      "sync_ms": 181.57408299157396,
+      "stream_ms": 184.43962500896305
     },
     {
       "name": "keypoints-short",
@@ -1753,8 +1730,9 @@
           "done": true
         }
       ],
-      "sync_ms": 68.44816598459147,
-      "stream_ms": 67.1348330215551
+      "stream_matches_result": true,
+      "sync_ms": 68.78412503283471,
+      "stream_ms": 69.48858295800164
     },
     {
       "name": "keypoints-short-limit-64",
@@ -1851,8 +1829,9 @@
           "done": true
         }
       ],
-      "sync_ms": 66.91683299141005,
-      "stream_ms": 63.74033400788903
+      "stream_matches_result": true,
+      "sync_ms": 65.26258401572704,
+      "stream_ms": 64.37008403008804
     }
   ],
   "errors": [
@@ -1888,13 +1867,14 @@
       }
     },
     "_MpTextSummarizerOptionsC": {
-      "size": 88,
+      "size": 96,
       "alignment": 8,
       "offsets": {
         "base_options": 0,
         "mode": 72,
         "max_num_tokens": 76,
-        "cache_dir": 80
+        "cache_dir": 80,
+        "min_log_severity": 88
       }
     },
     "_MpTextSummarizerResultC": {

@@ -13,8 +13,8 @@ import '../types/results.dart';
 /// embedders and EmbeddingGemma alike.
 ///
 /// One class on every platform. Google's native runtime serves it on a
-/// worker isolate on macOS, Linux, Windows and iOS; its Android SDK and
-/// browser runtime serve it through the registered platform plugin.
+/// worker isolate on Android, iOS, macOS, Linux and Windows; its browser
+/// runtime serves it through the registered web plugin.
 /// EmbeddingGemma (`TextModels.embeddingGemma`) runs on every one of them,
 /// with Google's prompt formatting on each;
 /// `queryTextEmbedderCapabilities(TextModels.embeddingGemma)` reports it.

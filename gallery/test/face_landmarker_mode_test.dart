@@ -28,7 +28,6 @@ void main() {
         version: '15.0',
       ),
       {'face_landmarker'},
-      const {},
     ).single;
     await tester.pumpWidget(
       MaterialApp(
@@ -39,7 +38,6 @@ void main() {
             architecture: 'arm64',
             version: '15.0',
           ),
-          officialMacosLandmarkTasks: const {},
         ),
       ),
     );

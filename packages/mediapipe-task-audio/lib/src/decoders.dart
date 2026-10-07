@@ -1,8 +1,8 @@
-/// One decoder from the platform SDK adapters' results to the Dart types.
+/// One decoder from the browser adapter's results to the Dart types.
 ///
-/// Google's browser runtime and its Android SDK both deliver Audio Classifier
-/// results as JSON in the shape of Google's JavaScript API: one
-/// classification result per chunk. The adapters only forward them.
+/// Google's browser runtime delivers Audio Classifier results as JSON in the
+/// shape of its JavaScript API: one classification result per chunk. The
+/// adapter only forwards them.
 library;
 
 import 'package:mediapipe_core/platform_interface.dart'

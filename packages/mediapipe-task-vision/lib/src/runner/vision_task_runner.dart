@@ -1,6 +1,6 @@
-/// Where one vision task runs: a registered platform SDK adapter (Google's
-/// browser runtime or Android SDK), or Google's native runtime on a worker
-/// isolate. Every task class forwards here, on every platform.
+/// Where one vision task runs: the registered browser adapter (Google's
+/// JavaScript runtime), or Google's native runtime on a worker isolate.
+/// Every task class forwards here, on every platform.
 library;
 
 import 'package:mediapipe_core/mediapipe_core.dart';
@@ -51,8 +51,8 @@ final class VisionTaskRunner<R> {
     return _sdk?.liveFrame(started) ?? _native!.processLiveFrame(started);
   }
 
-  /// Resolves the model, then opens the task: through [backend] where a
-  /// platform plugin registered one (browsers, Android), else on Google's
+  /// Resolves the model, then opens the task: through [backend] where the
+  /// web plugin registered one (browsers), else on Google's
   /// native runtime after [capabilities] admits the delegate and [validate]
   /// passes, with [native] creating the task on a worker named [debugName].
   /// [name] appears in errors.

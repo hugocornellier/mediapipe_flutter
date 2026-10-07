@@ -3,8 +3,8 @@ name: Android devices (Firebase Test Lab)
 # Every official SDK suite (gallery/integration_test/sdk_all_test.dart): the
 # vision tasks on CPU and GPU, Face Landmarker's camera checks, the text and
 # audio tasks, and EmbeddingGemma, Proofreader and Summarizer against the
-# references from Google's 1.0.0 wheel (the phones are arm64, like the
-# references' Mac), on physical phones covering the three Android GPU families:
+# checked-in references from Google's macOS arm64 wheel of the same release
+# (the phones are arm64, like that Mac), on physical phones covering the three Android GPU families:
 # Mali (Pixel 8a), Adreno (Galaxy S24) and PowerVR (Galaxy A12). Manual only:
 # each run bills physical devices, so it is dispatched for a branch, whose own
 # copy of this file then runs. It signs in with the FIREBASE_TEST_LAB_CREDENTIALS
@@ -115,24 +115,27 @@ jobs:
       - name: Verify packaged runtime and models
         run: |
           python3 - <<'PY'
+          import json
           import zipfile
           with zipfile.ZipFile('gallery/build/app/outputs/apk/debug/app-debug.apk') as apk:
               names = set(apk.namelist())
-          models = ['face_landmarker.task', 'hand_landmarker.task', 'pose_landmarker_lite.task', 'gesture_recognizer.task',
-                    'holistic_landmarker.task', 'blaze_face_short_range.tflite',
-                    'efficientdet_lite0.tflite', 'efficientnet_lite0.tflite',
-                    'mobilenet_v3_small.tflite', 'deeplab_v3.tflite',
-                    'interactive_segmentation.task', 'bert_classifier.tflite',
-                    'universal_sentence_encoder.tflite', 'language_detector.tflite', 'yamnet.tflite',
-                    'embedding_gemma.task', 'proofread_quant_200m.litertlm',
-                    'summarization_quant_200m_2modes.litertlm']
+          # bundle_models names each model by its SHA-256; all 18 tasks' models.
+          with open('gallery/assets/mediapipe/manifest.json') as manifest:
+              models = [entry['file'] for entry in json.load(manifest)['models']]
+          assert len(models) == 18, models
           references = ['embedding_gemma.json', 'proofreader.json', 'summarizer.json']
-          required = {'lib/arm64-v8a/libflutter.so', 'lib/arm64-v8a/libmediapipe_tasks_jni.so',
-                      'lib/arm64-v8a/libmediapipe_tasks_textgenai_jni.so',
-                      *[f'assets/flutter_assets/assets/models/{m}' for m in models],
+          # One library per family, with the text and audio stream adapters.
+          libraries = ['libflutter.so', 'libmediapipe_tasks_vision.so', 'libmediapipe_tasks_text.so',
+                       'libmediapipe_tasks_audio.so', 'libmediapipe_text_stream.so',
+                       'libmediapipe_audio_stream.so']
+          required = {*[f'lib/arm64-v8a/{library}' for library in libraries],
+                      *[f'assets/flutter_assets/assets/mediapipe/{m}' for m in models],
                       *[f'assets/flutter_assets/assets/references/modern_text/{r}' for r in references]}
           assert required <= names, sorted(required - names)
-          assert not any('libmediapipe.so' in name for name in names), 'Duplicate source runtime'
+          # Neither the combined library nor Google's retired Java SDK.
+          stale = [name for name in names if name.endswith(('/libmediapipe.so', '_jni.so'))
+                   and 'mediapipe' in name]
+          assert not stale, stale
           PY
       # One device, no shards or flaky retries: one execution from the daily budget.
       - name: Run every SDK suite on CPU and GPU
@@ -165,10 +168,10 @@ jobs:
           MODEL: ${{ matrix.model }}
         run: |
           python3 -B tool/coverage/record.py --tier device --suite "android-$MODEL-cpu" --platform android --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer --outcome "$OUTCOME"
-          # Interactive Segmenter's GPU is not declared on Android: PowerVR refuses
-          # its stroke shader and Mali's mask differs from CPU, so its suite only
-          # records the GPU.
-          gpu=$(python3 -c "import os; skip = set(os.environ['GPU_SKIP'].split(',')); print(','.join(t for t in 'face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker'.split(',') if t not in skip | {'interactive_segmenter'}))")
+          # Not declared on Android, so their suites check the refusal or only
+          # record the GPU: Interactive Segmenter's (browsers only), Face
+          # Detector's (no LiteRT GPU plugin, UP-046) and Holistic's (UP-026).
+          gpu=$(python3 -c "import os; skip = set(os.environ['GPU_SKIP'].split(',')); print(','.join(t for t in 'face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker'.split(',') if t not in skip | {'interactive_segmenter', 'face_detector', 'holistic_landmarker'}))")
           python3 -B tool/coverage/record.py --tier device --suite "android-$MODEL-gpu" --platform android --delegate gpu --tasks "$gpu" --outcome "$OUTCOME"
       - uses: actions/upload-artifact@v4
         if: always()

@@ -2,7 +2,7 @@ import 'dart:io';
 
 /// Google's unmodified MediaPipe C API headers, which core vendors once for
 /// every family; see third_party/README.md.
-const _headers = '../mediapipe-core/native/ios/include';
+const _headers = '../mediapipe-core/native/include';
 
 Future<void> main(List<String> arguments) async {
   // ffigen 21 does not visit C++ LinkageSpec cursors. Remove only the enclosing

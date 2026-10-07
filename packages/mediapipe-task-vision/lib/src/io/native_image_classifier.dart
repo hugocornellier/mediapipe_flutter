@@ -3,13 +3,10 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 
-import '../../third_party/mediapipe/vision_tasks_bindings.dart' as mp;
-import '../capabilities/official_runtime_io.dart';
+import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../runner/native_interface.dart';
 import '../types/options.dart';
 import '../types/results.dart';
-import 'native_ios_sdk.dart';
-import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 
 /// Google's Image Classifier on its worker isolate.
@@ -38,69 +35,45 @@ final class NativeImageClassifier
   }
   final bool _gpu;
   mp.MpImageClassifierPtr _task = nullptr;
-  late final IosBgraStorage? _iosBgra = hasOfficialIosVisionRuntime()
-      ? iosBgraStorage()
-      : null;
 
+  /// Runs one IMAGE or VIDEO request and copies every result.
   @override
-  ImageClassifierResult process(VisionTaskInput input) => using((arena) {
-    final (source, rotation, timestamp, region) = input;
-    final image = createVisionImage(
-      arena,
-      source,
-      expandRgbForGpu: _gpu,
-      checked: checkVisionCall,
-      iosBgra: _iosBgra,
-    );
-    try {
-      final processing = visionProcessingOptions(arena, rotation, region);
-      final result = arena<mp.MpImageClassifierResult>();
-      if (timestamp == null) {
-        checkVisionCall(
-          (error) => mp.MpImageClassifierClassifyImage(
-            _task,
-            image,
-            processing,
-            result,
-            error,
-          ),
-        );
-      } else {
-        checkVisionCall(
-          (error) => mp.MpImageClassifierClassifyForVideo(
-            _task,
-            image,
-            processing,
-            timestamp,
-            result,
-            error,
-          ),
-        );
-      }
-      try {
-        return ImageClassifierResult(
-          classifications: copyVisionClassifications(result.ref),
-          imageWidth: mp.MpImageGetWidth(image),
-          imageHeight: mp.MpImageGetHeight(image),
-          timestampMilliseconds: timestamp,
-        );
-      } finally {
-        mp.MpImageClassifierCloseResult(result);
-      }
-    } finally {
-      mp.MpImageFree(image);
-    }
-  });
+  ImageClassifierResult process(VisionTaskInput input) => runVisionRequest(
+    input,
+    gpu: _gpu,
+    allocate: (arena) => arena<mp.MpImageClassifierResult>(),
+    image: (image, processing, result, error) =>
+        mp.MpImageClassifierClassifyImage(
+          _task,
+          image,
+          processing,
+          result,
+          error,
+        ),
+    video: (image, processing, timestamp, result, error) =>
+        mp.MpImageClassifierClassifyForVideo(
+          _task,
+          image,
+          processing,
+          timestamp,
+          result,
+          error,
+        ),
+    closeResult: mp.MpImageClassifierCloseResult,
+    copy: (request, result) => ImageClassifierResult(
+      classifications: copyVisionClassifications(result.ref),
+      imageWidth: mp.MpImageGetWidth(request.image),
+      imageHeight: mp.MpImageGetHeight(request.image),
+      timestampMilliseconds: request.timestamp,
+    ),
+    region: true,
+  );
 
   @override
   void close() {
     if (_task == nullptr) return;
     final task = _task;
     _task = nullptr;
-    try {
-      checkVisionCall((error) => mp.MpImageClassifierClose(task, error));
-    } finally {
-      _iosBgra?.close();
-    }
+    checkVisionCall((error) => mp.MpImageClassifierClose(task, error));
   }
 }

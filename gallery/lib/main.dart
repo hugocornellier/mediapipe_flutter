@@ -139,11 +139,7 @@ class _HomePageState extends State<HomePage> {
         final (assets, platform) = snapshot.requireData;
         final bundled = assets.bundledTasks;
         final tasks = [
-          for (final task in supportedTasks(
-            platform,
-            bundled,
-            assets.officialMacosLandmarkTasks,
-          ))
+          for (final task in supportedTasks(platform, bundled))
             if (task.hasOwnPage) task,
         ];
         return _GalleryShell(
@@ -220,7 +216,7 @@ class _GalleryShellState extends State<_GalleryShell> {
     _prefetch = Timer(const Duration(seconds: 2), () {
       WebModelCache.prefetch([
         for (final i in [index + 1, index - 1])
-          if (i >= 0 && i < live.length) 'assets/models/${live[i].model}',
+          if (i >= 0 && i < live.length) live[i].model,
       ]);
     });
   }
@@ -248,7 +244,6 @@ class _GalleryShellState extends State<_GalleryShell> {
         navigationOpen: _navigationOpen,
         stillImagePicker: widget.stillImagePicker,
         platform: widget.platform,
-        officialMacosLandmarkTasks: widget.assets.officialMacosLandmarkTasks,
         onOpenMenu: openMenu,
       ),
       GalleryDemo.segment => SegmentPage(
@@ -261,14 +256,9 @@ class _GalleryShellState extends State<_GalleryShell> {
         task: task,
         imagePicker: widget.stillImagePicker,
         platform: widget.platform,
-        officialMacosLandmarkTasks: widget.assets.officialMacosLandmarkTasks,
         onOpenMenu: openMenu,
       ),
-      GalleryDemo.text => TextPage(
-        task: task,
-        assets: widget.assets,
-        onOpenMenu: openMenu,
-      ),
+      GalleryDemo.text => TextPage(task: task, onOpenMenu: openMenu),
       GalleryDemo.audio => AudioPage(
         task: task,
         onOpenMenu: openMenu,
@@ -543,10 +533,8 @@ class _Gallery extends StatelessWidget {
   final ValueChanged<GalleryTask> onTaskSelected;
   final VoidCallback? onOpenMenu;
 
-  bool _gpu(GalleryTask task) => task
-      .capabilitiesFor(platform, assets.officialMacosLandmarkTasks)
-      .supportedDelegates
-      .contains(Delegate.gpu);
+  bool _gpu(GalleryTask task) =>
+      task.capabilities(platform).supportedDelegates.contains(Delegate.gpu);
 
   @override
   Widget build(BuildContext context) {
@@ -621,7 +609,6 @@ class _Gallery extends StatelessWidget {
                                   task,
                                   platform,
                                   assets.bundledTasks,
-                                  assets.officialMacosLandmarkTasks,
                                 ),
                                 gpu: false,
                                 onTap: null,

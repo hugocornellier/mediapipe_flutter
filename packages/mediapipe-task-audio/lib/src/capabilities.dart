@@ -6,10 +6,9 @@ import 'package:mediapipe_core/platform_interface.dart';
 
 import 'audio_task_backend.dart' show audioTaskBackendFactory;
 
-/// Where Audio Classifier runs: CPU on core's shared runtime, Google's library
-/// for macOS arm64 (macOS 14+), Linux x64 and Windows x64 and its iOS SDK
-/// (iOS 15+, through the adapter core builds), and through Google's
-/// browser runtime or Android SDK where a platform plugin installs it.
+/// Where Audio Classifier runs: CPU on Google's audio library on Android,
+/// iOS 15+, macOS 14+ arm64, Linux x64 and Windows x64, and through Google's
+/// browser runtime where the web plugin installs it.
 Future<TaskCapabilities> queryAudioClassifierCapabilities() async =>
     audioClassifierCapabilitiesForPlatform(await currentTaskPlatform());
 
@@ -21,14 +20,8 @@ TaskCapabilities audioClassifierCapabilitiesForPlatform(
   gpuUnavailableReason: "Google's official audio task runs on CPU only.",
   runtimeVersion: tasksRuntimeVersionOn(platform),
   targets: {
-    // Core's runtime, iOS included (its SDK adapter).
     ...tasksRuntimeTargets,
-    // A registered backend is Google's browser runtime or Android SDK for
-    // this very platform.
-    if (audioTaskBackendFactory != null) ...{
-      'web/unknown': null,
-      'android/arm64': null,
-      'android/x64': null,
-    },
+    // A registered backend is Google's browser runtime.
+    if (audioTaskBackendFactory != null) 'web/unknown': null,
   },
 );

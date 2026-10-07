@@ -13,14 +13,15 @@ from official_embedding_layout import use_header_embedding_layout
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'mediapipe-core/tool'))
 from official_wheels import MACOS, host_runtime  # noqa: E402
+from model_pins import model_sha256  # noqa: E402
 
 PACKAGE = Path(__file__).resolve().parents[1]
 # The checked-in baseline's library: Google's macOS arm64 build core bundles.
 LIBRARY_SHA256 = MACOS['library_sha256']
 MODELS = {
-    'classifier': ('bert_classifier.tflite', '9b45012ab143d88d61e10ea501d6c8763f7202b86fa987711519d89bfa2a88b1'),
-    'embedder': ('universal_sentence_encoder.tflite', '89ad3c74175dd8caa398cc22b657296d94302d20c525c12b58b29420f7249749'),
-    'language': ('language_detector.tflite', '7db4f23dfe1ad8966b050b419a865da451143fd43eb6b606a256aadeeb1e5417'),
+    'classifier': ('bert_classifier.tflite', model_sha256('bert_classifier.tflite')),
+    'embedder': ('universal_sentence_encoder.tflite', model_sha256('universal_sentence_encoder.tflite')),
+    'language': ('language_detector.tflite', model_sha256('language_detector.tflite')),
 }
 
 
@@ -52,7 +53,7 @@ def main():
               'library_sha256': runtime['library_sha256'], **host,
               'models': {}, 'cases': [], 'creation_errors': [], 'lifecycle_sequences': {}}
     for name, (file, sha) in MODELS.items():
-        model = PACKAGE / 'example/assets' / file
+        model = PACKAGE / 'models' / file
         assert hashlib.sha256(model.read_bytes()).hexdigest() == sha
         report['models'][name] = {'file': file, 'sha256': sha}
     specs = [
@@ -98,7 +99,7 @@ def main():
              'head_index': e.head_index, 'head_name': e.head_name} for e in result.embeddings]}
 
     for task_name, options_class, task_class, method, cases in specs:
-        model = PACKAGE / 'example/assets' / MODELS[task_name][0]
+        model = PACKAGE / 'models' / MODELS[task_name][0]
         for name, text, config in cases:
             with task_class.create_from_options(options_class(
                     mp.tasks.BaseOptions(model_asset_path=str(model)), **config)) as task:

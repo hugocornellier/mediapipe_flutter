@@ -1,5 +1,5 @@
-/// Where a platform plugin plugs Google's browser or Android SDK into the
-/// task classes. Applications use the task classes.
+/// Where the web plugin plugs Google's browser runtime into the task
+/// classes. Applications use the task classes.
 library;
 
 import 'package:mediapipe_core/mediapipe_core.dart';
@@ -9,9 +9,8 @@ import 'types/results.dart';
 import 'types/strokes.dart';
 import 'types/vision_types.dart';
 
-/// A serialized, asynchronous adapter to one task of an official platform
-/// SDK: Google's browser runtime on a worker, or its Android SDK on the
-/// plugin's thread.
+/// A serialized, asynchronous adapter to one task of Google's browser
+/// runtime, on a worker.
 abstract interface class VisionTaskBackend<R> {
   /// Completes with copied results; requests and disposal keep their
   /// submission order. Only the tasks that accept a region of interest

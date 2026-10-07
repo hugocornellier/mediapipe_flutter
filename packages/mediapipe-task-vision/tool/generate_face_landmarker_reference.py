@@ -16,10 +16,11 @@ from mediapipe.tasks.python.vision.face_landmarker import FaceLandmarksConnectio
 from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
 
 from generate_face_detector_reference import ROOT, FIXTURES, LIBRARY_SHA256, digest, gpu_image
+from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
 from official_face_runtime import LIBRARY_NAME, RUNTIME, SOURCE_REVISION, VERSION
 
 MODEL = ROOT / "models/face_landmarker.task"
-MODEL_SHA256 = "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff"
+MODEL_SHA256 = model_sha256('face_landmarker.task')
 
 
 def main():

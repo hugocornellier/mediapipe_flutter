@@ -2,10 +2,7 @@
 
 Google's MediaPipe **Audio Classifier** for Dart and Flutter, for example
 YAMNet's 521 sound categories, on Android, iOS, macOS, Linux, Windows and the
-web. Google's pinned YAMNet model is bundled with your app at build time:
-list it under `hooks.user_defines.mediapipe_audio.models: [yamnet]` in the
-app's pubspec, declare `assets/mediapipe/` under `flutter: assets:`, and run
-`dart run mediapipe_core:bundle_models` from the app's root.
+web. Google's pinned YAMNet model is bundled with your app at build time.
 
 > **Not on pub.dev yet.** Depend on it by path from a checkout of
 > [the repository](https://github.com/hugocornellier/mediapipe_flutter) until
@@ -13,28 +10,44 @@ app's pubspec, declare `assets/mediapipe/` under `flutter: assets:`, and run
 
 ## Platforms
 
-The task runs Google's runtime on each platform, on the CPU: the Android SDK
-(`tasks-audio` 1.0.0), an adapter over the 1.0.1 iOS SDK (iOS 15+), the
-official wheel libraries on Linux x64 (1.0.1) and Windows x64 (1.0.0),
-Google's 1.0.0 library on macOS 14+ arm64, and `@mediapipe/tasks-audio` 1.0.1
-in browsers. `mediapipe_core` bundles the native engine once per app, shared
-with vision and text.
+The task runs Google's runtime on each platform, on the CPU: its MediaPipe
+1.1.0 audio library on Android 9+, iOS 15+, macOS 14+ arm64, Linux x64 and
+Windows x64, which this package's hook bundles, and
+`@mediapipe/tasks-audio` 1.0.1 in browsers.
 
-On macOS the engine is opt-in because it adds about 95 MB:
-
-```yaml
-hooks:
-  user_defines:
-    mediapipe_core:
-      tasks_runtime: true
-```
-
-Other platforms need no setting. See
+No platform needs a setting. See
 [platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md)
 for permissions, Linux graphics libraries and self-hosting the browser
 runtime.
 
 ## Use
+
+Bundle the model with your app: list it in the app's pubspec and declare the
+folder it goes in.
+
+```yaml
+flutter:
+  assets:
+    - assets/mediapipe/
+
+hooks:
+  user_defines:
+    mediapipe_audio:
+      models: [yamnet]
+```
+
+Then run `dart run mediapipe_core:bundle_models` from the app's root, and
+again whenever the list changes. It downloads the model once, checks it
+against its pinned SHA-256 and writes it into `assets/mediapipe/`, so nothing
+is downloaded at run time. `AudioModels.byName` lists the accepted names.
+
+A model that is not bundled makes `create` throw a
+`RuntimeUnavailableException` whose `fix` names the pubspec entry to add. To
+download it at run time instead, set `ModelStore.allowDownloads = true` before
+creating the task; Android release builds and sandboxed macOS apps then need
+network permission, as
+[platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md)
+describes.
 
 ```dart
 import 'dart:io';
@@ -144,9 +157,7 @@ Future<void> listen(Stream<Float32List> blocks) async {
 - **`results` takes one listener, before the first block.** Pausing buffers,
   and cancelling discards later results while the stream goes on. A failure
   arrives on `results` as a `TaskException`, closes it, and every later
-  `classifyAsync` throws it. On Android, Google's runtime reports a failure of
-  its graph only when the stream closes, so there it arrives during
-  `dispose()`.
+  `classifyAsync` throws it.
 - **`dispose()` flushes the tail** as Google's close does: the audio short of
   a window is classified, delivered with the time it starts, and then
   `results` closes. A stream that ends on a window has no tail.
@@ -155,12 +166,11 @@ Future<void> listen(Stream<Float32List> blocks) async {
   memory (64 KB per second of 16 kHz mono audio), and so do results while a
   listener is paused (about 50 KB a window with every category, little with a
   small `maxResults`).
-- **Google's own stream** runs on Android, iOS, macOS, Linux and Windows. On
-  iOS, macOS, Linux and Windows at most 64 streams can be open at once in one
-  app, since Google's C callback does not say which stream it serves and the
-  package compiles one callback per stream; creating another throws a
-  `TaskException`. Android and browsers have no such limit. Google's browser
-  runtime has no stream, so in browsers the package frames the blocks itself
+- **Google's own stream** runs on Android, iOS, macOS, Linux and Windows,
+  where at most 64 streams can be open at once in one app, since Google's C
+  callback does not say which stream it serves and the package compiles one
+  callback per stream; creating another throws a `TaskException`. Browsers
+  have no such limit. Google's browser runtime has no stream, so in browsers the package frames the blocks itself
   and classifies each window with Google's clips mode. At the model's rate
   that gives exactly Google's results. At any other rate each window is
   resampled on its own, unlike Google's streaming resampler, so some windows
@@ -175,7 +185,7 @@ Future<void> listen(Stream<Float32List> blocks) async {
 The tests compare every chunk of three official MediaPipe sample clips (speech
 at 16 kHz and 48 kHz, and a clip YAMNet hears as animal and bird sounds) with
 Google's own Python output (`test/fixtures/official_reference.json`, from the
-macOS 1.0.1 wheel; the 1.0.0 engine on macOS matches it): same categories and
+macOS 1.1.0 wheel): same categories and
 timestamps, scores within 0.00001, including resampling from 48 kHz. On Linux
 and Windows CI, `tool/prepare_audio_reference.py` regenerates that reference
 with Google's pinned wheel on the same runner (`tool/test_text_audio.py` at the
@@ -188,12 +198,12 @@ In audio stream mode the tests feed those clips as blocks (100 ms blocks, odd
 lengths from a later first timestamp, the whole clip at once, 48 kHz in blocks
 of 4801, stereo, a stream that ends on a window, and a lone half second) and
 compare every window with Google's own stream
-(`test/fixtures/official_stream_reference.json`, from the macOS 1.0.0 wheel,
+(`test/fixtures/official_stream_reference.json`, from the macOS 1.1.0 wheel,
 regenerated with the pinned wheel on Linux and Windows CI): same timestamps,
 the flushed tail's included once restamped, same categories, and scores within
 0.00001. At the model's rate the package's emulation, run over the native
 clips mode, must equal the native stream to the bit, and does (0.0 over every
 score of every window). Browser CI compares the emulated stream with Google's
 JavaScript on the same page; the iOS simulator, the Android emulator and
-Firebase Test Lab's phones run the stream on Google's mobile SDKs against the
-same device's clips results.
+Firebase Test Lab's phones run the stream on Google's mobile libraries against
+the same device's clips results.

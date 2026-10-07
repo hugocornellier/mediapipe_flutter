@@ -1,18 +1,17 @@
 SHELL := /bin/bash
 DART_PACKAGES := packages/mediapipe-core tool/task_benchmarks
-FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-text/example packages/mediapipe-task-text/example_embedding packages/mediapipe-task-vision/example packages/mediapipe-task-vision/example_segmenter
+FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
-# The gallery's pubspec is generated per target by tool/gallery_builder or
-# gallery/tool/prepare.py, so it is format-checked without package resolution
+# The gallery's pubspec is generated per target by tool/gallery_builder, so
+# it is format-checked without package resolution
 # and analyzed by the platform workflows after preparation.
 GALLERY_SOURCES := lib test integration_test tool
 # The generated pubspec (sdk ^3.12.0) may be absent when formatting, and
 # unresolved files default to the newest language version, whose style differs.
 GALLERY_FORMAT := dart format --language-version=3.12
 ANALYZE_PACKAGES := $(ALL_PACKAGES)
-VISION_NATIVE_ARGS ?=
 
-.PHONY: get models native_vision release_vision analyze format check_format generate generate_text generate_vision test test_only test_core test_text test_vision test_vision_flutter test_vision_prebuilt test_examples build_text build_vision_camera example_text example_vision ci
+.PHONY: get models analyze format check_format generate generate_text generate_vision test test_only test_core test_text test_vision test_vision_flutter ci
 
 get:
 	@for package in $(DART_PACKAGES); do (cd "$$package" && dart pub get) || exit $$?; done
@@ -28,20 +27,10 @@ models:
 	cd packages/mediapipe-task-vision && dart tool/download_image_tasks.dart
 	cd packages/mediapipe-task-vision && dart tool/download_landmark_tasks.dart
 	cd packages/mediapipe-task-vision && dart tool/download_segmenter_tasks.dart
-	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
 	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
-	cd packages/mediapipe-task-vision && python3 -B tool/prepare_segmenter_example.py
 	$(MAKE) models_embedding
 	$(MAKE) models_proofreader
 	$(MAKE) models_summarizer
-
-# Optional maintainer build; consumers download the pinned prebuilt runtime.
-native_vision:
-	cd packages/mediapipe-task-vision && python3 tool/build_native.py $(VISION_NATIVE_ARGS)
-
-# Prepare a reviewable public archive from an already tested native build.
-release_vision:
-	cd packages/mediapipe-task-vision && python3 tool/prepare_native_release.py
 
 analyze:
 	@for package in $(ANALYZE_PACKAGES); do (cd "$$package" && dart analyze --fatal-infos) || exit $$?; done
@@ -59,35 +48,29 @@ generate:
 	$(MAKE) generate_text
 	$(MAKE) generate_vision
 
-# 1.0.1 text bindings are adapted from the pinned wheel's ctypes definitions;
+# The text bindings are adapted from Google's wheel's ctypes definitions;
 # the retired 2024 headers must not regenerate them.
 generate_text:
 	cd packages/mediapipe-task-text && dart test test/classic_text_abi_test.dart --reporter expanded
 
 generate_vision:
 	cd packages/mediapipe-task-vision && dart tool/generate_bindings.dart
-	cd packages/mediapipe-task-vision && dart tool/generate_bindings.dart ffigen_face_landmarker.yaml
-	cd packages/mediapipe-task-vision && dart tool/generate_bindings.dart ffigen_vision.yaml
 
 test:
 	$(MAKE) models
 	$(MAKE) test_only
 
-# Tests tagged `flutter` need Flutter's test binding, which `dart test`
-# cannot load, so Flutter runs them.
 test_only:
 	$(MAKE) test_core
 	$(MAKE) test_text
 	$(MAKE) test_audio
 	$(MAKE) test_vision
-	$(MAKE) test_examples
 
 test_core:
 	cd packages/mediapipe-core && dart test --reporter expanded
 
 test_text:
-	cd packages/mediapipe-task-text && dart test --reporter expanded --exclude-tags flutter
-	cd packages/mediapipe-task-text && flutter test --reporter expanded --tags flutter
+	cd packages/mediapipe-task-text && dart test --reporter expanded
 
 .PHONY: test_audio models_audio test_audio_stream_bridge test_audio_web
 models_audio:
@@ -95,8 +78,7 @@ models_audio:
 
 test_audio:
 	$(MAKE) test_audio_stream_bridge
-	cd packages/mediapipe-task-audio && dart test --reporter expanded --exclude-tags flutter
-	cd packages/mediapipe-task-audio && flutter test --reporter expanded --tags flutter
+	cd packages/mediapipe-task-audio && dart test --reporter expanded
 
 # The audio stream's callback-copy bridge, its slots and their threads,
 # under AddressSanitizer.
@@ -111,9 +93,11 @@ test_audio_web:
 	cd packages/mediapipe-task-audio && flutter test --platform chrome test/web --reporter expanded
 	cd packages/mediapipe-task-audio && flutter test --platform chrome --wasm test/web --reporter expanded
 
+# The C ABI sizes the vision bindings assume, against the vendored headers.
 test_vision:
-	cd packages/mediapipe-task-vision && dart test --reporter expanded --exclude-tags flutter
-	cd packages/mediapipe-task-vision && flutter test --reporter expanded --tags flutter
+	clang++ -std=c++17 -fsyntax-only -Wall -Wextra -Werror -I packages/mediapipe-core/native/include packages/mediapipe-task-vision/tool/abi_check.cc
+	cd packages/mediapipe-task-vision && dart test --reporter expanded --exclude-tags isolated
+	cd packages/mediapipe-task-vision && dart test --reporter expanded --tags isolated
 
 .PHONY: test_vision_web
 test_vision_web:
@@ -122,64 +106,13 @@ test_vision_web:
 test_vision_flutter:
 	cd packages/mediapipe-task-vision && python3 tool/test_flutter_macos.py
 
-test_vision_prebuilt:
-	cd packages/mediapipe-task-vision && python3 tool/test_prebuilt_macos.py
-
-test_examples:
-	cd packages/mediapipe-task-text/example && flutter test --reporter expanded
-	cd packages/mediapipe-task-text/example_embedding && flutter test --reporter expanded
-	cd packages/mediapipe-task-vision/example && flutter test --reporter expanded
-	cd packages/mediapipe-task-vision/example_segmenter && flutter test --reporter expanded
-
-build_text:
-	cd packages/mediapipe-task-text/example && flutter build macos --debug
-
-build_vision_camera:
-	cd packages/mediapipe-task-vision/example && flutter build macos --release
-
-.PHONY: example_segmenter build_segmenter test_segmenter_prebuilt
-example_segmenter:
-	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
-	cd packages/mediapipe-task-vision && python3 -B tool/prepare_segmenter_example.py
-	cd packages/mediapipe-task-vision/example_segmenter && flutter run -d macos --release
-
-build_segmenter:
-	cd packages/mediapipe-task-vision/example_segmenter && flutter build macos --release
-
-test_segmenter_prebuilt:
-	cd packages/mediapipe-task-vision && python3 -B tool/test_segmenter_macos.py
-
-example_vision:
-	cd packages/mediapipe-task-vision && dart tool/download_model.dart
-	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
-	cd packages/mediapipe-task-vision && python3 -B tool/prepare_face_example.py
-	cd packages/mediapipe-task-vision/example && flutter run -d macos --release
-
-.PHONY: native_vision_ios_simulator native_vision_ios_device test_vision_ios_consumer
-native_vision_ios_simulator:
-	cd packages/mediapipe-task-vision && python3 -B tool/build_ios_simulator.py
-
-native_vision_ios_device:
-	cd packages/mediapipe-task-vision && python3 -B tool/build_ios_simulator.py --sdk iphoneos
-
-test_vision_ios_consumer:
-	cd packages/mediapipe-task-vision && python3 -B tool/test_ios_consumer.py
-
-example_text: models_text
-	cd packages/mediapipe-task-text/example && flutter run -d macos
-
 .PHONY: models_text
 models_text:
 	cd packages/mediapipe-task-text && dart tool/download_classic_text.dart
 
-.PHONY: models_embedding example_embedding test_embedding_macos
+.PHONY: models_embedding test_embedding_macos
 models_embedding:
 	cd packages/mediapipe-task-text && dart tool/download_embedding_gemma.dart
-	mkdir -p packages/mediapipe-task-text/example_embedding/assets
-	cp packages/mediapipe-task-text/models/embedding_gemma.task packages/mediapipe-task-text/example_embedding/assets/embedding_gemma.task
-
-example_embedding: models_embedding models_proofreader models_summarizer
-	cd packages/mediapipe-task-text/example_embedding && flutter run -d macos --release
 
 test_embedding_macos:
 	cd packages/mediapipe-task-text && python3 -B tool/test_embedding_macos.py
@@ -202,8 +135,6 @@ test_modern_task_matrix:
 .PHONY: models_proofreader test_text_stream_bridge
 models_proofreader:
 	cd packages/mediapipe-task-text && dart tool/download_proofreader.dart
-	mkdir -p packages/mediapipe-task-text/example_embedding/assets
-	cp packages/mediapipe-task-text/models/proofread_quant_200m.litertlm packages/mediapipe-task-text/example_embedding/assets/proofread_quant_200m.litertlm
 
 test_text_stream_bridge:
 	mkdir -p build/codex-tmp
@@ -213,18 +144,12 @@ test_text_stream_bridge:
 .PHONY: models_summarizer
 models_summarizer:
 	cd packages/mediapipe-task-text && dart tool/download_summarizer.dart
-	mkdir -p packages/mediapipe-task-text/example_embedding/assets
-	cp packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm packages/mediapipe-task-text/example_embedding/assets/summarization_quant_200m_2modes.litertlm
 
 # Run sequentially even when make is invoked with -j.
 ci:
 	$(MAKE) get
 	$(MAKE) models
-	$(MAKE) native_vision
 	$(MAKE) analyze
 	$(MAKE) check_format
 	$(MAKE) test_only
-	$(MAKE) build_text
-	$(MAKE) build_vision_camera
-	$(MAKE) build_segmenter
 	$(MAKE) test_vision_flutter

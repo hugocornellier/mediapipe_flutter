@@ -11,12 +11,13 @@ from mediapipe.tasks.python import vision
 from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
+from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'test/fixtures/face_detection'
 MODELS = {
     'image': ('deeplab_v3.tflite',
-        'ff36e24d40547fe9e645e2f4e8745d1876d6e38b332d39a82f0bf0f5d1d561b3'),
+        model_sha256('deeplab_v3.tflite')),
 }
 # Coarse views of each file-input mask, for runtimes whose bytes differ from
 # this wheel's: the mobile SDKs and the browser decode the JPEG themselves and

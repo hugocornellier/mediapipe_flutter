@@ -25,9 +25,9 @@ runtime for its platform, with Google's pinned models bundled at build time.
 | `mediapipe_text` | Text classification, embeddings (EmbeddingGemma included) and language detection; proofreading and summarization everywhere but browsers | [Text](packages/mediapipe-task-text/README.md) |
 | `mediapipe_audio` | Audio classification | [Audio](packages/mediapipe-task-audio/README.md) |
 
-Add only the families you use. Each one depends on `mediapipe_core`, which
-bundles Google's MediaPipe engine once per app however many families use it,
-and holds the shared model store and browser runtime settings
+Add only the families you use: each one bundles only Google's MediaPipe
+library for that family. They all depend on `mediapipe_core`, which holds the
+shared download code, model store and browser runtime settings
 ([core guide](packages/mediapipe-core/README.md)).
 
 ## Quick start
@@ -109,9 +109,10 @@ dependencies and set `ModelStore.allowDownloads = true` before creating
 tasks; Android then needs the `INTERNET` permission, and a sandboxed macOS
 app the network client entitlement.
 
-macOS apps using text, audio or most vision tasks also need
-`tasks_runtime: true`. See [platform setup](doc/platform_setup.md). Your own
-models work too: pass `modelPath` or `modelBytes` instead of `model`.
+On macOS, build the app for Apple Silicon only (two lines in its
+`AppInfo.xcconfig`; without them, release builds fail). See
+[platform setup](doc/platform_setup.md#macos). Your own models work too: pass
+`modelPath` or `modelBytes` instead of `model`.
 
 ## Where it runs
 

@@ -1,4 +1,7 @@
-import 'package:flutter/services.dart';
+import 'dart:typed_data';
+
+import 'package:mediapipe_vision/mediapipe_vision.dart'
+    show DownloadAsset, ModelStore;
 
 /// Keeps recently used bundled models in memory across gallery pages.
 /// Uploaded models bypass this cache. A small cap avoids retaining the full
@@ -10,7 +13,12 @@ abstract final class WebModelCache {
   static int _bytes = 0;
   static Future<void> _prefetches = Future.value();
 
-  static Future<Uint8List> load(String asset) {
+  static final _store = ModelStore();
+
+  /// The verified bytes of [model], which the app bundles with `dart run
+  /// mediapipe_core:bundle_models`.
+  static Future<Uint8List> load(DownloadAsset model) {
+    final asset = model.sha256;
     final cached = _models.remove(asset);
     if (cached != null) {
       _models[asset] = cached;
@@ -18,17 +26,20 @@ abstract final class WebModelCache {
     }
     // A page and a prefetch asking at once share one download. The block body
     // matters: returning the removed future would make this one wait on itself.
-    return _loading[asset] ??= _fetch(asset).whenComplete(() {
+    return _loading[asset] ??= _fetch(model).whenComplete(() {
       _loading.remove(asset);
     });
   }
 
-  static Future<Uint8List> _fetch(String asset) async {
-    final data = await rootBundle.load(asset);
-    final model = data.buffer.asUint8List(
-      data.offsetInBytes,
-      data.lengthInBytes,
-    );
+  static Future<Uint8List> _fetch(DownloadAsset pin) async {
+    final asset = pin.sha256;
+    final model = (await _store.find(pin))?.bytes;
+    if (model == null) {
+      throw StateError(
+        '${Uri.parse(pin.url).pathSegments.last} is not bundled in this '
+        'build. Prepare the gallery again.',
+      );
+    }
     if (model.lengthInBytes > _maxBytes) return model;
 
     while (_bytes + model.lengthInBytes > _maxBytes) {
@@ -40,14 +51,14 @@ abstract final class WebModelCache {
     return model;
   }
 
-  /// Fetches [assets] one at a time once the models already loading are in,
+  /// Fetches [models] one at a time once the models already loading are in,
   /// for the pages a visitor is likely to open next.
-  static void prefetch(Iterable<String> assets) {
-    for (final asset in assets) {
+  static void prefetch(Iterable<DownloadAsset> models) {
+    for (final model in models) {
       _prefetches = _prefetches.then((_) async {
         try {
           await Future.wait(_loading.values.toList());
-          await load(asset);
+          await load(model);
         } catch (_) {
           // A page that opens it loads it again and reports the failure.
         }

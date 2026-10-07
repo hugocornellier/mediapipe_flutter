@@ -1,23 +1,16 @@
-"""Reviewed official runtimes used by independent reference generators.
-
-Linux uses 1.0.1, the first Linux wheel built with GPU. Upstream never tagged
-1.0.1, so its references carry no source revision; the wheel and library
-digests identify it.
+"""The official runtime the independent reference generators record: Google's
+wheel pinned for this host in core's `referenceWheels`, which the Dart tests
+check every receipt against. Google's wheels name no source revision.
 """
-import platform
+import sys
+from pathlib import Path
 
-RUNTIMES = {
-    ('Darwin', 'arm64'): ('libmediapipe.dylib',
-        'aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f',
-        '1.0.0', '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120'),
-    ('Linux', 'x86_64'): ('libmediapipe.so',
-        'b72e6d61a79d1080d29a96ba95e3cfa3e43f6c433c0acc3bc9b3eb7ac0ba103a',
-        '1.0.1', None),
-    ('Windows', 'AMD64'): ('libmediapipe.dll',
-        'a8970c645c8c87c25ec9965cb5c898e803c6c42f7192b7de9a0541c62ae48cef',
-        '1.0.0', '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120'),
-}
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'mediapipe-core/tool'))
+from official_wheels import host_runtime  # noqa: E402
 
-LIBRARY_NAME, LIBRARY_SHA256, VERSION, SOURCE_REVISION = RUNTIMES[
-    (platform.system(), platform.machine())]
+_HOST = host_runtime()
+LIBRARY_NAME = _HOST['library']
+LIBRARY_SHA256 = _HOST['library_sha256']
+VERSION = _HOST['version']
+SOURCE_REVISION = None
 RUNTIME = 'mediapipe==' + VERSION

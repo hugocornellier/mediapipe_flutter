@@ -44,13 +44,6 @@ final class _WorkerTextTask implements TextTaskBackend {
           )
           as Map<String, dynamic>;
 
-  /// Google's browser runtime has no generative text task (upstream-issues.md
-  /// UP-034); their capability queries refuse browsers before a task opens.
-  @override
-  Stream<Map<String, dynamic>> stream(String text) => Stream.error(
-    UnsupportedError("Google's browser text runtime streams no task."),
-  );
-
   @override
   Future<void> dispose() => _worker.close();
 }

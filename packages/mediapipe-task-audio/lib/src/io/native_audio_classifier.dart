@@ -73,9 +73,9 @@ Pointer<Void> openNativeTask(
       ..modelAssetBuffer = model.cast()
       ..modelAssetBufferCount = settings.modelBytes!.length;
   } else {
-    native.ref.baseOptions.modelAssetPath = settings.modelPath!
-        .toNativeUtf8(allocator: arena)
-        .cast();
+    native.ref.baseOptions.modelAssetPath = nativeModelPath(
+      settings.modelPath!,
+    ).toNativeUtf8(allocator: arena).cast();
   }
   Pointer<Pointer<Char>> strings(List<String> values) {
     if (values.isEmpty) return nullptr;

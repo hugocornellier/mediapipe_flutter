@@ -13,8 +13,7 @@ Not published yet. The first release of this rewrite, replacing Google's
 - Proofreader and Summarizer on Android, iOS, macOS, Linux and Windows, with
   streamed updates (`proofreadStream`, `summarizeStream`). Browsers have
   neither task (upstream-issues.md UP-034), which the capability queries
-  report. On Android a `cacheDirectory` is refused, since Google's options
-  there have none.
+  report.
 - Every task is one class with the same API on every platform, created with
   `await Xxx.create(options)` and released with an idempotent `dispose()`.
   `mediapipe_text.dart` is the only app library.
@@ -31,5 +30,3 @@ Not published yet. The first release of this rewrite, replacing Google's
   `dart run mediapipe_core:bundle_models` bundles into the app. `model:` uses
   the bundled copy and downloads at run time only when
   `ModelStore.allowDownloads` is true; app-supplied paths and bytes work too.
-- On Android, a task made from model bytes keeps them until it closes, since
-  Google's SDK reads them in place (UP-033 in upstream-issues.md).

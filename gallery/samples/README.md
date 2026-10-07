@@ -14,9 +14,8 @@ licensed under the Apache License 2.0, preserved in
 | `elephant.png` | `public/elephant.png` | 640 x 640 | `9caa818cdde183d09c56b2f56d4a26b9e54fb78074040be0c819cff91c11c098` |
 
 Unchanged files give the same similarities as Google's demo for the same
-model and delegate. The gallery's preparer, `tool/gallery_builder` or
-`tool/prepare.py`, copies them into the app's samples whenever a build
-bundles Image Embedder.
+model and delegate. The gallery's preparer, `tool/gallery_builder`, copies
+them into the app's samples whenever a build bundles Image Embedder.
 
 # Video clips
 
@@ -42,5 +41,5 @@ Both sources are licensed under the Apache License 2.0.
 H.264 at main profile decodes on every platform and browser the gallery runs
 on, and frequent keyframes keep a browser's frame-by-frame seeking cheap. The
 script strips encoder names and dates, so a rerun with the same ffmpeg writes
-the same bytes. The preparer, `tool/gallery_builder` or `tool/prepare.py`,
-copies both clips into every build's samples, as it does the photos.
+the same bytes. The preparer, `tool/gallery_builder`, copies both clips into
+every build's samples, as it does the photos.

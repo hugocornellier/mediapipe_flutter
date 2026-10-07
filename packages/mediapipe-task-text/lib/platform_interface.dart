@@ -1,5 +1,5 @@
-/// Where the Android and browser plugins plug Google's SDKs into the classic
-/// text tasks.
+/// Where the browser plugin plugs Google's JavaScript runtime into the
+/// classic text tasks.
 ///
 /// Applications should import `mediapipe_text.dart` instead.
 library;

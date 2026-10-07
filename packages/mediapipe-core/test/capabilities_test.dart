@@ -2,10 +2,13 @@ import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart';
 import 'package:test/test.dart';
 
-TaskCapabilities _support(TaskPlatform platform) => TaskCapabilities.macosCpu(
-  platform: platform,
-  gpuUnavailableReason: 'Upstream GPU failure.',
-);
+TaskCapabilities _support(TaskPlatform platform) =>
+    TaskCapabilities.cpuOnTargets(
+      platform: platform,
+      gpuUnavailableReason: 'Upstream GPU failure.',
+      runtimeVersion: '1.1.0',
+      targets: const {'macos/arm64': '14.0'},
+    );
 
 void main() {
   test(

@@ -8,8 +8,10 @@ import 'package:crypto/crypto.dart';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_vision/models.dart';
-import 'package:mediapipe_vision/third_party/mediapipe/interactive_segmenter_bindings.dart'
+import 'package:mediapipe_vision/src/third_party/mediapipe/interactive_segmenter_bindings.dart'
     as abi;
+import 'package:mediapipe_vision/src/third_party/mediapipe/vision_bindings.dart'
+    as mp;
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart' show gpuFaceTestsEnabled;
@@ -322,7 +324,7 @@ void main() {
     'Dart ABI matches the official Python ctypes sizes and field offsets',
     () {
       final sizes = {
-        'MpBaseOptionsC': sizeOf<abi.MpBaseOptions>(),
+        'MpBaseOptionsC': sizeOf<mp.MpBaseOptions>(),
         'InteractiveSegmenterOptionsC':
             sizeOf<abi.MpInteractiveSegmenterOptions>(),
         'MpStrokePointC': sizeOf<abi.MpStrokePoint>(),
@@ -333,21 +335,21 @@ void main() {
         expect(entry.value, reference['abi'][entry.key]['size']);
       }
       using((arena) {
-        final base = arena<abi.MpBaseOptions>();
+        final base = arena<mp.MpBaseOptions>();
         base.ref
-          ..modelAssetBuffer = Pointer.fromAddress(11)
-          ..modelAssetBufferCount = 12
-          ..modelAssetPath = Pointer.fromAddress(13)
-          ..fileDescriptor = 14
-          ..delegate = 15
-          ..hostEnvironment = 16
-          ..hostSystem = 17
-          ..hostVersion = Pointer.fromAddress(18)
-          ..caBundlePath = Pointer.fromAddress(19)
-          ..appId = Pointer.fromAddress(20)
-          ..appVersion = Pointer.fromAddress(21);
+          ..model_asset_buffer = Pointer.fromAddress(11)
+          ..model_asset_buffer_count = 12
+          ..model_asset_path = Pointer.fromAddress(13)
+          ..file_descriptor = 14
+          ..delegateAsInt = 15
+          ..host_environmentAsInt = 16
+          ..host_systemAsInt = 17
+          ..host_version = Pointer.fromAddress(18)
+          ..ca_bundle_path = Pointer.fromAddress(19)
+          ..app_id = Pointer.fromAddress(20)
+          ..app_version = Pointer.fromAddress(21);
         final data = ByteData.sublistView(
-          base.cast<Uint8>().asTypedList(sizeOf<abi.MpBaseOptions>()),
+          base.cast<Uint8>().asTypedList(sizeOf<mp.MpBaseOptions>()),
         );
         final offsets =
             reference['abi']['MpBaseOptionsC']['offsets']
@@ -358,10 +360,10 @@ void main() {
         }
         final stroke = arena<abi.MpStroke>();
         stroke.ref
-          ..brushMode = 3
+          ..brush_mode = 3
           ..points = Pointer.fromAddress(123)
-          ..pointsCount = 9
-          ..isCompleted = true;
+          ..points_count = 9
+          ..is_completed = true;
         final bytes = ByteData.sublistView(
           stroke.cast<Uint8>().asTypedList(sizeOf<abi.MpStroke>()),
         );

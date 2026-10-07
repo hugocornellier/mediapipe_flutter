@@ -8,3 +8,6 @@ int get mpHostSystem =>
 
 /// Browsers load no native library, so no loader error names one.
 StateError? missingLinuxGraphicsLibraries(String loaderError) => null;
+
+/// Model paths pass through unchanged off `dart:io` platforms.
+String nativeModelPath(String path) => path;

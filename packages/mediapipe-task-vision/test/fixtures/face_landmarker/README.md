@@ -1,8 +1,8 @@
 # Official Face Landmarker references
 
-Generated with Google's `mediapipe==1.0.0` macOS arm64 wheel, CPU delegate,
-and the unmodified Face Landmarker float16 version 1 bundle.
-The JSON records the model, wheel library, source revision, and raw-image hashes.
+Generated with Google's 1.1.0 release candidate wheel (`mediapipe-nightly` 1.1.0rc20260925 for macOS arm64, core's `referenceWheels`), CPU delegate, and the unmodified Face Landmarker
+float16 version 1 bundle.
+The JSON records the model, wheel library and raw-image hashes.
 Photographs and their provenance/license remain in [../face_detection](../face_detection).
 
 Ten IMAGE inputs include five photographs, RGB/RGBA pixels, two faces, a rotated

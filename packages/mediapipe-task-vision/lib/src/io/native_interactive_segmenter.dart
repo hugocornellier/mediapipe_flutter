@@ -3,17 +3,18 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_core/platform_interface.dart' show mpHostSystem;
 
-import '../../third_party/mediapipe/interactive_segmenter_bindings.dart' as mp;
+import '../third_party/mediapipe/interactive_segmenter_bindings.dart' as seg;
+import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../types/options.dart';
 import '../types/strokes.dart';
 import '../types/vision_types.dart';
-import 'native_desktop_runtime.dart';
-import 'native_vision_image.dart' show packVisionPixels;
+import 'native_vision_image.dart' show createVisionImage;
+import 'native_vision_task.dart'
+    show checkVisionCall, copyVisionConfidenceMask, setVisionBaseOptions;
 
 /// One Interactive Segmenter session, owned by its persistent worker isolate:
-/// Google's desktop engine, or its iOS SDK through core's adapter.
+/// Google's vision library on macOS, Linux and iOS.
 abstract interface class InteractiveSegmenterSession {
   /// Replace the image, resetting the stroke session.
   void setImage(VisionImage input);
@@ -29,12 +30,11 @@ abstract interface class InteractiveSegmenterSession {
 final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
   /// Create the official CPU task and acquire its native handle.
   NativeInteractiveSegmenter(InteractiveSegmenterOptions options) {
-    if (!Platform.isMacOS && !Platform.isLinux) {
+    if (Platform.isWindows) {
       throw UnsupportedError(
-        'Interactive Segmenter supports macOS arm64 and Linux x64 here.',
+        "Google's Windows library has no Interactive Segmenter.",
       );
     }
-    if (Platform.isLinux) loadOfficialDesktopRuntime();
     if (options.delegate != Delegate.cpu) {
       throw UnsupportedError(
         'Interactive Segmenter supports CPU only. The official macOS runtime '
@@ -43,45 +43,41 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
       );
     }
     using((arena) {
-      final native = arena<mp.MpInteractiveSegmenterOptions>();
-      native.ref.baseOptions
-        ..fileDescriptor = -1
-        ..delegate = 0
-        ..hostSystem = mpHostSystem;
-      if (options.modelPath case final path?) {
-        native.ref.baseOptions.modelAssetPath = path
-            .toNativeUtf8(allocator: arena)
-            .cast();
-      }
-      if (options.modelBytes case final bytes?) {
-        final buffer = arena<Uint8>(bytes.length);
-        buffer.asTypedList(bytes.length).setAll(0, bytes);
-        native.ref.baseOptions
-          ..modelAssetBuffer = buffer.cast()
-          ..modelAssetBufferCount = bytes.length;
-      }
+      final native = arena<seg.MpInteractiveSegmenterOptions>();
+      setVisionBaseOptions(arena, native.ref.base_options, options);
       final output = arena<Pointer<Void>>();
-      _checked((error) => mp.create(native, output, error));
+      _checked(
+        (error) => seg.MpInteractiveSegmenterCreate(native, output, error),
+      );
       _task = output.value;
     });
   }
 
   Pointer<Void> _task = nullptr;
-  Pointer<Void> _image = nullptr;
+  mp.MpImagePtr _image = nullptr;
   bool _hasImage = false;
 
   /// Replace the image, retaining native input ownership until replacement.
   @override
   void setImage(VisionImage input) {
-    final next = _createImage(input);
+    final next = using(
+      (arena) => createVisionImage(
+        arena,
+        input,
+        expandRgbForGpu: false,
+        checked: checkVisionCall,
+      ),
+    );
     try {
       _hasImage = false;
-      _checked((error) => mp.setImage(_task, next, error));
+      _checked(
+        (error) => seg.MpInteractiveSegmenterSetImage(_task, next, error),
+      );
     } catch (_) {
-      mp.imageFree(next);
+      mp.MpImageFree(next);
       rethrow;
     }
-    if (_image != nullptr) mp.imageFree(_image);
+    if (_image != nullptr) mp.MpImageFree(_image);
     _image = next;
     _hasImage = true;
   }
@@ -93,59 +89,42 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
       throw StateError('Call setImage successfully before segment.');
     }
     return using((arena) {
-      final native = arena<mp.MpStrokes>();
-      final values = arena<mp.MpStroke>(strokes.length);
+      final native = arena<seg.MpStrokes>();
+      final values = arena<seg.MpStroke>(strokes.length);
       native.ref
         ..strokes = values
-        ..strokesCount = strokes.length;
+        ..strokes_count = strokes.length;
       for (var i = 0; i < strokes.length; i++) {
         final stroke = strokes[i];
-        final points = arena<mp.MpStrokePoint>(stroke.points.length);
+        final points = arena<seg.MpStrokePoint>(stroke.points.length);
         for (var j = 0; j < stroke.points.length; j++) {
           points[j]
             ..x = stroke.points[j].x
             ..y = stroke.points[j].y;
         }
         values[i]
-          ..brushMode = stroke.brushMode.nativeValue
+          ..brush_mode = stroke.brushMode.nativeValue
           ..points = points
-          ..pointsCount = stroke.points.length
-          ..isCompleted = stroke.isCompleted;
+          ..points_count = stroke.points.length
+          ..is_completed = stroke.isCompleted;
       }
-      final output = arena<Pointer<Void>>();
+      final output = arena<mp.MpImagePtr>();
       try {
-        _checked((error) => mp.segment(_task, native, output, error));
-        final mask = output.value;
-        if (mask == nullptr) throw StateError('MediaPipe returned no mask.');
-        final width = mp.imageWidth(mask);
-        final height = mp.imageHeight(mask);
-        if (width <= 0 ||
-            height <= 0 ||
-            mp.imageChannels(mask) != 1 ||
-            mp.imageByteDepth(mask) != 4) {
-          throw StateError(
-            'MediaPipe returned an invalid float32 confidence mask.',
-          );
-        }
-        final data = arena<Pointer<Float>>();
-        // The official accessor realigns noncontiguous data, just as numpy_view
-        // does. Do not assume ImageFrame row alignment or expose native pointers.
-        _checked((error) => mp.imageData(mask, data, error));
-        if (data.value == nullptr) {
-          throw StateError('MediaPipe returned no mask data.');
-        }
-        return ConfidenceMask(
-          width: width,
-          height: height,
-          confidence: data.value.asTypedList(width * height),
+        _checked(
+          (error) =>
+              seg.MpInteractiveSegmenterSegment(_task, native, output, error),
         );
+        if (output.value == nullptr) {
+          throw StateError('MediaPipe returned no mask.');
+        }
+        return copyVisionConfidenceMask(arena, output.value);
       } catch (_) {
         // A native graph failure can persist. Require a fresh successful image
         // before accepting more segmentation; argument errors never reach here.
         _hasImage = false;
         rethrow;
       } finally {
-        if (output.value != nullptr) mp.imageFree(output.value);
+        if (output.value != nullptr) mp.MpImageFree(output.value);
       }
     });
   }
@@ -158,59 +137,14 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
     _task = nullptr;
     _hasImage = false;
     try {
-      _checked((error) => mp.close(task, error));
+      _checked((error) => seg.MpInteractiveSegmenterClose(task, error));
     } finally {
-      if (_image != nullptr) mp.imageFree(_image);
+      if (_image != nullptr) mp.MpImageFree(_image);
       _image = nullptr;
     }
   }
 }
 
-Pointer<Void> _createImage(VisionImage input) => using((arena) {
-  final output = arena<Pointer<Void>>();
-  try {
-    if (input.path case final path?) {
-      final name = path.toNativeUtf8(allocator: arena).cast<Char>();
-      _checked((error) => mp.imageFromFile(name, output, error));
-    } else {
-      final (pixels, byteCount) = packVisionPixels(
-        arena,
-        input,
-        expandRgb: false,
-      );
-      _checked(
-        (error) => mp.imageFromPixels(
-          input.format == VisionPixelFormat.rgb ? 1 : 2,
-          input.width!,
-          input.height!,
-          pixels,
-          byteCount,
-          output,
-          error,
-        ),
-      );
-    }
-    return output.value;
-  } catch (_) {
-    if (output.value != nullptr) mp.imageFree(output.value);
-    rethrow;
-  }
-});
-
-void _checked(int Function(Pointer<Pointer<Char>>) call) {
-  final error = calloc<Pointer<Char>>();
-  try {
-    final status = call(error);
-    if (status != 0) {
-      throw TaskException(
-        error.value == nullptr
-            ? 'MediaPipe returned status $status.'
-            : error.value.cast<Utf8>().toDartString(),
-        statusCode: status,
-      );
-    }
-  } finally {
-    if (error.value != nullptr) mp.errorFree(error.value);
-    calloc.free(error);
-  }
-}
+/// The stateful API's bindings return the status code as an int.
+void _checked(int Function(Pointer<Pointer<Char>>) call) =>
+    checkVisionCall((error) => mp.MpStatus.fromValue(call(error)));

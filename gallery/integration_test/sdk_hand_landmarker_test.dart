@@ -13,7 +13,9 @@ import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/main.dart';
 
 import 'support/gallery_tiles.dart';
+import 'support/official_landmark_references.dart';
 import 'support/sdk_frames.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 /// `required` fails when the SDK refuses the GPU, as on a phone; `optional`
 /// records a refusal at creation; `skip` runs CPU only.
@@ -26,18 +28,9 @@ import 'support/sdk_frames.dart';
 /// both, as it is for Face Landmarker.
 const _gpu = String.fromEnvironment('SDK_GPU', defaultValue: 'optional');
 
-/// Google's official CPU landmarks for `thumb_up.jpg` (`mediapipe==1.0.0`,
-/// macOS arm64 wheel), from the package's
-/// `test/fixtures/landmark_tasks/official_reference.json`.
-const _official = <(double, double)>[
-  (0.638756, 0.671342), (0.634899, 0.536707), (0.574672, 0.412842), //
-  (0.499685, 0.325514), (0.473628, 0.251028), (0.407497, 0.471301), //
-  (0.337207, 0.467420), (0.441842, 0.509600), (0.480570, 0.518769), //
-  (0.392183, 0.549520), (0.340471, 0.556102), (0.461523, 0.583108), //
-  (0.470589, 0.564142), (0.392376, 0.618645), (0.343047, 0.628003), //
-  (0.450040, 0.643008), (0.464002, 0.622156), (0.392316, 0.681880), //
-  (0.357859, 0.698581), (0.426990, 0.698921), (0.444231, 0.687622),
-];
+/// Google's official CPU landmarks for `thumb_up.jpg`, from the vision
+/// package's `test/fixtures/landmark_tasks/official_reference.json`.
+final _official = officialLandmarkReferences['hand']!['hand']!;
 
 /// Another runtime build and image decoder than the reference's, so the bound
 /// is the cross-runtime one the Android face test uses for CPU against GPU.
@@ -55,13 +48,12 @@ void main() {
     (tester) async {
       await tester.runAsync(() async {
         expect(Platform.isAndroid || Platform.isIOS, isTrue);
-        if (Platform.isAndroid) {
-          expect(
-            handLandmarkerBackendFactory,
-            isNotNull,
-            reason: 'the Android SDK plugin must register automatically',
-          );
-        }
+        expect(
+          handLandmarkerBackendFactory,
+          isNull,
+          reason:
+              "Android and iOS run Google's C library through FFI, not a plugin backend",
+        );
         final assets = await GalleryAssets.unpack();
         final model = await _model();
         final frame = await loadSample('thumb_up.jpg');
@@ -156,11 +148,10 @@ void main() {
     'official SDK Hand Landmarker VIDEO: tracking, blank, queued frames',
     (tester) async {
       await tester.runAsync(() async {
-        final assets = await GalleryAssets.unpack();
         final frame = await loadSample('thumb_up.jpg');
         final task = await HandLandmarker.create(
           HandLandmarkerOptions(
-            modelPath: assets.path('hand_landmarker.task'),
+            model: VisionModels.handLandmarker,
             runningMode: RunningMode.video,
             numHands: 2,
           ),
@@ -246,7 +237,7 @@ void main() {
 }
 
 Future<Uint8List> _model() async {
-  final bytes = await rootBundle.load('assets/models/hand_landmarker.task');
+  final bytes = await rootBundle.load(bundledModelFile('hand_landmarker.task'));
   return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
 }
 

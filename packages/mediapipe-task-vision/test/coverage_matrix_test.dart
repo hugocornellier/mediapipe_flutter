@@ -31,51 +31,15 @@ const _platforms = {
 final _claims = <String, TaskCapabilities Function(TaskPlatform)>{
   'face_detector': faceDetectorCapabilitiesForPlatform,
   'face_landmarker': faceLandmarkerCapabilitiesForPlatform,
-  'gesture_recognizer': (p) => gestureRecognizerCapabilitiesForPlatform(
-    p,
-    officialMacosRuntime: true,
-    officialIosRuntime: true,
-  ),
-  'hand_landmarker': (p) => handLandmarkerCapabilitiesForPlatform(
-    p,
-    officialMacosRuntime: true,
-    officialIosRuntime: true,
-  ),
-  'holistic_landmarker': (p) => holisticLandmarkerCapabilitiesForPlatform(
-    p,
-    officialMacosRuntime: true,
-    officialIosRuntime: true,
-  ),
-  'image_classifier': (p) => imageClassifierCapabilitiesForPlatform(
-    p,
-    officialMacosRuntime: true,
-    officialIosRuntime: true,
-  ),
-  'image_embedder': (p) => imageEmbedderCapabilitiesForPlatform(
-    p,
-    officialMacosRuntime: true,
-    officialIosRuntime: true,
-  ),
-  'image_segmenter': (p) => imageSegmenterCapabilitiesForPlatform(
-    p,
-    officialMacosRuntime: true,
-    officialIosRuntime: true,
-  ),
-  'interactive_segmenter': (p) => interactiveSegmenterCapabilitiesForPlatform(
-    p,
-    officialMacosRuntime: true,
-    officialIosRuntime: true,
-  ),
-  'object_detector': (p) => objectDetectorCapabilitiesForPlatform(
-    p,
-    officialMacosRuntime: true,
-    officialIosRuntime: true,
-  ),
-  'pose_landmarker': (p) => poseLandmarkerCapabilitiesForPlatform(
-    p,
-    officialMacosRuntime: true,
-    officialIosRuntime: true,
-  ),
+  'gesture_recognizer': gestureRecognizerCapabilitiesForPlatform,
+  'hand_landmarker': handLandmarkerCapabilitiesForPlatform,
+  'holistic_landmarker': holisticLandmarkerCapabilitiesForPlatform,
+  'image_classifier': imageClassifierCapabilitiesForPlatform,
+  'image_embedder': imageEmbedderCapabilitiesForPlatform,
+  'image_segmenter': imageSegmenterCapabilitiesForPlatform,
+  'interactive_segmenter': interactiveSegmenterCapabilitiesForPlatform,
+  'object_detector': objectDetectorCapabilitiesForPlatform,
+  'pose_landmarker': poseLandmarkerCapabilitiesForPlatform,
 };
 
 Never _unused(Object? _) => throw UnimplementedError();

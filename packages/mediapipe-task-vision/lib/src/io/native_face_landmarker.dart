@@ -1,70 +1,38 @@
 import 'dart:ffi';
-import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 
-import '../../third_party/mediapipe/face_landmarker_bindings.dart' as mp;
+import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../runner/native_interface.dart';
 import '../types/options.dart';
 import '../types/results.dart';
-import '../types/vision_types.dart';
-import 'face_landmarker_api.dart';
-import 'native_desktop_runtime.dart';
-import 'native_ios_sdk.dart';
-import 'native_vision_image.dart' show nativeString, packVisionPixels;
-
-FaceLandmarkerApi get _api => FaceLandmarkerApi.current;
+import 'native_vision_task.dart'
+    show
+        checkVisionCall,
+        checkVisionCreate,
+        copyVisionCategories,
+        copyVisionNormalizedLandmarks,
+        nativeRunningMode,
+        runVisionRequest,
+        setVisionBaseOptions;
 
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceLandmarker
     implements NativeVisionTask<FaceLandmarkerResult> {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
   NativeFaceLandmarker(FaceLandmarkerOptions options)
-    : _gpu = options.delegate == Delegate.gpu,
-      _officialIos = hasOfficialIosFaceRuntime() {
-    if (!Platform.isMacOS && !Platform.isLinux && !_officialIos && _gpu) {
-      throw UnsupportedError(
-        'GPU face inference requires macOS, Linux or the official iOS SDK '
-        'adapter; this runtime supports CPU only.',
-      );
-    }
-    refuseIosSimulatorGpu(gpu: _gpu);
-    loadOfficialDesktopRuntime();
+    : _gpu = options.delegate == Delegate.gpu {
     using((arena) {
       final native = arena<mp.MpFaceLandmarkerOptions>();
-      final base = native.ref.base_options;
-      base.file_descriptor = -1;
-      base.delegate = options.delegate == Delegate.gpu
-          ? mp.MpDelegate.MP_DELEGATE_GPU
-          : mp.MpDelegate.MP_DELEGATE_CPU;
-      base.host_system = Platform.isIOS
-          ? mp.MpHostSystem.MP_HOST_SYSTEM_IOS
-          : Platform.isAndroid
-          ? mp.MpHostSystem.MP_HOST_SYSTEM_ANDROID
-          : Platform.isLinux
-          ? mp.MpHostSystem.MP_HOST_SYSTEM_LINUX
-          : Platform.isWindows
-          ? mp.MpHostSystem.MP_HOST_SYSTEM_WINDOWS
-          : mp.MpHostSystem.MP_HOST_SYSTEM_MAC;
-      if (options.modelPath case final path?) {
-        // Android's resource resolver treats relative paths as Java assets.
-        // This FFI API reads files, so bypass that resolver with a full path.
-        final filePath = Platform.isAndroid ? File(path).absolute.path : path;
-        base.model_asset_path = filePath.toNativeUtf8(allocator: arena).cast();
-      }
-      if (options.modelBytes case final bytes?) {
-        final buffer = arena<Uint8>(bytes.length);
-        buffer.asTypedList(bytes.length).setAll(0, bytes);
-        base.model_asset_buffer = buffer.cast();
-        base.model_asset_buffer_count = bytes.length;
-      }
+      setVisionBaseOptions(
+        arena,
+        native.ref.base_options,
+        options,
+        officialGpu: true,
+      );
       native.ref
-        // LIVE_STREAM runs on the VIDEO graph, with its flow limiter in
-        // the task runner.
-        ..running_mode = options.runningMode == RunningMode.image
-            ? mp.MpRunningMode.MP_RUNNING_MODE_IMAGE
-            : mp.MpRunningMode.MP_RUNNING_MODE_VIDEO
+        ..running_mode = nativeRunningMode(options.runningMode)
         ..num_faces = options.numFaces
         ..min_face_detection_confidence = options.minFaceDetectionConfidence
         ..min_face_presence_confidence = options.minFacePresenceConfidence
@@ -73,133 +41,62 @@ final class NativeFaceLandmarker
         ..output_facial_transformation_matrixes =
             options.outputFacialTransformationMatrixes;
       final output = arena<mp.MpFaceLandmarkerPtr>();
-      try {
-        _checked((error) => _api.create(native, output, error));
-      } on TaskException catch (error) {
-        // Google's runtime reports every GPU refusal (no EGL display, a
-        // software renderer) as its missing GPU service.
-        if (!_gpu || !error.message.contains('kGpuService')) rethrow;
-        throw TaskException(
-          error.message,
-          statusCode: error.statusCode,
-          gpuUnavailable: true,
-        );
-      }
+      checkVisionCreate(
+        (error) => mp.MpFaceLandmarkerCreate(native, output, error),
+        gpu: _gpu,
+      );
       _detector = output.value;
     });
   }
 
   mp.MpFaceLandmarkerPtr _detector = nullptr;
   final bool _gpu;
-  final bool _officialIos;
-  late final IosBgraStorage? _iosBgraStorage = _officialIos
-      ? iosBgraStorage()
-      : null;
 
-  /// Runs a single image and copies every result before releasing native memory.
-  FaceLandmarkerResult detect(
-    VisionImage input,
-    int rotation, {
-    int? timestamp,
-  }) {
-    return using((arena) {
-      final imageOut = arena<mp.MpImagePtr>();
-      if (input.path case final path?) {
-        final name = path.toNativeUtf8(allocator: arena).cast<Char>();
-        _checked((error) => _api.imageFromFile(name, imageOut, error));
-      } else if (_officialIos && input.format == VisionPixelFormat.bgra) {
-        _checked(
-          (error) => mp.MpStatus.fromValue(
-            createOfficialIosBgraImage(
-              input,
-              arena,
-              imageOut.cast(),
-              error,
-              storage: _iosBgraStorage,
-            ),
-          ),
-        );
-      } else {
-        // Apple's GPU image upload cannot accept three-channel ImageFrames, so
-        // GPU input gets opaque alpha on every host, as in the GPU references.
-        final expandRgb =
-            _gpu && !_officialIos && input.format == VisionPixelFormat.rgb;
-        final (pixels, byteCount) = packVisionPixels(
-          arena,
-          input,
-          expandRgb: expandRgb,
-        );
-        _checked(
-          (error) => _api.imageFromData(
-            input.format == VisionPixelFormat.rgb && !expandRgb
-                ? mp.MpImageFormat.kMpImageFormatSrgb
-                : mp.MpImageFormat.kMpImageFormatSrgba,
-            input.width!,
-            input.height!,
-            pixels,
-            byteCount,
-            imageOut,
-            error,
-          ),
-        );
-      }
-      final image = imageOut.value;
-      try {
-        final options = arena<mp.MpImageProcessingOptions>();
-        options.ref.rotation_degrees = rotation;
-        final result = arena<mp.MpFaceLandmarkerResult>();
-        if (timestamp == null) {
-          _checked(
-            (error) =>
-                _api.detectImage(_detector, image, options, result, error),
-          );
-        } else {
-          _checked(
-            (error) => _api.detectForVideo(
-              _detector,
-              image,
-              options,
-              timestamp,
-              result,
-              error,
-            ),
-          );
-        }
-        try {
-          return FaceLandmarkerResult(
-            imageWidth: _api.imageWidth(image),
-            imageHeight: _api.imageHeight(image),
-            timestampMilliseconds: timestamp,
-            faceLandmarks: [
-              for (var i = 0; i < result.ref.face_landmarks_count; i++)
-                _copyLandmarks(result.ref.face_landmarks[i]),
-            ],
-            faceBlendshapes: [
-              for (var i = 0; i < result.ref.face_blendshapes_count; i++)
-                _copyCategories(result.ref.face_blendshapes[i]),
-            ],
-            facialTransformationMatrixes: [
-              for (
-                var i = 0;
-                i < result.ref.facial_transformation_matrixes_count;
-                i++
-              )
-                _copyMatrix(result.ref.facial_transformation_matrixes[i]),
-            ],
-          );
-        } finally {
-          // This releases the contents, while Arena owns the outer struct.
-          _api.closeResult(result);
-        }
-      } finally {
-        _api.imageFree(image);
-      }
-    });
-  }
-
+  /// Runs one IMAGE or VIDEO request and copies every result.
   @override
-  FaceLandmarkerResult process(VisionTaskInput input) =>
-      detect(input.$1, input.$2, timestamp: input.$3);
+  FaceLandmarkerResult process(VisionTaskInput input) => runVisionRequest(
+    input,
+    gpu: _gpu,
+    allocate: (arena) => arena<mp.MpFaceLandmarkerResult>(),
+    image: (image, processing, result, error) => mp.MpFaceLandmarkerDetectImage(
+      _detector,
+      image,
+      processing,
+      result,
+      error,
+    ),
+    video: (image, processing, timestamp, result, error) =>
+        mp.MpFaceLandmarkerDetectForVideo(
+          _detector,
+          image,
+          processing,
+          timestamp,
+          result,
+          error,
+        ),
+    closeResult: mp.MpFaceLandmarkerCloseResult,
+    copy: (request, result) => FaceLandmarkerResult(
+      imageWidth: mp.MpImageGetWidth(request.image),
+      imageHeight: mp.MpImageGetHeight(request.image),
+      timestampMilliseconds: request.timestamp,
+      faceLandmarks: [
+        for (var i = 0; i < result.ref.face_landmarks_count; i++)
+          copyVisionNormalizedLandmarks(result.ref.face_landmarks[i]),
+      ],
+      faceBlendshapes: copyVisionCategories(
+        result.ref.face_blendshapes,
+        result.ref.face_blendshapes_count,
+      ),
+      facialTransformationMatrixes: [
+        for (
+          var i = 0;
+          i < result.ref.facial_transformation_matrixes_count;
+          i++
+        )
+          _copyMatrix(result.ref.facial_transformation_matrixes[i]),
+      ],
+    ),
+  );
 
   /// Closes the task exactly once, including when native shutdown reports failure.
   @override
@@ -207,55 +104,9 @@ final class NativeFaceLandmarker
     if (_detector == nullptr) return;
     final pointer = _detector;
     _detector = nullptr;
-    try {
-      _checked((error) => _api.close(pointer, error));
-    } finally {
-      _iosBgraStorage?.close();
-    }
+    checkVisionCall((error) => mp.MpFaceLandmarkerClose(pointer, error));
   }
 }
-
-void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) {
-  final error = calloc<Pointer<Char>>();
-  try {
-    final status = call(error);
-    if (status != mp.MpStatus.kMpOk) {
-      throw TaskException(
-        nativeString(error.value) ?? 'MediaPipe returned ${status.name}',
-        statusCode: status.value,
-      );
-    }
-  } finally {
-    if (error.value != nullptr) _api.errorFree(error.value);
-    calloc.free(error);
-  }
-}
-
-List<NormalizedLandmark> _copyLandmarks(mp.MpNormalizedLandmarks value) => [
-  for (var i = 0; i < value.landmarks_count; i++)
-    NormalizedLandmark(
-      x: value.landmarks[i].x,
-      y: value.landmarks[i].y,
-      z: value.landmarks[i].z,
-      visibility: value.landmarks[i].has_visibility
-          ? value.landmarks[i].visibility
-          : null,
-      presence: value.landmarks[i].has_presence
-          ? value.landmarks[i].presence
-          : null,
-      name: nativeString(value.landmarks[i].name),
-    ),
-];
-
-List<MediaPipeCategory> _copyCategories(mp.MpCategories value) => [
-  for (var i = 0; i < value.categories_count; i++)
-    MediaPipeCategory(
-      index: value.categories[i].index,
-      score: value.categories[i].score,
-      categoryName: nativeString(value.categories[i].category_name),
-      displayName: nativeString(value.categories[i].display_name),
-    ),
-];
 
 Matrix _copyMatrix(mp.MpMatrix value) => Matrix(
   rows: value.rows,

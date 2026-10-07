@@ -4,36 +4,28 @@ import 'package:gallery_builder/models.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-/// Each package's `lib/models.dart`, with adjacent string literals joined so
-/// a URL split across lines reads as one literal.
-String _pins(String package) {
+/// The names in a family's `XxxModels.byName`, read from its
+/// `lib/models.dart`, which this tool cannot import.
+Set<String> _byName(String family) {
   final source = File(
-    p.join('..', '..', 'packages', package, 'lib', 'models.dart'),
+    p.join('..', '..', 'packages', packageOf(family), 'lib', 'models.dart'),
   ).readAsStringSync();
-  return source.replaceAll(RegExp(r"'\s*\n\s*'"), '');
+  final start = source.indexOf('static const byName');
+  final block = source.substring(start, source.indexOf('};', start));
+  return RegExp(
+    r"'(\w+)':",
+  ).allMatches(block).map((match) => match.group(1)!).toSet();
 }
 
 void main() {
   for (final MapEntry(key: task, value: model) in models.entries) {
-    test('$task pins the same model as ${packageOf(task)}', () {
-      final pins = _pins(packageOf(task));
-      final url = RegExp.escape("'${model.url}'");
-      final sha = RegExp.escape("'${model.sha256}'");
-      // `const nameUrl = ...; const nameSha256 = ...;` in vision and audio,
-      // `DownloadAsset(url: ..., sha256: ...)` in text.
-      final named = RegExp('const (\\w+)Url =\\s*$url;').firstMatch(pins);
-      final paired =
-          (named != null &&
-              RegExp(
-                'const ${named.group(1)}Sha256 =\\s*$sha;',
-              ).hasMatch(pins)) ||
-          RegExp('url:\\s*$url,\\s*sha256:\\s*$sha').hasMatch(pins);
+    test('$task lists a model ${model.family} can bundle', () {
       expect(
-        paired,
-        isTrue,
+        _byName(model.family),
+        contains(model.name),
         reason:
-            '${model.url} with ${model.sha256} is not pinned in '
-            'packages/${packageOf(task)}/lib/models.dart',
+            '${model.name} is not in packages/${packageOf(model.family)}/'
+            'lib/models.dart byName',
       );
     });
   }

@@ -101,9 +101,7 @@ final class AudioClassifier {
     var model = options.modelBytes;
     AudioStreamRunner? stream;
     AudioClassifierRunner? clips;
-    if (audioStreamBackendFactory case final factory?) {
-      stream = await BackendStreamRunner.open(factory, options, results);
-    } else if (audioTaskBackendFactory case final factory?) {
+    if (audioTaskBackendFactory case final factory?) {
       // The browser's clips task gets the bytes in place of the URL, so the
       // model is downloaded once.
       model ??= await readModelBytes(options.modelPath!);

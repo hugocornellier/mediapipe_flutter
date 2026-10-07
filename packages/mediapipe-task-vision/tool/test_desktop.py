@@ -2,7 +2,6 @@
 import argparse
 import hashlib
 import json
-import os
 from pathlib import Path
 import platform
 import re
@@ -15,7 +14,8 @@ import urllib.request
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
-from consumer_packages import copy_package  # noqa: E402
+from consumer_packages import (  # noqa: E402
+    consumer_environment, copy_package, core_hook_defines, family_runtime)
 
 
 def digest(path):
@@ -88,6 +88,8 @@ def main():
                    ('holisticLandmarker', 'holistic_landmarker.task')]
     if args.segmenter_tasks:
         models += [('deepLabV3', 'deeplab_v3.tflite')]
+    if args.interactive_segmenter:
+        models += [('interactiveSegmenterModel', 'interactive_segmentation.task')]
     for prefix, name in models:
         url = dart_strings(re.search(r'const ' + prefix + r'Url\s*=(.*?);', model_pins, re.S).group(1))
         sha = dart_strings(re.search(r'const ' + prefix + r'Sha256\s*=(.*?);', model_pins, re.S).group(1))
@@ -114,8 +116,6 @@ def main():
     if args.interactive_segmenter:
         if target != 'linux':
             raise SystemExit('Google exports the stateful Interactive Segmenter on Linux only.')
-        from prepare_interactive_segmenter import MODEL_SHA256, MODEL_URL
-        download(MODEL_URL, MODEL_SHA256, PACKAGE / 'models/interactive_segmentation.task')
         # Rewrites the checked-in fixtures with this host's wheel, as above.
         run([oracle['python'], '-u', '-X', 'faulthandler', '-B',
              PACKAGE / 'tool/generate_interactive_segmenter_reference.py'],
@@ -165,7 +165,6 @@ dependencies:
   mediapipe_vision:
     path: ../packages/mediapipe-task-vision
 dev_dependencies:
-  archive: ^4.2.0
   crypto: ^3.0.6
   test: ^1.31.0
   integration_test:
@@ -174,8 +173,7 @@ dev_dependencies:
     sdk: flutter
 hooks:
   user_defines:
-    mediapipe_vision:
-      prebuilt: true
+''' + core_hook_defines() + '''    mediapipe_vision:
       tasks: [''' + ', '.join(selected) + ''']
 flutter:
   assets:
@@ -213,10 +211,6 @@ flutter:
         # Every camera-capable task, in VIDEO and LIVE_STREAM on this host's runtime.
         shutil.copyfile(PACKAGE / 'test/live_stream_runtime_test.dart',
                         app / 'test/live_stream_runtime_test.dart')
-    (app / 'test/native_assets').mkdir()
-    # Core owns the official wheel download; its test still runs on each desktop host.
-    shutil.copyfile(REPO / 'packages/mediapipe-core/test/native_assets/wheel_library_test.dart',
-                    app / 'test/native_assets/wheel_library_test.dart')
     (app / 'integration_test').mkdir()
     for source, destination in [('flutter_smoke_test.dart.template', 'integration_test/face_test.dart'),
                                 ('flutter_release_smoke.dart.template', 'lib/main.dart')]:
@@ -235,23 +229,28 @@ flutter:
             content = content.replace('      report(', '      await runSegmenterTasksSmoke();\n      report(')
             content += (PACKAGE / 'tool/flutter_desktop_segmenter_smoke.dart.template').read_text()
         (app / destination).write_text(content)
-    env = {**os.environ, 'MEDIAPIPE_CPU_REFERENCE_DIR': str(references)}
+    env = consumer_environment(MEDIAPIPE_CPU_REFERENCE_DIR=str(references))
+    # Google's vision library, which the hook bundles unchanged on Linux and
+    # Windows; the references come from its wheel's own library.
+    vision = family_runtime('vision', target + '/x64')
     run(['flutter', 'pub', 'get'], app, root / 'pub.log', env)
     # Every selected task builds its own tasks per reference case.
     run(['dart', 'test', '--reporter', 'expanded'], app, root / 'dart-tests.log',
         env, timeout=2400)
     run(['flutter', 'test', '-d', target, 'integration_test/face_test.dart',
          '--reporter', 'expanded'], app, root / 'integration.log', env)
-    report = {'target': target + '/x64', 'delegate': 'CPU', 'library_sha256': library_sha,
+    report = {'target': target + '/x64', 'delegate': 'CPU', 'library_sha256': vision['sha256'],
+              'reference_library_sha256': library_sha,
               'reference_comparison': comparisons, 'modes': {}}
     for mode in ['debug', 'release']:
         run(['flutter', 'build', target, '--' + mode], app, root / f'build-{mode}.log', env)
         bundle = app / (f'build/linux/x64/{mode}/bundle' if target == 'linux' else
                         f'build/windows/x64/runner/{mode.capitalize()}')
         libraries = [path for path in bundle.rglob('*')
-                     if path.is_file() and path.suffix in ('.so', '.dll') and digest(path) == library_sha]
-        if not libraries:
-            raise RuntimeError(f'{mode} bundle is missing the pinned native runtime')
+                     if path.is_file() and path.suffix in ('.so', '.dll')
+                     and digest(path) == vision['sha256']]
+        if len(libraries) != 1:
+            raise RuntimeError(f"{mode} bundle must hold Google's vision library once: {libraries}")
         deployed = root / 'deployed' / mode
         shutil.copytree(bundle, deployed)
         executable = deployed / ('mediapipe_desktop_smoke.exe' if target == 'windows'

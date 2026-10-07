@@ -2,15 +2,22 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:crypto/crypto.dart';
 import 'package:gallery_builder/models.dart';
-import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+
+import '../../../packages/mediapipe-task-vision/vision_tasks.dart';
 
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
     ..addOption('target', mandatory: true)
     ..addOption('tasks', help: 'Comma-separated task subset.')
+    ..addOption(
+      'asset-source',
+      help:
+          "A directory holding Google's per-family MediaPipe libraries named by "
+          'SHA-256, for offline builds; written to '
+          'hooks.user_defines.mediapipe_core.asset_source.',
+    )
     ..addOption(
       'modern-text-reference',
       help:
@@ -29,18 +36,18 @@ Future<void> main(List<String> arguments) async {
   }
 
   final target = options.option('target')!;
-  final available = targetTasks[target];
+  final targets = galleryTargets(visionRuntimeTasks);
+  final available = targets[target];
   if (available == null) {
     stderr.writeln(
-      'This Dart preparer supports ${targetTasks.keys.join(', ')}; prepare '
-      'other targets with python3.12 -B gallery/tool/prepare.py.',
+      'Unknown target $target; choose one of ${targets.keys.join(', ')}.',
     );
     exitCode = 64;
     return;
   }
   final requested = options.option('tasks');
   final tasks = requested == null
-      ? available.difference(modernTextTasks)
+      ? available
       : requested.split(',').map((task) => task.trim()).toSet();
   final unknown = tasks.difference(available);
   if (unknown.isNotEmpty) {
@@ -56,6 +63,10 @@ Future<void> main(List<String> arguments) async {
       target,
       tasks.toList()..sort(),
       referenceDirectory: options.option('modern-text-reference'),
+      assetSource: switch (options.option('asset-source')) {
+        final path? => p.absolute(path),
+        null => null,
+      },
     );
   } on Object catch (error) {
     // Nothing needs cleaning up: a rerun keeps the models already verified
@@ -70,37 +81,17 @@ Future<void> _prepare(
   String target,
   List<String> tasks, {
   String? referenceDirectory,
+  String? assetSource,
 }) async {
   final repo = _repositoryRoot();
   final gallery = p.join(repo, 'gallery');
-  final modelsDirectory = Directory(p.join(gallery, 'assets/models'));
   final samplesDirectory = Directory(p.join(gallery, 'assets/samples'));
   final referencesDirectory = Directory(
     p.join(gallery, 'assets/references/modern_text'),
   );
-  await modelsDirectory.create(recursive: true);
-
-  final client = http.Client();
-  try {
-    for (final task in tasks) {
-      final model = models[task]!;
-      stdout.writeln('Preparing $task (${model.fileName})...');
-      await _prepareModel(
-        model,
-        File(p.join(modelsDirectory.path, model.fileName)),
-        client,
-      );
-    }
-  } finally {
-    client.close();
-  }
-  // Models another target or an earlier task list left behind.
-  final bundled = {for (final task in tasks) models[task]!.fileName};
-  await for (final entity in modelsDirectory.list()) {
-    if (entity is File && !bundled.contains(p.basename(entity.path))) {
-      await entity.delete();
-    }
-  }
+  // Models the gallery bundled itself before it used `bundle_models`.
+  final legacyModels = Directory(p.join(gallery, 'assets/models'));
+  if (await legacyModels.exists()) await legacyModels.delete(recursive: true);
 
   await _replaceDirectory(samplesDirectory);
   final sampleNames = <String>[];
@@ -122,11 +113,14 @@ Future<void> _prepare(
   sampleNames.sort();
 
   // Google's answers for the generative text suite, from the wheel of the
-  // emulator's runtime version on this architecture, or the macOS fixtures.
+  // device's architecture, or the macOS fixtures. The browser suites compare
+  // EmbeddingGemma with Google's JavaScript on the same page instead.
   if (await referencesDirectory.exists()) {
     await referencesDirectory.delete(recursive: true);
   }
-  final modernText = tasks.where(modernTextTasks.contains).toList();
+  final modernText = target == 'web'
+      ? <String>[]
+      : tasks.where(modernTextTasks.contains).toList();
   if (modernText.isNotEmpty) {
     await referencesDirectory.create(recursive: true);
     for (final task in modernText) {
@@ -148,22 +142,10 @@ Future<void> _prepare(
     }
   }
 
-  final modelNames = <String, String>{
-    for (final task in tasks) task: models[task]!.fileName,
-  };
-  final macos = target.startsWith('macos/');
-  final macosEngine = macos && needsMacosEngine(tasks);
   final manifest = <String, Object?>{
     'target': target,
     'tasks': tasks,
-    'models': modelNames,
     'samples': sampleNames,
-    'macos_engine_tasks': [
-      if (macosEngine) ...tasks.where(macosEngineTasks.contains),
-    ],
-    'official_ios_sdk': null,
-    'official_android_sdk': macos ? null : '1.0.0',
-    'official_web_sdk': null,
   };
   await File(
     p.join(gallery, 'assets/manifest.json'),
@@ -172,21 +154,38 @@ Future<void> _prepare(
     _pubspec(
       target,
       tasks,
-      modelNames,
       sampleNames,
-      macosEngine: macosEngine,
+      assetSource: assetSource,
       references: modernText.isNotEmpty,
     ),
   );
+
+  // The gallery bundles its models as any app does: listed in pubspec, then
+  // downloaded and verified by core's command.
+  await _run('flutter', ['pub', 'get'], gallery);
+  for (var attempt = 1; ; attempt++) {
+    try {
+      await _run('dart', ['run', 'mediapipe_core:bundle_models'], gallery);
+      break;
+    } on Object catch (error) {
+      // A phone build should not fail on one dropped connection; a rerun
+      // keeps the models already verified.
+      if (attempt == 3) rethrow;
+      stderr.writeln('  attempt $attempt failed ($error); retrying');
+      await Future<void>.delayed(Duration(seconds: 2 * attempt));
+    }
+  }
 
   stdout.writeln('$target: ${tasks.length} task(s) bundled');
   for (final task in tasks) {
     stdout.writeln('  + $task');
   }
-  stdout.writeln(
-    '\nNext: cd gallery, then flutter run -d '
-    '${macos ? 'macos' : '<device-id>'} --release',
-  );
+  final device = switch (target.split('/').first) {
+    'web' => 'chrome',
+    final desktop && ('macos' || 'linux' || 'windows') => desktop,
+    _ => '<device-id>',
+  };
+  stdout.writeln('\nNext: cd gallery, then flutter run -d $device --release');
 }
 
 /// The checkout this script belongs to, found by the marker file at its
@@ -219,106 +218,66 @@ Future<void> _replaceDirectory(Directory directory) async {
   await directory.create(recursive: true);
 }
 
-Future<String> _sha256(File file) async =>
-    (await sha256.bind(file.openRead()).first).toString();
-
-/// Keeps a model already verified by an earlier run, and otherwise downloads
-/// it, retrying twice: a phone build should not fail on one dropped
-/// connection.
-Future<void> _prepareModel(
-  Model model,
-  File destination,
-  http.Client client,
+/// Runs [executable] in [directory], streaming its output, and throws when
+/// it fails.
+Future<void> _run(
+  String executable,
+  List<String> arguments,
+  String directory,
 ) async {
-  if (await destination.exists() &&
-      await _sha256(destination) == model.sha256) {
-    stdout.writeln('  already downloaded and verified');
-    return;
-  }
-  for (var attempt = 1; ; attempt++) {
-    try {
-      await _downloadVerified(model, destination, client);
-      return;
-    } on Object catch (error) {
-      if (attempt == 3) {
-        throw StateError('${model.fileName}: $error');
-      }
-      stderr.writeln('  attempt $attempt failed ($error); retrying');
-      await Future<void>.delayed(Duration(seconds: 2 * attempt));
-    }
-  }
-}
-
-Future<void> _downloadVerified(
-  Model model,
-  File destination,
-  http.Client client,
-) async {
-  final source = Platform.environment['MEDIAPIPE_ASSET_SOURCE'];
-  final uri = source == null || source.isEmpty
-      ? Uri.parse(model.url)
-      : source.startsWith('http://') || source.startsWith('https://')
-      ? Uri.parse(
-          '${source.endsWith('/') ? source : '$source/'}${model.sha256}',
-        )
-      : File(p.join(source, model.sha256)).uri;
-  final temporary = File('${destination.path}.download');
-  try {
-    if (uri.scheme == 'file') {
-      await File.fromUri(uri).copy(temporary.path);
-    } else {
-      final response = await client
-          .send(http.Request('GET', uri))
-          .timeout(const Duration(seconds: 60));
-      if (response.statusCode != HttpStatus.ok) {
-        throw HttpException('HTTP ${response.statusCode}', uri: uri);
-      }
-      final sink = temporary.openWrite();
-      try {
-        await sink.addStream(
-          response.stream.timeout(const Duration(seconds: 60)),
-        );
-      } finally {
-        await sink.close();
-      }
-    }
-    final actual = await _sha256(temporary);
-    if (actual != model.sha256) {
-      throw StateError(
-        'SHA-256 mismatch for ${model.fileName}: expected ${model.sha256}, got $actual',
-      );
-    }
-    await temporary.rename(destination.path);
-  } finally {
-    if (await temporary.exists()) await temporary.delete();
+  final process = await Process.start(
+    executable,
+    arguments,
+    workingDirectory: directory,
+    runInShell: Platform.isWindows,
+    mode: ProcessStartMode.inheritStdio,
+  );
+  final code = await process.exitCode;
+  if (code != 0) {
+    throw StateError('$executable ${arguments.join(' ')} exited with $code');
   }
 }
 
 String _pubspec(
   String target,
   List<String> tasks,
-  Map<String, String> models,
   List<String> samples, {
-  required bool macosEngine,
+  required String? assetSource,
   required bool references,
 }) {
-  final assets = <String>{...models.values}.toList()..sort();
-  // camera_desktop supplies macOS preview and raw image streaming; camera
-  // itself supplies Android's.
-  final camera = target.startsWith('macos/')
+  // camera_desktop supplies the desktop preview and raw image streaming;
+  // camera itself supplies the mobile and browser implementations.
+  final camera = target.startsWith(RegExp('macos|linux|windows'))
       ? '  camera: ^0.12.1\n  camera_desktop: ^1.2.2'
       : '  camera: ^0.12.1';
-  // The one setting an app writes besides `tasks`: Google's macOS engine is
-  // opt-in, and every other target picks its runtime by default.
-  final core = macosEngine
-      ? '    mediapipe_core:\n      tasks_runtime: true\n'
-      : '';
+  // Without one the hooks download the libraries, as an app's would.
+  final core = assetSource == null
+      ? ''
+      : '    mediapipe_core:\n      asset_source: $assetSource\n';
   final entries = [
-    for (final name in assets) '    - assets/models/$name',
+    '    - assets/mediapipe/',
     for (final name in samples) '    - assets/samples/$name',
     if (references) '    - assets/references/modern_text/',
   ].join('\n');
-  final nativeTasks = tasks.where((task) => !nonVisionTasks.contains(task));
+  final nativeTasks = target == 'web'
+      ? tasks.where(webHostTestTasks.contains)
+      : tasks.where((task) => !nonVisionTasks.contains(task));
+  final defines = StringBuffer();
+  for (final family in [
+    'mediapipe_vision',
+    'mediapipe_text',
+    'mediapipe_audio',
+  ]) {
+    final names = {
+      for (final task in tasks)
+        if (models[task]!.family == family) models[task]!.name,
+    }.toList()..sort();
+    defines.writeln('    $family:');
+    if (family == 'mediapipe_vision') {
+      defines.writeln('      tasks: [${nativeTasks.join(', ')}]');
+    }
+    defines.writeln('      models: [${names.join(', ')}]');
+  }
   return '''# Generated by tool/gallery_builder for $target. Do not edit by hand:
 # the task list is per-target and the build hook rejects unavailable tasks.
 name: mediapipe_gallery
@@ -359,9 +318,7 @@ dev_dependencies:
 
 hooks:
   user_defines:
-$core    mediapipe_vision:
-      tasks: [${nativeTasks.join(', ')}]
-
+$core$defines
 flutter:
   uses-material-design: true
   fonts:

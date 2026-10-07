@@ -25,20 +25,34 @@ Future<void> _pumpLivePage(WidgetTester tester, Size size) async {
   final previous = CameraPlatform.instance;
   CameraPlatform.instance = ScriptedCamera(cameras: const []);
   addTearDown(() => CameraPlatform.instance = previous);
-  final task = supportedTasks(_platform, {'face_landmarker'}, const {}).single;
+  final task = supportedTasks(_platform, {'face_landmarker'}).single;
   await tester.pumpWidget(
     MaterialApp(
-      home: LivePage(
-        task: task,
-        platform: _platform,
-        officialMacosLandmarkTasks: const {},
-      ),
+      home: LivePage(task: task, platform: _platform),
     ),
   );
   await tester.pump();
 }
 
 void main() {
+  testWidgets('the camera demo opens idle, without capturing', (tester) async {
+    final previous = CameraPlatform.instance;
+    final camera = ScriptedCamera();
+    CameraPlatform.instance = camera;
+    addTearDown(() => CameraPlatform.instance = previous);
+    final task = supportedTasks(_platform, {'face_landmarker'}).single;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LivePage(task: task, platform: _platform),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(camera.created, isEmpty);
+    expect(camera.activeStreams, 0);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a phone opens Output and Stats as dialogs over the feed', (
     tester,
   ) async {

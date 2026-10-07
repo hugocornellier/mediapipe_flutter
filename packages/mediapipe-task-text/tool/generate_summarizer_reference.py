@@ -15,9 +15,10 @@ import threading
 import time
 
 PACKAGE = Path(__file__).resolve().parents[1]
-MODEL_SHA256 = '8b2d4ef09236adb9ead3127325526ba1aa5a59feb7c5de2d3f5958f27479de59'
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
 from official_wheels import host_runtime  # noqa: E402
+from model_pins import model_sha256  # noqa: E402
+MODEL_SHA256 = model_sha256('summarization_quant_200m_2modes.litertlm')
 MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/text_summarizer/200m/1/summarization_quant_200m_2modes.litertlm'
 
 
@@ -27,8 +28,6 @@ def main():
                         help='an extracted wheel to import instead of the installed one')
     parser.add_argument('--output', type=Path,
                         default=PACKAGE / 'test/fixtures/summarizer/official_reference.json')
-    parser.add_argument('--runtime-version',
-                        help="Google's release to compare with instead of this host's pin")
     args = parser.parse_args()
     if args.python_package_root:
         sys.path.insert(0, str(args.python_package_root.resolve()))
@@ -36,7 +35,7 @@ def main():
     import mediapipe as mp
     from mediapipe.tasks.python.text import text_summarizer as api
     from mediapipe.tasks.python.core.base_options_c import MpBaseOptionsC
-    runtime = host_runtime(args.runtime_version)
+    runtime = host_runtime()
     assert mp.__version__ == runtime['version'], mp.__version__
     library = Path(mp.__file__).parent / 'tasks/c' / runtime['library']
     assert hashlib.sha256(library.read_bytes()).hexdigest() == runtime['library_sha256']

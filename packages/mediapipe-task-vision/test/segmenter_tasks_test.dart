@@ -17,7 +17,7 @@ typedef _Task = (
 
 // The task is validated against the official wheel that ships the same
 // native library on Linux and Windows, and on Google's macOS engine against
-// same-host outputs (tool/test_macos_tasks_runtime.py), since its
+// same-host outputs (tool/test_macos_references.py), since its
 // CPU output drifts between Apple CPUs.
 final _unvalidatedHost =
     Platform.isMacOS &&

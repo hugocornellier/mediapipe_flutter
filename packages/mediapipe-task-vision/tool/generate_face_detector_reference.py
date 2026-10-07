@@ -1,7 +1,7 @@
 """Regenerate reviewed goldens with Google's official macOS arm64 Python API.
 
 Run from the package root in a Python 3.12 venv with the host's pinned runtime
-from official_face_runtime.py (1.0.0 on macOS and Windows, 1.0.1 on Linux).
+from official_face_runtime.py (core's referenceWheels row for this host).
 The Dart tests consume the checked-in JSON; they do not need Python.
 """
 import argparse
@@ -12,6 +12,7 @@ from pathlib import Path
 import platform
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
+from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
 
 import mediapipe as mp
 import numpy as np
@@ -21,7 +22,7 @@ from mediapipe.tasks.python.vision.core.image_processing_options import ImagePro
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "test/fixtures/face_detection"
 MODEL = ROOT / "models/blaze_face_short_range.tflite"
-MODEL_SHA256 = "b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f"
+MODEL_SHA256 = model_sha256('blaze_face_short_range.tflite')
 
 
 def digest(path):

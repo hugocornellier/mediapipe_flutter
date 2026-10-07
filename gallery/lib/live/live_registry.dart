@@ -7,8 +7,6 @@ import 'face_overlay.dart';
 import 'landmark_overlay.dart';
 import 'live_camera_controller.dart';
 import 'live_tasks.dart';
-import 'live_registry_additions_web.dart'
-    if (dart.library.io) 'live_registry_additions_native.dart';
 
 /// The two things a live tile contributes beyond the shared controller.
 ///
@@ -31,7 +29,38 @@ final _demos = <String, LiveDemo>{
     task: FaceLandmarkerLiveTask.new,
     overlay: _faceOverlay,
   ),
-  ...additionalLiveDemos(_landmarkOverlay),
+  'hand_landmarker_live': (
+    task: HandLandmarkerLiveTask.new,
+    overlay: _landmarkOverlay,
+  ),
+  'pose_landmarker_live': (
+    task: PoseLandmarkerLiveTask.new,
+    overlay: _landmarkOverlay,
+  ),
+  'gesture_recognizer_live': (
+    task: GestureRecognizerLiveTask.new,
+    overlay: _landmarkOverlay,
+  ),
+  'holistic_landmarker_live': (
+    task: HolisticLandmarkerLiveTask.new,
+    overlay: _landmarkOverlay,
+  ),
+  'face_detector_live': (
+    task: FaceDetectorLiveTask.new,
+    overlay: _landmarkOverlay,
+  ),
+  'object_detector_live': (
+    task: ObjectDetectorLiveTask.new,
+    overlay: _landmarkOverlay,
+  ),
+  'image_classifier_live': (
+    task: ImageClassifierLiveTask.new,
+    overlay: _landmarkOverlay,
+  ),
+  'image_segmenter_live': (
+    task: ImageSegmenterLiveTask.new,
+    overlay: _landmarkOverlay,
+  ),
 };
 
 LiveDemo? liveDemoFor(String id) => _demos[id];

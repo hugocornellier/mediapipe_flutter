@@ -1,5 +1,5 @@
-/// A task on an official platform SDK adapter (Google's browser runtime or
-/// Android SDK): the shared checks, then the backend, in submission order.
+/// A task on the browser adapter (Google's JavaScript runtime): the shared
+/// checks, then the backend, in submission order.
 library;
 
 import '../types/vision_types.dart';

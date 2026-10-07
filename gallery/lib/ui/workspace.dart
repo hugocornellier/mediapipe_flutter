@@ -361,7 +361,7 @@ Future<void> showTaskInfo(BuildContext context, GalleryTask task) {
             const SizedBox(height: 18),
             const Eyebrow('Model'),
             const SizedBox(height: 6),
-            Text(task.model, style: label),
+            Text(task.modelFile, style: label),
             const SizedBox(height: 18),
             const Eyebrow('Guide'),
             const SizedBox(height: 6),
@@ -380,6 +380,12 @@ Future<void> showTaskInfo(BuildContext context, GalleryTask task) {
                 ),
               ),
             ),
+            if (task.gemmaModel) ...[
+              const SizedBox(height: 18),
+              const Eyebrow('Terms'),
+              const SizedBox(height: 6),
+              const GemmaNotice(),
+            ],
             const SizedBox(height: 18),
             Text(
               'Settings, the model and the delegate are in the settings '
@@ -397,4 +403,53 @@ Future<void> showTaskInfo(BuildContext context, GalleryTask task) {
       ],
     ),
   );
+}
+
+/// The notice the Gemma Terms of Use ask an app to give with a Gemma model,
+/// with links to the terms and the Prohibited Use Policy they include.
+class GemmaNotice extends StatelessWidget {
+  const GemmaNotice({super.key});
+
+  static final terms = Uri.parse('https://ai.google.dev/gemma/terms');
+  static final policy = Uri.parse(
+    'https://ai.google.dev/gemma/prohibited_use_policy',
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final c = GalleryColors.of(context);
+    final style = TextStyle(color: c.muted, fontSize: Sizes.xs, height: 1.5);
+    Widget link(Uri uri, String text) => Link(
+      uri: uri,
+      target: LinkTarget.blank,
+      builder: (context, openLink) => InkWell(
+        onTap: openLink,
+        child: Text(
+          text,
+          style: style.copyWith(
+            color: c.teal,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Gemma is provided under and subject to the Gemma Terms of Use, '
+          'which include its Prohibited Use Policy.',
+          style: style,
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 16,
+          children: [
+            link(terms, 'Gemma Terms of Use'),
+            link(policy, 'Prohibited Use Policy'),
+          ],
+        ),
+      ],
+    );
+  }
 }

@@ -1,9 +1,9 @@
 {
-  "runtime": "mediapipe==1.0.0",
-  "source_revision": "6d31f1ebc3284db74d211d62bdc4f0a0c29ea120",
-  "library_sha256": "aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f",
+  "runtime": "mediapipe==1.1.0rc20260925",
+  "source_revision": null,
+  "library_sha256": "a9d0e783f1aef73aae4a0e2df46154ced7d3dcb9ccd36989c092592921afcad6",
   "model_sha256": "40338edf5ec70d43e318b0a716a84d4564cd1802759a7a07170c7e43796dbf58",
-  "platform": "macOS arm64",
+  "platform": "Darwin arm64",
   "delegate": "CPU",
   "running_mode": "IMAGE",
   "score_threshold": 0.3,
@@ -43,7 +43,7 @@
           "categories": [
             {
               "index": null,
-              "score": 0.450329452753067,
+              "score": 0.45032963156700134,
               "display_name": null,
               "category_name": "tie"
             }
@@ -70,7 +70,7 @@
           "categories": [
             {
               "index": null,
-              "score": 0.8856803178787231,
+              "score": 0.8856803774833679,
               "display_name": null,
               "category_name": "person"
             }
@@ -97,7 +97,7 @@
           "categories": [
             {
               "index": null,
-              "score": 0.943034291267395,
+              "score": 0.9430343508720398,
               "display_name": null,
               "category_name": "person"
             }
@@ -124,7 +124,7 @@
           "categories": [
             {
               "index": null,
-              "score": 0.9433225393295288,
+              "score": 0.943322479724884,
               "display_name": null,
               "category_name": "person"
             }
@@ -151,7 +151,7 @@
           "categories": [
             {
               "index": null,
-              "score": 0.7923649549484253,
+              "score": 0.7923648357391357,
               "display_name": null,
               "category_name": "person"
             }
@@ -246,7 +246,7 @@
           "categories": [
             {
               "index": null,
-              "score": 0.8836109638214111,
+              "score": 0.8836109042167664,
               "display_name": null,
               "category_name": "person"
             }
@@ -273,7 +273,7 @@
           "categories": [
             {
               "index": null,
-              "score": 0.8836109638214111,
+              "score": 0.8836109042167664,
               "display_name": null,
               "category_name": "person"
             }
@@ -300,7 +300,7 @@
           "categories": [
             {
               "index": null,
-              "score": 0.8867427706718445,
+              "score": 0.8867427110671997,
               "display_name": null,
               "category_name": "person"
             }

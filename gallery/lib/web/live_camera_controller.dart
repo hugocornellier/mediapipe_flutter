@@ -97,11 +97,11 @@ class LiveCameraController<T> extends ChangeNotifier {
   double _lastVideoTime = -1;
   int _lastTimestamp = -1;
   int _timestampOffset = 0;
-  String? _modelAsset;
+  DownloadAsset? _model;
   String? _warmUpSample;
 
-  /// Supplies the model instead of the bundled asset: one of Google's other
-  /// official models, or a file the user uploaded. Null uses the asset.
+  /// Supplies the model instead of the bundled one: one of Google's other
+  /// official models, or a file the user uploaded. Null uses the bundled one.
   Future<Uint8List> Function()? modelLoader;
   bool running = false;
   bool changing = false;
@@ -401,16 +401,16 @@ class LiveCameraController<T> extends ChangeNotifier {
   Future<void> start({
     CameraDescription? description,
     Delegate? delegate,
-    String? modelAsset,
+    DownloadAsset? model,
     String? warmUpSample,
   }) {
     if (_closed) return Future.error(StateError('Camera demo is closed.'));
     this.description = description ?? this.description;
     final selected = this.description;
-    final asset = _modelAsset = modelAsset ?? _modelAsset;
+    final pinned = _model = model ?? _model;
     final sample = _warmUpSample = warmUpSample ?? _warmUpSample;
     final chosen = delegate ?? this.delegate;
-    if (asset == null || selected == null) {
+    if (pinned == null || selected == null) {
       return Future.error(StateError('No camera selected.'));
     }
     final generation = ++_generation;
@@ -445,7 +445,7 @@ class LiveCameraController<T> extends ChangeNotifier {
         // Load the model and open the task while the camera starts: on a phone
         // each takes seconds and neither needs the other. Every path below
         // awaits it, so a task that opens late is still released.
-        opening = _openTask(chosen, asset)..ignore();
+        opening = _openTask(chosen, pinned)..ignore();
         try {
           if (keepCamera) {
             // A rebuild of the platform view can pause the existing video even
@@ -534,11 +534,11 @@ class LiveCameraController<T> extends ChangeNotifier {
     });
   }
 
-  Future<void> _openTask(Delegate chosen, String asset) async {
+  Future<void> _openTask(Delegate chosen, DownloadAsset model) async {
     final loader = modelLoader;
     final bytes = loader != null
         ? await loader()
-        : await WebModelCache.load(asset);
+        : await WebModelCache.load(model);
     await task.open(chosen, bytes);
     _opened = true;
     _results = task.results.listen(_onResult, onError: _onResultError);

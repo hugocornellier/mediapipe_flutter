@@ -2,16 +2,16 @@
 
 Runs the three generators with Google's checksum-pinned wheel for this host and
 writes `embedding_gemma.json`, `proofreader.json`, `summarizer.json` and a
-`provenance.json` receipt into --output-dir. The example_embedding tests read
-that directory through MEDIAPIPE_MODERN_TEXT_REFERENCE_DIR and otherwise use the
-checked-in macOS arm64 fixtures. The checked-in fixtures are never rewritten.
+`provenance.json` receipt into --output-dir. The package's `modern-text` tests
+read that directory through MEDIAPIPE_MODERN_TEXT_REFERENCE_DIR and otherwise
+use the checked-in macOS arm64 fixtures. The checked-in fixtures are never
+rewritten.
 
-The generated text must match Google's byte for byte on the same runtime, and
-Google's 1.0.0 and 1.0.1 runtimes generate different text, so each host
-compares with the wheel its own runtime comes from. For a mobile runtime of
-the other release, --runtime-version selects Google's wheel of that release
-for this architecture (core's tool/official_wheels.py ORACLES): the gallery's
-preparers bundle the result for the simulator and emulator suites.
+The generated text must match Google's byte for byte on the same runtime, so
+each host compares with the wheel of the release its libraries were built
+from. A host of the same architecture generates the answers for a mobile
+runtime too: the gallery's preparers bundle the result for the simulator and
+emulator suites.
 """
 import argparse
 import hashlib
@@ -46,12 +46,8 @@ def main():
                              help='a virtual environment to create (or reuse) and install '
                                   "Google's pinned wheel into")
     parser.add_argument('--output-dir', required=True, type=Path)
-    parser.add_argument('--runtime-version',
-                        help="Google's release the interpreter has, when it is not this "
-                             "host's pin: 1.0.1 on a Mac for the iOS SDK, 1.0.0 on Linux "
-                             'for the Android SDK')
     args = parser.parse_args()
-    runtime = host_runtime(args.runtime_version)
+    runtime = host_runtime()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     python = args.python
     if args.venv:
@@ -68,9 +64,7 @@ def main():
         log = args.output_dir / f'{task}.log'
         with log.open('w', encoding='utf-8') as handle:
             subprocess.run([str(python), '-B', str(PACKAGE / 'tool' / generator),
-                            '--output', str(output),
-                            *(['--runtime-version', args.runtime_version]
-                              if args.runtime_version else [])],
+                            '--output', str(output)],
                            check=True, stdout=handle, stderr=subprocess.STDOUT)
         report = json.loads(output.read_text(encoding='utf-8'))
         assert report['runtime'] == 'mediapipe==' + runtime['version'], report['runtime']

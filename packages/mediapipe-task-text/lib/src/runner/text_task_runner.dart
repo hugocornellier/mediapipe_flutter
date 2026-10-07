@@ -1,6 +1,6 @@
-/// Where one text task runs: a registered platform SDK adapter (Google's
-/// browser runtime or Android SDK), or Google's native runtime on a worker
-/// isolate. Every task class forwards here, on every platform.
+/// Where one text task runs: the registered browser adapter (Google's
+/// JavaScript runtime), or Google's native runtime on a worker isolate.
+/// Every task class forwards here, on every platform.
 library;
 
 import 'dart:async';
@@ -102,48 +102,21 @@ Future<TextTaskRunner<I, R>> openClassicTextTask<I, R, O extends TaskOptions>(
   return native(options);
 }
 
-/// Opens a generative text task (Proofreader or Summarizer) after
-/// [capabilities] admits the delegate: through the registered platform
-/// backend (Google's Android SDK) as Google's [task] with [settings], or
-/// else on Google's native runtime through [native].
-///
-/// Google's Android options take no cache directory, so a [cacheDirectory]
-/// fails there with that reason rather than being ignored.
+/// Opens a generative text task (Proofreader or Summarizer) on Google's
+/// native runtime through [native], after [capabilities] admits the
+/// delegate. Browsers have neither task, which [capabilities] reports.
 Future<TextStreamRunner<String, R, U>>
 openGenerativeTextTask<R, U, O extends TaskOptions>(
   O options, {
   required Future<TaskCapabilities> Function() capabilities,
-  required String task,
-  required Map<String, Object?> settings,
-  required String? cacheDirectory,
-  required R Function(Map<String, dynamic> json) decodeResult,
-  required U Function(Map<String, dynamic> json) decodeUpdate,
   required Future<TextStreamRunner<String, R, U>> Function(O options) native,
 }) async {
   requireDelegate(await capabilities(), options.delegate);
   await resolveTaskModel(options);
-  if (textTaskBackendFactory case final factory?) {
-    if (cacheDirectory != null) {
-      throw const RuntimeUnavailableException(
-        "Google's Android SDK takes no cache directory for this task.",
-        fix:
-            'Omit cacheDirectory on Android; the Proofreader and Summarizer '
-            "options of Google's Android SDK have no such setting.",
-      );
-    }
-    return BackendStreamTextTask.open(
-      factory,
-      task,
-      {'modelPath': options.modelPath, ...settings},
-      decodeResult,
-      decodeUpdate,
-    );
-  }
   return native(options);
 }
 
-/// A format context named as Google's JavaScript `TextFormatOptions`, which
-/// its Android SDK's `TextFormatContext` reads by the same names.
+/// A format context named as Google's JavaScript `TextFormatOptions`.
 Map<String, Object?> formatContextSettings(TextFormatContext context) => {
   'type': _embeddingTypes[context.taskType]!,
   'title': ?context.title,
@@ -226,107 +199,4 @@ final class _BackendInput<I, R> implements TextTaskRunner<I, R> {
 
   @override
   Future<void> dispose() => _backend.dispose();
-}
-
-/// One of Google's generative text tasks on a platform plugin's backend, with
-/// the stream behavior of the native worker: completed and streamed requests
-/// run in submission order, a stream starts on listen and has one
-/// subscription, pausing buffers its updates, cancelling stops delivery and
-/// waits for Google's generation to finish, and disposal waits for every
-/// accepted request.
-final class BackendStreamTextTask<R, U>
-    implements TextStreamRunner<String, R, U> {
-  BackendStreamTextTask._(
-    this._backend,
-    this._decodeResult,
-    this._decodeUpdate,
-  );
-
-  /// Creates Google's [task] with [options] through [factory].
-  static Future<BackendStreamTextTask<R, U>> open<R, U>(
-    Future<TextTaskBackend> Function(String, Map<String, Object?>) factory,
-    String task,
-    Map<String, Object?> options,
-    R Function(Map<String, dynamic> json) decodeResult,
-    U Function(Map<String, dynamic> json) decodeUpdate,
-  ) async {
-    try {
-      return BackendStreamTextTask._(
-        await factory(task, options),
-        decodeResult,
-        decodeUpdate,
-      );
-    } catch (error) {
-      throw taskException(error);
-    }
-  }
-
-  final TextTaskBackend _backend;
-  final R Function(Map<String, dynamic> json) _decodeResult;
-  final U Function(Map<String, dynamic> json) _decodeUpdate;
-  Future<void> _tail = Future.value();
-  Future<void>? _disposing;
-
-  @override
-  Future<R> run(String text) {
-    if (_disposing != null) {
-      return Future.error(StateError('Text task has been disposed.'));
-    }
-    final result = _tail.then((_) async {
-      final Map<String, dynamic> json;
-      try {
-        json = await _backend.run(text);
-      } catch (error) {
-        throw taskException(error);
-      }
-      return _decodeResult(json);
-    });
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return result;
-  }
-
-  @override
-  Stream<U> stream(String text) {
-    late final StreamController<U> controller;
-    Future<void>? finished;
-    var cancelled = false;
-    controller = StreamController<U>(
-      onListen: () {
-        if (_disposing != null) {
-          controller.addError(StateError('Text task has been disposed.'));
-          unawaited(controller.close());
-          return;
-        }
-        final operation = _tail.then((_) async {
-          try {
-            await for (final json in _backend.stream(text)) {
-              if (!cancelled) controller.add(_decodeUpdate(json));
-            }
-          } catch (error, stack) {
-            if (!cancelled) controller.addError(taskException(error), stack);
-          }
-          unawaited(controller.close());
-        });
-        finished = operation;
-        _tail = operation.then<void>(
-          (_) {},
-          onError: (Object _, StackTrace _) {},
-        );
-      },
-      onCancel: () async {
-        cancelled = true;
-        await finished;
-      },
-    );
-    return controller.stream;
-  }
-
-  @override
-  Future<void> dispose() => _disposing ??= _tail.then((_) async {
-    try {
-      await _backend.dispose();
-    } catch (error) {
-      throw taskException(error);
-    }
-  });
 }

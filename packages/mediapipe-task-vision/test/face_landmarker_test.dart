@@ -1,13 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_vision/models.dart';
-import 'package:mediapipe_vision/src/capabilities/official_runtime_io.dart';
-import 'package:mediapipe_vision/src/io/face_landmarker_api.dart';
 import 'package:test/test.dart';
 
 import 'support/vision_fixture.dart';
@@ -33,24 +30,6 @@ void main() {
   test('CPU is the default delegate', () {
     expect(FaceLandmarkerOptions(modelPath: _model).delegate, Delegate.cpu);
   });
-  test(
-    "macOS Face Landmarker calls core's engine after Face Detector loads",
-    () async {
-      // Face Detector keeps its own macOS library, which also exports
-      // MpErrorFree and the MpImage functions. Once it is loaded, Dart's
-      // fallback for an unbundled asset finds those, so they must not decide
-      // which library Face Landmarker binds.
-      final detector = await FaceDetector.create(
-        FaceDetectorOptions(modelPath: 'models/blaze_face_short_range.tflite'),
-      );
-      await detector.dispose();
-      // Each task's worker isolate picks the API on first use, as this does.
-      final usesEngine = await Isolate.run(
-        () => FaceLandmarkerApi.current.usesEngine,
-      );
-      expect(usesEngine, Platform.isMacOS && hasMacosTasksRuntime());
-    },
-  );
   test(
     'a refused GPU is reported, never replaced by CPU',
     () async {
@@ -177,9 +156,14 @@ void _testDelegate(Delegate delegate) {
   test(
     'detector and landmarker coexist in one process with independent lifetimes',
     () async {
+      // Where Face Detector's GPU is withdrawn (Linux, UP-046), its CPU runs
+      // beside the GPU landmarker.
+      final detectorCapabilities = await queryFaceDetectorCapabilities();
       final detector = await FaceDetector.create(
         FaceDetectorOptions(
-          delegate: delegate,
+          delegate: detectorCapabilities.supportedDelegates.contains(delegate)
+              ? delegate
+              : Delegate.cpu,
           modelPath: 'models/blaze_face_short_range.tflite',
         ),
       );

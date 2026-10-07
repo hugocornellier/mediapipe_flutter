@@ -10,14 +10,15 @@ import 'package:mediapipe_gallery/main.dart';
 
 import 'support/official_mask_references.dart';
 import 'support/sdk_frames.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
-// Google's stateful MagicTouch Interactive Segmenter through the official
-// mobile SDKs: iOS through the package's Objective-C adapter, Android through
-// mediapipe_vision. The reference is CPU. On Android the suite
-// also records what Google's GPU delegate does, which is not declared: on Test
-// Lab phones PowerVR refused its stroke shader and Mali's mask agreed with CPU
-// on 94% of pixels (tool/coverage/matrix.json). Whatever SDK_GPU says, a GPU
-// refusal or disagreement is recorded, never failed; `skip` runs CPU only.
+// Google's stateful MagicTouch Interactive Segmenter through Google's C
+// library on iOS and Android. The reference is CPU. On Android the suite also
+// records what the GPU delegate does, which is not declared: the package
+// refuses it before Google's task exists, and earlier, through Google's
+// Android SDK, PowerVR refused its stroke shader and Mali's mask agreed with
+// CPU on 94% of pixels (tool/coverage/matrix.json). Whatever SDK_GPU says, a
+// GPU refusal or disagreement is recorded, never failed; `skip` runs CPU only.
 const _gpu = String.fromEnvironment('SDK_GPU', defaultValue: 'optional');
 
 void main() {
@@ -28,12 +29,15 @@ void main() {
     (tester) async {
       await tester.runAsync(() async {
         expect(Platform.isAndroid || Platform.isIOS, isTrue);
-        if (Platform.isAndroid) {
-          expect(interactiveSegmenterBackendFactory, isNotNull);
-        }
+        expect(
+          interactiveSegmenterBackendFactory,
+          isNull,
+          reason:
+              "Android and iOS run Google's C library through FFI, not a plugin backend",
+        );
         final assets = await GalleryAssets.unpack();
         final bytes = await rootBundle.load(
-          'assets/models/interactive_segmentation.task',
+          bundledModelFile('interactive_segmentation.task'),
         );
         final task = await InteractiveSegmenter.create(
           InteractiveSegmenterOptions(
@@ -130,7 +134,7 @@ void main() {
       await tester.runAsync(() async {
         final assets = await GalleryAssets.unpack();
         final bytes = await rootBundle.load(
-          'assets/models/interactive_segmentation.task',
+          bundledModelFile('interactive_segmentation.task'),
         );
         final model = bytes.buffer.asUint8List(
           bytes.offsetInBytes,
@@ -161,9 +165,14 @@ void main() {
             } finally {
               await task.dispose();
             }
-          } on TaskException catch (error) {
+          } on MediaPipeException catch (error) {
+            // The package's own refusal (RuntimeUnavailableException) or
+            // Google's (TaskException).
             if (delegate == Delegate.cpu) rethrow;
-            _report('gpu_unavailable', {'error': error.message});
+            _report('gpu_unavailable', {
+              'type': '${error.runtimeType}',
+              'error': error.message,
+            });
             return;
           }
         }

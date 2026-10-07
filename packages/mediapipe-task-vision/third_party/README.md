@@ -1,56 +1,43 @@
 # Native provenance
 
-- MediaPipe: https://github.com/google-ai-edge/mediapipe/tree/v1.0.0
-- Commit: `6d31f1ebc3284db74d211d62bdc4f0a0c29ea120`
-- Bazel: 7.4.1, from that release's `.bazelversion`.
-- Targets: `//mediapipe/tasks/c/vision/face_detector:libface_detector.dylib`
-  and `//mediapipe/tasks/c/vision/face_landmarker:libface_landmarker.dylib`.
-- OpenCV: 4.12.0, commit `49486f61fb25722cbcf586b7f4320921d46fb38e`.
-- Models: official BlazeFace short-range and Face Landmarker float16 version 1; URLs and digests are in
-  `lib/models.dart`.
+The vision tasks run on Google's MediaPipe vision library, one of the C
+libraries Google builds per task family, here from MediaPipe
+`1.1.0-dev.20261005`. This package's build hook bundles it as
+`package:mediapipe_vision/mediapipe.dylib` through `mediapipe_core`, which pins
+every platform's file by SHA-256 and size
+(`mediapipe_core/lib/src/native_assets/family_runtimes.dart`). No MediaPipe
+code is compiled or patched here. On macOS, core shortens the library's system
+framework paths and signs it again, because Google's build leaves too little
+header room for the install names Dart and Flutter write (upstream-issues.md
+UP-042); code and data are unchanged.
 
-`tool/generate_bindings.dart` binds the vision tasks' C API headers from that
-commit, unchanged, which mediapipe_core vendors once for every family in
-`packages/mediapipe-core/native/ios/include/`. They define the modern C ABI.
-Do not substitute the base options or image structs of the retired 2024 core,
-text or GenAI headers, which are in git history.
+## Bindings
 
-`tool/build_native.py` compiles the official CPU/Metal task with static OpenCV core
-and imgproc. Its external-repository override supplies those static libraries;
-no MediaPipe graph, calculator, model, or C implementation is patched.
+The Dart bindings are generated with ffigen from MediaPipe's C API headers,
+which `mediapipe_core` vendors unchanged from
+https://github.com/google-ai-edge/mediapipe/tree/v1.0.0 (commit
+`6d31f1ebc3284db74d211d62bdc4f0a0c29ea120`); the 1.1.0 library keeps that ABI.
+The Interactive Segmenter's stateful API has no published header, so its
+bindings follow Google's Python ctypes definitions. The tests check struct
+sizes and field offsets against both.
 
-Linker flags retain the selected task/image entry points (otherwise the upstream
-target dead-strips them), restrict exports to `Mp*`, and reserve install-name
-space for Dart/Flutter relocation. Only macOS system frameworks/libraries remain
-as dynamic dependencies. Every build verifies C exports, ABI sizes, and portrait
-inference before preparing a native release candidate with a SHA-256 manifest.
-The build is source/version pinned; byte-identical output across Xcode versions
-is not claimed.
+`FaceLandmarksConnections`, `HandLandmarksConnections` and
+`PoseLandmarksConnections` are generated from MediaPipe 1.0.0's official Python
+drawing topology, keeping every edge and its order.
 
-Metal builds select the pinned Apple C++/Objective-C toolchain explicitly.
-Compiler definitions prefix seven Objective-C classes, the graph delegate
-protocol, and the NSError category/selectors separately for each task. These
-identifiers are process-global even with hidden C exports; prefixing prevents
-collisions between the two dylibs and other LiteRT Metal runtimes. The builder
-checks the class list and requires successful CPU and GPU inference, including
-the upstream Metal delegate creation log. Upstream sources remain unmodified.
-
-Each task has its own dylib and generated bindings, including its own image
-allocation/free functions. Native pointers never cross task libraries. Tests
-exercise concurrent detector/landmarker inference and independent disposal in
-one process. `FaceLandmarksConnections` is generated from the same release's
-official Python drawing topology, retaining every edge and its ordering.
+## Notices
 
 `LICENSE` and `NOTICE` were copied from Google's official MediaPipe 1.0.0
-distribution. They include notices for the larger upstream distribution.
-The native release archive also includes OpenCV's installed license directory.
+distribution and cover the larger upstream distribution the vision library is
+built from. Google delivers the per-family libraries without license files, so
+these stay the package's notices for the bundled library.
+`OPENCV_CAROTENE_NOTICES` holds OpenCV 4.12.0's hal/carotene notices, which the
+package's former source-built runtime needed; it stays until Google confirms
+the notices its own libraries need.
 
-Reference detections use Google's unmodified macOS arm64 Python wheel:
-`mediapipe-1.0.0-py3-none-macosx_11_0_arm64.whl`.
+## Reference outputs
 
-- Wheel SHA-256: `7ee4783be41b2de345e1eb71e2f7e7c159a50ed5c283e60ccb8f5a6027c70a82`.
-- Original `mediapipe/tasks/c/libmediapipe.dylib` SHA-256:
-  `aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f`.
-
-The wheel is an independent oracle, not the application runtime. Its library
-contains every task and lacks the Mach-O header padding Dart bundling requires.
+The tests compare the bundled library with Google's own Python API for the same
+release: the `mediapipe-nightly` 1.1.0rc20260925 wheel for macOS arm64, which
+`mediapipe_core`'s `referenceWheels` pins together with its C library. The
+wheel is an independent oracle, not the application runtime.

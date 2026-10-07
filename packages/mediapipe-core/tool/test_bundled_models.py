@@ -27,7 +27,8 @@ PACKAGES = CORE.parent
 REPO = PACKAGES.parent
 TEMPLATES = CORE / 'tool/bundled_models'
 sys.path.insert(0, str(CORE / 'tool'))
-from consumer_packages import copy_package  # noqa: E402
+from consumer_packages import (  # noqa: E402
+    consumer_environment, copy_package, core_hook_defines)
 
 NAME = 'mediapipe_bundled_models'
 # One model per family: its package folder and its name in XxxModels.byName.
@@ -56,7 +57,8 @@ def run(command, cwd, log, expect=0, timeout=1800):
     print(' '.join(command), flush=True)
     with log.open('w', encoding='utf-8') as output:
         result = subprocess.run(command, cwd=cwd, stdout=output,
-                                stderr=subprocess.STDOUT, timeout=timeout)
+                                stderr=subprocess.STDOUT, timeout=timeout,
+                                env=consumer_environment())
     text = log.read_text(encoding='utf-8', errors='replace')
     print('\n'.join(text.splitlines()[-25:]), flush=True)
     if result.returncode != expect:
@@ -94,8 +96,6 @@ def create_app(root, target):
                            for family, (folder, _) in FAMILIES.items())
     models = ''.join(f'    {family}:\n      models: [{name}]\n'
                      for family, (_, name) in FAMILIES.items())
-    # Google's engine, which text and audio run on, is opt-in on macOS only.
-    engine = '    mediapipe_core:\n      tasks_runtime: true\n' if target == 'macos' else ''
     (app / 'pubspec.yaml').write_text(f'''name: {NAME}
 publish_to: none
 environment:
@@ -117,7 +117,7 @@ flutter:
     - assets/test/
 hooks:
   user_defines:
-{models}{engine}''', encoding='utf-8')
+{models}{core_hook_defines()}''', encoding='utf-8')
     for template, destination in [('checks.dart', 'lib/checks.dart'),
                                   ('main.dart', 'lib/main.dart'),
                                   ('bundled_models_test.dart',

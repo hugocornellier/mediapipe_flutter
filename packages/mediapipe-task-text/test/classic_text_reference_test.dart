@@ -13,9 +13,9 @@ void main() {
     'all three tasks match the pinned official outputs from paths and bytes',
     () async {
       final report = await validateClassicText({
-        'classifier': 'example/assets/bert_classifier.tflite',
-        'embedder': 'example/assets/universal_sentence_encoder.tflite',
-        'language': 'example/assets/language_detector.tflite',
+        'classifier': 'models/bert_classifier.tflite',
+        'embedder': 'models/universal_sentence_encoder.tflite',
+        'language': 'models/language_detector.tflite',
       }, loadClassicTextReference());
       expect(report['reference_cases'], 26);
       expect(report['inference_comparisons'], 52);

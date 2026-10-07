@@ -18,6 +18,7 @@ import 'package:flutter/services.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 import 'package:mediapipe_gallery/audio/microphone.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 @JS('mediapipeTextAudioReport')
 external set _report(JSAny? value);
@@ -166,7 +167,7 @@ List<Object?> _categories(Iterable<Classifications> heads) => [
 ];
 
 Future<Object?> _classifier() async {
-  final model = await _asset('assets/models/bert_classifier.tflite');
+  final model = await _asset(bundledModelFile('bert_classifier.tflite'));
   final results = [];
   for (final (text, options) in classifierCases) {
     final task = await TextClassifier.create(
@@ -186,7 +187,7 @@ Future<Object?> _classifier() async {
   // A model given as a URL, then ordered requests and disposal.
   final byPath = await TextClassifier.create(
     TextClassifierOptions(
-      modelPath: 'assets/assets/models/bert_classifier.tflite',
+      modelPath: 'assets/${bundledModelFile('bert_classifier.tflite')}',
     ),
   );
   final queued = await Future.wait([
@@ -209,7 +210,9 @@ Future<Object?> _classifier() async {
 }
 
 Future<Object?> _embedder() async {
-  final model = await _asset('assets/models/universal_sentence_encoder.tflite');
+  final model = await _asset(
+    bundledModelFile('universal_sentence_encoder.tflite'),
+  );
   final result = <String, Object?>{};
   for (final quantize in [false, true]) {
     final task = await TextEmbedder.create(
@@ -245,7 +248,7 @@ Future<Object?> _embedder() async {
 }
 
 /// EmbeddingGemma through Google's browser TextEmbedder, when the build
-/// bundles its 184 MB model (prepare.py --tasks ...,embedding_gemma).
+/// bundles its 184 MB model (prepare_gallery.dart --tasks ...,embedding_gemma).
 Future<Object?> _embeddingGemma() async {
   final manifest =
       jsonDecode(await rootBundle.loadString('assets/manifest.json'))
@@ -260,7 +263,7 @@ Future<Object?> _embeddingGemma() async {
     support.supportedDelegates.contains(Delegate.cpu),
     'EmbeddingGemma must be supported in browsers.',
   );
-  final model = await _asset('assets/models/embedding_gemma.task');
+  final model = await _asset(bundledModelFile('embedding_gemma.task'));
   final result = <String, Object?>{};
   for (final quantize in [false, true]) {
     final task = await TextEmbedder.create(
@@ -301,7 +304,7 @@ Future<Object?> _embeddingGemma() async {
 Future<Object?> _language() async {
   final task = await LanguageDetector.create(
     LanguageDetectorOptions(
-      modelBytes: await _asset('assets/models/language_detector.tflite'),
+      modelBytes: await _asset(bundledModelFile('language_detector.tflite')),
       maxResults: 3,
     ),
   );
@@ -332,7 +335,7 @@ List<Object?> _chunks(List<AudioClassifierResult> result) => [
 Future<Object?> _audio() async {
   final task = await AudioClassifier.create(
     AudioClassifierOptions(
-      modelBytes: await _asset('assets/models/yamnet.tflite'),
+      modelBytes: await _asset(bundledModelFile('yamnet.tflite')),
     ),
   );
   final result = <String, Object?>{};
@@ -363,7 +366,7 @@ Future<Object?> _audio() async {
 /// 4801 at 48 kHz, and the lone half second; and the checks' messages, which
 /// must be native platforms' to the letter.
 Future<Object?> _audioStream() async {
-  final model = await _asset('assets/models/yamnet.tflite');
+  final model = await _asset(bundledModelFile('yamnet.tflite'));
   final speech = decodeWav(
     await _asset('assets/samples/speech_16000_hz_mono.wav'),
   );
@@ -484,7 +487,9 @@ Future<Object?> _streamed(
 /// from the samples sent.
 Future<Object?> _microphone() async {
   const rate = 16000;
-  final task = await _streamTask(await _asset('assets/models/yamnet.tflite'));
+  final task = await _streamTask(
+    await _asset(bundledModelFile('yamnet.tflite')),
+  );
   final results = <AudioClassifierResult>[];
   final done = Completer<void>();
   task.results.listen(

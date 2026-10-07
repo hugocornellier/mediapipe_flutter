@@ -11,6 +11,7 @@ import 'package:mediapipe_gallery/main.dart';
 
 import 'support/official_detection_references.dart';
 import 'support/sdk_frames.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
 /// As in sdk_hand_landmarker_test.dart: `required` fails when the SDK refuses
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
@@ -31,9 +32,12 @@ void main() {
     (tester) async {
       await tester.runAsync(() async {
         expect(Platform.isAndroid || Platform.isIOS, isTrue);
-        if (Platform.isAndroid) {
-          expect(imageEmbedderBackendFactory, isNotNull);
-        }
+        expect(
+          imageEmbedderBackendFactory,
+          isNull,
+          reason:
+              "Android and iOS run Google's C library through FFI, not a plugin backend",
+        );
         final assets = await GalleryAssets.unpack();
         final model = await _model();
         final frame = await loadSample('portrait.jpg');
@@ -237,7 +241,7 @@ double _cosine(List<double> a, List<double> b) {
 
 Future<Uint8List> _model() async {
   final bytes = await rootBundle.load(
-    'assets/models/mobilenet_v3_small.tflite',
+    bundledModelFile('mobilenet_v3_small.tflite'),
   );
   return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
 }

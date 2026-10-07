@@ -3,8 +3,10 @@ arm64 APK configuration, Firebase project (`flutter-litert`) and physical Pixel 
 device (`panther`, Android API 33). No Firebase SDK or Firebase initialization is
 needed in the application.
 
-Android gallery preparation defaults to this FaceLandmarker SDK. Selecting
-both face tasks explicitly retains the older source-built CPU runtime path.
+The gallery runs the face tasks on Google's MediaPipe vision library
+(`libmediapipe_tasks_vision.so`), which the vision package's hook bundles.
+Until Google publishes it, prepare with `--asset-source` (see the
+[gallery README](../README.md)).
 
 Prepare and build from the repository root:
 
@@ -19,8 +21,8 @@ cd android
 ```
 
 Run Gradle commands sequentially. Before uploading, inspect the APK ZIP and
-verify `lib/arm64-v8a/libflutter.so`, `libmediapipe_tasks_jni.so` and the bundled
-face model exist. A successful Gradle exit alone does not prove correct APK
+verify `lib/arm64-v8a/libflutter.so`, `libmediapipe_tasks_vision.so` and the
+bundled face model exist. A successful Gradle exit alone does not prove correct APK
 packaging. The runner grants camera permission before launching the activity.
 
 From the repository root, submit one physical-device execution:

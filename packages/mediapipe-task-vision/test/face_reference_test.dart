@@ -2,9 +2,11 @@
 library;
 
 import 'dart:convert';
+import 'dart:ffi' show Abi;
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:mediapipe_core/src/native_assets/reference_wheels.dart';
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart';
@@ -15,19 +17,13 @@ void main() {
   late Map<String, dynamic> manifest;
   const relative = 'face_detection/official_gpu_reference.json';
   // Same-host GPU references exist on macOS (Metal) and Linux (OpenGL ES).
-  final (runtime, library, revision, confirmation) = Platform.isLinux
-      ? (
-          'mediapipe==1.0.1',
-          'b72e6d61a79d1080d29a96ba95e3cfa3e43f6c433c0acc3bc9b3eb7ac0ba103a',
-          null,
-          'gl_confirmed',
-        )
-      : (
-          'mediapipe==1.0.0',
-          'aa1314b6cc3eb2ce3b610808433930c016e19cdc0f62cbb3f10cc7e912b6f72f',
-          '6d31f1ebc3284db74d211d62bdc4f0a0c29ea120',
-          'metal_confirmed',
-        );
+  final wheel = referenceWheel(
+    Abi.current().toString().replaceFirst('_', '/'),
+  )!;
+  final runtime = 'mediapipe==${wheel.version}';
+  final library = wheel.librarySha256;
+  const String? revision = null;
+  final confirmation = Platform.isLinux ? 'gl_confirmed' : 'metal_confirmed';
   Future<void> receipt() =>
       File('${root.path}/provenance.json').writeAsString(jsonEncode(manifest));
 

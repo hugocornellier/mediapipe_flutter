@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
+import '../gallery_assets_io.dart';
 import 'camera_geometry.dart';
 import 'camera_frame.dart';
 import 'camera_selection.dart';
@@ -97,11 +98,11 @@ class LiveCameraController<T> extends ChangeNotifier {
 
   /// Orientation the last frame's rotation was computed for.
   DeviceOrientation deviceOrientation = DeviceOrientation.portraitUp;
-  String? _modelAsset;
+  DownloadAsset? _model;
   String? _warmUpSample;
 
-  /// Supplies the model instead of the bundled asset: one of Google's other
-  /// official models, or a file the user uploaded. Null uses the asset.
+  /// Supplies the model instead of the bundled one: one of Google's other
+  /// official models, or a file the user uploaded. Null uses the bundled one.
   Future<Uint8List> Function()? modelLoader;
 
   /// Whether the demo is looking at the person holding the device.
@@ -270,16 +271,16 @@ class LiveCameraController<T> extends ChangeNotifier {
   Future<void> start({
     CameraDescription? description,
     Delegate? delegate,
-    String? modelAsset,
+    DownloadAsset? model,
     String? warmUpSample,
   }) {
     if (_closed) return Future.error(StateError('Camera demo is closed.'));
     this.description = description ?? this.description;
     final chosen = delegate ?? this.delegate;
-    final asset = _modelAsset = modelAsset ?? _modelAsset;
+    final pinned = _model = model ?? _model;
     final sample = _warmUpSample = warmUpSample ?? _warmUpSample;
     final selected = this.description;
-    if (selected == null || asset == null) {
+    if (selected == null || pinned == null) {
       return Future.error(StateError('No camera selected.'));
     }
     final generation = ++_generation;
@@ -301,16 +302,9 @@ class LiveCameraController<T> extends ChangeNotifier {
       try {
         this.delegate = chosen;
         final loader = modelLoader;
-        final Uint8List bytes;
-        if (loader != null) {
-          bytes = await loader();
-        } else {
-          final data = await rootBundle.load(asset);
-          bytes = data.buffer.asUint8List(
-            data.offsetInBytes,
-            data.lengthInBytes,
-          );
-        }
+        final bytes = loader != null
+            ? await loader()
+            : await GalleryAssets.modelBytes(pinned);
         await task.open(chosen, bytes);
         _opened = true;
         _results = task.results.listen(_onResult, onError: _onResultError);

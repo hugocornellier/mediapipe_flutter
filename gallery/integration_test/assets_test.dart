@@ -7,11 +7,11 @@ import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/live/live_camera_controller.dart';
 import 'package:mediapipe_gallery/live/live_registry.dart';
 import 'package:mediapipe_gallery/main.dart';
+import 'package:mediapipe_gallery/bundled_model_assets.dart';
 
-/// The gallery's preparer (`tool/gallery_builder` for Android and macOS,
-/// `tool/prepare.py` for the rest) chooses what the app bundles per target,
-/// so an asset a screen asks for by name can silently not be there. These
-/// check the bundle the app was actually built with.
+/// The gallery's preparer (`tool/gallery_builder`) chooses what the app
+/// bundles per target, so an asset a screen asks for by name can silently not
+/// be there. These check the bundle the app was actually built with.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -21,12 +21,11 @@ void main() {
     final tasks = supportedTasks(
       platform,
       assets.bundledTasks,
-      assets.officialMacosLandmarkTasks,
     ).where((task) => task.hasOwnPage).toList();
     expect(tasks, isNotEmpty, reason: 'no tile is visible to check');
     for (final task in tasks) {
       await expectLater(
-        rootBundle.load('assets/models/${task.model}'),
+        rootBundle.load(bundledModelAsset(task.model)),
         completes,
         reason: '${task.id} model',
       );
@@ -49,7 +48,6 @@ void main() {
     final live = supportedTasks(
       platform,
       assets.bundledTasks,
-      assets.officialMacosLandmarkTasks,
     ).where((task) => task.demo == GalleryDemo.live).toList();
     if (live.isEmpty) {
       markTestSkipped('no live tile on this platform');
@@ -74,7 +72,7 @@ void main() {
           lensDirection: CameraLensDirection.front,
           sensorOrientation: 0,
         ),
-        modelAsset: 'assets/models/${task.model}',
+        model: task.model,
       );
       expect(
         controller.error ?? '',

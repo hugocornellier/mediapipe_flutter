@@ -221,8 +221,7 @@ final class TaskCapabilities
   String? get minimumOperatingSystemVersion
   TaskPlatform get platform
   bool get isSupported
-  factory TaskCapabilities.cpuOnTargets({required TaskPlatform platform, required String gpuUnavailableReason, Map<String, String?> targets = tasksRuntimeTargets, String runtimeVersion = '1.0.1'})
-  factory TaskCapabilities.macosCpu({required TaskPlatform platform, required String gpuUnavailableReason})
+  factory TaskCapabilities.cpuOnTargets({required TaskPlatform platform, required String gpuUnavailableReason, required String runtimeVersion, Map<String, String?> targets = tasksRuntimeTargets})
   factory TaskCapabilities.onTargets({required TaskPlatform platform, required Map<Delegate, Map<String, String?>> delegates, required Map<Delegate, String> unavailableReasons, required String runtimeVersion})
 final class TaskException extends MediaPipeException
   Object? get cause

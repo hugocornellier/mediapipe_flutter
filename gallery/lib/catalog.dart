@@ -1,5 +1,5 @@
 import 'package:mediapipe_audio/mediapipe_audio.dart'
-    show audioClassifierCapabilitiesForPlatform;
+    show AudioModels, audioClassifierCapabilitiesForPlatform;
 import 'package:mediapipe_text/mediapipe_text.dart'
     show
         TextModels,
@@ -64,15 +64,10 @@ String plannedReason(
   PlannedTask task,
   TaskPlatform platform,
   Set<String> bundled,
-  Set<String> officialMacosLandmarkTasks,
 ) {
   if (!bundled.contains(task.runtimeId)) return 'Not bundled in this build.';
   final entry = _catalog.firstWhere((t) => t.runtimeId == task.runtimeId);
-  final capabilities = entry.capabilitiesFor(
-    platform,
-    officialMacosLandmarkTasks,
-  );
-  return capabilities.unavailableReasons[Delegate.cpu] ??
+  return entry.capabilities(platform).unavailableReasons[Delegate.cpu] ??
       'Not validated on this platform.';
 }
 
@@ -90,7 +85,6 @@ final class GalleryTask {
     required this.sample,
     required this.capabilities,
     this.demo = GalleryDemo.none,
-    this.officialMacosCapabilities,
     this.category = GalleryCategory.vision,
     String? runtimeId,
   }) : runtimeId = runtimeId ?? id;
@@ -116,129 +110,27 @@ final class GalleryTask {
   /// Whether this entry has a screen of its own, and so can be a tile.
   bool get hasOwnPage => demo != GalleryDemo.none;
 
-  /// The capability claim this entry earns when the build manifest says the
-  /// macOS tasks runtime (Google's engine) was selected for [runtimeId], if
-  /// any.
-  final TaskCapabilities Function(TaskPlatform)? officialMacosCapabilities;
+  /// The pinned model the demo runs, which the gallery's pubspec lists for
+  /// `dart run mediapipe_core:bundle_models` like any app's.
+  final DownloadAsset model;
 
-  /// Model asset name, as the gallery's preparer bundles it.
-  final String model;
+  /// The model's file name, as Google publishes it.
+  String get modelFile => Uri.parse(model.url).pathSegments.last;
+
+  /// Whether the model is one of Google's Gemma models, which come under the
+  /// Gemma Terms of Use rather than Apache 2.0, so the gallery passes the
+  /// terms on wherever it runs one.
+  bool get gemmaModel => const {
+    'embedding_gemma',
+    'text_proofreader',
+    'text_summarizer',
+  }.contains(runtimeId);
 
   /// Sample input shipped for the demo.
   final String sample;
 
   final TaskCapabilities Function(TaskPlatform) capabilities;
-
-  TaskCapabilities capabilitiesFor(
-    TaskPlatform platform,
-    Set<String> officialMacosLandmarkTasks,
-  ) => switch (officialMacosCapabilities) {
-    final official? when officialMacosLandmarkTasks.contains(runtimeId) =>
-      official(platform),
-    _ => capabilities(platform),
-  };
 }
-
-// tool/prepare.py builds every iOS target against Google's official SDK, so
-// Hand Landmarker always has the package's official iOS adapter there.
-TaskCapabilities _hand(TaskPlatform platform) =>
-    handLandmarkerCapabilitiesForPlatform(platform, officialIosRuntime: true);
-
-TaskCapabilities _officialMacosHand(TaskPlatform platform) =>
-    handLandmarkerCapabilitiesForPlatform(
-      platform,
-      officialMacosRuntime: true,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _pose(TaskPlatform platform) =>
-    poseLandmarkerCapabilitiesForPlatform(platform, officialIosRuntime: true);
-
-TaskCapabilities _officialMacosPose(TaskPlatform platform) =>
-    poseLandmarkerCapabilitiesForPlatform(
-      platform,
-      officialMacosRuntime: true,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _objects(TaskPlatform platform) =>
-    objectDetectorCapabilitiesForPlatform(platform, officialIosRuntime: true);
-
-TaskCapabilities _classifier(TaskPlatform platform) =>
-    imageClassifierCapabilitiesForPlatform(platform, officialIosRuntime: true);
-
-TaskCapabilities _officialMacosObjects(TaskPlatform platform) =>
-    objectDetectorCapabilitiesForPlatform(
-      platform,
-      officialMacosRuntime: true,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _officialMacosClassifier(TaskPlatform platform) =>
-    imageClassifierCapabilitiesForPlatform(
-      platform,
-      officialMacosRuntime: true,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _embedder(TaskPlatform platform) =>
-    imageEmbedderCapabilitiesForPlatform(platform, officialIosRuntime: true);
-
-TaskCapabilities _officialMacosEmbedder(TaskPlatform platform) =>
-    imageEmbedderCapabilitiesForPlatform(
-      platform,
-      officialMacosRuntime: true,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _segmenter(TaskPlatform platform) =>
-    imageSegmenterCapabilitiesForPlatform(platform, officialIosRuntime: true);
-
-TaskCapabilities _officialMacosSegmenter(TaskPlatform platform) =>
-    imageSegmenterCapabilitiesForPlatform(
-      platform,
-      officialMacosRuntime: true,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _magicTouch(TaskPlatform platform) =>
-    interactiveSegmenterCapabilitiesForPlatform(
-      platform,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _officialMacosMagicTouch(TaskPlatform platform) =>
-    interactiveSegmenterCapabilitiesForPlatform(
-      platform,
-      officialMacosRuntime: true,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _gesture(TaskPlatform platform) =>
-    gestureRecognizerCapabilitiesForPlatform(
-      platform,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _holistic(TaskPlatform platform) =>
-    holisticLandmarkerCapabilitiesForPlatform(
-      platform,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _officialMacosGesture(TaskPlatform platform) =>
-    gestureRecognizerCapabilitiesForPlatform(
-      platform,
-      officialMacosRuntime: true,
-      officialIosRuntime: true,
-    );
-
-TaskCapabilities _officialMacosHolistic(TaskPlatform platform) =>
-    holisticLandmarkerCapabilitiesForPlatform(
-      platform,
-      officialMacosRuntime: true,
-      officialIosRuntime: true,
-    );
 
 /// The delegate a demo opens on: GPU wherever this platform offers it for the
 /// task, as Google's web demo does, otherwise the first supported delegate.
@@ -274,7 +166,7 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.live,
     title: 'Face Landmarker',
     summary: 'Facial landmarks from the camera or a still image.',
-    model: 'face_landmarker.task',
+    model: VisionModels.faceLandmarker,
     sample: 'portrait.jpg',
     capabilities: faceLandmarkerCapabilitiesForPlatform,
   ),
@@ -284,10 +176,9 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.live,
     title: 'Hand Landmarker',
     summary: 'Hand landmarks and handedness in camera frames or an image.',
-    model: 'hand_landmarker.task',
+    model: VisionModels.handLandmarker,
     sample: 'hands.jpg',
-    capabilities: _hand,
-    officialMacosCapabilities: _officialMacosHand,
+    capabilities: handLandmarkerCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'pose_landmarker_live',
@@ -295,10 +186,9 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.live,
     title: 'Pose Landmarker',
     summary: 'Pose landmarks and skeleton in camera frames or an image.',
-    model: 'pose_landmarker_lite.task',
+    model: VisionModels.poseLandmarker,
     sample: 'pose.jpg',
-    capabilities: _pose,
-    officialMacosCapabilities: _officialMacosPose,
+    capabilities: poseLandmarkerCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'gesture_recognizer_live',
@@ -306,10 +196,9 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.live,
     title: 'Gesture Recognizer',
     summary: 'Hand landmarks and recognized gestures in video or an image.',
-    model: 'gesture_recognizer.task',
+    model: VisionModels.gestureRecognizer,
     sample: 'thumb_up.jpg',
-    capabilities: _gesture,
-    officialMacosCapabilities: _officialMacosGesture,
+    capabilities: gestureRecognizerCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'holistic_landmarker_live',
@@ -317,10 +206,9 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.live,
     title: 'Holistic Landmarker',
     summary: 'Body, hands and face together in video or an image.',
-    model: 'holistic_landmarker.task',
+    model: VisionModels.holisticLandmarker,
     sample: 'pose.jpg',
-    capabilities: _holistic,
-    officialMacosCapabilities: _officialMacosHolistic,
+    capabilities: holisticLandmarkerCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'face_detector_live',
@@ -328,7 +216,7 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.live,
     title: 'Face Detector',
     summary: 'Face boxes and six keypoints in video or an image.',
-    model: 'blaze_face_short_range.tflite',
+    model: VisionModels.faceDetector,
     sample: 'portrait.jpg',
     capabilities: faceDetectorCapabilitiesForPlatform,
   ),
@@ -338,10 +226,9 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.live,
     title: 'Object Detector',
     summary: 'Labeled object boxes in camera frames or an image.',
-    model: 'efficientdet_lite0.tflite',
+    model: VisionModels.objectDetector,
     sample: 'group.jpeg',
-    capabilities: _objects,
-    officialMacosCapabilities: _officialMacosObjects,
+    capabilities: objectDetectorCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'image_classifier_live',
@@ -349,28 +236,25 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.live,
     title: 'Image Classifier',
     summary: 'The top three classes for camera frames or an image.',
-    model: 'efficientnet_lite0.tflite',
+    model: VisionModels.imageClassifier,
     sample: 'portrait.jpg',
-    capabilities: _classifier,
-    officialMacosCapabilities: _officialMacosClassifier,
+    capabilities: imageClassifierCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'object_detector',
     title: 'Object Detector',
     summary: 'Labelled boxes over everyday objects.',
-    model: 'efficientdet_lite0.tflite',
+    model: VisionModels.objectDetector,
     sample: 'group.jpeg',
-    capabilities: _objects,
-    officialMacosCapabilities: _officialMacosObjects,
+    capabilities: objectDetectorCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'image_classifier',
     title: 'Image Classifier',
     summary: 'Top-k labels with scores.',
-    model: 'efficientnet_lite0.tflite',
+    model: VisionModels.imageClassifier,
     sample: 'portrait.jpg',
-    capabilities: _classifier,
-    officialMacosCapabilities: _officialMacosClassifier,
+    capabilities: imageClassifierCapabilitiesForPlatform,
   ),
   // Still images only, as Google's Image Embedding demo compares them.
   GalleryTask(
@@ -378,55 +262,49 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.embed,
     title: 'Image Embedder',
     summary: 'Two images as vectors, compared by similarity.',
-    model: 'mobilenet_v3_small.tflite',
+    model: VisionModels.imageEmbedder,
     sample: 'dog.jpg',
-    capabilities: _embedder,
-    officialMacosCapabilities: _officialMacosEmbedder,
+    capabilities: imageEmbedderCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'hand_landmarker',
     title: 'Hand Landmarker',
     summary: '21 landmarks per hand, with handedness.',
-    model: 'hand_landmarker.task',
+    model: VisionModels.handLandmarker,
     sample: 'hands.jpg',
-    capabilities: _hand,
-    officialMacosCapabilities: _officialMacosHand,
+    capabilities: handLandmarkerCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'gesture_recognizer',
     title: 'Gesture Recognizer',
     summary: 'Hand landmarks plus a recognised gesture.',
-    model: 'gesture_recognizer.task',
+    model: VisionModels.gestureRecognizer,
     sample: 'thumb_up.jpg',
-    capabilities: _gesture,
-    officialMacosCapabilities: _officialMacosGesture,
+    capabilities: gestureRecognizerCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'pose_landmarker',
     title: 'Pose Landmarker',
     summary: '33 body landmarks with visibility.',
-    model: 'pose_landmarker_lite.task',
+    model: VisionModels.poseLandmarker,
     sample: 'pose.jpg',
-    capabilities: _pose,
-    officialMacosCapabilities: _officialMacosPose,
+    capabilities: poseLandmarkerCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'holistic_landmarker',
     title: 'Holistic Landmarker',
     summary: 'Face, hands and pose in one graph.',
-    model: 'holistic_landmarker.task',
+    model: VisionModels.holisticLandmarker,
     sample: 'pose.jpg',
-    capabilities: _holistic,
-    officialMacosCapabilities: _officialMacosHolistic,
+    capabilities: holisticLandmarkerCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'image_segmenter',
     title: 'Image Segmenter',
     summary: 'Category and confidence masks.',
-    model: 'deeplab_v3.tflite',
+    model: VisionModels.imageSegmenter,
     sample: 'portrait.jpg',
-    capabilities: _segmenter,
-    officialMacosCapabilities: _officialMacosSegmenter,
+    capabilities: imageSegmenterCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'image_segmenter_live',
@@ -434,20 +312,18 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.live,
     title: 'Image Segmenter',
     summary: 'Segmentation masks for camera frames or an image.',
-    model: 'deeplab_v3.tflite',
+    model: VisionModels.imageSegmenter,
     sample: 'portrait.jpg',
-    capabilities: _segmenter,
-    officialMacosCapabilities: _officialMacosSegmenter,
+    capabilities: imageSegmenterCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'interactive_segmenter',
     demo: GalleryDemo.segment,
     title: 'Interactive Segmenter',
     summary: 'Tap a subject to segment it, stroke by stroke.',
-    model: 'interactive_segmentation.task',
+    model: VisionModels.interactiveSegmenter,
     sample: 'animals.jpg',
-    capabilities: _magicTouch,
-    officialMacosCapabilities: _officialMacosMagicTouch,
+    capabilities: interactiveSegmenterCapabilitiesForPlatform,
   ),
   // The audio package's Audio Classifier, on the same shared runtime.
   GalleryTask(
@@ -456,7 +332,7 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.audio,
     title: 'Audio Classifier',
     summary: 'Sound categories in a clip, second by second.',
-    model: 'yamnet.tflite',
+    model: AudioModels.yamnet,
     sample: 'speech_16000_hz_mono.wav',
     capabilities: _audio,
   ),
@@ -468,7 +344,7 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.text,
     title: 'Language Detector',
     summary: 'The language of a piece of text.',
-    model: 'language_detector.tflite',
+    model: TextModels.languageDetector,
     sample: '',
     capabilities: _text,
   ),
@@ -478,7 +354,7 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.text,
     title: 'Text Classifier',
     summary: 'Sentiment of a piece of text.',
-    model: 'bert_classifier.tflite',
+    model: TextModels.bertClassifier,
     sample: '',
     capabilities: _text,
   ),
@@ -488,7 +364,7 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.text,
     title: 'Text Embedder',
     summary: 'Two texts as vectors, compared by similarity.',
-    model: 'universal_sentence_encoder.tflite',
+    model: TextModels.universalSentenceEncoder,
     sample: '',
     capabilities: _text,
   ),
@@ -498,7 +374,7 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.text,
     title: 'EmbeddingGemma',
     summary: 'Two texts as Gemma vectors, formatted for a chosen use.',
-    model: 'embedding_gemma.task',
+    model: TextModels.embeddingGemma,
     sample: '',
     capabilities: _embeddingGemma,
   ),
@@ -508,7 +384,7 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.text,
     title: 'Proofreader',
     summary: 'Corrected text and the edits that make it, as it is written.',
-    model: 'proofread_quant_200m.litertlm',
+    model: TextModels.proofreader,
     sample: '',
     capabilities: textProofreaderCapabilitiesForPlatform,
   ),
@@ -518,7 +394,7 @@ final _catalog = <GalleryTask>[
     demo: GalleryDemo.text,
     title: 'Summarizer',
     summary: 'Key points or a short paragraph for a piece of text.',
-    model: 'summarization_quant_200m_2modes.litertlm',
+    model: TextModels.summarizer,
     sample: '',
     capabilities: textSummarizerCapabilitiesForPlatform,
   ),
@@ -526,13 +402,10 @@ final _catalog = <GalleryTask>[
 
 /// The catalog restricted to tasks this build actually bundled and whose
 /// runtime is validated here. [bundled] comes from `assets/manifest.json`.
-List<GalleryTask> supportedTasks(
-  TaskPlatform platform,
-  Set<String> bundled,
-  Set<String> officialMacosLandmarkTasks,
-) => [
-  for (final task in _catalog)
-    if (bundled.contains(task.runtimeId) &&
-        task.capabilitiesFor(platform, officialMacosLandmarkTasks).isSupported)
-      task,
-];
+List<GalleryTask> supportedTasks(TaskPlatform platform, Set<String> bundled) =>
+    [
+      for (final task in _catalog)
+        if (bundled.contains(task.runtimeId) &&
+            task.capabilities(platform).isSupported)
+          task,
+    ];

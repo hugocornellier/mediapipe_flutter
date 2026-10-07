@@ -42,7 +42,6 @@ class LivePage extends StatefulWidget {
     super.key,
     required this.task,
     required this.platform,
-    required this.officialMacosLandmarkTasks,
     this.navigationOpen,
     this.initialStillImage = false,
     this.stillImagePicker,
@@ -51,7 +50,6 @@ class LivePage extends StatefulWidget {
 
   final GalleryTask task;
   final TaskPlatform platform;
-  final Set<String> officialMacosLandmarkTasks;
   final ValueListenable<bool>? navigationOpen;
   final bool initialStillImage;
   final Future<XFile?> Function()? stillImagePicker;
@@ -151,10 +149,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
   ];
 
   late final List<Delegate> _delegates =
-      widget.task
-          .capabilitiesFor(widget.platform, widget.officialMacosLandmarkTasks)
-          .supportedDelegates
-          .toList()
+      widget.task.capabilities(widget.platform).supportedDelegates.toList()
         ..sort((a, b) => a.index.compareTo(b.index));
 
   String? _error;
@@ -324,7 +319,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
         delegate: _delegates.contains(_controller.delegate)
             ? _controller.delegate
             : preferredDelegate(_delegates),
-        modelAsset: 'assets/models/${widget.task.model}',
+        model: widget.task.model,
         warmUpSample: 'assets/samples/${widget.task.sample}',
       );
     } on Object catch (error) {
@@ -427,7 +422,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
       modelStatus: _modelStatus,
       onModel: _chooseModel,
       onUpload: _upload,
-      bundledModel: widget.task.model,
+      bundledModel: widget.task.modelFile,
       standardModel: standardModelNames[widget.task.runtimeId] ?? 'Standard',
       labels: _labels,
     ),
@@ -643,10 +638,8 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
     return operation;
   }
 
-  Future<Uint8List> _bundledModelBytes() async {
-    final data = await rootBundle.load('assets/models/${widget.task.model}');
-    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-  }
+  Future<Uint8List> _bundledModelBytes() =>
+      GalleryAssets.modelBytes(widget.task.model);
 
   String _imageSummary(Object result) => switch (result) {
     FaceLandmarkerResult(:final faceLandmarks) =>

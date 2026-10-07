@@ -1,22 +1,9 @@
-import 'dart:io';
-
 import 'package:gallery_builder/models.dart';
-import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-/// The vision package's runtime table, which this tool cannot import.
-final _sdkDownloads = File(
-  p.join('..', '..', 'packages', 'mediapipe-task-vision', 'sdk_downloads.dart'),
-).readAsStringSync();
+import '../../../packages/mediapipe-task-vision/vision_tasks.dart';
 
-/// The quoted names in the first `{...}` set literal after [start].
-Set<String> _setAfter(String source, int start) {
-  final open = source.indexOf('{', start);
-  return RegExp(r"'(\w+)'")
-      .allMatches(source.substring(open, source.indexOf('}', open)))
-      .map((match) => match.group(1)!)
-      .toSet();
-}
+final targetTasks = galleryTargets(visionRuntimeTasks);
 
 void main() {
   test('every task a target bundles has a pinned model', () {
@@ -25,30 +12,25 @@ void main() {
     }
   });
 
-  test('the macOS engine tasks match sdk_downloads.dart', () {
+  test('native targets bundle the vision tasks the vision hook accepts', () {
+    for (final target in nativeTargets) {
+      expect(
+        targetTasks[target]!.difference(nonVisionTasks),
+        visionRuntimeTasks[target],
+        reason: target,
+      );
+    }
+    // Google's Windows library has no stroke API.
     expect(
-      _setAfter(_sdkDownloads, _sdkDownloads.indexOf('const macosEngineTasks')),
-      macosEngineTasks,
+      targetTasks['windows/x64'],
+      isNot(contains('interactive_segmenter')),
     );
+    expect(targetTasks['macos/arm64'], hasLength(models.length));
   });
 
-  // A fresh checkout has no maintainer build, so an unpublished row's task
-  // would fail the build hook rather than appear as a tile.
-  test('macOS bundles the engine tasks and published macOS source builds', () {
-    final releases = _sdkDownloads.substring(
-      _sdkDownloads.indexOf('const visionRuntimeReleases'),
-      _sdkDownloads.indexOf('const visionWheelReleases'),
-    );
-    final published = <String>{
-      for (final row in releases.split('VisionRuntimeRelease(').skip(1))
-        if (row.contains("target: 'macos/arm64'") &&
-            !row.contains('archive: null'))
-          ..._setAfter(row, row.indexOf('tasks:')),
-    };
-    expect(published, isNotEmpty);
-    expect(macosTasks.difference(nonVisionTasks), {
-      ...macosEngineTasks,
-      ...published,
-    });
+  test('the web build lists only tasks Google serves in browsers', () {
+    expect(webTasks, isNot(contains('text_proofreader')));
+    expect(webTasks, isNot(contains('text_summarizer')));
+    expect(webHostTestTasks.difference(webTasks), isEmpty);
   });
 }

@@ -50,11 +50,6 @@ dev_dependencies:
 flutter:
   plugin:
     platforms:
-      android:
-        package: dev.mediapipe.flutter.audio
-        pluginClass: MediaPipeAudioPlugin
-        dartPluginClass: MediaPipeAudioAndroid
-        dartFileName: mediapipe_audio_android.dart
       web:
         pluginClass: MediaPipeAudioWeb
         fileName: mediapipe_audio_web.dart
@@ -63,10 +58,3 @@ flutter:
       platforms: [web]
     - path: assets/runtime.json
       platforms: [web]
-
-# Used when this package is the root (Dart tests/tools). Consumers opt in in
-# their own pubspec, as for the text package.
-hooks:
-  user_defines:
-    mediapipe_core:
-      tasks_runtime: true

@@ -35,5 +35,8 @@ build/
 # validation evidence and benchmarks live in the repository, not the package.
 /tool/
 /test/
-/example_embedding/
 /dart_test.yaml
+# The bridge's AddressSanitizer test; the build hook compiles only the bridge.
+/native/text_stream_bridge_test.c
+# It includes the repository's shared options, which are not published.
+/analysis_options.yaml

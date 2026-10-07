@@ -11,14 +11,15 @@ from mediapipe.tasks.python import vision
 from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
+from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'test/fixtures/landmark_tasks'
 MODELS = {
-    'hand': ('hand_landmarker.task', 'fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1'),
-    'gesture': ('gesture_recognizer.task', '97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482'),
-    'pose': ('pose_landmarker_lite.task', '59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a'),
-    'holistic': ('holistic_landmarker.task', 'e2dab61191e2dcd0a15f943d8e3ed1dce13c82dfa597b9dd39f562975a50c3f8'),
+    'hand': ('hand_landmarker.task', model_sha256('hand_landmarker.task')),
+    'gesture': ('gesture_recognizer.task', model_sha256('gesture_recognizer.task')),
+    'pose': ('pose_landmarker_lite.task', model_sha256('pose_landmarker_lite.task')),
+    'holistic': ('holistic_landmarker.task', model_sha256('holistic_landmarker.task')),
 }
 FILES = {
     'thumb_up.jpg': '5d673c081ab13b8a1812269ff57047066f9c33c07db5f4178089e8cb3fdc0291',
@@ -58,10 +59,7 @@ def digest(path):
 
 
 def mask_output(mask):
-    # In 1.0.0, float32's contiguous-copy path calls the uint8 ImageFrame
-    # overload and aborts for padded rows. Scalar access is safe on both paths.
-    data = mask.numpy_view().copy() if mask.is_contiguous() else np.asarray(
-        [[mask[y, x] for x in range(mask.width)] for y in range(mask.height)], dtype=np.float32)
+    data = mask.numpy_view().copy()
     return dict(width=mask.width, height=mask.height,
                 samples=data[::17, ::19].reshape(-1).tolist(),
                 minimum=float(data.min()), maximum=float(data.max()), mean=float(data.mean()))

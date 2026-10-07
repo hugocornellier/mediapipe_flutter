@@ -3,13 +3,11 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:mediapipe_core/src/native_assets/tasks_runtime.dart';
+import 'package:mediapipe_core/src/native_assets/reference_wheels.dart';
 
-/// Google's pinned official wheel on this host, from core's runtime tables.
+/// Google's pinned official wheel on this host, from core's reference table.
 ({String runtime, String library, String wheel})? officialTextRuntime() {
-  final wheel = tasksRuntimeWheel(
-    Abi.current().toString().replaceFirst('_', '/'),
-  );
+  final wheel = referenceWheel(Abi.current().toString().replaceFirst('_', '/'));
   return wheel == null
       ? null
       : (
