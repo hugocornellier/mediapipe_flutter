@@ -22,7 +22,8 @@ export 'src/capabilities.dart'
         retrievalRuntimeTargets,
         retrievalRuntimeVersion,
         semanticRetrieverCapabilitiesForPlatform,
-        universalEmbedderCapabilitiesForPlatform;
+        universalEmbedderCapabilitiesForPlatform,
+        webGpuAdapterPrefix;
 export 'src/retrieval_tasks.dart' show SemanticRetriever, UniversalEmbedder;
 export 'src/types/content.dart' hide checkSource;
 export 'src/types/options.dart';

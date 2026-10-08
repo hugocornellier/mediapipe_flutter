@@ -146,14 +146,15 @@ try {
   await page.goto(base + (base.includes('?') ? '&' : '?') + 'microphone=sample');
   await sidebarItem('Home').waitFor({timeout: 120000});
   // Google's browser Decision Maker answers only on a hardware WebGPU adapter,
-  // by its own rule (UP-049); elsewhere the gallery shows its card instead.
+  // by its own rule (UP-049), and its Universal Embedder creates a WebGPU
+  // device for itself (UP-052); elsewhere the gallery shows their cards.
   hardwareWebGpu = await page.evaluate(async () => {
     const adapter = await navigator.gpu?.requestAdapter({powerPreference: 'high-performance'});
     const info = adapter?.info ?? {};
     return !!adapter && !adapter.isFallbackAdapter &&
       !/fallback|swiftshader|llvmpipe|software|lavapipe/i.test(`${info.vendor} ${info.architecture} ${info.description}`);
   });
-  const refused = new Set(hardwareWebGpu ? [] : ['decision_maker']);
+  const refused = new Set(hardwareWebGpu ? [] : ['decision_maker', 'universal_embedder', 'semantic_retriever']);
   // --tasks=a,b visits only those of the bundled tasks.
   const only = args.tasks ? new Set(args.tasks.split(',')) : null;
   for (const id of refused) if (only && !only.has(id)) refused.delete(id);
@@ -164,7 +165,7 @@ try {
     if (!manifest.tasks.includes(id)) continue;
     // The home page's card gives the capability query's reason.
     enter(`${id}:refused`);
-    await page.getByText(/UP-049/).first().waitFor({timeout: 120000});
+    await page.getByText(/UP-049|UP-052/).first().waitFor({timeout: 120000});
     report.checks.push(`${id}:refused`);
   }
 

@@ -60,6 +60,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-049](#up-049-the-browser-decision-maker-fails-every-evaluation-without-a-hardware-webgpu-adapter) | The browser Decision Maker fails every evaluation without a hardware WebGPU adapter | Found on 1.1.0 |
 | [UP-050](#up-050-universal-embedder-refuses-the-text-only-embeddinggemma-2-model) | Universal Embedder refuses the text-only EmbeddingGemma 2 model | Found on 1.1.0 |
 | [UP-051](#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again) | The browser Universal Embedder reads modelAssetPath as a file, and a second Wasm object needs the loader again | Found on 1.1.0 |
+| [UP-052](#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter) | The browser Universal Embedder runs only on a hardware WebGPU adapter | Found on 1.1.0 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -818,6 +819,25 @@ Two differences from Google's other browser tasks:
   comes from the module cache without running the script again. The worker
   gives the chunker the embedder's own module (`createFromModule`) when it
   can find it, and otherwise imports a fresh copy of the loader.
+
+### UP-052: The browser Universal Embedder runs only on a hardware WebGPU adapter
+
+**Status:** observed October 8, 2026 with Google's `@mediapipe/tasks-retrieval`
+1.1.0 in Chromium on GitHub's `ubuntu-24.04` runner (SwiftShader) and on a
+Mac (Metal). Worked around: the retrieval package offers browsers only the
+GPU delegate, and only where the browser has a hardware WebGPU adapter, by
+Google's own rule; elsewhere `create` refuses with the capability query's
+reason. Not yet reported to Google.
+
+`UniversalEmbedder.createFromOptions` takes no delegate. When
+`baseOptions.device` is unset it creates a WebGPU device for itself
+(`navigator.gpu.requestAdapter({powerPreference: 'high-performance'})`, then
+`requestDevice`), and throws "No appropriate WebGPU adapter found." or
+"WebGPU is not supported on this platform." when it cannot. There is no CPU
+path, unlike the vision, text and audio browser tasks. On a hardware adapter
+(Metal on a Mac) both retrieval tasks answer as Google's native library does.
+Decision Maker's browser runtime has the same requirement for a different
+reason (UP-049).
 
 ## History
 

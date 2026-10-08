@@ -314,20 +314,40 @@ void main() {
       );
     });
 
-    test('browsers need the plugin', () {
-      final web = _platform('web', 'unknown');
+    test('browsers get the GPU on a hardware WebGPU adapter (UP-052)', () {
+      TaskPlatform web(String? gpu) => TaskPlatform(
+        operatingSystem: 'web',
+        architecture: 'unknown',
+        gpu: gpu,
+      );
+      const metal = 'WebGPU apple metal-3';
       expect(
-        universalEmbedderCapabilitiesForPlatform(web).isSupported,
+        universalEmbedderCapabilitiesForPlatform(web(metal)).isSupported,
         isFalse,
+        reason: 'no plugin',
       );
       retrievalBackendFactory = (_) => throw UnimplementedError();
       addTearDown(() => retrievalBackendFactory = null);
-      expect(universalEmbedderCapabilitiesForPlatform(web).supportedDelegates, {
-        Delegate.cpu,
-      });
-      expect(semanticRetrieverCapabilitiesForPlatform(web).supportedDelegates, {
-        Delegate.cpu,
-      });
+      for (final capabilities in [
+        universalEmbedderCapabilitiesForPlatform(web(metal)),
+        semanticRetrieverCapabilitiesForPlatform(web(metal)),
+      ]) {
+        expect(capabilities.supportedDelegates, {Delegate.gpu});
+        expect(
+          capabilities.unavailableReasons[Delegate.cpu],
+          contains('UP-052'),
+        );
+      }
+      for (final gpu in [
+        null,
+        'WebGPU google swiftshader',
+        'WebGPU apple metal-3 (fallback adapter)',
+        'Mali-G715 (ARM)',
+      ]) {
+        final refused = universalEmbedderCapabilitiesForPlatform(web(gpu));
+        expect(refused.isSupported, isFalse, reason: '$gpu');
+        expect(refused.unavailableReasons[Delegate.gpu], contains('UP-052'));
+      }
     });
   });
 }

@@ -189,9 +189,13 @@ jobs:
         env:
           LIBGL_ALWAYS_SOFTWARE: ${{ runner.os == 'Linux' && '1' || '' }}
         run: node gallery/tool/browser/test_gallery_journey.mjs --tasks=universal_embedder,semantic_retriever
-      - name: Record web CPU retrieval coverage
-        if: always()
-        run: python3 -B tool/coverage/record.py --suite web-retrieval-chromium-${{ matrix.os }} --platform web --delegate cpu --tasks universal_embedder,semantic_retriever --outcome ${{ steps.web_journey.outcome }}
+      # Google's browser Universal Embedder runs only on a hardware WebGPU
+      # adapter (UP-052): the Mac runner's Metal one runs the tasks and records
+      # the web GPU row; hosted Linux, with only SwiftShader, checks that the
+      # gallery refuses them.
+      - name: Record web GPU retrieval coverage
+        if: always() && runner.os == 'macOS'
+        run: python3 -B tool/coverage/record.py --suite web-retrieval-chromium-${{ matrix.os }} --platform web --delegate gpu --tasks universal_embedder,semantic_retriever --outcome ${{ steps.web_journey.outcome }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

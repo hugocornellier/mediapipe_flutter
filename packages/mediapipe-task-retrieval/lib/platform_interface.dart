@@ -4,4 +4,5 @@
 /// Applications should import `mediapipe_retrieval.dart` instead.
 library;
 
+export 'src/capabilities.dart' show webGpuAdapterPrefix;
 export 'src/retrieval_backend.dart';

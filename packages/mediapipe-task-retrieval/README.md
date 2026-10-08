@@ -20,12 +20,16 @@ pipeline.
 The runtimes are Google's MediaPipe 1.1.0: its per-family retrieval C
 library, which this package's build hook downloads and checks against its
 SHA-256 on Android 9+, iOS 15+, macOS 14+, Linux and Windows, on the CPU; and
-`@mediapipe/tasks-retrieval` 1.1.0 in browsers. Both tasks give the same
-results on every platform, with two differences the browser runtime imposes:
-images and audio go in as bytes and samples there, never as file paths, and
-the index stays in memory, so `databasePath` is for the native platforms. In
-browsers the package fetches the model itself, since Google's task reads a
-`modelAssetPath` as a file
+`@mediapipe/tasks-retrieval` 1.1.0 in browsers, on the GPU delegate. Google's
+browser Universal Embedder creates a WebGPU device for itself and has no CPU
+path
+([UP-052](../../upstream-issues.md#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter)),
+so the capability queries offer browsers only the GPU, and only on a
+hardware WebGPU adapter; there both tasks answer as the native library does.
+Two more differences the browser runtime imposes: images and audio go in as
+bytes and samples there, never as file paths, and the index stays in memory,
+so `databasePath` is for the native platforms. In browsers the package fetches
+the model itself, since Google's task reads a `modelAssetPath` as a file
 ([UP-051](../../upstream-issues.md#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again)).
 
 ## Quick start
@@ -93,9 +97,11 @@ listed. An app bundles a model by naming it under
 
 `queryUniversalEmbedderCapabilities()` and
 `querySemanticRetrieverCapabilities()` report, without loading a model, the
-delegates this platform runs the tasks on: the CPU everywhere, and in
-browsers once the plugin has registered. GPU inference is not validated and
-`create` refuses `Delegate.gpu` with a `RuntimeUnavailableException`.
+delegates this platform runs the tasks on: the CPU on Android, iOS, macOS,
+Linux and Windows, and in browsers the GPU, once the plugin has registered
+and on a hardware WebGPU adapter. The other delegate is refused by `create`
+with a `RuntimeUnavailableException`: the native library's GPU path is not
+validated, and Google's browser runtime has no CPU path.
 
 ## Testing
 
