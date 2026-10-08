@@ -289,3 +289,4 @@ getter Map<String, String?> get retrievalRuntimeTargets
 getter String get retrievalRuntimeVersion
 function TaskCapabilities semanticRetrieverCapabilitiesForPlatform(TaskPlatform platform)
 function TaskCapabilities universalEmbedderCapabilitiesForPlatform(TaskPlatform platform)
+getter String get webGpuAdapterPrefix
