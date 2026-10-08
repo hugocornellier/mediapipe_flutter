@@ -5,6 +5,7 @@ library;
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:mediapipe_retrieval/mediapipe_retrieval.dart';
 import 'package:test/test.dart';
@@ -35,6 +36,9 @@ void main() {
   // differently, and a query's close neighbours may swap places there.
   final sameHost = _host == 'macos/arm64';
   final tolerance = sameHost ? 1e-3 : 0.02;
+  // The vision encoder differs by up to 2e-3 per dimension even on GitHub's
+  // virtual Mac, so images get a looser bound and a cosine floor instead.
+  final imageTolerance = sameHost ? 0.01 : 0.02;
   final texts = (_reference['texts']! as Map).cast<String, String>();
   final vectors = (_reference['embeddings']! as Map).cast<String, List>();
   final documents = (_reference['documents']! as Map).cast<String, Map>();
@@ -106,13 +110,24 @@ void main() {
       for (var i = 0; i < expected.length; i++) {
         expect(
           embedding.floatEmbedding![i],
-          closeTo(expected[i].toDouble(), tolerance),
+          closeTo(expected[i].toDouble(), imageTolerance),
           reason: '$name[$i]',
         );
       }
+      final reference = Embedding(
+        floatEmbedding: Float32List.fromList([
+          for (final v in expected) v.toDouble(),
+        ]),
+        headIndex: embedding.headIndex,
+      );
+      expect(
+        UniversalEmbedder.cosineSimilarity(reference, embedding),
+        greaterThan(0.999),
+        reason: '$name against Google\'s vector',
+      );
       expect(
         UniversalEmbedder.cosineSimilarity(sentence, embedding),
-        closeTo((image['similarityToText'] as num).toDouble(), tolerance),
+        closeTo((image['similarityToText'] as num).toDouble(), imageTolerance),
         reason: name,
       );
     }
