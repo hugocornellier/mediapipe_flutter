@@ -11,10 +11,12 @@ import 'package:mediapipe_gallery/ui/components.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_vision/platform_interface.dart';
 
-/// A segmenter that records every history and answers a one-pixel mask.
+/// A segmenter that records every history and answers a one-pixel mask, or
+/// throws [failure] while it is set.
 final class _FakeSegmenter implements InteractiveSegmenterBackend {
   final calls = <List<Stroke>>[];
   int images = 0;
+  Object? failure;
 
   @override
   Future<void> setImage(VisionImage image) async => images++;
@@ -22,6 +24,7 @@ final class _FakeSegmenter implements InteractiveSegmenterBackend {
   @override
   Future<ConfidenceMask> segment(List<Stroke> strokes) async {
     calls.add(strokes);
+    if (failure case final failure?) throw failure;
     return ConfidenceMask(
       width: 1,
       height: 1,
@@ -248,6 +251,31 @@ void main() {
       expect(find.text('1 include · 1 exclude'), findsNothing);
       // Undoing the last stroke resubmits the shorter history.
       expect(backend.calls.last.single.brushMode, BrushMode.positive);
+    },
+  );
+
+  testWidgets(
+    'a failed request shows over the picture, and the next stroke retries',
+    (tester) async {
+      if (!await bundled()) {
+        markTestSkipped('This build bundles no Interactive Segmenter.');
+        return;
+      }
+      await openPage(tester);
+      final failure = find.textContaining('WebGL context lost');
+      backend.failure = StateError('WebGL context lost');
+      await tester.tap(canvas);
+      await until(tester, () => failure.evaluate().isNotEmpty);
+      // Only a banner says what failed: the picture, the stroke and the
+      // brushes stay.
+      expect(canvas, findsOneWidget);
+      expect(find.text('1 include'), findsOneWidget);
+      expect(tester.widget<Segmented<BrushMode>>(brushes).onChanged, isNotNull);
+      backend.failure = null;
+      await tester.tap(canvas);
+      await until(tester, () => failure.evaluate().isEmpty);
+      expect(find.text('2 include'), findsOneWidget);
+      expect(backend.calls.last, hasLength(2));
     },
   );
 }

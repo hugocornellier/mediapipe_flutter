@@ -73,6 +73,15 @@ def main():
     lasso = stroke('lasso', [[.52, .2], [.78, .2], [.78, .98], [.52, .98], [.52, .2]])
     lasso_open = stroke('lasso', [[.52, .2], [.78, .2], [.78, .98], [.52, .98]])
     lasso_corners = stroke('lasso', [[.52, .2], [.78, .98]])
+    # Strokes as the gallery's editor sends them: an Exclude drag down the
+    # dog (in progress while drawn), a lasso before the pointer lifts, and
+    # mixed histories. The drag removes most of the dog, so a dropped or
+    # misread Exclude stroke misses by far more than any tolerance.
+    negative_drag = stroke('negative', [[.6, round(.25 + .07 * i, 2)] for i in range(11)])
+    negative_drag_partial = stroke('negative', negative_drag['points'], False)
+    lasso_unfinished = stroke('lasso', lasso_open['points'], False)
+    across = stroke('negative', [[round(.55 + .025 * i, 3), .45] for i in range(11)])
+    second_lasso = stroke('lasso', [[.05, .3], [.35, .95]])
     scenarios = [
         ('file-cat', 'file', True, [cat]),
         ('raw-dog', 'rgb', True, [dog]),
@@ -88,6 +97,14 @@ def main():
         ('raw-lasso-open', 'rgb', False, [lasso_open]),
         ('raw-lasso-corners', 'rgb', False, [lasso_corners]),
         ('raw-negative-partial', 'rgb', False, [dog, negative_partial]),
+        ('raw-negative-drag', 'rgb', False, [dog, negative_drag]),
+        ('raw-negative-drag-partial', 'rgb', False, [dog, negative_drag_partial]),
+        # The completed flag only changes a lasso's mask: this case is the
+        # one that shows a wrapper passes it through.
+        ('raw-lasso-unfinished', 'rgb', False, [lasso_unfinished]),
+        ('raw-lasso-negative', 'rgb', False, [lasso, across]),
+        ('raw-two-lassos', 'rgb', False, [lasso, second_lasso]),
+        ('raw-dog-lasso-negative', 'rgb', False, [dog, lasso, across]),
         ('raw-undo', 'rgb', False, [dog]),
         ('rgba-cat', 'rgba', True, [cat]),
         ('blank', 'blank', True, [dog]),
@@ -105,6 +122,7 @@ def main():
     options = api.InteractiveSegmenterOptions(mp.tasks.BaseOptions(
         model_asset_path=str(model), delegate=mp.tasks.BaseOptions.Delegate.CPU))
     written = {}
+    masks = {}
 
     def native(strokes):
         return [api.Stroke(
@@ -132,6 +150,7 @@ def main():
             assert mask.shape == (image.height, image.width, 1)
             assert np.isfinite(mask).all() and mask.min() >= 0 and mask.max() <= 1
             data = mask.tobytes()
+            masks[name] = mask.copy()  # numpy_view() is reused by later results
             # Cases with the same mask share the first one's file.
             filename = written.setdefault(digest(data), f'{name}.f32.gz')
             if filename == f'{name}.f32.gz':
@@ -142,16 +161,33 @@ def main():
                 'foreground_pixels': int((mask > .5).sum()), 'mean': float(mask.mean()),
                 'set_image_ms': set_ms, 'segment_and_copy_ms': (time.perf_counter()-t)*1000})
             print(name, report['cases'][-1]['foreground_pixels'], flush=True)
+
+        def differs(a, b):
+            return float(np.abs(masks[a] - masks[b]).max()) > .5
+
+        # Each stroke the cases add must change the mask, or a wrapper that
+        # dropped or misread it would still match.
+        assert differs('raw-dog', 'raw-negative-drag')
+        assert not differs('raw-negative-drag', 'raw-negative-drag-partial')
+        assert differs('raw-lasso', 'raw-lasso-unfinished')
+        assert differs('raw-lasso', 'raw-lasso-negative')
+        assert differs('raw-lasso', 'raw-two-lassos')
+        assert differs('raw-lasso-negative', 'raw-dog-lasso-negative')
         # Phones and browsers compare Exclude and Lasso on the whole photo with
         # these reductions, as they compare Include with file-cat's mask:
         # cell means on a 16 x 8 grid, the mean and the share above 0.5. The
         # masks themselves are not stored.
         task.set_image(source)
+        dog_grid = np.array(grid(task.segment(native([dog])).numpy_view()))
         report['summaries'] = []
-        for name, strokes in [('file-dog-negative', [dog, negative]),
+        for name, strokes in [('file-dog-negative-drag', [dog, negative_drag]),
                               ('file-lasso', [lasso]),
                               ('file-lasso-corners', [lasso_corners])]:
             mask = np.ascontiguousarray(task.segment(native(strokes)).numpy_view(), dtype='<f4')
+            if name == 'file-dog-negative-drag':
+                # Phones allow 0.02 of mean cell error: dropping the Exclude
+                # stroke must miss by well over that.
+                assert np.abs(np.array(grid(mask)) - dog_grid).mean() > .05
             assert mask.shape == (source.height, source.width, 1)
             report['summaries'].append({
                 'name': name, 'input': 'file', 'strokes': strokes,
