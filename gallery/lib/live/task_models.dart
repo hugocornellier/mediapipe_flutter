@@ -30,6 +30,37 @@ const standardModelNames = <String, String>{
 /// Alternatives to each task's bundled model, keyed by the catalog's runtime
 /// id. Every one runs through Google's own task API for that task.
 const taskModels = <String, List<TaskModel>>{
+  // Hungry Fish starts with EmbeddingGemma 2; Laya plays it as well.
+  'decision_fish_game': [
+    TaskModel(
+      'Laya (256 tokens)',
+      'decision_maker/laya/float32/laya_s256/1/laya_s256.task',
+      '8cb730b89ef99cb5c98cdbc7936de79deab77623ce25dc0031eec9e25c64c24e',
+      678477844,
+    ),
+  ],
+  // Decision Maker downloads its model to a file rather than to memory: see
+  // `GalleryAssets.downloadedModelPath`.
+  'decision_maker': [
+    TaskModel(
+      'Laya (512 tokens)',
+      'decision_maker/laya/float32/laya_s512/1/laya_s512.task',
+      'e9f1693861c9a79a541d6f716648142ee844fd2e7119c9ed48d166f4b85a15df',
+      679395348,
+    ),
+    TaskModel(
+      'GLiNER2.5-Decide (256 tokens)',
+      'decision_maker/gliner/float16/gliner_s256/1/gliner_s256.task',
+      '18e8eb07a06e3833c4ebb4b0a32c76bff0e1197acba0e4c1658b121d01c92674',
+      981216352,
+    ),
+    TaskModel(
+      'GLiNER2.5-Decide (512 tokens)',
+      'decision_maker/gliner/float16/gliner_s512/1/gliner_s512.task',
+      '23a02e1b286fab7573ef2a00acbd8bf80fd2b1284de25eb8fafcd74f8bccd7ec',
+      1081879648,
+    ),
+  ],
   'pose_landmarker': [
     TaskModel(
       'Pose Landmarker (Full)',

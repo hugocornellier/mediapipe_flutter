@@ -15,6 +15,7 @@ typedef BundledModel = ({String family, String name});
 /// The model the gallery uses for every task some target bundles.
 const models = <String, BundledModel>{
   'audio_classifier': (family: 'mediapipe_audio', name: 'yamnet'),
+  'decision_maker': (family: 'mediapipe_decision', name: 'laya_s256'),
   'embedding_gemma': (family: 'mediapipe_text', name: 'embedding_gemma'),
   'face_detector': (family: 'mediapipe_vision', name: 'face_detector'),
   'face_landmarker': (family: 'mediapipe_vision', name: 'face_landmarker'),
@@ -49,6 +50,7 @@ const models = <String, BundledModel>{
 /// The package directory whose `lib/models.dart` lists each family's names.
 String packageOf(String family) => switch (family) {
   'mediapipe_audio' => 'mediapipe-task-audio',
+  'mediapipe_decision' => 'mediapipe-task-decision',
   'mediapipe_text' => 'mediapipe-task-text',
   _ => 'mediapipe-task-vision',
 };
@@ -70,10 +72,16 @@ const modernTextReferences = {
   'text_summarizer': 'summarizer',
 };
 
+/// Tasks whose model the gallery downloads on first use instead of bundling:
+/// Decision Maker's smallest is 678 MB, more than every other model put
+/// together.
+const downloadedModelTasks = {'decision_maker'};
+
 /// Tasks outside the vision package, which its build hook must not be asked
 /// for.
 const nonVisionTasks = {
   'audio_classifier',
+  'decision_maker',
   'language_detector',
   'text_classifier',
   'text_embedder',
@@ -96,6 +104,7 @@ const nativeTargets = [
 /// the generative text tasks.
 const webTasks = {
   'audio_classifier',
+  'decision_maker',
   'embedding_gemma',
   'face_detector',
   'face_landmarker',

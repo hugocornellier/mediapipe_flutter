@@ -21,7 +21,9 @@
     if (state.dead) return Promise.reject(new Error('MediaPipe worker is closed'));
     return new Promise((resolve, reject) => {
       const id = state.next++;
-      const timer = setTimeout(() => fail(state, new Error('MediaPipe worker request timed out')), 120000);
+      // Creation fetches the model, which for Decision Maker is 680 MB.
+      const limit = type === 'create' ? 600000 : 120000;
+      const timer = setTimeout(() => fail(state, new Error('MediaPipe worker request timed out')), limit);
       state.pending.set(id, {resolve, reject, timer});
       const transfers = [];
       if (input?.modelBytes) transfers.push(input.modelBytes.buffer);

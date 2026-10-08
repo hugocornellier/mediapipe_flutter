@@ -34,6 +34,11 @@ final class GalleryAssets {
     );
   }
 
+  /// [model] as a verified file, downloaded into the model cache on first
+  /// use: Decision Maker's models are too large to bundle.
+  static Future<String> downloadedModelPath(DownloadAsset model) async =>
+      (await _models.get(model)).path!;
+
   /// The bundled copy of [model], for demos that also accept a chosen or
   /// uploaded model's bytes.
   static Future<Uint8List> modelBytes(DownloadAsset model) async =>

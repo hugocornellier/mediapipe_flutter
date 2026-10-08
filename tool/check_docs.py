@@ -21,6 +21,7 @@ DOCS = [
     'packages/mediapipe-task-vision/README.md',
     'packages/mediapipe-task-text/README.md',
     'packages/mediapipe-task-audio/README.md',
+    'packages/mediapipe-task-decision/README.md',
 ]
 BLOCK = re.compile(r'^```dart\n(.*?)^```', re.S | re.M)
 LINK = re.compile(r'\]\(([^)\s]+)\)')
@@ -71,6 +72,8 @@ dependencies:
     path: {packages / 'mediapipe-task-text'}
   mediapipe_audio:
     path: {packages / 'mediapipe-task-audio'}
+  mediapipe_decision:
+    path: {packages / 'mediapipe-task-decision'}
 """)
         (app / 'analysis_options.yaml').write_text(
             'analyzer:\n  errors:\n    avoid_print: ignore\n')

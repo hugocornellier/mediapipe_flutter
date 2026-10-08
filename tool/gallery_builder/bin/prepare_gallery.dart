@@ -267,10 +267,13 @@ String _pubspec(
     'mediapipe_vision',
     'mediapipe_text',
     'mediapipe_audio',
+    'mediapipe_decision',
   ]) {
     final names = {
       for (final task in tasks)
-        if (models[task]!.family == family) models[task]!.name,
+        if (models[task]!.family == family &&
+            !downloadedModelTasks.contains(task))
+          models[task]!.name,
     }.toList()..sort();
     defines.writeln('    $family:');
     if (family == 'mediapipe_vision') {
@@ -297,6 +300,8 @@ dependencies:
     path: ../packages/mediapipe-task-text
   mediapipe_audio:
     path: ../packages/mediapipe-task-audio
+  mediapipe_decision:
+    path: ../packages/mediapipe-task-decision
   web: ^1.1.1
   crypto: ^3.0.6
   file_selector: ^1.0.3

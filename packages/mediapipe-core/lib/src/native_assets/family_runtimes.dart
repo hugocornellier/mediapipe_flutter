@@ -178,6 +178,84 @@ const _audioIos = FamilyRuntime(
   29739799,
 );
 
+/// Google's MediaPipe library as it ships inside one of Google's official
+/// Python wheels, which holds every task Google's Python API serves. A family
+/// whose own library Google has not built yet bundles this instead; when
+/// Google's arrives, the family moves to [familyRuntimes] and its bindings
+/// stay the same, since both libraries export the same C API.
+final class WheelRuntime {
+  /// Pins [path] inside [wheel] by digest and size.
+  const WheelRuntime(this.wheel, this.path, this.sha256, this.bytes);
+
+  /// Google's wheel on PyPI, pinned by its SHA-256.
+  final DownloadAsset wheel;
+
+  /// The library's path inside the wheel.
+  final String path;
+
+  /// SHA-256 of the only accepted library bytes.
+  final String sha256;
+
+  /// Exact size of the library in bytes.
+  final int bytes;
+}
+
+// TODO: Finish Decision Maker and retrieval on Google's per-family libraries,
+// as every other task runs: pin `decision` and `retrieval` in familyRuntimes,
+// retiring this table and bundleWheelRuntime, and offer both on Android and
+// iOS. Waits on Google building the two families. See
+// packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
+
+/// The families that bundle Google's wheel library ([WheelRuntime]), by
+/// family and build target: Decision Maker, which Google's per-family
+/// delivery does not include. Google's 1.1.0 wheels (October 6, 2026) are
+/// the only official C library with it; Google ships none for Android or
+/// iOS, so the hook bundles nothing there and the task reports those
+/// platforms unsupported.
+const wheelRuntimes = <String, Map<String, WheelRuntime>>{
+  'decision': {
+    'macos/arm64': WheelRuntime(
+      DownloadAsset(
+        url:
+            'https://files.pythonhosted.org/packages/e0/7c/'
+            'e5e1b0fd0a43a8f71db9062c94731a3de196186d392ce0c4417d7923a1a0/'
+            'mediapipe-1.1.0-py3-none-macosx_11_0_arm64.whl',
+        sha256:
+            '8d262c745a4432c69c47fba664e2f9210acaca0af4eca2ad9fed42db494f3e12',
+      ),
+      'mediapipe/tasks/c/libmediapipe.dylib',
+      '8445f23f797b1103527b24d4ec71e898c49a792f3d5f936c3ba06c5dba252002',
+      129297904,
+    ),
+    'linux/x64': WheelRuntime(
+      DownloadAsset(
+        url:
+            'https://files.pythonhosted.org/packages/10/1d/'
+            'ae070817ebc1b9500cec3f83faeeed1a405dcb764c23738a87726d96432c/'
+            'mediapipe-1.1.0-py3-none-manylinux_2_28_x86_64.whl',
+        sha256:
+            'f6830aa5fbe87ab49e5eacd36a66611f9788819b45999fb76e9f5beb4638762b',
+      ),
+      'mediapipe/tasks/c/libmediapipe.so',
+      'ca660f1202863b069c04a7d064e02f944b149bbe303df5e7c3d5ea9a340923ee',
+      122008416,
+    ),
+    'windows/x64': WheelRuntime(
+      DownloadAsset(
+        url:
+            'https://files.pythonhosted.org/packages/4a/95/'
+            '14e45f779280d2cc9d7495cb149a67f8a44d5beb801df7f662353976d0ae/'
+            'mediapipe-1.1.0-py3-none-win_amd64.whl',
+        sha256:
+            '955ac7934825aa8c8ff78fd1e47bf1f2b78fcafc95a8ebc010f6ee977c2eaf53',
+      ),
+      'mediapipe/tasks/c/libmediapipe.dll',
+      '8c74fb9c004f81fc1e808cc7fec8e91baeb6d61934b09a42cb757de38d4f6a5d',
+      60979200,
+    ),
+  },
+};
+
 /// [family]'s library for [target], or an [UnsupportedError] naming the
 /// targets that have one.
 FamilyRuntime requireFamilyRuntime(String family, String target) {
@@ -185,27 +263,33 @@ FamilyRuntime requireFamilyRuntime(String family, String target) {
   if (runtimes == null) throw ArgumentError.value(family, 'family');
   final runtime = runtimes[target];
   if (runtime != null) return runtime;
-  throw UnsupportedError(switch (target) {
-    // Flutter's macOS release and profile builds include Intel unless the
-    // app excludes it; debug builds target only the host.
-    'macos/x64' =>
-      'mediapipe_$family has no MediaPipe library for Intel Macs '
-          "(macos/x64), and Flutter's macOS release and profile builds "
-          'include Intel by default. Build the app for Apple Silicon only: add '
-          'ARCHS = arm64 and EXCLUDED_ARCHS = x86_64 to '
-          'macos/Runner/Configs/AppInfo.xcconfig, or run '
-          '`flutter config --enable-macos-arm64-only`.',
-    'ios-simulator/x64' =>
-      'mediapipe_$family has no MediaPipe library for the Intel iOS '
-          'Simulator (ios-simulator/x64). Exclude that slice in the Runner '
-          "target's build settings: "
-          'EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64.',
-    _ =>
-      'mediapipe_$family has no MediaPipe library for $target. Targets: '
-          '${runtimes.keys.join(', ')}, plus browsers through Google\'s '
-          'JavaScript runtime.',
-  });
+  throw UnsupportedError(_unsupportedTarget(family, target, runtimes.keys));
 }
+
+String _unsupportedTarget(
+  String family,
+  String target,
+  Iterable<String> targets,
+) => switch (target) {
+  // Flutter's macOS release and profile builds include Intel unless the
+  // app excludes it; debug builds target only the host.
+  'macos/x64' =>
+    'mediapipe_$family has no MediaPipe library for Intel Macs '
+        "(macos/x64), and Flutter's macOS release and profile builds "
+        'include Intel by default. Build the app for Apple Silicon only: add '
+        'ARCHS = arm64 and EXCLUDED_ARCHS = x86_64 to '
+        'macos/Runner/Configs/AppInfo.xcconfig, or run '
+        '`flutter config --enable-macos-arm64-only`.',
+  'ios-simulator/x64' =>
+    'mediapipe_$family has no MediaPipe library for the Intel iOS '
+        'Simulator (ios-simulator/x64). Exclude that slice in the Runner '
+        "target's build settings: "
+        'EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64.',
+  _ =>
+    'mediapipe_$family has no MediaPipe library for $target. Targets: '
+        '${targets.join(', ')}, plus browsers through Google\'s '
+        'JavaScript runtime.',
+};
 
 /// The lowest Android API level Google's Android libraries load on: they are
 /// built for Android 9.
@@ -252,6 +336,69 @@ Future<void> bundleFamilyRuntime(
     _ => download,
   };
   output.dependencies.add(download.uri);
+  output.assets.code.add(
+    CodeAsset(
+      package: input.packageName,
+      name: familyRuntimeAssetName,
+      linkMode: DynamicLoadingBundled(),
+      file: library.uri,
+    ),
+  );
+}
+
+/// Bundles [family]'s library from Google's wheel ([wheelRuntimes]) for the
+/// hook's target under [familyRuntimeAssetName], in the calling family's
+/// package, as [bundleFamilyRuntime] bundles a per-family library. Android
+/// and iOS get nothing: Google publishes no C library with the family there,
+/// so its tasks report those platforms unsupported instead of failing the
+/// app's build.
+Future<void> bundleWheelRuntime(
+  BuildInput input,
+  BuildOutputBuilder output, {
+  required String family,
+}) async {
+  final code = input.config.code;
+  requireDynamicLinking(code);
+  final runtimes = wheelRuntimes[family];
+  if (runtimes == null) throw ArgumentError.value(family, 'family');
+  final target = buildTarget(code);
+  final runtime = runtimes[target];
+  if (runtime == null) {
+    if (code.targetOS == OS.android || code.targetOS == OS.iOS) return;
+    throw UnsupportedError(_unsupportedTarget(family, target, runtimes.keys));
+  }
+  final wheelName = Uri.parse(runtime.wheel.url).pathSegments.last;
+  final cache = Directory.fromUri(
+    input.outputDirectoryShared.resolve('${runtime.wheel.sha256}/'),
+  );
+  final wheel = await downloadVerified(
+    runtime.wheel,
+    File.fromUri(cache.uri.resolve(wheelName)),
+    source: hookAssetSource(input),
+  );
+  final extracted = await _derived(
+    wheel,
+    'library/${runtime.path.split('/').last}',
+    (copy) async {
+      final entry = ZipDecoder()
+          .decodeBytes(await wheel.readAsBytes())
+          .findFile(runtime.path);
+      if (entry == null) {
+        throw StateError('${wheel.path} has no ${runtime.path}.');
+      }
+      await copy.writeAsBytes(entry.readBytes()!, flush: true);
+      if (await copy.length() != runtime.bytes ||
+          await _digest(copy) != runtime.sha256) {
+        throw StateError(
+          '$target $family wheel library does not match its pin.',
+        );
+      }
+    },
+  );
+  final library = code.targetOS == OS.macOS
+      ? await _prepareMacos(extracted)
+      : extracted;
+  output.dependencies.add(wheel.uri);
   output.assets.code.add(
     CodeAsset(
       package: input.packageName,

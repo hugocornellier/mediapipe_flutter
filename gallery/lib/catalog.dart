@@ -1,5 +1,7 @@
 import 'package:mediapipe_audio/mediapipe_audio.dart'
     show AudioModels, audioClassifierCapabilitiesForPlatform;
+import 'package:mediapipe_decision/mediapipe_decision.dart'
+    show DecisionModels, decisionMakerCapabilitiesForPlatform;
 import 'package:mediapipe_text/mediapipe_text.dart'
     show
         TextModels,
@@ -29,13 +31,22 @@ enum GalleryDemo {
 
   /// An audio task on a clip.
   audio,
+
+  /// A question about typed text, answered by Decision Maker.
+  decision,
+
+  /// A game Decision Maker plays.
+  game,
 }
 
-/// The home page's sections, in MediaPipe Studio's order.
+/// The home page's sections, in MediaPipe Studio's order, then the families
+/// Google added in MediaPipe 1.1.0.
 enum GalleryCategory {
   vision('Vision'),
   audio('Audio'),
-  text('Text');
+  text('Text'),
+  decision('Decision'),
+  retrieval('Retrieval');
 
   const GalleryCategory(this.title);
   final String title;
@@ -49,13 +60,29 @@ typedef PlannedTask = ({
   String runtimeId,
 });
 
-/// The audio and text tasks, listed as MediaPipe Studio lists them. A build
-/// prepared without one, or a browser for the Proofreader and Summarizer,
-/// shows its card in place of the tile.
+/// The audio, text and decision tasks, listed as MediaPipe Studio lists
+/// them, and the retrieval tasks this repository has not implemented yet. A
+/// build prepared without one, or a platform whose runtime lacks it, shows
+/// its card in place of the tile.
 final plannedTasks = <PlannedTask>[
   for (final task in _catalog)
     if (task.category != GalleryCategory.vision)
       (category: task.category, title: task.title, runtimeId: task.runtimeId),
+  ..._comingTasks,
+];
+
+/// Google's MediaPipe 1.1.0 retrieval tasks, which come after Decision Maker.
+const _comingTasks = <PlannedTask>[
+  (
+    category: GalleryCategory.retrieval,
+    title: 'Universal Embedder',
+    runtimeId: 'universal_embedder',
+  ),
+  (
+    category: GalleryCategory.retrieval,
+    title: 'Semantic Retriever',
+    runtimeId: 'semantic_retriever',
+  ),
 ];
 
 /// Why [task] is a card rather than a tile: this build did not bundle it, or
@@ -65,6 +92,9 @@ String plannedReason(
   TaskPlatform platform,
   Set<String> bundled,
 ) {
+  if (_comingTasks.contains(task)) {
+    return 'Coming next: Google added it in MediaPipe 1.1.0.';
+  }
   if (!bundled.contains(task.runtimeId)) return 'Not bundled in this build.';
   final entry = _catalog.firstWhere((t) => t.runtimeId == task.runtimeId);
   return entry.capabilities(platform).unavailableReasons[Delegate.cpu] ??
@@ -86,6 +116,7 @@ final class GalleryTask {
     required this.capabilities,
     this.demo = GalleryDemo.none,
     this.category = GalleryCategory.vision,
+    this.downloadsModel = false,
     String? runtimeId,
   }) : runtimeId = runtimeId ?? id;
 
@@ -116,6 +147,11 @@ final class GalleryTask {
 
   /// The model's file name, as Google publishes it.
   String get modelFile => Uri.parse(model.url).pathSegments.last;
+
+  /// Whether the page downloads [model] on first use rather than the app
+  /// bundling it: Decision Maker's models are larger than every other
+  /// model together (`downloadedModelTasks` in tool/gallery_builder).
+  final bool downloadsModel;
 
   /// Whether the model is one of Google's Gemma models, which come under the
   /// Gemma Terms of Use rather than Apache 2.0, so the gallery passes the
@@ -387,6 +423,33 @@ final _catalog = <GalleryTask>[
     model: TextModels.proofreader,
     sample: '',
     capabilities: textProofreaderCapabilitiesForPlatform,
+  ),
+  // Decision Maker, on Google's desktop wheel library and its browser runtime.
+  GalleryTask(
+    id: 'decision_maker',
+    category: GalleryCategory.decision,
+    demo: GalleryDemo.decision,
+    downloadsModel: true,
+    title: 'Decision Maker',
+    summary: 'Yes-or-no, choice and score questions about a text.',
+    model: DecisionModels.layaS256,
+    sample: '',
+    capabilities: decisionMakerCapabilitiesForPlatform,
+  ),
+  // Decision Maker playing a game, as Google's web demo plays its dino game.
+  GalleryTask(
+    id: 'decision_fish_game',
+    runtimeId: 'decision_maker',
+    category: GalleryCategory.decision,
+    demo: GalleryDemo.game,
+    downloadsModel: true,
+    title: 'Hungry Fish',
+    summary:
+        'A fish that eats smaller fish and flees bigger ones, steered '
+        'by Decision Maker.',
+    model: DecisionModels.embeddingGemma2Text,
+    sample: '',
+    capabilities: decisionMakerCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'text_summarizer',

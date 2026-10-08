@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 DART_PACKAGES := packages/mediapipe-core tool/task_benchmarks
-FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio
+FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-decision
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 # The gallery's pubspec is generated per target by tool/gallery_builder, so
 # it is format-checked without package resolution
@@ -153,3 +153,12 @@ ci:
 	$(MAKE) check_format
 	$(MAKE) test_only
 	$(MAKE) test_vision_flutter
+
+# Decision Maker's Laya model (678 MB) and its native suite against Google's
+# Python answers, on Google's wheel library for this desktop.
+.PHONY: models_decision test_decision
+models_decision:
+	cd packages/mediapipe-task-decision && dart run tool/download_model.dart
+
+test_decision:
+	cd packages/mediapipe-task-decision && dart test --reporter expanded
