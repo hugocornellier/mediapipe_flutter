@@ -58,6 +58,8 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-047](#up-047-opengl-es-gpu-category-masks-come-back-as-float32) | OpenGL ES GPU category masks come back as float32 | Found on 1.1.0 |
 | [UP-048](#up-048-the-windows-library-runs-the-stateful-interactive-segmenter-about-100-times-slower-than-linux) | The Windows library runs the stateful Interactive Segmenter about 100 times slower than Linux | Found on 1.1.0 |
 | [UP-049](#up-049-the-browser-decision-maker-fails-every-evaluation-without-a-hardware-webgpu-adapter) | The browser Decision Maker fails every evaluation without a hardware WebGPU adapter | Found on 1.1.0 |
+| [UP-050](#up-050-universal-embedder-refuses-the-text-only-embeddinggemma-2-model) | Universal Embedder refuses the text-only EmbeddingGemma 2 model | Found on 1.1.0 |
+| [UP-051](#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again) | The browser Universal Embedder reads modelAssetPath as a file, and a second Wasm object needs the loader again | Found on 1.1.0 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -621,7 +623,11 @@ builds the same way.
 
 Until then, `bundleFamilyRuntime` names the system frameworks without their
 `Versions/A/` directory, which macOS resolves to the same files, and signs
-the copy again, freeing about 150 bytes (vision 248, text 208, audio 184).
+the copy again, freeing 144 to 168 bytes (room after: vision 248, text 208,
+audio 184, retrieval 240). Google's delivery of October 8, 2026 (decision and
+retrieval) is linked the same way: 72 to 80 bytes on macOS, and 32 on the
+simulator slices, less than any slice before. Report sent to Google on
+October 8, 2026.
 That covers the install names Dart and Flutter write for ordinary project
 paths. On iOS the frameworks keep Google's file names, so Flutter's new
 install name has the same length as Google's.
@@ -764,6 +770,54 @@ way: the bundle skips WebGPU when no adapter is found or the adapter is a
 fallback or software one (`/swiftshader|llvmpipe|software|lavapipe/`), and
 the task then takes its CPU path. Hosted Linux runners have only SwiftShader,
 so CI there checks that the gallery refuses the task with this reason.
+
+### UP-050: Universal Embedder refuses the text-only EmbeddingGemma 2 model
+
+**Status:** observed October 8, 2026 with Google's mediapipe 1.1.0 wheel on
+macOS arm64 and its per-family retrieval library. Worked around: the
+retrieval package pins only the two EmbeddingGemma 2 models with a vision
+encoder. Not yet reported to Google.
+
+Google's Universal Embedder guide lists three EmbeddingGemma 2 models,
+including the text-only 270M one (`embeddinggemma-2-text-270m.litertlm`, the
+model Decision Maker's bi-encoder backend runs). `UniversalEmbedder.create`
+refuses it at creation, before any input:
+
+```
+ERROR: [third_party/odml/litert_lm/runtime/core/embedding_engine_impl.cc:503]
+└ ERROR: [third_party/odml/litert_lm/runtime/core/embedding_engine_impl.cc:293]
+└ ERROR: [third_party/odml/litert_lm/runtime/executor/model_signature_utils.cc:283]
+└ ERROR: [third_party/odml/litert_lm/runtime/executor/model_signature_utils.cc:168]
+└ tf_lite_vision_encoder not found in the model.
+```
+
+The engine looks the vision encoder up unconditionally, so a text-only
+deployment has to download the 388 MB text and vision model instead of the
+165 MB text one. The text and vision 440M and the full 740M models load and
+answer.
+
+### UP-051: The browser Universal Embedder reads modelAssetPath as a file, and a second Wasm object needs the loader again
+
+**Status:** observed October 8, 2026 with Google's `@mediapipe/tasks-retrieval`
+1.1.0 in Chromium. Worked around in the retrieval package's worker. Not yet
+reported to Google.
+
+Two differences from Google's other browser tasks:
+
+- `UniversalEmbedder.createFromOptions` with `baseOptions.modelAssetPath` set
+  to a URL fails with "Model asset path does not exist or is not a readable
+  file": the task hands the string to its engine as a file path instead of
+  fetching it, as `DecisionMaker` and the text tasks do. The worker fetches
+  the URL itself and passes `response.body.getReader()` as
+  `modelAssetBuffer`, which the type declarations allow.
+- `SemanticRetriever.createFromComponents` requires a text chunker, and
+  `DefaultTextChunker.create(wasmFileset)` fails with "ModuleFactory not set"
+  once an embedder exists in the same worker: every Wasm-backed object
+  imports the loader script and reads the `ModuleFactory` global it sets,
+  which the bundle clears after use, and a second `import()` of the same URL
+  comes from the module cache without running the script again. The worker
+  gives the chunker the embedder's own module (`createFromModule`) when it
+  can find it, and otherwise imports a fresh copy of the loader.
 
 ## History
 

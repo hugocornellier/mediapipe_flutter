@@ -1,0 +1,4 @@
+tags:
+  # Tests that load Google's library through the build hook and run
+  # EmbeddingGemma 2 (text and vision) (make models_retrieval, or MEDIAPIPE_RETRIEVAL_MODEL).
+  native-assets:

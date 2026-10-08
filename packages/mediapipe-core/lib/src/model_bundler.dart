@@ -17,6 +17,7 @@ const bundlableFamilies = {
   'mediapipe_text': 'TextModels',
   'mediapipe_audio': 'AudioModels',
   'mediapipe_decision': 'DecisionModels',
+  'mediapipe_retrieval': 'RetrievalModels',
 };
 
 final _sha256Name = RegExp(r'^[a-f0-9]{64}$');

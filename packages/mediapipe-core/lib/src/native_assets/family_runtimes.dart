@@ -160,6 +160,42 @@ const familyRuntimes = <String, Map<String, FamilyRuntime>>{
       17534464,
     ),
   },
+  // Universal Embedder and Semantic Retriever, from Google's delivery of
+  // October 8, 2026, which added the retrieval and decision families.
+  'retrieval': {
+    'macos/arm64': FamilyRuntime(
+      'libmediapipe_tasks_retrieval.dylib',
+      '3d8f97a2f5e719db0866b0a26c8bf11897d817586565f459735cf8f9a29a3934',
+      19237744,
+    ),
+    'android/arm64': FamilyRuntime(
+      'libmediapipe_tasks_retrieval.so',
+      '4a56a9305671e645c5c26e0e1791ed85f6f1f77176e141ac50e9194bcdd12f50',
+      12297872,
+    ),
+    'android/arm': FamilyRuntime(
+      'libmediapipe_tasks_retrieval.so',
+      'af37e5bfdc2d363ad713accd332601cad7c5365d6daa2dfd4864ba0d6a4876a9',
+      8386036,
+    ),
+    'android/x64': FamilyRuntime(
+      'libmediapipe_tasks_retrieval.so',
+      '05197b0dd412b947abc5479ddcb04e79b84a2786c590424f42392b878b1abf2a',
+      15131376,
+    ),
+    'ios/arm64': _retrievalIos,
+    'ios-simulator/arm64': _retrievalIos,
+    'linux/x64': FamilyRuntime(
+      'libmediapipe_tasks_retrieval.so',
+      '1c89bfa537bbe03a90a3f07c1aa737c652098aed8df6cbf95d88c2d77e30d200',
+      27678224,
+    ),
+    'windows/x64': FamilyRuntime(
+      'mediapipe_tasks_retrieval.dll',
+      '89d17f5a3c1a7a0f660267bf6354b5af2bf56f01cb0d7e917ccba15a8f0cac07',
+      22322176,
+    ),
+  },
 };
 
 const _visionIos = FamilyRuntime(
@@ -176,6 +212,11 @@ const _audioIos = FamilyRuntime(
   'MediaPipeTasksAudioC.xcframework.zip',
   'ae47efaaa55dff72e7e16e20fbc8a9c15cf96180db9377be3857afdc80d3f38b',
   29739799,
+);
+const _retrievalIos = FamilyRuntime(
+  'MediaPipeTasksRetrievalC.xcframework.zip',
+  '507e8f7ae9931b777cf44cb0b695dd1455ccb67cac1868eca5e49f276ced632c',
+  45006655,
 );
 
 /// Google's MediaPipe library as it ships inside one of Google's official
@@ -200,10 +241,10 @@ final class WheelRuntime {
   final int bytes;
 }
 
-// TODO: Finish Decision Maker and retrieval on Google's per-family libraries,
-// as every other task runs: pin `decision` and `retrieval` in familyRuntimes,
-// retiring this table and bundleWheelRuntime, and offer both on Android and
-// iOS. Waits on Google building the two families. See
+// TODO: Finish Decision Maker on Google's per-family libraries, as every
+// other task runs: pin `decision` in familyRuntimes, retiring this table and
+// bundleWheelRuntime, and offer it on Android and iOS. Google's delivery of
+// October 8, 2026 has the library for every target but Windows. See
 // packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
 
 /// The families that bundle Google's wheel library ([WheelRuntime]), by

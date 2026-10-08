@@ -72,7 +72,7 @@ jobs:
       - name: Prepare the gallery with the official SDK tasks
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64 \
-            --tasks audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer \
+            --tasks audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever \
             --modern-text-reference build/modern-text-reference
           cd gallery && flutter pub get
       - name: Enable Android emulator hardware acceleration
@@ -100,6 +100,9 @@ jobs:
       - name: Record android CPU modern text coverage (android-sdk-emulator-modern-text)
         if: always()
         run: python3 -B tool/coverage/record.py --suite android-sdk-emulator-modern-text --platform android --delegate cpu --tasks embedding_gemma,text_proofreader,text_summarizer --outcome "$(cat build/coverage-outcomes/android-modern-text 2>/dev/null || echo failure)"
+      - name: Record android CPU retrieval coverage (android-sdk-emulator-retrieval)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite android-sdk-emulator-retrieval --platform android --delegate cpu --tasks universal_embedder,semantic_retriever --outcome ${{ steps.sdk.outcome }}
       - name: Record android CPU task coverage (android-sdk-emulator)
         if: always()
         run: python3 -B tool/coverage/record.py --suite android-sdk-emulator --platform android --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.sdk.outcome }}

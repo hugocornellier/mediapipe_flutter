@@ -45,12 +45,21 @@ const models = <String, BundledModel>{
   ),
   'text_proofreader': (family: 'mediapipe_text', name: 'proofreader'),
   'text_summarizer': (family: 'mediapipe_text', name: 'summarizer'),
+  'universal_embedder': (
+    family: 'mediapipe_retrieval',
+    name: 'embedding_gemma_2_text_vision',
+  ),
+  'semantic_retriever': (
+    family: 'mediapipe_retrieval',
+    name: 'embedding_gemma_2_text_vision',
+  ),
 };
 
 /// The package directory whose `lib/models.dart` lists each family's names.
 String packageOf(String family) => switch (family) {
   'mediapipe_audio' => 'mediapipe-task-audio',
   'mediapipe_decision' => 'mediapipe-task-decision',
+  'mediapipe_retrieval' => 'mediapipe-task-retrieval',
   'mediapipe_text' => 'mediapipe-task-text',
   _ => 'mediapipe-task-vision',
 };
@@ -73,9 +82,13 @@ const modernTextReferences = {
 };
 
 /// Tasks whose model the gallery downloads on first use instead of bundling:
-/// Decision Maker's smallest is 678 MB, more than every other model put
-/// together.
-const downloadedModelTasks = {'decision_maker'};
+/// Decision Maker's smallest is 678 MB and the retrieval tasks' 388 MB, each
+/// more than every other model put together.
+const downloadedModelTasks = {
+  'decision_maker',
+  'semantic_retriever',
+  'universal_embedder',
+};
 
 /// Tasks outside the vision package, which its build hook must not be asked
 /// for.
@@ -83,8 +96,10 @@ const nonVisionTasks = {
   'audio_classifier',
   'decision_maker',
   'language_detector',
+  'semantic_retriever',
   'text_classifier',
   'text_embedder',
+  'universal_embedder',
   ...modernTextTasks,
 };
 
@@ -118,8 +133,10 @@ const webTasks = {
   'language_detector',
   'object_detector',
   'pose_landmarker',
+  'semantic_retriever',
   'text_classifier',
   'text_embedder',
+  'universal_embedder',
 };
 
 /// The vision tasks a web build still lists for the vision hook: Chrome tests
@@ -169,5 +186,9 @@ const samples = <String, String>{
   'gallery/samples/rotated.mp4': 'rotated.mp4',
 };
 
-/// The photos Google's Image Embedding demo compares, bundled only with it.
+/// The photos Google's Image Embedding demo compares, bundled only with it
+/// and with Universal Embedder, which offers the same three.
 const embedderSamples = {'dog.jpg', 'cat.png', 'elephant.png'};
+
+/// The tasks whose pages offer [embedderSamples].
+const embedderSampleTasks = {'image_embedder', 'universal_embedder'};

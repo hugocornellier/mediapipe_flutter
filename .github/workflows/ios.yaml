@@ -72,7 +72,7 @@ jobs:
       - name: Prepare the gallery with the official SDK tasks
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target ios-simulator/arm64 \
-            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer \
+            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever \
             --modern-text-reference build/modern-text-reference
           cd gallery && flutter pub get
       - name: Boot an installed iPhone simulator
@@ -147,6 +147,9 @@ jobs:
             fi
             exit "$status"
           done
+      - name: Record ios CPU retrieval coverage (ios-sdk-simulator-retrieval)
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite ios-sdk-simulator-retrieval --platform ios --delegate cpu --tasks universal_embedder,semantic_retriever --outcome ${{ steps.sdk.outcome }}
       - name: Record ios CPU text and audio coverage (ios-sdk-simulator-text-audio)
         if: always()
         run: python3 -B tool/coverage/record.py --suite ios-sdk-simulator-text-audio --platform ios --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.text_audio.outcome }}
