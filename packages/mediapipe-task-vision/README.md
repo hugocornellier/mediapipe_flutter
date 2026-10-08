@@ -67,7 +67,7 @@ Every vision task runs on Google's MediaPipe vision library with no setting
 
 The `tasks` list only checks the names against the tasks validated on the
 target: a Windows build fails if it names `interactive_segmenter`, which
-Google's Windows library lacks.
+Google's Windows library runs too slowly to offer (UP-048).
 
 ```yaml
 hooks:
@@ -488,7 +488,13 @@ Future<void> segmentScene(VisionImage image) async {
 
 Select an object with strokes, in coordinates normalized to the image. The
 task keeps the image, so each call passes the full stroke history; send a
-shorter history to undo. Not available on Windows.
+shorter history to undo. `BrushMode.positive` includes what a stroke touches,
+`BrushMode.negative` excludes it, and `BrushMode.lasso` selects what lies
+inside the box around the stroke's points (Google's graph reads the box, not
+the outline, so two opposite corners are enough). A one-point Include or
+Exclude stroke draws nothing on a browser's GPU; send a short scribble
+there. Not available on Windows, where Google's library takes about 25
+seconds a stroke (UP-048).
 
 ```dart
 import 'package:mediapipe_vision/mediapipe_vision.dart';
@@ -656,8 +662,8 @@ before offering a GPU toggle.
 | Linux x64 | Official library | OpenGL ES for supported tasks; EGL and a GPU driver required |
 | Windows x64 | Official library | Not available |
 
-The Interactive Segmenter is unavailable on Windows. Some GPU paths have
-upstream limits. Read the
+The Interactive Segmenter is unavailable on Windows (UP-048). Some GPU paths
+have upstream limits. Read the
 [per-task matrix](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
 before depending on a particular combination.
 

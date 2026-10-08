@@ -18,7 +18,14 @@ It can also import an extracted wheel using `--python-package-root`.
 
 Coverage includes file and raw inputs, repeated requests, partial strokes,
 multiple positive strokes, negative strokes, lasso, undo by resubmitting a
-shorter history, RGBA, blank input and image replacement. The blank image
+shorter history, RGBA, blank input and image replacement. Three cases show
+how Google's graph reads strokes: a lasso is the bounding box of its points
+(the open outline and the two opposite corners give `raw-lasso`'s mask), and
+an unfinished Exclude stroke reads as the finished one (`raw-negative`'s).
+Cases with the same mask share one file. The `summaries` section reduces
+three Exclude and Lasso histories on the whole photo to a 16 x 8 grid of
+cell means, the mean and the foreground share, for the gallery's phone and
+browser tests; those masks are not stored. The blank image
 produces a nonempty mask with this official model; references preserve that
 behavior. Timings here are observations from reference generation, not warmed
 Flutter performance benchmarks.

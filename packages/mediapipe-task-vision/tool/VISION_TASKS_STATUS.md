@@ -82,9 +82,11 @@ OpenGL ES is software (SwiftShader).
 
 Details and reproductions are in [upstream-issues.md](../../../upstream-issues.md).
 
-- [b] Google's Windows library does not export the stateful Interactive
-  Segmenter API. The Linux, macOS and iOS ones do, and the package binds it
-  there.
+- [b] UP-048: Google's Windows library exports the stateful Interactive
+  Segmenter and its masks agree with the macOS wheel's within 0.045, but a
+  stroke takes about 25 s on GitHub's Windows runner against 0.3 s on its
+  Linux runner, and Google's Windows Python wheel lacks the API. The package
+  does not offer the task on Windows.
 - [d] UP-028 and UP-030: Google's desktop GPU paths give no float Pose masks
   (Metal fails; OpenGL ES returns 8-bit RGBA images), so the package refuses
   masks on those GPUs with the reason; landmarks run, and masks run on CPU.

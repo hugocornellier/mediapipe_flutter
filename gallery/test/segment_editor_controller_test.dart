@@ -169,26 +169,84 @@ void main() {
     },
   );
 
-  test('lasso waits for a polygon and closes the completed stroke', () async {
-    editor.brush = BrushMode.lasso;
-    editor
-      ..begin(point(0.1, 0.1))
-      ..extend(point(0.9, 0.1));
-    await tick();
-    expect(backend.calls, isEmpty);
-    editor.extend(point(0.5, 0.9));
-    await tick();
-    expect(backend.calls.single.single.isCompleted, isFalse);
-    editor.end();
-    backend.finish(0);
-    await tick();
-    final stroke = backend.calls.last.single;
-    expect(stroke.isCompleted, isTrue);
-    expect(stroke.points, hasLength(4));
-    expect(stroke.points.first, same(stroke.points.last));
-    backend.finish(1);
-    await tick();
-  });
+  test(
+    'a lasso is drawn until the pointer lifts, then sent as drawn',
+    () async {
+      editor.brush = BrushMode.lasso;
+      editor
+        ..begin(point(0.1, 0.1))
+        ..extend(point(0.9, 0.1))
+        ..extend(point(0.5, 0.9));
+      await tick();
+      // Google's CPU graph reads an unfinished lasso differently, so nothing
+      // is segmented while it is drawn; the painter still sees the points.
+      expect(backend.calls, isEmpty);
+      expect(editor.activePoints, hasLength(3));
+      expect(editor.activeBrush, BrushMode.lasso);
+      expect(editor.canUndo, isTrue);
+      editor.end();
+      await tick();
+      final stroke = backend.calls.single.single;
+      expect(stroke.brushMode, BrushMode.lasso);
+      expect(stroke.isCompleted, isTrue);
+      // Google reads the box around the points, so the outline is not closed.
+      expect(stroke.points, hasLength(3));
+      expect(stroke.points.last.x, 0.5);
+      expect(editor.strokeCounts, {BrushMode.lasso: 1});
+      backend.finish(0);
+      await tick();
+      expect(editor.mask, isNotNull);
+    },
+  );
+
+  test(
+    'a lasso shorter than the minimum is dropped, so a tap draws none',
+    () async {
+      editor.brush = BrushMode.lasso;
+      editor
+        ..begin(point(0.5, 0.5))
+        ..extend(point(0.51, 0.5))
+        ..end();
+      await tick();
+      expect(backend.calls, isEmpty);
+      expect(editor.strokes, isEmpty);
+      expect(editor.canUndo, isFalse);
+      expect(editor.strokeCounts, isEmpty);
+    },
+  );
+
+  test(
+    'an Exclude stroke is sent while drawn, and counted when done',
+    () async {
+      editor
+        ..begin(point(0.2))
+        ..end();
+      await tick();
+      backend.finish(0);
+      await tick();
+      editor.brush = BrushMode.negative;
+      editor.begin(point(0.6));
+      await tick();
+      expect(backend.calls, hasLength(2));
+      expect(backend.calls.last.last.brushMode, BrushMode.negative);
+      expect(backend.calls.last.last.isCompleted, isFalse);
+      expect(editor.strokeCounts, {BrushMode.positive: 1});
+      for (var i = 61; i < 70; i++) {
+        editor.extend(point(i / 100));
+      }
+      editor.end();
+      backend.finish(1);
+      await tick();
+      expect(backend.calls.last.last.isCompleted, isTrue);
+      expect(editor.strokeCounts, {
+        BrushMode.positive: 1,
+        BrushMode.negative: 1,
+      });
+      expect(editor.completedStrokes, hasLength(2));
+      backend.finish(2);
+      await tick();
+    },
+  );
 
   test('clear during inference prevents late selection reappearing', () async {
     editor.begin(point(0.2));

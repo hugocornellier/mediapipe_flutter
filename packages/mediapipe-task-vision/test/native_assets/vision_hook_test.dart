@@ -111,8 +111,8 @@ void main() {
   test('validated tasks cover exactly what the platform jobs validate', () {
     // The hook refuses any task missing from these rows, so widening them
     // without adding the task to a platform job would claim coverage nothing
-    // proves. Google's Windows library does not export the stateful
-    // Interactive Segmenter.
+    // proves. Google's Windows library runs the stateful Interactive
+    // Segmenter too slowly to offer (upstream-issues.md UP-048).
     expect(
       visionRuntimeTasks.keys,
       unorderedEquals(familyRuntimes['vision']!.keys),

@@ -11,7 +11,8 @@ import 'native_interactive_segmenter.dart';
 
 /// Google's stateful MagicTouch segmenter on a persistent worker isolate:
 /// the image and stroke histories travel to the worker in submission order,
-/// where Google's vision library keeps the session.
+/// where Google's vision library keeps the session, on Android, iOS, macOS
+/// and Linux.
 final class NativeInteractiveSegmenterRunner
     implements InteractiveSegmenterBackend {
   NativeInteractiveSegmenterRunner._() {

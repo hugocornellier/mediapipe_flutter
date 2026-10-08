@@ -236,6 +236,36 @@ def write_masks():
     ]
     lines += [
         '',
+        "/// A stroke history on animals.jpg and Google's mask for it, reduced as",
+        '/// officialInteractiveReference is: brush mode and points per stroke, cell',
+        '/// means on a 16 x 8 grid, the mean, and the share of pixels above 0.5.',
+        'typedef OfficialInteractiveSummary = ({',
+        '  List<(String, List<(double, double)>)> strokes,',
+        '  List<List<double>> grid,',
+        '  double mean,',
+        '  double foreground,',
+        '});',
+        '',
+        "/// Google's masks of animals.jpg for Exclude and Lasso histories, from the",
+        "/// fixture's summaries.",
+        'const officialInteractiveSummaries = <String, OfficialInteractiveSummary>{',
+    ]
+    for summary in interactive.get('summaries', []):
+        strokes = ', '.join(
+            f"('{s['brush_mode']}', [{', '.join(f'({p[0]}, {p[1]})' for p in s['points'])}])"
+            for s in summary['strokes'])
+        grid = ', '.join('[' + ', '.join(f'{v:.4f}' for v in row) + ']' for row in summary['grid'])
+        lines += [
+            f"  '{summary['name']}': (",
+            f'    strokes: [{strokes}],',
+            f'    grid: <List<double>>[{grid}],',
+            f"    mean: {summary['mean']:.6f},",
+            f"    foreground: {summary['foreground']:.6f},",
+            '  ),',
+        ]
+    lines += ['};']
+    lines += [
+        '',
         '/// Mean pose segmentation mask value on pose.jpg, upright and turned as in',
         '/// officialLandmarkReferences.',
         f"const officialPoseMaskMeans = <String, double>{{{', '.join(means)}}};",

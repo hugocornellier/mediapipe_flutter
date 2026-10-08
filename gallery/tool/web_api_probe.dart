@@ -765,7 +765,10 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
   } finally {
     await segmenter.dispose();
   }
-  // Stateful MagicTouch: a point, then the point and a negative one.
+  // Stateful MagicTouch: Include, then Exclude with it, a lasso as an
+  // outline and as its two opposite corners, and an unfinished stroke.
+  // Multi-point strokes throughout, since Google's WebGL graph draws
+  // nothing for a single point; the official JavaScript side sends the same.
   final magic = await InteractiveSegmenter.create(
     InteractiveSegmenterOptions(
       delegate: delegate,
@@ -773,9 +776,14 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
     ),
   );
   try {
-    Stroke point(BrushMode mode, double x, double y) => Stroke(
+    Stroke stroke(
+      BrushMode mode,
+      List<(double, double)> points, {
+      bool done = true,
+    }) => Stroke(
       brushMode: mode,
-      points: [NormalizedKeypoint(x: x, y: y)],
+      points: [for (final (x, y) in points) NormalizedKeypoint(x: x, y: y)],
+      isCompleted: done,
     );
     Future<Map<String, Object?>> sampled(List<Stroke> history) async {
       final mask = await magic.segment(history);
@@ -790,10 +798,27 @@ Future<Map<String, Object?>> checkDetectionTasksApi(
     }
 
     await magic.setImage(portrait);
-    final positive = point(BrushMode.positive, 0.5, 0.4);
+    final include = stroke(BrushMode.positive, [(0.5, 0.4), (0.5, 0.45)]);
     report['interactive_segmenter'] = [
-      await sampled([positive]),
-      await sampled([positive, point(BrushMode.negative, 0.5, 0.8)]),
+      await sampled([include]),
+      await sampled([
+        include,
+        stroke(BrushMode.negative, [(0.45, 0.8), (0.55, 0.8)]),
+      ]),
+      await sampled([
+        stroke(BrushMode.lasso, [
+          (0.25, 0.1),
+          (0.75, 0.1),
+          (0.75, 0.9),
+          (0.25, 0.9),
+        ]),
+      ]),
+      await sampled([
+        stroke(BrushMode.lasso, [(0.25, 0.1), (0.75, 0.9)]),
+      ]),
+      await sampled([
+        stroke(BrushMode.positive, [(0.5, 0.4), (0.5, 0.45)], done: false),
+      ]),
     ];
   } finally {
     await magic.dispose();

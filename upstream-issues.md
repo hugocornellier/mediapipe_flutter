@@ -56,6 +56,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-045](#up-045-per-family-windows-libraries-export-tensorflow-lite-and-litert) | Per-family Windows libraries export TensorFlow Lite and LiteRT | Found on 1.1.0 |
 | [UP-046](#up-046-face-detectors-gpu-needs-a-litert-plugin-the-linux-and-android-libraries-do-not-ship) | Face Detector's GPU needs a LiteRT plugin the Linux and Android libraries do not ship | Found on 1.1.0 |
 | [UP-047](#up-047-opengl-es-gpu-category-masks-come-back-as-float32) | OpenGL ES GPU category masks come back as float32 | Found on 1.1.0 |
+| [UP-048](#up-048-the-windows-library-runs-the-stateful-interactive-segmenter-about-100-times-slower-than-linux) | The Windows library runs the stateful Interactive Segmenter about 100 times slower than Linux | Found on 1.1.0 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -716,6 +717,29 @@ image back unchanged, so `MpImageDataUint8` fails on it. The package reads a
 one-channel float32 mask and rounds each value times 255 back to the class;
 the Pixel 8a, the Galaxy S24 and Linux's Mesa GPU then match Google's GPU
 references. A truncating read of the same float explains UP-024.
+
+### UP-048: The Windows library runs the stateful Interactive Segmenter about 100 times slower than Linux
+
+**Status:** observed October 7, 2026 on GitHub's `windows-2025` runner with
+Google's pre-release per-family Windows library (1.1.0-dev.20261005), in
+the desktop validation of pull request #78. The package keeps the task off
+Windows. Not yet reported to Google.
+
+Google's `mediapipe_tasks_vision.dll` exports `MpInteractiveSegmenterCreate`,
+`SetImage`, `Segment` and `Close`, the same 100 `Mp*` functions as the macOS
+and Linux libraries, and its masks agree with the macOS wheel's within 0.045
+(`file-cat` 0.0449, `raw-dog` 0.0358), so the task runs. It runs slowly: the
+package's pixel-exact suite, 14 cases that the `ubuntu-24.04` runner finishes
+in 5 seconds, got through two in its 2-minute budget on Windows, and a
+decoder-only `segment` after the image was set took about 26 seconds. LiteRT
+logged "XNNPACK CPU accelerator registered" on both runners, so the
+accelerator is present; the int8 kernels it reaches on Windows are not the
+Linux ones. Google's Windows Python wheel of the same release
+(`mediapipe-nightly` 1.1.0rc20260925, `libmediapipe.dll`) exports only the
+Legacy task, as the 1.0.1 wheel did, which is where the package's earlier "no
+stroke API on Windows" came from. With no Windows oracle and a stroke that
+takes longer than the editor's whole session elsewhere, the package does not
+offer the task on Windows.
 
 ## History
 

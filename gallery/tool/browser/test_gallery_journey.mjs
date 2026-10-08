@@ -261,6 +261,45 @@ try {
           `\\d+\\.\\d ms · \\d+ requests · \\d+ coalesced · ${delegate.toUpperCase()}$`,
         )).waitFor({timeout: 120000});
         report.checks.push(`${id}:${delegate}:tap`);
+        // Exclude and Lasso through the page, as the Flutter journey draws
+        // them: a drag with each brush, counted on the Selection card and
+        // segmented on this delegate. Multi-point strokes matter here: WebGL
+        // draws nothing for a single point.
+        const requests = async () => {
+          const text = await page.getByText(/\d+ requests/).first().textContent();
+          return Number(/(\d+) requests/.exec(text ?? '')?.[1] ?? 0);
+        };
+        const until = async (what, condition) => {
+          const end = Date.now() + 120000;
+          while (!(await condition())) {
+            if (Date.now() > end) throw new Error(`${id}: timed out waiting for ${what} on ${delegate}`);
+            await page.waitForTimeout(250);
+          }
+        };
+        const drag = async points => {
+          await page.mouse.move(...points[0]);
+          await page.mouse.down();
+          for (const point of points.slice(1)) await page.mouse.move(...point, {steps: 8});
+          await page.mouse.up();
+        };
+        const at = (fx, fy) => [box.x + box.width * fx, box.y + box.height * fy];
+        const summary = text => page.getByText(text, {exact: true});
+        const brush = name => page.getByRole('button', {name, exact: true});
+        let before = await requests();
+        enter(`${id}:${delegate}:exclude`);
+        await brush('Exclude').click();
+        await drag([at(0.4, 0.5), at(0.6, 0.5)]);
+        await until('the Exclude stroke', async () =>
+          await requests() > before && await summary('1 include · 1 exclude').count() === 1);
+        report.checks.push(`${id}:${delegate}:exclude`);
+        before = await requests();
+        enter(`${id}:${delegate}:lasso`);
+        await brush('Lasso').click();
+        await drag([at(0.3, 0.3), at(0.7, 0.3), at(0.7, 0.7), at(0.3, 0.7)]);
+        await until('the lasso', async () =>
+          await requests() > before && await summary('1 include · 1 exclude · 1 lasso').count() === 1);
+        report.checks.push(`${id}:${delegate}:lasso`);
+        await brush('Include').click();
       }
       await page.screenshot({path: path.join(evidence, `${id}.png`)});
     }

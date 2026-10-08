@@ -74,6 +74,14 @@ void main() {
     expect(result.runtimeVersion, '1.1.0');
   });
 
+  test("MagicTouch stays off Google's Windows library, with the reason", () {
+    final windows = interactiveSegmenterCapabilitiesForPlatform(
+      const TaskPlatform(operatingSystem: 'windows', architecture: 'x64'),
+    );
+    expect(windows.isSupported, isFalse);
+    expect(windows.unavailableReasons[Delegate.cpu], contains('UP-048'));
+  });
+
   test("Object Detector runs CPU and Metal on Google's macOS library", () {
     const mac = TaskPlatform(
       operatingSystem: 'macos',

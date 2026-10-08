@@ -11,10 +11,11 @@ import '../vision_task_backend.dart';
 /// Google's stateful MagicTouch Interactive Segmenter: an image, then the
 /// mask of the object a stroke history selects.
 ///
-/// One class on every platform. Google's native runtime serves it on a
-/// worker isolate on macOS, Linux and iOS; its Android
-/// SDK and browser runtime serve it through the registered platform plugin.
-/// Google's Windows build lacks it, which the capability query reports.
+/// One class on every platform. Google's vision library serves it on a
+/// worker isolate on Android, iOS, macOS and Linux; Google's browser runtime
+/// serves it through the registered web adapter. Google's Windows library
+/// has it too, but runs a stroke in about 25 seconds, so the capability
+/// query reports Windows as unavailable (upstream-issues.md UP-048).
 ///
 /// ```dart
 /// final task = await InteractiveSegmenter.create(

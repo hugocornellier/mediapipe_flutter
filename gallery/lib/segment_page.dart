@@ -17,11 +17,13 @@ import 'ui/components.dart';
 import 'ui/design.dart';
 import 'ui/workspace.dart';
 
-/// MagicTouch segmentation: drag over a subject to select it.
+/// MagicTouch segmentation: drag over a subject to select it, with Google's
+/// three brushes. Include and Exclude strokes mark what to add and remove;
+/// a lasso selects what lies inside the box around the drag.
 ///
-/// The editor controller and mask thresholding are the segmenter example's,
-/// copied unchanged. They already coalesce in-flight requests, keep the task's
-/// float mask intact, and serialise stroke edits against native work.
+/// The editor controller and mask thresholding coalesce in-flight requests,
+/// keep the task's float mask intact, and serialise stroke edits against
+/// native work.
 class SegmentPage extends StatefulWidget {
   const SegmentPage({
     super.key,
@@ -195,13 +197,28 @@ class _SegmentPageState extends State<SegmentPage> {
     super.dispose();
   }
 
-  /// A lasso stroke is discarded below three points, so a tap does nothing in
-  /// that mode. Say which gesture the selected tool expects.
+  /// A lasso shorter than the editor's minimum is dropped, so a tap does
+  /// nothing in that mode. Say which gesture the selected tool expects.
   static String _hintFor(BrushMode? brush) => switch (brush) {
     BrushMode.negative => 'Tap or drag over an area to exclude it.',
     BrushMode.lasso => 'Draw a shape around a subject to select it.',
     _ => 'Tap or drag over a subject to include it.',
   };
+
+  /// The finished strokes by brush, "1 include · 1 exclude · 1 lasso", or
+  /// null before the first.
+  static String? _summary(EditorController? editor) {
+    final counts = editor?.strokeCounts;
+    if (counts == null || counts.isEmpty) return null;
+    return [
+      for (final MapEntry(key: brush, value: count) in counts.entries)
+        '$count ${switch (brush) {
+          BrushMode.positive => 'include',
+          BrushMode.negative => 'exclude',
+          BrushMode.lasso => 'lasso',
+        }}',
+    ].join(' · ');
+  }
 
   NormalizedKeypoint? _pointFor(Offset local, Size size) {
     if (size.width <= 0 || size.height <= 0) return null;
@@ -294,8 +311,9 @@ class _SegmentPageState extends State<SegmentPage> {
                             if (point != null) editor.extend(point);
                           },
                           onPanEnd: (_) => editor.end(),
-                          // A single point is never a valid lasso, so let
-                          // taps fall through rather than silently drop.
+                          // A lasso needs a drag: the editor drops one
+                          // shorter than its minimum, as Google's web sample
+                          // does, so a tap in lasso mode is left alone.
                           onTapUp: editor.brush == BrushMode.lasso
                               ? null
                               : (details) {
@@ -319,10 +337,15 @@ class _SegmentPageState extends State<SegmentPage> {
                               ),
                               if (_maskImage case final image?)
                                 CustomPaint(painter: _MaskPainter(image)),
-                              // The stroke being drawn, as Google's sample
-                              // shows it until the pointer lifts.
+                              // The finished strokes and the one being
+                              // drawn, in each brush's color as Google's
+                              // samples show them.
                               CustomPaint(
-                                painter: _StrokePainter(editor.activePoints),
+                                painter: _StrokePainter(
+                                  completed: editor.completedStrokes,
+                                  active: editor.activePoints,
+                                  activeBrush: editor.activeBrush,
+                                ),
                               ),
                             ],
                           ),
@@ -371,12 +394,41 @@ class _SegmentPageState extends State<SegmentPage> {
           ],
           delegate: _delegate == Delegate.gpu ? 'GPU' : 'CPU',
         ),
-        // TODO: Restore the Exclude and Lasso brushes. Only Include is offered
-        // today. See packages/mediapipe-task-vision/tool/SEGMENTER_BRUSHES.md.
+        const SizedBox(height: 11),
+        // The controller reads `brush` when a stroke begins, so a change
+        // mid-stroke cannot alter the stroke already running.
+        Segmented<BrushMode>(
+          expand: true,
+          semanticsIdentifier: 'segment-brush',
+          segments: const [
+            (
+              value: BrushMode.positive,
+              label: 'Include',
+              icon: LucideIcons.circlePlus,
+              key: ValueKey('brush-positive'),
+            ),
+            (
+              value: BrushMode.negative,
+              label: 'Exclude',
+              icon: LucideIcons.circleMinus,
+              key: ValueKey('brush-negative'),
+            ),
+            (
+              value: BrushMode.lasso,
+              label: 'Lasso',
+              icon: LucideIcons.lasso,
+              key: ValueKey('brush-lasso'),
+            ),
+          ],
+          selected: editor?.brush ?? BrushMode.positive,
+          onChanged: editor == null || !editor.ready
+              ? null
+              : (mode) => setState(() => editor.brush = mode),
+        ),
         const SizedBox(height: 11),
         OutputCard(
           title: 'Selection',
-          count: editor?.canUndo ?? false ? 'Include' : null,
+          count: _summary(editor),
           empty: _hintFor(editor?.brush),
           child: editor?.mask == null
               ? null
@@ -392,39 +444,86 @@ class _SegmentPageState extends State<SegmentPage> {
 }
 
 class _StrokePainter extends CustomPainter {
-  const _StrokePainter(this.points);
+  const _StrokePainter({
+    required this.completed,
+    required this.active,
+    required this.activeBrush,
+  });
 
-  /// Normalized to the picture, which fills this painter exactly.
-  final List<NormalizedKeypoint> points;
+  /// The finished strokes, normalized to the picture, which fills this
+  /// painter exactly.
+  final List<Stroke> completed;
+
+  /// The stroke being drawn, and its brush.
+  final List<NormalizedKeypoint> active;
+  final BrushMode activeBrush;
+
+  /// Include in the design's accent; Exclude and Lasso in the red and blue of
+  /// Google's samples, the lasso filled lightly.
+  static const _exclude = Color(0xFFE53935);
+  static const _lasso = Color(0xFF2196F3);
+
+  static Color _colorFor(BrushMode brush) => switch (brush) {
+    BrushMode.positive => GalleryTheme.accentLight,
+    BrushMode.negative => _exclude,
+    BrushMode.lasso => _lasso,
+  };
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (points.isEmpty) return;
+    for (final stroke in completed) {
+      _paintStroke(canvas, size, stroke.points, stroke.brushMode, done: true);
+    }
+    if (active.isNotEmpty) {
+      _paintStroke(canvas, size, active, activeBrush, done: false);
+    }
+  }
+
+  void _paintStroke(
+    Canvas canvas,
+    Size size,
+    List<NormalizedKeypoint> points,
+    BrushMode brush, {
+    required bool done,
+  }) {
+    final color = _colorFor(brush);
     final paint = Paint()
-      ..color = GalleryTheme.accentLight
+      ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
+      ..strokeWidth = brush == BrushMode.lasso ? 3 : 4
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-    final path = Path()
-      ..moveTo(points.first.x * size.width, points.first.y * size.height);
-    for (final point in points.skip(1)) {
-      path.lineTo(point.x * size.width, point.y * size.height);
-    }
+    Offset at(NormalizedKeypoint p) =>
+        Offset(p.x * size.width, p.y * size.height);
     if (points.length == 1) {
-      canvas.drawCircle(
-        Offset(points.first.x * size.width, points.first.y * size.height),
-        3,
-        paint..style = PaintingStyle.fill,
-      );
-    } else {
-      canvas.drawPath(path, paint);
+      canvas.drawCircle(at(points.first), 3, paint..style = PaintingStyle.fill);
+      return;
     }
+    final path = Path()..moveTo(at(points.first).dx, at(points.first).dy);
+    for (final point in points.skip(1)) {
+      path.lineTo(at(point).dx, at(point).dy);
+    }
+    if (brush == BrushMode.lasso) {
+      // Google's samples close and fill the lasso once it has a shape.
+      final fill = Path.from(path);
+      if (done || points.length > 2) fill.close();
+      canvas.drawPath(
+        fill,
+        Paint()
+          ..color = color.withValues(alpha: 0.15)
+          ..style = PaintingStyle.fill,
+      );
+    }
+    canvas.drawPath(path, paint);
   }
 
   @override
   bool shouldRepaint(_StrokePainter oldDelegate) =>
-      oldDelegate.points.length != points.length;
+      oldDelegate.completed.length != completed.length ||
+      (completed.isNotEmpty &&
+          !identical(oldDelegate.completed.last, completed.last)) ||
+      oldDelegate.active.length != active.length ||
+      oldDelegate.activeBrush != activeBrush;
 }
 
 class _MaskPainter extends CustomPainter {

@@ -10,8 +10,10 @@ runs through Google's own runtime on each platform:
 - **Web:** `@mediapipe/tasks-vision` 1.0.1.
 
 Browsers run it on CPU or WebGL 2, every other platform on the CPU. Google's
-Windows library does not export the stateful API, so Windows has no
-Interactive Segmenter.
+Windows library exports the stateful API as well and its masks agree with the
+macOS wheel's within 0.045, but a stroke takes about 25 seconds on GitHub's
+Windows runner and Google's Windows Python wheel lacks the API, so Windows
+has no Interactive Segmenter (upstream-issues.md UP-048).
 
 Official sources:
 
@@ -41,8 +43,8 @@ is Google's unchanged **30.5 MB** int8 version-1 bundle
 SHA-256 `38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03`).
 Maintainers download it with `dart tool/download_interactive_segmenter.dart`.
 
-No platform needs a setting. The task needs no entry in
-`mediapipe_vision.tasks`, and a Windows build fails if that list names it.
+No platform needs a setting, and the task needs no entry in
+`mediapipe_vision.tasks`.
 
 On macOS, set the deployment target to **14.0** and add `ARCHS = arm64` and
 `EXCLUDED_ARCHS = x86_64` to `macos/Runner/Configs/AppInfo.xcconfig`; Google's
@@ -80,9 +82,13 @@ Google's pipeline performs all model preprocessing and inference.
 Call `setImage` once per image, then pass the **complete current stroke history**
 to every `segment` call. Points are normalized to the input image, excluding
 canvas letterboxing. A positive click is a one-point positive stroke. Negative
-strokes exclude areas; lasso strokes have at least three points. Set
+strokes exclude areas. A lasso selects what lies inside the box around its
+points, however many: Google's graph reads the box, not the outline. Set
 `isCompleted: false` while drawing and resubmit the finished stroke with
-`isCompleted: true` when released. Undo by resubmitting a shorter history.
+`isCompleted: true` when released; send a lasso only when released, since
+Google's CPU graph reads an unfinished one differently. Undo by resubmitting
+a shorter history. Every mode takes a stroke of one or more points, as
+Google's API does.
 
 Clear the displayed mask when the history becomes empty, and call `setImage`
 to reset the session. Empty histories are rejected before native execution:
@@ -95,13 +101,58 @@ their confidence buffers and remain valid after another inference or disposal.
 No threshold, smoothing or postprocessing is added to the task result.
 `dispose` drains queued work and is idempotent.
 
+## How Google's graph reads strokes
+
+Measured on 2026-10-07 with the pinned model on `cats_and_dogs.jpg`:
+natively on macOS through the package's FFI bindings, which could send what
+Google's API takes but the Dart type then rejected, and in headless Chromium
+through Google's `@mediapipe/tasks-vision` 1.0.1 on the CPU and WebGL
+delegates. The native run used the fixtures' 299 x 150 raw input and the
+browser the 1200 x 600 JPEG it decoded, so foreground shares differ between
+columns; comparisons hold within a column. Google's Python wheel confirmed
+the lasso and Exclude rows when it regenerated the fixtures.
+
+| Case | Native CPU | Web CPU | WebGL |
+| --- | --- | --- | --- |
+| Open rectangle lasso vs the closed one | identical | identical | identical |
+| Two opposite corners vs the rectangle | identical | identical | identical |
+| Three collinear points vs the rectangle | identical | identical | identical |
+| Unfinished lasso vs the finished one | foreground 0.063 vs 0.131 | agreement 0.84 | agreement 0.9996 |
+| Unfinished Include or Exclude vs finished | identical | identical | agreement 0.9996 |
+| A single-point stroke of any mode | as Google's samples | as Google's samples | the default mask: a point draws nothing |
+| The editor's 13-point ring vs the point | agreement 0.9999 | agreement 0.9999 | ring works, point does not |
+| Exclude with no Include before it | foreground 0.034 | foreground 0.021 | the default mask |
+| Rectangle lasso, CPU vs WebGL | | | agreement 0.984 |
+| Brush mode 0 or 7 | "Unknown brush mode" error; `setImage` recovers | | |
+
+So a lasso is the bounding box of its points, closing the outline changes
+nothing, and Google's three samples (Android, iOS and the web demo) send
+strokes as drawn with no minimum and no closing point, segmenting only when
+the pointer lifts. The web demo drops strokes shorter than 0.05 of the image.
+This package follows Google's API (`Stroke` takes one or more points in any
+mode) and its samples in the editor below. The package's own tests check the
+box rule pixel for pixel (`raw-lasso-open` and `raw-lasso-corners` reproduce
+`raw-lasso`'s mask, `raw-negative-partial` reproduces `raw-negative`'s), the
+browser suite checks it on Google's own JavaScript output, and the phone
+suite checks it on the whole photo.
+
 ## Editor
 
 The gallery's Segment page (`gallery/lib/segment_page.dart`, with its editor in
-`gallery/lib/segment/`) is the MagicTouch editor on every platform: include
-strokes, undo, clear and a display-only threshold setting on the bundled
-sample photo. The tap area takes the picture's exact shape, so a tap's
-position is measured against the picture, not the letterbox.
+`gallery/lib/segment/`) is the MagicTouch editor on every platform: Google's
+three brushes under the picture (Include, Exclude and Lasso), undo, clear and
+a display-only threshold setting on the bundled sample photo. The tap area
+takes the picture's exact shape, so a tap's position is measured against the
+picture, not the letterbox.
+
+Include and Exclude strokes are segmented while they are drawn, as Google
+reads them the same finished or not; a tap becomes a 13-point ring, because
+a browser's WebGL graph draws nothing for a single point. A lasso is drawn
+until the pointer lifts and then sent as drawn, unclosed, like Google's
+samples; one shorter than 0.05 of the image is dropped, so a tap in lasso
+mode selects nothing. Finished strokes stay painted in their brush's color
+(Include in the design's accent, Exclude red, Lasso blue with a light fill),
+and the Selection card counts them ("1 include · 1 exclude · 1 lasso").
 
 Inference has one active request and one replaceable pending history. Drawing
 does not enqueue every pointer event. Image replacement, undo and clear discard
@@ -156,16 +207,27 @@ The saved macOS validation and CPU baseline, in git history at `3e217ac` under
 consumer report and editor screenshot.
 
 - `dart test test/interactive_segmenter_test.dart` compares every mask pixel in
-  11 cases with Google's Python API (the 1.1.0 wheel) at maximum absolute
-  error 1e-6: clicks, partial strokes, multiple selections, exclusion, lasso,
-  undo, image replacement, blank input, padded RGB/RGBA/BGRA, ownership and
-  lifecycle. It also runs the segmenter alongside CPU and Metal face tasks.
+  14 cases with Google's Python API (the 1.1.0 wheel) at maximum absolute
+  error 1e-6: clicks, partial strokes, multiple selections, exclusion, lasso
+  as an outline, open, and as two corners, an unfinished Exclude, undo, image
+  replacement, blank input, padded RGB/RGBA/BGRA, ownership and lifecycle.
+  It also runs the segmenter alongside CPU and Metal face tasks.
 - `gallery/test/segment_editor_controller_test.dart` checks the editor's
-  bounded queue, late-result rejection, undo/clear, lasso completion, the ring
-  a tap becomes and the display threshold. The gallery journey
-  (`gallery_journey_test.dart`) draws, undoes and clears on the Segment page.
-- The gallery's `sdk_interactive_segmenter_test` runs it on the iOS
-  Simulator.
+  bounded queue, late-result rejection, undo/clear, the lasso sent unclosed
+  on release and dropped when too short, the Exclude stroke sent while drawn,
+  the stroke counts, the ring a tap becomes and the display threshold. The
+  gallery journey (`gallery_journey_test.dart`, and its browser twin
+  `gallery/tool/browser/test_gallery_journey.mjs`) taps Include, drags
+  Exclude and a lasso, reads the Selection card, undoes and clears on the
+  Segment page, on every delegate the page offers.
+- The gallery's `sdk_interactive_segmenter_test` (iOS Simulator, Android
+  emulator and Test Lab phones) compares Include with Google's `file-cat`
+  mask and Exclude and Lasso with the fixture's summaries of the same photo,
+  and checks that the lasso's outline and corners select the same pixels.
+- The browser suite (`gallery/tool/web_api_probe.dart` through
+  `test_browser.mjs`) compares Include, Exclude, lasso and an unfinished
+  stroke with Google's JavaScript on the same delegate, CPU and WebGL, and
+  checks the box rule on Google's own output.
 
 `generate_interactive_segmenter_reference.py` runs Google's wheel pinned for
 the host (core's `tool/official_wheels.py`); `--python-package-root` takes the

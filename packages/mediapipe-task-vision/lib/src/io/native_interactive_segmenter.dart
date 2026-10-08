@@ -14,7 +14,7 @@ import 'native_vision_task.dart'
     show checkVisionCall, copyVisionConfidenceMask, setVisionBaseOptions;
 
 /// One Interactive Segmenter session, owned by its persistent worker isolate:
-/// Google's vision library on macOS, Linux and iOS.
+/// Google's vision library on Android, iOS, macOS and Linux.
 abstract interface class InteractiveSegmenterSession {
   /// Replace the image, resetting the stroke session.
   void setImage(VisionImage input);
@@ -32,7 +32,9 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
   NativeInteractiveSegmenter(InteractiveSegmenterOptions options) {
     if (Platform.isWindows) {
       throw UnsupportedError(
-        "Google's Windows library has no Interactive Segmenter.",
+        "Google's Windows library runs the Interactive Segmenter at about 25 "
+        'seconds a stroke (upstream-issues.md UP-048), so the package does '
+        'not offer it there.',
       );
     }
     if (options.delegate != Delegate.cpu) {

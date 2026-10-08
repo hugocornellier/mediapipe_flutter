@@ -74,6 +74,38 @@ void main() {
           expect(meanDelta, lessThan(0.01));
           expect(foregroundDelta, lessThan(0.01));
 
+          // Exclude and Lasso on the same photo, against Google's summaries
+          // of the same histories, with Include's tolerances.
+          final summaries = <String, ConfidenceMask>{};
+          for (final MapEntry(key: name, value: summary)
+              in officialInteractiveSummaries.entries) {
+            final mask = await task.segment([
+              for (final (mode, points) in summary.strokes)
+                stroke(BrushMode.values.byName(mode), points),
+            ]);
+            summaries[name] = mask;
+            final error = _gridError(mask, summary.grid);
+            final mean = (_mean(mask) - summary.mean).abs();
+            final share = (_foreground(mask) - summary.foreground).abs();
+            _report(name, {
+              'grid_error': error,
+              'mean_delta': mean,
+              'foreground_delta': share,
+            });
+            expect(error, lessThan(0.02), reason: name);
+            expect(mean, lessThan(0.01), reason: name);
+            expect(share, lessThan(0.01), reason: name);
+          }
+          // Google reads a lasso as the box around its points: the outline
+          // and its two opposite corners select the same pixels.
+          expect(
+            _agreement(
+              summaries['file-lasso']!,
+              summaries['file-lasso-corners']!,
+            ),
+            greaterThan(0.999),
+          );
+
           // The same image as decoded pixels: the same selection.
           final frame = await loadSample('animals.jpg');
           await task.setImage(frame.image);
@@ -81,28 +113,10 @@ void main() {
           final agreement = _agreement(file, pixels);
           expect(agreement, greaterThan(0.99));
 
-          // Strokes add, subtract and enclose, as in Google's references.
+          // Strokes add, as in Google's references.
           final dogOnly = await task.segment([dog]);
           final both = await task.segment([dog, cat]);
           expect(_foreground(both), greaterThan(_foreground(dogOnly)));
-          final negative = await task.segment([
-            dog,
-            stroke(BrushMode.negative, [(0.42, 0.6)]),
-          ]);
-          expect(
-            _foreground(negative),
-            lessThanOrEqualTo(_foreground(dogOnly) + 0.001),
-          );
-          final lasso = await task.segment([
-            stroke(BrushMode.lasso, [
-              (0.52, 0.2),
-              (0.78, 0.2),
-              (0.78, 0.98),
-              (0.52, 0.98),
-              (0.52, 0.2),
-            ]),
-          ]);
-          expect(_foreground(lasso), greaterThan(0.01));
           // Undo is a shorter history: the earlier mask again.
           final undone = await task.segment([dog]);
           expect(_agreement(dogOnly, undone), greaterThan(0.999));
@@ -115,8 +129,6 @@ void main() {
             'foreground': {
               'dog': _foreground(dogOnly),
               'dog_cat': _foreground(both),
-              'dog_negative': _foreground(negative),
-              'lasso': _foreground(lasso),
             },
           });
         } finally {

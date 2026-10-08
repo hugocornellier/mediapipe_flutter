@@ -20,7 +20,8 @@ void main() {
         reason: target,
       );
     }
-    // Google's Windows library has no stroke API.
+    // Google's Windows library runs the stateful segmenter too slowly to
+    // offer (upstream-issues.md UP-048).
     expect(
       targetTasks['windows/x64'],
       isNot(contains('interactive_segmenter')),
