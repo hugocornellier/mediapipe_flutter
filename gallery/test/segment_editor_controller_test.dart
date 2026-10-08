@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediapipe_gallery/segment/editor_controller.dart';
 import 'package:mediapipe_gallery/segment/mask_overlay.dart';
@@ -34,7 +34,28 @@ class FakeBackend implements SegmentationBackend {
   );
 }
 
+/// A backend whose image load fails while [fail] is set.
+class _FailingImageBackend extends FakeBackend {
+  bool fail = true;
+
+  @override
+  Future<void> setImage(VisionImage image) async {
+    if (fail) throw StateError('decode failed');
+    await super.setImage(image);
+  }
+}
+
 Future<void> tick() => Future<void>.delayed(Duration.zero);
+
+/// What debugPrint prints until the test ends.
+List<String> capturePrints() {
+  final printed = <String>[];
+  final original = debugPrint;
+  debugPrint = (message, {wrapWidth}) => printed.add(message!);
+  addTearDown(() => debugPrint = original);
+  return printed;
+}
+
 NormalizedKeypoint point(double x, [double y = 0.5]) =>
     NormalizedKeypoint(x: x, y: y);
 VisionImage input() => VisionImage.fromPixels(
@@ -260,18 +281,81 @@ void main() {
     expect(backend.calls, hasLength(1));
   });
 
+  test('a failed request keeps the picture, strokes and mask; the next stroke '
+      'retries and its success clears the error', () async {
+    final printed = capturePrints();
+    editor
+      ..begin(point(0.2))
+      ..end();
+    await tick();
+    backend.finish(0, 0.25);
+    await tick();
+    final kept = editor.mask;
+    editor
+      ..brush = BrushMode.negative
+      ..begin(point(0.3))
+      ..end();
+    await tick();
+    backend.results[1].completeError(StateError('lost context'));
+    await tick();
+    expect(editor.ready, isTrue);
+    expect(editor.error, contains('lost context'));
+    expect(editor.mask, same(kept));
+    expect(editor.completedStrokes, hasLength(2));
+    expect(printed, [
+      'Segment: segment failed for [positive 13 points, negative 13 '
+          'points]: Bad state: lost context',
+    ]);
+    // The same failure again is not printed again.
+    editor
+      ..begin(point(0.4))
+      ..end();
+    await tick();
+    backend.results[2].completeError(StateError('lost context'));
+    await tick();
+    expect(printed, hasLength(1));
+    editor
+      ..begin(point(0.5))
+      ..end();
+    await tick();
+    expect(backend.calls.last, hasLength(4));
+    // Each retry gave Google's graph the image again first.
+    expect(backend.images, 3);
+    backend.finish(3);
+    await tick();
+    expect(editor.error, isNull);
+    expect(editor.mask, isNot(same(kept)));
+  });
+
+  test('a failed image load stops the editor until the next load', () async {
+    final failing = _FailingImageBackend();
+    final broken = EditorController(failing, debugLabel: 'Segment GPU');
+    addTearDown(broken.close);
+    final printed = capturePrints();
+    await broken.loadImage(input());
+    expect(broken.ready, isFalse);
+    expect(broken.error, contains('decode failed'));
+    expect(printed, ['Segment GPU: setImage failed: Bad state: decode failed']);
+    failing.fail = false;
+    await broken.loadImage(input());
+    expect(broken.ready, isTrue);
+    expect(broken.error, isNull);
+  });
+
   test(
-    'native failure can be reset; close drains once without notification',
+    'failure is reset by clear; close drains once without notification',
     () async {
+      capturePrints();
       editor
         ..begin(point(0.2))
         ..end();
       await tick();
       backend.results[0].completeError(StateError('decoder failure'));
       await tick();
-      expect(editor.ready, isFalse);
+      expect(editor.ready, isTrue);
       expect(editor.error, contains('decoder failure'));
       await editor.clear();
+      expect(editor.error, isNull);
       editor
         ..begin(point(0.3))
         ..end();

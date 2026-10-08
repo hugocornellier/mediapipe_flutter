@@ -135,7 +135,7 @@ void main() {
       compare(retained!, retainedCase!);
       expect(() => retained!.confidence[0] = 0, throwsUnsupportedError);
     },
-    // Loads a 30 MB model and runs eleven segmentations; slow hosted runners
+    // Loads a 30 MB model and runs twenty segmentations; slow hosted runners
     // have taken over the default 30 seconds.
     timeout: const Timeout(Duration(minutes: 2)),
   );

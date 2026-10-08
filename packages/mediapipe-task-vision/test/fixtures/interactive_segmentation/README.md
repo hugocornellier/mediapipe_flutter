@@ -22,10 +22,18 @@ shorter history, RGBA, blank input and image replacement. Three cases show
 how Google's graph reads strokes: a lasso is the bounding box of its points
 (the open outline and the two opposite corners give `raw-lasso`'s mask), and
 an unfinished Exclude stroke reads as the finished one (`raw-negative`'s).
-Cases with the same mask share one file. The `summaries` section reduces
-three Exclude and Lasso histories on the whole photo to a 16 x 8 grid of
-cell means, the mean and the foreground share, for the gallery's phone and
-browser tests; those masks are not stored. The blank image
+Six cases send strokes as the gallery's editor does: an Exclude drag down
+the dog, finished and in progress (one mask, since Google reads both the
+same); a lasso before the pointer lifts, the one case where the completed
+flag changes the mask; and a lasso with an Exclude drag, two lassos, and an
+Include, a lasso and an Exclude drag together. The generator asserts that
+each of these strokes changes the mask, so a wrapper that dropped or misread
+one could not still match. Cases with the same mask share one file. The
+`summaries` section reduces three Exclude and Lasso histories on the whole
+photo to a 16 x 8 grid of cell means, the mean and the foreground share, for
+the gallery's phone tests; those masks are not stored. The Exclude summary's
+drag removes most of the dog, and the generator asserts that dropping it
+moves the grid by more than 0.05, against the phones' 0.02. The blank image
 produces a nonempty mask with this official model; references preserve that
 behavior. Timings here are observations from reference generation, not warmed
 Flutter performance benchmarks.

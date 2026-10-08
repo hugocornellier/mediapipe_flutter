@@ -30,9 +30,18 @@ class NativeSegmentationBackend implements SegmentationBackend {
 /// finished or not; a lasso is sent when the pointer lifts, as Google's
 /// samples do, because Google's CPU graph reads an unfinished lasso
 /// differently from the finished one.
+///
+/// A failed request keeps the image, the strokes and the last mask: [error]
+/// says what failed, the next stroke sets the image again and asks again,
+/// and a success clears it.
+/// Failures are printed with [debugLabel] and the history sent, so a
+/// browser's console keeps them after the page has moved on.
 class EditorController extends ChangeNotifier {
-  EditorController(this._backend);
+  EditorController(this._backend, {this.debugLabel = 'Segment'});
   final SegmentationBackend _backend;
+
+  /// Names this editor in the failures it prints, such as its delegate.
+  final String debugLabel;
   final _completed = <Stroke>[];
   List<NormalizedKeypoint>? _active;
   BrushMode _activeBrush = BrushMode.positive;
@@ -46,6 +55,9 @@ class EditorController extends ChangeNotifier {
   int _revision = 0;
   ({int generation, int revision, List<Stroke> strokes})? _pending;
   Future<void>? _draining;
+
+  /// A request failed on this image: the next one sets the image again.
+  bool _stale = false;
   Future<void>? _loading;
   Future<void>? _closing;
   double? lastInferenceMs;
@@ -124,6 +136,7 @@ class EditorController extends ChangeNotifier {
     _revision++;
     _input = image;
     _pending = null;
+    _stale = false;
     _completed.clear();
     _active = null;
     mask = null;
@@ -139,6 +152,7 @@ class EditorController extends ChangeNotifier {
       await _backend.setImage(image);
       if (!_closed && generation == _generation) ready = true;
     } catch (failure) {
+      debugPrint('$debugLabel: setImage failed: $failure');
       if (!_closed && generation == _generation) error = failure.toString();
     }
     _notify();
@@ -239,8 +253,14 @@ class EditorController extends ChangeNotifier {
       while (!_closed && ready && _pending != null) {
         final request = _pending!;
         _pending = null;
-        final watch = Stopwatch()..start();
         try {
+          // A failed request can leave Google's graph needing the image
+          // again, so the next one sends it first.
+          if (_stale) {
+            _stale = false;
+            await _backend.setImage(_input!);
+          }
+          final watch = Stopwatch()..start();
           final result = await _backend.segment(request.strokes);
           completedRequests++;
           if (!_closed &&
@@ -251,10 +271,20 @@ class EditorController extends ChangeNotifier {
             error = null;
           }
         } catch (failure) {
+          final message = failure.toString();
+          // The first of a run of failures is printed with what was sent,
+          // not one line per pointer move after it.
+          if (message != error) {
+            debugPrint(
+              '$debugLabel: segment failed for '
+              '[${_describe(request.strokes)}]: $message',
+            );
+          }
+          // The image and the history stay, so the next stroke retries; a
+          // newer history already pending goes out now.
           if (!_closed && request.generation == _generation) {
-            ready = false;
-            error = failure.toString();
-            _pending = null;
+            error = message;
+            _stale = true;
           }
         }
         _notify();
@@ -265,6 +295,14 @@ class EditorController extends ChangeNotifier {
       _notify();
     }
   }
+
+  /// "positive 13 points, negative 8 points in progress", for the failure
+  /// log.
+  static String _describe(List<Stroke> strokes) => [
+    for (final stroke in strokes)
+      '${stroke.brushMode.name} ${stroke.points.length} points'
+          '${stroke.isCompleted ? '' : ' in progress'}',
+  ].join(', ');
 
   void _notify() {
     if (!_closed) notifyListeners();

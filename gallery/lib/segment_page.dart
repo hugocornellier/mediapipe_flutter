@@ -110,19 +110,25 @@ class _SegmentPageState extends State<SegmentPage> {
         return;
       }
       _task = task;
-      final editor = EditorController(NativeSegmentationBackend(task))
-        ..addListener(_onEditorChanged);
+      final editor = EditorController(
+        NativeSegmentationBackend(task),
+        debugLabel: 'Segment ${_delegateName(_delegate)}',
+      )..addListener(_onEditorChanged);
       _editor = editor;
       await editor.loadImage(
         VisionImage.fromFile(widget.assets.path(widget.task.sample)),
       );
       if (mounted) setState(() {});
     } on Object catch (error) {
+      debugPrint('Segment ${_delegateName(_delegate)}: open failed: $error');
       if (mounted && revision == _openRevision) {
         setState(() => _error = '$error');
       }
     }
   }
+
+  static String _delegateName(Delegate delegate) =>
+      delegate == Delegate.gpu ? 'GPU' : 'CPU';
 
   /// Reopens the segmenter on [delegate] with the same image; strokes and the
   /// mask start over, since they belong to the task being replaced.
@@ -253,7 +259,11 @@ class _SegmentPageState extends State<SegmentPage> {
   Widget build(BuildContext context) {
     final c = GalleryColors.of(context);
     final editor = _editor;
-    final error = _error ?? editor?.error;
+    // Opening the task or loading the picture failed: nothing to draw on.
+    final error = _error ?? ((editor?.ready ?? true) ? null : editor?.error);
+    // A request failed: the picture, strokes and last mask stay, and the
+    // next stroke asks again.
+    final failure = (editor?.ready ?? false) ? editor?.error : null;
     return TaskWorkspace(
       title: widget.task.title,
       onOpenMenu: widget.onOpenMenu,
@@ -354,6 +364,36 @@ class _SegmentPageState extends State<SegmentPage> {
                     ),
                   ),
                 ),
+              if (failure != null)
+                Positioned(
+                  left: 14,
+                  right: 14,
+                  top: 14,
+                  child: IgnorePointer(
+                    child: Semantics(
+                      identifier: 'segment-failure',
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: const Color(0xDD101715),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          child: Text(
+                            'Segmentation failed: $failure\n'
+                            'Draw again to retry, or clear the selection.',
+                            maxLines: 4,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Color(0xFFF0F3F2)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               Positioned(
                 left: 14,
                 bottom: 14,
@@ -392,7 +432,7 @@ class _SegmentPageState extends State<SegmentPage> {
             ] else
               _hintFor(editor?.brush),
           ],
-          delegate: _delegate == Delegate.gpu ? 'GPU' : 'CPU',
+          delegate: _delegateName(_delegate),
         ),
         const SizedBox(height: 11),
         // The controller reads `brush` when a stroke begins, so a change

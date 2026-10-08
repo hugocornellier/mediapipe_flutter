@@ -154,6 +154,13 @@ mode selects nothing. Finished strokes stay painted in their brush's color
 (Include in the design's accent, Exclude red, Lasso blue with a light fill),
 and the Selection card counts them ("1 include · 1 exclude · 1 lasso").
 
+A failed request keeps the picture, the strokes and the last mask, and a
+banner over the picture says what failed. The next stroke sets the image
+again before it asks, since a failure can leave Google's graph needing it,
+and a success removes the banner. Each failure is printed with the delegate
+and the history sent (`Segment GPU: segment failed for [positive 13 points,
+negative 8 points in progress]: ...`), so a browser's console keeps it.
+
 Inference has one active request and one replaceable pending history. Drawing
 does not enqueue every pointer event. Image replacement, undo and clear discard
 obsolete results. Mask coloring runs off the UI isolate. Timings show the
@@ -207,10 +214,14 @@ The saved macOS validation and CPU baseline, in git history at `3e217ac` under
 consumer report and editor screenshot.
 
 - `dart test test/interactive_segmenter_test.dart` compares every mask pixel in
-  14 cases with Google's Python API (the 1.1.0 wheel) at maximum absolute
+  20 cases with Google's Python API (the 1.1.0 wheel) at maximum absolute
   error 1e-6: clicks, partial strokes, multiple selections, exclusion, lasso
-  as an outline, open, and as two corners, an unfinished Exclude, undo, image
+  as an outline, open, and as two corners, an unfinished Exclude, an Exclude
+  drag finished and in progress, an unfinished lasso, a lasso with an
+  Exclude drag, two lassos, Include, lasso and Exclude together, undo, image
   replacement, blank input, padded RGB/RGBA/BGRA, ownership and lifecycle.
+  The unfinished lasso is the only case the completed flag changes, so it is
+  what fails if a wrapper drops that flag.
   It also runs the segmenter alongside CPU and Metal face tasks.
 - `gallery/test/segment_editor_controller_test.dart` checks the editor's
   bounded queue, late-result rejection, undo/clear, the lasso sent unclosed
@@ -224,6 +235,8 @@ consumer report and editor screenshot.
   emulator and Test Lab phones) compares Include with Google's `file-cat`
   mask and Exclude and Lasso with the fixture's summaries of the same photo,
   and checks that the lasso's outline and corners select the same pixels.
+  The Exclude summary is a drag that removes most of the dog: dropping it
+  would miss by about 0.12 of mean cell error, against a tolerance of 0.02.
 - The browser suite (`gallery/tool/web_api_probe.dart` through
   `test_browser.mjs`) compares Include, Exclude, lasso and an unfinished
   stroke with Google's JavaScript on the same delegate, CPU and WebGL, and
