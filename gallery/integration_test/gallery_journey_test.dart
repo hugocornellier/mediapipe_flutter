@@ -9,7 +9,9 @@ import 'package:video_frames/video_frames.dart';
 import 'package:mediapipe_gallery/audio/microphone.dart';
 import 'package:mediapipe_gallery/audio_page.dart';
 import 'package:mediapipe_gallery/catalog.dart';
+import 'package:mediapipe_gallery/decision_page.dart';
 import 'package:mediapipe_gallery/embed_page.dart';
+import 'package:mediapipe_gallery/fish_game_page.dart';
 import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/live/video_frame_image.dart';
 import 'package:mediapipe_gallery/live_page.dart';
@@ -156,6 +158,10 @@ void main() {
                   ? SegmentPage
                   : task.demo == GalleryDemo.text
                   ? TextPage
+                  : task.demo == GalleryDemo.decision
+                  ? DecisionPage
+                  : task.demo == GalleryDemo.game
+                  ? FishGamePage
                   : AudioPage,
             )
             .evaluate()
@@ -347,6 +353,57 @@ void main() {
               reason: task.id,
             );
           }
+          break;
+        case GalleryDemo.decision:
+          // Each kind of question on the page's sample, which Google's
+          // Python API answers the same way (the package's reference test
+          // covers every case to float precision).
+          for (final (kind, expected) in _decisionAnswers) {
+            await tester.tap(find.byKey(ValueKey('decision-${kind.name}')));
+            await tester.pump();
+            final ask = find.text('Ask');
+            await tester.ensureVisible(ask);
+            await tester.tap(ask);
+            // The first question downloads Google's 678 MB model.
+            await _until(
+              tester,
+              () =>
+                  find.byKey(decisionAnswerKey).evaluate().isNotEmpty ||
+                  find.text('Error').evaluate().isNotEmpty,
+              attempts: 2400,
+            );
+            expect(
+              find.text('Error'),
+              findsNothing,
+              reason: '${task.id} ${kind.name}: ${_screen(tester)}',
+            );
+            final answer = tester.widget<Text>(find.byKey(decisionAnswerKey));
+            expected(answer.data!, '${task.id} ${kind.name}');
+            checks.add('${task.id}:cpu:${kind.name}');
+          }
+          break;
+        case GalleryDemo.game:
+          // The model steers the fish: Google's wording gets every sentence
+          // the game writes right, so each decision matches the scene.
+          await tester.tap(find.byKey(const ValueKey('fish-play')));
+          // The first game downloads Google's EmbeddingGemma 2 (165 MB).
+          await _until(
+            tester,
+            () =>
+                _fishScore(tester).$1 >= 5 ||
+                find.text('Error').evaluate().isNotEmpty,
+            attempts: 2400,
+          );
+          expect(
+            find.text('Error'),
+            findsNothing,
+            reason: '${task.id}: ${_screen(tester)}',
+          );
+          final (decisions, matched) = _fishScore(tester);
+          expect(matched, decisions, reason: '${task.id}: ${_screen(tester)}');
+          await tester.tap(find.byKey(const ValueKey('fish-play')));
+          await tester.pump();
+          checks.add('${task.id}:cpu:play');
           break;
         case GalleryDemo.audio:
           checks.add('${task.id}:cpu:run');
@@ -622,6 +679,22 @@ const _textCategories = <String, String>{
 /// The embedders compare two texts.
 const _comparingTasks = {'text_embedder', 'embedding_gemma'};
 
+/// What Decision Maker answers the page's sample, as Google's Python API does
+/// with Laya: a refund, about shipping, and unhappy (1.28 of 0 to 4). The
+/// score allows for another desktop's build of Google's library.
+final _decisionAnswers = <(DecisionKind, void Function(String, String))>[
+  (DecisionKind.boolean, (answer, why) => expect(answer, 'Yes', reason: why)),
+  (
+    DecisionKind.choice,
+    (answer, why) => expect(answer, 'shipping', reason: why),
+  ),
+  (
+    DecisionKind.score,
+    (answer, why) =>
+        expect(double.parse(answer), closeTo(1.28, 0.05), reason: why),
+  ),
+];
+
 /// The Proofreader and Summarizer write text, checked here for arriving;
 /// sdk_modern_text_test.dart compares what they write with Google's.
 const _generativeTasks = {'text_proofreader', 'text_summarizer'};
@@ -859,6 +932,13 @@ String _screen(WidgetTester tester) => tester
 void _note(String message) {
   // ignore: avoid_print
   print('GALLERY_JOURNEY_NOTE $message');
+}
+
+/// Hungry Fish's decisions so far and how many matched the scene.
+(int, int) _fishScore(WidgetTester tester) {
+  final text = tester.widget<Text>(find.byKey(fishScoreKey)).data!;
+  final numbers = RegExp(r'\d+').allMatches(text).map((m) => int.parse(m[0]!));
+  return (numbers.first, numbers.last);
 }
 
 /// Pumps until [done], for [attempts] quarter seconds: two minutes unless a

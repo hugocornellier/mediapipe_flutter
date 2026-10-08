@@ -24,6 +24,7 @@ runtime for its platform, with Google's pinned models bundled at build time.
 | `mediapipe_vision` | Face and object detection; face, hand, pose and holistic landmarks; gestures; image classification, embeddings and segmentation | [Vision](packages/mediapipe-task-vision/README.md) |
 | `mediapipe_text` | Text classification, embeddings (EmbeddingGemma included) and language detection; proofreading and summarization everywhere but browsers | [Text](packages/mediapipe-task-text/README.md) |
 | `mediapipe_audio` | Audio classification | [Audio](packages/mediapipe-task-audio/README.md) |
+| `mediapipe_decision` | Yes-or-no, choice and score questions about a text (Decision Maker) on macOS, Linux, Windows and the web | [Decision](packages/mediapipe-task-decision/README.md) |
 
 Add only the families you use: each one bundles only Google's MediaPipe
 library for that family. They all depend on `mediapipe_core`, which holds the

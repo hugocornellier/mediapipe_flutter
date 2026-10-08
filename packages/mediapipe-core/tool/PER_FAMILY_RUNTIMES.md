@@ -155,6 +155,44 @@ test files shared its process; it now runs alone (`--tags isolated`).
 - **Notices.** Google's delivery has no LICENSE or NOTICE; the wheels carry
   both.
 
+## Decision and retrieval
+
+Waiting on Google. Its per-family delivery has vision, text and audio only:
+none of its libraries exports Decision Maker, Universal Embedder or Semantic
+Retriever, on any platform. Until Google builds the `decision` and `retrieval`
+families:
+
+- Decision Maker (`mediapipe_decision`) runs on macOS, Linux and Windows on
+  the all-in-one library from Google's 1.1.0 wheels (`wheelRuntimes`), and in
+  browsers on `@mediapipe/tasks-decision`. Android and iOS report it
+  unsupported: Google's Android and iOS SDKs for it are Kotlin and Swift only,
+  and the packages do not bring back a Java or Swift bridge.
+- Retrieval is not implemented; the gallery lists Universal Embedder and
+  Semantic Retriever as coming next. Google's npm package and the wheels'
+  all-in-one library have it, but nothing gives Android or iOS a C API for it.
+- Building them ourselves is out: Google's public source leaves Decision
+  Maker's engine out, and retrieval, whose C code is public, would need the
+  source builds the switch to per-family libraries removed, only to be
+  thrown away.
+
+Asked of Google: per-family `decision` and `retrieval` libraries for the same
+targets as the others (Android arm64, arm and x86_64; iOS device and
+simulator; macOS arm64; Linux x64; Windows x64), built from the 1.1.0 tag and
+exporting only the C API; Decision Maker's C header, which is not public (the
+library exports 24 functions, Google's Python declares 13); and confirmation
+that the decision library runs EmbeddingGemma 2 (`.litertlm`) as well as Laya.
+
+When they arrive:
+
+1. Pin both families in `familyRuntimes`, delete `wheelRuntimes` and
+   `bundleWheelRuntime`, and have the decision hook call `bundleFamilyRuntime`
+   like the others (the TODO above `wheelRuntimes`).
+2. Add Android and iOS to `decisionRuntimeTargets`, then run the native suite
+   and both gallery journeys on the phones (Test Lab, an iPhone).
+3. Add `mediapipe_retrieval`, built as `mediapipe_decision` is (FFI on the
+   five native platforms, npm in browsers), and turn the gallery's Retrieval
+   cards into tiles.
+
 ## For Google
 
 - Link the macOS and simulator builds with `-headerpad_max_install_names`

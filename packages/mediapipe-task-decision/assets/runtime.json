@@ -1,0 +1,23 @@
+{
+  "package": "@mediapipe/tasks-decision",
+  "version": "1.1.0",
+  "integrity": "WjbOVtj305Lzs5IwF5TOAMDlnW8T1ILQP6efZJGMv9WZgJquwDPZzrheIQve2Zrp7COGHrYuOhuuQF6z/bWOIg==",
+  "files": [
+    "decision_bundle.mjs",
+    "wasm/decision_wasm_internal.js",
+    "wasm/decision_wasm_internal.wasm",
+    "wasm/decision_wasm_nosimd_internal.js",
+    "wasm/decision_wasm_nosimd_internal.wasm",
+    "wasm/decision_wasm_module_internal.js",
+    "wasm/decision_wasm_module_internal.wasm"
+  ],
+  "sha384": {
+    "decision_bundle.mjs": "4LnQlCgo5zRE76gwD6HhtHuJsdMOKzh4OAOp4I9bKP9Uw82Lm3YRH3deHy/EiOvI",
+    "wasm/decision_wasm_internal.js": "vgZXL9HwyNdU/3jrRg7mm2KUD58MVlUD4MwT6HIpZjf1jlC66PdSmHQ91UJ4a0LR",
+    "wasm/decision_wasm_internal.wasm": "Ulx/y5EflasWeqAn9FJGymWRCl2w2J2rkc14HzMFjEdprDKPbDkPANUq0ftwDTh0",
+    "wasm/decision_wasm_nosimd_internal.js": "kHwtph3OWnWXT6QjI9VVjPjeNMtTFFywSU01CRgmL/71YvpmQ7fCDvGoGbfg0PnC",
+    "wasm/decision_wasm_nosimd_internal.wasm": "8AkI2Bk5bt9Px6q9tZZ8xBqmApIDsf/tR7POvxvPSib6Bd9WmkA73hvX4ny+AV2s",
+    "wasm/decision_wasm_module_internal.js": "PswwJBR3zbuR2EGhnMBogOWoVccrFhJnMC0Yyl4pcfAly11eGoSqHggV+wZEMbRF",
+    "wasm/decision_wasm_module_internal.wasm": "sNsRcD7Cltx6bx9R2xS+YtZesPxSAFtV6IyzxZm0QjAoOv+9k2jKBg27FJmMD7t5"
+  }
+}

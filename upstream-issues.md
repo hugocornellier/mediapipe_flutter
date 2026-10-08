@@ -57,6 +57,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-046](#up-046-face-detectors-gpu-needs-a-litert-plugin-the-linux-and-android-libraries-do-not-ship) | Face Detector's GPU needs a LiteRT plugin the Linux and Android libraries do not ship | Found on 1.1.0 |
 | [UP-047](#up-047-opengl-es-gpu-category-masks-come-back-as-float32) | OpenGL ES GPU category masks come back as float32 | Found on 1.1.0 |
 | [UP-048](#up-048-the-windows-library-runs-the-stateful-interactive-segmenter-about-100-times-slower-than-linux) | The Windows library runs the stateful Interactive Segmenter about 100 times slower than Linux | Found on 1.1.0 |
+| [UP-049](#up-049-the-browser-decision-maker-fails-every-evaluation-without-a-hardware-webgpu-adapter) | The browser Decision Maker fails every evaluation without a hardware WebGPU adapter | Found on 1.1.0 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -740,6 +741,29 @@ Legacy task, as the 1.0.1 wheel did, which is where the package's earlier "no
 stroke API on Windows" came from. With no Windows oracle and a stroke that
 takes longer than the editor's whole session elsewhere, the package does not
 offer the task on Windows.
+
+### UP-049: The browser Decision Maker fails every evaluation without a hardware WebGPU adapter
+
+**Status:** observed October 8, 2026 with Google's `@mediapipe/tasks-decision`
+1.1.0 and the Laya model in Chromium, with and without this package: on a Mac
+(Metal) and on GitHub's `ubuntu-24.04` runner (SwiftShader). Worked around:
+the package runs Decision Maker in browsers on the GPU delegate only, and its
+capability query offers it only where the browser has a hardware WebGPU
+adapter, by Google's own rule. Not yet reported to Google.
+
+With `baseOptions.delegate: 'CPU'` the task is created (backend type -1), but
+`evaluateBoolean`, `evaluateChoice`, `evaluateScore` and their batch forms all
+throw `TypeError: e(...).then is not a function`: the bundle's request
+wrapper calls `.then` on the WASM call's result, and on the CPU path that call
+returns its answer synchronously. The ES module and classic WASM builds fail
+alike. With `delegate: 'GPU'`, as Google's own web demo defaults, every
+evaluation succeeds on a hardware WebGPU adapter and matches Google's native
+library to about 2e-7 (Laya, "The customer wants a refund.": 0.7654307
+against the wheel's 0.7654309). Without one the GPU delegate fails the same
+way: the bundle skips WebGPU when no adapter is found or the adapter is a
+fallback or software one (`/swiftshader|llvmpipe|software|lavapipe/`), and
+the task then takes its CPU path. Hosted Linux runners have only SwiftShader,
+so CI there checks that the gallery refuses the task with this reason.
 
 ## History
 

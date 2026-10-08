@@ -24,11 +24,14 @@ void main() {
     ).where((task) => task.hasOwnPage).toList();
     expect(tasks, isNotEmpty, reason: 'no tile is visible to check');
     for (final task in tasks) {
-      await expectLater(
-        rootBundle.load(bundledModelAsset(task.model)),
-        completes,
-        reason: '${task.id} model',
-      );
+      // Decision Maker's pages download their models on first use.
+      if (!task.downloadsModel) {
+        await expectLater(
+          rootBundle.load(bundledModelAsset(task.model)),
+          completes,
+          reason: '${task.id} model',
+        );
+      }
       // Text tiles take typed input and bundle no sample.
       if (task.sample.isNotEmpty) {
         await expectLater(

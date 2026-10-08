@@ -215,6 +215,12 @@ const taskSettings = <String, List<TaskSetting>>{
     ChoiceSetting('mode', 'Mode', options: ['Key Points', 'TL;DR']),
     SwitchSetting('stream', 'Stream Output', initial: true),
   ],
+  // Decision Maker's Yes / No threshold, and Google's normalization against
+  // the model's empty-context prior, which removes label bias.
+  'decision_maker': [
+    ShareSetting('threshold', 'Yes Threshold'),
+    SwitchSetting('normalizePrior', 'Normalize Prior'),
+  ],
 };
 
 /// The current value of every setting of one task.

@@ -8,6 +8,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'catalog.dart';
+import 'decision_page.dart';
+import 'fish_game_page.dart';
 import 'embed_page.dart';
 import 'segment_page.dart';
 import 'text_page.dart';
@@ -43,6 +45,7 @@ const _taskOrder = [
   'language_detector',
   'text_classifier',
   'text_embedder',
+  'decision_maker',
 ];
 
 int compareTasks(
@@ -259,6 +262,16 @@ class _GalleryShellState extends State<_GalleryShell> {
         onOpenMenu: openMenu,
       ),
       GalleryDemo.text => TextPage(task: task, onOpenMenu: openMenu),
+      GalleryDemo.decision => DecisionPage(
+        task: task,
+        platform: widget.platform,
+        onOpenMenu: openMenu,
+      ),
+      GalleryDemo.game => FishGamePage(
+        task: task,
+        platform: widget.platform,
+        onOpenMenu: openMenu,
+      ),
       GalleryDemo.audio => AudioPage(
         task: task,
         onOpenMenu: openMenu,

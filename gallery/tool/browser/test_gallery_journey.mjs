@@ -32,6 +32,13 @@ const cases = {
   text_classifier: {title: 'Text Classifier', text: true, row: /^positive (0\.[5-9]|1\.0)/},
   text_embedder: {title: 'Text Embedder', text: true, compare: true, result: /^Cosine similarity -?\d+\.\d+$/},
   embedding_gemma: {title: 'EmbeddingGemma', text: true, compare: true, result: /^Cosine similarity -?\d+\.\d+$/},
+  // What Google's Python API answers the page's sample with Laya: a refund,
+  // about shipping, and unhappy (1.28 of 0 to 4).
+  decision_maker: {title: 'Decision Maker', decision: [
+    ['Yes / No', /^Yes$/],
+    ['Choice', /^shipping$/],
+    ['Score', /^1\.(2[3-9]|3[0-3])$/],
+  ]},
 };
 
 // The delegates each page must offer and run come from the coverage matrix the
@@ -81,6 +88,7 @@ const browser = await ({chromium, firefox, webkit}[browserName]).launch({
 });
 browser.on('disconnected', () => lifecycle('browser disconnected'));
 let page;
+let hardwareWebGpu = false;
 try {
   const context = await browser.newContext({viewport: {width: 1280, height: 900}});
   context.on('close', () => lifecycle('context closed'));
@@ -108,9 +116,9 @@ try {
   // web build bundles them for the text probe's comparison only; the gallery
   // shows their cards, not tiles. EmbeddingGemma is a tile.
   const probeOnly = new Set(['text_proofreader', 'text_summarizer']);
-  const expected = manifest.tasks.filter(id => !probeOnly.has(id));
-  assert.ok(expected.length > 0, 'empty release task list');
-  for (const id of expected) assert.ok(cases[id], `new bundled task ${id} needs a gallery journey`);
+  for (const id of manifest.tasks.filter(id => !probeOnly.has(id))) {
+    assert.ok(cases[id], `new bundled task ${id} needs a gallery journey`);
+  }
   // Flutter renders sidebar links as <a> without an href, which has no link
   // role, so match the item's own anchor by its exact text.
   const sidebarItem = title => page.locator('a[flt-tappable]')
@@ -132,6 +140,28 @@ try {
   // plays the speech sample through its microphone path instead.
   await page.goto(base + (base.includes('?') ? '&' : '?') + 'microphone=sample');
   await sidebarItem('Home').waitFor({timeout: 120000});
+  // Google's browser Decision Maker answers only on a hardware WebGPU adapter,
+  // by its own rule (UP-049); elsewhere the gallery shows its card instead.
+  hardwareWebGpu = await page.evaluate(async () => {
+    const adapter = await navigator.gpu?.requestAdapter({powerPreference: 'high-performance'});
+    const info = adapter?.info ?? {};
+    return !!adapter && !adapter.isFallbackAdapter &&
+      !/fallback|swiftshader|llvmpipe|software|lavapipe/i.test(`${info.vendor} ${info.architecture} ${info.description}`);
+  });
+  const refused = new Set(hardwareWebGpu ? [] : ['decision_maker']);
+  // --tasks=a,b visits only those of the bundled tasks.
+  const only = args.tasks ? new Set(args.tasks.split(',')) : null;
+  for (const id of refused) if (only && !only.has(id)) refused.delete(id);
+  const expected = manifest.tasks.filter(id =>
+    !probeOnly.has(id) && !refused.has(id) && (!only || only.has(id)));
+  assert.ok(expected.length + refused.size > 0, 'empty release task list');
+  for (const id of refused) {
+    if (!manifest.tasks.includes(id)) continue;
+    // The home page's card gives the capability query's reason.
+    enter(`${id}:refused`);
+    await page.getByText(/UP-049/).first().waitFor({timeout: 120000});
+    report.checks.push(`${id}:refused`);
+  }
 
   for (const id of expected) {
     const spec = cases[id];
@@ -216,6 +246,40 @@ try {
         .waitFor({timeout: 120000});
       await page.getByText(/Done in \d+\.\d ms/).waitFor();
       report.checks.push(`${id}:cpu:run`);
+    } else if (spec.decision) {
+      const error = page.getByText('Error', {exact: true});
+      for (const [kind, answer] of spec.decision) {
+        enter(`${id}:${kind}`);
+        await page.getByRole('button', {name: kind, exact: true}).click();
+        await page.getByRole('button', {name: 'Ask', exact: true}).click();
+        // The first question fetches Google's 678 MB model from its bucket.
+        await page.getByText(answer).first().or(error).first().waitFor({timeout: 600000});
+        assert.equal(await error.count(), 0,
+          `${id} ${kind}: ${await page.locator('flt-semantics').allInnerTexts()}`);
+        report.checks.push(`${id}:gpu:${kind}`);
+      }
+      await page.screenshot({path: path.join(evidence, `${id}.png`)});
+      // Hungry Fish, the same runtime playing a game: Google's wording gets
+      // every sentence the game writes right, so each decision matches.
+      enter(`${id}:game`);
+      await sidebarItem('Hungry Fish').click();
+      await openedPage('Hungry Fish').waitFor();
+      await page.getByRole('button', {name: 'Play', exact: true}).click();
+      const score = page.getByText(/^\d+ decisions · \d+ matched the scene$/);
+      const deadline = Date.now() + 600000;
+      let decisions = 0;
+      let matched = 0;
+      while (decisions < 5) {
+        assert.equal(await error.count(), 0,
+          `${id} game: ${await page.locator('flt-semantics').allInnerTexts()}`);
+        assert.ok(Date.now() < deadline, `${id} game: five decisions`);
+        [decisions, matched] = ((await score.textContent()) ?? '').match(/\d+/g)?.map(Number) ?? [0, 0];
+        await page.waitForTimeout(250);
+      }
+      assert.equal(matched, decisions, `${id} game: every decision matches the scene`);
+      await page.getByRole('button', {name: 'Pause', exact: true}).click();
+      await page.screenshot({path: path.join(evidence, `${id}-game.png`)});
+      report.checks.push(`${id}:gpu:game`);
     } else if (spec.audio) {
       enter(`${id}:run`);
       // The first window of the speech clip is heard as speech.
