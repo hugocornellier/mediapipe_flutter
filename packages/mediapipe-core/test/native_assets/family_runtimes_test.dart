@@ -63,12 +63,13 @@ void main() {
     for (final MapEntry(key: family, value: runtimes)
         in familyRuntimes.entries) {
       // Flutter's Android release builds include 32-bit ARM, which no task
-      // claims; the simulator is part of the iOS claim.
-      expect(runtimes.keys.toSet(), {
-        ...tasksRuntimeTargets.keys,
-        'ios-simulator/arm64',
-        'android/arm',
-      }, reason: family);
+      // claims; the simulator is part of the iOS claim. A target Google has
+      // not built the family for yet comes from its wheel (wheelRuntimes).
+      expect(
+        {...runtimes.keys, ...?wheelRuntimes[family]?.keys},
+        {...tasksRuntimeTargets.keys, 'ios-simulator/arm64', 'android/arm'},
+        reason: family,
+      );
       for (final MapEntry(key: target, value: runtime) in runtimes.entries) {
         expect(runtime.sha256, matches(RegExp(r'^[a-f0-9]{64}$')));
         expect(runtime.bytes, greaterThan(1000000));
@@ -87,14 +88,17 @@ void main() {
   test('wheel libraries come from Google\'s 1.1.0 wheels on the desktop', () {
     for (final MapEntry(key: family, value: runtimes)
         in wheelRuntimes.entries) {
-      // Google ships no C library with these families for the phones, and a
-      // family Google already builds needs no wheel stand-in.
-      expect(familyRuntimes.keys, isNot(contains(family)));
-      expect(runtimes.keys.toSet(), {
-        'macos/arm64',
-        'linux/x64',
-        'windows/x64',
-      }, reason: family);
+      // Google's wheels exist for the desktops only, and a target its
+      // per-family delivery covers needs no wheel stand-in.
+      expect(runtimes, isNotEmpty, reason: family);
+      for (final target in runtimes.keys) {
+        expect({'macos/arm64', 'linux/x64', 'windows/x64'}, contains(target));
+        expect(
+          familyRuntimes[family]?.keys ?? const <String>[],
+          isNot(contains(target)),
+          reason: '$family $target',
+        );
+      }
       for (final MapEntry(key: target, value: runtime) in runtimes.entries) {
         expect(runtime.wheel.sha256, matches(RegExp(r'^[a-f0-9]{64}$')));
         expect(runtime.sha256, matches(RegExp(r'^[a-f0-9]{64}$')));

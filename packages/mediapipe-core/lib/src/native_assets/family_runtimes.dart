@@ -196,6 +196,37 @@ const familyRuntimes = <String, Map<String, FamilyRuntime>>{
       22322176,
     ),
   },
+  // Decision Maker, from the same delivery, which has no Windows library:
+  // Windows stays on the wheel's library ([wheelRuntimes]).
+  'decision': {
+    'macos/arm64': FamilyRuntime(
+      'libmediapipe_tasks_decision.dylib',
+      '41ee7b75ad4067f282fdcbc716ae93e157f36f84267ec781cd0aaac9d833d836',
+      9907456,
+    ),
+    'android/arm64': FamilyRuntime(
+      'libmediapipe_tasks_decision.so',
+      '601b89b46a1793f458b63214fb32495a50a8a3bf5bf4a99e4dd58f5aac9c1642',
+      7384672,
+    ),
+    'android/arm': FamilyRuntime(
+      'libmediapipe_tasks_decision.so',
+      'f5074c693a6c0d827897efe714ec3b9306ce4a0d54548e24ecb77f3cab910f44',
+      4867960,
+    ),
+    'android/x64': FamilyRuntime(
+      'libmediapipe_tasks_decision.so',
+      '4c87c55486b57a48a60a6b408df1a0aaf4f2017762fb8732b1b7160895aaed65',
+      9725024,
+    ),
+    'ios/arm64': _decisionIos,
+    'ios-simulator/arm64': _decisionIos,
+    'linux/x64': FamilyRuntime(
+      'libmediapipe_tasks_decision.so',
+      '55ae8469d7542f8623873bc3683b52382390f76ed79c9bb2271165faf6ccb49f',
+      16116288,
+    ),
+  },
 };
 
 const _visionIos = FamilyRuntime(
@@ -217,6 +248,11 @@ const _retrievalIos = FamilyRuntime(
   'MediaPipeTasksRetrievalC.xcframework.zip',
   '507e8f7ae9931b777cf44cb0b695dd1455ccb67cac1868eca5e49f276ced632c',
   45006655,
+);
+const _decisionIos = FamilyRuntime(
+  'MediaPipeTasksDecisionC.xcframework.zip',
+  'db5f540c8359da2628fd5e727a50ec0aaa1dd9f5e8aa120d634d0f7ff402f4f9',
+  26197715,
 );
 
 /// Google's MediaPipe library as it ships inside one of Google's official
@@ -241,46 +277,17 @@ final class WheelRuntime {
   final int bytes;
 }
 
-// TODO: Finish Decision Maker on Google's per-family libraries, as every
-// other task runs: pin `decision` in familyRuntimes, retiring this table and
-// bundleWheelRuntime, and offer it on Android and iOS. Google's delivery of
-// October 8, 2026 has the library for every target but Windows. See
+// TODO: Retire this table and bundleWheelRuntime once Google builds a
+// Windows decision library: its delivery of October 8, 2026 has every other
+// target, pinned in familyRuntimes. See
 // packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
 
 /// The families that bundle Google's wheel library ([WheelRuntime]), by
-/// family and build target: Decision Maker, which Google's per-family
-/// delivery does not include. Google's 1.1.0 wheels (October 6, 2026) are
-/// the only official C library with it; Google ships none for Android or
-/// iOS, so the hook bundles nothing there and the task reports those
-/// platforms unsupported.
+/// family and build target: Decision Maker on Windows, the one target
+/// Google's per-family delivery lacks. Google's 1.1.0 wheels (October 6,
+/// 2026) are the only official C library with it there.
 const wheelRuntimes = <String, Map<String, WheelRuntime>>{
   'decision': {
-    'macos/arm64': WheelRuntime(
-      DownloadAsset(
-        url:
-            'https://files.pythonhosted.org/packages/e0/7c/'
-            'e5e1b0fd0a43a8f71db9062c94731a3de196186d392ce0c4417d7923a1a0/'
-            'mediapipe-1.1.0-py3-none-macosx_11_0_arm64.whl',
-        sha256:
-            '8d262c745a4432c69c47fba664e2f9210acaca0af4eca2ad9fed42db494f3e12',
-      ),
-      'mediapipe/tasks/c/libmediapipe.dylib',
-      '8445f23f797b1103527b24d4ec71e898c49a792f3d5f936c3ba06c5dba252002',
-      129297904,
-    ),
-    'linux/x64': WheelRuntime(
-      DownloadAsset(
-        url:
-            'https://files.pythonhosted.org/packages/10/1d/'
-            'ae070817ebc1b9500cec3f83faeeed1a405dcb764c23738a87726d96432c/'
-            'mediapipe-1.1.0-py3-none-manylinux_2_28_x86_64.whl',
-        sha256:
-            'f6830aa5fbe87ab49e5eacd36a66611f9788819b45999fb76e9f5beb4638762b',
-      ),
-      'mediapipe/tasks/c/libmediapipe.so',
-      'ca660f1202863b069c04a7d064e02f944b149bbe303df5e7c3d5ea9a340923ee',
-      122008416,
-    ),
     'windows/x64': WheelRuntime(
       DownloadAsset(
         url:
@@ -389,10 +396,9 @@ Future<void> bundleFamilyRuntime(
 
 /// Bundles [family]'s library from Google's wheel ([wheelRuntimes]) for the
 /// hook's target under [familyRuntimeAssetName], in the calling family's
-/// package, as [bundleFamilyRuntime] bundles a per-family library. Android
-/// and iOS get nothing: Google publishes no C library with the family there,
-/// so its tasks report those platforms unsupported instead of failing the
-/// app's build.
+/// package, as [bundleFamilyRuntime] bundles a per-family library. A target
+/// with neither gets nothing on Android and iOS, so the family's tasks report
+/// it unsupported instead of failing the app's build.
 Future<void> bundleWheelRuntime(
   BuildInput input,
   BuildOutputBuilder output, {

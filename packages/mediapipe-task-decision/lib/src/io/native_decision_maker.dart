@@ -17,11 +17,12 @@ final _target =
 /// bundled.
 void requireDecisionRuntime() {
   if (!decisionRuntimeTargets.containsKey(_target)) {
-    throw const RuntimeUnavailableException(
+    throw RuntimeUnavailableException(
       "Google's Decision Maker library is unavailable on this platform.",
       fix:
-          'Google publishes no C library with Decision Maker for Android or '
-          'iOS yet. Use macOS arm64, Linux x64 or Windows x64, or a browser.',
+          "Google's Decision Maker library covers "
+          '${decisionRuntimeTargets.keys.join(', ')}, and browsers run its '
+          'JavaScript runtime.',
     );
   }
   try {
@@ -251,8 +252,14 @@ void _check(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
   try {
     final status = call(error);
     if (status != 0) {
+      final message = _string(error.value) ?? 'MediaPipe operation failed.';
       throw TaskException(
-        _string(error.value) ?? 'MediaPipe operation failed.',
+        // How Google's per-family library fails the text-only EmbeddingGemma
+        // 2 model, given by path or bytes (UP-053): name the model that runs.
+        message.startsWith('EG2 embedder') &&
+                !embeddingGemma2TextTargets.containsKey(_target)
+            ? '$message $textOnlyEmbeddingGemmaUnavailable'
+            : message,
         statusCode: status,
       );
     }

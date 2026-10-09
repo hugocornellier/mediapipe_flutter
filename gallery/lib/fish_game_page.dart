@@ -54,6 +54,20 @@ class _FishGamePageState extends State<FishGamePage>
       .supportedDelegates
       .toList();
   late final Delegate _delegate = preferredDelegate(_delegates);
+
+  /// The standard model: the catalog's text-only EmbeddingGemma 2 (165 MB)
+  /// where Google's runtime accepts it, Windows and browsers, and the text
+  /// and vision one (388 MB) on Google's per-family library, which fails
+  /// every evaluation with the text-only model (upstream-issues.md UP-053).
+  /// The two share a text encoder and steer the fish the same.
+  late final DownloadAsset _standard =
+      decisionMakerCapabilitiesForPlatform(
+        widget.platform,
+        model: widget.task.model,
+      ).isSupported
+      ? widget.task.model
+      : DecisionModels.embeddingGemma2TextVision;
+  late final bool _textOnly = _standard.sha256 == widget.task.model.sha256;
   late final Ticker _ticker = createTicker(_frame);
   late final _game = FishGame(decide: _decide);
   late final _rules = {
@@ -137,15 +151,17 @@ class _FishGamePageState extends State<FishGamePage>
     normalizePrior: true,
   );
 
-  /// The chosen model's pin: EmbeddingGemma 2 unless another was chosen.
+  /// The chosen model's pin: the standard EmbeddingGemma 2 unless another
+  /// was chosen.
   DownloadAsset get _pin => switch (_model) {
     final model? => DownloadAsset(url: '${model.url}', sha256: model.sha256),
-    null => widget.task.model,
+    null => _standard,
   };
 
   Future<DecisionMaker> _open() => _opening ??= () async {
     final pin = _pin;
-    final name = _model?.name ?? 'EmbeddingGemma 2 (165 MB)';
+    final name =
+        _model?.name ?? 'EmbeddingGemma 2 (${_textOnly ? 165 : 388} MB)';
     _loadingSeconds = 0;
     _loadingClock?.cancel();
     _loadingClock = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -257,7 +273,7 @@ class _FishGamePageState extends State<FishGamePage>
       onModel: _chooseModel,
       onUpload: null,
       bundledModel: widget.task.modelFile,
-      standardModel: 'EmbeddingGemma 2 (270M)',
+      standardModel: 'EmbeddingGemma 2 (${_textOnly ? '270M' : '440M'})',
     ),
   );
 

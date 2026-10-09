@@ -90,9 +90,12 @@ Three gates, in order:
    ([UP-034](../upstream-issues.md#up-034-browser-text-runtime-omits-proofreader-and-summarizer)),
    so the web build bundles EmbeddingGemma alone and shows the other two as
    cards that say why. Decision Maker and its game, Hungry Fish, bundle no
-   model: Laya (678 MB) and EmbeddingGemma 2 (165 MB) download on first use,
-   verified into the model cache natively and fetched by Google's runtime in
-   browsers, which show the two only on a hardware WebGPU adapter
+   model: Laya (678 MB) and EmbeddingGemma 2 (165 MB, or its 388 MB text and
+   vision variant where Google's per-family library runs the task,
+   [UP-053](../upstream-issues.md#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model))
+   download on first use, verified into the model cache natively and fetched
+   by Google's runtime in browsers, which show the two only on a hardware
+   WebGPU adapter
    ([UP-049](../upstream-issues.md#up-049-the-browser-decision-maker-fails-every-evaluation-without-a-hardware-webgpu-adapter)).
 2. **Validated**: `lib/catalog.dart` asks the package's own capability query.
    Nothing restates support by hand, so a task validated on a new platform

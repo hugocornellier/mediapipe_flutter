@@ -90,11 +90,14 @@ void main() {
   });
 
   group('capabilities', () {
-    test('the CPU on the three desktops, nothing on the phones', () {
+    test('the CPU on every native target', () {
       for (final (os, arch, version) in [
         ('macos', 'arm64', '15.0'),
         ('linux', 'x64', null),
         ('windows', 'x64', null),
+        ('android', 'arm64', '14'),
+        ('android', 'x64', '14'),
+        ('ios', 'arm64', '17.0'),
       ]) {
         final capabilities = decisionMakerCapabilitiesForPlatform(
           _platform(os, arch, version),
@@ -102,21 +105,80 @@ void main() {
         expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: os);
         expect(capabilities.runtimeVersion, '1.1.0');
       }
-      for (final (os, arch) in [('android', 'arm64'), ('ios', 'arm64')]) {
-        final capabilities = decisionMakerCapabilitiesForPlatform(
-          _platform(os, arch, '17.0'),
-        );
-        expect(capabilities.isSupported, isFalse, reason: os);
-        expect(
-          capabilities.unavailableReasons[Delegate.cpu],
-          contains('no C library'),
-        );
-      }
       expect(
         decisionMakerCapabilitiesForPlatform(
           _platform('macos', 'arm64', '13.0'),
         ).isSupported,
         isFalse,
+      );
+    });
+
+    test('the text-only EmbeddingGemma 2 runs on the wheel library and in '
+        'browsers alone (UP-053)', () {
+      const text = DecisionModels.embeddingGemma2Text;
+      for (final (os, arch, version) in [
+        ('macos', 'arm64', '15.0'),
+        ('linux', 'x64', null),
+        ('android', 'arm64', '14'),
+        ('android', 'x64', '14'),
+        ('ios', 'arm64', '17.0'),
+      ]) {
+        final platform = _platform(os, arch, version);
+        final refused = decisionMakerCapabilitiesForPlatform(
+          platform,
+          model: text,
+        );
+        expect(refused.isSupported, isFalse, reason: os);
+        for (final delegate in Delegate.values) {
+          expect(
+            refused.unavailableReasons[delegate],
+            allOf(contains('UP-053'), contains('embeddingGemma2TextVision')),
+            reason: '$os $delegate',
+          );
+        }
+        for (final model in [
+          null,
+          DecisionModels.embeddingGemma2TextVision,
+          DecisionModels.layaS256,
+        ]) {
+          expect(
+            decisionMakerCapabilitiesForPlatform(
+              platform,
+              model: model,
+            ).supportedDelegates,
+            {Delegate.cpu},
+            reason: '$os $model',
+          );
+        }
+      }
+      final windows = decisionMakerCapabilitiesForPlatform(
+        _platform('windows', 'x64'),
+        model: text,
+      );
+      expect(windows.supportedDelegates, {Delegate.cpu});
+      expect(windows.supportedTargets.keys, embeddingGemma2TextTargets.keys);
+      decisionBackendFactory = (_) => throw UnimplementedError();
+      addTearDown(() => decisionBackendFactory = null);
+      final browser = decisionMakerCapabilitiesForPlatform(
+        const TaskPlatform(
+          operatingSystem: 'web',
+          architecture: 'unknown',
+          gpu: 'WebGPU apple metal-3',
+        ),
+        model: text,
+      );
+      expect(browser.supportedDelegates, {Delegate.gpu});
+    });
+
+    test('every pinned model has a bundling name', () {
+      expect(DecisionModels.byName, hasLength(6));
+      expect(
+        DecisionModels.byName['embedding_gemma_2_text_vision'],
+        same(DecisionModels.embeddingGemma2TextVision),
+      );
+      expect(
+        DecisionModels.embeddingGemma2TextVision.sha256,
+        isNot(DecisionModels.embeddingGemma2Text.sha256),
       );
     });
 

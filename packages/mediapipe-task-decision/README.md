@@ -13,11 +13,13 @@ generating text. Every call runs Google's official MediaPipe pipeline.
 
 | Task | Class | Android | iOS | macOS arm64 | Linux x64 | Windows x64 | Web |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Decision Maker | `DecisionMaker` | | | ✓ | ✓ | ✓ | ✓ |
+| Decision Maker | `DecisionMaker` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-The runtimes are Google's MediaPipe 1.1.0: the C library from Google's
-official Python wheels on macOS 14+, Linux and Windows, which this package's
-hook downloads from PyPI and checks against its SHA-256, on the CPU; and
+The runtimes are Google's MediaPipe 1.1.0: its per-family decision C
+library, which this package's build hook downloads and checks against its
+SHA-256 on Android 9+, iOS 15+, macOS 14+ and Linux, on the CPU; the C
+library from Google's official Python wheel on Windows, which that delivery
+lacks, downloaded from PyPI and checked the same way; and
 `@mediapipe/tasks-decision` 1.1.0 in browsers, on the GPU delegate. Google's
 browser runtime fails every evaluation on the CPU delegate and on browsers
 without a hardware WebGPU adapter
@@ -25,13 +27,17 @@ without a hardware WebGPU adapter
 so `queryDecisionMakerCapabilities()` offers browsers only the GPU, and only
 on such an adapter; there it answers as the desktop library does.
 
-Google's per-family MediaPipe libraries, which the vision, text and audio
-packages bundle, do not include Decision Maker yet, so this package bundles
-the library from Google's wheel instead (`wheelRuntimes` in mediapipe_core).
-Google publishes no C library with Decision Maker for Android or iOS; there
-`queryDecisionMakerCapabilities()` reports the task unsupported and `create`
-throws `RuntimeUnavailableException`. When Google's per-family Decision
-library arrives, only the hook's pin changes.
+Google's per-family decision library (its delivery of October 8, 2026)
+covers every target but Windows, so Windows alone bundles the library from
+Google's wheel (`wheelRuntimes` in mediapipe_core) until Google builds one;
+the bindings are the same, since both libraries export the same C API. The
+per-family library fails every evaluation with the text-only EmbeddingGemma
+2 model, which the wheel's library and Google's browser runtime run
+([UP-053](../../upstream-issues.md#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model)):
+`queryDecisionMakerCapabilities(model)` says where a model runs, `create`
+refuses one the runtime here cannot before downloading it, and
+`DecisionModels.embeddingGemma2TextVision` answers the same on every
+runtime.
 
 ## Quick start
 
@@ -43,7 +49,7 @@ Future<void> decide() async {
   final task = await DecisionMaker.create(
     DecisionMakerOptions(
       model: DecisionModels.layaS256,
-      // The CPU on the desktop, the GPU in browsers.
+      // The CPU natively, the GPU in browsers.
       delegate: capabilities.supportedDelegates.first,
     ),
   );
@@ -74,9 +80,11 @@ Future<void> decide() async {
 
 `DecisionModels` pins Google's decision models: Laya and GLiNER2.5-Decide
 (`layaS256`, `layaS512`, `glinerS256`, `glinerS512`: 678 MB to 1.08 GB),
-and EmbeddingGemma 2 (`embeddingGemma2Text`, 165 MB), which answers as fast
-at a quarter of the download. They are large, so an app
-usually downloads one on first use rather than bundling it: set
+and EmbeddingGemma 2, which answers as fast at a fraction of the download:
+`embeddingGemma2Text` (165 MB) on Windows and in browsers, and
+`embeddingGemma2TextVision` (388 MB) everywhere (UP-053 above). They are
+large, so an app usually downloads one on first use rather than bundling
+it: set
 `ModelStore.allowDownloads = true` before `create`, or pass `modelPath`.
 In browsers, `modelPath` can be the model's URL in Google's bucket, which
 Google's runtime then fetches itself.

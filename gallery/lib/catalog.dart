@@ -417,7 +417,8 @@ final _catalog = <GalleryTask>[
     sample: '',
     capabilities: textProofreaderCapabilitiesForPlatform,
   ),
-  // Decision Maker, on Google's desktop wheel library and its browser runtime.
+  // Decision Maker, on Google's per-family library (its wheel's on Windows)
+  // and its browser runtime.
   GalleryTask(
     id: 'decision_maker',
     category: GalleryCategory.decision,
@@ -430,6 +431,9 @@ final _catalog = <GalleryTask>[
     capabilities: decisionMakerCapabilitiesForPlatform,
   ),
   // Decision Maker playing a game, as Google's web demo plays its dino game.
+  // Its model is the text-only EmbeddingGemma 2 where Google's runtime
+  // accepts it; on Google's per-family library the page plays on the text
+  // and vision one instead (UP-053).
   GalleryTask(
     id: 'decision_fish_game',
     runtimeId: 'decision_maker',
