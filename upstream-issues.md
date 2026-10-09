@@ -274,6 +274,16 @@ lasts as long as the upload; blocking the host removes both the upload and
 the wait. The Linux 1.0.1 library contains the same uploader (over libcurl,
 with `ca_bundle_path` as its CA file); no slow close has been seen on Linux.
 
+Google's per-family macOS libraries wait the same way, and so do its October
+8 iOS libraries, the first iOS builds with the uploader.
+- **macOS, October 9:** with the reply held for 40 s by a local receiver, each
+  close took 40,011 to 40,014 ms. Refused, closes took 2 to 9 ms; with the
+  host unroutable, about 4.1 s.
+- **iOS Simulator:** with the host unroutable, closes took about 4 s.
+- **CI:** a slow reply fits the lone 30 s test timeouts in the macOS runtime
+  job (#59, #79, #82 and #84). That job's tests now get 180 s each, more than
+  the upload request's own 60 s timeout.
+
 ### UP-026: Holistic cannot open its face blendshapes model on a desktop or iPhone GPU
 
 **Status:** observed September 25 through Google's own Python API with the
