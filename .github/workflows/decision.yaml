@@ -133,7 +133,9 @@ jobs:
     # Google's per-family decision library on the x86_64 emulator, CPU only:
     # the in-app test and the journey through the Decision page and Hungry
     # Fish, which download Laya (678 MB) and the text and vision EmbeddingGemma
-    # 2 (388 MB), the one that library runs (UP-053).
+    # 2 (388 MB), the one that library runs (UP-053). Image Embedder is the
+    # one vision task the vision hook needs, as on the desktops: its page
+    # takes no camera, which the emulator's journey could not open.
     name: Decision gallery / Android x64 emulator
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -152,10 +154,9 @@ jobs:
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
-      # Decision Maker, and the one vision task the vision hook needs.
       - name: Prepare the gallery
         run: |
-          dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64 --tasks decision_maker,face_detector
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64 --tasks decision_maker,image_embedder
           cd gallery && flutter pub get
       - name: Enable Android emulator hardware acceleration
         run: |
