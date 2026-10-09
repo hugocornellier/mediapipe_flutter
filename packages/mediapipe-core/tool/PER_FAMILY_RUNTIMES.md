@@ -187,6 +187,20 @@ the simulator, Apple's ld on iOS devices, Android API 28 with 16 KB pages).
   Decision Maker is still not public. The TODO above `wheelRuntimes` marks
   it.
 
+## Android and iOS rebuilds
+
+The same delivery rebuilt the vision, text and audio libraries for Android and
+iOS, and the hooks pin those rebuilds. They export the same functions as the
+October 5 builds and add Google's usage-logging client
+(`TasksStatsProtoLogger`, with a Clearcut uploader to
+`https://play.googleapis.com/log`). The October 5 Android and iOS builds
+carried only a logger that does nothing; the desktop libraries, and the
+retrieval libraries on every platform, already had the uploader; the decision
+libraries have neither (see [privacy and licenses](../../../doc/privacy_and_licenses.md)).
+The delivery's macOS and Linux vision, text and audio files are the October 5
+bytes, and its Windows ones differ only in their build timestamp, so those
+pins stay.
+
 ## For Google
 
 - Link the macOS and simulator builds with `-headerpad_max_install_names`
@@ -223,12 +237,12 @@ stripped):
 
 | Platform | Vision | Text | Audio | All three | Retrieval |
 | --- | --- | --- | --- | --- | --- |
-| iOS arm64 (device slice) | 19.1 | 20.3 | 9.0 | 48.4 | 14.0 |
+| iOS arm64 (device slice) | 20.0 | 21.2 | 10.0 | 51.2 | 14.0 |
 | macOS arm64 | 26.6 | 26.1 | 12.8 | 65.5 | 19.2 |
 | Linux x64 | 29.7 | 39.0 | 20.1 | 88.8 | 27.7 |
 | Windows x64 | 24.7 | 44.6 | 17.5 | 86.8 | 22.3 |
-| Android arm64-v8a | 13.2 | 14.7 | 8.4 | 36.3 | 12.3 |
-| Android x86_64 | 16.0 | 17.9 | 10.8 | 44.7 |
+| Android arm64-v8a | 13.9 | 15.4 | 9.1 | 38.4 | 12.3 |
+| Android x86_64 | 16.8 | 18.6 | 11.6 | 46.9 | 15.1 |
 
 The Android arm64-v8a and x86_64 libraries are aligned for 16 KB pages.
 
