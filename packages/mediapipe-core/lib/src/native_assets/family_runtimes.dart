@@ -16,7 +16,9 @@ import '../../native_assets.dart';
 /// so the three load side by side in one process.
 const familyRuntimeAssetName = 'mediapipe.dylib';
 
-/// Google's MediaPipe version the libraries were built from.
+/// Google's MediaPipe build that names the release holding the libraries:
+/// the 1.1.0 development build of October 5, 2026. Files from Google's
+/// delivery of October 8 are posted there too.
 const familyRuntimeVersion = '1.1.0-dev.20261005';
 
 /// Where the hooks download Google's libraries: a pre-release of this
@@ -57,6 +59,11 @@ final class FamilyRuntime {
 ///
 /// Android has 32-bit ARM too, which Flutter's release builds include, though
 /// no task claims it; browsers run Google's JavaScript runtime instead.
+///
+/// Android and iOS take every family from Google's delivery of October 8,
+/// 2026. Its macOS and Linux vision, text and audio files are the October 5
+/// bytes, and its Windows ones differ only in their build timestamp, so those
+/// pins stay.
 const familyRuntimes = <String, Map<String, FamilyRuntime>>{
   'vision': {
     'macos/arm64': FamilyRuntime(
@@ -66,18 +73,18 @@ const familyRuntimes = <String, Map<String, FamilyRuntime>>{
     ),
     'android/arm64': FamilyRuntime(
       'libmediapipe_tasks_vision.so',
-      '5fb803a1bec8074f2d306c974497701a1a895b4faae9cd817095990e1db34c6a',
-      13196368,
+      'da82f83e43fdcbe2ffb5841c887bbb84bae10670006e2e9481d57b2503fbf17c',
+      13857344,
     ),
     'android/arm': FamilyRuntime(
       'libmediapipe_tasks_vision.so',
-      '3d7e87bb50c22d9ccc9396c173b617d641022d7531b288f26d9cfeb17f437565',
-      9000448,
+      'fe6d7d1e8b03a6e191b3deb3d4c1c9ee0cfdecee04568152b30f0fe7b4bc65ee',
+      9514268,
     ),
     'android/x64': FamilyRuntime(
       'libmediapipe_tasks_vision.so',
-      '9c30e32df784a2eae19efbb8aa35ede4e40b0a528f144644aad08829cc0d61e3',
-      16031408,
+      '41542b554beba7dd4024d4ca547c1cca7190f4c362b805d42fb461cdffbd0624',
+      16752584,
     ),
     'ios/arm64': _visionIos,
     'ios-simulator/arm64': _visionIos,
@@ -100,18 +107,18 @@ const familyRuntimes = <String, Map<String, FamilyRuntime>>{
     ),
     'android/arm64': FamilyRuntime(
       'libmediapipe_tasks_text.so',
-      'b70ce937e60f016c14817220291a24c4f00ffa89ba6529dc2a28a1940effd0be',
-      14740880,
+      '0921347d773f6c4c948ab1400b85684ffd20a7fc6eb1282ba6c346e6c7fb9355',
+      15385184,
     ),
     'android/arm': FamilyRuntime(
       'libmediapipe_tasks_text.so',
-      'b33bdbcfdca8a36674b102f3d3731d16180d71f1a5d16ad5ca2c37742c21a92e',
-      9898492,
+      '0407eb55d10cd857cf70cd6a9db2d26072d06c4affc5043a944570259e528ce7',
+      10403924,
     ),
     'android/x64': FamilyRuntime(
       'libmediapipe_tasks_text.so',
-      '53ae5eea2405c9eb6109cb3a2678cefa39fb7834878f97351905407854d6b96e',
-      17866480,
+      '8f710c27bd3e500789bb45188f792877826f722161dc1676df0192eeee161924',
+      18587392,
     ),
     'ios/arm64': _textIos,
     'ios-simulator/arm64': _textIos,
@@ -134,18 +141,18 @@ const familyRuntimes = <String, Map<String, FamilyRuntime>>{
     ),
     'android/arm64': FamilyRuntime(
       'libmediapipe_tasks_audio.so',
-      'bb8c683a13eaf8cd449be0cf5398fdc0b021f6c5916fd85fbad580c56d6553e4',
-      8449040,
+      '1eb2f74479a8cb4c6671b2269bcd8c9e70eb0134df655c78d4776d86def27f14',
+      9110048,
     ),
     'android/arm': FamilyRuntime(
       'libmediapipe_tasks_audio.so',
-      '7eea1d930f99bd2267ef428d021bedcc2ef58bd666e15c325891632aa21361f1',
-      5570912,
+      '52020d74c7dc2639a6c9fd640f8b697773520bdec75acdb725df1041f91b46d8',
+      6088836,
     ),
     'android/x64': FamilyRuntime(
       'libmediapipe_tasks_audio.so',
-      '18fdf3942a715a8498301b6092a16f7932e0a94313b7174934738bf35f4a902f',
-      10834616,
+      '9ad57acb98ece90560eadc2740e0eae271ef27cc164ddf0bd51a73364c73322a',
+      11555856,
     ),
     'ios/arm64': _audioIos,
     'ios-simulator/arm64': _audioIos,
@@ -231,18 +238,18 @@ const familyRuntimes = <String, Map<String, FamilyRuntime>>{
 
 const _visionIos = FamilyRuntime(
   'MediaPipeTasksVisionC.xcframework.zip',
-  'c847285eba803f6e546f651f9932f45222ff338d3ac57431aae40b222dcd0d3f',
-  60190107,
+  '910013512896be0c2e3966a21137a931e6630e8e9babac99cef5fdc1f34f2794',
+  62968259,
 );
 const _textIos = FamilyRuntime(
   'MediaPipeTasksTextC.xcframework.zip',
-  '74901e1702ff1e7a8d0bb1f27e9482291224b9a81000ca8fd19a183476c2b421',
-  63722307,
+  '2ca0f943e2d376d089c1eeabace73399597e7be232059c88b8a607bb99103c27',
+  66482595,
 );
 const _audioIos = FamilyRuntime(
   'MediaPipeTasksAudioC.xcframework.zip',
-  'ae47efaaa55dff72e7e16e20fbc8a9c15cf96180db9377be3857afdc80d3f38b',
-  29739799,
+  'c8e6deafb6fd26df9b49a4f13516ac247b585e7a4ef7e54a526e7fedcdc4d3ac',
+  32521231,
 );
 const _retrievalIos = FamilyRuntime(
   'MediaPipeTasksRetrievalC.xcframework.zip',
