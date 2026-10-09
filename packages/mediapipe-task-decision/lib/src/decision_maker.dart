@@ -13,9 +13,9 @@ import 'types/results.dart';
 /// about a text with calibrated probabilities, in one forward pass of a
 /// small model rather than by generating text.
 ///
-/// One class on every platform. Google's desktop library serves it on a
-/// worker isolate on macOS, Linux and Windows; its browser runtime serves it
-/// through the registered web plugin.
+/// One class on every platform. Google's library serves it on a worker
+/// isolate on Android, iOS, macOS, Linux and Windows; its browser runtime
+/// serves it through the registered web plugin.
 ///
 /// ```dart
 /// final task = await DecisionMaker.create(
@@ -39,9 +39,14 @@ final class DecisionMaker {
   /// The processor the task runs on, fixed at creation.
   final Delegate delegate;
 
-  /// Resolves the model and opens Google's task off the calling isolate.
+  /// Resolves the model and opens Google's task off the calling isolate. A
+  /// pinned model Google's runtime here cannot run is refused before any
+  /// download, with `queryDecisionMakerCapabilities(model)`'s reason.
   static Future<DecisionMaker> create(DecisionMakerOptions options) async {
-    requireDelegate(await queryDecisionMakerCapabilities(), options.delegate);
+    requireDelegate(
+      await queryDecisionMakerCapabilities(options.model),
+      options.delegate,
+    );
     await resolveTaskModel(options);
     final DecisionBackend backend;
     if (decisionBackendFactory case final factory?) {

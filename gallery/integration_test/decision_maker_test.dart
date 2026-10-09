@@ -5,11 +5,10 @@ import 'package:mediapipe_gallery/catalog.dart' show preferredDelegate;
 import 'package:mediapipe_gallery/main.dart' show GalleryAssets;
 
 // Decision Maker inside the gallery app, beside the vision runtimes: Google's
-// wheel library must load and answer as Google's Python API does on macOS
-// arm64, Linux x64 and Windows x64, and Android and iOS must refuse the task
-// with the capability query's reason. The package's native test covers every
-// reference case; this checks the app build, its model download and the
-// runtime together.
+// library must load and answer as Google's Python API does on Android, iOS,
+// macOS arm64, Linux x64 and Windows x64. The package's native test covers
+// every reference case; this checks the app build, its model download and
+// the runtime together.
 const _texts = [
   'My order arrived broken and I want my money back.',
   'Thanks, everything was perfect and it arrived early.',

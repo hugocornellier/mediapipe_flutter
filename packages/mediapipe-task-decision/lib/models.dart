@@ -42,6 +42,12 @@ abstract final class DecisionModels {
   /// in Google's Decision Maker guide, and the model Google's web demo starts
   /// with: as fast as Laya here at a quarter of the download. From Google's
   /// LiteRT community on Hugging Face, Apache 2.0, pinned to its revision.
+  ///
+  /// Google's per-family decision library, the runtime on Android, iOS,
+  /// macOS and Linux, fails every evaluation with this model
+  /// (upstream-issues.md UP-053); `queryDecisionMakerCapabilities(model)`
+  /// reports where it runs. [embeddingGemma2TextVision] answers the same
+  /// everywhere.
   static const embeddingGemma2Text = DownloadAsset(
     url:
         'https://huggingface.co/litert-community/'
@@ -49,6 +55,21 @@ abstract final class DecisionModels {
         '9be6e8b90982095dc05c2bd162e4b954ee4dbac7/'
         'embeddinggemma-2-text-270m.litertlm',
     sha256: '2d079ee2f6f066b1f368e8d7c819f55214eaef1d0513b312321901f30ab286fb',
+  );
+
+  /// EmbeddingGemma 2, text and images, 440M parameters: 388 MB. The same
+  /// text encoder as [embeddingGemma2Text] with a vision encoder Decision
+  /// Maker never runs, so it answers as that model does, on every runtime:
+  /// the model for Google's per-family library, which refuses the text-only
+  /// one (UP-053). The same pin as `RetrievalModels.embeddingGemma2TextVision`,
+  /// downloaded once for both packages.
+  static const embeddingGemma2TextVision = DownloadAsset(
+    url:
+        'https://huggingface.co/litert-community/'
+        'embeddinggemma-2-text-vision-440m-litert-lm/resolve/'
+        'e301f74d5551b0c2641bd5cb4652a76239d5c5f8/'
+        'embeddinggemma-2-text-vision-440m.litertlm',
+    sha256: '92dcbea108899e5d6e30d919b0744f90d9967e80c67a4ab5503ac16d54f62eb0',
   );
 
   /// Every model above by the name an app lists to bundle it, under
@@ -59,5 +80,6 @@ abstract final class DecisionModels {
     'gliner_s256': glinerS256,
     'gliner_s512': glinerS512,
     'embedding_gemma_2_text': embeddingGemma2Text,
+    'embedding_gemma_2_text_vision': embeddingGemma2TextVision,
   };
 }

@@ -4,8 +4,10 @@ permissions:
   contents: read
 
 # The Decision Maker checks: the package against Google's Python answers on
-# each desktop, the gallery's Decision test and journey, and the browser
-# journey. Dispatch by hand to run a subset of the jobs.
+# each desktop, the gallery's Decision test and journey on the desktops, the
+# Android emulator and the iOS simulator, and the browser journey, recording
+# task coverage rows for the gate. Dispatch by hand to run a subset of the
+# jobs.
 on:
   push:
     branches: [main]
@@ -13,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       jobs:
-        description: Jobs to run (package, gallery, web), comma-separated, or all
+        description: Jobs to run (package, gallery, android, ios, web), comma-separated, or all
         required: false
         default: all
 
@@ -103,17 +105,138 @@ jobs:
           flutter analyze
           flutter test test
       - name: Decision Maker in the app against Google's answers
+        id: app
         working-directory: gallery
         shell: bash
         run: |
           run() { if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a "$@"; else "$@"; fi; }
           run flutter test -d ${{ matrix.device }} integration_test/decision_maker_test.dart --reporter expanded
       - name: The journey through the Decision page
+        id: journey
         working-directory: gallery
         shell: bash
         run: |
           run() { if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a "$@"; else "$@"; fi; }
           run flutter test -d ${{ matrix.device }} integration_test/gallery_journey_test.dart --reporter expanded
+      - name: Record ${{ matrix.device }} CPU Decision Maker coverage
+        if: always()
+        shell: bash
+        run: python3 -B tool/coverage/record.py --suite ${{ matrix.device }}-decision --platform ${{ matrix.device }} --delegate cpu --tasks decision_maker --outcome "${{ steps.app.outcome == 'success' && steps.journey.outcome || steps.app.outcome }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-decision-${{ matrix.device }}
+          path: build/coverage/
+
+  android:
+    if: ${{ !inputs.jobs || inputs.jobs == 'all' || contains(inputs.jobs, 'android') }}
+    # Google's per-family decision library on the x86_64 emulator, CPU only:
+    # the in-app test and the journey through the Decision page and Hungry
+    # Fish, which download Laya (678 MB) and the text and vision EmbeddingGemma
+    # 2 (388 MB), the one that library runs (UP-053). Image Embedder is the
+    # one vision task the vision hook needs, as on the desktops: its page
+    # takes no camera, which the emulator's journey could not open.
+    name: Decision gallery / Android x64 emulator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Prepare the gallery
+        run: |
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64 --tasks decision_maker,image_embedder
+          cd gallery && flutter pub get
+      - name: Enable Android emulator hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Decision Maker in the app, and the journey through its pages
+        id: emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated
+          # The action runs each script line in its own shell, so one line.
+          script: cd gallery && timeout 1500 flutter test -d emulator-5554 integration_test/decision_maker_test.dart --reporter expanded && timeout 2400 flutter test -d emulator-5554 --dart-define=SDK_GPU=skip integration_test/gallery_journey_test.dart --reporter expanded
+      - name: Record android CPU Decision Maker coverage
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite android-decision-emulator --platform android --delegate cpu --tasks decision_maker --outcome ${{ steps.emulator.outcome }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-decision-android
+          path: build/coverage/
+
+  ios:
+    if: ${{ !inputs.jobs || inputs.jobs == 'all' || contains(inputs.jobs, 'ios') }}
+    # Google's per-family decision library on the iOS simulator, CPU only.
+    name: Decision gallery / iOS simulator
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - name: Make flutter test wait for the simulator log reader
+        run: python3 -B tool/ci/patch_flutter_simulator_launch.py
+      - name: Prepare the gallery
+        run: |
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target ios-simulator/arm64 --tasks decision_maker,face_detector
+          cd gallery && flutter pub get
+      - name: Boot an installed iPhone simulator
+        id: simulator
+        run: |
+          device=$(python3 - <<'PY'
+          import json, subprocess
+          devices = json.loads(subprocess.check_output(
+              ['xcrun', 'simctl', 'list', 'devices', 'available', '--json'], text=True))['devices']
+          candidates = [d for runtime, entries in devices.items() if '.iOS-' in runtime
+                        for d in entries if d['name'].startswith('iPhone')]
+          if not candidates:
+              raise SystemExit('No installed iPhone simulator runtime')
+          print(candidates[0]['udid'])
+          PY
+          )
+          xcrun simctl boot "$device"
+          xcrun simctl bootstatus "$device" -b
+          echo "device=$device" >> "$GITHUB_OUTPUT"
+      - name: Decision Maker in the app, and the journey through its pages
+        id: simulator_tests
+        working-directory: gallery
+        shell: bash
+        run: |
+          device=${{ steps.simulator.outputs.device }}
+          perl -e 'alarm shift; exec @ARGV' 1500 flutter test -d "$device" integration_test/decision_maker_test.dart --reporter expanded
+          perl -e 'alarm shift; exec @ARGV' 2400 flutter test -d "$device" --dart-define=SDK_GPU=skip integration_test/gallery_journey_test.dart --reporter expanded
+      - name: Record ios CPU Decision Maker coverage
+        if: always()
+        run: python3 -B tool/coverage/record.py --suite ios-decision-simulator --platform ios --delegate cpu --tasks decision_maker --outcome ${{ steps.simulator_tests.outcome }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-decision-ios
+          path: build/coverage/
 
   web:
     if: ${{ !inputs.jobs || inputs.jobs == 'all' || contains(inputs.jobs, 'web') }}
@@ -176,9 +299,20 @@ jobs:
       # hook needs a task, and web.yaml covers it (and its video-file stall on
       # hosted macOS).
       - name: The journey through the Decision pages in Chromium
+        id: web_journey
         env:
           LIBGL_ALWAYS_SOFTWARE: ${{ runner.os == 'Linux' && '1' || '' }}
         run: node gallery/tool/browser/test_gallery_journey.mjs --tasks=decision_maker
+      # The Mac runner's Metal adapter runs the task and records the web GPU
+      # row; hosted Linux checks the refusal (UP-049).
+      - name: Record web GPU Decision Maker coverage
+        if: always() && runner.os == 'macOS'
+        run: python3 -B tool/coverage/record.py --suite web-decision-chromium-${{ matrix.os }} --platform web --delegate gpu --tasks decision_maker --outcome ${{ steps.web_journey.outcome }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-decision-web-${{ matrix.os }}
+          path: build/coverage/
       - uses: actions/upload-artifact@v4
         if: always()
         with:

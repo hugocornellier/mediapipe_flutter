@@ -27,7 +27,8 @@ PLATFORMS = ['web', 'android', 'ios', 'macos', 'linux', 'windows']
 # commit; a missing one is a failure rather than silently fewer rows.
 RECORDING_WORKFLOWS = ['.github/workflows/android.yaml', '.github/workflows/ios.yaml',
                        '.github/workflows/web.yaml', '.github/workflows/desktop.yaml',
-                       '.github/workflows/main.yaml', '.github/workflows/retrieval.yaml']
+                       '.github/workflows/main.yaml', '.github/workflows/retrieval.yaml',
+                       '.github/workflows/decision.yaml']
 # Physical-device workflows, dispatched by hand for a branch or main. Their
 # rows carry tier 'device'; the gate does not wait for them.
 DEVICE_WORKFLOWS = ['.github/workflows/android-face-testlab.yml']

@@ -527,6 +527,32 @@
         "cpu": "required",
         "gpu": "unsupported: Google's retrieval tasks run on CPU only"
       }
+    },
+    "decision_maker": {
+      "web": {
+        "cpu": "unsupported: Google's browser Decision Maker fails every evaluation on the CPU delegate (UP-049)",
+        "gpu": "required"
+      },
+      "android": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Decision Maker on the CPU only on this platform"
+      },
+      "ios": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Decision Maker on the CPU only on this platform"
+      },
+      "macos": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Decision Maker on the CPU only on this platform"
+      },
+      "linux": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Decision Maker on the CPU only on this platform"
+      },
+      "windows": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Decision Maker on the CPU only on this platform"
+      }
     }
   }
 }

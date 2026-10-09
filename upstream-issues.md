@@ -1,6 +1,6 @@
 # Upstream issues and runtime compatibility findings
 
-Last updated: 2026-10-07. These are local observations unless explicitly marked
+Last updated: 2026-10-09. These are local observations unless explicitly marked
 as an external report; each entry says whether it was reported upstream. An
 exported symbol alone does not establish a working task or platform.
 
@@ -61,6 +61,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-050](#up-050-universal-embedder-refuses-the-text-only-embeddinggemma-2-model) | Universal Embedder refuses the text-only EmbeddingGemma 2 model | Found on 1.1.0 |
 | [UP-051](#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again) | The browser Universal Embedder reads modelAssetPath as a file, and a second Wasm object needs the loader again | Found on 1.1.0 |
 | [UP-052](#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter) | The browser Universal Embedder runs only on a hardware WebGPU adapter | Found on 1.1.0 |
+| [UP-053](#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model) | The per-family decision library fails every evaluation with the text-only EmbeddingGemma 2 model | Found on 1.1.0 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -838,6 +839,42 @@ path, unlike the vision, text and audio browser tasks. On a hardware adapter
 (Metal on a Mac) both retrieval tasks answer as Google's native library does.
 Decision Maker's browser runtime has the same requirement for a different
 reason (UP-049).
+
+### UP-053: The per-family decision library fails every evaluation with the text-only EmbeddingGemma 2 model
+
+**Status:** observed October 9, 2026 with Google's per-family decision
+library of October 8, 2026 (`libmediapipe_tasks_decision.dylib`, macOS
+arm64); the gallery's Hungry Fish, which played on this model, showed an
+error on the arm64 iOS Simulator too. Google's 1.1.0 wheel library of
+October 6 (`libmediapipe.dylib`, macOS arm64) runs the same model through
+the same calls. Worked around: `queryDecisionMakerCapabilities(model)`
+reports the text-only model unsupported on the per-family library and
+`create` refuses it there before any download;
+`DecisionModels.embeddingGemma2TextVision` pins the text and vision model,
+which the library runs, and the gallery's Hungry Fish plays on it there.
+Not yet reported to Google.
+
+Google's Decision Maker guide lists EmbeddingGemma 2 as a bi-encoder
+backend, and its web demo starts with the text-only 270M model
+(`embeddinggemma-2-text-270m.litertlm`, 165 MB). On the per-family library
+`MpDecisionMakerCreate` accepts it, but every evaluation
+(`MpDecisionMakerEvaluateBoolean`, the choice and score calls and their
+batch forms) returns status 13 with `EG2 embedder invocation failed.` The
+wheel's library answers the same calls with the same model (0.4516 for "The
+customer wants a refund." on the gallery's refund text). With the text and
+vision 440M model (`embeddinggemma-2-text-vision-440m.litertlm`, 388 MB),
+whose text encoder is the same, the per-family library answers every case
+as the wheel does, within 1e-6
+(`packages/mediapipe-task-decision/test/fixtures/embedding_gemma_2_text_vision_reference.json`,
+run with `MEDIAPIPE_DECISION_EG2_MODEL`): 0.45160728693008423 on both for
+that question. The two libraries drive the model differently: the
+per-family one carries messages for a signature runner of its own (`EG2
+embedder signature runner unavailable`, `Failed to allocate EG2 embedder
+tensors`), the wheel's goes through LiteRT-LM's `EmbeddingEngine`. The
+text-only model has the `tf_lite_text_encoder` and `tf_lite_embedder`
+signatures; the 440M one adds `tf_lite_vision_encoder` and
+`tf_lite_vision_adapter`. Universal Embedder refuses the same model at
+creation (UP-050).
 
 ## History
 

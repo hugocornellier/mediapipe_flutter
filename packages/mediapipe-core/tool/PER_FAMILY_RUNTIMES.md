@@ -171,17 +171,21 @@ the simulator, Apple's ld on iOS devices, Android API 28 with 16 KB pages).
   ([UP-050](../../../upstream-issues.md#up-050-universal-embedder-refuses-the-text-only-embeddinggemma-2-model)),
   so the package pins the text and vision (388 MB) and the full (485 MB)
   models.
-- **Decision Maker** (`mediapipe_decision`) still runs on the all-in-one
-  library from Google's 1.1.0 wheels (`wheelRuntimes`) on macOS, Linux and
-  Windows, and on `@mediapipe/tasks-decision` in browsers. The October 8
-  delivery has a decision library for every target but Windows, exporting
-  32 functions (the 13 Google's Python declares, plus schema, JSON, context
-  and prewarm evaluation); Google's C header for it is still not public.
-
-Next for Decision Maker: pin `decision` in `familyRuntimes` for the targets
-Google built, keep the wheel for Windows, add Android and iOS to
-`decisionRuntimeTargets`, then run the native suite and both gallery journeys
-on the phones (Test Lab, an iPhone). The TODO above `wheelRuntimes` marks it.
+- **Decision Maker** (`mediapipe_decision`) runs on the per-family decision
+  library through `familyRuntimes['decision']` on Android arm64, arm and
+  x86_64, iOS device and simulator, macOS arm64 and Linux x64, and on
+  `@mediapipe/tasks-decision` in browsers. The library exports 32 functions
+  (the 13 Google's Python declares, plus schema, JSON, context and prewarm
+  evaluation); its answers match Google's wheel to float precision with
+  Laya and with the text and vision EmbeddingGemma 2, but it fails every
+  evaluation with the text-only EmbeddingGemma 2, which the wheel's library
+  runs ([UP-053](../../../upstream-issues.md#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model)):
+  the package's capability query and `create` say so, and
+  `DecisionModels.embeddingGemma2TextVision` is the bi-encoder for it.
+  Windows alone stays on the wheel's all-in-one library (`wheelRuntimes`),
+  since the delivery has no Windows decision library; Google's C header for
+  Decision Maker is still not public. The TODO above `wheelRuntimes` marks
+  it.
 
 ## For Google
 
@@ -190,6 +194,9 @@ on the phones (Test Lab, an iPhone). The TODO above `wheelRuntimes` marks it.
   the October 8 decision and retrieval simulator slices have 32 bytes.
 - A Windows decision library, the one target the October 8 delivery lacks,
   and the public C header for Decision Maker.
+- The per-family decision library fails every evaluation with the text-only
+  EmbeddingGemma 2 model, which the wheel's library runs
+  ([UP-053](../../../upstream-issues.md#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model)).
 - The families each define the same Objective-C classes
   ([UP-043](../../../upstream-issues.md#up-043-per-family-libraries-each-define-the-same-objective-c-classes)).
 - Apple GPU tasks abort on a three-channel image, as Google's 1.0.0 library
