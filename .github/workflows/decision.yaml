@@ -173,10 +173,8 @@ jobs:
           ram-size: 4096M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated
-          script: |
-            cd gallery
-            timeout 1500 flutter test -d emulator-5554 integration_test/decision_maker_test.dart --reporter expanded
-            timeout 2400 flutter test -d emulator-5554 --dart-define=SDK_GPU=skip integration_test/gallery_journey_test.dart --reporter expanded
+          # The action runs each script line in its own shell, so one line.
+          script: cd gallery && timeout 1500 flutter test -d emulator-5554 integration_test/decision_maker_test.dart --reporter expanded && timeout 2400 flutter test -d emulator-5554 --dart-define=SDK_GPU=skip integration_test/gallery_journey_test.dart --reporter expanded
       - name: Record android CPU Decision Maker coverage
         if: always()
         run: python3 -B tool/coverage/record.py --suite android-decision-emulator --platform android --delegate cpu --tasks decision_maker --outcome ${{ steps.emulator.outcome }}
