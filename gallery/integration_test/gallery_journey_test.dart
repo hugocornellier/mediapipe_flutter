@@ -16,10 +16,12 @@ import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/live/video_frame_image.dart';
 import 'package:mediapipe_gallery/live_page.dart';
 import 'package:mediapipe_gallery/main.dart';
+import 'package:mediapipe_gallery/retrieval_page.dart';
 import 'package:mediapipe_gallery/segment_page.dart';
 import 'package:mediapipe_gallery/text_page.dart';
 import 'package:mediapipe_gallery/ui/components.dart';
 import 'package:mediapipe_gallery/ui/design.dart';
+import 'package:mediapipe_gallery/universal_embedder_page.dart';
 
 import 'support/delegate_control.dart';
 
@@ -162,6 +164,10 @@ void main() {
                   ? DecisionPage
                   : task.demo == GalleryDemo.game
                   ? FishGamePage
+                  : task.demo == GalleryDemo.universalEmbed
+                  ? UniversalEmbedderPage
+                  : task.demo == GalleryDemo.retrieve
+                  ? RetrievalPage
                   : AudioPage,
             )
             .evaluate()
@@ -404,6 +410,78 @@ void main() {
           await tester.tap(find.byKey(const ValueKey('fish-play')));
           await tester.pump();
           checks.add('${task.id}:cpu:play');
+          break;
+        case GalleryDemo.universalEmbed:
+          // The sentence about a dog against the dog photo, then against the
+          // elephant: Google's model puts the matching pair closer (0.60
+          // against 0.55 in its Python API).
+          await tester.tap(find.byKey(const ValueKey('universal-compare')));
+          await tester.pump();
+          // The first comparison downloads Google's 388 MB model.
+          await _until(
+            tester,
+            () =>
+                _universalSimilarity(tester) != null ||
+                find
+                    .byKey(const ValueKey('universal-error'))
+                    .evaluate()
+                    .isNotEmpty,
+            attempts: 2400,
+          );
+          expect(
+            find.byKey(const ValueKey('universal-error')),
+            findsNothing,
+            reason: '${task.id}: ${_screen(tester)}',
+          );
+          final dog = _universalSimilarity(tester)!;
+          await tester.tap(find.byKey(const ValueKey('universal-2-elephant')));
+          await _until(
+            tester,
+            () => find
+                .bySemanticsLabel('Image 2: Elephant')
+                .evaluate()
+                .isNotEmpty,
+          );
+          await tester.tap(find.byKey(const ValueKey('universal-compare')));
+          await tester.pump();
+          await _until(tester, () {
+            final value = _universalSimilarity(tester);
+            return value != null && value != dog;
+          }, attempts: 1200);
+          final elephant = _universalSimilarity(tester)!;
+          expect(
+            elephant,
+            lessThan(dog),
+            reason:
+                '${task.id}: dog text vs dog photo $dog, vs elephant $elephant',
+          );
+          checks.add('${task.id}:cpu:compare');
+          break;
+        case GalleryDemo.retrieve:
+          // The puppy query over the page's six documents: Google's Python
+          // API ranks the dog document first (0.82), the cat second.
+          await tester.tap(find.byKey(const ValueKey('retrieval-search')));
+          await tester.pump();
+          // The first search downloads Google's 388 MB model.
+          await _until(
+            tester,
+            () =>
+                find.byKey(retrievalTopKey).evaluate().isNotEmpty ||
+                find.text('Error').evaluate().isNotEmpty,
+            attempts: 2400,
+          );
+          expect(
+            find.text('Error'),
+            findsNothing,
+            reason: '${task.id}: ${_screen(tester)}',
+          );
+          final top = tester.widget<Text>(find.byKey(retrievalTopKey));
+          expect(
+            top.data,
+            retrievalSampleDocuments.first,
+            reason: '${task.id}: ${_screen(tester)}',
+          );
+          checks.add('${task.id}:cpu:search');
           break;
         case GalleryDemo.audio:
           checks.add('${task.id}:cpu:run');
@@ -694,6 +772,14 @@ final _decisionAnswers = <(DecisionKind, void Function(String, String))>[
         expect(double.parse(answer), closeTo(1.28, 0.05), reason: why),
   ),
 ];
+
+/// Universal Embedder's similarity on screen, or null before the first
+/// comparison finishes.
+double? _universalSimilarity(WidgetTester tester) {
+  final finder = find.byKey(universalSimilarityKey);
+  if (finder.evaluate().isEmpty) return null;
+  return double.tryParse(tester.widget<Text>(finder).data ?? '');
+}
 
 /// The Proofreader and Summarizer write text, checked here for arriving;
 /// sdk_modern_text_test.dart compares what they write with Google's.

@@ -2,6 +2,11 @@ import 'package:mediapipe_audio/mediapipe_audio.dart'
     show AudioModels, audioClassifierCapabilitiesForPlatform;
 import 'package:mediapipe_decision/mediapipe_decision.dart'
     show DecisionModels, decisionMakerCapabilitiesForPlatform;
+import 'package:mediapipe_retrieval/mediapipe_retrieval.dart'
+    show
+        RetrievalModels,
+        semanticRetrieverCapabilitiesForPlatform,
+        universalEmbedderCapabilitiesForPlatform;
 import 'package:mediapipe_text/mediapipe_text.dart'
     show
         TextModels,
@@ -37,6 +42,12 @@ enum GalleryDemo {
 
   /// A game Decision Maker plays.
   game,
+
+  /// Two inputs, a text or an image each, compared by Universal Embedder.
+  universalEmbed,
+
+  /// Documents indexed on the device and searched by meaning.
+  retrieve,
 }
 
 /// The home page's sections, in MediaPipe Studio's order, then the families
@@ -60,29 +71,13 @@ typedef PlannedTask = ({
   String runtimeId,
 });
 
-/// The audio, text and decision tasks, listed as MediaPipe Studio lists
-/// them, and the retrieval tasks this repository has not implemented yet. A
-/// build prepared without one, or a platform whose runtime lacks it, shows
-/// its card in place of the tile.
+/// The audio, text, decision and retrieval tasks, listed as MediaPipe Studio
+/// lists them. A build prepared without one, or a platform whose runtime
+/// lacks it, shows its card in place of the tile.
 final plannedTasks = <PlannedTask>[
   for (final task in _catalog)
     if (task.category != GalleryCategory.vision)
       (category: task.category, title: task.title, runtimeId: task.runtimeId),
-  ..._comingTasks,
-];
-
-/// Google's MediaPipe 1.1.0 retrieval tasks, which come after Decision Maker.
-const _comingTasks = <PlannedTask>[
-  (
-    category: GalleryCategory.retrieval,
-    title: 'Universal Embedder',
-    runtimeId: 'universal_embedder',
-  ),
-  (
-    category: GalleryCategory.retrieval,
-    title: 'Semantic Retriever',
-    runtimeId: 'semantic_retriever',
-  ),
 ];
 
 /// Why [task] is a card rather than a tile: this build did not bundle it, or
@@ -92,9 +87,6 @@ String plannedReason(
   TaskPlatform platform,
   Set<String> bundled,
 ) {
-  if (_comingTasks.contains(task)) {
-    return 'Coming next: Google added it in MediaPipe 1.1.0.';
-  }
   if (!bundled.contains(task.runtimeId)) return 'Not bundled in this build.';
   final entry = _catalog.firstWhere((t) => t.runtimeId == task.runtimeId);
   return entry.capabilities(platform).unavailableReasons[Delegate.cpu] ??
@@ -149,8 +141,9 @@ final class GalleryTask {
   String get modelFile => Uri.parse(model.url).pathSegments.last;
 
   /// Whether the page downloads [model] on first use rather than the app
-  /// bundling it: Decision Maker's models are larger than every other
-  /// model together (`downloadedModelTasks` in tool/gallery_builder).
+  /// bundling it: Decision Maker's and the retrieval tasks' models are
+  /// larger than every other model together (`downloadedModelTasks` in
+  /// tool/gallery_builder).
   final bool downloadsModel;
 
   /// Whether the model is one of Google's Gemma models, which come under the
@@ -460,6 +453,31 @@ final _catalog = <GalleryTask>[
     model: TextModels.summarizer,
     sample: '',
     capabilities: textSummarizerCapabilitiesForPlatform,
+  ),
+  // The retrieval package's tasks, on Google's per-family retrieval library
+  // and, in browsers, its JavaScript runtime. Their 388 MB model downloads
+  // on first use.
+  GalleryTask(
+    id: 'universal_embedder',
+    category: GalleryCategory.retrieval,
+    demo: GalleryDemo.universalEmbed,
+    title: 'Universal Embedder',
+    summary: 'A text and an image as vectors in one space, compared.',
+    model: RetrievalModels.embeddingGemma2TextVision,
+    sample: 'dog.jpg',
+    capabilities: universalEmbedderCapabilitiesForPlatform,
+    downloadsModel: true,
+  ),
+  GalleryTask(
+    id: 'semantic_retriever',
+    category: GalleryCategory.retrieval,
+    demo: GalleryDemo.retrieve,
+    title: 'Semantic Retriever',
+    summary: 'A few documents indexed on the device, searched by meaning.',
+    model: RetrievalModels.embeddingGemma2TextVision,
+    sample: '',
+    capabilities: semanticRetrieverCapabilitiesForPlatform,
+    downloadsModel: true,
   ),
 ];
 

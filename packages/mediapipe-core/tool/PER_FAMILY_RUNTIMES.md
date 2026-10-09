@@ -157,46 +157,39 @@ test files shared its process; it now runs alone (`--tags isolated`).
 
 ## Decision and retrieval
 
-Waiting on Google. Its per-family delivery has vision, text and audio only:
-none of its libraries exports Decision Maker, Universal Embedder or Semantic
-Retriever, on any platform. Until Google builds the `decision` and `retrieval`
-families:
+Google's delivery of October 8, 2026 added the `decision` and `retrieval`
+families to its per-family libraries, built like the others (LLD on macOS and
+the simulator, Apple's ld on iOS devices, Android API 28 with 16 KB pages).
 
-- Decision Maker (`mediapipe_decision`) runs on macOS, Linux and Windows on
-  the all-in-one library from Google's 1.1.0 wheels (`wheelRuntimes`), and in
-  browsers on `@mediapipe/tasks-decision`. Android and iOS report it
-  unsupported: Google's Android and iOS SDKs for it are Kotlin and Swift only,
-  and the packages do not bring back a Java or Swift bridge.
-- Retrieval is not implemented; the gallery lists Universal Embedder and
-  Semantic Retriever as coming next. Google's npm package and the wheels'
-  all-in-one library have it, but nothing gives Android or iOS a C API for it.
-- Building them ourselves is out: Google's public source leaves Decision
-  Maker's engine out, and retrieval, whose C code is public, would need the
-  source builds the switch to per-family libraries removed, only to be
-  thrown away.
+- **Retrieval** (`mediapipe_retrieval`) runs Universal Embedder and Semantic
+  Retriever on every target through `familyRuntimes['retrieval']`: Android
+  arm64, arm and x86_64; iOS device and simulator; macOS arm64; Linux x64;
+  Windows x64; and in browsers on `@mediapipe/tasks-retrieval` 1.1.0. The
+  library exports 64 functions, identical on every platform: the two tasks,
+  plus the Text and Image Embedder and `MpImage` functions they depend on.
+  Google's engine refuses the text-only EmbeddingGemma 2 model for the task
+  ([UP-050](../../../upstream-issues.md#up-050-universal-embedder-refuses-the-text-only-embeddinggemma-2-model)),
+  so the package pins the text and vision (388 MB) and the full (485 MB)
+  models.
+- **Decision Maker** (`mediapipe_decision`) still runs on the all-in-one
+  library from Google's 1.1.0 wheels (`wheelRuntimes`) on macOS, Linux and
+  Windows, and on `@mediapipe/tasks-decision` in browsers. The October 8
+  delivery has a decision library for every target but Windows, exporting
+  32 functions (the 13 Google's Python declares, plus schema, JSON, context
+  and prewarm evaluation); Google's C header for it is still not public.
 
-Asked of Google: per-family `decision` and `retrieval` libraries for the same
-targets as the others (Android arm64, arm and x86_64; iOS device and
-simulator; macOS arm64; Linux x64; Windows x64), built from the 1.1.0 tag and
-exporting only the C API; Decision Maker's C header, which is not public (the
-library exports 24 functions, Google's Python declares 13); and confirmation
-that the decision library runs EmbeddingGemma 2 (`.litertlm`) as well as Laya.
-
-When they arrive:
-
-1. Pin both families in `familyRuntimes`, delete `wheelRuntimes` and
-   `bundleWheelRuntime`, and have the decision hook call `bundleFamilyRuntime`
-   like the others (the TODO above `wheelRuntimes`).
-2. Add Android and iOS to `decisionRuntimeTargets`, then run the native suite
-   and both gallery journeys on the phones (Test Lab, an iPhone).
-3. Add `mediapipe_retrieval`, built as `mediapipe_decision` is (FFI on the
-   five native platforms, npm in browsers), and turn the gallery's Retrieval
-   cards into tiles.
+Next for Decision Maker: pin `decision` in `familyRuntimes` for the targets
+Google built, keep the wheel for Windows, add Android and iOS to
+`decisionRuntimeTargets`, then run the native suite and both gallery journeys
+on the phones (Test Lab, an iPhone). The TODO above `wheelRuntimes` marks it.
 
 ## For Google
 
 - Link the macOS and simulator builds with `-headerpad_max_install_names`
-  ([UP-042](../../../upstream-issues.md#up-042-per-family-macos-and-simulator-libraries-have-no-header-room-for-a-rename)).
+  ([UP-042](../../../upstream-issues.md#up-042-per-family-macos-and-simulator-libraries-have-no-header-room-for-a-rename));
+  the October 8 decision and retrieval simulator slices have 32 bytes.
+- A Windows decision library, the one target the October 8 delivery lacks,
+  and the public C header for Decision Maker.
 - The families each define the same Objective-C classes
   ([UP-043](../../../upstream-issues.md#up-043-per-family-libraries-each-define-the-same-objective-c-classes)).
 - Apple GPU tasks abort on a three-channel image, as Google's 1.0.0 library
@@ -221,13 +214,13 @@ When they arrive:
 Google's per-family libraries as delivered, in MB (10^6 bytes; all
 stripped):
 
-| Platform | Vision | Text | Audio | All three |
-| --- | --- | --- | --- | --- |
-| iOS arm64 (device slice) | 19.1 | 20.3 | 9.0 | 48.4 |
-| macOS arm64 | 26.6 | 26.1 | 12.8 | 65.5 |
-| Linux x64 | 29.7 | 39.0 | 20.1 | 88.8 |
-| Windows x64 | 24.7 | 44.6 | 17.5 | 86.8 |
-| Android arm64-v8a | 13.2 | 14.7 | 8.4 | 36.3 |
+| Platform | Vision | Text | Audio | All three | Retrieval |
+| --- | --- | --- | --- | --- | --- |
+| iOS arm64 (device slice) | 19.1 | 20.3 | 9.0 | 48.4 | 14.0 |
+| macOS arm64 | 26.6 | 26.1 | 12.8 | 65.5 | 19.2 |
+| Linux x64 | 29.7 | 39.0 | 20.1 | 88.8 | 27.7 |
+| Windows x64 | 24.7 | 44.6 | 17.5 | 86.8 | 22.3 |
+| Android arm64-v8a | 13.2 | 14.7 | 8.4 | 36.3 | 12.3 |
 | Android x86_64 | 16.0 | 17.9 | 10.8 | 44.7 |
 
 The Android arm64-v8a and x86_64 libraries are aligned for 16 KB pages.

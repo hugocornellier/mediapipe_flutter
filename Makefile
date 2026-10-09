@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 DART_PACKAGES := packages/mediapipe-core tool/task_benchmarks
-FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-decision
+FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-decision packages/mediapipe-task-retrieval
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 # The gallery's pubspec is generated per target by tool/gallery_builder, so
 # it is format-checked without package resolution
@@ -162,3 +162,12 @@ models_decision:
 
 test_decision:
 	cd packages/mediapipe-task-decision && dart test --reporter expanded
+
+# The retrieval tasks' EmbeddingGemma 2 model (388 MB) and their native suite
+# against Google's Python answers, on Google's retrieval library for this host.
+.PHONY: models_retrieval test_retrieval
+models_retrieval:
+	cd packages/mediapipe-task-retrieval && dart run tool/download_model.dart
+
+test_retrieval:
+	cd packages/mediapipe-task-retrieval && dart test --reporter expanded

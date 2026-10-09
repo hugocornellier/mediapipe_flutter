@@ -39,6 +39,11 @@ const cases = {
     ['Choice', /^shipping$/],
     ['Score', /^1\.(2[3-9]|3[0-3])$/],
   ]},
+  // Universal Embedder compares a sentence about a dog with the dog photo,
+  // then the elephant; Semantic Retriever ranks the dog document first for
+  // the puppy query, as Google's Python API does (0.82).
+  universal_embedder: {title: 'Universal Embedder', universal: true},
+  semantic_retriever: {title: 'Semantic Retriever', retrieve: /^A dog chases a ball/},
 };
 
 // The delegates each page must offer and run come from the coverage matrix the
@@ -141,14 +146,15 @@ try {
   await page.goto(base + (base.includes('?') ? '&' : '?') + 'microphone=sample');
   await sidebarItem('Home').waitFor({timeout: 120000});
   // Google's browser Decision Maker answers only on a hardware WebGPU adapter,
-  // by its own rule (UP-049); elsewhere the gallery shows its card instead.
+  // by its own rule (UP-049), and its Universal Embedder creates a WebGPU
+  // device for itself (UP-052); elsewhere the gallery shows their cards.
   hardwareWebGpu = await page.evaluate(async () => {
     const adapter = await navigator.gpu?.requestAdapter({powerPreference: 'high-performance'});
     const info = adapter?.info ?? {};
     return !!adapter && !adapter.isFallbackAdapter &&
       !/fallback|swiftshader|llvmpipe|software|lavapipe/i.test(`${info.vendor} ${info.architecture} ${info.description}`);
   });
-  const refused = new Set(hardwareWebGpu ? [] : ['decision_maker']);
+  const refused = new Set(hardwareWebGpu ? [] : ['decision_maker', 'universal_embedder', 'semantic_retriever']);
   // --tasks=a,b visits only those of the bundled tasks.
   const only = args.tasks ? new Set(args.tasks.split(',')) : null;
   for (const id of refused) if (only && !only.has(id)) refused.delete(id);
@@ -159,7 +165,7 @@ try {
     if (!manifest.tasks.includes(id)) continue;
     // The home page's card gives the capability query's reason.
     enter(`${id}:refused`);
-    await page.getByText(/UP-049/).first().waitFor({timeout: 120000});
+    await page.getByText(/UP-049|UP-052/).first().waitFor({timeout: 120000});
     report.checks.push(`${id}:refused`);
   }
 
@@ -246,6 +252,44 @@ try {
         .waitFor({timeout: 120000});
       await page.getByText(/Done in \d+\.\d ms/).waitFor();
       report.checks.push(`${id}:cpu:run`);
+    } else if (spec.universal) {
+      // The first comparison fetches Google's 388 MB model from Hugging Face.
+      enter(`${id}:compare`);
+      const similarity = page.locator('[flt-semantics-identifier="universal-similarity"]');
+      const error = page.locator('[flt-semantics-identifier="universal-error"]');
+      const value = async () => {
+        const text = (await similarity.getAttribute('aria-label')) ?? (await similarity.textContent()) ?? '';
+        return parseFloat(text.replace(/^Cosine similarity\s*/, ''));
+      };
+      await page.getByRole('button', {name: 'Compare', exact: true}).click();
+      await similarity.filter({hasText: /-?\d\.\d{4}/}).or(error).first().waitFor({timeout: 600000});
+      assert.equal(await error.count(), 0, `${id}: ${await page.locator('flt-semantics').allInnerTexts()}`);
+      const dog = await value();
+      enter(`${id}:elephant`);
+      await page.locator('[flt-semantics-identifier="universal-2-samples"]')
+        .getByRole('button', {name: 'Elephant', exact: true}).click();
+      await page.getByRole('img', {name: 'Image 2: Elephant'}).or(page.getByText('Image 2: Elephant')).first().waitFor({timeout: 120000});
+      await page.getByRole('button', {name: 'Compare', exact: true}).click();
+      const deadline = Date.now() + 120000;
+      let elephant = dog;
+      while (elephant === dog && Date.now() < deadline) {
+        await page.waitForTimeout(500);
+        elephant = await value();
+      }
+      assert.ok(elephant < dog, `${id}: dog text vs dog photo ${dog}, vs elephant ${elephant}`);
+      report.checks.push(`${id}:cpu:compare`);
+      await page.screenshot({path: path.join(evidence, `${id}.png`)});
+    } else if (spec.retrieve) {
+      // The first search fetches Google's 388 MB model from Hugging Face.
+      enter(`${id}:search`);
+      const top = page.locator('[flt-semantics-identifier="retrieval-top"]');
+      const error = page.getByText('Error', {exact: true});
+      await page.getByRole('button', {name: 'Search', exact: true}).click();
+      await top.or(error).first().waitFor({timeout: 600000});
+      assert.equal(await error.count(), 0, `${id}: ${await page.locator('flt-semantics').allInnerTexts()}`);
+      assert.match((await top.textContent()) ?? '', spec.retrieve, `${id}: best match`);
+      report.checks.push(`${id}:cpu:search`);
+      await page.screenshot({path: path.join(evidence, `${id}.png`)});
     } else if (spec.decision) {
       const error = page.getByText('Error', {exact: true});
       for (const [kind, answer] of spec.decision) {

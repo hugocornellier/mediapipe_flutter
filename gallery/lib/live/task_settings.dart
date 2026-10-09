@@ -221,6 +221,15 @@ const taskSettings = <String, List<TaskSetting>>{
     ShareSetting('threshold', 'Yes Threshold'),
     SwitchSetting('normalizePrior', 'Normalize Prior'),
   ],
+  // Universal Embedder's normalization, which Google's browser API defaults
+  // to, and Semantic Retriever's result count and similarity floor.
+  'universal_embedder': [
+    SwitchSetting('l2Normalize', 'L2 Normalize', initial: true),
+  ],
+  'semantic_retriever': [
+    CountSetting('limit', 'Results', initial: 3, min: 1, max: 6),
+    ShareSetting('minSimilarity', 'Min Similarity', initial: 0),
+  ],
 };
 
 /// The current value of every setting of one task.

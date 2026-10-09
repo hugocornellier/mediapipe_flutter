@@ -42,7 +42,7 @@ jobs:
       # conventions and match its reviewed snapshot (tool/api_parity/README.md).
       - name: Check API parity, conventions and snapshots
         run: |
-          for family in task-vision task-text task-audio; do
+          for family in task-vision task-text task-audio task-retrieval; do
             (cd packages/mediapipe-$family && flutter pub get)
           done
           cd tool/api_parity

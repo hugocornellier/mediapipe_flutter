@@ -1,0 +1,208 @@
+name: Retrieval
+
+permissions:
+  contents: read
+
+# The retrieval checks: the package against Google's Python answers on each
+# desktop, the gallery's retrieval test and journey, and the browser journey,
+# recording task coverage rows for the gate. The phones run the same journey
+# in android.yaml and ios.yaml. Dispatch by hand to run a subset of the jobs.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: Jobs to run (package, gallery, web), comma-separated, or all
+        required: false
+        default: all
+
+concurrency:
+  group: retrieval-${{ github.ref }}-${{ inputs.jobs || 'all' }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    if: ${{ !inputs.jobs || inputs.jobs == 'all' || contains(inputs.jobs, 'package') }}
+    name: Retrieval package / ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - name: Install Linux graphics libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgles2
+      # Google's Windows runtime uploads usage logs and a task's close waits
+      # for the upload (upstream-issues.md UP-025).
+      - name: Keep Google's usage logging off the network
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Add-Content "$env:SystemRoot\System32\drivers\etc\hosts" "`n0.0.0.0 play.googleapis.com`n:: play.googleapis.com"
+          ipconfig /flushdns | Out-Null
+      - uses: actions/cache@v6
+        with:
+          path: packages/mediapipe-task-retrieval/models/embeddinggemma-2-text-vision-440m.litertlm
+          key: retrieval-embedding-gemma-2-text-vision-${{ hashFiles('packages/mediapipe-task-retrieval/lib/models.dart') }}
+      - name: Resolve packages
+        working-directory: packages/mediapipe-task-retrieval
+        run: flutter pub get
+      - name: Download Google's EmbeddingGemma 2 model
+        working-directory: packages/mediapipe-task-retrieval
+        run: dart run tool/download_model.dart
+      - name: Analyze
+        working-directory: packages/mediapipe-task-retrieval
+        run: dart analyze --fatal-infos
+      - name: The retrieval tasks against Google's Python answers
+        working-directory: packages/mediapipe-task-retrieval
+        run: dart test --reporter expanded
+
+  gallery:
+    if: ${{ !inputs.jobs || inputs.jobs == 'all' || contains(inputs.jobs, 'gallery') }}
+    name: Retrieval gallery / ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-15, target: macos/arm64, device: macos}
+          - {os: ubuntu-24.04, target: linux/x64, device: linux}
+          - {os: windows-2025, target: windows/x64, device: windows}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - name: Install Linux Flutter host dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev xvfb libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good gstreamer1.0-libav libegl1 libgles2
+      - name: Keep Google's usage logging off the network
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Add-Content "$env:SystemRoot\System32\drivers\etc\hosts" "`n0.0.0.0 play.googleapis.com`n:: play.googleapis.com"
+          ipconfig /flushdns | Out-Null
+      # The retrieval tasks, and the one vision task the vision hook needs.
+      - name: Prepare the gallery
+        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target ${{ matrix.target }} --tasks universal_embedder,semantic_retriever,image_embedder
+      - name: Analyze and unit-test the gallery
+        working-directory: gallery
+        run: |
+          flutter analyze
+          flutter test test
+      - name: The retrieval tasks in the app against Google's answers
+        id: app
+        working-directory: gallery
+        shell: bash
+        run: |
+          run() { if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a "$@"; else "$@"; fi; }
+          run flutter test -d ${{ matrix.device }} integration_test/retrieval_test.dart --reporter expanded
+      - name: The journey through the retrieval pages
+        id: journey
+        working-directory: gallery
+        shell: bash
+        run: |
+          run() { if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a "$@"; else "$@"; fi; }
+          run flutter test -d ${{ matrix.device }} integration_test/gallery_journey_test.dart --reporter expanded
+      - name: Record ${{ matrix.device }} CPU retrieval coverage
+        if: always()
+        shell: bash
+        run: python3 -B tool/coverage/record.py --suite ${{ matrix.device }}-retrieval --platform ${{ matrix.device }} --delegate cpu --tasks universal_embedder,semantic_retriever --outcome "${{ steps.app.outcome == 'success' && steps.journey.outcome || steps.app.outcome }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-retrieval-${{ matrix.device }}
+          path: build/coverage/
+
+  web:
+    if: ${{ !inputs.jobs || inputs.jobs == 'all' || contains(inputs.jobs, 'web') }}
+    name: Retrieval gallery / web Chromium ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: gallery/tool/browser/package-lock.json
+      # The retrieval tasks, and the vision task a web build lists for the hook.
+      - name: Prepare the web gallery
+        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target web --tasks universal_embedder,semantic_retriever,face_detector
+      - name: Prepare the Linux camera fixture
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg xvfb libgl1-mesa-dri
+          python3 -B gallery/tool/browser/prepare_camera.py
+      - name: Install Playwright's Chromium
+        working-directory: gallery/tool/browser
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Analyze the retrieval package's browser code
+        working-directory: packages/mediapipe-task-retrieval
+        run: |
+          flutter pub get
+          flutter analyze lib
+      - name: Build the release gallery
+        working-directory: gallery
+        run: flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+      - name: Start the gallery server
+        run: |
+          nohup python3 -B gallery/tool/web_server.py > web-server.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            curl -sf -o /dev/null --max-time 5 http://127.0.0.1:8866/mediapipe_flutter/ && exit 0
+            sleep 2
+          done
+          cat web-server.log
+          exit 1
+      # Only the retrieval tiles: Face Detector is in the build because the vision
+      # hook needs a task, and web.yaml covers it (and its video-file stall on
+      # hosted macOS).
+      - name: The journey through the retrieval pages in Chromium
+        id: web_journey
+        env:
+          LIBGL_ALWAYS_SOFTWARE: ${{ runner.os == 'Linux' && '1' || '' }}
+        run: node gallery/tool/browser/test_gallery_journey.mjs --tasks=universal_embedder,semantic_retriever
+      # Google's browser Universal Embedder runs only on a hardware WebGPU
+      # adapter (UP-052): the Mac runner's Metal one runs the tasks and records
+      # the web GPU row; hosted Linux, with only SwiftShader, checks that the
+      # gallery refuses them.
+      - name: Record web GPU retrieval coverage
+        if: always() && runner.os == 'macOS'
+        run: python3 -B tool/coverage/record.py --suite web-retrieval-chromium-${{ matrix.os }} --platform web --delegate gpu --tasks universal_embedder,semantic_retriever --outcome ${{ steps.web_journey.outcome }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-retrieval-web-${{ matrix.os }}
+          path: build/coverage/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: retrieval-web-journey-${{ matrix.os }}
+          path: build/codex-tmp/gallery-journey-chromium/

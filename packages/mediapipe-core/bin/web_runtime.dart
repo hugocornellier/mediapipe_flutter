@@ -9,6 +9,7 @@ const _families = [
   'mediapipe_text',
   'mediapipe_audio',
   'mediapipe_decision',
+  'mediapipe_retrieval',
 ];
 
 /// Copies Google's pinned, verified browser runtimes into a folder the app

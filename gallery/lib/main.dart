@@ -9,6 +9,8 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import 'catalog.dart';
 import 'decision_page.dart';
+import 'retrieval_page.dart';
+import 'universal_embedder_page.dart';
 import 'fish_game_page.dart';
 import 'embed_page.dart';
 import 'segment_page.dart';
@@ -46,6 +48,8 @@ const _taskOrder = [
   'text_classifier',
   'text_embedder',
   'decision_maker',
+  'universal_embedder',
+  'semantic_retriever',
 ];
 
 int compareTasks(
@@ -268,6 +272,17 @@ class _GalleryShellState extends State<_GalleryShell> {
         onOpenMenu: openMenu,
       ),
       GalleryDemo.game => FishGamePage(
+        task: task,
+        platform: widget.platform,
+        onOpenMenu: openMenu,
+      ),
+      GalleryDemo.universalEmbed => UniversalEmbedderPage(
+        task: task,
+        imagePicker: widget.stillImagePicker,
+        platform: widget.platform,
+        onOpenMenu: openMenu,
+      ),
+      GalleryDemo.retrieve => RetrievalPage(
         task: task,
         platform: widget.platform,
         onOpenMenu: openMenu,

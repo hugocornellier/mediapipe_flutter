@@ -99,7 +99,7 @@ Future<void> _prepare(
     if (!tasks.contains('audio_classifier') && entry.value.endsWith('.wav')) {
       continue;
     }
-    if (!tasks.contains('image_embedder') &&
+    if (!tasks.any(embedderSampleTasks.contains) &&
         embedderSamples.contains(entry.value)) {
       continue;
     }
@@ -268,6 +268,7 @@ String _pubspec(
     'mediapipe_text',
     'mediapipe_audio',
     'mediapipe_decision',
+    'mediapipe_retrieval',
   ]) {
     final names = {
       for (final task in tasks)
@@ -302,6 +303,8 @@ dependencies:
     path: ../packages/mediapipe-task-audio
   mediapipe_decision:
     path: ../packages/mediapipe-task-decision
+  mediapipe_retrieval:
+    path: ../packages/mediapipe-task-retrieval
   web: ^1.1.1
   crypto: ^3.0.6
   file_selector: ^1.0.3

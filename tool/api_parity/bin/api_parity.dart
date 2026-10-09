@@ -27,6 +27,10 @@ const families = {
     'packages/mediapipe-task-audio',
     'package:mediapipe_audio/mediapipe_audio.dart',
   ),
+  'retrieval': (
+    'packages/mediapipe-task-retrieval',
+    'package:mediapipe_retrieval/mediapipe_retrieval.dart',
+  ),
 };
 
 /// Libraries an app imports beside a family; a public name they also export
