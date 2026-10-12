@@ -119,7 +119,7 @@ class _DecisionPageState extends State<DecisionPage> {
 
   /// The chosen model's pin: the catalog's unless another was chosen.
   DownloadAsset get _pin => switch (_model) {
-    final model? => DownloadAsset(url: '${model.url}', sha256: model.sha256),
+    final model? => model.pin,
     null => widget.task.model,
   };
 

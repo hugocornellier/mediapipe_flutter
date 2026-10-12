@@ -571,7 +571,9 @@ to 150 lines, and one place for version bumps.
   `TaskErrorCard` in `gallery/lib/ui/components.dart`. About 48 lines. The
   Decision and Retrieval pages share 78 normalized lines in all; these two
   helpers and the mixin cover most of them.
-- **Decision pins:** `gallery/lib/live/task_models.dart:35-65` hardcodes four
+- **Decision pins:** **Done on `chore/oct12-combined`:** `TaskModel.pinned`,
+  and a `pin` getter for the three places that rebuilt one. As found:
+  `gallery/lib/live/task_models.dart:35-65` hardcodes four
   Decision model pins (path, SHA-256, size) that `DecisionModels` already
   pins, and `decision_page.dart:116` and `fish_game_page.dart:156` rebuild a
   `DownloadAsset` from them. A `TaskModel.pinned(label, DownloadAsset pin,

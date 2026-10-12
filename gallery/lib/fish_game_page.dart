@@ -154,7 +154,7 @@ class _FishGamePageState extends State<FishGamePage>
   /// The chosen model's pin: the standard EmbeddingGemma 2 unless another
   /// was chosen.
   DownloadAsset get _pin => switch (_model) {
-    final model? => DownloadAsset(url: '${model.url}', sha256: model.sha256),
+    final model? => model.pin,
     null => _standard,
   };
 

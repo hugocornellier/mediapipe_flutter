@@ -223,7 +223,7 @@ TaskCapabilities fishGameCapabilitiesForPlatform(TaskPlatform platform) =>
 bool decisionRunsModel(TaskPlatform platform, TaskModel model) =>
     decisionMakerCapabilitiesForPlatform(
       platform,
-      model: DownloadAsset(url: '${model.url}', sha256: model.sha256),
+      model: model.pin,
     ).isSupported;
 
 final _catalog = <GalleryTask>[
