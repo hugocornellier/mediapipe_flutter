@@ -5,6 +5,8 @@ import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
 import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_core/src/native_assets/family_runtimes.dart'
+    show wheelRuntimes;
 import 'package:mediapipe_core/platform_interface.dart'
     show tasksRuntimeTargets;
 import 'package:test/test.dart';

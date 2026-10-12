@@ -18,15 +18,8 @@ final class FamilyRuntime
   String get sha256
   int get bytes
   new FamilyRuntime(String fileName, String sha256, int bytes)
-final class WheelRuntime
-  DownloadAsset get wheel
-  String get path
-  String get sha256
-  int get bytes
-  new WheelRuntime(DownloadAsset wheel, String path, String sha256, int bytes)
 function String buildTarget(CodeConfig code)
 function Future<void> bundleFamilyRuntime(BuildInput input, BuildOutputBuilder output, {required String family})
-function Future<void> bundleWheelRuntime(BuildInput input, BuildOutputBuilder output, {required String family})
 function Future<File> downloadVerified(DownloadAsset asset, File destination, {Client? client, String? source})
 getter String get familyRuntimeAssetName
 getter String get familyRuntimeBaseUrl
@@ -36,4 +29,3 @@ getter Map<String, Map<String, FamilyRuntime>> get familyRuntimes
 function String? hookAssetSource(BuildInput input)
 function void requireDynamicLinking(CodeConfig code)
 function FamilyRuntime requireFamilyRuntime(String family, String target)
-getter Map<String, Map<String, WheelRuntime>> get wheelRuntimes

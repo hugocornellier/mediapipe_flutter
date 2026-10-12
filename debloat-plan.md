@@ -228,7 +228,12 @@ Removing any of this after 0.1.0 is a breaking change.
   `audio_stream_runtime_test.dart:85`, `face_detector_test.dart:64` and
   `:247`, `face_landmarker_test.dart:75`, `object_detector_test.dart:110`).
   About 96 lines.
-- **Core's wheel extraction.** `native_assets.dart:5` exports all of
+- **Core's wheel extraction.** **Done on `chore/oct12-combined`,** as
+  recommended below: `bundleFamilyRuntime` falls back to the wheel itself,
+  the wheel's class, table and helper are no longer exported, Decision's hook
+  is Retrieval's three lines, and the tests and tools import the table from
+  `src/`. A target with neither library now fails Decision's build as it
+  fails every other family's. As found: `native_assets.dart:5` exports all of
   `family_runtimes.dart`, including `WheelRuntime` (`:270`), `wheelRuntimes`
   (`:296`) and `bundleWheelRuntime` (`:409`): about 110 lines for one target,
   Decision on Windows, which extracts Google's 61 MB library from the 1.1.0
@@ -416,8 +421,8 @@ show every one.
 
 ### S2. Small dead code and leftovers
 
-**Done on `chore/oct12-combined`,** but for the macOS wheel branch, which goes
-with B3's wheel fold. As found:
+**Done on `chore/oct12-combined`,** the macOS wheel branch with B3's wheel
+fold. As found:
 
 - `bundleWheelRuntime`'s macOS branch (`family_runtimes.dart:452-454`) cannot
   run: `wheelRuntimes` pins only `windows/x64`. It goes with B3.

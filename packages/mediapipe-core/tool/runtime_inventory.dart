@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_core/src/native_assets/family_runtimes.dart'
+    show wheelRuntimes;
 
 /// Prints Google's libraries the hooks bundle, as JSON for
 /// `tool/mirror_runtime_assets.py` and the fresh-app harnesses

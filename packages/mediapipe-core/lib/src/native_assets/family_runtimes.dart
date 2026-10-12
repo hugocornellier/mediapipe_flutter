@@ -294,7 +294,7 @@ final class WheelRuntime {
   final int bytes;
 }
 
-// TODO: Retire this table and bundleWheelRuntime once Google builds a
+// TODO: Retire this table and _bundleWheelRuntime once Google builds a
 // Windows decision library: its build of October 9, 2026 has every other
 // target, pinned in familyRuntimes. See
 // packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
@@ -361,7 +361,9 @@ String _unsupportedTarget(
 const familyRuntimeMinimumAndroidApi = 28;
 
 /// Bundles [family]'s library for the hook's target under
-/// [familyRuntimeAssetName], in the calling family's package.
+/// [familyRuntimeAssetName], in the calling family's package: Google's
+/// per-family library ([familyRuntimes]), or on a target Google has not
+/// built one for, the library from its wheel ([wheelRuntimes]).
 Future<void> bundleFamilyRuntime(
   BuildInput input,
   BuildOutputBuilder output, {
@@ -370,6 +372,11 @@ Future<void> bundleFamilyRuntime(
   final code = input.config.code;
   requireDynamicLinking(code);
   final target = buildTarget(code);
+  if (familyRuntimes[family]?[target] == null) {
+    if (wheelRuntimes[family]?[target] case final wheel?) {
+      return _bundleWheelRuntime(input, output, family, target, wheel);
+    }
+  }
   final runtime = requireFamilyRuntime(family, target);
   if (code.targetOS == OS.android &&
       code.android.targetNdkApi < familyRuntimeMinimumAndroidApi) {
@@ -409,26 +416,16 @@ Future<void> bundleFamilyRuntime(
   );
 }
 
-/// Bundles [family]'s library from Google's wheel ([wheelRuntimes]) for the
-/// hook's target under [familyRuntimeAssetName], in the calling family's
-/// package, as [bundleFamilyRuntime] bundles a per-family library. A target
-/// with neither gets nothing on Android and iOS, so the family's tasks report
-/// it unsupported instead of failing the app's build.
-Future<void> bundleWheelRuntime(
+/// Bundles [runtime], [family]'s library from Google's wheel, for [target]
+/// under [familyRuntimeAssetName], as [bundleFamilyRuntime] bundles a
+/// per-family library.
+Future<void> _bundleWheelRuntime(
   BuildInput input,
-  BuildOutputBuilder output, {
-  required String family,
-}) async {
-  final code = input.config.code;
-  requireDynamicLinking(code);
-  final runtimes = wheelRuntimes[family];
-  if (runtimes == null) throw ArgumentError.value(family, 'family');
-  final target = buildTarget(code);
-  final runtime = runtimes[target];
-  if (runtime == null) {
-    if (code.targetOS == OS.android || code.targetOS == OS.iOS) return;
-    throw UnsupportedError(_unsupportedTarget(family, target, runtimes.keys));
-  }
+  BuildOutputBuilder output,
+  String family,
+  String target,
+  WheelRuntime runtime,
+) async {
   final wheelName = Uri.parse(runtime.wheel.url).pathSegments.last;
   final cache = Directory.fromUri(
     input.outputDirectoryShared.resolve('${runtime.wheel.sha256}/'),

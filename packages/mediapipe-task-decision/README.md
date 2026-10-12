@@ -29,7 +29,7 @@ on such an adapter; there it answers as the desktop library does.
 
 Google's per-family decision library (its build of October 9, 2026) covers
 every target but Windows, so Windows alone bundles the library from
-Google's wheel (`wheelRuntimes` in mediapipe_core) until Google builds one;
+Google's 1.1.0 wheel until Google builds one;
 the bindings are the same, since both libraries export the same C API. The
 per-family library fails every evaluation with the text-only EmbeddingGemma
 2 model, which the wheel's library and Google's browser runtime run

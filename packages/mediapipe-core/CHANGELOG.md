@@ -11,7 +11,8 @@ Google's text package; [MIGRATION.md](MIGRATION.md) maps that API.
   each family (`bundleFamilyRuntime`), which the vision, text, audio,
   retrieval and decision hooks bundle on Android 9+, iOS, macOS arm64, Linux
   x64 and Windows x64, so an app ships only the families it uses; Decision
-  Maker's Windows library comes from Google's wheel (`bundleWheelRuntime`).
+  Maker's Windows library comes from Google's wheel, which
+  `bundleFamilyRuntime` picks on its own.
 - Shared types: `TaskOptions` (the base of every options class, with `model`,
   `modelPath`, `modelBytes` and `delegate`), one `Delegate`,
   `TaskCapabilities`, and the value types `MediaPipeCategory`,

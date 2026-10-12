@@ -2,6 +2,8 @@
 library;
 
 import 'package:mediapipe_core/native_assets.dart';
+import 'package:mediapipe_core/src/native_assets/family_runtimes.dart'
+    show wheelRuntimes;
 import 'package:mediapipe_decision/src/capabilities.dart'
     show decisionRuntimeTargets, embeddingGemma2TextTargets;
 import 'package:test/test.dart';
