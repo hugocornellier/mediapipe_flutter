@@ -1,6 +1,30 @@
 import '../delegate.dart';
 import '../exceptions.dart';
 
+/// A browser's engine, for a task whose browser runtime fails in one of them.
+enum BrowserEngine {
+  /// Safari, and every browser on iOS and iPadOS.
+  webkit,
+
+  /// Chrome, Edge, Opera and the other Chromium browsers.
+  blink,
+
+  /// Firefox outside iOS.
+  gecko;
+
+  /// The engine [userAgent] names; null when it names none of these. Every
+  /// browser on iOS and iPadOS runs WebKit, whatever its own name.
+  static BrowserEngine? fromUserAgent(String userAgent) {
+    if (RegExp(r'\b(iPhone|iPad|iPod)\b').hasMatch(userAgent)) return webkit;
+    final appleWebKit = userAgent.contains('AppleWebKit/');
+    if (!appleWebKit && userAgent.contains('Firefox/')) return gecko;
+    if (!appleWebKit) return null;
+    return RegExp(r'\b(Chrome|Chromium|HeadlessChrome)/').hasMatch(userAgent)
+        ? blink
+        : webkit;
+  }
+}
+
 /// The current process platform, including its ABI (not the host CPU's ABI).
 final class TaskPlatform {
   /// Construct a platform snapshot. A null OS version means it is unknown.
@@ -10,6 +34,7 @@ final class TaskPlatform {
     this.version,
     this.gpu,
     this.simulator = false,
+    this.browserEngine,
   });
 
   /// Dart operating system name, or `web` outside native platforms.
@@ -30,13 +55,18 @@ final class TaskPlatform {
   /// device. The target is still `ios/arm64`, but a GPU path can differ.
   final bool simulator;
 
+  /// The browser's engine on the web, read from its user agent; null on
+  /// native platforms and in a browser it does not recognize.
+  final BrowserEngine? browserEngine;
+
   /// `operatingSystem/architecture`, the key used by runtime target tables.
   String get target => '$operatingSystem/$architecture';
 
   @override
   String toString() =>
       'TaskPlatform($target${version == null ? '' : ' $version'}'
-      '${gpu == null ? '' : ', $gpu'}${simulator ? ', simulator' : ''})';
+      '${gpu == null ? '' : ', $gpu'}${simulator ? ', simulator' : ''}'
+      '${browserEngine == null ? '' : ', ${browserEngine!.name}'})';
 }
 
 /// Names this device's GPU for [TaskPlatform.gpu]. An adapter package that can

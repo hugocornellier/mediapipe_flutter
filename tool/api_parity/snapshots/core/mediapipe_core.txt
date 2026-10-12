@@ -9,6 +9,17 @@ final class BoundingBox
   int get top
   int get width
   new BoundingBox({required int left, required int top, required int right, required int bottom})
+enum BrowserEngine extends Enum
+  int get index
+  new BrowserEngine()
+  static BrowserEngine blink
+  static BrowserEngine gecko
+  static BrowserEngine webkit
+  static BrowserEngine? fromUserAgent(String userAgent)
+  static List<BrowserEngine> values
+  value BrowserEngine.blink
+  value BrowserEngine.gecko
+  value BrowserEngine.webkit
 final class CategoryMask
   String toString()
   Uint8List get categories
@@ -172,6 +183,7 @@ abstract base class TaskOptions
   Uint8List? get modelBytes
   new TaskOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, Delegate delegate = Delegate.cpu, required String family, required Map<String, DownloadAsset> registry})
 final class TaskPlatform
+  BrowserEngine? get browserEngine
   String get architecture
   String get operatingSystem
   String get target
@@ -179,4 +191,4 @@ final class TaskPlatform
   String? get gpu
   String? get version
   bool get simulator
-  new TaskPlatform({required String operatingSystem, required String architecture, String? version, String? gpu, bool simulator = false})
+  new TaskPlatform({required String operatingSystem, required String architecture, String? version, String? gpu, bool simulator = false, BrowserEngine? browserEngine})

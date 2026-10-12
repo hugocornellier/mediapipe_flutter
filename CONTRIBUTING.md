@@ -42,6 +42,22 @@ it bundles one model per family with `dart run mediapipe_core:bundle_models`
 and runs them offline. CI runs the
 rest (Android emulator, Linux, Windows and three browsers).
 
+One browser path CI does not reach: on GitHub's `macos-15` runners, which
+CI uses, WebKit has no WebGPU at all, so Decision Maker and the retrieval
+tasks never run in WebKit there (`macos-26` has it). After a change to either family or to Google's browser
+runtimes, and before a release, run the gallery journey in WebKit on a Mac
+with Apple silicon. Build the release gallery as `.github/workflows/web.yaml`
+does, start `python3 -B gallery/tool/web_server.py`, then run:
+
+```sh
+node gallery/tool/browser/test_gallery_journey.mjs --browser=webkit \
+  --tasks=decision_maker,universal_embedder,semantic_retriever
+```
+
+It expects Decision Maker to answer on Laya, and Hungry Fish and both
+retrieval tasks to be cards with their reason
+([UP-054](upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2)).
+
 ## Versions and the first release
 
 Nothing from this repository is on pub.dev yet. The first release will be

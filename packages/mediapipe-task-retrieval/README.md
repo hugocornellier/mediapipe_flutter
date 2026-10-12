@@ -25,7 +25,11 @@ browser Universal Embedder creates a WebGPU device for itself and has no CPU
 path
 ([UP-052](../../upstream-issues.md#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter)),
 so the capability queries offer browsers only the GPU, and only on a
-hardware WebGPU adapter; there both tasks answer as the native library does.
+hardware WebGPU adapter; there both tasks answer as the native library does,
+except in WebKit, the engine of Safari and of every browser on iOS, where
+Google's runtime returns zeros for every input with both models, so the
+queries offer neither task there
+([UP-054](../../upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2)).
 Two more differences the browser runtime imposes: images and audio go in as
 bytes and samples there, never as file paths, and the index stays in memory,
 so `databasePath` is for the native platforms. In browsers the package fetches

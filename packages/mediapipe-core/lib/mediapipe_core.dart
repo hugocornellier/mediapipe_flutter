@@ -6,7 +6,7 @@
 library;
 
 export 'src/capabilities/task_capabilities.dart'
-    show RuntimeTargets, TaskCapabilities, TaskPlatform;
+    show BrowserEngine, RuntimeTargets, TaskCapabilities, TaskPlatform;
 export 'src/delegate.dart';
 export 'src/download_asset.dart' show DownloadAsset, DownloadFailure;
 export 'src/exceptions.dart';

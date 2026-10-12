@@ -349,5 +349,44 @@ void main() {
         expect(refused.unavailableReasons[Delegate.gpu], contains('UP-052'));
       }
     });
+
+    test('WebKit gets neither task: Google\'s runtime embeds everything as '
+        'zeros there (UP-054)', () {
+      TaskPlatform web(
+        BrowserEngine? engine, [
+        String gpu = 'WebGPU apple apple',
+      ]) => TaskPlatform(
+        operatingSystem: 'web',
+        architecture: 'unknown',
+        gpu: gpu,
+        browserEngine: engine,
+      );
+      retrievalBackendFactory = (_) => throw UnimplementedError();
+      addTearDown(() => retrievalBackendFactory = null);
+      for (final query in [
+        universalEmbedderCapabilitiesForPlatform,
+        semanticRetrieverCapabilitiesForPlatform,
+      ]) {
+        final refused = query(web(BrowserEngine.webkit));
+        expect(refused.isSupported, isFalse);
+        for (final delegate in Delegate.values) {
+          expect(
+            refused.unavailableReasons[delegate],
+            contains('UP-054'),
+            reason: '$delegate',
+          );
+        }
+        for (final engine in [BrowserEngine.blink, BrowserEngine.gecko, null]) {
+          expect(query(web(engine)).supportedDelegates, {Delegate.gpu});
+        }
+        // Without a hardware adapter the reason stays UP-052.
+        expect(
+          query(
+            web(BrowserEngine.webkit, 'WebGPU apple apple (fallback adapter)'),
+          ).unavailableReasons[Delegate.gpu],
+          contains('UP-052'),
+        );
+      }
+    });
   });
 }

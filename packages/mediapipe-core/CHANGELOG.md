@@ -18,6 +18,9 @@ Google's text package; [MIGRATION.md](MIGRATION.md) maps that API.
   `Classifications`, `Embedding`, `Detection`, `BoundingBox`,
   `NormalizedKeypoint`, `NormalizedLandmark`, `Landmark`, `Matrix`,
   `ConfidenceMask` and `CategoryMask`.
+- `TaskPlatform.browserEngine` (`BrowserEngine.webkit`, `blink` or `gecko`,
+  read from the user agent in browsers), for a family whose browser runtime
+  fails in one engine.
 - Shared errors: `MediaPipeException`, with `RuntimeUnavailableException`
   (whose `fix` says what to change), `ModelDownloadException` and
   `TaskException`. `checkClassifierSettings` and `requireDelegate` give every

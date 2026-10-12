@@ -11,3 +11,5 @@ Not published yet.
   images, audio and mixed content with metadata and retrieves the nearest
   records, with the same results on every platform.
 - `RetrievalModels` pins Google's EmbeddingGemma 2 models.
+- Neither task is offered in WebKit, where Google's browser runtime returns
+  zeros for every input with both models (UP-054).

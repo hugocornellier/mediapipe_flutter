@@ -242,12 +242,18 @@ jobs:
     if: ${{ !inputs.jobs || inputs.jobs == 'all' || contains(inputs.jobs, 'web') }}
     # Google's browser Decision Maker answers only on a hardware WebGPU adapter
     # (UP-049): the Mac runner's Metal one runs the task, and hosted Linux,
-    # with only SwiftShader, checks that the gallery refuses it.
-    name: Decision gallery / web Chromium ${{ matrix.os }}
+    # with only SwiftShader, checks that the gallery refuses it. WebKit has
+    # WebGPU on macos-26 alone, where it runs Laya and shows Hungry Fish as a
+    # card, since Google's runtime embeds every input as zeros with
+    # EmbeddingGemma 2 there (UP-054).
+    name: Decision gallery / web ${{ matrix.engine }} ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15, ubuntu-24.04]
+        include:
+          - {os: macos-15, engine: Chromium, browser: chromium}
+          - {os: ubuntu-24.04, engine: Chromium, browser: chromium}
+          - {os: macos-26, engine: WebKit, browser: webkit}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
@@ -273,11 +279,11 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y ffmpeg xvfb libgl1-mesa-dri
           python3 -B gallery/tool/browser/prepare_camera.py
-      - name: Install Playwright's Chromium
+      - name: Install Playwright's ${{ matrix.engine }}
         working-directory: gallery/tool/browser
         run: |
           npm ci
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps ${{ matrix.browser }}
       - name: Analyze the Decision package's browser code
         working-directory: packages/mediapipe-task-decision
         run: |
@@ -298,18 +304,19 @@ jobs:
       # Only the Decision tiles: Face Detector is in the build because the vision
       # hook needs a task, and web.yaml covers it (and its video-file stall on
       # hosted macOS).
-      - name: The journey through the Decision pages in Chromium
+      - name: The journey through the Decision pages in ${{ matrix.engine }}
         id: web_journey
         env:
           LIBGL_ALWAYS_SOFTWARE: ${{ runner.os == 'Linux' && '1' || '' }}
-        run: node gallery/tool/browser/test_gallery_journey.mjs --tasks=decision_maker
-      # The Mac runner's Metal adapter runs the task and records the web GPU
-      # row; hosted Linux checks the refusal (UP-049).
+        run: node gallery/tool/browser/test_gallery_journey.mjs --browser=${{ matrix.browser }} --tasks=decision_maker
+      # Chromium on the Mac runner's Metal adapter runs the task and records
+      # the web GPU row; hosted Linux checks the refusal (UP-049). The matrix
+      # has no row per browser engine, so WebKit records none.
       - name: Record web GPU Decision Maker coverage
-        if: always() && runner.os == 'macOS'
+        if: always() && runner.os == 'macOS' && matrix.browser == 'chromium'
         run: python3 -B tool/coverage/record.py --suite web-decision-chromium-${{ matrix.os }} --platform web --delegate gpu --tasks decision_maker --outcome ${{ steps.web_journey.outcome }}
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && matrix.browser == 'chromium'
         with:
           name: coverage-decision-web-${{ matrix.os }}
           path: build/coverage/
@@ -317,4 +324,4 @@ jobs:
         if: always()
         with:
           name: decision-web-journey-${{ matrix.os }}
-          path: build/codex-tmp/gallery-journey-chromium/
+          path: build/codex-tmp/gallery-journey-${{ matrix.browser }}/

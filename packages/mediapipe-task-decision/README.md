@@ -39,6 +39,18 @@ refuses one the runtime here cannot before downloading it, and
 `DecisionModels.embeddingGemma2TextVision` answers the same on every
 runtime.
 
+Google's browser runtime fails with some models too. In WebKit, the engine
+of Safari and of every browser on iOS, it embeds every text as zeros with
+both EmbeddingGemma 2 models, so every option scores the same
+([UP-054](../../upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2));
+in every browser it aborts while it creates the task with either
+GLiNER2.5-Decide model
+([UP-055](../../upstream-issues.md#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide)).
+`queryDecisionMakerCapabilities(model)` reports both, and Laya runs in every
+browser with a hardware WebGPU adapter. The browser runtime also ignores
+`normalizePrior` and `scoringMode`
+([UP-056](../../upstream-issues.md#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode)).
+
 ## Quick start
 
 ```dart
@@ -81,8 +93,9 @@ Future<void> decide() async {
 `DecisionModels` pins Google's decision models: Laya and GLiNER2.5-Decide
 (`layaS256`, `layaS512`, `glinerS256`, `glinerS512`: 678 MB to 1.08 GB),
 and EmbeddingGemma 2, which answers as fast at a fraction of the download:
-`embeddingGemma2Text` (165 MB) on Windows and in browsers, and
-`embeddingGemma2TextVision` (388 MB) everywhere (UP-053 above). They are
+`embeddingGemma2Text` (165 MB) on Windows and in browsers other than
+WebKit, and `embeddingGemma2TextVision` (388 MB) everywhere but WebKit
+(UP-053 and UP-054 above). They are
 large, so an app usually downloads one on first use rather than bundling
 it: set
 `ModelStore.allowDownloads = true` before `create`, or pass `modelPath`.

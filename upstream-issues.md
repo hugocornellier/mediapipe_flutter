@@ -1,6 +1,6 @@
 # Upstream issues and runtime compatibility findings
 
-Last updated: 2026-10-09. These are local observations unless explicitly marked
+Last updated: 2026-10-12. These are local observations unless explicitly marked
 as an external report; each entry says whether it was reported upstream. An
 exported symbol alone does not establish a working task or platform.
 
@@ -63,6 +63,9 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-051](#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again) | The browser Universal Embedder reads modelAssetPath as a file, and a second Wasm object needs the loader again | Found on 1.1.0 |
 | [UP-052](#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter) | The browser Universal Embedder runs only on a hardware WebGPU adapter | Found on 1.1.0 |
 | [UP-053](#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model) | The per-family decision library fails every evaluation with the text-only EmbeddingGemma 2 model | Found on 1.1.0 |
+| [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0 |
+| [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0 |
+| [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -889,6 +892,78 @@ text-only model has the `tf_lite_text_encoder` and `tf_lite_embedder`
 signatures; the 440M one adds `tf_lite_vision_encoder` and
 `tf_lite_vision_adapter`. Universal Embedder refuses the same model at
 creation (UP-050).
+
+### UP-054: In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2
+
+**Status:** observed October 12, 2026 with `@mediapipe/tasks-decision` and
+`@mediapipe/tasks-retrieval` 1.1.0 in Playwright's WebKit 26.6 on macOS 27,
+Apple M4 Max, on its hardware WebGPU adapter (vendor `apple`, architecture
+`apple`), and again on GitHub's `macos-26` runner (macOS 26.6.2, a virtual
+Apple M1) with the runtime from jsDelivr (CI run 38291903608). Playwright's
+Chromium 153 on the same Mac and GPU answers correctly. Safari itself was
+not tried. Worked around: the decision and
+retrieval capability queries read the browser's engine
+(`TaskPlatform.browserEngine`, from the user agent) and report both
+EmbeddingGemma 2 Decision Maker models and both retrieval tasks unsupported
+in WebKit; the gallery shows Hungry Fish, Universal Embedder and Semantic
+Retriever as cards there, and Decision Maker runs Laya. Not yet reported to
+Google.
+
+Google's own JavaScript, run in the page with no package code, shows it.
+`UniversalEmbedder.embedText` returns a 768-value vector of zeros (norm 0)
+for every text with both pinned retrieval models
+(`embeddinggemma-2-text-vision-440m.litertlm`, 388 MB, and
+`embeddinggemma-2-740m.litertlm`, 485 MB); in Chromium the same calls return
+unit vectors (norm 0.9999997 for "A dog chases a ball across the park.").
+Decision Maker with either EmbeddingGemma 2 model
+(`embeddinggemma-2-text-270m.litertlm`, 165 MB, and the 388 MB one) scores
+every option of every question 0.333 of 3 in WebKit, so the first option
+wins every tie: Hungry Fish chased every predator. Chromium answers the
+game's three sentences right with clear margins (flee 0.860 for "Predator
+nearby: a pufferfish, bigger than you."). Laya (`laya_s256.task`) gives the
+same probabilities in both browsers, so the WebGPU device itself works; the
+fault is on the EmbeddingGemma 2 path. Semantic Retriever then finds no
+document at a minimum similarity of 0, and Universal Embedder's cosine
+similarity is NaN.
+
+The two adapters differ in `subgroup-size-control` (Chromium only),
+`float16-renderable` and `float32-renderable` (WebKit only), and
+`maxBufferSize` and `maxStorageBufferBindingSize` (2 GB in WebKit, 4 GB in
+Chromium). Both offer `shader-f16` and `subgroups`.
+
+On GitHub's `macos-15` runners, which CI uses, WebKit has no
+`navigator.gpu` at all, so CI never reaches this path; on `macos-26` WebKit
+gets the Apple adapter and reproduces it.
+`gallery/tool/browser/test_gallery_journey.mjs --browser=webkit` on a Mac
+with Apple silicon, or on `macos-26`, reaches it and expects the cards.
+
+### UP-055: The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide
+
+**Status:** observed October 12, 2026 with `@mediapipe/tasks-decision` 1.1.0
+in Playwright's Chromium 153 and WebKit 26.6 on macOS 27, Apple M4 Max, on
+the GPU delegate. Worked around: `queryDecisionMakerCapabilities(model)`
+reports both GLiNER2.5-Decide models unsupported in browsers, and the
+gallery's Decision Maker page offers neither there. Not yet reported to
+Google.
+
+`DecisionMaker.createFromOptions` with `gliner_s256.task` or
+`gliner_s512.task` rejects with `RuntimeError: Aborted(). Build with
+-sASSERTIONS for more info.`, with or without `maxNumTokens` (256 or 4096).
+Laya and EmbeddingGemma 2 load from the same page.
+
+### UP-056: The browser Decision Maker ignores normalizePrior and scoringMode
+
+**Status:** read from `decision_bundle.mjs` of `@mediapipe/tasks-decision`
+1.1.0 on October 12, 2026, and confirmed by results that do not change with
+either. Documented on the options; not worked around. Not yet reported to
+Google.
+
+`evaluateBoolean` passes the condition, threshold and temperature to the
+Wasm engine, and `evaluateChoice` the criteria, instructions, context and
+temperature; neither passes `normalizePrior`, and `evaluateChoice` does not
+pass `scoringMode`. Google's C API takes both. In browsers, Laya therefore
+reads "No fish nearby." as flee (0.478, explore 0.324) on the question that
+Google's 1.1.0 wheel, with the prior normalized, answers explore.
 
 ## History
 

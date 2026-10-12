@@ -48,7 +48,10 @@ class _FishGamePageState extends State<FishGamePage>
 
   late final String _id = widget.task.id;
   late final TaskSettingValues _values = TaskSettingValues(_id);
-  late final List<TaskModel> _models = taskModels[_id] ?? const [];
+  late final List<TaskModel> _models = [
+    for (final model in taskModels[_id] ?? const <TaskModel>[])
+      if (decisionRunsModel(widget.platform, model)) model,
+  ];
   late final List<Delegate> _delegates = widget.task
       .capabilities(widget.platform)
       .supportedDelegates
@@ -56,17 +59,14 @@ class _FishGamePageState extends State<FishGamePage>
   late final Delegate _delegate = preferredDelegate(_delegates);
 
   /// The standard model: the catalog's text-only EmbeddingGemma 2 (165 MB)
-  /// where Google's runtime accepts it, Windows and browsers, and the text
-  /// and vision one (388 MB) on Google's per-family library, which fails
-  /// every evaluation with the text-only model (upstream-issues.md UP-053).
-  /// The two share a text encoder and steer the fish the same.
+  /// where Google's runtime accepts it, Windows and browsers other than
+  /// WebKit, and the text and vision one (388 MB) on Google's per-family
+  /// library, which fails every evaluation with the text-only model
+  /// (upstream-issues.md UP-053). The two share a text encoder and steer the
+  /// fish the same. WebKit runs neither (UP-054), so there the page is a card.
   late final DownloadAsset _standard =
-      decisionMakerCapabilitiesForPlatform(
-        widget.platform,
-        model: widget.task.model,
-      ).isSupported
-      ? widget.task.model
-      : DecisionModels.embeddingGemma2TextVision;
+      fishGameModel(widget.platform) ??
+      DecisionModels.embeddingGemma2TextVision;
   late final bool _textOnly = _standard.sha256 == widget.task.model.sha256;
   late final Ticker _ticker = createTicker(_frame);
   late final _game = FishGame(decide: _decide);

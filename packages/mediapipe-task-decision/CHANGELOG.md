@@ -12,4 +12,8 @@ Not published yet.
 - `DecisionModels` pins Google's Laya, GLiNER2.5-Decide and EmbeddingGemma 2
   models; `queryDecisionMakerCapabilities(model)` says where a model runs,
   since Google's per-family library fails every evaluation with the
-  text-only EmbeddingGemma 2 (UP-053).
+  text-only EmbeddingGemma 2 (UP-053), and its browser runtime embeds every
+  text as zeros with either EmbeddingGemma 2 model in WebKit (UP-054) and
+  aborts with GLiNER2.5-Decide in every browser (UP-055).
+- In browsers Google's runtime ignores `normalizePrior` and `scoringMode`
+  (UP-056), as the questions' documentation says.

@@ -54,30 +54,42 @@ String _noWebGpu(TaskPlatform platform) =>
     'one (upstream-issues.md UP-052). This browser has '
     '${platform.gpu ?? 'no WebGPU adapter'}.';
 
+/// Why both tasks are unavailable in WebKit (UP-054).
+const embeddingGemma2WebKitUnavailable =
+    "In WebKit, the engine of Safari and of every browser on iOS, Google's "
+    'browser Universal Embedder (@mediapipe/tasks-retrieval 1.1.0) returns '
+    'zeros for every input with both EmbeddingGemma 2 models, so no document '
+    'matches any query (upstream-issues.md UP-054). Use a Chromium browser.';
+
 /// Both tasks' support on [platform]: the CPU on Google's retrieval library
 /// natively, and the GPU in browsers once the plugin registers, on a hardware
-/// WebGPU adapter only, since Google's browser runtime has no CPU path.
+/// WebGPU adapter only, since Google's browser runtime has no CPU path, and
+/// not in WebKit, where it embeds everything as zeros (UP-054).
 TaskCapabilities _capabilities(TaskPlatform platform) {
   final web = platform.operatingSystem == 'web';
+  final browserRuns =
+      retrievalBackendFactory != null && _hardwareWebGpu(platform);
+  final webKit = platform.browserEngine == BrowserEngine.webkit;
   return TaskCapabilities.onTargets(
     platform: platform,
     delegates: {
       Delegate.cpu: retrievalRuntimeTargets,
-      Delegate.gpu: {
-        if (retrievalBackendFactory != null && _hardwareWebGpu(platform))
-          'web/unknown': null,
-      },
+      Delegate.gpu: {if (browserRuns && !webKit) 'web/unknown': null},
     },
     unavailableReasons: {
       // Without a hardware adapter both delegates end on Google's WebGPU check.
       Delegate.cpu: !web
           ? _desktopGpu
+          : browserRuns && webKit
+          ? embeddingGemma2WebKitUnavailable
           : _hardwareWebGpu(platform)
           ? _browserCpu
           : _noWebGpu(platform),
       Delegate.gpu: web
           ? retrievalBackendFactory == null
                 ? _noPlugin
+                : browserRuns && webKit
+                ? embeddingGemma2WebKitUnavailable
                 : _noWebGpu(platform)
           : _desktopGpu,
     },

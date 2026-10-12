@@ -54,7 +54,12 @@ class _DecisionPageState extends State<DecisionPage> {
   late final String _id = widget.task.runtimeId;
   late final TaskSettingValues _values = TaskSettingValues(_id);
   late final List<TaskSetting> _settings = taskSettings[_id] ?? const [];
-  late final List<TaskModel> _models = taskModels[_id] ?? const [];
+  // Only the alternatives the package accepts here: browsers run neither
+  // GLiNER2.5-Decide model (UP-055).
+  late final List<TaskModel> _models = [
+    for (final model in taskModels[_id] ?? const <TaskModel>[])
+      if (decisionRunsModel(widget.platform, model)) model,
+  ];
   late final List<Delegate> _delegates = widget.task
       .capabilities(widget.platform)
       .supportedDelegates

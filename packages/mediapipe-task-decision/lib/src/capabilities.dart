@@ -36,6 +36,37 @@ const textOnlyEmbeddingGemmaUnavailable =
     'vision encoder the task never runs, which answers the same on every '
     'runtime, or Laya.';
 
+/// Why the EmbeddingGemma 2 models are unavailable in WebKit (UP-054).
+const embeddingGemma2WebKitUnavailable =
+    "In WebKit, the engine of Safari and of every browser on iOS, Google's "
+    'browser Decision Maker (@mediapipe/tasks-decision 1.1.0) embeds every '
+    'text as zeros with the EmbeddingGemma 2 models, so every option scores '
+    'the same (upstream-issues.md UP-054). Use DecisionModels.layaS256, or a '
+    'Chromium browser.';
+
+/// Why GLiNER2.5-Decide is unavailable in browsers (UP-055).
+const glinerBrowserUnavailable =
+    "Google's browser Decision Maker (@mediapipe/tasks-decision 1.1.0) aborts "
+    'while it creates the task with either GLiNER2.5-Decide model '
+    '(upstream-issues.md UP-055). Use DecisionModels.layaS256 in browsers.';
+
+/// Why Google's browser runtime cannot run [model] in the browser [platform]
+/// names, or null when it can.
+String? _browserRefusal(TaskPlatform platform, DownloadAsset? model) {
+  final sha256 = model?.sha256;
+  if (platform.operatingSystem != 'web' || sha256 == null) return null;
+  if (platform.browserEngine == BrowserEngine.webkit &&
+      (sha256 == DecisionModels.embeddingGemma2Text.sha256 ||
+          sha256 == DecisionModels.embeddingGemma2TextVision.sha256)) {
+    return embeddingGemma2WebKitUnavailable;
+  }
+  if (sha256 == DecisionModels.glinerS256.sha256 ||
+      sha256 == DecisionModels.glinerS512.sha256) {
+    return glinerBrowserUnavailable;
+  }
+  return null;
+}
+
 const _noLibrary =
     "Google's Decision Maker library covers Android arm64 and x86_64, iOS, "
     'macOS arm64, Linux x64 and Windows x64, and browsers run its JavaScript '
@@ -81,7 +112,9 @@ String _noWebGpu(TaskPlatform platform) =>
 /// Query Decision Maker support on this platform without loading a model.
 /// Pass [model] to learn where that model runs: the text-only EmbeddingGemma
 /// 2 (`DecisionModels.embeddingGemma2Text`) only on Windows and in browsers
-/// (UP-053); every other pinned model wherever the task runs.
+/// (UP-053), neither EmbeddingGemma 2 model in WebKit (UP-054), GLiNER2.5-
+/// Decide nowhere in browsers (UP-055), and every other pinned model wherever
+/// the task runs.
 Future<TaskCapabilities> queryDecisionMakerCapabilities([
   DownloadAsset? model,
 ]) async => decisionMakerCapabilitiesForPlatform(
@@ -93,7 +126,9 @@ Future<TaskCapabilities> queryDecisionMakerCapabilities([
 /// libraries, and the GPU in browsers once the plugin registers, since
 /// Google's browser runtime fails on the CPU (UP-049). With [model], the
 /// support for that model: Google's per-family library fails every
-/// evaluation with the text-only EmbeddingGemma 2 (UP-053).
+/// evaluation with the text-only EmbeddingGemma 2 (UP-053), and its browser
+/// runtime fails with EmbeddingGemma 2 in WebKit (UP-054) and with GLiNER2.5-
+/// Decide in every browser (UP-055).
 TaskCapabilities decisionMakerCapabilitiesForPlatform(
   TaskPlatform platform, {
   DownloadAsset? model,
@@ -106,6 +141,10 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
       textOnlyGemma &&
       decisionRuntimeTargets.containsKey(platform.target) &&
       !embeddingGemma2TextTargets.containsKey(platform.target);
+  final browserRuns =
+      decisionBackendFactory != null && _hardwareWebGpu(platform);
+  // Where the GPU path would run, the browser's own refusal of this model.
+  final browserRefusal = browserRuns ? _browserRefusal(platform, model) : null;
   return TaskCapabilities.onTargets(
     platform: platform,
     delegates: {
@@ -113,8 +152,7 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
           ? embeddingGemma2TextTargets
           : decisionRuntimeTargets,
       Delegate.gpu: {
-        if (decisionBackendFactory != null && _hardwareWebGpu(platform))
-          'web/unknown': null,
+        if (browserRuns && browserRefusal == null) 'web/unknown': null,
       },
     },
     unavailableReasons: {
@@ -123,13 +161,12 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
           ? libraryRefusesModel
                 ? textOnlyEmbeddingGemmaUnavailable
                 : _noLibrary
-          : _hardwareWebGpu(platform)
-          ? _browserCpu
-          : _noWebGpu(platform),
+          : browserRefusal ??
+                (_hardwareWebGpu(platform) ? _browserCpu : _noWebGpu(platform)),
       Delegate.gpu: web
           ? decisionBackendFactory == null
                 ? _noPlugin
-                : _noWebGpu(platform)
+                : browserRefusal ?? _noWebGpu(platform)
           : libraryRefusesModel
           ? textOnlyEmbeddingGemmaUnavailable
           : decisionRuntimeTargets.containsKey(platform.target)

@@ -36,7 +36,8 @@ const cases = {
   // about shipping, and unhappy (1.28 of 0 to 4).
   decision_maker: {title: 'Decision Maker', decision: [
     ['Yes / No', /^Yes$/],
-    ['Choice', /^shipping$/],
+    // Its expected option is the first one, which a tie also picks.
+    ['Choice', /^shipping$/, ['shipping', 'billing', 'account', 'other']],
     ['Score', /^1\.(2[3-9]|3[0-3])$/],
   ]},
   // Universal Embedder compares a sentence about a dog with the dog photo,
@@ -138,6 +139,18 @@ try {
   // frame rate above zero once frames arrive on that delegate.
   const liveFrames = delegate =>
     page.getByText(new RegExp(`^(?!0\\.0 fps)\\d+\\.\\d fps · \\d+ ms · ${delegate.toUpperCase()}$`));
+  // A runtime that embeds every input as zeros scores every option the same,
+  // and a tie reads as the first option (UP-054), so options whose score
+  // rows ("shipping 0.87") all read the same fail here.
+  const assertScoresDiffer = async (names, what) => {
+    const scores = [];
+    for (const name of names) {
+      const row = (await page.getByText(new RegExp(`^${name} \\d\\.\\d{2}$`)).first().textContent()) ?? '';
+      scores.push(row.slice(name.length + 1));
+    }
+    assert.ok(new Set(scores).size > 1,
+      `${what}: every option scored ${scores[0]}, as when Google's runtime embeds every input as zeros (UP-054)`);
+  };
   // A still image's status line names the delegate that produced it.
   const stillRan = delegate =>
     page.getByText(new RegExp(`Inference \\d+\\.\\d ms · ${delegate.toUpperCase()}$`));
@@ -154,7 +167,13 @@ try {
     return !!adapter && !adapter.isFallbackAdapter &&
       !/fallback|swiftshader|llvmpipe|software|lavapipe/i.test(`${info.vendor} ${info.architecture} ${info.description}`);
   });
-  const refused = new Set(hardwareWebGpu ? [] : ['decision_maker', 'universal_embedder', 'semantic_retriever']);
+  // On a hardware adapter WebKit still runs no EmbeddingGemma 2 model, as
+  // Google's runtime embeds every input there as zeros (UP-054): the
+  // retrieval tasks and Hungry Fish are cards, and Decision Maker runs Laya.
+  const webKitZeros = browserName === 'webkit' && hardwareWebGpu;
+  const refused = new Set(!hardwareWebGpu ? ['decision_maker', 'universal_embedder', 'semantic_retriever']
+    : webKitZeros ? ['universal_embedder', 'semantic_retriever'] : []);
+  const refusedReason = webKitZeros ? /UP-054/ : /UP-049|UP-052/;
   // --tasks=a,b visits only those of the bundled tasks.
   const only = args.tasks ? new Set(args.tasks.split(',')) : null;
   for (const id of refused) if (only && !only.has(id)) refused.delete(id);
@@ -165,7 +184,7 @@ try {
     if (!manifest.tasks.includes(id)) continue;
     // The home page's card gives the capability query's reason.
     enter(`${id}:refused`);
-    await page.getByText(/UP-049|UP-052/).first().waitFor({timeout: 120000});
+    await page.getByText(refusedReason).first().waitFor({timeout: 120000});
     report.checks.push(`${id}:refused`);
   }
 
@@ -262,8 +281,10 @@ try {
         return parseFloat(text.replace(/^Cosine similarity\s*/, ''));
       };
       await page.getByRole('button', {name: 'Compare', exact: true}).click();
-      await similarity.filter({hasText: /-?\d\.\d{4}/}).or(error).first().waitFor({timeout: 600000});
+      const undefinedSimilarity = similarity.filter({hasText: /NaN/});
+      await similarity.filter({hasText: /-?\d\.\d{4}/}).or(error).or(undefinedSimilarity).first().waitFor({timeout: 600000});
       assert.equal(await error.count(), 0, `${id}: ${await page.locator('flt-semantics').allInnerTexts()}`);
+      assert.equal(await undefinedSimilarity.count(), 0, `${id}: the similarity is NaN, as when Google's runtime embeds every input as zeros (UP-054)`);
       const dog = await value();
       enter(`${id}:elephant`);
       await page.locator('[flt-semantics-identifier="universal-2-samples"]')
@@ -284,15 +305,18 @@ try {
       enter(`${id}:search`);
       const top = page.locator('[flt-semantics-identifier="retrieval-top"]');
       const error = page.getByText('Error', {exact: true});
+      // Zero vectors match no document, even at a minimum similarity of 0.
+      const none = page.getByText(/^0 of \d+ documents$/);
       await page.getByRole('button', {name: 'Search', exact: true}).click();
-      await top.or(error).first().waitFor({timeout: 600000});
+      await top.or(error).or(none).first().waitFor({timeout: 600000});
       assert.equal(await error.count(), 0, `${id}: ${await page.locator('flt-semantics').allInnerTexts()}`);
+      assert.equal(await none.count(), 0, `${id}: no document matched, as when Google's runtime embeds every input as zeros (UP-054)`);
       assert.match((await top.textContent()) ?? '', spec.retrieve, `${id}: best match`);
       report.checks.push(`${id}:cpu:search`);
       await page.screenshot({path: path.join(evidence, `${id}.png`)});
     } else if (spec.decision) {
       const error = page.getByText('Error', {exact: true});
-      for (const [kind, answer] of spec.decision) {
+      for (const [kind, answer, rows] of spec.decision) {
         enter(`${id}:${kind}`);
         await page.getByRole('button', {name: kind, exact: true}).click();
         await page.getByRole('button', {name: 'Ask', exact: true}).click();
@@ -300,30 +324,41 @@ try {
         await page.getByText(answer).first().or(error).first().waitFor({timeout: 600000});
         assert.equal(await error.count(), 0,
           `${id} ${kind}: ${await page.locator('flt-semantics').allInnerTexts()}`);
+        if (rows) await assertScoresDiffer(rows, `${id} ${kind}`);
         report.checks.push(`${id}:gpu:${kind}`);
       }
       await page.screenshot({path: path.join(evidence, `${id}.png`)});
-      // Hungry Fish, the same runtime playing a game: Google's wording gets
-      // every sentence the game writes right, so each decision matches.
-      enter(`${id}:game`);
-      await sidebarItem('Hungry Fish').click();
-      await openedPage('Hungry Fish').waitFor();
-      await page.getByRole('button', {name: 'Play', exact: true}).click();
-      const score = page.getByText(/^\d+ decisions · \d+ matched the scene$/);
-      const deadline = Date.now() + 600000;
-      let decisions = 0;
-      let matched = 0;
-      while (decisions < 5) {
-        assert.equal(await error.count(), 0,
-          `${id} game: ${await page.locator('flt-semantics').allInnerTexts()}`);
-        assert.ok(Date.now() < deadline, `${id} game: five decisions`);
-        [decisions, matched] = ((await score.textContent()) ?? '').match(/\d+/g)?.map(Number) ?? [0, 0];
-        await page.waitForTimeout(250);
+      if (webKitZeros) {
+        // Hungry Fish plays on EmbeddingGemma 2, so in WebKit it is a card.
+        enter(`${id}:game-refused`);
+        assert.equal(await sidebarItem('Hungry Fish').count(), 0, `${id}: Hungry Fish is a tile in WebKit`);
+        await sidebarItem('Home').click();
+        await page.getByText(/UP-054/).first().waitFor({timeout: 120000});
+        report.checks.push(`${id}:game-refused`);
+      } else {
+        // Hungry Fish, the same runtime playing a game: Google's wording gets
+        // every sentence the game writes right, so each decision matches.
+        enter(`${id}:game`);
+        await sidebarItem('Hungry Fish').click();
+        await openedPage('Hungry Fish').waitFor();
+        await page.getByRole('button', {name: 'Play', exact: true}).click();
+        const score = page.getByText(/^\d+ decisions · \d+ matched the scene$/);
+        const deadline = Date.now() + 600000;
+        let decisions = 0;
+        let matched = 0;
+        while (decisions < 5) {
+          assert.equal(await error.count(), 0,
+            `${id} game: ${await page.locator('flt-semantics').allInnerTexts()}`);
+          assert.ok(Date.now() < deadline, `${id} game: five decisions`);
+          [decisions, matched] = ((await score.textContent()) ?? '').match(/\d+/g)?.map(Number) ?? [0, 0];
+          await page.waitForTimeout(250);
+        }
+        await assertScoresDiffer(['chase', 'flee', 'explore'], `${id} game`);
+        assert.equal(matched, decisions, `${id} game: every decision matches the scene`);
+        await page.getByRole('button', {name: 'Pause', exact: true}).click();
+        await page.screenshot({path: path.join(evidence, `${id}-game.png`)});
+        report.checks.push(`${id}:gpu:game`);
       }
-      assert.equal(matched, decisions, `${id} game: every decision matches the scene`);
-      await page.getByRole('button', {name: 'Pause', exact: true}).click();
-      await page.screenshot({path: path.join(evidence, `${id}-game.png`)});
-      report.checks.push(`${id}:gpu:game`);
     } else if (spec.audio) {
       enter(`${id}:run`);
       // The first window of the speech clip is heard as speech.
