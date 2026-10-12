@@ -253,7 +253,9 @@ Removing any of this after 0.1.0 is a breaking change.
   move them to a separate core library only Decision's hook imports (still
   public), withdraw Decision on Windows (a product decision), or publish them
   as they are and break later.
-- **Vision results repeat their metadata.** All ten result classes in
+- **Vision results repeat their metadata.** **Done on
+  `chore/oct12-combined`:** `VisionResult`, with the EXIF wording. As found:
+  All ten result classes in
   `vision/lib/src/types/results.dart` (`:15`, `:45`, `:76`, `:118`, `:158`,
   `:207`, `:249`, `:322`, `:352`, `:382`) declare `imageWidth`, `imageHeight`
   and `timestampMilliseconds`. One exported `abstract base class

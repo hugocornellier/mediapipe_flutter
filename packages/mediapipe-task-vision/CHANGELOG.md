@@ -13,7 +13,9 @@ Not published yet. The first release.
   (`detect`, `recognize`, `classify`, `embed` and `segment`, and their
   `ForVideo` forms), and results use core's shared types (`Detection`,
   `BoundingBox`, `MediaPipeCategory`, `NormalizedLandmark` and `Landmark`,
-  `Matrix`, `Classifications`, `Embedding`, `ConfidenceMask`).
+  `Matrix`, `Classifications`, `Embedding`, `ConfidenceMask`). Every
+  result extends `VisionResult`, with the input's size and the frame's
+  timestamp.
 - Image, video and live stream running modes on every platform, the web
   included. In live stream mode every camera-capable task has `detectAsync`
   (`recognizeAsync`, `classifyAsync`, `embedAsync`, `segmentAsync`), a

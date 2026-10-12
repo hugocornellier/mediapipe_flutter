@@ -41,7 +41,7 @@ final class FaceDetectorOptions extends VisionTaskOptions
   double get minDetectionConfidence
   double get minSuppressionThreshold
   new FaceDetectorOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, double minDetectionConfidence = 0.5, double minSuppressionThreshold = 0.3})
-final class FaceDetectorResult
+final class FaceDetectorResult extends VisionResult
   List<Detection> get detections
   String toString()
   int get imageHeight
@@ -71,7 +71,7 @@ final class FaceLandmarkerOptions extends VisionTaskOptions
   double get minTrackingConfidence
   int get numFaces
   new FaceLandmarkerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, int numFaces = 1, double minFaceDetectionConfidence = 0.5, double minFacePresenceConfidence = 0.5, double minTrackingConfidence = 0.5, bool outputFaceBlendshapes = false, bool outputFacialTransformationMatrixes = false})
-final class FaceLandmarkerResult
+final class FaceLandmarkerResult extends VisionResult
   List<List<MediaPipeCategory>> get faceBlendshapes
   List<List<NormalizedLandmark>> get faceLandmarks
   List<Matrix> get facialTransformationMatrixes
@@ -109,7 +109,7 @@ final class GestureRecognizerOptions extends HandTrackingOptions
   double get minTrackingConfidence
   int get numHands
   new GestureRecognizerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, int numHands = 1, double minHandDetectionConfidence = 0.5, double minHandPresenceConfidence = 0.5, double minTrackingConfidence = 0.5, ClassifierOptions? cannedGesturesClassifierOptions, ClassifierOptions? customGesturesClassifierOptions})
-final class GestureRecognizerResult
+final class GestureRecognizerResult extends VisionResult
   List<List<Landmark>> get handWorldLandmarks
   List<List<MediaPipeCategory>> get gestures
   List<List<MediaPipeCategory>> get handedness
@@ -140,7 +140,7 @@ final class HandLandmarkerOptions extends HandTrackingOptions
   double get minTrackingConfidence
   int get numHands
   new HandLandmarkerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, int numHands = 1, double minHandDetectionConfidence = 0.5, double minHandPresenceConfidence = 0.5, double minTrackingConfidence = 0.5})
-final class HandLandmarkerResult
+final class HandLandmarkerResult extends VisionResult
   List<List<Landmark>> get handWorldLandmarks
   List<List<MediaPipeCategory>> get handedness
   List<List<NormalizedLandmark>> get handLandmarks
@@ -195,7 +195,7 @@ final class HolisticLandmarkerOptions extends VisionTaskOptions
   double get minPosePresenceConfidence
   double get minPoseSuppressionThreshold
   new HolisticLandmarkerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, double minFaceDetectionConfidence = 0.5, double minFaceSuppressionThreshold = 0.5, double minFacePresenceConfidence = 0.5, double minHandLandmarksConfidence = 0.5, double minPoseDetectionConfidence = 0.5, double minPoseSuppressionThreshold = 0.5, double minPosePresenceConfidence = 0.5, bool outputFaceBlendshapes = false, bool outputPoseSegmentationMask = false})
-final class HolisticLandmarkerResult
+final class HolisticLandmarkerResult extends VisionResult
   ConfidenceMask? get poseSegmentationMask
   List<Landmark> get leftHandWorldLandmarks
   List<Landmark> get poseWorldLandmarks
@@ -232,7 +232,7 @@ final class ImageClassifierOptions extends VisionTaskOptions implements Classifi
   double get scoreThreshold
   int get maxResults
   new ImageClassifierOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, String? displayNamesLocale, int maxResults = -1, double scoreThreshold = 0, List<String>? categoryAllowlist, List<String>? categoryDenylist})
-final class ImageClassifierResult
+final class ImageClassifierResult extends VisionResult
   List<Classifications> get classifications
   String toString()
   int get imageHeight
@@ -259,7 +259,7 @@ final class ImageEmbedderOptions extends VisionTaskOptions
   bool get l2Normalize
   bool get quantize
   new ImageEmbedderOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, bool l2Normalize = false, bool quantize = false})
-final class ImageEmbedderResult
+final class ImageEmbedderResult extends VisionResult
   List<Embedding> get embeddings
   String toString()
   int get imageHeight
@@ -286,7 +286,7 @@ final class ImageSegmenterOptions extends VisionTaskOptions
   bool get outputCategoryMask
   bool get outputConfidenceMasks
   new ImageSegmenterOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, bool outputConfidenceMasks = true, bool outputCategoryMask = false, String? displayNamesLocale})
-final class ImageSegmenterResult
+final class ImageSegmenterResult extends VisionResult
   CategoryMask? get categoryMask
   Float32List? get qualityScores
   List<ConfidenceMask>? get confidenceMasks
@@ -332,7 +332,7 @@ final class ObjectDetectorOptions extends VisionTaskOptions implements Classifie
   double get scoreThreshold
   int get maxResults
   new ObjectDetectorOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, String? displayNamesLocale, int maxResults = -1, double scoreThreshold = 0, List<String>? categoryAllowlist, List<String>? categoryDenylist})
-final class ObjectDetectorResult
+final class ObjectDetectorResult extends VisionResult
   List<Detection> get detections
   String toString()
   int get imageHeight
@@ -361,7 +361,7 @@ final class PoseLandmarkerOptions extends VisionTaskOptions
   double get minTrackingConfidence
   int get numPoses
   new PoseLandmarkerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, RunningMode runningMode = RunningMode.image, Delegate delegate = Delegate.cpu, int numPoses = 1, double minPoseDetectionConfidence = 0.5, double minPosePresenceConfidence = 0.5, double minTrackingConfidence = 0.5, bool outputSegmentationMasks = false})
-final class PoseLandmarkerResult
+final class PoseLandmarkerResult extends VisionResult
   List<ConfidenceMask>? get segmentationMasks
   List<List<Landmark>> get poseWorldLandmarks
   List<List<NormalizedLandmark>> get poseLandmarks
@@ -432,6 +432,11 @@ final class VisionRegionOfInterest
   double get right
   double get top
   new VisionRegionOfInterest({required double left, required double top, required double right, required double bottom})
+abstract base class VisionResult
+  int get imageHeight
+  int get imageWidth
+  int? get timestampMilliseconds
+  new VisionResult({required int imageWidth, required int imageHeight, int? timestampMilliseconds})
 abstract interface class VisionTask
   Delegate get delegate
   Future<void> dispose()
