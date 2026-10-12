@@ -1,8 +1,9 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache 2.0.
-// Adapted from mediapipe==1.1.0 Python ctypes decision/decision_maker.py:
-// Google publishes no C header for Decision Maker, so these layouts follow
-// its Python declarations. Every function returns an MpStatus and takes the
-// error string last, as Google's mediapipe_c_utils.CStatusFunction does.
+// Adapted from mediapipe==1.1.0 Python ctypes decision/decision_maker.py,
+// and matching Google's C header, decision/decision_maker/decision_maker.h in
+// packages/mediapipe-core/native/include. Every function returns an MpStatus
+// and takes the error string last, as Google's
+// mediapipe_c_utils.CStatusFunction does.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
 

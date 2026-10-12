@@ -7,7 +7,7 @@ Google's text package; [MIGRATION.md](MIGRATION.md) maps that API.
 - The shared layer of every task family. `mediapipe_core.dart` is the one
   library apps see, through each family's library, which re-exports it;
   `platform_interface.dart` is for family packages and plugins.
-- Downloads, verifies and prepares Google's MediaPipe 1.1.0 C library for
+- Downloads, verifies and prepares Google's MediaPipe 1.1.1 C library for
   each family (`bundleFamilyRuntime`), which the vision, text, audio,
   retrieval and decision hooks bundle on Android 9+, iOS, macOS arm64, Linux
   x64 and Windows x64, so an app ships only the families it uses; Decision

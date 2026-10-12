@@ -1,10 +1,10 @@
 // The C ABI sizes the vision bindings assume, checked against the vendored
 // headers in mediapipe_core/native/include. `make test_vision` compiles it.
-#include "mediapipe/tasks/c/components/containers/category.h"
-#include "mediapipe/tasks/c/components/containers/keypoint.h"
-#include "mediapipe/tasks/c/vision/core/image_processing_options.h"
-#include "mediapipe/tasks/c/vision/face_detector/face_detector.h"
-#include "mediapipe/tasks/c/vision/face_landmarker/face_landmarker.h"
+#include "components/containers/category.h"
+#include "components/containers/keypoint.h"
+#include "vision/core/image_processing_options.h"
+#include "vision/face_detector/face_detector.h"
+#include "vision/face_landmarker/face_landmarker.h"
 
 static_assert(sizeof(MpStatus) == 4);
 static_assert(sizeof(MpImageFormat) == 4);

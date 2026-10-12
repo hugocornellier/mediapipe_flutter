@@ -8,8 +8,8 @@ import '../models.dart' show DecisionModels;
 import 'decision_backend.dart' show decisionBackendFactory;
 
 /// The release behind Decision Maker on every platform: Google's per-family
-/// decision library (its delivery of October 8, 2026) on Android, iOS,
-/// macOS and Linux, its 1.1.0 wheel's library on Windows, and
+/// decision library (its build of October 9, 2026) on Android, iOS, macOS
+/// and Linux, its 1.1.0 wheel's library on Windows, and
 /// `@mediapipe/tasks-decision` 1.1.0 in browsers.
 const decisionRuntimeVersion = '1.1.0';
 

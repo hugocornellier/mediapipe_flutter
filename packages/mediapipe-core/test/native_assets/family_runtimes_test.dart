@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:code_assets/code_assets.dart';
+import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
 import 'package:mediapipe_core/native_assets.dart';
 import 'package:mediapipe_core/platform_interface.dart'
@@ -44,20 +45,6 @@ Future<void> _bundle(
   check: (_, output) => check(output),
 );
 
-/// Google's own [runtime] file: from [_source], or downloaded as the hooks
-/// do.
-Future<File> _google(FamilyRuntime runtime) async {
-  if (_source case final source?) {
-    return File('${source.path}/${runtime.sha256}');
-  }
-  final directory = await Directory.systemTemp.createTemp('family_runtime');
-  addTearDown(() => directory.delete(recursive: true));
-  return downloadVerified(
-    runtime.asset,
-    File('${directory.path}/${runtime.fileName}'),
-  );
-}
-
 void main() {
   test('every family has a library on every target the tasks claim', () {
     for (final MapEntry(key: family, value: runtimes)
@@ -79,7 +66,7 @@ void main() {
           'windows' => 'mediapipe_tasks_$family.dll',
           _ =>
             'MediaPipeTasks${family[0].toUpperCase()}${family.substring(1)}C'
-                '.xcframework.zip',
+                '.framework.zip',
         });
       }
     }
@@ -146,53 +133,53 @@ void main() {
     );
   });
 
-  test(
-    'macOS gets header room for the install name Dart and Flutter write',
-    () async {
-      final google = familyRuntimes['audio']!['macos/arm64']!;
-      // Google's own file has 40 bytes, too few for any rename.
-      expect(
-        _headerRoom((await _google(google)).readAsBytesSync()),
-        lessThan(64),
-      );
-      await _bundle(
-        'audio',
-        OS.macOS,
-        Architecture.arm64,
-        check: (output) {
-          final asset = output.assets.code.single;
-          expect(asset.id, 'package:mediapipe_core/mediapipe.dylib');
-          final library = File.fromUri(asset.file!);
-          expect(_headerRoom(library.readAsBytesSync()), greaterThan(150));
-          final listing = Process.runSync('otool', ['-L', library.path]);
-          expect(listing.stdout, isNot(contains('/Versions/')));
-          final signature = Process.runSync('codesign', ['-v', library.path]);
-          expect(signature.exitCode, 0, reason: '${signature.stderr}');
-        },
-      );
-    },
-    skip: Platform.isMacOS ? false : 'needs macOS',
-  );
+  test("macOS bundles Google's library as is, with room for the install name "
+      'Dart and Flutter write', () async {
+    final google = familyRuntimes['audio']!['macos/arm64']!;
+    await _bundle(
+      'audio',
+      OS.macOS,
+      Architecture.arm64,
+      check: (output) {
+        final asset = output.assets.code.single;
+        expect(asset.id, 'package:mediapipe_core/mediapipe.dylib');
+        final library = File.fromUri(asset.file!);
+        expect(
+          sha256.convert(library.readAsBytesSync()).toString(),
+          google.sha256,
+        );
+        // An absolute install name under a deep build folder fits in a
+        // few hundred bytes.
+        expect(_headerRoom(library.readAsBytesSync()), greaterThan(4096));
+      },
+    );
+  }, skip: Platform.isMacOS ? false : 'needs macOS');
 
-  test(
-    "iOS bundles the simulator's arm64 slice under Google's file name",
-    () async {
-      await _bundle(
-        'audio',
-        OS.iOS,
-        Architecture.arm64,
-        sdk: IOSSdk.iPhoneSimulator,
-        check: (output) {
-          final asset = output.assets.code.single;
-          final library = File.fromUri(asset.file!);
-          expect(library.uri.pathSegments.last, 'MediaPipeTasksAudioC');
-          final archs = Process.runSync('lipo', ['-archs', library.path]);
-          expect((archs.stdout as String).trim(), 'arm64');
-        },
-      );
-    },
-    skip: Platform.isMacOS ? false : 'needs macOS',
-  );
+  for (final (sdk, slice) in [
+    (IOSSdk.iPhoneOS, 'device'),
+    (IOSSdk.iPhoneSimulator, 'simulator'),
+  ]) {
+    test(
+      "iOS bundles the $slice's arm64 binary under Google's file name",
+      () async {
+        await _bundle(
+          'audio',
+          OS.iOS,
+          Architecture.arm64,
+          sdk: sdk,
+          check: (output) {
+            final asset = output.assets.code.single;
+            final library = File.fromUri(asset.file!);
+            expect(library.uri.pathSegments.last, 'MediaPipeTasksAudioC');
+            final archs = Process.runSync('lipo', ['-archs', library.path]);
+            expect((archs.stdout as String).trim(), 'arm64');
+            expect(_headerRoom(library.readAsBytesSync()), greaterThan(4096));
+          },
+        );
+      },
+      skip: Platform.isMacOS ? false : 'needs macOS',
+    );
+  }
 }
 
 /// Free bytes between a 64-bit Mach-O header's load commands and its first

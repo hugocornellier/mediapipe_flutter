@@ -12,8 +12,8 @@ import 'retrieval_backend.dart' show retrievalBackendFactory;
 const retrievalRuntimeVersion = '1.1.0';
 
 /// Where Google's retrieval library runs: core's shared targets, which
-/// Google's delivery of October 8, 2026 covers as its vision, text and audio
-/// libraries do.
+/// Google's per-family build covers as its vision, text and audio libraries
+/// do.
 const retrievalRuntimeTargets = tasksRuntimeTargets;
 
 /// How the web plugin names a WebGPU adapter in `TaskPlatform.gpu`.

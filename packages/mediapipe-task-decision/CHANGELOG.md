@@ -3,9 +3,9 @@
 Not published yet.
 
 - Decision Maker on Android, iOS, macOS, Linux, Windows and the web, through
-  Google's official MediaPipe 1.1.0 runtimes: its per-family decision C
-  library everywhere but Windows, the C library from Google's Python wheel
-  there, and `@mediapipe/tasks-decision` in browsers.
+  Google's official MediaPipe runtimes: its per-family 1.1.1 decision C
+  library everywhere but Windows, the C library from Google's 1.1.0 Python
+  wheel there, and `@mediapipe/tasks-decision` in browsers.
 - `evaluateBoolean`, `evaluateChoice` and `evaluateScore` with Google's
   `BooleanQuestion`, `ChoiceQuestion` and `ScoreQuestion`, plus their batch
   forms, with the same results on every platform.

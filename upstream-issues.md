@@ -6,13 +6,14 @@ exported symbol alone does not establish a working task or platform.
 
 ## Runtimes
 
-The packages run Google's per-family MediaPipe libraries, pre-release 1.1.0
-development builds of October 5, 2026 (core's `family_runtimes.dart`), on
-Android, iOS, macOS, Linux and Windows, and Google's JavaScript runtime 1.0.1
-in browsers. Their outputs are compared with Google's 1.1.0 release candidate
+The packages run Google's per-family MediaPipe libraries, a pre-release 1.1.1
+development build of October 9, 2026 (core's `family_runtimes.dart`; the
+1.1.0 development builds of October 5 and 8 before it), on Android, iOS,
+macOS, Linux and Windows, and Google's JavaScript runtime 1.0.1 in browsers.
+Their outputs are compared with Google's 1.1.0 release candidate
 wheel, `mediapipe-nightly` 1.1.0rc20260925 (core's `reference_wheels.dart`).
 With Google's agreement they are posted unmodified, for testing, as the
-pre-release `per-family-v1.1.0-dev.20261005` on
+pre-release `per-family-v1.1.1-dev.20261009` on
 `hugocornellier/mediapipe_flutter_native`, which the hooks download. CI runs
 them on Linux x64, Windows x64, macOS arm64, the arm64 iOS Simulator and the
 x86_64 Android emulator, and Firebase Test Lab on a Pixel 8a (Mali), a Galaxy
@@ -50,7 +51,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-037](#up-037-the-audio-streams-flushed-tail-is-stamped-with-a-sentinel-not-a-time) | The audio stream's flushed tail is stamped with a sentinel, not a time | Present |
 | [UP-038](#up-038-the-c-audio-stream-callback-carries-no-user-data-and-no-message) | The C audio stream callback carries no user data and no message | Present |
 | [UP-041](#up-041-two-defects-in-the-c-audio-classifier) | Two defects in the C Audio Classifier | Not re-checked |
-| [UP-042](#up-042-per-family-macos-and-simulator-libraries-have-no-header-room-for-a-rename) | Per-family macOS and simulator libraries have no header room for a rename | Found on 1.1.0 |
+| [UP-042](#up-042-per-family-macos-and-simulator-libraries-have-no-header-room-for-a-rename) | Per-family macOS and simulator libraries have no header room for a rename | Fixed in the 1.1.1 build of October 9 |
 | [UP-043](#up-043-per-family-libraries-each-define-the-same-objective-c-classes) | Per-family libraries each define the same Objective-C classes | Found on 1.1.0 |
 | [UP-044](#up-044-apple-gpu-tasks-abort-on-a-three-channel-image-instead-of-failing) | Apple GPU tasks abort on a three-channel image instead of failing | Found on 1.1.0 |
 | [UP-045](#up-045-per-family-windows-libraries-export-tensorflow-lite-and-litert) | Per-family Windows libraries export TensorFlow Lite and LiteRT | Found on 1.1.0 |
@@ -618,9 +619,11 @@ issue filed.
 
 ### UP-042: Per-family macOS and simulator libraries have no header room for a rename
 
-**Status:** observed October 6, 2026 in Google's pre-release per-family C
-libraries (1.1.0 development builds of October 5). Worked around in
-`mediapipe_core`'s hook. Not yet reported to Google.
+**Status:** fixed in Google's 1.1.1 development build of October 9, 2026:
+every macOS dylib and iOS slice leaves 15 to 28 KB, so the hook bundles
+Google's files as is and the workaround below is gone. Observed October 6,
+2026 in Google's pre-release per-family C libraries (1.1.0 development builds
+of October 5); reported to Google on October 8, 2026.
 
 Dart (`dart test`, `dart run`) and Flutter give every bundled library a new,
 longer install name. Google's macOS libraries leave 40 (audio), 48 (text) and
@@ -633,16 +636,15 @@ about 12 KB, so they are evidently linked with
 `-headerpad_max_install_names`; the fix is to link the macOS and simulator
 builds the same way.
 
-Until then, `bundleFamilyRuntime` names the system frameworks without their
-`Versions/A/` directory, which macOS resolves to the same files, and signs
-the copy again, freeing 144 to 168 bytes (room after: vision 248, text 208,
-audio 184, retrieval 240). Google's delivery of October 8, 2026 (decision and
-retrieval) is linked the same way: 72 to 80 bytes on macOS, and 32 on the
-simulator slices, less than any slice before. Report sent to Google on
-October 8, 2026.
-That covers the install names Dart and Flutter write for ordinary project
-paths. On iOS the frameworks keep Google's file names, so Flutter's new
-install name has the same length as Google's.
+Until the 1.1.1 build, `bundleFamilyRuntime` named the system frameworks
+without their `Versions/A/` directory, which macOS resolves to the same files,
+and signed the copy again, freeing 144 to 168 bytes (room after: vision 248,
+text 208, audio 184, retrieval 240). Google's delivery of October 8, 2026
+(decision and retrieval) was linked the same way: 72 to 80 bytes on macOS,
+and 32 on the simulator slices, less than any slice before. That covered the
+install names Dart and Flutter write for ordinary project paths. On iOS the
+frameworks keep Google's file names, so Flutter's new install name has the
+same length as Google's.
 
 ### UP-043: Per-family libraries each define the same Objective-C classes
 
@@ -655,8 +657,10 @@ the vision library defines too (`GTMSessionFetcher` and its helpers, the
 `GIPLog*` and `GTMLog*` logging classes, `IonNetworkHelper`,
 `MPPMetalSharedResources`), so a process with all three logs 68 "Class ... is
 implemented in both" warnings and uses whichever copy loaded first. On iOS
-the slices share `MPPMetalSharedResources` and miniaudio's
-`ma_ios_notification_handler`. Libraries from different releases in one app
+the slices shared `MPPMetalSharedResources` and miniaudio's
+`ma_ios_notification_handler`; since the 1.1.1 build added the usage-logging
+client on iOS, they also share `GTMSessionFetcher`, the `GIPLog*` and
+`GTMLog*` classes and `IonNetworkHelper`, as on macOS. Libraries from different releases in one app
 could then run one family's code against another family's class layout.
 
 ### UP-044: Apple GPU tasks abort on a three-channel image instead of failing

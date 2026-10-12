@@ -1,26 +1,26 @@
 name: MediaPipeVisionBindings
-description: MediaPipe v1.0.0 C API. Regenerate with dart tool/generate_bindings.dart.
+description: MediaPipe 1.1.1 C API. Regenerate with dart tool/generate_bindings.dart.
 silence-enum-warning: true # sizeof(enum)==4 is checked by tool/abi_check.cc.
 # Every vision task binds Google's one vision library.
 output: lib/src/third_party/mediapipe/vision_bindings.dart
 headers:
   entry-points:
-    - build/ffigen/mediapipe/tasks/c/vision/face_detector/face_detector.h
-    - build/ffigen/mediapipe/tasks/c/vision/face_landmarker/face_landmarker.h
-    - build/ffigen/mediapipe/tasks/c/vision/gesture_recognizer/gesture_recognizer.h
-    - build/ffigen/mediapipe/tasks/c/vision/hand_landmarker/hand_landmarker.h
-    - build/ffigen/mediapipe/tasks/c/vision/holistic_landmarker/holistic_landmarker.h
-    - build/ffigen/mediapipe/tasks/c/vision/image_classifier/image_classifier.h
-    - build/ffigen/mediapipe/tasks/c/vision/image_embedder/image_embedder.h
-    - build/ffigen/mediapipe/tasks/c/vision/image_segmenter/image_segmenter.h
-    - build/ffigen/mediapipe/tasks/c/vision/object_detector/object_detector.h
-    - build/ffigen/mediapipe/tasks/c/vision/pose_landmarker/pose_landmarker.h
-    - build/ffigen/mediapipe/tasks/c/vision/core/image_processing_options.h
-    - build/ffigen/mediapipe/tasks/c/components/containers/category.h
-    - build/ffigen/mediapipe/tasks/c/components/containers/keypoint.h
-    - build/ffigen/mediapipe/tasks/c/components/containers/landmark.h
+    - build/ffigen/vision/face_detector/face_detector.h
+    - build/ffigen/vision/face_landmarker/face_landmarker.h
+    - build/ffigen/vision/gesture_recognizer/gesture_recognizer.h
+    - build/ffigen/vision/hand_landmarker/hand_landmarker.h
+    - build/ffigen/vision/holistic_landmarker/holistic_landmarker.h
+    - build/ffigen/vision/image_classifier/image_classifier.h
+    - build/ffigen/vision/image_embedder/image_embedder.h
+    - build/ffigen/vision/image_segmenter/image_segmenter.h
+    - build/ffigen/vision/object_detector/object_detector.h
+    - build/ffigen/vision/pose_landmarker/pose_landmarker.h
+    - build/ffigen/vision/core/image_processing_options.h
+    - build/ffigen/components/containers/category.h
+    - build/ffigen/components/containers/keypoint.h
+    - build/ffigen/components/containers/landmark.h
   include-directives:
-    - '**/mediapipe/tasks/c/**.h'
+    - '**ffigen/**.h'
 compiler-opts:
   - '-xc++'
   - '-Ibuild/ffigen'
@@ -59,6 +59,7 @@ macros:
 preamble: |
   // Copyright 2026 The MediaPipe Authors.
   // Licensed under the Apache License, Version 2.0.
-  // Generated from unmodified MediaPipe v1.0.0 headers; see third_party/README.md.
+  // Generated from Google's unmodified MediaPipe 1.1.1 headers; see
+  // packages/mediapipe-core/native/README.md.
 ffi-native:
   asset-id: package:mediapipe_vision/mediapipe.dylib
