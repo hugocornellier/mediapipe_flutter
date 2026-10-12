@@ -7,7 +7,6 @@ import 'package:crypto/crypto.dart';
 import 'package:mediapipe_core/src/native_assets/reference_wheels.dart'
     show referenceWheel;
 import 'package:mediapipe_audio/mediapipe_audio.dart';
-import 'package:mediapipe_audio/models.dart';
 import 'package:mediapipe_audio/src/third_party/mediapipe/audio_classifier_bindings.dart'
     as abi;
 import 'package:test/test.dart';
@@ -65,9 +64,9 @@ void main() {
   setUpAll(() {
     expect(
       sha256.convert(File(_model).readAsBytesSync()).toString(),
-      yamnetSha256,
+      AudioModels.yamnet.sha256,
     );
-    expect(reference['model_sha256'], yamnetSha256);
+    expect(reference['model_sha256'], AudioModels.yamnet.sha256);
   });
 
   for (final MapEntry(key: clip, value: expected) in clips.entries) {

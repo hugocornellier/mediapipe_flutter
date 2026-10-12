@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart';
@@ -21,15 +20,15 @@ void main() {
       setUpAll(() {
         expect(
           sha256.convert(File(_classifierModel).readAsBytesSync()).toString(),
-          efficientNetLite0Sha256,
+          VisionModels.imageClassifier.sha256,
         );
         expect(
           sha256.convert(File(_embedderModel).readAsBytesSync()).toString(),
-          mobileNetV3SmallSha256,
+          VisionModels.imageEmbedder.sha256,
         );
         expect(reference['models'], {
-          'classifier': efficientNetLite0Sha256,
-          'embedder': mobileNetV3SmallSha256,
+          'classifier': VisionModels.imageClassifier.sha256,
+          'embedder': VisionModels.imageEmbedder.sha256,
         });
       });
 

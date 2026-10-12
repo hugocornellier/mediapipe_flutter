@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart';
@@ -106,9 +105,9 @@ void _testDelegate(Delegate delegate) {
   setUpAll(() async {
     expect(
       sha256.convert(File(_model).readAsBytesSync()).toString(),
-      efficientDetLite0Sha256,
+      VisionModels.objectDetector.sha256,
     );
-    expect(reference['model_sha256'], efficientDetLite0Sha256);
+    expect(reference['model_sha256'], VisionModels.objectDetector.sha256);
     expect(reference['delegate'], delegate.name.toUpperCase());
     expect(reference['score_threshold'], _scoreThreshold);
     expect(reference['max_results'], _maxResults);

@@ -25,9 +25,8 @@ def registries():
 
 def model_pins():
     """Every pinned model: `{url, sha256, source}`, `source` being the
-    registry relative to `packages/`. A registry pins a model inline, as
-    `DownloadAsset(url: '...', sha256: '...')`, or as a `const xUrl` and
-    `const xSha256` pair that its `DownloadAsset` names."""
+    registry relative to `packages/`. Every registry pins its models inline,
+    as `DownloadAsset(url: '...', sha256: '...')` in its `XModels` class."""
     pins = []
     for relative in registries():
         text = (PACKAGES / relative).read_text()
@@ -37,13 +36,6 @@ def model_pins():
             if fields and _literals(fields.group(1)):
                 pins.append({'url': _literals(fields.group(1)),
                              'sha256': _literals(fields.group(2)),
-                             'source': relative})
-        for match in re.finditer(r'const (\w+)Url\s*=\s*(.*?);', text, re.S):
-            stem = match.group(1)
-            digest = re.search(r'const ' + stem + r'Sha256\s*=\s*(.*?);', text, re.S)
-            if digest:
-                pins.append({'url': _literals(match.group(2)),
-                             'sha256': _literals(digest.group(1)),
                              'source': relative})
     return pins
 

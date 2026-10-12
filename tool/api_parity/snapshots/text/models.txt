@@ -7,9 +7,3 @@ abstract final class TextModels
   static DownloadAsset summarizer
   static DownloadAsset universalSentenceEncoder
   static Map<String, DownloadAsset> byName
-getter DownloadAsset get bertClassifierModel
-getter DownloadAsset get embeddingGemmaModel
-getter DownloadAsset get languageDetectorModel
-getter DownloadAsset get proofreaderModel
-getter DownloadAsset get summarizerModel
-getter DownloadAsset get universalSentenceEncoderModel

@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/vision_fixture.dart';
@@ -70,9 +69,9 @@ void _testDelegate(Delegate delegate) {
   setUpAll(() {
     expect(
       sha256.convert(File(_model).readAsBytesSync()).toString(),
-      faceLandmarkerSha256,
+      VisionModels.faceLandmarker.sha256,
     );
-    expect(reference['model_sha256'], faceLandmarkerSha256);
+    expect(reference['model_sha256'], VisionModels.faceLandmarker.sha256);
     expect(reference['delegate'], delegate.name.toUpperCase());
   });
 

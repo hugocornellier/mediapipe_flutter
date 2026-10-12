@@ -7,7 +7,6 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
-import 'package:mediapipe_audio/models.dart';
 import 'package:mediapipe_audio/src/stream/checks.dart';
 import 'package:mediapipe_audio/src/stream/emulation.dart';
 import 'package:mediapipe_audio/src/stream/model_specs.dart';
@@ -81,8 +80,8 @@ void main() {
   final googleTimestamps = <int>[];
 
   setUpAll(() {
-    expect(sha256.convert(model).toString(), yamnetSha256);
-    expect(reference['model_sha256'], yamnetSha256);
+    expect(sha256.convert(model).toString(), AudioModels.yamnet.sha256);
+    expect(reference['model_sha256'], AudioModels.yamnet.sha256);
     debugGoogleStreamTimestamp = googleTimestamps.add;
   });
   tearDownAll(() => debugGoogleStreamTimestamp = null);

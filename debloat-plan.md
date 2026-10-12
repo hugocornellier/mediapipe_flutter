@@ -212,7 +212,10 @@ Removing any of this after 0.1.0 is a breaking change.
   step 3 makes the prefix core-private. **Done on `chore/oct12-combined`:**
   the runtime versions became private per-platform functions, the targets
   tests need come from `src/`, and S1 step 3 moved the prefix into core.
-- **Redundant model constants.** Vision's `lib/models.dart:1-189` declares 22
+- **Redundant model constants.** **Done on `chore/oct12-combined`:** every
+  family pins each model once, inline in `XModels`; the tests read
+  `XModels.x.sha256`, and `model_pins.py` and both vision tools read the one
+  format. As found: Vision's `lib/models.dart:1-189` declares 22
   top-level constants beside `VisionModels` (an `xUrl` and an `xSha256` per
   model, such as `blazeFaceShortRangeUrl` and `faceLandmarkerSha256`), text's
   `lib/models.dart:1-80` six `xModel` constants that `TextModels` aliases, and
@@ -279,7 +282,7 @@ What remains:
 - `doc/platform_setup.md:118` and
   `packages/mediapipe-core/tool/MODEL_BUNDLING.md` name neither family's
   `models` setting or `byName` map.
-- `model_pins.py` parses two registry formats until B3 leaves one.
+- `model_pins.py` parses two registry formats until B3 leaves one (done).
 
 ### B5. Devices
 

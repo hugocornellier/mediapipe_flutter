@@ -2,12 +2,13 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 import 'support/face_reference.dart';
 
 const _fixtures = 'test/fixtures/face_detection';
-const _models = {'image': ('models/deeplab_v3.tflite', deepLabV3Sha256)};
+final _models = {
+  'image': ('models/deeplab_v3.tflite', VisionModels.imageSegmenter.sha256),
+};
 // DeepLab-v3's Pascal VOC order.
 const _deepLabLabels = 21;
 typedef _Task = (

@@ -2,16 +2,24 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 import 'support/face_reference.dart';
 
 const _fixtures = 'test/fixtures/landmark_tasks';
-const _models = {
-  'hand': ('models/hand_landmarker.task', handLandmarkerSha256),
-  'gesture': ('models/gesture_recognizer.task', gestureRecognizerSha256),
-  'pose': ('models/pose_landmarker_lite.task', poseLandmarkerLiteSha256),
-  'holistic': ('models/holistic_landmarker.task', holisticLandmarkerSha256),
+final _models = {
+  'hand': ('models/hand_landmarker.task', VisionModels.handLandmarker.sha256),
+  'gesture': (
+    'models/gesture_recognizer.task',
+    VisionModels.gestureRecognizer.sha256,
+  ),
+  'pose': (
+    'models/pose_landmarker_lite.task',
+    VisionModels.poseLandmarker.sha256,
+  ),
+  'holistic': (
+    'models/holistic_landmarker.task',
+    VisionModels.holisticLandmarker.sha256,
+  ),
 };
 typedef _Task = (
   Future<Map<String, dynamic>> Function(VisionImage, int, int?),
