@@ -1,6 +1,8 @@
-/// Checks each family's public API: identical on native and web, within the
-/// conventions, free of collisions with Dart's and Flutter's names, and equal
-/// to its reviewed snapshot. `--update` rewrites the baseline and snapshots.
+/// Checks every package's public libraries: each family's app-facing API is
+/// identical on native and web, within the conventions and free of
+/// collisions with Dart's and Flutter's names, and every public library
+/// equals its reviewed snapshot. `--update` rewrites the baseline and
+/// snapshots.
 library;
 
 import 'dart:io';
@@ -8,30 +10,6 @@ import 'dart:io';
 import 'package:api_parity/api_dump.dart';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
-
-/// Each family's package directory and app-facing library.
-const families = {
-  'core': (
-    'packages/mediapipe-core',
-    'package:mediapipe_core/mediapipe_core.dart',
-  ),
-  'vision': (
-    'packages/mediapipe-task-vision',
-    'package:mediapipe_vision/mediapipe_vision.dart',
-  ),
-  'text': (
-    'packages/mediapipe-task-text',
-    'package:mediapipe_text/mediapipe_text.dart',
-  ),
-  'audio': (
-    'packages/mediapipe-task-audio',
-    'package:mediapipe_audio/mediapipe_audio.dart',
-  ),
-  'retrieval': (
-    'packages/mediapipe-task-retrieval',
-    'package:mediapipe_retrieval/mediapipe_retrieval.dart',
-  ),
-};
 
 /// Libraries an app imports beside a family; a public name they also export
 /// could not be used from such an app without a prefix.
@@ -47,6 +25,13 @@ const collisionLibraries = [
   'package:flutter/material.dart',
   'package:flutter/cupertino.dart',
 ];
+
+/// The first line of a family's app-facing snapshot: everything core's
+/// app-facing library declares, which every family re-exports unchanged.
+const includeCore = 'include package:mediapipe_core/mediapipe_core.dart';
+
+/// One package under `packages/`: `mediapipe_<family>` in [directory].
+typedef Package = ({String family, String name, String directory});
 
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
@@ -66,70 +51,76 @@ Future<void> main(List<String> arguments) async {
     ),
   );
   final tool = p.join(root, 'tool', 'api_parity');
+  final packages = _packages(root);
   final findings = <String>[];
   final snapshots = <String, String>{};
+  // Core's app-facing API, by snapshot suffix ('' or '.web').
+  final coreApi = <String, List<String>>{};
 
-  final reserved = await _reservedNames(root);
-  for (final MapEntry(key: family, value: (directory, uri))
-      in families.entries) {
-    final packageRoot = p.join(root, directory);
-    stdout.writeln('Analyzing $uri');
-    final native = await dumpLibrary(
-      packageRoot: packageRoot,
-      uri: uri,
-      declaredVariables: nativeLibraries,
-    );
-    final web = await dumpLibrary(
-      packageRoot: packageRoot,
-      uri: uri,
-      declaredVariables: webLibraries,
-    );
-    final nativeLines = native.lines.toSet();
-    final webLines = web.lines.toSet();
-    for (final line in native.lines) {
-      if (!webLines.contains(line)) {
-        findings.add('[$family] native only: ${line.trim()}');
+  final reserved = await _reservedNames(packages.last.directory);
+  for (final package in packages) {
+    final family = package.family;
+    for (final file in _libraries(package.directory)) {
+      final uri = 'package:${package.name}/$file';
+      final appFacing = file == '${package.name}.dart';
+      stdout.writeln('Analyzing $uri');
+      final native = await dumpLibrary(
+        packageRoot: package.directory,
+        uri: uri,
+        declaredVariables: nativeLibraries,
+      );
+      final web = await dumpLibrary(
+        packageRoot: package.directory,
+        uri: uri,
+        declaredVariables: webLibraries,
+      );
+      final nativeLines = native.lines.toSet();
+      final webLines = web.lines.toSet();
+      final dumps = {
+        '': native.lines,
+        // Only while the web API still differs.
+        if (!nativeLines.containsAll(webLines) ||
+            !webLines.containsAll(nativeLines))
+          '.web': web.lines,
+      };
+      if (appFacing) _check(family, native, web, reserved, findings);
+      for (final MapEntry(key: suffix, value: lines) in dumps.entries) {
+        if (appFacing && family == 'core') coreApi[suffix] = lines;
+        final snapshot = appFacing && family != 'core'
+            ? _withoutCore(
+                family,
+                lines,
+                coreApi[suffix] ?? coreApi['']!,
+                findings,
+              )
+            : lines;
+        final name = p.join(family, p.basenameWithoutExtension(file));
+        snapshots['$name$suffix.txt'] = '${snapshot.join('\n')}\n';
       }
     }
-    for (final line in web.lines) {
-      if (!nativeLines.contains(line)) {
-        findings.add('[$family] web only: ${line.trim()}');
-      }
-    }
-    for (final finding in {...native.platformTypes, ...web.platformTypes}) {
-      findings.add('[$family] platform type: $finding');
-    }
-    for (final finding in {...native.conventions, ...web.conventions}) {
-      findings.add('[$family] convention: $finding');
-    }
-    for (final name in {...native.names, ...web.names}.toList()..sort()) {
-      if (reserved[name] case final library?) {
-        findings.add('[$family] collision: $name is also in $library');
-      }
-    }
-    snapshots['$family.txt'] = '${native.lines.join('\n')}\n';
-    snapshots['$family.web.txt'] =
-        nativeLines.containsAll(webLines) && webLines.containsAll(nativeLines)
-        ? ''
-        : '${web.lines.join('\n')}\n';
   }
 
   final baselineFile = File(p.join(tool, 'baseline.txt'));
   final snapshotDirectory = Directory(p.join(tool, 'snapshots'));
+  final recorded = {
+    if (snapshotDirectory.existsSync())
+      for (final file in snapshotDirectory.listSync(recursive: true))
+        if (file is File) p.relative(file.path, from: snapshotDirectory.path),
+  };
+  final stale = recorded.difference(snapshots.keys.toSet());
   if (args.flag('update')) {
     baselineFile.writeAsStringSync(_baseline(findings));
-    snapshotDirectory.createSync();
+    for (final name in stale) {
+      File(p.join(snapshotDirectory.path, name)).deleteSync();
+    }
     for (final MapEntry(key: name, value: content) in snapshots.entries) {
-      final file = File(p.join(snapshotDirectory.path, name));
-      if (content.isEmpty) {
-        if (file.existsSync()) file.deleteSync();
-      } else {
-        file.writeAsStringSync(content);
-      }
+      File(p.join(snapshotDirectory.path, name))
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(content);
     }
     stdout.writeln(
       'Wrote ${findings.length} baseline entries and '
-      '${snapshots.values.where((s) => s.isNotEmpty).length} snapshots.',
+      '${snapshots.length} snapshots.',
     );
     return;
   }
@@ -149,12 +140,19 @@ Future<void> main(List<String> arguments) async {
   }
   for (final MapEntry(key: name, value: content) in snapshots.entries) {
     final file = File(p.join(snapshotDirectory.path, name));
-    final recorded = file.existsSync() ? file.readAsStringSync() : '';
-    if (recorded != content) failures.add('snapshot differs: $name');
+    if (!file.existsSync()) {
+      failures.add('snapshot missing: $name');
+    } else if (file.readAsStringSync() != content) {
+      failures.add('snapshot differs: $name');
+    }
+  }
+  for (final name in stale) {
+    failures.add('snapshot of no library: $name');
   }
   if (failures.isEmpty) {
     stdout.writeln(
-      'API parity: ${findings.length} known findings, snapshots unchanged.',
+      'API parity: ${findings.length} known findings, '
+      '${snapshots.length} snapshots unchanged.',
     );
     return;
   }
@@ -167,6 +165,108 @@ Future<void> main(List<String> arguments) async {
     '--update` and commit baseline.txt and snapshots/.',
   );
   exitCode = 1;
+}
+
+/// Every package under `packages/`, core first: each folder with a pubspec.
+List<Package> _packages(String root) {
+  final packages = <Package>[];
+  for (final entry in Directory(p.join(root, 'packages')).listSync()) {
+    final pubspec = File(p.join(entry.path, 'pubspec.yaml'));
+    if (entry is! Directory || !pubspec.existsSync()) continue;
+    final name = RegExp(
+      r'^name: (\S+)$',
+      multiLine: true,
+    ).firstMatch(pubspec.readAsStringSync())!.group(1)!;
+    packages.add((
+      family: name.substring('mediapipe_'.length),
+      name: name,
+      directory: entry.path,
+    ));
+  }
+  int rank(Package package) => package.family == 'core' ? 0 : 1;
+  return packages..sort(
+    (a, b) =>
+        rank(a) != rank(b) ? rank(a) - rank(b) : a.family.compareTo(b.family),
+  );
+}
+
+/// The public libraries of the package in [directory]: `lib/*.dart`.
+List<String> _libraries(String directory) => [
+  for (final entry in Directory(p.join(directory, 'lib')).listSync())
+    if (entry is File && entry.path.endsWith('.dart')) p.basename(entry.path),
+]..sort();
+
+/// Records the parity, platform-type, convention and collision findings of
+/// [family]'s app-facing library.
+void _check(
+  String family,
+  ApiDump native,
+  ApiDump web,
+  Map<String, String> reserved,
+  List<String> findings,
+) {
+  final nativeLines = native.lines.toSet();
+  final webLines = web.lines.toSet();
+  for (final line in native.lines) {
+    if (!webLines.contains(line)) {
+      findings.add('[$family] native only: ${line.trim()}');
+    }
+  }
+  for (final line in web.lines) {
+    if (!nativeLines.contains(line)) {
+      findings.add('[$family] web only: ${line.trim()}');
+    }
+  }
+  for (final finding in {...native.platformTypes, ...web.platformTypes}) {
+    findings.add('[$family] platform type: $finding');
+  }
+  for (final finding in {...native.conventions, ...web.conventions}) {
+    findings.add('[$family] convention: $finding');
+  }
+  for (final name in {...native.names, ...web.names}.toList()..sort()) {
+    if (reserved[name] case final library?) {
+      findings.add('[$family] collision: $name is also in $library');
+    }
+  }
+}
+
+/// [lines], a family's app-facing API, as [includeCore] and the declarations
+/// that are not [core]'s. A core declaration the family does not re-export
+/// unchanged is a finding.
+List<String> _withoutCore(
+  String family,
+  List<String> lines,
+  List<String> core,
+  List<String> findings,
+) {
+  final blocks = _declarations(lines);
+  final shared = _declarations(core);
+  for (final declaration in shared) {
+    if (!blocks.contains(declaration)) {
+      findings.add(
+        '[$family] does not re-export core: ${declaration.split('\n').first}',
+      );
+    }
+  }
+  final coreSet = shared.toSet();
+  return [
+    includeCore,
+    for (final block in blocks)
+      if (!coreSet.contains(block)) block,
+  ];
+}
+
+/// [lines] as declarations: each top-level line with its indented members.
+List<String> _declarations(List<String> lines) {
+  final blocks = <List<String>>[];
+  for (final line in lines) {
+    if (line.startsWith(' ') && blocks.isNotEmpty) {
+      blocks.last.add(line);
+    } else {
+      blocks.add([line]);
+    }
+  }
+  return [for (final block in blocks) block.join('\n')];
 }
 
 String _baseline(List<String> findings) {
@@ -184,12 +284,13 @@ String _baseline(List<String> findings) {
 }
 
 /// Every public name the [collisionLibraries] export, with the first library
-/// that exports it. Resolved from the vision package, which depends on Flutter.
-Future<Map<String, String>> _reservedNames(String root) async {
+/// that exports it. Resolved from [packageRoot], a family, which depends on
+/// Flutter.
+Future<Map<String, String>> _reservedNames(String packageRoot) async {
   final reserved = <String, String>{};
   for (final uri in collisionLibraries) {
     final library = await resolveLibrary(
-      packageRoot: p.join(root, families['vision']!.$1),
+      packageRoot: packageRoot,
       uri: uri,
       declaredVariables: nativeLibraries,
     );

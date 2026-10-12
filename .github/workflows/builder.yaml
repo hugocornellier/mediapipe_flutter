@@ -38,12 +38,17 @@ jobs:
           dart analyze --fatal-infos
           dart format --output=none --set-exit-if-changed .
           dart test --reporter expanded
-      # The public API must be identical on native and web, follow the shared
-      # conventions and match its reviewed snapshot (tool/api_parity/README.md).
+      # The family lists that stay hand-written and the pins that must move
+      # together across the packages (tool/check_repository.py).
+      - name: Check family lists and shared pins
+        run: python3 -B tool/check_repository.py
+      # Every public library must match its reviewed snapshot, and each
+      # family's API must be identical on native and web and follow the shared
+      # conventions (tool/api_parity/README.md).
       - name: Check API parity, conventions and snapshots
         run: |
-          for family in task-vision task-text task-audio task-retrieval; do
-            (cd packages/mediapipe-$family && flutter pub get)
+          for package in packages/mediapipe-task-*/; do
+            (cd "$package" && flutter pub get)
           done
           cd tool/api_parity
           dart pub get

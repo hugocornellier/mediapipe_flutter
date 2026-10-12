@@ -3,16 +3,14 @@
 Maintainer scripts check every model they run against the package's own pin,
 so a pin lives in one place. The mirror inventory reads the same table.
 """
-from pathlib import Path
 import re
+import sys
+from pathlib import Path
 from urllib.parse import urlsplit
 
-PACKAGES = Path(__file__).resolve().parents[2]
-SOURCES = [
-    'mediapipe-task-text/lib/models.dart',
-    'mediapipe-task-vision/lib/models.dart',
-    'mediapipe-task-audio/lib/models.dart',
-]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from families import PACKAGES, task_families  # noqa: E402
+
 _STRINGS = re.compile(r"'([^']*)'")
 
 
@@ -20,28 +18,33 @@ def _literals(expression):
     return ''.join(_STRINGS.findall(expression))
 
 
+def registries():
+    """Every family's registry, relative to `packages/`."""
+    return [f'{folder}/lib/models.dart' for folder in task_families().values()]
+
+
 def model_pins():
     """Every pinned model: `{url, sha256, source}`, `source` being the
-    registry relative to `packages/`."""
+    registry relative to `packages/`. A registry pins a model inline, as
+    `DownloadAsset(url: '...', sha256: '...')`, or as a `const xUrl` and
+    `const xSha256` pair that its `DownloadAsset` names."""
     pins = []
-    for relative in SOURCES:
+    for relative in registries():
         text = (PACKAGES / relative).read_text()
-        if 'text/' in relative:
-            for match in re.finditer(r'DownloadAsset\((.*?)\)', text, re.S):
-                fields = re.search(r'url:\s*(.*?),\s*sha256:\s*(.*?),?\s*$',
-                                   match.group(1), re.S)
-                if fields:
-                    pins.append({'url': _literals(fields.group(1)),
-                                 'sha256': _literals(fields.group(2)),
-                                 'source': relative})
-        else:
-            for match in re.finditer(r'const (\w+)Url\s*=\s*(.*?);', text, re.S):
-                stem = match.group(1)
-                digest = re.search(r'const ' + stem + r'Sha256\s*=\s*(.*?);', text, re.S)
-                if digest:
-                    pins.append({'url': _literals(match.group(2)),
-                                 'sha256': _literals(digest.group(1)),
-                                 'source': relative})
+        for match in re.finditer(r'DownloadAsset\((.*?)\)', text, re.S):
+            fields = re.search(r'url:\s*(.*?),\s*sha256:\s*(.*?),?\s*$',
+                               match.group(1), re.S)
+            if fields and _literals(fields.group(1)):
+                pins.append({'url': _literals(fields.group(1)),
+                             'sha256': _literals(fields.group(2)),
+                             'source': relative})
+        for match in re.finditer(r'const (\w+)Url\s*=\s*(.*?);', text, re.S):
+            stem = match.group(1)
+            digest = re.search(r'const ' + stem + r'Sha256\s*=\s*(.*?);', text, re.S)
+            if digest:
+                pins.append({'url': _literals(match.group(2)),
+                             'sha256': _literals(digest.group(1)),
+                             'source': relative})
     return pins
 
 

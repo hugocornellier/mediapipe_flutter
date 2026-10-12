@@ -28,9 +28,14 @@ make analyze                   # dart analyze, every package and example
 make check_format
 make test                      # downloads the test models, runs every package's tests
 python3 -B tool/check_docs.py  # README samples compile, links resolve
+python3 -B tool/check_repository.py  # family lists and shared pins agree
 python3 -B packages/mediapipe-core/tool/publish_check.py   # pub dry run
 python3 -B packages/mediapipe-core/tool/test_bundled_models.py
 ```
+
+`make test` leaves out Decision's and Retrieval's models (678 MB and 388 MB),
+so their reference tests skip; run `make models_all` first to include them.
+CI runs them with cached models.
 
 The last one builds fresh apps from the packages as pub.dev would ship them:
 it bundles one model per family with `dart run mediapipe_core:bundle_models`
@@ -40,8 +45,9 @@ rest (Android emulator, Linux, Windows and three browsers).
 ## Versions and the first release
 
 Nothing from this repository is on pub.dev yet. The first release will be
-0.1.0 of `mediapipe_core`, `mediapipe_vision`, `mediapipe_text` and
-`mediapipe_audio`, published together.
+0.1.0 of `mediapipe_core`, `mediapipe_vision`, `mediapipe_text`,
+`mediapipe_audio`, `mediapipe_decision` and `mediapipe_retrieval`, published
+together.
 
 On pub.dev, `mediapipe_core` and `mediapipe_text` (and the removed
 `mediapipe_genai`) are Google's 0.0.1 previews from May 2024, published from
@@ -49,8 +55,9 @@ On pub.dev, `mediapipe_core` and `mediapipe_text` (and the removed
 Only their uploaders can publish new versions of these names, and the next
 version must be above 0.0.1. Under Dart's rules for versions before 1.0, the minor version
 marks a breaking change, so 0.1.0 is the version that follows Google's
-previews. `mediapipe_vision` and `mediapipe_audio` are free names, kept at
-0.1.0 so all four release together.
+previews. `mediapipe_vision`, `mediapipe_audio`, `mediapipe_decision` and
+`mediapipe_retrieval` were free names on October 9, 2026, kept at 0.1.0 so
+all six release together.
 
 Until the first release:
 
@@ -101,12 +108,14 @@ platform it claims, and a test proves the output matches Google's.
    getter; an idempotent `Future<void> dispose()`; failures as
    `TaskException`, errors through the returned `Future`. Export it from the
    family's main library and run `tool/api_parity`
-   (`dart run bin/api_parity.dart --update`) so the snapshot shows the new
+   (`dart run bin/api_parity.dart --update`) so the snapshots show the new
    API; the check requires it to be identical on native and web.
 6. **Tests.** Generate a reference with Google's own Python for the pinned
    runtime version, check it in as a fixture, and compare every value in unit
    tests; add the task to the browser suite's comparison with Google's
-   JavaScript and to the CI coverage rows (`tool/coverage/`). A task whose
+   JavaScript, to the CI coverage rows (`tool/coverage/`), and to its
+   family's `test/coverage_matrix_test.dart`, which checks the matrix row
+   against the task's capability claims. A task whose
    output differs between Google's releases (the generative text tasks) is
    compared with the wheel of each platform's own version, generated on the
    runner (`packages/mediapipe-task-text/tool/prepare_modern_text_reference.py`).

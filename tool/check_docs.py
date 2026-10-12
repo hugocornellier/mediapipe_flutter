@@ -1,7 +1,7 @@
 """Checks the user-facing docs: Dart samples compile and relative links resolve.
 
 Every ```dart block that has an `import` is a complete sample: each becomes a
-library in a scratch Flutter app that depends on the four packages by path,
+library in a scratch Flutter app that depends on every package by path,
 and `flutter analyze` must report nothing. Blocks without imports are
 fragments and are skipped. Relative Markdown links must point at files that
 exist in the repository.
@@ -14,15 +14,13 @@ import sys
 import tempfile
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / 'packages/mediapipe-core/tool'))
+from families import PACKAGES, package_folders, package_name  # noqa: E402
+
 DOCS = [
     'README.md', 'MIGRATION.md', 'CONTRIBUTING.md',
     'doc/platform_setup.md', 'doc/privacy_and_licenses.md',
-    'packages/mediapipe-core/README.md',
-    'packages/mediapipe-task-vision/README.md',
-    'packages/mediapipe-task-text/README.md',
-    'packages/mediapipe-task-audio/README.md',
-    'packages/mediapipe-task-decision/README.md',
-    'packages/mediapipe-task-retrieval/README.md',
+    *(f'packages/{folder}/README.md' for folder in package_folders()),
 ]
 BLOCK = re.compile(r'^```dart\n(.*?)^```', re.S | re.M)
 LINK = re.compile(r'\]\(([^)\s]+)\)')
@@ -57,7 +55,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix='mediapipe-doc-') as tmp:
         app = Path(tmp) / 'doc_snippets'
         (app / 'lib').mkdir(parents=True)
-        packages = REPO / 'packages'
+        dependencies = ''.join(
+            f'  {package_name(folder)}:\n    path: {PACKAGES / folder}\n'
+            for folder in package_folders())
         (app / 'pubspec.yaml').write_text(f"""name: doc_snippets
 publish_to: none
 environment:
@@ -65,19 +65,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_core:
-    path: {packages / 'mediapipe-core'}
-  mediapipe_vision:
-    path: {packages / 'mediapipe-task-vision'}
-  mediapipe_text:
-    path: {packages / 'mediapipe-task-text'}
-  mediapipe_audio:
-    path: {packages / 'mediapipe-task-audio'}
-  mediapipe_decision:
-    path: {packages / 'mediapipe-task-decision'}
-  mediapipe_retrieval:
-    path: {packages / 'mediapipe-task-retrieval'}
-""")
+{dependencies}""")
         (app / 'analysis_options.yaml').write_text(
             'analyzer:\n  errors:\n    avoid_print: ignore\n')
         origins = {}

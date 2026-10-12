@@ -128,7 +128,15 @@ void main() {
   });
 
   test('every family pin in this repo parses', () {
-    for (final family in ['vision', 'text', 'audio']) {
+    const prefix = 'mediapipe-task-';
+    final families = [
+      for (final entry in Directory('..').listSync())
+        if (entry.uri.pathSegments.where((s) => s.isNotEmpty).last
+            case final name when name.startsWith(prefix))
+          name.substring(prefix.length),
+    ];
+    expect(families, containsAll(['vision', 'text', 'audio', 'decision']));
+    for (final family in families) {
       final json =
           jsonDecode(
                 File(

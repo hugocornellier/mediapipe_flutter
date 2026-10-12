@@ -1,6 +1,13 @@
 SHELL := /bin/bash
+# Every task family, found on disk: packages/mediapipe-task-<family>. Each
+# has a models_<family> and a test_<family> target.
+TASK_FAMILIES := $(sort $(patsubst packages/mediapipe-task-%,%,$(wildcard packages/mediapipe-task-*)))
+# Families whose models download only with `make models_all`: Decision's Laya
+# (678 MB) and Retrieval's EmbeddingGemma 2 (388 MB). Their reference tests
+# skip without them; CI caches and runs them (decision.yaml, retrieval.yaml).
+LARGE_MODEL_FAMILIES := decision retrieval
 DART_PACKAGES := packages/mediapipe-core tool/task_benchmarks
-FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-decision packages/mediapipe-task-retrieval
+FLUTTER_PACKAGES := $(addprefix packages/mediapipe-task-,$(TASK_FAMILIES))
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 # The gallery's pubspec is generated per target by tool/gallery_builder, so
 # it is format-checked without package resolution
@@ -11,16 +18,25 @@ GALLERY_SOURCES := lib test integration_test tool
 GALLERY_FORMAT := dart format --language-version=3.12
 ANALYZE_PACKAGES := $(ALL_PACKAGES)
 
-.PHONY: get models analyze format check_format generate generate_text generate_vision test test_only test_core test_text test_vision test_vision_flutter ci
+.PHONY: get models models_all analyze format check_format generate generate_text generate_vision test test_only test_core test_text test_vision test_vision_flutter ci
 
 get:
 	@for package in $(DART_PACKAGES); do (cd "$$package" && dart pub get) || exit $$?; done
 	@for package in $(FLUTTER_PACKAGES); do (cd "$$package" && flutter pub get) || exit $$?; done
 
 # Download versioned test/example models; no model is embedded in a package.
+# Every family's but the LARGE_MODEL_FAMILIES', which `models_all` adds.
 models:
-	$(MAKE) models_text
-	$(MAKE) models_audio
+	@for target in $(addprefix models_,$(filter-out $(LARGE_MODEL_FAMILIES),$(TASK_FAMILIES))) \
+	    models_embedding models_proofreader models_summarizer; do \
+	  $(MAKE) $$target || exit $$?; \
+	done
+
+models_all: models
+	@for family in $(LARGE_MODEL_FAMILIES); do $(MAKE) models_$$family || exit $$?; done
+
+.PHONY: models_vision
+models_vision:
 	cd packages/mediapipe-task-vision && dart tool/download_model.dart
 	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
 	cd packages/mediapipe-task-vision && dart tool/download_object_detector.dart
@@ -28,9 +44,6 @@ models:
 	cd packages/mediapipe-task-vision && dart tool/download_landmark_tasks.dart
 	cd packages/mediapipe-task-vision && dart tool/download_segmenter_tasks.dart
 	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
-	$(MAKE) models_embedding
-	$(MAKE) models_proofreader
-	$(MAKE) models_summarizer
 
 analyze:
 	@for package in $(ANALYZE_PACKAGES); do (cd "$$package" && dart analyze --fatal-infos) || exit $$?; done
@@ -60,11 +73,10 @@ test:
 	$(MAKE) models
 	$(MAKE) test_only
 
+# Every package's suite. Decision's and Retrieval's reference tests skip
+# unless `make models_all` downloaded their models.
 test_only:
-	$(MAKE) test_core
-	$(MAKE) test_text
-	$(MAKE) test_audio
-	$(MAKE) test_vision
+	@for package in core $(TASK_FAMILIES); do $(MAKE) test_$$package || exit $$?; done
 
 test_core:
 	cd packages/mediapipe-core && dart test --reporter expanded

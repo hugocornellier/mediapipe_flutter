@@ -18,9 +18,10 @@ import sys
 import tempfile
 
 CORE = Path(__file__).resolve().parents[1]
-PACKAGES = CORE.parent
-FAMILY = ['mediapipe-core', 'mediapipe-task-vision', 'mediapipe-task-text',
-          'mediapipe-task-audio']
+sys.path.insert(0, str(CORE / 'tool'))
+from families import PACKAGES, package_folders  # noqa: E402
+
+FAMILY = package_folders()
 PATH_DEPENDENCY = re.compile(
     r'^  (mediapipe_[a-z]+):\n    path: \.\./(mediapipe-[a-z-]+)\n', re.M)
 

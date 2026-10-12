@@ -11,6 +11,7 @@ GALLERY = Path(__file__).resolve().parents[1]
 REPO = GALLERY.parent
 sys.path.insert(0, str(REPO / 'packages/mediapipe-core/tool'))
 from consumer_packages import family_runtime  # noqa: E402
+from families import task_families  # noqa: E402
 
 
 def main():
@@ -69,7 +70,7 @@ def main():
                          else 'build/windows/x64/runner/Release')
     # One library per family, each the one core pins for this target.
     runtimes = {}
-    for family in ('vision', 'text', 'audio'):
+    for family in task_families():
         pin = family_runtime(family, f'{target}/x64')
         libraries = list(bundle.rglob(pin['file']))
         if len(libraries) != 1:

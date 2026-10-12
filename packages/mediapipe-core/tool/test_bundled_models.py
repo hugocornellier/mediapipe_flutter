@@ -29,16 +29,22 @@ TEMPLATES = CORE / 'tool/bundled_models'
 sys.path.insert(0, str(CORE / 'tool'))
 from consumer_packages import (  # noqa: E402
     consumer_environment, copy_package, core_hook_defines)
+from families import task_families  # noqa: E402
 
 NAME = 'mediapipe_bundled_models'
-# One model per family: its package folder and its name in XxxModels.byName.
-# The checks also use Face Landmarker, which stays unbundled.
+# One model per family: its package folder and its name in XxxModels.byName,
+# in core's `bundlableFamilies` order. The checks also use Face Landmarker,
+# which stays unbundled. Decision and Retrieval list the same EmbeddingGemma 2
+# (388 MB), which the app bundles once.
 FAMILIES = {
     'mediapipe_vision': ('mediapipe-task-vision', 'face_detector'),
     'mediapipe_text': ('mediapipe-task-text', 'language_detector'),
     'mediapipe_audio': ('mediapipe-task-audio', 'yamnet'),
+    'mediapipe_decision': ('mediapipe-task-decision', 'embedding_gemma_2_text_vision'),
+    'mediapipe_retrieval': ('mediapipe-task-retrieval', 'embedding_gemma_2_text_vision'),
 }
 SHA_NAME = re.compile(r'[0-9a-f]{64}')
+MODEL_SUFFIXES = ('.tflite', '.task', '.litertlm')
 
 
 def digest(path):
@@ -72,13 +78,22 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def expected_labels():
+    """The manifest's labels. Families that list a model by the same name
+    pin it identically (tool/check_repository.py), and the command keeps one
+    copy, labeled by the first family that lists it."""
+    labels = {}
+    for family, (_, name) in FAMILIES.items():
+        labels.setdefault(name, f'{family}: {name}')
+    return set(labels.values())
+
+
 def bundled_models(folder):
     """The manifest's models by label, after checking that the folder holds
     exactly those files, each named by its SHA-256."""
     manifest = json.loads((folder / 'manifest.json').read_text(encoding='utf-8'))
     models = {entry['model']: entry['file'] for entry in manifest['models']}
-    expected = {f'{family}: {name}' for family, (_, name) in FAMILIES.items()}
-    require(set(models) == expected, f'The manifest lists {sorted(models)}.')
+    require(set(models) == expected_labels(), f'The manifest lists {sorted(models)}.')
     files = {path.name for path in folder.iterdir() if path.name != 'manifest.json'}
     require(files == set(models.values()), f'{folder} holds {sorted(files)}.')
     for name in files:
@@ -168,6 +183,9 @@ def main():
     if not ((target in ('linux', 'windows') and machine in ('amd64', 'x86_64'))
             or (target == 'macos' and machine == 'arm64')):
         raise SystemExit('This test needs Linux x64, Windows x64 or macOS arm64.')
+    folders = sorted(folder for folder, _ in FAMILIES.values())
+    require(folders == sorted(task_families().values()),
+            f'FAMILIES covers {folders}; add a model for every task family.')
     build = REPO / 'build/codex-tmp'
     build.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix=f'bundled-{target}-', dir=build))
@@ -183,7 +201,8 @@ def main():
         require(f'Downloaded: {label}' in log, f'{label} was not downloaded.')
     log = run(['dart', 'run', 'mediapipe_core:bundle_models', '--check'], app,
               root / 'check.log')
-    require('assets/mediapipe/ matches pubspec.yaml: 3 models' in log, 'The check did not pass.')
+    require(f'assets/mediapipe/ matches pubspec.yaml: {len(expected_labels())} models' in log,
+            'The check did not pass.')
 
     # A corrupted copy and an unlisted file fail the check; the command
     # replaces the first and removes the second.
@@ -217,7 +236,7 @@ def main():
     require(files == set(models.values()), f'The release ships {sorted(files)}.')
     for name in files:
         require(digest(shipped / name) == name, f'The release copy of {name} differs.')
-    strays = [path for path in bundle.rglob('*') if path.suffix in ('.tflite', '.task')]
+    strays = [path for path in bundle.rglob('*') if path.suffix in MODEL_SUFFIXES]
     require(not strays, f'The release ships other model files: {strays}')
     deployed = root / 'deployed' / bundle.name
     shutil.copytree(bundle, deployed, symlinks=True)

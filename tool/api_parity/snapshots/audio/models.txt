@@ -1,0 +1,7 @@
+abstract final class AudioModels
+  new AudioModels()
+  static DownloadAsset yamnet
+  static Map<String, DownloadAsset> byName
+getter DownloadAsset get yamnetModel
+getter String get yamnetSha256
+getter String get yamnetUrl
