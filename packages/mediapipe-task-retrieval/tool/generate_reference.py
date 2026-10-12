@@ -1,13 +1,19 @@
 """Records Google's own answers for the retrieval test cases.
 
 Runs Google's Python Universal Embedder and Semantic Retriever from the
-official mediapipe 1.1.0 wheel over the texts below and writes them with the
-wheel's and model's digests, plus the sizes of Google's C structs:
+official mediapipe 1.1.0 wheel over the texts and images below and writes
+them with the wheel's and model's digests, plus the sizes of Google's C
+structs:
 
     python -I tool/generate_reference.py <embeddinggemma-2-text-vision-440m.litertlm> <output.json>
 
-The package's tests compare their native answers and struct layouts with this
-file.
+With --audio, it records the audio cases instead, on the full model, the
+only one that embeds audio:
+
+    python -I tool/generate_reference.py --audio <embeddinggemma-2-740m.litertlm> <output.json>
+
+The package's tests compare their native answers and struct layouts with
+these files.
 """
 
 import ctypes
@@ -16,7 +22,9 @@ import importlib.metadata
 import json
 import pathlib
 import platform
+import struct
 import sys
+import wave
 
 from mediapipe.tasks.python.core import base_options as base_options_module
 from mediapipe.tasks.python.core import base_options_c
@@ -55,6 +63,17 @@ IMAGES = {
 }
 IMAGE_TEXT = 'A dog running across the grass with a ball.'
 
+# Two of the audio package's clips, 16 kHz mono, and a sentence for each:
+# YAMNet hears speech in the first and a bird in the second. Each is cut to
+# its first 15,600 samples (0.975 s), the one length whose embedding Google's
+# runtime repeats exactly from call to call (upstream-issues.md UP-058).
+AUDIO = {
+    'speech': 'packages/mediapipe-task-audio/test/fixtures/speech_16000_hz_mono.wav',
+    'bird': 'packages/mediapipe-task-audio/test/fixtures/two_heads_16000_hz_mono.wav',
+}
+AUDIO_SAMPLES = 15600
+AUDIO_TEXTS = ['Someone is talking.', 'A bird is singing.']
+
 STRUCTS = {
     'MpUniversalEmbedderOptions': ue._MpUniversalEmbedderOptionsC,
     'MpBaseOptions': base_options_c.MpBaseOptionsC,
@@ -83,7 +102,73 @@ def _records(result):
            'metadata': dict(r.metadata)} for r in result.records]
 
 
+def _media_records(result):
+  # Google's Python needs a path for media and keeps it as the record's
+  # text; a caller that passes bytes alone gets none, so it is left out.
+  return [{'id': r.id, 'score': round(float(r.score), 7),
+           'metadata': dict(r.metadata)} for r in result.records]
+
+
+def _samples(path):
+  """Mono 16-bit PCM as the floats Google's audio tasks take, at most
+  AUDIO_SAMPLES of them."""
+  with wave.open(str(path)) as clip:
+    assert clip.getnchannels() == 1 and clip.getsampwidth() == 2, path
+    frames = min(clip.getnframes(), AUDIO_SAMPLES)
+    return [v / 32768.0 for v in
+            struct.unpack(f'<{frames}h', clip.readframes(frames))]
+
+
+def _provenance(model, library):
+  return {
+      'mediapipe': importlib.metadata.version('mediapipe'),
+      'platform': f'{platform.system().lower()}/{platform.machine().lower()}',
+      'library': library.name,
+      'librarySha256': hashlib.sha256(library.read_bytes()).hexdigest(),
+      'model': model.name,
+      'modelSha256': hashlib.sha256(model.read_bytes()).hexdigest(),
+  }
+
+
+def audio_main(model, output):
+  embedder = ue.UniversalEmbedder.create_from_options(ue.UniversalEmbedderOptions(
+      base_options=base_options_module.BaseOptions(model_asset_path=str(model)),
+      l2_normalize=True))
+  library = next((pathlib.Path(ue.__file__).parents[2] / 'c').glob('libmediapipe.*'))
+  repo = pathlib.Path(__file__).resolve().parents[3]
+  texts = {text: embedder.embed_text(text).embeddings[0] for text in AUDIO_TEXTS}
+  clips = {}
+  for name, path in AUDIO.items():
+    result = embedder.embed_audio(_samples(repo / path))
+    clips[name] = {
+        'path': path,
+        'samples': len(_samples(repo / path)),
+        'embedding': _vector(result),
+        'similarityToTexts': {
+            text: round(float(ue.UniversalEmbedder.cosine_similarity(
+                vector, result.embeddings[0])), 7)
+            for text, vector in texts.items()},
+    }
+  retriever = sr.SemanticRetriever.create_from_options(sr.SemanticRetrieverOptions(
+      embedder=embedder))
+  for name, path in AUDIO.items():
+    retriever.insert_audio(f'audio:{name}', path, audio_data=_samples(repo / path),
+                           metadata={'clip': name})
+  retrieval = [{'query': text, 'top2': _media_records(
+      retriever.retrieve(text, limit=2, min_similarity=0.0))}
+               for text in AUDIO_TEXTS]
+  retriever.close()
+  embedder.close()
+  reference = {**_provenance(model, library), 'audio': clips,
+               'audioRetrieval': retrieval}
+  output.parent.mkdir(parents=True, exist_ok=True)
+  output.write_text(json.dumps(reference, indent=1) + '\n')
+
+
 def main():
+  if sys.argv[1] == '--audio':
+    audio_main(pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3]))
+    return
   model, output = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
   embedder = ue.UniversalEmbedder.create_from_options(ue.UniversalEmbedderOptions(
       base_options=base_options_module.BaseOptions(model_asset_path=str(model)),
@@ -137,15 +222,26 @@ def main():
   retriever.delete_all()
   after_delete_all = sorted(retriever.get_all_record_ids())
   retriever.close()
+
+  # The same photos as image records, searched with the sentence.
+  image_retriever = sr.SemanticRetriever.create_from_options(
+      sr.SemanticRetrieverOptions(embedder=embedder))
+  for name, path in IMAGES.items():
+    image_retriever.insert_image(f'image:{name}', path,
+                                 image_bytes=(repo / path).read_bytes(),
+                                 metadata={'animal': name})
+  image_retrieval = {
+      'top3': _media_records(image_retriever.retrieve(
+          IMAGE_TEXT, limit=3, min_similarity=0.0)),
+      'cat': _media_records(image_retriever.retrieve(
+          IMAGE_TEXT, limit=3, min_similarity=0.0,
+          metadata_filter={'animal': 'cat'})),
+  }
+  image_retriever.close()
   embedder.close()
 
   reference = {
-      'mediapipe': importlib.metadata.version('mediapipe'),
-      'platform': f'{platform.system().lower()}/{platform.machine().lower()}',
-      'library': library.name,
-      'librarySha256': hashlib.sha256(library.read_bytes()).hexdigest(),
-      'model': model.name,
-      'modelSha256': hashlib.sha256(model.read_bytes()).hexdigest(),
+      **_provenance(model, library),
       'structSizes': {name: ctypes.sizeof(struct)
                       for name, struct in STRUCTS.items()},
       'texts': texts,
@@ -159,6 +255,7 @@ def main():
       'recordIds': {'all': all_ids, 'afterDeleteCat': after_delete,
                     'afterDeleteAnimals': after_filter_delete,
                     'afterDeleteAll': after_delete_all},
+      'imageRetrieval': image_retrieval,
   }
   output.parent.mkdir(parents=True, exist_ok=True)
   output.write_text(json.dumps(reference, indent=1) + '\n')

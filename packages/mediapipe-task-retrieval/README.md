@@ -82,8 +82,12 @@ Future<void> search() async {
 metadata; `metadataFilter` keeps only records carrying every given pair.
 `retrieveContent` takes a multimodal query of `TextPart`, `ImagePart` and
 `AudioPart`, and `insertImage`, `insertAudio` and `insertContent` index the
-other modalities. A retriever runs on its embedder's worker: dispose it before
-the embedder.
+other modalities. On Android, iOS and the desktops an image or audio record's
+text is the path it was inserted with, or its id when it came from bytes or
+samples alone. Audio needs the full model, and Google's audio embeddings vary
+slightly from call to call
+([UP-058](../../upstream-issues.md#up-058-universal-embedders-audio-embeddings-change-from-call-to-call)).
+A retriever runs on its embedder's worker: dispose it before the embedder.
 
 ## Models
 

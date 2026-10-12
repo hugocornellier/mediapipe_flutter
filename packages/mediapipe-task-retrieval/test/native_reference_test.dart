@@ -222,6 +222,68 @@ void main() {
     }
   });
 
+  test('image records match Google\'s Python API', skip: missing, () async {
+    final retriever = await SemanticRetriever.create(
+      SemanticRetrieverOptions(embedder: embedder),
+    );
+    final images = (_reference['images']! as Map).cast<String, Map>();
+    final root = Directory.current.parent.parent;
+    final sentence = _reference['imageText']! as String;
+    final expected = (_reference['imageRetrieval']! as Map)
+        .cast<String, List>();
+    try {
+      for (final MapEntry(key: name, value: image) in images.entries) {
+        await retriever.insertImage(
+          'image:$name',
+          imageBytes: File('${root.path}/${image['path']}').readAsBytesSync(),
+          metadata: {'animal': name},
+        );
+      }
+      void compare(RetrievalResult result, String name) {
+        final want = expected[name]!.cast<Map>();
+        final why = '$name: ${result.records}';
+        expect(result.records, hasLength(want.length), reason: why);
+        for (var i = 0; i < want.length; i++) {
+          final record = result.records[i];
+          if (sameHost) expect(record.id, want[i]['id'], reason: why);
+          expect(
+            record.score,
+            closeTo((want[i]['score'] as num).toDouble(), imageTolerance),
+            reason: why,
+          );
+          expect(
+            record.metadata,
+            (want[i]['metadata'] as Map).cast<String, String>(),
+            reason: why,
+          );
+          // Inserted from bytes alone, so the stand-in path is the id.
+          expect(record.text, record.id, reason: why);
+        }
+        expect(
+          result.records.map((r) => r.id).toSet(),
+          want.map((e) => e['id']).toSet(),
+          reason: why,
+        );
+      }
+
+      compare(
+        await retriever.retrieve(sentence, limit: 3, minSimilarity: 0),
+        'top3',
+      );
+      compare(
+        await retriever.retrieve(
+          sentence,
+          limit: 3,
+          minSimilarity: 0,
+          metadataFilter: {'animal': 'cat'},
+        ),
+        'cat',
+      );
+    } finally {
+      await retriever.dispose();
+    }
+  });
+
   test(
     'mixed content and images index through the same embedder',
     skip: missing,
@@ -230,11 +292,18 @@ void main() {
         SemanticRetrieverOptions(embedder: embedder),
       );
       try {
+        final photo = File(
+          '${Directory.current.parent.parent.path}/gallery/samples/'
+          'elephant.png',
+        ).readAsBytesSync();
         await retriever.insertContent(
           'mixed',
           [TextPart('A dog chases a ball across the park.')],
           metadata: {'topic': 'animals'},
         );
+        // Image parts from bytes alone, which Google's runtime refuses
+        // without a path: the package passes the record's id, or "query".
+        await retriever.insertContent('photo', [ImagePart(imageBytes: photo)]);
         final result = await retriever.retrieve(
           'A puppy playing fetch.',
           limit: 1,
@@ -242,6 +311,12 @@ void main() {
         );
         expect(result.records.single.id, 'mixed');
         expect(result.records.single.metadata, {'topic': 'animals'});
+        final byImage = await retriever.retrieveContent(
+          [ImagePart(imageBytes: photo)],
+          limit: 1,
+          minSimilarity: 0,
+        );
+        expect(byImage.records.single.id, 'photo');
       } finally {
         await retriever.dispose();
       }

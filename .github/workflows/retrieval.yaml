@@ -50,14 +50,18 @@ jobs:
         run: |
           Add-Content "$env:SystemRoot\System32\drivers\etc\hosts" "`n0.0.0.0 play.googleapis.com`n:: play.googleapis.com"
           ipconfig /flushdns | Out-Null
+      # Both EmbeddingGemma 2 models the native tests run: text and vision,
+      # and the full one, the only one that embeds audio.
       - uses: actions/cache@v6
         with:
-          path: packages/mediapipe-task-retrieval/models/embeddinggemma-2-text-vision-440m.litertlm
-          key: retrieval-embedding-gemma-2-text-vision-${{ hashFiles('packages/mediapipe-task-retrieval/lib/models.dart') }}
+          path: |
+            packages/mediapipe-task-retrieval/models/embeddinggemma-2-text-vision-440m.litertlm
+            packages/mediapipe-task-retrieval/models/embeddinggemma-2-740m.litertlm
+          key: retrieval-embedding-gemma-2-models-${{ hashFiles('packages/mediapipe-task-retrieval/lib/models.dart') }}
       - name: Resolve packages
         working-directory: packages/mediapipe-task-retrieval
         run: flutter pub get
-      - name: Download Google's EmbeddingGemma 2 model
+      - name: Download Google's EmbeddingGemma 2 models
         working-directory: packages/mediapipe-task-retrieval
         run: dart run tool/download_model.dart
       - name: Analyze

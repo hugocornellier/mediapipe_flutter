@@ -264,7 +264,12 @@ Removing any of this after 0.1.0 is a breaking change.
   supertype could also be added after 0.1.0 without breaking callers; per the
   decision above it lands now. The width and height docs differ slightly
   (some mention EXIF correction); keep the more precise wording.
-- **Untested public API.** `SemanticRetriever.insertImage` and `insertAudio`
+- **Untested public API.** **Native half done on `chore/oct12-combined`:**
+  Google's Python answers for image and audio records and audio embeddings
+  (the audio on the full model), and native tests against them, which found
+  that Google's runtime refuses media without a path (the package now passes
+  the record's id) and that its audio embeddings vary (UP-058). Browser cases
+  are still to add. As found: `SemanticRetriever.insertImage` and `insertAudio`
   (`retrieval_tasks.dart:214`, `:232`) are in the package README and wired in
   both the native runner and the web worker, but nothing in the repository
   calls them. `UniversalEmbedder.embedAudio` (`:108`) is tested only for

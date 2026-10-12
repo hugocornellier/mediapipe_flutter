@@ -67,6 +67,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0 |
 | [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0 |
 | [UP-057](#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel) | The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel | Found on the 1.1.1 build of October 9 |
+| [UP-058](#up-058-universal-embedders-audio-embeddings-change-from-call-to-call) | Universal Embedder's audio embeddings change from call to call | Found on 1.1.0 and the 1.1.1 build of October 9 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -1014,6 +1015,25 @@ cells of `tool/coverage/matrix.json` required again, and bring back the Metal
 steps this withdrawal removed from `.github/workflows/main.yaml` and
 `packages/mediapipe-task-vision/tool/test_macos_references.py`. iPhones keep
 the GPU; the 1.1.1 build has not run on one yet.
+
+### UP-058: Universal Embedder's audio embeddings change from call to call
+
+**Status:** observed October 12, 2026 on an Apple M4 Max (macOS 27) with the
+full EmbeddingGemma 2 model (`embeddinggemma-2-740m.litertlm`), through
+Google's Python API from the `mediapipe` 1.1.0 wheel and through the
+package on Google's 1.1.1 retrieval library alike. Text and image embeddings
+repeat exactly. Worked around in the tests only: they compare audio within
+0.01. Not yet reported to Google.
+
+The same samples give a different audio embedding from one call to the
+next, and from one process to the next: Google's Python embeds the audio
+package's 4.3 s `speech_16000_hz_mono.wav` with values up to 0.006 apart on
+two calls in a row, and two separate runs of
+`tool/generate_reference.py --audio` disagree by up to 0.005 per value and
+0.004 in a retrieval score. One 15,600-sample (0.975 s) clip usually
+repeats exactly, but not always: the result also moves with the audio
+embedded before it. A Semantic Retriever's scores for audio records vary
+the same way.
 
 ## History
 

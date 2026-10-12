@@ -10464,5 +10464,39 @@
    "stars"
   ],
   "afterDeleteAll": []
+ },
+ "imageRetrieval": {
+  "top3": [
+   {
+    "id": "image:dog",
+    "score": 0.6029943,
+    "metadata": {
+     "animal": "dog"
+    }
+   },
+   {
+    "id": "image:elephant",
+    "score": 0.5450177,
+    "metadata": {
+     "animal": "elephant"
+    }
+   },
+   {
+    "id": "image:cat",
+    "score": 0.5301819,
+    "metadata": {
+     "animal": "cat"
+    }
+   }
+  ],
+  "cat": [
+   {
+    "id": "image:cat",
+    "score": 0.5301819,
+    "metadata": {
+     "animal": "cat"
+    }
+   }
+  ]
  }
 }

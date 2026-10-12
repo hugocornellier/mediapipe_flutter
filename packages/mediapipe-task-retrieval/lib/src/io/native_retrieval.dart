@@ -134,8 +134,10 @@ final class NativeUniversalEmbedder {
         return (array, map.length);
       }
 
-      // Record or query parts as Google's MpTaskPart array.
-      Pointer<mp.MpTaskPart> parts(List<Object?> list) {
+      // Record or query parts as Google's MpTaskPart array. Google's runtime
+      // needs a path for media even when it has the bytes or samples, and
+      // keeps it as the record's text; [name] stands in where none was given.
+      Pointer<mp.MpTaskPart> parts(List<Object?> list, String name) {
         final array = arena<mp.MpTaskPart>(list.length);
         for (final (i, raw) in list.indexed) {
           final part = raw! as Map;
@@ -150,14 +152,14 @@ final class NativeUniversalEmbedder {
               target.imagePart
                 ..imageBytes = bytes(data)
                 ..imageBytesSize = data?.length ?? 0
-                ..filePath = string(part['filePath'] as String?);
+                ..filePath = string(part['filePath'] as String? ?? name);
             case 'audio':
               final data = part['audioData'] as Float32List?;
               target.kind = 2;
               target.audioPart
                 ..audioData = floats(data)
                 ..audioDataSize = data?.length ?? 0
-                ..audioPath = string(part['audioPath'] as String?);
+                ..audioPath = string(part['audioPath'] as String? ?? name);
             default:
               throw ArgumentError.value(part['kind'], 'kind');
           }
@@ -249,7 +251,10 @@ final class NativeUniversalEmbedder {
               string(request['recordId']! as String),
               bytes(data),
               data?.length ?? 0,
-              string(request['filePath'] as String?),
+              string(
+                request['filePath'] as String? ??
+                    request['recordId']! as String,
+              ),
               metadata,
               metadataCount,
               error,
@@ -264,7 +269,10 @@ final class NativeUniversalEmbedder {
               string(request['recordId']! as String),
               floats(data),
               data?.length ?? 0,
-              string(request['audioPath'] as String?),
+              string(
+                request['audioPath'] as String? ??
+                    request['recordId']! as String,
+              ),
               metadata,
               metadataCount,
               error,
@@ -277,7 +285,7 @@ final class NativeUniversalEmbedder {
             (error) => mp.insertContent(
               retriever,
               string(request['recordId']! as String),
-              parts(list),
+              parts(list, request['recordId']! as String),
               list.length,
               metadata,
               metadataCount,
@@ -287,7 +295,7 @@ final class NativeUniversalEmbedder {
           return null;
         case 'retriever.retrieve':
           final list = request['parts']! as List;
-          final query = parts(list);
+          final query = parts(list, 'query');
           final limit = request['limit']! as int;
           final minSimilarity = (request['minSimilarity']! as num).toDouble();
           final (filter, filterCount) = pairs(request['metadataFilter']);
