@@ -44,6 +44,12 @@ const _desktopGpu =
     "Google's retrieval library runs the tasks on the CPU; this package has "
     'not validated a GPU path.';
 
+/// Why a native target outside [retrievalRuntimeTargets] runs neither task.
+const _noLibrary =
+    "Google's retrieval library covers Android arm64 and x86_64, iOS, macOS "
+    'arm64, Linux x64 and Windows x64, and browsers run its JavaScript '
+    'runtime.';
+
 const _noPlugin =
     'The MediaPipe Retrieval browser plugin did not register. Depend on '
     'mediapipe_retrieval as a Flutter plugin.';
@@ -86,7 +92,7 @@ TaskCapabilities _capabilities(TaskPlatform platform) {
     unavailableReasons: {
       // Without a hardware adapter both delegates end on Google's WebGPU check.
       Delegate.cpu: !web
-          ? _desktopGpu
+          ? _noLibrary
           : browserRuns && webKit
           ? embeddingGemma2WebKitUnavailable
           : _hardwareWebGpu(platform)
@@ -98,7 +104,9 @@ TaskCapabilities _capabilities(TaskPlatform platform) {
                 : browserRuns && webKit
                 ? embeddingGemma2WebKitUnavailable
                 : _noWebGpu(platform)
-          : _desktopGpu,
+          : retrievalRuntimeTargets.containsKey(platform.target)
+          ? _desktopGpu
+          : _noLibrary,
     },
     runtimeVersion: _runtimeVersionOn(platform),
   );

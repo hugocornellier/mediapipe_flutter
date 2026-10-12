@@ -314,6 +314,26 @@ void main() {
       );
     });
 
+    test('a target without the library says so for both delegates', () {
+      for (final (os, arch) in [
+        ('macos', 'x64'),
+        ('linux', 'arm64'),
+        ('windows', 'arm64'),
+      ]) {
+        final capabilities = semanticRetrieverCapabilitiesForPlatform(
+          _platform(os, arch, null),
+        );
+        expect(capabilities.supportedDelegates, isEmpty, reason: '$os/$arch');
+        for (final delegate in Delegate.values) {
+          expect(
+            capabilities.unavailableReasons[delegate],
+            allOf(contains('covers'), isNot(contains('GPU path'))),
+            reason: '$os/$arch ${delegate.name}',
+          );
+        }
+      }
+    });
+
     test('browsers get the GPU on a hardware WebGPU adapter (UP-052)', () {
       TaskPlatform web(String? gpu) => TaskPlatform(
         operatingSystem: 'web',

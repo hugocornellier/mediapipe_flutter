@@ -453,6 +453,9 @@ with B3's wheel fold. As found:
 
 ### S4. Retrieval explains an unsupported target with its GPU message
 
+**Done on `chore/oct12-combined`:** a no-library reason for both delegates, as
+Decision has, and a test for three unsupported targets. As found:
+
 `retrieval/lib/src/capabilities.dart:73-74` uses `_desktopGpu` as the native
 CPU reason, and core uses that reason when the target is missing from the
 table (`task_capabilities.dart:120-122`). On `macos/x64`, `linux/arm64` or
