@@ -209,9 +209,9 @@ Removing any of this after 0.1.0 is a breaking change.
   `webGpuAdapterPrefix`. Only the packages and their tests use them, the web
   plugins reach the prefix through `platform_interface.dart`, and no older
   family exports anything like them. Drop them from the public libraries; S1
-  step 3 makes the prefix core-private. The two runtime versions are already
-  gone on `chore/oct12-combined`, where each package reports its version per
-  platform from a private function.
+  step 3 makes the prefix core-private. **Done on `chore/oct12-combined`:**
+  the runtime versions became private per-platform functions, the targets
+  tests need come from `src/`, and S1 step 3 moved the prefix into core.
 - **Redundant model constants.** Vision's `lib/models.dart:1-189` declares 22
   top-level constants beside `VisionModels` (an `xUrl` and an `xSha256` per
   model, such as `blazeFaceShortRangeUrl` and `faceLandmarkerSha256`), text's
@@ -355,7 +355,8 @@ show every one.
    unless a synchronous getter is wanted anyway.
 2. **Close-once handle:** `NativeTaskHandle<T extends NativeType>` (`value`,
    `close(release)`), clearing the pointer before the callback. Net about 50.
-3. **Core web helpers** (`web_task_bridge.dart`, `platform_interface.dart`):
+3. **Core web helpers** (`web_task_bridge.dart`, `platform_interface.dart`),
+   **done on `chore/oct12-combined`:**
    `readWebGpuAdapter()`, `hasHardwareWebGpu(TaskPlatform)` and
    `loadPackageScript(package, asset)`; the prefix and the regex become
    core-private, which removes `webGpuAdapterPrefix` from both families (B3).

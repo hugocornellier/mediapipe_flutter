@@ -4,4 +4,3 @@ abstract interface class DecisionBackend
   new DecisionBackend()
 getter Future<DecisionBackend> Function(Map<String, Object?>)? get decisionBackendFactory
 setter set decisionBackendFactory(Future<DecisionBackend> Function(Map<String, Object?>)? value)
-getter String get webGpuAdapterPrefix

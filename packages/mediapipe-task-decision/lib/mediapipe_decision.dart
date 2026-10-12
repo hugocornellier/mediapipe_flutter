@@ -13,11 +13,7 @@ export 'package:mediapipe_core/mediapipe_core.dart';
 
 export 'models.dart' show DecisionModels;
 export 'src/capabilities.dart'
-    show
-        decisionMakerCapabilitiesForPlatform,
-        embeddingGemma2TextTargets,
-        queryDecisionMakerCapabilities,
-        webGpuAdapterPrefix;
+    show decisionMakerCapabilitiesForPlatform, queryDecisionMakerCapabilities;
 export 'src/decision_maker.dart';
 export 'src/types/options.dart';
 export 'src/types/questions.dart';

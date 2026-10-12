@@ -77,6 +77,4 @@ final class ScoreResult
   double get expectedScore
   new ScoreResult({required double expectedScore, required List<double> probabilities, required double confidence, required String selectedKey})
 function TaskCapabilities decisionMakerCapabilitiesForPlatform(TaskPlatform platform, {DownloadAsset? model})
-getter Map<String, String?> get embeddingGemma2TextTargets
 function Future<TaskCapabilities> queryDecisionMakerCapabilities([DownloadAsset? model])
-getter String get webGpuAdapterPrefix

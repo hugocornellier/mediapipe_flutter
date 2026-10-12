@@ -1,5 +1,7 @@
 import 'package:mediapipe_decision/mediapipe_decision.dart';
 import 'package:mediapipe_decision/platform_interface.dart';
+import 'package:mediapipe_decision/src/capabilities.dart'
+    show embeddingGemma2TextTargets;
 import 'package:mediapipe_decision/src/results/decoders.dart';
 import 'package:test/test.dart';
 

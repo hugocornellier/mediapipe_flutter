@@ -14,6 +14,7 @@ export 'src/capabilities/task_capabilities.dart'
         tasksRuntimeTargets,
         tasksRuntimeUnavailable,
         tasksRuntimeVersionOn;
+export 'src/capabilities/web_gpu.dart' show hasHardwareWebGpu;
 export 'src/classifier_settings.dart';
 export 'src/host_stub.dart' if (dart.library.io) 'src/host_io.dart';
 export 'src/model_source.dart';

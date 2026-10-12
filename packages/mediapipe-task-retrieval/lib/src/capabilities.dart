@@ -23,23 +23,6 @@ String _runtimeVersionOn(TaskPlatform platform) =>
 /// do.
 const retrievalRuntimeTargets = tasksRuntimeTargets;
 
-/// How the web plugin names a WebGPU adapter in `TaskPlatform.gpu`.
-const webGpuAdapterPrefix = 'WebGPU';
-
-/// The adapters Google's runtime refuses to run on, by Google's own rule.
-final _softwareAdapter = RegExp(
-  r'fallback|swiftshader|llvmpipe|software|lavapipe',
-  caseSensitive: false,
-);
-
-/// Whether [platform] names a hardware WebGPU adapter, the only place
-/// Google's browser Universal Embedder runs (UP-052).
-bool _hardwareWebGpu(TaskPlatform platform) => switch (platform.gpu) {
-  final gpu? =>
-    gpu.startsWith(webGpuAdapterPrefix) && !_softwareAdapter.hasMatch(gpu),
-  null => false,
-};
-
 const _desktopGpu =
     "Google's retrieval library runs the tasks on the CPU; this package has "
     'not validated a GPU path.';
@@ -81,7 +64,7 @@ const embeddingGemma2WebKitUnavailable =
 TaskCapabilities _capabilities(TaskPlatform platform) {
   final web = platform.operatingSystem == 'web';
   final browserRuns =
-      retrievalBackendFactory != null && _hardwareWebGpu(platform);
+      retrievalBackendFactory != null && hasHardwareWebGpu(platform);
   final webKit = platform.browserEngine == BrowserEngine.webkit;
   return TaskCapabilities.onTargets(
     platform: platform,
@@ -95,7 +78,7 @@ TaskCapabilities _capabilities(TaskPlatform platform) {
           ? _noLibrary
           : browserRuns && webKit
           ? embeddingGemma2WebKitUnavailable
-          : _hardwareWebGpu(platform)
+          : hasHardwareWebGpu(platform)
           ? _browserCpu
           : _noWebGpu(platform),
       Delegate.gpu: web

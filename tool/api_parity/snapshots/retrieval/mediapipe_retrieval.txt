@@ -104,7 +104,5 @@ final class UniversalEmbedderResult
   new UniversalEmbedderResult({required List<Embedding> embeddings})
 function Future<TaskCapabilities> querySemanticRetrieverCapabilities()
 function Future<TaskCapabilities> queryUniversalEmbedderCapabilities()
-getter Map<String, String?> get retrievalRuntimeTargets
 function TaskCapabilities semanticRetrieverCapabilitiesForPlatform(TaskPlatform platform)
 function TaskCapabilities universalEmbedderCapabilitiesForPlatform(TaskPlatform platform)
-getter String get webGpuAdapterPrefix

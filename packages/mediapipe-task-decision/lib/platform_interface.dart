@@ -4,5 +4,4 @@
 /// Applications should import `mediapipe_decision.dart` instead.
 library;
 
-export 'src/capabilities.dart' show webGpuAdapterPrefix;
 export 'src/decision_backend.dart';

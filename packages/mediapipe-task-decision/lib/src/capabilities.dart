@@ -87,23 +87,6 @@ const _browserCpu =
     'every evaluation on the CPU delegate (upstream-issues.md UP-049). Use '
     'Delegate.gpu, its WebGPU path, as Google\'s web demo does.';
 
-/// How the web plugin names a WebGPU adapter in `TaskPlatform.gpu`.
-const webGpuAdapterPrefix = 'WebGPU';
-
-/// The adapters Google's runtime refuses to run on, by Google's own rule.
-final _softwareAdapter = RegExp(
-  r'fallback|swiftshader|llvmpipe|software|lavapipe',
-  caseSensitive: false,
-);
-
-/// Whether [platform] names a hardware WebGPU adapter, the only one Google's
-/// browser Decision Maker answers on (UP-049).
-bool _hardwareWebGpu(TaskPlatform platform) => switch (platform.gpu) {
-  final gpu? =>
-    gpu.startsWith(webGpuAdapterPrefix) && !_softwareAdapter.hasMatch(gpu),
-  null => false,
-};
-
 const _desktopGpu =
     "Google's library runs Decision Maker on the CPU; this package has not "
     'validated its GPU path.';
@@ -151,7 +134,7 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
       decisionRuntimeTargets.containsKey(platform.target) &&
       !embeddingGemma2TextTargets.containsKey(platform.target);
   final browserRuns =
-      decisionBackendFactory != null && _hardwareWebGpu(platform);
+      decisionBackendFactory != null && hasHardwareWebGpu(platform);
   // Where the GPU path would run, the browser's own refusal of this model.
   final browserRefusal = browserRuns ? _browserRefusal(platform, model) : null;
   return TaskCapabilities.onTargets(
@@ -171,7 +154,9 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
                 ? textOnlyEmbeddingGemmaUnavailable
                 : _noLibrary
           : browserRefusal ??
-                (_hardwareWebGpu(platform) ? _browserCpu : _noWebGpu(platform)),
+                (hasHardwareWebGpu(platform)
+                    ? _browserCpu
+                    : _noWebGpu(platform)),
       Delegate.gpu: web
           ? decisionBackendFactory == null
                 ? _noPlugin

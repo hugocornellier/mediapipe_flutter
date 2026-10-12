@@ -1,14 +1,17 @@
-/// The browser plumbing the text and audio plugins share: one worker per
-/// task, created from the family's worker script, with requests and
-/// disposal in order. Web only, and not for applications.
+/// The browser plumbing the family plugins share: one worker per task,
+/// created from the family's worker script, with requests and disposal in
+/// order; the page's scripts; and the WebGPU adapter. Web only, and not for
+/// applications.
 library;
 
 import 'dart:async';
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 import 'dart:typed_data';
 
 import 'package:web/web.dart' as web;
 
+import 'src/capabilities/web_gpu.dart';
 import 'src/exceptions.dart';
 import 'src/web_runtime.dart';
 
@@ -24,7 +27,6 @@ external JSPromise<JSAny?> _close(JSNumber id);
 final class WebTaskWorker {
   WebTaskWorker._(this._id);
   final JSNumber _id;
-  static Future<void>? _loaded;
 
   /// Starts a worker from [family]'s worker script (`mediapipe_text` or
   /// `mediapipe_audio`) and creates its task from [options]: the task's
@@ -34,7 +36,7 @@ final class WebTaskWorker {
     String family,
     Map<String, Object?> options,
   ) async {
-    await (_loaded ??= _loadBridge());
+    await loadPackageScript('mediapipe_core', 'assets/task_bridge.js');
     final bytes = options['modelBytes'] as Uint8List?;
     final path = options['modelPath'] as String?;
     final input = {
@@ -67,27 +69,62 @@ Future<T> _reported<T extends JSAny?>(JSPromise<T> promise) async {
   }
 }
 
-/// Adds core's bridge script to the page once; a failure can be retried.
-Future<void> _loadBridge() async {
-  final script = web.HTMLScriptElement()
-    ..src = Uri.base
-        .resolve('assets/packages/mediapipe_core/assets/task_bridge.js')
-        .toString();
-  final ready = Completer<void>();
-  unawaited(script.onLoad.first.then((_) => ready.complete()));
-  unawaited(
-    script.onError.first.then((_) {
-      ready.completeError(
-        StateError('Unable to load the MediaPipe web bridge.'),
-      );
-    }),
-  );
-  web.document.head!.append(script);
-  try {
-    await ready.future.timeout(const Duration(seconds: 60));
-  } catch (_) {
-    script.remove();
-    WebTaskWorker._loaded = null;
-    rethrow;
-  }
+final _scripts = <String, Future<void>>{};
+
+/// Adds [package]'s [asset] (such as `assets/bridge.js`) to the page as a
+/// script, once. A failed load is forgotten, so the next call retries it
+/// rather than failing every later task.
+Future<void> loadPackageScript(String package, String asset) {
+  final url = Uri.base.resolve('assets/packages/$package/$asset').toString();
+  return _scripts[url] ??= () async {
+    final script = web.HTMLScriptElement()..src = url;
+    final ready = Completer<void>();
+    unawaited(script.onLoad.first.then((_) => ready.complete()));
+    unawaited(
+      script.onError.first.then((_) {
+        ready.completeError(StateError('Unable to load $url.'));
+      }),
+    );
+    web.document.head!.append(script);
+    try {
+      await ready.future.timeout(const Duration(seconds: 60));
+    } catch (_) {
+      script.remove();
+      // Forget this failed load, so the next call retries it.
+      unawaited(_scripts.remove(url));
+      rethrow;
+    }
+  }();
+}
+
+@JS('navigator.gpu')
+external JSObject? get _gpu;
+
+/// The adapter Google's browser runtimes ask WebGPU for, named for
+/// `TaskPlatform.gpu` as `WebGPU` and its vendor, architecture and
+/// description, with a fallback adapter marked as such; null without WebGPU.
+/// A family whose browser runtime needs WebGPU sets it as
+/// `taskPlatformGpuReader` when its plugin registers.
+Future<String?> readWebGpuAdapter() async {
+  final gpu = _gpu;
+  if (gpu == null) return null;
+  final adapter = await gpu
+      .callMethod<JSPromise<JSObject?>>(
+        'requestAdapter'.toJS,
+        {'powerPreference': 'high-performance'}.jsify(),
+      )
+      .toDart;
+  if (adapter == null) return null;
+  final info = adapter.getProperty<JSObject?>('info'.toJS);
+  String part(String name) =>
+      info?.getProperty<JSString?>(name.toJS)?.toDart ?? '';
+  final fallback =
+      adapter.getProperty<JSBoolean?>('isFallbackAdapter'.toJS)?.toDart ??
+      false;
+  return [
+    webGpuAdapterPrefix,
+    for (final name in ['vendor', 'architecture', 'description'])
+      if (part(name).isNotEmpty) part(name),
+    if (fallback) '(fallback adapter)',
+  ].join(' ');
 }

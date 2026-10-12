@@ -11,6 +11,7 @@ import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_core/platform_interface.dart'
     show classifierSettingsJson;
+import 'package:mediapipe_core/web_task_bridge.dart' show loadPackageScript;
 import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:web/web.dart' as web;
 
@@ -150,7 +151,6 @@ final class WebVisionTask<R>
   final R Function(Map<String, dynamic> json, Float64List? landmarks) _decode;
   Future<void> _tail = Future.value();
   Future<void>? _disposing;
-  static Future<void>? _loaded;
 
   static Future<T> _workerResult<T extends JSAny?>(JSPromise<T> promise) async {
     try {
@@ -159,29 +159,6 @@ final class WebVisionTask<R>
       throw TaskException('$cause', cause: cause);
     }
   }
-
-  static Future<void> _load() => _loaded ??= () async {
-    final script = web.HTMLScriptElement()
-      ..src = Uri.base
-          .resolve('assets/packages/mediapipe_vision/assets/bridge.js')
-          .toString();
-    final ready = Completer<void>();
-    unawaited(script.onLoad.first.then((_) => ready.complete()));
-    unawaited(
-      script.onError.first.then((_) {
-        ready.completeError(StateError('Unable to load MediaPipe web bridge.'));
-      }),
-    );
-    web.document.head!.append(script);
-    try {
-      await ready.future.timeout(const Duration(seconds: 60));
-    } catch (_) {
-      // A transient script failure must not poison every later create call.
-      script.remove();
-      _loaded = null;
-      rethrow;
-    }
-  }();
 
   /// Creates one official browser [task] from [options] in [runningMode];
   /// [settings] are the task's own options, named as in Google's JavaScript
@@ -193,7 +170,7 @@ final class WebVisionTask<R>
     Map<String, Object?> settings,
     R Function(Map<String, dynamic> json, Float64List? landmarks) decode,
   ) async {
-    await _load();
+    await loadPackageScript('mediapipe_vision', 'assets/bridge.js');
     final modelBytes = options.modelBytes;
     final modelPath = options.modelPath;
     final id = await _workerResult(

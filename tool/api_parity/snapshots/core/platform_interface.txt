@@ -20,6 +20,7 @@ function MediaPipeCategory decodeCategory(Map<Object?, Object?> json)
 function Classifications decodeClassifications(Map<Object?, Object?> json)
 function Embedding decodeEmbedding(Map<Object?, Object?> json)
 function String? decodeLabel(Object? value)
+function bool hasHardwareWebGpu(TaskPlatform platform)
 function void holdModelBytes(TaskOptions options, Uint8List bytes)
 getter int get maxStreamTimestampMilliseconds
 function StateError? missingLinuxGraphicsLibraries(String loaderError)

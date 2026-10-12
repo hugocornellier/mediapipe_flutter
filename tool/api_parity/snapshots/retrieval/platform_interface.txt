@@ -4,4 +4,3 @@ abstract interface class RetrievalBackend
   new RetrievalBackend()
 getter Future<RetrievalBackend> Function(Map<String, Object?>)? get retrievalBackendFactory
 setter set retrievalBackendFactory(Future<RetrievalBackend> Function(Map<String, Object?>)? value)
-getter String get webGpuAdapterPrefix
