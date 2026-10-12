@@ -415,6 +415,9 @@ show every one.
 
 ### S2. Small dead code and leftovers
 
+**Done on `chore/oct12-combined`,** but for the macOS wheel branch, which goes
+with B3's wheel fold. As found:
+
 - `bundleWheelRuntime`'s macOS branch (`family_runtimes.dart:452-454`) cannot
   run: `wheelRuntimes` pins only `windows/x64`. It goes with B3.
 - Decision declares `meta: ^1.18.0` (`pubspec.yaml:37`) and never imports it:
@@ -462,6 +465,8 @@ for an unsupported target (`retrieval_unit_test.dart:283-315` covers
 supported targets and macOS 13 only).
 
 ### S5. `verified_runtime.js` ships in native apps
+
+**Done on `chore/oct12-combined`.** As found:
 
 `packages/mediapipe-core/pubspec.yaml:46` lists `assets/verified_runtime.js`
 without `platforms: [web]`, unlike `task_bridge.js` (`:47-48`) and every

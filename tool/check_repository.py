@@ -49,14 +49,13 @@ def family_lists(problems):
     for family in families:
         if f'mediapipe_{family}' not in release:
             problems.append(f'CONTRIBUTING.md: the first release does not name mediapipe_{family}')
-    for source, declaration in [
-            ('packages/mediapipe-core/lib/src/model_bundler.dart', 'const bundlableFamilies = {'),
-            ('packages/mediapipe-core/bin/web_runtime.dart', 'const _families = [')]:
-        text = read(source)
-        block = text[text.index(declaration):]
-        listed = set(re.findall(r"'mediapipe_(\w+)'", block[:block.index(';')]))
-        if listed != set(families):
-            problems.append(f'{source}: lists {sorted(listed)}, not {sorted(families)}')
+    # bin/web_runtime.dart reads the same table.
+    source = 'packages/mediapipe-core/lib/src/model_bundler.dart'
+    text = read(source)
+    block = text[text.index('const bundlableFamilies = {'):]
+    listed = set(re.findall(r"'mediapipe_(\w+)'", block[:block.index(';')]))
+    if listed != set(families):
+        problems.append(f'{source}: lists {sorted(listed)}, not {sorted(families)}')
     makefile = read('Makefile')
     for family in families:
         for target in (f'models_{family}', f'test_{family}'):

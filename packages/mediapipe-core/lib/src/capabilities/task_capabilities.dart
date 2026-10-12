@@ -74,6 +74,16 @@ final class TaskPlatform {
 /// is called once, with the rest of the platform.
 Future<String?> Function()? taskPlatformGpuReader;
 
+/// What [taskPlatformGpuReader] names, or null without one or when it fails:
+/// an unnamed GPU leaves every capability table as declared.
+Future<String?> readTaskPlatformGpu() async {
+  try {
+    return await taskPlatformGpuReader?.call();
+  } on Object {
+    return null;
+  }
+}
+
 /// Minimum product version for one process target, e.g. `macos/arm64: 14.0`.
 ///
 /// A null version means any version of that operating system is accepted.

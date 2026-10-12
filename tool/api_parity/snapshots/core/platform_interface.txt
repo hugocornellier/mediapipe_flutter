@@ -28,7 +28,6 @@ function String nativeModelPath(String path)
 function void requireDelegate(TaskCapabilities capabilities, Delegate delegate)
 function Future<ModelSource> resolvePinnedModel(DownloadAsset model, {String? family, Map<String, DownloadAsset> registry = const {}})
 function Future<void> resolveTaskModel(TaskOptions options)
-getter bool get runningInIosSimulator
 getter Future<String?> Function()? get taskPlatformGpuReader
 setter set taskPlatformGpuReader(Future<String?> Function()? value)
 getter Map<String, String?> get tasksRuntimeTargets

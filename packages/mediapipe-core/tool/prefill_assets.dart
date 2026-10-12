@@ -6,7 +6,7 @@ import 'package:mediapipe_core/native_assets.dart';
 /// Consumes the reviewed source inventory from `tool/mirror_runtime_assets.py`.
 Future<void> main(List<String> args) async {
   if (args.length != 1) {
-    stderr.writeln('Usage: dart run mediapipe_core:prefill_assets <directory>');
+    stderr.writeln('Usage: dart run tool/prefill_assets.dart <directory>');
     exit(64);
   }
   final entries =

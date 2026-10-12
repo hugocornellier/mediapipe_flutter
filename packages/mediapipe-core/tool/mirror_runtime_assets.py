@@ -99,7 +99,7 @@ def main():
             if not item['urls']:
                 print(f"skipped {item['release_asset']}: not published yet")
         subprocess.run(
-            ['dart', 'run', 'mediapipe_core:prefill_assets', str(args.prefill.resolve())],
+            ['dart', 'run', 'tool/prefill_assets.dart', str(args.prefill.resolve())],
             input=json.dumps([item for item in selected if item['urls']]),
             text=True, check=True, cwd=CORE,
         )
