@@ -53,10 +53,16 @@ flutter:
     shutil.copyfile(PACKAGE / "test/fixtures/face_detection/portrait-301x209.rgb",
                     app / "assets/portrait.rgb")
     (app / "integration_test").mkdir(exist_ok=True)
-    shutil.copyfile(PACKAGE / "tool/flutter_smoke_test.dart.template",
-                    app / "integration_test/face_detector_test.dart")
-    shutil.copyfile(PACKAGE / "tool/flutter_release_smoke.dart.template",
-                    app / "lib/main.dart")
+    # The CPU only, as on Linux and Windows: macOS withdraws the GPU while
+    # Google's 1.1.1 library gives different Metal results from its wheel
+    # (upstream-issues.md UP-057).
+    for source, destination in [
+            ("flutter_smoke_test.dart.template",
+             "integration_test/face_detector_test.dart"),
+            ("flutter_release_smoke.dart.template", "lib/main.dart")]:
+        (app / destination).write_text(
+            (PACKAGE / "tool" / source).read_text().replace(
+                "Delegate.values", "const [Delegate.cpu]"))
     # Flutter defaults release builds to a universal binary. This runtime is arm64.
     config = app / "macos/Runner/Configs/AppInfo.xcconfig"
     settings = config.read_text()
