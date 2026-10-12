@@ -7,11 +7,20 @@ import 'package:mediapipe_core/platform_interface.dart';
 import '../models.dart' show DecisionModels;
 import 'decision_backend.dart' show decisionBackendFactory;
 
-/// The release behind Decision Maker on every platform: Google's per-family
-/// decision library (its build of October 9, 2026) on Android, iOS, macOS
-/// and Linux, its 1.1.0 wheel's library on Windows, and
-/// `@mediapipe/tasks-decision` 1.1.0 in browsers.
-const decisionRuntimeVersion = '1.1.0';
+/// The release of `@mediapipe/tasks-decision` that `assets/runtime.json`
+/// pins for browsers (`tool/check_repository.py` checks the two agree).
+const _browserRuntimeVersion = '1.1.0';
+
+/// The release behind Decision Maker on [platform]: Google's per-family
+/// decision library (its 1.1.1 build of October 9, 2026) on Android, iOS,
+/// macOS and Linux, its 1.1.0 wheel's library on Windows, and the browser
+/// runtime in browsers.
+String _runtimeVersionOn(TaskPlatform platform) =>
+    switch (platform.operatingSystem) {
+      'web' => _browserRuntimeVersion,
+      'windows' => '1.1.0',
+      _ => tasksRuntimeVersionOn(platform),
+    };
 
 /// Where Google's C library with Decision Maker runs: core's shared targets,
 /// from its per-family library (`familyRuntimes`) everywhere but Windows,
@@ -173,6 +182,6 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
           ? _desktopGpu
           : _noLibrary,
     },
-    runtimeVersion: decisionRuntimeVersion,
+    runtimeVersion: _runtimeVersionOn(platform),
   );
 }

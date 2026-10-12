@@ -43,6 +43,22 @@ void main() {
       throwsA(isA<RuntimeUnavailableException>()),
     );
   }, skip: Platform.isLinux ? false : 'Linux only');
+  test('macOS refuses the GPU with its reason (UP-057)', () async {
+    final capabilities = await queryFaceDetectorCapabilities();
+    expect(capabilities.supportedDelegates, {Delegate.cpu});
+    await expectLater(
+      FaceDetector.create(
+        FaceDetectorOptions(delegate: Delegate.gpu, modelPath: _model),
+      ),
+      throwsA(
+        isA<RuntimeUnavailableException>().having(
+          (error) => error.fix,
+          'fix',
+          contains('UP-057'),
+        ),
+      ),
+    );
+  }, skip: Platform.isMacOS ? false : 'macOS only');
   tearDownAll(() => reportReferenceDeltas('face_detector'));
 }
 

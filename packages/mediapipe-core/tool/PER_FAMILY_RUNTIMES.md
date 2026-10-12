@@ -81,25 +81,31 @@ Checked on 2026-10-12 against the same references (the 1.1.0 release
 candidate wheel), downloading the libraries from the release:
 
 - **macOS arm64** (M4 Max, macOS 27): core 57, text 96 plus the 35 modern
-  text checks, audio 45, Decision Maker 22 (1 skipped), Retrieval 29 and the
-  vision GPU memory test pass, as do the text tasks beside the face tasks in
-  a debug and a release app. Every CPU output matches as before.
-- **Metal.** Vision passes on the CPU, but 35 of its Metal checks fail, all
-  in Face Detector, Face Landmarker and Object Detector: Google's 1.1.1 Metal
-  output differs from every published wheel's (the 1.1.0 release candidate
-  and the final 1.1.0 wheel give identical GPU output). Face boxes move by
-  up to 12 pixels, landmarks by up to 0.007 and scores by up to 0.017, and
-  Object Detector keeps a different set of boxes near its score threshold on
-  four images. The new GPU numbers lie closer to the CPU ones. The
-  references stay until Google publishes a wheel from the same build.
+  text checks, audio 45, Decision Maker 22 (1 skipped), Retrieval 29 and
+  every vision task on the CPU pass, as do the text tasks beside the face
+  tasks in a debug and a release app. Every CPU output matches the wheel
+  exactly, in the package suites and in `tool/test_macos_references.py`.
+- **Metal, withdrawn.** Google's 1.1.1 Metal output differs from the
+  wheel's for every vision task, on the M4 Max (67 checks of
+  `tool/test_macos_references.py`) and on GitHub's runners (68), where the
+  October 5 build matched it exactly; the release candidate and the final
+  1.1.0 wheel give identical GPU output, and no newer wheel exists. The
+  vision package offers the CPU only on macOS until a wheel from the same
+  build confirms the new output
+  ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
 - **Android arm64 emulator** (API 31, CPU): the gallery's `sdk_all_test`
   (32 checks) and its still image test pass. Its logcat still shows the
   usage-logging client's `Failed to get JNIEnv` error.
-- **CI** (branch `chore/google-1-1-1-libraries`): Linux x64 and Windows x64
-  on the CPU, Linux's GPU (Mesa) against Google's GPU wheel, the x86_64
-  Android emulator, Decision Maker and Retrieval on every platform, and the
-  bundled models pass. The arm64 iOS Simulator suites, Firebase Test Lab's
-  phones and an iPhone are still to report.
+- **Android phones** (Firebase Test Lab, GPU required): the Pixel 8a, the
+  Galaxy S24 and the Galaxy A12 pass all 38 checks; a first Pixel 8a run
+  missed one Image Embedder self-consistency check by 0.000001, and its rerun
+  passed. Each phone's logcat shows the `Failed to get JNIEnv` error.
+- **iOS Simulator** (arm64, CI): every suite passes.
+- **CI** (branches `chore/google-1-1-1-libraries` and `chore/oct12-combined`):
+  Linux x64 and Windows x64 on the CPU, Linux's GPU (Mesa) against Google's
+  GPU wheel, the x86_64 Android emulator, Decision Maker and Retrieval on
+  every platform (WebKit on `macos-26` included), the macOS text and modern
+  task jobs, and the bundled models pass. An iPhone is still to report.
 
 ### The October 5 and 8 builds (1.1.0)
 
@@ -178,14 +184,11 @@ test files shared its process; it now runs alone (`--tags isolated`).
   `MEDIAPIPE_ASSET_SOURCE` (written into the app's
   `hooks.user_defines.mediapipe_core.asset_source`, see
   `tool/consumer_packages.py`) points them at a local folder instead.
-  `tool/mirror_runtime_assets.py --prefill` fills such a folder. `main`'s
-  ruleset still requires six checks whose jobs are gone (the macOS landmark
-  pin, the public runtime download consumer, the iOS and Android face
-  consumers, the separate face GPU comparison and the MagicTouch example
-  consumer).
+  `tool/mirror_runtime_assets.py --prefill` fills such a folder.
 - **Notices.** Since October 9, every family ships Google's LICENSE and
   NOTICE, identical across families; the NOTICE opens with Google's
-  MediaPipe Tasks privacy notice. The release posts both.
+  MediaPipe Tasks privacy notice. The release posts both, and
+  `mediapipe_core` carries them (`third_party/`).
 
 ## Decision and retrieval
 
@@ -261,8 +264,9 @@ The October 9 build (its `BUILD_INFO` is in `packages/mediapipe-core/native`):
 - **Headers and notices.** Each family ships its C headers, now vendored in
   `packages/mediapipe-core/native/include`, with Google's LICENSE, NOTICE
   and BUILD_INFO.
-- **GPU output.** On macOS, Metal output moved away from the 1.1.0 release
-  candidate's: see [Validated](#validated).
+- **GPU output.** On macOS, Metal output differs from the 1.1.0 wheel's for
+  every vision task, so the vision package withdraws the macOS GPU: see
+  [Validated](#validated).
 - Still no Windows decision library. Linux arm64, Windows arm64 and Android
   x86 libraries come too; no task claims them, so the release does not post
   them.
@@ -318,8 +322,11 @@ this.
   Face Detector keeps about twice each frame
   ([UP-032](../../../upstream-issues.md#up-032-macos-gpu-tasks-keep-every-frame-until-they-close)).
 - A Python wheel from the same build as the libraries, for the references
-  ([UP-036](../../../upstream-issues.md#up-036-ios-summarizer-generations-drift-from-googles-wheel-late-in-long-summaries));
-  the 1.1.1 build's Metal output differs from the 1.1.0 release candidate's.
+  ([UP-036](../../../upstream-issues.md#up-036-ios-summarizer-generations-drift-from-googles-wheel-late-in-long-summaries)),
+  and to show whether the 1.1.1 build's different Metal output is intended
+  ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
+  `mediapipe-nightly` stops at 1.1.0rc20260925, though npm has had 1.1.1
+  nightlies since October 8.
 - An official URL.
 
 ## Sizes

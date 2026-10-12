@@ -18,18 +18,24 @@ String? get _hostLibrary => referenceWheel(
   Abi.current().toString().replaceFirst('_', '/'),
 )?.librarySha256;
 
-/// macOS compares GPU output with its checked-in physical-Mac references, or
-/// with same-host ones. Linux has no checked-in GPU references, so it runs the
-/// GPU suites only against same-host official outputs.
+/// Why no GPU suite runs on macOS: the package withdraws Metal while Google's
+/// 1.1.1 library gives different results there from its 1.1.0 wheel. The
+/// checked-in physical-Mac GPU references stay for when it returns.
+const macosGpuWithdrawn =
+    "macOS withdraws the GPU while Google's 1.1.1 Metal output differs from "
+    'its 1.1.0 wheel (upstream-issues.md UP-057).';
+
+/// Linux has no checked-in GPU references, so it runs the GPU suites only
+/// against same-host official outputs; macOS runs none ([macosGpuWithdrawn]).
 bool get gpuFaceTestsEnabled =>
-    Platform.isMacOS ||
-    (Platform.isLinux &&
-        Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] != null);
+    Platform.isLinux &&
+    Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] != null;
 
 /// Why the GPU face suites are skipped on this host.
-const gpuFaceTestsSkipReason =
-    'GPU face inference is validated on macOS, and on Linux against '
-    'same-host references (MEDIAPIPE_GPU_REFERENCE_DIR).';
+String get gpuFaceTestsSkipReason => Platform.isMacOS
+    ? macosGpuWithdrawn
+    : 'GPU face inference is validated on Linux against same-host references '
+          '(MEDIAPIPE_GPU_REFERENCE_DIR).';
 
 /// CPU goldens stay fixed. CI may use GPU outputs from the pinned official wheel
 /// on that same host; missing, modified or differently pinned outputs fail.

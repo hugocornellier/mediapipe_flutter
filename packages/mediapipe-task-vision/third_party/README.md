@@ -24,11 +24,9 @@ drawing topology, keeping every edge and its order.
 
 ## Notices
 
-`LICENSE` and `NOTICE` were copied from Google's official MediaPipe 1.0.0
-distribution and cover the larger upstream distribution the vision library is
-built from. Google's October 9, 2026 build ships its own LICENSE and NOTICE
-with each family; until the package adopts those, these stay its notices for
-the bundled library.
+Google's `LICENSE` and `NOTICE` for the bundled library are the ones its
+October 9, 2026 build ships with every family, which `mediapipe_core` carries
+once (`mediapipe_core/third_party/`).
 `OPENCV_CAROTENE_NOTICES` holds OpenCV 4.12.0's hal/carotene notices, which the
 package's former source-built runtime needed; it stays until Google confirms
 the notices its own libraries need.

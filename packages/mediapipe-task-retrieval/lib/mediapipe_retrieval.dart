@@ -20,7 +20,6 @@ export 'src/capabilities.dart'
         querySemanticRetrieverCapabilities,
         queryUniversalEmbedderCapabilities,
         retrievalRuntimeTargets,
-        retrievalRuntimeVersion,
         semanticRetrieverCapabilitiesForPlatform,
         universalEmbedderCapabilitiesForPlatform,
         webGpuAdapterPrefix;

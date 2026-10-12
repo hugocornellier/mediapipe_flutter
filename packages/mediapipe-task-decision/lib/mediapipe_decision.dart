@@ -15,7 +15,6 @@ export 'models.dart' show DecisionModels;
 export 'src/capabilities.dart'
     show
         decisionMakerCapabilitiesForPlatform,
-        decisionRuntimeVersion,
         embeddingGemma2TextTargets,
         queryDecisionMakerCapabilities,
         webGpuAdapterPrefix;

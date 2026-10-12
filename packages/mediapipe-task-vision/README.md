@@ -658,7 +658,7 @@ before offering a GPU toggle.
 | Web | WASM | WebGL 2 in a worker, when supported |
 | iOS | Official library | Metal for supported tasks |
 | Android | Official library | Supported GPUs on arm64 devices; CPU only on emulators |
-| macOS Apple Silicon | Official library | Metal for supported tasks |
+| macOS Apple Silicon | Official library | Not available for now: Google's 1.1.1 Metal results are unconfirmed (UP-057) |
 | Linux x64 | Official library | OpenGL ES for supported tasks; EGL and a GPU driver required |
 | Windows x64 | Official library | Not available |
 

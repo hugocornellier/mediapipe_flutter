@@ -6,10 +6,17 @@ import 'package:mediapipe_core/platform_interface.dart';
 
 import 'retrieval_backend.dart' show retrievalBackendFactory;
 
-/// The release behind both tasks on every platform: Google's per-family
-/// retrieval library natively and `@mediapipe/tasks-retrieval` in browsers,
-/// both MediaPipe 1.1.0.
-const retrievalRuntimeVersion = '1.1.0';
+/// The release of `@mediapipe/tasks-retrieval` that `assets/runtime.json`
+/// pins for browsers (`tool/check_repository.py` checks the two agree).
+const _browserRuntimeVersion = '1.1.0';
+
+/// The release behind both tasks on [platform]: Google's per-family
+/// retrieval library natively (its 1.1.1 build of October 9, 2026) and the
+/// browser runtime in browsers.
+String _runtimeVersionOn(TaskPlatform platform) =>
+    platform.operatingSystem == 'web'
+    ? _browserRuntimeVersion
+    : tasksRuntimeVersionOn(platform);
 
 /// Where Google's retrieval library runs: core's shared targets, which
 /// Google's per-family build covers as its vision, text and audio libraries
@@ -93,7 +100,7 @@ TaskCapabilities _capabilities(TaskPlatform platform) {
                 : _noWebGpu(platform)
           : _desktopGpu,
     },
-    runtimeVersion: retrievalRuntimeVersion,
+    runtimeVersion: _runtimeVersionOn(platform),
   );
 }
 

@@ -33,17 +33,17 @@ final _selectedTasks =
     };
 
 // Each selected task's GPU output is compared with the official wheel's GPU
-// output for the cases that reference holds: on macOS (official runtime) the
-// checked-in physical-Mac references (hand) or same-host ones, on Linux only
-// same-host ones (MEDIAPIPE_GPU_REFERENCE_DIR, from
-// tool/prepare_gpu_reference.py --landmark-tasks or --hand).
-final _gpuSkip = Platform.isMacOS && _unvalidatedHost == null
-    ? null
+// output for the cases that reference holds: on Linux, same-host ones
+// (MEDIAPIPE_GPU_REFERENCE_DIR, from tool/prepare_gpu_reference.py
+// --landmark-tasks or --hand). macOS runs none ([macosGpuWithdrawn]); its
+// checked-in physical-Mac hand references stay for when the GPU returns.
+final _gpuSkip = Platform.isMacOS
+    ? macosGpuWithdrawn
     : Platform.isLinux &&
           Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] != null
     ? null
-    : 'Landmark GPU is validated on the official macOS runtime, and on Linux '
-          'against same-host references (MEDIAPIPE_GPU_REFERENCE_DIR).';
+    : 'Landmark GPU is validated on Linux against same-host references '
+          '(MEDIAPIPE_GPU_REFERENCE_DIR).';
 
 void main() {
   final reference = loadFaceReference(

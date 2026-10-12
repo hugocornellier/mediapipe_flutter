@@ -1,11 +1,13 @@
 """Compare Google's vision library with the official wheel on this Mac.
 
 Face, Hand, Pose, Gesture and Holistic Landmarker, Object Detector, Image
-Classifier, Image Embedder and Image Segmenter run on CPU and Metal (Image
-Segmenter in IMAGE mode: Google's Metal path aborts in VIDEO mode). Each is
-compared with the official wheel's output, generated on this machine for both
-CPU and GPU: the wheel's CPU results
-drift between Apple CPUs, as cpu_reference.py records for every native job.
+Classifier, Image Embedder and Image Segmenter run on the CPU. Each is
+compared with the official wheel's output, generated on this machine: the
+wheel's CPU results drift between Apple CPUs, as cpu_reference.py records for
+every native job. Metal is withdrawn while Google's 1.1.1 library gives
+different results there from its 1.1.0 wheel (upstream-issues.md UP-057);
+prepare_gpu_reference.py still writes the macOS Metal references for when it
+returns.
 """
 import argparse
 import json
@@ -89,12 +91,6 @@ def main():
         output / 'python-install', 'macos/arm64')
     env = {**os.environ, 'MPLCONFIGDIR': str(output / 'matplotlib')}
 
-    gpu = output / 'gpu'
-    run([str(python), '-B', str(PACKAGE / 'tool/prepare_gpu_reference.py'),
-         '--python', str(python), '--output-dir', str(gpu), '--landmark-tasks',
-         '--object-detector', '--image-tasks', '--segmenter-tasks'],
-        REPO, env, output / 'gpu-reference.log')
-
     cpu = output / 'cpu'
     oracle = generate(
         output / 'cpu-generation', cpu, 'macos/arm64',
@@ -112,7 +108,6 @@ def main():
 
     root = test_root(output / 'consumer')
     env.update(MEDIAPIPE_CPU_REFERENCE_DIR=str(cpu),
-               MEDIAPIPE_GPU_REFERENCE_DIR=str(gpu),
                MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME='1',
                MEDIAPIPE_LANDMARK_TASKS='hand,pose,gesture,holistic')
     run(['dart', 'pub', 'get'], root, env, output / 'dart-pub-get.log')
@@ -126,7 +121,7 @@ def main():
         output / 'dart-tests.log')
     print('Official macOS runtime comparisons passed for Face, Hand, Pose, '
           'Gesture, Holistic, Object Detector, Image Classifier, Image '
-          'Embedder and Image Segmenter, on Metal too.', flush=True)
+          'Embedder and Image Segmenter on the CPU.', flush=True)
 
 
 if __name__ == '__main__':

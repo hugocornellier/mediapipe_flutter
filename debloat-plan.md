@@ -4,9 +4,10 @@ Checked at `ebe8ffd` (`main`, October 12, 2026), which `main` now carries as
 `a9cbed4` (#84 and #85 squashed). Of the files cited here only
 `gallery/tool/browser/test_browser.mjs` differs between the two, and its
 references are at `a9cbed4`; every other line number is the same at both.
-Step 1 of the [suggested order](#suggested-order) is done on its own branch
-([The guards](#the-guards-step-1)); its changes are not yet reflected in the
-line numbers below. The first pass (#77) is done; it is summarized under
+Step 1 of the [suggested order](#suggested-order)
+([The guards](#the-guards-step-1)), B1 and B2 are done on
+`chore/oct12-combined`, with Google's 1.1.1 libraries; their changes are not
+yet reflected in the line numbers below. The first pass (#77) is done; it is summarized under
 [The first pass](#the-first-pass-77), and its full record is this file at
 `a9cbed4` (`git show a9cbed4:debloat-plan.md`).
 
@@ -146,6 +147,11 @@ In this order. These block 0.1.0, or 0.1.0 would freeze them.
 
 ### B1. Describe the phone telemetry, by the binary each platform bundles
 
+**Done on `chore/oct12-combined`:** the privacy doc's usage-logging table
+follows the binaries the packages bundle since the 1.1.1 libraries (every one
+has the uploader, Decision's too), quotes Google's privacy notice, and lists
+PyPI and Hugging Face among the hosts. As found:
+
 `doc/privacy_and_licenses.md:27-34` says Google's usage-logging client "was
 observed" with Google's Windows library. Since #83 it is also in the vision,
 text and audio libraries on Android and iOS, and Retrieval's libraries carry it
@@ -170,6 +176,12 @@ models, though the EmbeddingGemma 2 models come from Hugging Face
 `packages/mediapipe-task-retrieval/lib/models.dart:13-20`).
 
 ### B2. Notices
+
+**Done on `chore/oct12-combined`, but for the OpenCV question:** Google's 1.1.1
+build ships the same `LICENSE` and `NOTICE` with every family, so core carries
+them once (`packages/mediapipe-core/third_party/`) and vision dropped its 1.0.0
+copies; vision keeps `OPENCV_CAROTENE_NOTICES` until Google says whether its
+libraries need it. As found:
 
 Only vision ships Google's notices (`packages/mediapipe-task-vision/third_party/`:
 `LICENSE`, `NOTICE`, `OPENCV_CAROTENE_NOTICES`). Text, audio, Decision and
@@ -197,7 +209,9 @@ Removing any of this after 0.1.0 is a breaking change.
   `webGpuAdapterPrefix`. Only the packages and their tests use them, the web
   plugins reach the prefix through `platform_interface.dart`, and no older
   family exports anything like them. Drop them from the public libraries; S1
-  step 3 makes the prefix core-private.
+  step 3 makes the prefix core-private. The two runtime versions are already
+  gone on `chore/oct12-combined`, where each package reports its version per
+  platform from a private function.
 - **Redundant model constants.** Vision's `lib/models.dart:1-189` declares 22
   top-level constants beside `VisionModels` (an `xUrl` and an `xSha256` per
   model, such as `blazeFaceShortRangeUrl` and `faceLandmarkerSha256`), text's
@@ -272,6 +286,7 @@ What remains:
   download their models on demand.
 - The Galaxy A12 failed 4 of 38 on October 8 and October 9. On October 8 all
   four were CameraX's "The camera device has encountered a recoverable error".
+  On the 1.1.1 build it passed all 38 on October 12.
 - The iPhone has not run since `6c940cf` (October 7), so Google's October 8 iOS
   rebuilds have run only in the simulator.
 - Run B5 on the final code, after S1's runtime changes.
@@ -745,7 +760,7 @@ The scans flag these, and they stay:
 | What | Why it stays |
 |---|---|
 | JSON reference fixtures and binary fixture inputs | Google's oracle outputs and their inputs. Every fixture has a reader, and `.pubignore` keeps them out of the archives. |
-| `third_party/NOTICE`, `LICENSE`, `OPENCV_CAROTENE_NOTICES` | Required notices (B2). |
+| Core's `third_party/NOTICE` and `LICENSE`, vision's `third_party/OPENCV_CAROTENE_NOTICES` | Required notices (B2). |
 | Text and audio stream bridges (`native/*_bridge.c`, `.h`) | The family hooks compile them, and Dart binds every exported function. They differ (per-request userdata against 64 locked slots), so they stay two. |
 | Vision's Android plugin | `gpuRenderer` has a Dart caller (`mediapipe_vision_android.dart`). |
 | Browser worker `preload` and `stats` messages | Called by name from `vision/assets/bridge.js` and the browser tests. |
@@ -774,7 +789,7 @@ Everything before 0.1.0, one branch and pull request at a time. Every pull
 request runs the full suites; the runtime one also the iPhone and Test Lab, in
 debug and release.
 
-1. **Guards (day 1), done on `chore/debloat-guards`:** B4's snapshots of
+1. **Guards (day 1), done on `chore/oct12-combined`:** B4's snapshots of
    every public library (with R14's delta format), the family inventory,
    `make test` and `make models` for six packages, the pin checks, the
    bundled-models test for every family, and R5's coverage-matrix tests for
@@ -782,8 +797,8 @@ debug and release.
    cannot miss a family.
 2. **API trims and release docs (days 1 to 2):** B3 (internal constants, model
    constants, the wheel fold, `VisionResult`, and the Retrieval audio and
-   insert tests or holding those calls back), S1 step 3, S2, S4, S5, R4's
-   Decision pins, and B1 and B2.
+   insert tests or holding those calls back), S1 step 3, S2, S4, S5 and R4's
+   Decision pins. B1 and B2 are done.
 3. **FFI kit (days 2 to 3):** S1 steps 1, 2 and 8.
 4. **Runtime plumbing (days 3 to 5, the riskiest):** S1 steps 4, 5 and 7.
    Core's tests with a fake worker task come first; then one family at a

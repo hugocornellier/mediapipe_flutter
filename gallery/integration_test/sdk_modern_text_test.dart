@@ -89,18 +89,19 @@ void main() {
     return file.path;
   }
 
-  /// A reference is Google's answer here only when it came from the runtime
-  /// version this device's library has.
+  /// A reference is Google's answer here only when it came from the release
+  /// line this device's library has.
   Future<void> expectReferenceRuntime(
     Map<String, dynamic> reference,
     TaskCapabilities support,
   ) async {
     expect(support.supportedDelegates, {Delegate.cpu});
     // A reference from Google's 1.1.0 release candidate wheel counts for the
-    // 1.1.0 library.
+    // 1.1.1 library; the comparisons check each answer.
+    final line = support.runtimeVersion.split('.').take(2).join('.');
     expect(
       reference['runtime'],
-      startsWith('mediapipe==${support.runtimeVersion}'),
+      startsWith('mediapipe==$line.'),
       reason:
           'bundle references generated with the wheel of this runtime\'s '
           'release (prepare_gallery.dart --modern-text-reference)',

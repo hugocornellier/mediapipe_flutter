@@ -22,17 +22,18 @@ Map<String, dynamic> loadReference(String task) {
 }
 
 /// Google's releases generate different text, so a reference is only
-/// Google's answer for this host when it came from the release its runtime
-/// reports: a reference from Google's 1.1.0 release candidate wheel counts
-/// for the 1.1.0 libraries.
+/// Google's answer for this host when it came from the release line its
+/// runtime reports: a reference from Google's 1.1.0 release candidate wheel
+/// counts for the 1.1.1 libraries, and the comparisons check each answer.
 Future<void> expectReferenceRuntime(
   Map<String, dynamic> reference,
   Future<TaskCapabilities> Function() capabilities,
 ) async {
   final support = await capabilities();
+  final line = support.runtimeVersion.split('.').take(2).join('.');
   expect(
     reference['runtime'],
-    startsWith('mediapipe==${support.runtimeVersion}'),
+    startsWith('mediapipe==$line.'),
     reason:
         'The reference was generated with another MediaPipe version than '
         "this host's pinned runtime. Generate same-host references with "

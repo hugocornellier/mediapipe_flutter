@@ -9,6 +9,8 @@ import 'dart:typed_data';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:test/test.dart';
 
+import 'support/face_reference.dart' show macosGpuWithdrawn;
+
 void main() {
   test(
     'macOS GPU video releases the frames MediaPipe keeps, without its model '
@@ -89,7 +91,7 @@ void main() {
         folder.deleteSync(recursive: true);
       }
     },
-    skip: !Platform.isMacOS,
+    skip: Platform.isMacOS ? macosGpuWithdrawn : 'macOS only',
     timeout: const Timeout(Duration(minutes: 2)),
   );
 }

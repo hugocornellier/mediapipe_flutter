@@ -103,7 +103,13 @@ void main() {
           _platform(os, arch, version),
         );
         expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: os);
-        expect(capabilities.runtimeVersion, '1.1.0');
+        // Windows runs the 1.1.0 wheel's library, the others Google's 1.1.1
+        // per-family one.
+        expect(
+          capabilities.runtimeVersion,
+          os == 'windows' ? '1.1.0' : '1.1.1',
+          reason: os,
+        );
       }
       expect(
         decisionMakerCapabilitiesForPlatform(

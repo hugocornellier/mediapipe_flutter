@@ -96,7 +96,8 @@ def pubspec_pins(problems):
 
 
 def runtime_versions(problems):
-    # Families without their own constant report core's tasksRuntimeVersionOn.
+    # Families without their own browser constant (`_browserRuntimeVersion`)
+    # report core's tasksRuntimeVersionOn.
     core = read('packages/mediapipe-core/lib/src/capabilities/task_capabilities.dart')
     web = re.search(r"operatingSystem == 'web' \? '([^']+)'", core).group(1)
     for family, folder in task_families().items():

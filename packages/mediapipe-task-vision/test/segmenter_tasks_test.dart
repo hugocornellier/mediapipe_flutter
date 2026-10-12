@@ -411,11 +411,11 @@ void _compare(
 const _gpuTolerances = {'confidence_masks': 0.01, 'category_mask': 0.05};
 
 /// Why the GPU comparisons cannot run on this host, or null when they can.
-final _gpuSkip = Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] == null
+final _gpuSkip = Platform.isMacOS
+    ? macosGpuWithdrawn
+    : Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] == null
     ? 'GPU Image Segmenter compares with same-host official GPU outputs '
           '(MEDIAPIPE_GPU_REFERENCE_DIR).'
-    : Platform.isMacOS && _unvalidatedHost != null
-    ? 'macOS GPU runs on the official runtime only.'
-    : Platform.isMacOS || Platform.isLinux
+    : Platform.isLinux
     ? null
-    : 'Desktop GPU is validated on Linux and macOS.';
+    : 'Desktop GPU is validated on Linux.';

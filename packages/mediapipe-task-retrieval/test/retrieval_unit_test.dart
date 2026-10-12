@@ -299,7 +299,7 @@ void main() {
           ),
         ]) {
           expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: os);
-          expect(capabilities.runtimeVersion, '1.1.0');
+          expect(capabilities.runtimeVersion, '1.1.1');
           expect(
             capabilities.unavailableReasons[Delegate.gpu],
             contains('CPU'),

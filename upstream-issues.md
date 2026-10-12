@@ -66,6 +66,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0 |
 | [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0 |
 | [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0 |
+| [UP-057](#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel) | The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel | Found on the 1.1.1 build of October 9 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -964,6 +965,55 @@ temperature; neither passes `normalizePrior`, and `evaluateChoice` does not
 pass `scoringMode`. Google's C API takes both. In browsers, Laya therefore
 reads "No fish nearby." as flee (0.478, explore 0.324) on the question that
 Google's 1.1.0 wheel, with the prior normalized, answers explore.
+
+### UP-057: The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel
+
+**Status:** observed October 12, 2026 with Google's 1.1.1 development build of
+October 9 (the per-family vision library for macOS arm64) on an Apple M4 Max
+(macOS 27) and on GitHub's `macos-15` runners. Worked around: the vision
+package withdraws the macOS GPU for every task until a Python wheel from the
+same build confirms the new output. Not yet reported to Google.
+
+On the CPU, every task matches the 1.1.0 release candidate wheel
+(`mediapipe-nightly` 1.1.0rc20260925) exactly, as the October 5 build did. On
+Metal, the October 5 build matched the wheel's Metal output on the same Mac
+exactly too, but the 1.1.1 build differs for every vision task the package
+runs there, by these largest amounts on the M4 Max
+(`tool/test_macos_references.py`, and the package suites against the
+checked-in Metal references):
+
+- Image Classifier: the top score falls from 0.804 to 0.584 on one input, and
+  on three others the top class changes from "cloak", which the wheel picks on
+  the CPU and on Metal, to "abaya".
+- Image Embedder: values move by up to 0.20.
+- Image Segmenter: confidence masks move by up to 0.13.
+- Pose Landmarker: landmarks move by up to 0.094 of the image width (0.168 on
+  GitHub's runner).
+- Object Detector: on two images it finds one object fewer or one more, on
+  the group shot its first detection is a different object, and boxes move by
+  up to 24 pixels.
+- Face Detector: boxes move by up to 12 pixels and scores by up to 0.017.
+- Hand Landmarker and Gesture Recognizer: handedness scores move by up to
+  0.065.
+- Face Landmarker: landmarks move by up to 0.007.
+
+Compared with the CPU, the change goes both ways: one face box and one
+classifier score lie closer to the CPU than the wheel's Metal output does, and
+the classifier's "abaya" is not among the CPU's top three. Google's final
+1.1.0 wheel gives the same Metal output as the release candidate, and no
+newer Python wheel exists (`mediapipe-nightly` stops at 1.1.0rc20260925; npm
+has had 1.1.1 nightlies since October 8), so nothing can show which output
+Google intends. GitHub's runner and the M4 Max differ the same way, so the
+change comes from the library, not the machine.
+
+To restore the GPU once a wheel from the same build agrees: pin it in
+`packages/mediapipe-core/lib/src/native_assets/reference_wheels.dart` and
+regenerate the references, drop `_macosGpuGap` from
+`packages/mediapipe-task-vision/lib/src/capabilities.dart`, mark the macOS GPU
+cells of `tool/coverage/matrix.json` required again, and bring back the Metal
+steps this withdrawal removed from `.github/workflows/main.yaml` and
+`packages/mediapipe-task-vision/tool/test_macos_references.py`. iPhones keep
+the GPU; the 1.1.1 build has not run on one yet.
 
 ## History
 

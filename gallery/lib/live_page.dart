@@ -314,7 +314,7 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
     if (_controller.description == null) return;
     try {
       // Start on the current delegate where the task supports it, otherwise
-      // on the preferred one (Object Detector is Metal-only on macOS).
+      // on the preferred one.
       await _controller.start(
         delegate: _delegates.contains(_controller.delegate)
             ? _controller.delegate

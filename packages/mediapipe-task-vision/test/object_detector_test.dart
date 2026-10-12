@@ -26,12 +26,13 @@ void main() {
               Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
                   '1'
           ? 'macOS CPU compares with same-host official outputs'
+          : delegate == Delegate.gpu && Platform.isMacOS
+          ? macosGpuWithdrawn
           : delegate == Delegate.gpu &&
-                !Platform.isMacOS &&
                 !(Platform.isLinux &&
                     Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] != null)
-          ? 'GPU object inference is validated on macOS, and on Linux against '
-                'same-host references (MEDIAPIPE_GPU_REFERENCE_DIR).'
+          ? 'GPU object inference is validated on Linux against same-host '
+                'references (MEDIAPIPE_GPU_REFERENCE_DIR).'
           : null,
     );
   }

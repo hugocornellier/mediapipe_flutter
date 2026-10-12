@@ -109,10 +109,10 @@ String tasksRuntimeUnavailable(String task, String operatingSystem) =>
     'Dart program), which run the hook.';
 
 /// The official MediaPipe release behind the tasks on [platform]: Google's
-/// 1.1.0 per-family libraries on Android, iOS, macOS, Linux and Windows, and
-/// its browser runtime 1.0.1.
+/// 1.1.1 per-family libraries (its development build of October 9, 2026) on
+/// Android, iOS, macOS, Linux and Windows, and its browser runtime 1.0.1.
 String tasksRuntimeVersionOn(TaskPlatform platform) =>
-    platform.operatingSystem == 'web' ? '1.0.1' : '1.1.0';
+    platform.operatingSystem == 'web' ? '1.0.1' : '1.1.1';
 
 /// Declared package support for one task on a platform: which [Delegate]s run
 /// there and why the others do not. This is not an inference self-test.
