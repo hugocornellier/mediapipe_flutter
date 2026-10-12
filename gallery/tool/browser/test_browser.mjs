@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -32,18 +33,24 @@ const base = argumentsMap['base-url'] || 'http://localhost:8866/mediapipe_flutte
 const gallery = base + (base.includes('?') ? '&' : '?') + 'test-hooks';
 const apiBase = argumentsMap['api-url'] || 'http://localhost:8866/api-probe/';
 const textAudioBase = argumentsMap['text-audio-url'] || 'http://localhost:8866/text-audio-probe/';
+// Where the direct comparisons load Google's own JavaScript: jsDelivr, or with
+// --official-runtime=<url> a copy `dart run mediapipe_core:web_runtime` wrote,
+// so the comparisons do not depend on the CDN.
+const officialRuntime = new URL(argumentsMap['official-runtime'] || 'https://cdn.jsdelivr.net/npm/', base).href;
 const evidence = path.join(repo, 'build/codex-tmp/web-browser-' + browserName +
   (delegate === 'GPU' ? '-gpu' : '') + (taskName === 'face' ? '' : '-' + taskName) +
   (argumentsMap.runtime ? '-self-hosted' : ''));
 fs.mkdirSync(evidence, {recursive: true});
-const report = {browser: browserName, delegate, suite, task: taskName, checks: [], physical_webcam_tested: false,
-  software_webgl: browserName === 'chromium' && process.platform === 'linux'};
+const report = {browser: browserName, delegate, suite, task: taskName, checks: [], retries: [],
+  physical_webcam_tested: false, software_webgl: browserName === 'chromium' && process.platform === 'linux'};
 const logs = [];
 const browsers = [];
 
 // Google's model files by name, at the SHA-256 names `dart run
-// mediapipe_core:bundle_models` gives them in the gallery's assets.
-const bundledModelsScript = () => {
+// mediapipe_core:bundle_models` gives them in the gallery's assets, and the
+// root the direct comparisons load Google's JavaScript from.
+const bundledModelsScript = runtime => {
+  window.officialRuntime = runtime;
   let manifest;
   const key = async file => {
     manifest ??= fetch(new URL('assets/assets/mediapipe/manifest.json', document.baseURI)).then(r => r.json());
@@ -76,6 +83,7 @@ async function launch(deviceCount = 2, useFile = true) {
 }
 
 function observe(page) {
+  page.on('crash', () => logs.push({type: 'crash', text: 'page crashed'}));
   page.on('console', msg => logs.push({type: msg.type(), text: msg.text()}));
   page.on('pageerror', error => logs.push({type: 'pageerror', text: error.stack}));
   page.on('response', response => {
@@ -107,7 +115,7 @@ function median(values) {
 async function detectScreenshot(page, png) {
   return page.evaluate(async ({base64, spec}) => {
     const pin = await (await fetch(new URL('assets/packages/mediapipe_vision/assets/runtime.json', document.baseURI))).json();
-    const runtime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${pin.version}/`);
+    const runtime = new URL(`@mediapipe/tasks-vision@${pin.version}/`, window.officialRuntime);
     const bundle = await import(new URL('vision_bundle.mjs', runtime));
     const files = await bundle.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const task = await bundle[spec.task].createFromOptions(files, {
@@ -239,7 +247,7 @@ async function alignmentCheck(page) {
 async function apiChecks() {
   const browser = await launch();
   const page = await browser.newPage();
-  await page.addInitScript(bundledModelsScript);
+  await page.addInitScript(bundledModelsScript, officialRuntime);
   observe(page);
   await page.goto(apiBase + (delegate === 'GPU' ? '?delegate=gpu' : ''));
   // The probe runs every browser task. Hosted runners emulate WebGL in
@@ -250,7 +258,7 @@ async function apiChecks() {
   assert.equal(api.status, 'passed', JSON.stringify(api));
   const direct = await page.evaluate(async delegate => {
     const pin = await (await fetch(new URL('assets/packages/mediapipe_vision/assets/runtime.json', document.baseURI))).json();
-    const runtime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${pin.version}/`);
+    const runtime = new URL(`@mediapipe/tasks-vision@${pin.version}/`, window.officialRuntime);
     const {FilesetResolver, FaceLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
     const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const task = await FaceLandmarker.createFromOptions(files, {
@@ -284,7 +292,7 @@ async function apiChecks() {
   // same image, runtime and delegate.
   const hand = await page.evaluate(async delegate => {
     const pin = await (await fetch(new URL('assets/packages/mediapipe_vision/assets/runtime.json', document.baseURI))).json();
-    const runtime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${pin.version}/`);
+    const runtime = new URL(`@mediapipe/tasks-vision@${pin.version}/`, window.officialRuntime);
     const {FilesetResolver, HandLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
     const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const task = await HandLandmarker.createFromOptions(files, {
@@ -320,7 +328,7 @@ async function apiChecks() {
   // only first calls are comparable.
   const landmarkTasks = await page.evaluate(async delegate => {
     const pin = await (await fetch(new URL('assets/packages/mediapipe_vision/assets/runtime.json', document.baseURI))).json();
-    const runtime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${pin.version}/`);
+    const runtime = new URL(`@mediapipe/tasks-vision@${pin.version}/`, window.officialRuntime);
     const vision = await import(new URL('vision_bundle.mjs', runtime));
     const files = await vision.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const points = list => (list ?? []).map(p => [p.x, p.y, p.z]);
@@ -370,7 +378,7 @@ async function apiChecks() {
   // boxes are float pixels; the Dart API truncates them, as its C API does.
   const detectionTasks = await page.evaluate(async delegate => {
     const pin = await (await fetch(new URL('assets/packages/mediapipe_vision/assets/runtime.json', document.baseURI))).json();
-    const runtime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${pin.version}/`);
+    const runtime = new URL(`@mediapipe/tasks-vision@${pin.version}/`, window.officialRuntime);
     const vision = await import(new URL('vision_bundle.mjs', runtime));
     const files = await vision.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
     const response = await fetch(new URL('assets/assets/samples/portrait.jpg', document.baseURI));
@@ -533,7 +541,7 @@ async function iosUserAgentCpuCheck() {
   const browser = await launch();
   const context = await browser.newContext({userAgent});
   const page = await context.newPage();
-  await page.addInitScript(bundledModelsScript);
+  await page.addInitScript(bundledModelsScript, officialRuntime);
   observe(page);
   // Failed creation terminates the worker before Playwright can inspect it.
   // Hold only the create request, then release it unchanged after observation.
@@ -661,7 +669,7 @@ async function cameraChecks() {
   const context = await browser.newContext({viewport: {width: 1280, height: 720}});
   await context.grantPermissions(['camera'], {origin: new URL(base).origin});
   const page = await context.newPage();
-  await page.addInitScript(bundledModelsScript);
+  await page.addInitScript(bundledModelsScript, officialRuntime);
   observe(page);
   await installCaptureObservations(page);
   await page.goto(gallery);
@@ -759,7 +767,7 @@ async function cameraChecks() {
   const denied = await browser.newContext();
   await denied.grantPermissions([], {origin: new URL(base).origin});
   const deniedPage = await denied.newPage();
-  await deniedPage.addInitScript(bundledModelsScript);
+  await deniedPage.addInitScript(bundledModelsScript, officialRuntime);
   observe(deniedPage);
   await deniedPage.goto(gallery);
   await deniedPage.getByRole('button', {name: /Face Landmarker/}).click();
@@ -778,7 +786,7 @@ async function cameraChecks() {
   });
   await multipleContext.grantPermissions(['camera'], {origin: new URL(base).origin});
   const multiplePage = await multipleContext.newPage();
-  await multiplePage.addInitScript(bundledModelsScript);
+  await multiplePage.addInitScript(bundledModelsScript, officialRuntime);
   observe(multiplePage);
   await installCaptureObservations(multiplePage, true);
   await multiplePage.goto(gallery);
@@ -875,7 +883,7 @@ async function cameraChecks() {
   const missingContext = await missing.newContext();
   await missingContext.grantPermissions(['camera'], {origin: new URL(base).origin});
   const missingPage = await missingContext.newPage();
-  await missingPage.addInitScript(bundledModelsScript);
+  await missingPage.addInitScript(bundledModelsScript, officialRuntime);
   observe(missingPage);
   await missingPage.goto(gallery);
   await missingPage.getByRole('button', {name: /Face Landmarker/}).click();
@@ -900,7 +908,7 @@ async function textAudioChecks() {
   report.browser_version = browser.version();
   const context = await browser.newContext(microphone ? {permissions: ['microphone']} : {});
   const page = await context.newPage();
-  await page.addInitScript(bundledModelsScript);
+  await page.addInitScript(bundledModelsScript, officialRuntime);
   observe(page);
   // Where the package's workers load Google's runtimes from: jsDelivr, or with
   // --runtime=<url> a root the probe's bundle serves (MediaPipeWebRuntime).
@@ -931,7 +939,7 @@ async function textAudioChecks() {
   if (argumentsMap.runtime && browserName === 'chromium') {
     // The same pinned SHA-384 must reject a changed file from a self-hosted root.
     const tampered = await context.newPage();
-    await tampered.addInitScript(bundledModelsScript);
+    await tampered.addInitScript(bundledModelsScript, officialRuntime);
     await tampered.route('**/text_bundle.mjs', route =>
       route.fulfill({status: 200, contentType: 'text/javascript', body: 'tampered'}));
     await tampered.goto(textAudioBase + '?runtime=' + encodeURIComponent(argumentsMap.runtime));
@@ -948,7 +956,7 @@ async function textAudioChecks() {
     const asset = name => new URL('assets/' + name, document.baseURI).href;
     const bytes = async name => new Uint8Array(await (await fetch(asset(name))).arrayBuffer());
     const textPin = await (await fetch(asset('packages/mediapipe_text/assets/runtime.json'))).json();
-    const textRuntime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@${textPin.version}/`);
+    const textRuntime = new URL(`@mediapipe/tasks-text@${textPin.version}/`, window.officialRuntime);
     const text = await import(new URL('text_bundle.mjs', textRuntime).href);
     const textFiles = await text.FilesetResolver.forTextTasks(new URL('wasm', textRuntime).href);
     const heads = result => result.classifications.map(h => h.categories.map(c =>
@@ -1010,7 +1018,7 @@ async function textAudioChecks() {
       detector.detect(t).languages.map(l => [l.languageCode, l.probability]));
     detector.close();
     const audioPin = await (await fetch(asset('packages/mediapipe_audio/assets/runtime.json'))).json();
-    const audioRuntime = new URL(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-audio@${audioPin.version}/`);
+    const audioRuntime = new URL(`@mediapipe/tasks-audio@${audioPin.version}/`, window.officialRuntime);
     const audio = await import(new URL('audio_bundle.mjs', audioRuntime).href);
     const audioFiles = await audio.FilesetResolver.forAudioTasks(new URL('wasm', audioRuntime).href);
     const yamnet = await audio.AudioClassifier.createFromOptions(audioFiles,
@@ -1130,13 +1138,53 @@ async function textAudioChecks() {
   report.checks.push('gallery-text-embedder-compare');
 }
 
-try {
-  if (suite === 'text-audio') await textAudioChecks();
-  if (suite === 'all' || suite === 'api') await apiChecks();
-  if ((suite === 'all' || suite === 'api') && browserName === 'chromium' && delegate === 'CPU') {
-    await iosUserAgentCpuCheck();
+// What macOS logged about the browser's processes, for a run that lost its
+// page: the unified log names a WebKit process that went and why.
+function saveSystemLog(name) {
+  if (process.platform !== 'darwin') return;
+  try {
+    const log = execFileSync('/usr/bin/log', ['show', '--last', '15m', '--style', 'compact', '--predicate',
+      'process == "Playwright" OR process BEGINSWITH "com.apple.WebKit" OR ' +
+      '(process == "kernel" AND eventMessage CONTAINS "memorystatus")'],
+    {encoding: 'utf8', maxBuffer: 1024 * 1024 * 1024});
+    fs.writeFileSync(path.join(evidence, name + '-lost-page-unified.log'), log);
+    console.log(log.split('\n')
+      .filter(line => /terminat|crash|unresponsive|exceed|kill|memory limit|footprint/i.test(line))
+      .filter(line => !/canTerminateAuxiliaryProcess|AutomaticTermination/.test(line))
+      .slice(-30).join('\n'));
+  } catch (error) {
+    console.log('No unified log: ' + error.message);
   }
-  if (suite === 'all' || suite === 'camera') await cameraChecks();
+}
+
+// WebKit on hosted macOS has closed the page mid-suite with no page error or
+// failed check (run 38261996089). A suite that loses its page or browser, and
+// only that, runs once more on a fresh browser; a failed check still fails at
+// once. Each retry is kept in the report and shown as a workflow warning.
+async function retryingLostPage(name, checks) {
+  const passed = report.checks.length;
+  try {
+    await checks();
+  } catch (error) {
+    if (!/Target page, context or browser has been closed|Target crashed/.test(error?.message ?? '')) throw error;
+    const reason = error.message.split('\n')[0];
+    report.retries.push({suite: name, error: reason, crashed: logs.some(entry => entry.type === 'crash')});
+    console.log(`::warning title=${browserName} lost the page::${name} checks: ${reason}. ` +
+      'Running them once more on a fresh browser.');
+    saveSystemLog(name);
+    report.checks.length = passed;
+    for (const browser of browsers.splice(0)) await browser.close().catch(() => {});
+    await checks();
+  }
+}
+
+try {
+  if (suite === 'text-audio') await retryingLostPage('text-audio', textAudioChecks);
+  if (suite === 'all' || suite === 'api') await retryingLostPage('api', apiChecks);
+  if ((suite === 'all' || suite === 'api') && browserName === 'chromium' && delegate === 'CPU') {
+    await retryingLostPage('ios-user-agent', iosUserAgentCpuCheck);
+  }
+  if (suite === 'all' || suite === 'camera') await retryingLostPage('camera', cameraChecks);
   assert.equal(logs.filter(entry => entry.type === 'pageerror').length, 0, JSON.stringify(logs));
   report.status = 'passed';
   console.log(JSON.stringify(report, null, 2));

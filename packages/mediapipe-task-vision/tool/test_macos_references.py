@@ -116,10 +116,14 @@ def main():
                MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME='1',
                MEDIAPIPE_LANDMARK_TASKS='hand,pose,gesture,holistic')
     run(['dart', 'pub', 'get'], root, env, output / 'dart-pub-get.log')
+    # A task's close waits for Google's usage-logging upload, so a slow reply
+    # holds a test past the default 30 s (upstream-issues.md UP-025); the
+    # upload request itself gives up after 60 s.
     run(['dart', 'test', 'test/face_landmarker_test.dart',
          'test/landmark_tasks_test.dart', 'test/image_tasks_test.dart',
          'test/object_detector_test.dart', 'test/segmenter_tasks_test.dart',
-         '--reporter', 'expanded'], root, env, output / 'dart-tests.log')
+         '--timeout', '180s', '--reporter', 'expanded'], root, env,
+        output / 'dart-tests.log')
     print('Official macOS runtime comparisons passed for Face, Hand, Pose, '
           'Gesture, Holistic, Object Detector, Image Classifier, Image '
           'Embedder and Image Segmenter, on Metal too.', flush=True)
