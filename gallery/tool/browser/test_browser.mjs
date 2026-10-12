@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -40,8 +41,8 @@ const evidence = path.join(repo, 'build/codex-tmp/web-browser-' + browserName +
   (delegate === 'GPU' ? '-gpu' : '') + (taskName === 'face' ? '' : '-' + taskName) +
   (argumentsMap.runtime ? '-self-hosted' : ''));
 fs.mkdirSync(evidence, {recursive: true});
-const report = {browser: browserName, delegate, suite, task: taskName, checks: [], physical_webcam_tested: false,
-  software_webgl: browserName === 'chromium' && process.platform === 'linux'};
+const report = {browser: browserName, delegate, suite, task: taskName, checks: [], retries: [],
+  physical_webcam_tested: false, software_webgl: browserName === 'chromium' && process.platform === 'linux'};
 const logs = [];
 const browsers = [];
 
@@ -82,6 +83,7 @@ async function launch(deviceCount = 2, useFile = true) {
 }
 
 function observe(page) {
+  page.on('crash', () => logs.push({type: 'crash', text: 'page crashed'}));
   page.on('console', msg => logs.push({type: msg.type(), text: msg.text()}));
   page.on('pageerror', error => logs.push({type: 'pageerror', text: error.stack}));
   page.on('response', response => {
@@ -1136,13 +1138,53 @@ async function textAudioChecks() {
   report.checks.push('gallery-text-embedder-compare');
 }
 
-try {
-  if (suite === 'text-audio') await textAudioChecks();
-  if (suite === 'all' || suite === 'api') await apiChecks();
-  if ((suite === 'all' || suite === 'api') && browserName === 'chromium' && delegate === 'CPU') {
-    await iosUserAgentCpuCheck();
+// What macOS logged about the browser's processes, for a run that lost its
+// page: the unified log names a WebKit process that went and why.
+function saveSystemLog(name) {
+  if (process.platform !== 'darwin') return;
+  try {
+    const log = execFileSync('/usr/bin/log', ['show', '--last', '15m', '--style', 'compact', '--predicate',
+      'process == "Playwright" OR process BEGINSWITH "com.apple.WebKit" OR ' +
+      '(process == "kernel" AND eventMessage CONTAINS "memorystatus")'],
+    {encoding: 'utf8', maxBuffer: 1024 * 1024 * 1024});
+    fs.writeFileSync(path.join(evidence, name + '-lost-page-unified.log'), log);
+    console.log(log.split('\n')
+      .filter(line => /terminat|crash|unresponsive|exceed|kill|memory limit|footprint/i.test(line))
+      .filter(line => !/canTerminateAuxiliaryProcess|AutomaticTermination/.test(line))
+      .slice(-30).join('\n'));
+  } catch (error) {
+    console.log('No unified log: ' + error.message);
   }
-  if (suite === 'all' || suite === 'camera') await cameraChecks();
+}
+
+// WebKit on hosted macOS has closed the page mid-suite with no page error or
+// failed check (run 38261996089). A suite that loses its page or browser, and
+// only that, runs once more on a fresh browser; a failed check still fails at
+// once. Each retry is kept in the report and shown as a workflow warning.
+async function retryingLostPage(name, checks) {
+  const passed = report.checks.length;
+  try {
+    await checks();
+  } catch (error) {
+    if (!/Target page, context or browser has been closed|Target crashed/.test(error?.message ?? '')) throw error;
+    const reason = error.message.split('\n')[0];
+    report.retries.push({suite: name, error: reason, crashed: logs.some(entry => entry.type === 'crash')});
+    console.log(`::warning title=${browserName} lost the page::${name} checks: ${reason}. ` +
+      'Running them once more on a fresh browser.');
+    saveSystemLog(name);
+    report.checks.length = passed;
+    for (const browser of browsers.splice(0)) await browser.close().catch(() => {});
+    await checks();
+  }
+}
+
+try {
+  if (suite === 'text-audio') await retryingLostPage('text-audio', textAudioChecks);
+  if (suite === 'all' || suite === 'api') await retryingLostPage('api', apiChecks);
+  if ((suite === 'all' || suite === 'api') && browserName === 'chromium' && delegate === 'CPU') {
+    await retryingLostPage('ios-user-agent', iosUserAgentCpuCheck);
+  }
+  if (suite === 'all' || suite === 'camera') await retryingLostPage('camera', cameraChecks);
   assert.equal(logs.filter(entry => entry.type === 'pageerror').length, 0, JSON.stringify(logs));
   report.status = 'passed';
   console.log(JSON.stringify(report, null, 2));
