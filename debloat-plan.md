@@ -4,8 +4,8 @@ Checked at `ebe8ffd` (`main`, October 12, 2026), which `main` now carries as
 `a9cbed4` (#84 and #85 squashed). Of the files cited here only
 `gallery/tool/browser/test_browser.mjs` differs between the two, and its
 references are at `a9cbed4`; every other line number is the same at both.
-Steps 1 and 2 of the [suggested order](#suggested-order)
-([The guards](#the-guards-step-1) and the API trims), S1 step 1, B1 and B2
+Steps 1 to 3 of the [suggested order](#suggested-order)
+([The guards](#the-guards-step-1), the API trims and the FFI kit), B1 and B2
 are done on `chore/oct12-combined`, with Google's 1.1.1 libraries; their
 changes are not yet reflected in the line numbers below. The first pass (#77) is done; it is summarized under
 [The first pass](#the-first-pass-77), and its full record is this file at
@@ -438,6 +438,14 @@ show every one.
    about 14). In text, a `runClassicTextRequest<T extends Struct, R>` like
    vision's `runVisionRequest` for the language detector and classifier, and a
    shared base for the proofreader and summarizer (net about 50, optional).
+   **Done on `chore/oct12-combined`, but for the optional text items:**
+   Retrieval's decoder is a 12-line wrapper over core's (net 22), and core's
+   `pluginNotRegistered(package)` serves the five stubs and both capability
+   reasons (net 10). The text items stay: Dart's FFI cannot allocate a struct
+   from a type parameter, so each request would still pass its own
+   allocator, as vision's do, and the shared runner saves about 2 lines; the
+   proofreader and summarizer differ in every struct and call, so a shared
+   base would be mostly callbacks.
 
 ### S2. Small dead code and leftovers
 
@@ -838,8 +846,9 @@ debug and release.
    `VisionResult`, and the Retrieval audio and insert tests or holding those
    calls back), S1 step 3, S2, S4, S5 and R4's Decision pins. B1 and B2 are
    done.
-3. **FFI kit (days 2 to 3):** S1 steps 1, 2 and 8. Step 1 is done on
-   `chore/oct12-combined`, and step 2 was measured and dropped.
+3. **FFI kit (days 2 to 3), done on `chore/oct12-combined`:** S1 steps 1,
+   2 and 8. Step 2 was measured and dropped, as were step 8's optional text
+   items.
 4. **Runtime plumbing (days 3 to 5, the riskiest):** S1 steps 4, 5 and 7.
    Core's tests with a fake worker task come first; then one family at a
    time.

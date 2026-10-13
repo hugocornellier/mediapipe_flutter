@@ -26,6 +26,7 @@ getter int get maxStreamTimestampMilliseconds
 function StateError? missingLinuxGraphicsLibraries(String loaderError)
 getter int get mpHostSystem
 function String nativeModelPath(String path)
+function RuntimeUnavailableException pluginNotRegistered(String package)
 function void requireDelegate(TaskCapabilities capabilities, Delegate delegate)
 function Future<ModelSource> resolvePinnedModel(DownloadAsset model, {String? family, Map<String, DownloadAsset> registry = const {}})
 function Future<void> resolveTaskModel(TaskOptions options)

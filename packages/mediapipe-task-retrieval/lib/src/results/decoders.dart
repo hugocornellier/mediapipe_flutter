@@ -3,9 +3,8 @@
 /// data, from the native worker.
 library;
 
-import 'dart:typed_data';
-
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart' show decodeEmbedding;
 
 import '../types/results.dart';
 
@@ -20,41 +19,20 @@ UniversalEmbedderResult decodeEmbedderResult(Object? json) {
   );
 }
 
+/// One head as core decodes it, except that Google's browser API leaves the
+/// unused representation empty, and a head must keep exactly one.
 Embedding _embedding(Map map) {
-  final floats = _floats(map['floatEmbedding']);
-  final quantized = _bytes(map['quantizedEmbedding']);
-  if ((floats == null) == (quantized == null)) {
+  bool present(Object? value) =>
+      value is List ? value.isNotEmpty : value != null;
+  final floats = present(map['floatEmbedding']);
+  if (floats == present(map['quantizedEmbedding'])) {
     throw const TaskException('MediaPipe returned an invalid embedding.');
   }
-  final name = map['headName'] as String?;
-  return Embedding(
-    floatEmbedding: floats,
-    quantizedEmbedding: quantized,
-    headIndex: (map['headIndex'] as num?)?.toInt() ?? 0,
-    headName: name == null || name.isEmpty ? null : name,
-  );
+  return decodeEmbedding({
+    ...map,
+    (floats ? 'quantizedEmbedding' : 'floatEmbedding'): null,
+  });
 }
-
-/// Google's browser API leaves the unused representation empty or absent.
-Float32List? _floats(Object? value) => switch (value) {
-  null => null,
-  Float32List list => list.isEmpty ? null : list,
-  List list =>
-    list.isEmpty
-        ? null
-        : Float32List.fromList([for (final v in list) (v as num).toDouble()]),
-  _ => throw TaskException('MediaPipe returned an invalid embedding: $value'),
-};
-
-Uint8List? _bytes(Object? value) => switch (value) {
-  null => null,
-  Uint8List list => list.isEmpty ? null : list,
-  List list =>
-    list.isEmpty
-        ? null
-        : Uint8List.fromList([for (final v in list) (v as num).toInt()]),
-  _ => throw TaskException('MediaPipe returned an invalid embedding: $value'),
-};
 
 /// A [RetrievalResult] from `{records: [{id, text, score, metadata}]}`.
 RetrievalResult decodeRetrievalResult(Object? json) {

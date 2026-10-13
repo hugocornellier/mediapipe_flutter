@@ -91,9 +91,8 @@ const _desktopGpu =
     "Google's library runs Decision Maker on the CPU; this package has not "
     'validated its GPU path.';
 
-const _noPlugin =
-    'The MediaPipe Decision browser plugin did not register. Depend on '
-    'mediapipe_decision as a Flutter plugin.';
+final _unregistered = pluginNotRegistered('mediapipe_decision');
+final _noPlugin = '${_unregistered.message} ${_unregistered.fix}';
 
 String _noWebGpu(TaskPlatform platform) =>
     "Google's browser Decision Maker answers only on a hardware WebGPU "

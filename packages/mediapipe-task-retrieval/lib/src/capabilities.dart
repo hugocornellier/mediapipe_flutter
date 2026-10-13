@@ -33,9 +33,8 @@ const _noLibrary =
     'arm64, Linux x64 and Windows x64, and browsers run its JavaScript '
     'runtime.';
 
-const _noPlugin =
-    'The MediaPipe Retrieval browser plugin did not register. Depend on '
-    'mediapipe_retrieval as a Flutter plugin.';
+final _unregistered = pluginNotRegistered('mediapipe_retrieval');
+final _noPlugin = '${_unregistered.message} ${_unregistered.fix}';
 
 /// Google's browser Universal Embedder creates a WebGPU device for itself
 /// and has no CPU path (upstream-issues.md UP-052).

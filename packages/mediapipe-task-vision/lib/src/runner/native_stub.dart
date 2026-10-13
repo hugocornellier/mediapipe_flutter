@@ -2,7 +2,8 @@
 /// browser plugin, so reaching these means it did not register.
 library;
 
-import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show pluginNotRegistered;
 
 import '../types/options.dart';
 import '../types/results.dart';
@@ -10,12 +11,7 @@ import '../types/vision_types.dart';
 import '../vision_task_backend.dart';
 import 'native_interface.dart';
 
-Never _unavailable() => throw const RuntimeUnavailableException(
-  'The MediaPipe vision browser plugin did not register.',
-  fix:
-      'Depend on mediapipe_vision as a Flutter plugin so its web '
-      'registration runs before the first task is created.',
-);
+Never _unavailable() => throw pluginNotRegistered('mediapipe_vision');
 
 /// Opens Google's native task on a worker; browsers have none.
 Future<NativeTaskRunner<R>> openNativeTask<R, O extends VisionTaskOptions>(

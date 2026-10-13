@@ -4,18 +4,14 @@
 /// first (upstream-issues.md UP-034).
 library;
 
-import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show pluginNotRegistered;
 
 import '../types/options.dart';
 import '../types/results.dart';
 import 'text_task_runner.dart';
 
-Never _unavailable() => throw const RuntimeUnavailableException(
-  'The MediaPipe text browser plugin did not register.',
-  fix:
-      'Depend on mediapipe_text as a Flutter plugin so its web '
-      'registration runs before the first task is created.',
-);
+Never _unavailable() => throw pluginNotRegistered('mediapipe_text');
 
 /// The native Text Classifier; browsers have none.
 Future<TextTaskRunner<String, TextClassifierResult>> openNativeTextClassifier(

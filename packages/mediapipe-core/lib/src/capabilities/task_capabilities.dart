@@ -118,6 +118,17 @@ String tasksRuntimeUnavailable(String task, String operatingSystem) =>
     'app with flutter run or flutter build (or dart run and dart test for a '
     'Dart program), which run the hook.';
 
+/// What a family reports in a browser where [package]'s plugin never
+/// registered: its native stubs throw it, and its capability queries give
+/// its message and fix as their reason.
+RuntimeUnavailableException pluginNotRegistered(String package) =>
+    RuntimeUnavailableException(
+      'The $package browser plugin did not register.',
+      fix:
+          'Depend on $package as a Flutter plugin so its web registration '
+          'runs before the first task is created.',
+    );
+
 /// The official MediaPipe release behind the tasks on [platform]: Google's
 /// 1.1.1 per-family libraries (its development build of October 9, 2026) on
 /// Android, iOS, macOS, Linux and Windows, and its browser runtime 1.0.1.
