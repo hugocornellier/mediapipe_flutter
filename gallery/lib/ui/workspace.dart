@@ -7,6 +7,28 @@ import '../catalog.dart';
 import 'components.dart';
 import 'design.dart';
 
+/// A page whose settings, which a phone shows in a sheet on a route of its
+/// own, redraw with the page: [revision] changes on every [setState].
+mixin RevisionedState<T extends StatefulWidget> on State<T> {
+  /// Bumped on every rebuild [bumpsRevision] admits.
+  final revision = ValueNotifier<int>(0);
+
+  /// Whether a rebuild redraws the settings too.
+  bool get bumpsRevision => true;
+
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    if (bumpsRevision) revision.value++;
+  }
+
+  @override
+  void dispose() {
+    revision.dispose();
+    super.dispose();
+  }
+}
+
 /// The design's top bar, shown while the sidebar is hidden: the menu, the
 /// page's title, and the settings button on phones.
 class TopBar extends StatelessWidget {

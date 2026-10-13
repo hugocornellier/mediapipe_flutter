@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 
@@ -15,6 +14,7 @@ import 'live/task_settings_panel.dart';
 import 'ui/components.dart';
 import 'ui/design.dart';
 import 'ui/workspace.dart';
+import 'bundled_model_assets.dart';
 
 /// Audio Classifier on a clip, or on the microphone as Google's audio stream,
 /// laid out as the other demos are: the audio and its results beside the
@@ -45,17 +45,14 @@ const _clips = <String, String>{
   'two_heads_16000_hz_mono.wav': 'Animal sounds',
 };
 
-class _AudioPageState extends State<AudioPage> {
+class _AudioPageState extends State<AudioPage>
+    with RevisionedState, ModelSelectionState {
   late final TaskSettingValues _values = TaskSettingValues('audio_classifier');
   late final List<TaskSetting> _settings =
       taskSettings['audio_classifier'] ?? const [];
 
   String _clip = _clips.keys.first;
   ({String name, Uint8List bytes})? _uploadedClip;
-
-  String? _uploadedModel;
-  Uint8List? _modelBytes;
-  String? _modelStatus;
 
   AudioClassifier? _task;
   Future<void> _resets = Future.value();
@@ -64,8 +61,6 @@ class _AudioPageState extends State<AudioPage> {
   AudioData? _audio;
   List<AudioClassifierResult>? _chunks;
   double? _milliseconds;
-
-  final _revision = ValueNotifier<int>(0);
 
   /// Microphone mode: the recorder's 16 kHz mono PCM as one audio stream,
   /// each window's result as it completes, newest first.
@@ -94,12 +89,6 @@ class _AudioPageState extends State<AudioPage> {
   int? _delay;
 
   @override
-  void setState(VoidCallback fn) {
-    super.setState(fn);
-    _revision.value++;
-  }
-
-  @override
   void initState() {
     super.initState();
     unawaited(_run());
@@ -109,20 +98,14 @@ class _AudioPageState extends State<AudioPage> {
   void dispose() {
     unawaited(_stopListening());
     unawaited(_task?.dispose());
-    _revision.dispose();
     super.dispose();
-  }
-
-  Future<Uint8List> _asset(String path) async {
-    final data = await rootBundle.load(path);
-    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   }
 
   Future<AudioClassifier> _open() async =>
       _task ??= await AudioClassifier.create(
         AudioClassifierOptions(
-          model: _modelBytes == null ? AudioModels.yamnet : null,
-          modelBytes: _modelBytes,
+          model: modelBytes == null ? AudioModels.yamnet : null,
+          modelBytes: modelBytes,
           maxResults: _values.count('maxResults'),
           scoreThreshold: _values.share('scoreThreshold'),
         ),
@@ -132,8 +115,8 @@ class _AudioPageState extends State<AudioPage> {
   Future<AudioClassifier> _openStream() async {
     final task = await AudioClassifier.create(
       AudioClassifierOptions(
-        model: _modelBytes == null ? AudioModels.yamnet : null,
-        modelBytes: _modelBytes,
+        model: modelBytes == null ? AudioModels.yamnet : null,
+        modelBytes: modelBytes,
         maxResults: _values.count('maxResults'),
         scoreThreshold: _values.share('scoreThreshold'),
         runningMode: AudioRunningMode.audioStream,
@@ -150,7 +133,7 @@ class _AudioPageState extends State<AudioPage> {
     });
     try {
       final bytes =
-          _uploadedClip?.bytes ?? await _asset('assets/samples/$_clip');
+          _uploadedClip?.bytes ?? await loadAssetBytes('assets/samples/$_clip');
       final audio = decodeWav(bytes);
       final task = await _open();
       final clock = Stopwatch()..start();
@@ -340,42 +323,11 @@ class _AudioPageState extends State<AudioPage> {
     }
   }
 
-  Future<void> _chooseModel(TaskModel? model) async {
-    setState(() {
-      _uploadedModel = null;
-      _modelBytes = null;
-      _modelStatus = null;
-    });
-    await _reset();
-  }
-
-  Future<void> _uploadModel() async {
-    try {
-      final file = await openFile(
-        acceptedTypeGroups: const [
-          XTypeGroup(
-            label: 'MediaPipe models',
-            extensions: ['tflite', 'task'],
-            // iOS filters by type, and models have none of their own.
-            uniformTypeIdentifiers: ['public.data'],
-          ),
-        ],
-      );
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _uploadedModel = file.name;
-        _modelBytes = bytes;
-        _modelStatus = null;
-      });
-      await _reset();
-    } on Object catch (error) {
-      if (mounted) setState(() => _modelStatus = '$error');
-    }
-  }
+  @override
+  void modelChanged() => unawaited(_reset());
 
   Widget _panel() => ListenableBuilder(
-    listenable: _revision,
+    listenable: revision,
     builder: (context, _) => TaskSettingsPanel(
       settings: _settings,
       values: _values,
@@ -386,10 +338,10 @@ class _AudioPageState extends State<AudioPage> {
       onDelegate: (_) {},
       models: const [],
       model: null,
-      uploaded: _uploadedModel,
-      modelStatus: _modelStatus,
-      onModel: _chooseModel,
-      onUpload: _uploadModel,
+      uploaded: uploaded,
+      modelStatus: modelStatus,
+      onModel: chooseModel,
+      onUpload: uploadModel,
       bundledModel: 'yamnet.tflite',
     ),
   );
@@ -523,16 +475,7 @@ class _AudioPageState extends State<AudioPage> {
         ),
         const SizedBox(height: 11),
         if (_error case final error?)
-          OutputCard(
-            title: 'Error',
-            child: Text(
-              error,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: Sizes.sm,
-              ),
-            ),
-          )
+          TaskErrorCard(error)
         else
           OutputCard(
             title: _microphone ? 'Heard' : 'Sounds over time',

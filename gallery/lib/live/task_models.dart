@@ -1,23 +1,45 @@
 import 'package:crypto/crypto.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:mediapipe_decision/mediapipe_decision.dart'
+    show DecisionModels, DownloadAsset;
 
 /// One of Google's official models for a task, as MediaPipe Studio offers
 /// them. The gallery bundles each task's standard model; these download when
 /// chosen, from Google's pinned version 1, and must match [sha256].
 final class TaskModel {
-  const TaskModel(this.name, this.path, this.sha256, this.bytes);
+  /// A model at [path] under https://storage.googleapis.com/mediapipe-models/.
+  const TaskModel(this.name, String path, String sha256, this.bytes)
+    : _path = path,
+      _sha256 = sha256,
+      _pin = null;
+
+  /// A model its family package already pins, such as Decision Maker's.
+  const TaskModel.pinned(this.name, DownloadAsset pin, this.bytes)
+    : _pin = pin,
+      _path = null,
+      _sha256 = null;
 
   final String name;
-
-  /// Under https://storage.googleapis.com/mediapipe-models/.
-  final String path;
-  final String sha256;
+  final String? _path;
+  final String? _sha256;
+  final DownloadAsset? _pin;
 
   /// Download size, shown before choosing.
   final int bytes;
 
-  Uri get url =>
-      Uri.parse('https://storage.googleapis.com/mediapipe-models/$path');
+  /// The download, checked against its SHA-256.
+  DownloadAsset get pin =>
+      _pin ??
+      DownloadAsset(
+        url: 'https://storage.googleapis.com/mediapipe-models/$_path',
+        sha256: _sha256!,
+      );
+
+  Uri get url => Uri.parse(pin.url);
+
+  String get sha256 => pin.sha256;
 }
 
 /// The bundled model's name where Google's demo names it, keyed by the
@@ -32,32 +54,20 @@ const standardModelNames = <String, String>{
 const taskModels = <String, List<TaskModel>>{
   // Hungry Fish starts with EmbeddingGemma 2; Laya plays it as well.
   'decision_fish_game': [
-    TaskModel(
-      'Laya (256 tokens)',
-      'decision_maker/laya/float32/laya_s256/1/laya_s256.task',
-      '8cb730b89ef99cb5c98cdbc7936de79deab77623ce25dc0031eec9e25c64c24e',
-      678477844,
-    ),
+    TaskModel.pinned('Laya (256 tokens)', DecisionModels.layaS256, 678477844),
   ],
   // Decision Maker downloads its model to a file rather than to memory: see
   // `GalleryAssets.downloadedModelPath`.
   'decision_maker': [
-    TaskModel(
-      'Laya (512 tokens)',
-      'decision_maker/laya/float32/laya_s512/1/laya_s512.task',
-      'e9f1693861c9a79a541d6f716648142ee844fd2e7119c9ed48d166f4b85a15df',
-      679395348,
-    ),
-    TaskModel(
+    TaskModel.pinned('Laya (512 tokens)', DecisionModels.layaS512, 679395348),
+    TaskModel.pinned(
       'GLiNER2.5-Decide (256 tokens)',
-      'decision_maker/gliner/float16/gliner_s256/1/gliner_s256.task',
-      '18e8eb07a06e3833c4ebb4b0a32c76bff0e1197acba0e4c1658b121d01c92674',
+      DecisionModels.glinerS256,
       981216352,
     ),
-    TaskModel(
+    TaskModel.pinned(
       'GLiNER2.5-Decide (512 tokens)',
-      'decision_maker/gliner/float16/gliner_s512/1/gliner_s512.task',
-      '23a02e1b286fab7573ef2a00acbd8bf80fd2b1284de25eb8fafcd74f8bccd7ec',
+      DecisionModels.glinerS512,
       1081879648,
     ),
   ],
@@ -164,4 +174,81 @@ Future<Uint8List> downloadModel(TaskModel model) async {
     throw StateError('${model.name} did not match its pinned checksum.');
   }
   return _downloaded[model.sha256] = bytes;
+}
+
+/// A page whose task runs the bundled model, one of Google's others, or a
+/// file of the user's own, as the settings panel offers them.
+mixin ModelSelectionState<T extends StatefulWidget> on State<T> {
+  /// The chosen official model, or null for the bundled or uploaded one.
+  TaskModel? model;
+
+  /// The uploaded file's name while an upload is chosen.
+  String? uploaded;
+
+  /// The chosen or uploaded model's bytes, or null for the bundled one.
+  Uint8List? modelBytes;
+
+  /// A download in progress, or what failed.
+  String? modelStatus;
+
+  /// Rebuilds the task with [modelBytes], after every change.
+  void modelChanged();
+
+  /// Downloads and verifies an official model before the task is rebuilt
+  /// with it, so a failed download leaves the running model in place. Null
+  /// returns to the bundled model.
+  Future<void> chooseModel(TaskModel? chosen) async {
+    if (chosen == null) {
+      setState(() {
+        model = null;
+        uploaded = null;
+        modelBytes = null;
+        modelStatus = null;
+      });
+      modelChanged();
+      return;
+    }
+    setState(() => modelStatus = 'Downloading ${chosen.name}…');
+    try {
+      final bytes = await downloadModel(chosen);
+      if (!mounted) return;
+      setState(() {
+        model = chosen;
+        uploaded = null;
+        modelBytes = bytes;
+        modelStatus = null;
+      });
+      modelChanged();
+    } on Object catch (error) {
+      if (mounted) setState(() => modelStatus = '$error');
+    }
+  }
+
+  /// A model file of the user's own, as MediaPipe Studio's Upload.
+  Future<void> uploadModel() async {
+    try {
+      final file = await openFile(
+        acceptedTypeGroups: const [
+          XTypeGroup(
+            label: 'MediaPipe models',
+            extensions: ['tflite', 'task'],
+            // iOS filters by type, and models have none of their own.
+            uniformTypeIdentifiers: ['public.data'],
+          ),
+        ],
+      );
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        model = null;
+        uploaded = file.name;
+        modelBytes = bytes;
+        modelStatus = null;
+      });
+      modelChanged();
+    } on Object catch (error) {
+      if (mounted) setState(() => modelStatus = '$error');
+    }
+  }
 }

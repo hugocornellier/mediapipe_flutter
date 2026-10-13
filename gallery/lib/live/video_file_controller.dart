@@ -6,6 +6,7 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:video_frames/video_frames.dart';
 
 import 'live_task.dart';
+import 'operation_queue.dart';
 import 'video_frame_image.dart';
 
 /// Runs a video file through one task in video mode: every frame, in order,
@@ -35,7 +36,7 @@ class VideoFileController extends ChangeNotifier {
   bool _looping = false;
   bool _disposed = false;
   int _generation = 0;
-  Future<void> _operations = Future.value();
+  final _operations = OperationQueue();
   Future<void>? _loop;
 
   /// Opening the file and the task.
@@ -87,15 +88,6 @@ class VideoFileController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
-  Future<void> _enqueue(Future<void> Function() action) {
-    final operation = _operations.then((_) => action());
-    _operations = operation.then<void>(
-      (_) {},
-      onError: (Object _, StackTrace _) {},
-    );
-    return operation;
-  }
-
   /// Opens [path], named [name] on the status line, and plays it from the
   /// start on [delegate] with the model [model] supplies.
   Future<void> open(
@@ -123,7 +115,7 @@ class VideoFileController extends ChangeNotifier {
     error = null;
     _reset();
     _changed();
-    return _enqueue(() async {
+    return _operations.add(() async {
       await _release();
       if (generation != _generation) return;
       try {
@@ -258,7 +250,7 @@ class VideoFileController extends ChangeNotifier {
     _generation++;
     playing = false;
     loading = false;
-    return _enqueue(_release);
+    return _operations.add(_release);
   }
 
   Future<void> _release() async {

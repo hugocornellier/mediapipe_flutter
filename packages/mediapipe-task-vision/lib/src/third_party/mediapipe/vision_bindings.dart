@@ -1,6 +1,7 @@
 // Copyright 2026 The MediaPipe Authors.
 // Licensed under the Apache License, Version 2.0.
-// Generated from unmodified MediaPipe v1.0.0 headers; see third_party/README.md.
+// Generated from Google's unmodified MediaPipe 1.1.1 headers; see
+// packages/mediapipe-core/native/README.md.
 
 // AUTO GENERATED FILE, DO NOT EDIT.
 //
@@ -1545,7 +1546,8 @@ final class MpClassifierOptions extends ffi.Struct {
 enum MpDelegate {
   MP_DELEGATE_CPU(0),
   MP_DELEGATE_GPU(1),
-  MP_DELEGATE_EDGETPU_NNAPI(2);
+  MP_DELEGATE_EDGETPU_NNAPI(2),
+  MP_DELEGATE_NPU(4);
 
   final int value;
   const MpDelegate(this.value);
@@ -1554,6 +1556,7 @@ enum MpDelegate {
     0 => MP_DELEGATE_CPU,
     1 => MP_DELEGATE_GPU,
     2 => MP_DELEGATE_EDGETPU_NNAPI,
+    4 => MP_DELEGATE_NPU,
     _ => throw ArgumentError('Unknown value for MpDelegate: $value'),
   };
 }
@@ -2000,7 +2003,8 @@ enum MpHostEnvironment {
   MP_HOST_ENVIRONMENT_ANDROID(1),
   MP_HOST_ENVIRONMENT_IOS(2),
   MP_HOST_ENVIRONMENT_PYTHON(3),
-  MP_HOST_ENVIRONMENT_WEB(4);
+  MP_HOST_ENVIRONMENT_WEB(4),
+  MP_HOST_ENVIRONMENT_FLUTTER(5);
 
   final int value;
   const MpHostEnvironment(this.value);
@@ -2011,6 +2015,7 @@ enum MpHostEnvironment {
     2 => MP_HOST_ENVIRONMENT_IOS,
     3 => MP_HOST_ENVIRONMENT_PYTHON,
     4 => MP_HOST_ENVIRONMENT_WEB,
+    5 => MP_HOST_ENVIRONMENT_FLUTTER,
     _ => throw ArgumentError('Unknown value for MpHostEnvironment: $value'),
   };
 }

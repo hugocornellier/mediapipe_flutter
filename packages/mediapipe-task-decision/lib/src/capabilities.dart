@@ -7,11 +7,20 @@ import 'package:mediapipe_core/platform_interface.dart';
 import '../models.dart' show DecisionModels;
 import 'decision_backend.dart' show decisionBackendFactory;
 
-/// The release behind Decision Maker on every platform: Google's per-family
-/// decision library (its delivery of October 8, 2026) on Android, iOS,
-/// macOS and Linux, its 1.1.0 wheel's library on Windows, and
-/// `@mediapipe/tasks-decision` 1.1.0 in browsers.
-const decisionRuntimeVersion = '1.1.0';
+/// The release of `@mediapipe/tasks-decision` that `assets/runtime.json`
+/// pins for browsers (`tool/check_repository.py` checks the two agree).
+const _browserRuntimeVersion = '1.1.0';
+
+/// The release behind Decision Maker on [platform]: Google's per-family
+/// decision library (its 1.1.1 build of October 9, 2026) on Android, iOS,
+/// macOS and Linux, its 1.1.0 wheel's library on Windows, and the browser
+/// runtime in browsers.
+String _runtimeVersionOn(TaskPlatform platform) =>
+    switch (platform.operatingSystem) {
+      'web' => _browserRuntimeVersion,
+      'windows' => '1.1.0',
+      _ => tasksRuntimeVersionOn(platform),
+    };
 
 /// Where Google's C library with Decision Maker runs: core's shared targets,
 /// from its per-family library (`familyRuntimes`) everywhere but Windows,
@@ -36,6 +45,37 @@ const textOnlyEmbeddingGemmaUnavailable =
     'vision encoder the task never runs, which answers the same on every '
     'runtime, or Laya.';
 
+/// Why the EmbeddingGemma 2 models are unavailable in WebKit (UP-054).
+const embeddingGemma2WebKitUnavailable =
+    "In WebKit, the engine of Safari and of every browser on iOS, Google's "
+    'browser Decision Maker (@mediapipe/tasks-decision 1.1.0) embeds every '
+    'text as zeros with the EmbeddingGemma 2 models, so every option scores '
+    'the same (upstream-issues.md UP-054). Use DecisionModels.layaS256, or a '
+    'Chromium browser.';
+
+/// Why GLiNER2.5-Decide is unavailable in browsers (UP-055).
+const glinerBrowserUnavailable =
+    "Google's browser Decision Maker (@mediapipe/tasks-decision 1.1.0) aborts "
+    'while it creates the task with either GLiNER2.5-Decide model '
+    '(upstream-issues.md UP-055). Use DecisionModels.layaS256 in browsers.';
+
+/// Why Google's browser runtime cannot run [model] in the browser [platform]
+/// names, or null when it can.
+String? _browserRefusal(TaskPlatform platform, DownloadAsset? model) {
+  final sha256 = model?.sha256;
+  if (platform.operatingSystem != 'web' || sha256 == null) return null;
+  if (platform.browserEngine == BrowserEngine.webkit &&
+      (sha256 == DecisionModels.embeddingGemma2Text.sha256 ||
+          sha256 == DecisionModels.embeddingGemma2TextVision.sha256)) {
+    return embeddingGemma2WebKitUnavailable;
+  }
+  if (sha256 == DecisionModels.glinerS256.sha256 ||
+      sha256 == DecisionModels.glinerS512.sha256) {
+    return glinerBrowserUnavailable;
+  }
+  return null;
+}
+
 const _noLibrary =
     "Google's Decision Maker library covers Android arm64 and x86_64, iOS, "
     'macOS arm64, Linux x64 and Windows x64, and browsers run its JavaScript '
@@ -47,30 +87,12 @@ const _browserCpu =
     'every evaluation on the CPU delegate (upstream-issues.md UP-049). Use '
     'Delegate.gpu, its WebGPU path, as Google\'s web demo does.';
 
-/// How the web plugin names a WebGPU adapter in `TaskPlatform.gpu`.
-const webGpuAdapterPrefix = 'WebGPU';
-
-/// The adapters Google's runtime refuses to run on, by Google's own rule.
-final _softwareAdapter = RegExp(
-  r'fallback|swiftshader|llvmpipe|software|lavapipe',
-  caseSensitive: false,
-);
-
-/// Whether [platform] names a hardware WebGPU adapter, the only one Google's
-/// browser Decision Maker answers on (UP-049).
-bool _hardwareWebGpu(TaskPlatform platform) => switch (platform.gpu) {
-  final gpu? =>
-    gpu.startsWith(webGpuAdapterPrefix) && !_softwareAdapter.hasMatch(gpu),
-  null => false,
-};
-
 const _desktopGpu =
     "Google's library runs Decision Maker on the CPU; this package has not "
     'validated its GPU path.';
 
-const _noPlugin =
-    'The MediaPipe Decision browser plugin did not register. Depend on '
-    'mediapipe_decision as a Flutter plugin.';
+final _unregistered = pluginNotRegistered('mediapipe_decision');
+final _noPlugin = '${_unregistered.message} ${_unregistered.fix}';
 
 String _noWebGpu(TaskPlatform platform) =>
     "Google's browser Decision Maker answers only on a hardware WebGPU "
@@ -81,7 +103,9 @@ String _noWebGpu(TaskPlatform platform) =>
 /// Query Decision Maker support on this platform without loading a model.
 /// Pass [model] to learn where that model runs: the text-only EmbeddingGemma
 /// 2 (`DecisionModels.embeddingGemma2Text`) only on Windows and in browsers
-/// (UP-053); every other pinned model wherever the task runs.
+/// (UP-053), neither EmbeddingGemma 2 model in WebKit (UP-054), GLiNER2.5-
+/// Decide nowhere in browsers (UP-055), and every other pinned model wherever
+/// the task runs.
 Future<TaskCapabilities> queryDecisionMakerCapabilities([
   DownloadAsset? model,
 ]) async => decisionMakerCapabilitiesForPlatform(
@@ -93,7 +117,9 @@ Future<TaskCapabilities> queryDecisionMakerCapabilities([
 /// libraries, and the GPU in browsers once the plugin registers, since
 /// Google's browser runtime fails on the CPU (UP-049). With [model], the
 /// support for that model: Google's per-family library fails every
-/// evaluation with the text-only EmbeddingGemma 2 (UP-053).
+/// evaluation with the text-only EmbeddingGemma 2 (UP-053), and its browser
+/// runtime fails with EmbeddingGemma 2 in WebKit (UP-054) and with GLiNER2.5-
+/// Decide in every browser (UP-055).
 TaskCapabilities decisionMakerCapabilitiesForPlatform(
   TaskPlatform platform, {
   DownloadAsset? model,
@@ -106,6 +132,10 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
       textOnlyGemma &&
       decisionRuntimeTargets.containsKey(platform.target) &&
       !embeddingGemma2TextTargets.containsKey(platform.target);
+  final browserRuns =
+      decisionBackendFactory != null && hasHardwareWebGpu(platform);
+  // Where the GPU path would run, the browser's own refusal of this model.
+  final browserRefusal = browserRuns ? _browserRefusal(platform, model) : null;
   return TaskCapabilities.onTargets(
     platform: platform,
     delegates: {
@@ -113,8 +143,7 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
           ? embeddingGemma2TextTargets
           : decisionRuntimeTargets,
       Delegate.gpu: {
-        if (decisionBackendFactory != null && _hardwareWebGpu(platform))
-          'web/unknown': null,
+        if (browserRuns && browserRefusal == null) 'web/unknown': null,
       },
     },
     unavailableReasons: {
@@ -123,19 +152,20 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
           ? libraryRefusesModel
                 ? textOnlyEmbeddingGemmaUnavailable
                 : _noLibrary
-          : _hardwareWebGpu(platform)
-          ? _browserCpu
-          : _noWebGpu(platform),
+          : browserRefusal ??
+                (hasHardwareWebGpu(platform)
+                    ? _browserCpu
+                    : _noWebGpu(platform)),
       Delegate.gpu: web
           ? decisionBackendFactory == null
                 ? _noPlugin
-                : _noWebGpu(platform)
+                : browserRefusal ?? _noWebGpu(platform)
           : libraryRefusesModel
           ? textOnlyEmbeddingGemmaUnavailable
           : decisionRuntimeTargets.containsKey(platform.target)
           ? _desktopGpu
           : _noLibrary,
     },
-    runtimeVersion: decisionRuntimeVersion,
+    runtimeVersion: _runtimeVersionOn(platform),
   );
 }

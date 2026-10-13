@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/vision_fixture.dart';
@@ -43,6 +42,22 @@ void main() {
       throwsA(isA<RuntimeUnavailableException>()),
     );
   }, skip: Platform.isLinux ? false : 'Linux only');
+  test('macOS refuses the GPU with its reason (UP-057)', () async {
+    final capabilities = await queryFaceDetectorCapabilities();
+    expect(capabilities.supportedDelegates, {Delegate.cpu});
+    await expectLater(
+      FaceDetector.create(
+        FaceDetectorOptions(delegate: Delegate.gpu, modelPath: _model),
+      ),
+      throwsA(
+        isA<RuntimeUnavailableException>().having(
+          (error) => error.fix,
+          'fix',
+          contains('UP-057'),
+        ),
+      ),
+    );
+  }, skip: Platform.isMacOS ? false : 'macOS only');
   tearDownAll(() => reportReferenceDeltas('face_detector'));
 }
 
@@ -59,9 +74,9 @@ void _testDelegate(Delegate delegate) {
   setUpAll(() async {
     expect(
       sha256.convert(File(_model).readAsBytesSync()).toString(),
-      blazeFaceShortRangeSha256,
+      VisionModels.faceDetector.sha256,
     );
-    expect(reference['model_sha256'], blazeFaceShortRangeSha256);
+    expect(reference['model_sha256'], VisionModels.faceDetector.sha256);
     expect(reference['delegate'], delegate.name.toUpperCase());
     detector = await FaceDetector.create(
       FaceDetectorOptions(delegate: delegate, modelPath: _model),
@@ -244,7 +259,7 @@ void _testDelegate(Delegate delegate) {
       'official${delegate == Delegate.gpu ? '_gpu' : ''}_video_reference.json',
     );
     expect(reference['running_mode'], 'VIDEO');
-    expect(reference['model_sha256'], blazeFaceShortRangeSha256);
+    expect(reference['model_sha256'], VisionModels.faceDetector.sha256);
     final video = await FaceDetector.create(
       FaceDetectorOptions(
         delegate: delegate,

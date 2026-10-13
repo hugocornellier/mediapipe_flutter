@@ -2,5 +2,6 @@
 /// Import this library from hooks, not from application code.
 library;
 
-export 'src/native_assets/family_runtimes.dart';
+export 'src/native_assets/family_runtimes.dart'
+    hide WheelRuntime, wheelRuntimes;
 export 'src/native_assets/native_library.dart';

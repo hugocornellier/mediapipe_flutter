@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:math' as math;
@@ -7,16 +6,14 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
-import 'package:mediapipe_audio/models.dart';
 import 'package:mediapipe_audio/src/stream/checks.dart';
 import 'package:mediapipe_audio/src/stream/emulation.dart';
 import 'package:mediapipe_audio/src/stream/model_specs.dart';
 import 'package:mediapipe_audio/src/stream/results.dart';
 import 'package:mediapipe_audio/src/third_party/mediapipe/audio_stream_bindings.dart'
     as bridge;
-import 'package:mediapipe_core/src/native_assets/reference_wheels.dart'
-    show referenceWheel;
 import 'package:test/test.dart';
+import 'support/same_host_reference.dart';
 
 /// Audio stream mode on Google's native runtime: every case against Google's
 /// own stream on this host, the tail proven to be Google's flush, the
@@ -32,57 +29,20 @@ const _scoreDelta = 1e-5;
 /// What Google stamps the tail with: Timestamp::Max() in milliseconds.
 const _googleTail = 9223372036854775;
 
-/// Google's stream results on this host when CI prepared them with
-/// tool/prepare_audio_reference.py; otherwise the checked-in macOS
-/// reference. A missing or modified same-host reference fails instead of
-/// falling back.
-Map<String, dynamic> _loadReference() {
-  final baselineBytes = File(
-    '$_fixtures/official_stream_reference.json',
-  ).readAsBytesSync();
-  final baseline =
-      jsonDecode(utf8.decode(baselineBytes)) as Map<String, dynamic>;
-  final directory = Platform.environment['MEDIAPIPE_AUDIO_REFERENCE_DIR'];
-  if (directory == null) return baseline;
-  final root = Directory(directory).absolute.uri;
-  final bytes = File.fromUri(
-    root.resolve('official_stream_reference.json'),
-  ).readAsBytesSync();
-  final reference = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-  final receipt =
-      jsonDecode(
-            File.fromUri(root.resolve('provenance.json')).readAsStringSync(),
-          )
-          as Map<String, dynamic>;
-  final wheel = referenceWheel(Abi.current().toString().replaceFirst('_', '/'));
-  final runtime = 'mediapipe==${wheel?.version}';
-  if (wheel == null ||
-      receipt['source'] != 'official-python-api' ||
-      receipt['runtime'] != runtime ||
-      receipt['library_sha256'] != wheel.librarySha256 ||
-      receipt['wheel_sha256'] != wheel.wheelSha256 ||
-      receipt['stream_reference_sha256'] != sha256.convert(bytes).toString() ||
-      receipt['stream_baseline_sha256'] !=
-          sha256.convert(baselineBytes).toString() ||
-      reference['runtime'] != runtime ||
-      reference['model_sha256'] != baseline['model_sha256'] ||
-      jsonEncode((reference['cases'] as Map).keys.toList()) !=
-          jsonEncode((baseline['cases'] as Map).keys.toList())) {
-    throw StateError('Invalid same-host official audio stream reference');
-  }
-  return reference;
-}
-
 void main() {
-  final reference = _loadReference();
+  final reference = loadSameHostReference(
+    'official_stream_reference.json',
+    prefix: 'stream_',
+    cases: 'cases',
+  );
   final cases = (reference['cases'] as Map).cast<String, Map>();
   final model = File(_model).readAsBytesSync();
   final specs = AudioModelSpecs.read(model);
   final googleTimestamps = <int>[];
 
   setUpAll(() {
-    expect(sha256.convert(model).toString(), yamnetSha256);
-    expect(reference['model_sha256'], yamnetSha256);
+    expect(sha256.convert(model).toString(), AudioModels.yamnet.sha256);
+    expect(reference['model_sha256'], AudioModels.yamnet.sha256);
     debugGoogleStreamTimestamp = googleTimestamps.add;
   });
   tearDownAll(() => debugGoogleStreamTimestamp = null);

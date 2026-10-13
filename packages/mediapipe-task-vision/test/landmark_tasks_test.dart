@@ -2,30 +2,30 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 import 'support/face_reference.dart';
+import 'support/vision_fixture.dart';
 
 const _fixtures = 'test/fixtures/landmark_tasks';
-const _models = {
-  'hand': ('models/hand_landmarker.task', handLandmarkerSha256),
-  'gesture': ('models/gesture_recognizer.task', gestureRecognizerSha256),
-  'pose': ('models/pose_landmarker_lite.task', poseLandmarkerLiteSha256),
-  'holistic': ('models/holistic_landmarker.task', holisticLandmarkerSha256),
+final _models = {
+  'hand': ('models/hand_landmarker.task', VisionModels.handLandmarker.sha256),
+  'gesture': (
+    'models/gesture_recognizer.task',
+    VisionModels.gestureRecognizer.sha256,
+  ),
+  'pose': (
+    'models/pose_landmarker_lite.task',
+    VisionModels.poseLandmarker.sha256,
+  ),
+  'holistic': (
+    'models/holistic_landmarker.task',
+    VisionModels.holisticLandmarker.sha256,
+  ),
 };
 typedef _Task = (
   Future<Map<String, dynamic>> Function(VisionImage, int, int?),
   Future<void> Function(),
 );
-// These tasks are validated against the official wheel that ships the same
-// native library on Linux and Windows. Google's macOS CPU output drifts
-// between Apple CPUs, so macOS compares with same-host outputs
-// (tool/test_macos_references.py).
-final _unvalidatedHost =
-    Platform.isMacOS &&
-        Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] != '1'
-    ? 'macOS compares with same-host official outputs'
-    : null;
 final _selectedTasks =
     switch (Platform.environment['MEDIAPIPE_LANDMARK_TASKS']) {
       final value? => value.split(',').toSet(),
@@ -33,17 +33,17 @@ final _selectedTasks =
     };
 
 // Each selected task's GPU output is compared with the official wheel's GPU
-// output for the cases that reference holds: on macOS (official runtime) the
-// checked-in physical-Mac references (hand) or same-host ones, on Linux only
-// same-host ones (MEDIAPIPE_GPU_REFERENCE_DIR, from
-// tool/prepare_gpu_reference.py --landmark-tasks or --hand).
-final _gpuSkip = Platform.isMacOS && _unvalidatedHost == null
-    ? null
+// output for the cases that reference holds: on Linux, same-host ones
+// (MEDIAPIPE_GPU_REFERENCE_DIR, from tool/prepare_gpu_reference.py
+// --landmark-tasks or --hand). macOS runs none ([macosGpuWithdrawn]); its
+// checked-in physical-Mac hand references stay for when the GPU returns.
+final _gpuSkip = Platform.isMacOS
+    ? macosGpuWithdrawn
     : Platform.isLinux &&
           Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] != null
     ? null
-    : 'Landmark GPU is validated on the official macOS runtime, and on Linux '
-          'against same-host references (MEDIAPIPE_GPU_REFERENCE_DIR).';
+    : 'Landmark GPU is validated on Linux against same-host references '
+          '(MEDIAPIPE_GPU_REFERENCE_DIR).';
 
 void main() {
   final reference = loadFaceReference(
@@ -86,7 +86,7 @@ void main() {
           await close();
         }
       },
-      skip: _unvalidatedHost,
+      skip: cpuReferenceSkipReason,
     );
   }
   for (final name in _models.keys.where(_selectedTasks.contains)) {
@@ -119,7 +119,7 @@ void main() {
           _compare(results[i], frames[i]['result'], name);
         }
       },
-      skip: _unvalidatedHost,
+      skip: cpuReferenceSkipReason,
     );
     test(
       '$name native input/model errors leave later inference usable',
@@ -151,7 +151,7 @@ void main() {
         final (_, validClose) = await _create(expected);
         await validClose();
       },
-      skip: _unvalidatedHost,
+      skip: cpuReferenceSkipReason,
     );
   }
   group('gpu', () {
@@ -268,38 +268,15 @@ VisionImage _image(Map<String, dynamic> expected) {
     );
     return VisionImage.fromFile(file.path);
   }
-  var pixels = File('$_fixtures/${expected['raw']}').readAsBytesSync();
+  final pixels = File('$_fixtures/${expected['raw']}').readAsBytesSync();
   expect(sha256.convert(pixels).toString(), expected['raw_sha256']);
-  final width = expected['width'] as int;
-  final height = expected['height'] as int;
-  var format = VisionPixelFormat.rgb;
-  if (expected['input'] == 'blank') {
-    pixels = Uint8List(width * height * 3);
-  } else if (expected['input'] == 'rgba') {
-    final rgba = Uint8List(width * height * 4);
-    for (var i = 0; i < width * height; i++) {
-      rgba.setRange(i * 4, i * 4 + 3, pixels, i * 3);
-      rgba[i * 4 + 3] = 255;
-    }
-    pixels = rgba;
-    format = VisionPixelFormat.rgba;
-  } else if (expected['input'] == 'rotated') {
-    final rotated = Uint8List(pixels.length);
-    final oldWidth = height;
-    final oldHeight = width;
-    for (var y = 0; y < oldHeight; y++) {
-      for (var x = 0; x < oldWidth; x++) {
-        final output = ((oldWidth - 1 - x) * oldHeight + y) * 3;
-        rotated.setRange(output, output + 3, pixels, (y * oldWidth + x) * 3);
-      }
-    }
-    pixels = rotated;
-  }
-  return VisionImage.fromPixels(
-    pixels: pixels,
-    width: width,
-    height: height,
-    format: format,
+  // A rotated case gives its image's size; the raw file is the other way up.
+  final rotated = expected['input'] == 'rotated';
+  return pixelsImage(
+    pixels,
+    width: expected[rotated ? 'height' : 'width'] as int,
+    height: expected[rotated ? 'width' : 'height'] as int,
+    input: expected['input'] as String,
   );
 }
 

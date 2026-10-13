@@ -39,7 +39,6 @@ final class FaceLandmarker implements VisionTask {
     final runner = await VisionTaskRunner.open(
       options,
       name: 'FaceLandmarker',
-      debugName: 'MediaPipe Face Landmarker',
       backend: faceLandmarkerBackendFactory,
       native: nativeFaceLandmarker,
       capabilities: queryFaceLandmarkerCapabilities,

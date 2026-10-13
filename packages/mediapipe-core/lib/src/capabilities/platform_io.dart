@@ -56,27 +56,17 @@ Future<TaskPlatform> _readPlatform() async {
       // Unknown version is reported as unavailable, not assumed compatible.
     }
   }
-  String? gpu;
-  if (taskPlatformGpuReader case final read?) {
-    try {
-      gpu = await read();
-    } on Object {
-      // An unnamed GPU leaves every capability table as declared.
-    }
-  }
   return TaskPlatform(
     operatingSystem: Platform.operatingSystem,
     architecture: Abi.current().toString().split('_').last,
     version: version,
-    gpu: gpu,
-    simulator: runningInIosSimulator,
+    gpu: await readTaskPlatformGpu(),
+    simulator: _iosSimulator,
   );
 }
 
 /// Whether this process runs in Apple's iOS Simulator. The simulator starts
 /// every app with its `SIMULATOR_*` environment; a device never sets it.
-bool get runningInIosSimulator => _iosSimulator;
-
 final bool _iosSimulator = Platform.isIOS && _hasEnvironment('SIMULATOR_UDID');
 
 /// Asks libc directly: Dart's `Platform.environment` is always empty on iOS.

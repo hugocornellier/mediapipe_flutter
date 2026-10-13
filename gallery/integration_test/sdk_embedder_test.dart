@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -12,6 +11,7 @@ import 'package:mediapipe_gallery/main.dart';
 import 'support/official_detection_references.dart';
 import 'support/sdk_frames.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
+import 'support/device_log.dart';
 
 /// As in sdk_hand_landmarker_test.dart: `required` fails when the SDK refuses
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
@@ -21,9 +21,8 @@ const _gpu = String.fromEnvironment('SDK_GPU', defaultValue: 'optional');
 /// image must still embed to nearly the same direction.
 const _crossRuntime = 0.99;
 
-// Image Embedder through Google's official mobile SDKs: iOS through the
-// package's Objective-C adapter, Android through
-// mediapipe_vision.
+// Image Embedder through mediapipe_vision on Google's vision library, on iOS
+// and Android.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -39,7 +38,7 @@ void main() {
               "Android and iOS run Google's C library through FFI, not a plugin backend",
         );
         final assets = await GalleryAssets.unpack();
-        final model = await _model();
+        final model = await loadBundledModel('mobilenet_v3_small.tflite');
         final frame = await loadSample('portrait.jpg');
         final references = <Delegate, Embedding>{};
         for (final delegate in [
@@ -192,7 +191,7 @@ void main() {
         final frame = await loadSample('portrait.jpg');
         final task = await ImageEmbedder.create(
           ImageEmbedderOptions(
-            modelBytes: await _model(),
+            modelBytes: await loadBundledModel('mobilenet_v3_small.tflite'),
             runningMode: RunningMode.video,
           ),
         );
@@ -239,15 +238,5 @@ double _cosine(List<double> a, List<double> b) {
   return dot / math.sqrt(left) / math.sqrt(right);
 }
 
-Future<Uint8List> _model() async {
-  final bytes = await rootBundle.load(
-    bundledModelFile('mobilenet_v3_small.tflite'),
-  );
-  return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
-}
-
-void _report(String event, Map<String, Object?> data) {
-  // Kept in the device log (logcat, the simulator console) for the record.
-  // ignore: avoid_print
-  print('SDK_EMBEDDER ${jsonEncode({'event': event, ...data})}');
-}
+void _report(String event, Map<String, Object?> data) =>
+    logRecord('SDK_EMBEDDER', {'event': event, ...data});

@@ -91,7 +91,6 @@ void main() {
       _Options(events.sendPort),
       _open,
       'reopen',
-      'reopen',
       reopenAfterBytes: 128,
     );
     final answers = [
@@ -115,7 +114,6 @@ void main() {
       _Options(events.sendPort),
       _open,
       'no budget',
-      'no budget',
     );
     final answers = [
       for (var i = 0; i < 5; i++) await worker.processVideo(_frame, 0, i, null),
@@ -130,7 +128,6 @@ void main() {
     final worker = await VisionTaskWorker.create(
       _Options(events.sendPort),
       _openOnce,
-      'reopen fails',
       'reopen fails',
       reopenAfterBytes: 64,
     );
@@ -155,7 +152,6 @@ void main() {
       _Options(events.sendPort, modelPath: model.path),
       _openFromFile,
       'model file deleted',
-      'model file deleted',
       reopenAfterBytes: 64,
     );
     // MediaPipe has read the file once the task exists, so apps may delete it.
@@ -172,10 +168,9 @@ void main() {
       'open 2 from 3 bytes',
       'close 2',
       'open 3 from 3 bytes',
+      // The budget is spent again by the last frame, but the task reopens
+      // only for a next one.
       'close 3',
-      // The budget is spent again after the last frame.
-      'open 4 from 3 bytes',
-      'close 4',
     ]);
   });
 

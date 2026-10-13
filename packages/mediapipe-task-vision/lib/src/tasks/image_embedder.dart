@@ -39,7 +39,6 @@ final class ImageEmbedder implements VisionTask {
     final runner = await VisionTaskRunner.open(
       options,
       name: 'ImageEmbedder',
-      debugName: 'MediaPipe Image Embedder',
       backend: imageEmbedderBackendFactory,
       capabilities: queryImageEmbedderCapabilities,
       native: nativeImageEmbedder,

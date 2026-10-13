@@ -2,15 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:mediapipe_core/src/model_bundler.dart' show bundlableFamilies;
 import 'package:mediapipe_core/src/web_runtime_host.dart';
 
-const _families = [
-  'mediapipe_vision',
-  'mediapipe_text',
-  'mediapipe_audio',
-  'mediapipe_decision',
-  'mediapipe_retrieval',
-];
+final _families = bundlableFamilies.keys;
 
 /// Copies Google's pinned, verified browser runtimes into a folder the app
 /// serves, for every task family the app depends on. Run from the app root:

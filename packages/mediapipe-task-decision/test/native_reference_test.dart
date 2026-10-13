@@ -7,6 +7,8 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:mediapipe_decision/mediapipe_decision.dart';
+import 'package:mediapipe_decision/src/capabilities.dart'
+    show embeddingGemma2TextTargets;
 import 'package:test/test.dart';
 
 /// Google's Laya model; `make models_decision` downloads it.

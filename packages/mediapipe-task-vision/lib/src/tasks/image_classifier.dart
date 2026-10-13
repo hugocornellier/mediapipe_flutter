@@ -38,7 +38,6 @@ final class ImageClassifier implements VisionTask {
     final runner = await VisionTaskRunner.open(
       options,
       name: 'ImageClassifier',
-      debugName: 'MediaPipe Image Classifier',
       backend: imageClassifierBackendFactory,
       capabilities: queryImageClassifierCapabilities,
       native: nativeImageClassifier,

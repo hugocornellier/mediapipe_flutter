@@ -2,19 +2,18 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_core/platform_interface.dart'
-    show mpHostSystem, nativeModelPath;
+import 'package:mediapipe_core/task_worker.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show checkNativeStatus, fillBaseOptions, nativeString;
 
 import '../types/options.dart';
 import '../types/results.dart';
 import 'native_text_stream.dart';
-import 'text_task_worker.dart';
 import 'third_party/mediapipe/summarizer_bindings.dart' as mp;
 
 /// Native Summarizer owner, constructed and used on one worker isolate.
 final class NativeTextSummarizer
-    implements
-        NativeTextTask<String, TextSummarizerResult, TextSummarizerUpdate> {
+    extends WorkerTask<String, TextSummarizerResult, TextSummarizerUpdate> {
   /// Create the official CPU pipeline without altering prompts or model bytes.
   NativeTextSummarizer(TextSummarizerOptions options) {
     if (options.delegate != Delegate.cpu) {
@@ -22,13 +21,11 @@ final class NativeTextSummarizer
     }
     using((arena) {
       final native = arena<mp.MpTextSummarizerOptions>();
-      native.ref.baseOptions
-        ..fileDescriptor = -1
-        ..delegate = 0
-        ..hostSystem = mpHostSystem
-        ..modelAssetPath = nativeModelPath(
-          options.modelPath!,
-        ).toNativeUtf8(allocator: arena).cast();
+      fillBaseOptions(
+        native.ref.baseOptions,
+        arena,
+        modelPath: options.modelPath,
+      );
       native.ref
         ..mode = options.mode.index
         ..maxNumTokens = options.maxNumTokens ?? 0
@@ -49,20 +46,18 @@ final class NativeTextSummarizer
   Pointer<Void> _handle = nullptr;
 
   @override
-  TextSummarizerResult run(String text) => using((arena) {
+  TextSummarizerResult run(String input) => using((arena) {
     final result = arena<mp.MpTextSummarizerResult>();
     _checked(
       (error) => mp.summarize(
         _handle,
-        text.toNativeUtf8(allocator: arena).cast(),
+        input.toNativeUtf8(allocator: arena).cast(),
         result,
         error,
       ),
     );
     try {
-      return TextSummarizerResult(
-        summary: nativeTextString(result.ref.summary),
-      );
+      return TextSummarizerResult(summary: nativeString(result.ref.summary));
     } finally {
       // Google frees the payload. The arena frees the caller-owned struct.
       mp.closeResult(result);
@@ -70,13 +65,13 @@ final class NativeTextSummarizer
   });
 
   @override
-  Future<void> stream(String text, void Function(TextSummarizerUpdate) emit) =>
+  Future<void> stream(String input, void Function(TextSummarizerUpdate) emit) =>
       receiveNativeTextStream(
         submit: (context) => using((arena) {
           _checked(
             (error) => mp.summarizeStreaming(
               _handle,
-              text.toNativeUtf8(allocator: arena).cast(),
+              input.toNativeUtf8(allocator: arena).cast(),
               Native.addressOf<NativeFunction<mp.SummarizerCallback>>(
                 mp.streamCallback,
               ),
@@ -86,7 +81,7 @@ final class NativeTextSummarizer
           );
         }),
         decode: (result, terminal) => TextSummarizerUpdate(
-          chunk: nativeTextString(result.text),
+          chunk: nativeString(result.text),
           done: terminal,
         ),
         emit: emit,
@@ -102,17 +97,5 @@ final class NativeTextSummarizer
   }
 }
 
-void _checked(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
-  final error = arena<Pointer<Char>>();
-  try {
-    final status = call(error);
-    if (status != 0) {
-      throw TaskException(
-        nativeTextString(error.value) ?? 'MediaPipe operation failed.',
-        statusCode: status,
-      );
-    }
-  } finally {
-    if (error.value != nullptr) mp.errorFree(error.value);
-  }
-});
+void _checked(int Function(Pointer<Pointer<Char>>) call) =>
+    checkNativeStatus(call, mp.errorFree);

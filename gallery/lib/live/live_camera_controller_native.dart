@@ -14,6 +14,7 @@ import 'camera_frame.dart';
 import 'camera_selection.dart';
 import 'frame_timings.dart';
 import 'live_task.dart';
+import 'operation_queue.dart';
 import 'still_image.dart';
 
 /// A submitted camera frame, from its arrival to its result: when it arrived
@@ -47,7 +48,7 @@ class LiveCameraController<T> extends ChangeNotifier {
 
   CameraController? _camera;
   bool _opened = false;
-  Future<void> _operations = Future.value();
+  final _operations = OperationQueue();
   StreamSubscription<LiveResult<T>>? _results;
 
   /// Frames submitted and not yet answered, by timestamp. A frame the task
@@ -184,16 +185,6 @@ class LiveCameraController<T> extends ChangeNotifier {
   double get recentFramesPerSecond => _recent.framesPerSecond;
   int get recentFrames => _recent.length;
 
-  Future<void> _enqueue(Future<void> Function() action) {
-    final operation = _operations.then((_) => action());
-    // Keep future lifecycle operations usable even if a caller catches a failure.
-    _operations = operation.then<void>(
-      (_) {},
-      onError: (Object _, StackTrace _) {},
-    );
-    return operation;
-  }
-
   void _changed() {
     if (!_disposed) notifyListeners();
   }
@@ -237,7 +228,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     changing = true;
     error = null;
     _changed();
-    return _enqueue(() async {
+    return _operations.add(() async {
       await _releaseCamera();
       if (_closed || generation != _generation) return;
       try {
@@ -290,7 +281,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     if (chosen == Delegate.gpu) notice = null;
     result = null;
     _changed();
-    return _enqueue(() async {
+    return _operations.add(() async {
       final keepCamera = _camera != null && description == null;
       if (keepCamera) {
         await _releaseTask();
@@ -556,7 +547,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     result = null;
     _clock.stop();
     _changed();
-    return _enqueue(() async {
+    return _operations.add(() async {
       await _release();
       if (generation == _generation) {
         changing = false;
@@ -618,7 +609,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     _closed = true;
     _generation++;
     running = false;
-    return _closing = _enqueue(_release);
+    return _closing = _operations.add(_release);
   }
 
   @override

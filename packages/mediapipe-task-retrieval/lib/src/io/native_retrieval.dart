@@ -4,7 +4,10 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show checkNativeStatus, fillBaseOptions, nativeString;
 import 'package:mediapipe_core/platform_interface.dart';
+import 'package:mediapipe_core/task_worker.dart';
 
 import '../capabilities.dart';
 import '../types/options.dart';
@@ -53,26 +56,18 @@ void requireRetrievalRuntime() {
 /// Google's Universal Embedder and the Semantic Retrievers built on it,
 /// created, used and closed on one worker isolate. Requests and results are
 /// the shapes of Google's JavaScript API, so both runtimes share one decoder.
-final class NativeUniversalEmbedder {
+final class NativeUniversalEmbedder
+    extends WorkerTask<Map<String, Object?>, Object?, Never> {
   /// Loads Google's task and acquires its handle.
   NativeUniversalEmbedder(UniversalEmbedderOptions options) {
     using((arena) {
       final native = arena<mp.MpUniversalEmbedderOptions>();
-      final base = native.ref.baseOptions
-        ..fileDescriptor = -1
-        ..delegate = 0
-        ..hostSystem = mpHostSystem;
-      if (options.modelBytes case final bytes?) {
-        final buffer = arena<Uint8>(bytes.length);
-        buffer.asTypedList(bytes.length).setAll(0, bytes);
-        base
-          ..modelAssetBuffer = buffer.cast()
-          ..modelAssetBufferCount = bytes.length;
-      } else {
-        base.modelAssetPath = nativeModelPath(
-          options.modelPath!,
-        ).toNativeUtf8(allocator: arena).cast();
-      }
+      fillBaseOptions(
+        native.ref.baseOptions,
+        arena,
+        modelPath: options.modelPath,
+        modelBytes: options.modelBytes,
+      );
       native.ref
         ..l2Normalize = options.l2Normalize
         ..maxInputLength = options.maxInputLength
@@ -97,6 +92,7 @@ final class NativeUniversalEmbedder {
   int _nextRetriever = 1;
 
   /// Runs one request (see `RetrievalBackend.run`).
+  @override
   Object? run(Map<String, Object?> request) {
     if (_handle == nullptr) {
       throw StateError('UniversalEmbedder has been closed.');
@@ -134,8 +130,10 @@ final class NativeUniversalEmbedder {
         return (array, map.length);
       }
 
-      // Record or query parts as Google's MpTaskPart array.
-      Pointer<mp.MpTaskPart> parts(List<Object?> list) {
+      // Record or query parts as Google's MpTaskPart array. Google's runtime
+      // needs a path for media even when it has the bytes or samples, and
+      // keeps it as the record's text; [name] stands in where none was given.
+      Pointer<mp.MpTaskPart> parts(List<Object?> list, String name) {
         final array = arena<mp.MpTaskPart>(list.length);
         for (final (i, raw) in list.indexed) {
           final part = raw! as Map;
@@ -150,14 +148,14 @@ final class NativeUniversalEmbedder {
               target.imagePart
                 ..imageBytes = bytes(data)
                 ..imageBytesSize = data?.length ?? 0
-                ..filePath = string(part['filePath'] as String?);
+                ..filePath = string(part['filePath'] as String? ?? name);
             case 'audio':
               final data = part['audioData'] as Float32List?;
               target.kind = 2;
               target.audioPart
                 ..audioData = floats(data)
                 ..audioDataSize = data?.length ?? 0
-                ..audioPath = string(part['audioPath'] as String?);
+                ..audioPath = string(part['audioPath'] as String? ?? name);
             default:
               throw ArgumentError.value(part['kind'], 'kind');
           }
@@ -249,7 +247,10 @@ final class NativeUniversalEmbedder {
               string(request['recordId']! as String),
               bytes(data),
               data?.length ?? 0,
-              string(request['filePath'] as String?),
+              string(
+                request['filePath'] as String? ??
+                    request['recordId']! as String,
+              ),
               metadata,
               metadataCount,
               error,
@@ -264,7 +265,10 @@ final class NativeUniversalEmbedder {
               string(request['recordId']! as String),
               floats(data),
               data?.length ?? 0,
-              string(request['audioPath'] as String?),
+              string(
+                request['audioPath'] as String? ??
+                    request['recordId']! as String,
+              ),
               metadata,
               metadataCount,
               error,
@@ -277,7 +281,7 @@ final class NativeUniversalEmbedder {
             (error) => mp.insertContent(
               retriever,
               string(request['recordId']! as String),
-              parts(list),
+              parts(list, request['recordId']! as String),
               list.length,
               metadata,
               metadataCount,
@@ -287,7 +291,7 @@ final class NativeUniversalEmbedder {
           return null;
         case 'retriever.retrieve':
           final list = request['parts']! as List;
-          final query = parts(list);
+          final query = parts(list, 'query');
           final limit = request['limit']! as int;
           final minSimilarity = (request['minSimilarity']! as num).toDouble();
           final (filter, filterCount) = pairs(request['metadataFilter']);
@@ -359,7 +363,7 @@ final class NativeUniversalEmbedder {
             return {
               'ids': [
                 for (var i = 0; i < result.ref.idsCount; i++)
-                  _string(result.ref.ids[i]) ?? '',
+                  nativeString(result.ref.ids[i]) ?? '',
               ],
             };
           } finally {
@@ -375,6 +379,7 @@ final class NativeUniversalEmbedder {
   }
 
   /// Releases the retrievers, then Google's embedder; later calls do nothing.
+  @override
   void close() {
     if (_handle == nullptr) return;
     final embedder = _handle;
@@ -424,35 +429,20 @@ Map<String, Object?> _embedding(mp.MpEmbedding value) => {
           value.quantizedEmbedding.asTypedList(value.valuesCount),
         ),
   'headIndex': value.headIndex,
-  'headName': _string(value.headName),
+  'headName': nativeString(value.headName),
 };
 
 Map<String, Object?> _record(mp.MpRetrievalRecord record) => {
-  'id': _string(record.id) ?? '',
-  'text': _string(record.text) ?? '',
+  'id': nativeString(record.id) ?? '',
+  'text': nativeString(record.text) ?? '',
   'score': record.score,
   'metadata': {
     for (var j = 0; j < record.metadataCount; j++)
-      _string(record.metadata[j].key) ?? '':
-          _string(record.metadata[j].value) ?? '',
+      nativeString(record.metadata[j].key) ?? '':
+          nativeString(record.metadata[j].value) ?? '',
   },
 };
 
-String? _string(Pointer<Char> value) =>
-    value == nullptr ? null : value.cast<Utf8>().toDartString();
-
 /// Frees Google's error string on success and failure alike.
-void _check(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
-  final error = arena<Pointer<Char>>();
-  try {
-    final status = call(error);
-    if (status != 0) {
-      throw TaskException(
-        _string(error.value) ?? 'MediaPipe operation failed.',
-        statusCode: status,
-      );
-    }
-  } finally {
-    if (error.value != nullptr) mp.errorFree(error.value);
-  }
-});
+void _check(int Function(Pointer<Pointer<Char>>) call) =>
+    checkNativeStatus(call, mp.errorFree);

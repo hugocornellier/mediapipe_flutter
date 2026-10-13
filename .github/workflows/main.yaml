@@ -22,11 +22,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup
         with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
+          python: 'false'
       # The one Dart command a fresh checkout runs: it downloads and verifies
       # the models itself, with no Python.
       - name: Prepare the vision gallery
@@ -50,11 +48,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup
         with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
+          python: 'false'
       - name: Prepare the official models
         run: |
           cd tool/task_benchmarks
@@ -63,12 +59,10 @@ jobs:
           dart format --output=none --set-exit-if-changed .
           cd ../../packages/mediapipe-task-text
           dart pub get
-          dart tool/download_embedding_gemma.dart
-          dart tool/download_proofreader.dart
-          dart tool/download_summarizer.dart
+          dart tool/download_models.dart embedding_gemma proofreader summarizer
           cd ../mediapipe-task-vision
           dart pub get
-          dart tool/download_interactive_segmenter.dart
+          dart tool/download_models.dart interactive_segmenter
       - name: Validate option combinations, caches, lifecycle and sustained use
         run: python3 -B tool/task_benchmarks/run_macos.py --output build/task-benchmarks/ci --iterations 25 --reloads 3
       - uses: actions/upload-artifact@v4
@@ -86,14 +80,7 @@ jobs:
       MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
       - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
+      - uses: ./.github/actions/setup
       - name: Generate official CPU text references on this runner
         run: |
           cd packages/mediapipe-task-text
@@ -111,13 +98,13 @@ jobs:
         run: make test_text_stream_bridge
       - name: Record macos CPU modern text coverage (macos-modern-text)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite macos-modern-text --platform macos --delegate cpu --tasks embedding_gemma,text_proofreader,text_summarizer --outcome ${{ steps.modern_text.outcome }}
-      - uses: actions/upload-artifact@v4
-        if: always()
+        uses: ./.github/actions/record-coverage
         with:
-          name: coverage-macos-modern-text
-          path: build/coverage/
-          if-no-files-found: error
+          suite: macos-modern-text
+          platform: macos
+          delegate: cpu
+          tasks: embedding_gemma,text_proofreader,text_summarizer
+          outcome: ${{ steps.modern_text.outcome }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -134,26 +121,17 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 90
     env:
-      MEDIAPIPE_GPU_REFERENCE_DIR: ${{ github.workspace }}/build/gpu-reference
       MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
       - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup
       - run: flutter --version
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
       - run: make get models
       - name: Generate official CPU text references on this runner
         run: python3 -B packages/mediapipe-task-text/tool/prepare_classic_text_reference.py
-      - name: Generate official GPU references on this runner
-        # This job runs every suite with MEDIAPIPE_GPU_REFERENCE_DIR set, so it
-        # needs the Object Detector references too; `make models` supplied them.
-        run: python3 -B packages/mediapipe-task-vision/tool/prepare_gpu_reference.py --object-detector
+      # No Metal references: the vision package withdraws the macOS GPU while
+      # Google's 1.1.1 library differs there from its 1.1.0 wheel
+      # (upstream-issues.md UP-057).
       # make get/models already ran above for the independent references.
       # Keep the remaining make ci checks, with visible stage boundaries.
       - name: Analyze, format-check and test all packages
@@ -164,86 +142,77 @@ jobs:
           make test_only
       - name: Record macos CPU task coverage (macos-packages)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite macos-packages --platform macos --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.packages.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: macos-packages
+          platform: macos
+          delegate: cpu
+          tasks: audio_classifier,language_detector,text_classifier,text_embedder
+          outcome: ${{ steps.packages.outcome }}
       # The face suites ran above against Google's wheel on this runner, on
-      # the CPU and on Metal (MEDIAPIPE_GPU_REFERENCE_DIR).
+      # the CPU.
       - name: Record macos CPU task coverage (macos-face-cpu)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite macos-face-cpu --platform macos --delegate cpu --tasks face_detector,face_landmarker --outcome ${{ steps.packages.outcome }}
-      - name: Record macos GPU task coverage (macos-face-metal)
-        if: always()
-        run: python3 -B tool/coverage/record.py --suite macos-face-metal --platform macos --delegate gpu --tasks face_detector,face_landmarker --outcome ${{ steps.packages.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: macos-face-cpu
+          platform: macos
+          delegate: cpu
+          tasks: face_detector,face_landmarker
+          outcome: ${{ steps.packages.outcome }}
       # MagicTouch against Google's references, on the CPU.
       - name: Record macos CPU task coverage (macos-interactive-segmenter)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite macos-interactive-segmenter --platform macos --delegate cpu --tasks interactive_segmenter --outcome ${{ steps.packages.outcome }}
-      - uses: actions/upload-artifact@v4
-        if: always()
+        uses: ./.github/actions/record-coverage
         with:
-          name: coverage-macos-packages
-          path: build/coverage/
-          if-no-files-found: error
+          suite: macos-interactive-segmenter
+          platform: macos
+          delegate: cpu
+          tasks: interactive_segmenter
+          outcome: ${{ steps.packages.outcome }}
       - name: Test face tasks in a fresh Flutter app
         run: make test_vision_flutter
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: official-gpu-reference-packages
+          name: official-classic-text-reference
           path: |
-            build/gpu-reference/**/*.json
-            build/gpu-reference/*.log
             build/classic-text-reference/*.json
             build/classic-text-reference/*.log
           if-no-files-found: error
 
   official-runtime-validation:
     # Every vision task on Google's vision library, against Google's
-    # reference wheel on this runner: CPU and Metal references generated
-    # here.
+    # reference wheel on this runner: CPU references generated here. Metal is
+    # withdrawn for now (upstream-issues.md UP-057).
     name: Official macOS runtime / every served task against Google's wheel
     runs-on: macos-15
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
+      - uses: ./.github/actions/setup
       - name: Download the pinned models
         working-directory: packages/mediapipe-task-vision
         run: |
           dart pub get
-          dart tool/download_model.dart
-          dart tool/download_face_landmarker.dart
-          dart tool/download_landmark_tasks.dart
-          dart tool/download_image_tasks.dart
-          dart tool/download_object_detector.dart
-          dart tool/download_segmenter_tasks.dart
+          dart tool/download_models.dart face_detector face_landmarker hand_landmarker gesture_recognizer pose_landmarker holistic_landmarker image_classifier image_embedder object_detector image_segmenter
       # Core's hook fetches Google's vision library by its pinned SHA-256.
       - name: Compare every served task with Google's wheel
         id: official
         run: python3 -B packages/mediapipe-task-vision/tool/test_macos_references.py
       - name: Record macos CPU task coverage (macos-official-cpu)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite macos-official-cpu --platform macos --delegate cpu --tasks face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.official.outcome }}
-      - name: Record macos GPU task coverage (macos-official-metal)
-        if: always()
-        run: python3 -B tool/coverage/record.py --suite macos-official-metal --platform macos --delegate gpu --tasks face_landmarker,gesture_recognizer,hand_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.official.outcome }}
-      - uses: actions/upload-artifact@v4
-        if: always()
+        uses: ./.github/actions/record-coverage
         with:
-          name: coverage-macos-official
-          path: build/coverage/
-          if-no-files-found: error
+          suite: macos-official-cpu
+          platform: macos
+          delegate: cpu
+          tasks: face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker
+          outcome: ${{ steps.official.outcome }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: official-macos-runtime-validation
           path: |
             packages/mediapipe-task-vision/build/macos-reference-validation/*.log
-            packages/mediapipe-task-vision/build/macos-reference-validation/gpu/**/*.json
           if-no-files-found: warn

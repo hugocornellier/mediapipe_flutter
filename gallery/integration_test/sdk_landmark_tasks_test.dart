@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -14,6 +13,7 @@ import 'support/official_landmark_references.dart';
 import 'support/official_mask_references.dart';
 import 'support/sdk_frames.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
+import 'support/device_log.dart';
 
 /// As in sdk_hand_landmarker_test.dart: `required` fails when the SDK refuses
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
@@ -27,9 +27,8 @@ const _only = String.fromEnvironment('SDK_TASKS');
 /// is the cross-runtime one the Android face test uses for CPU against GPU.
 const _crossRuntime = 0.03;
 
-// Pose Landmarker, Gesture Recognizer and Holistic Landmarker through Google's
-// official mobile SDKs: iOS through the package's Objective-C adapter, Android
-// through mediapipe_vision.
+// Pose Landmarker, Gesture Recognizer and Holistic Landmarker through
+// mediapipe_vision on Google's vision library, on iOS and Android.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -48,7 +47,7 @@ void main() {
                 "Android and iOS run Google's C library through FFI, not a plugin backend",
           );
           final assets = await GalleryAssets.unpack();
-          final model = await _model(subject.model);
+          final model = await loadBundledModel(subject.model);
           final frame = await loadSample(subject.sample);
           final references = <Delegate, _Parts>{};
           // The package withdraws Holistic's GPU where Google's runtime cannot
@@ -200,7 +199,7 @@ void main() {
         await tester.runAsync(() async {
           final frame = await loadSample(subject.sample);
           final task = await subject.open(
-            await _model(subject.model),
+            await loadBundledModel(subject.model),
             Delegate.cpu,
             RunningMode.video,
           );
@@ -537,11 +536,6 @@ Future<void> _checkMasks(
 double _mean(ConfidenceMask mask) =>
     mask.confidence.fold(0.0, (sum, v) => sum + v) / mask.confidence.length;
 
-Future<Uint8List> _model(String name) async {
-  final bytes = await rootBundle.load(bundledModelFile(name));
-  return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
-}
-
 /// Largest x or y difference from Google's reference over every part.
 double _officialDelta(_Subject subject, _Parts parts, {String? key}) {
   var maximum = 0.0;
@@ -577,10 +571,9 @@ double _delta(_Parts a, _Parts b) {
   return maximum;
 }
 
-void _report(_Subject subject, String event, Map<String, Object?> data) {
-  // Kept in the device log (logcat, the simulator console) for the record.
-  // ignore: avoid_print
-  print(
-    'SDK_LANDMARK_TASK ${jsonEncode({'task': subject.name, 'event': event, ...data})}',
-  );
-}
+void _report(_Subject subject, String event, Map<String, Object?> data) =>
+    logRecord('SDK_LANDMARK_TASK', {
+      'task': subject.name,
+      'event': event,
+      ...data,
+    });

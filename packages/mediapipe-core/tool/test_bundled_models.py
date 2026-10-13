@@ -12,13 +12,11 @@ models and pass the offline checks from a copy of its bundle.
 CI runs it on the Linux x64 (under xvfb-run) and Windows x64 runners; it runs
 on macOS arm64 as well.
 """
-import hashlib
 import json
 from pathlib import Path
 import platform
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 
@@ -28,43 +26,31 @@ REPO = PACKAGES.parent
 TEMPLATES = CORE / 'tool/bundled_models'
 sys.path.insert(0, str(CORE / 'tool'))
 from consumer_packages import (  # noqa: E402
-    consumer_environment, copy_package, core_hook_defines)
+    configure_macos, consumer_environment, copy_package, core_hook_defines)
+from tool_helpers import digest  # noqa: E402
+from tool_helpers import run as run_logged  # noqa: E402
+from families import task_families  # noqa: E402
 
 NAME = 'mediapipe_bundled_models'
-# One model per family: its package folder and its name in XxxModels.byName.
-# The checks also use Face Landmarker, which stays unbundled.
+# One model per family: its package folder and its name in XxxModels.byName,
+# in core's `bundlableFamilies` order. The checks also use Face Landmarker,
+# which stays unbundled. Decision and Retrieval list the same EmbeddingGemma 2
+# (388 MB), which the app bundles once.
 FAMILIES = {
     'mediapipe_vision': ('mediapipe-task-vision', 'face_detector'),
     'mediapipe_text': ('mediapipe-task-text', 'language_detector'),
     'mediapipe_audio': ('mediapipe-task-audio', 'yamnet'),
+    'mediapipe_decision': ('mediapipe-task-decision', 'embedding_gemma_2_text_vision'),
+    'mediapipe_retrieval': ('mediapipe-task-retrieval', 'embedding_gemma_2_text_vision'),
 }
 SHA_NAME = re.compile(r'[0-9a-f]{64}')
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+MODEL_SUFFIXES = ('.tflite', '.task', '.litertlm')
 
 
 def run(command, cwd, log, expect=0, timeout=1800):
-    """Runs [command] with its output in [log], which it returns. Fails
-    unless the exit code is [expect]."""
-    executable = str(command[0])
-    if platform.system() == 'Windows' and executable == 'dart':
-        # As in the vision package's test_desktop.py: Dart's hook runner needs
-        # the batch entry point Flutter's wrapper uses.
-        executable = 'dart.bat'
-    command = [shutil.which(executable) or executable, *map(str, command[1:])]
-    print(' '.join(command), flush=True)
-    with log.open('w', encoding='utf-8') as output:
-        result = subprocess.run(command, cwd=cwd, stdout=output,
-                                stderr=subprocess.STDOUT, timeout=timeout,
-                                env=consumer_environment())
-    text = log.read_text(encoding='utf-8', errors='replace')
-    print('\n'.join(text.splitlines()[-25:]), flush=True)
-    if result.returncode != expect:
-        raise RuntimeError(f'Exit code {result.returncode}, expected {expect}: '
-                           f'{log}')
-    return text
+    """Runs `command` as a consumer app's shell would, its output in `log`."""
+    return run_logged(command, cwd, log, env=consumer_environment(), expect=expect,
+                      timeout=timeout)
 
 
 def require(condition, message):
@@ -72,13 +58,22 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def expected_labels():
+    """The manifest's labels. Families that list a model by the same name
+    pin it identically (tool/check_repository.py), and the command keeps one
+    copy, labeled by the first family that lists it."""
+    labels = {}
+    for family, (_, name) in FAMILIES.items():
+        labels.setdefault(name, f'{family}: {name}')
+    return set(labels.values())
+
+
 def bundled_models(folder):
     """The manifest's models by label, after checking that the folder holds
     exactly those files, each named by its SHA-256."""
     manifest = json.loads((folder / 'manifest.json').read_text(encoding='utf-8'))
     models = {entry['model']: entry['file'] for entry in manifest['models']}
-    expected = {f'{family}: {name}' for family, (_, name) in FAMILIES.items()}
-    require(set(models) == expected, f'The manifest lists {sorted(models)}.')
+    require(set(models) == expected_labels(), f'The manifest lists {sorted(models)}.')
     files = {path.name for path in folder.iterdir() if path.name != 'manifest.json'}
     require(files == set(models.values()), f'{folder} holds {sorted(files)}.')
     for name in files:
@@ -129,11 +124,7 @@ hooks:
                     app / 'assets/test/portrait.rgb')
     if target == 'macos':
         # Google's macOS runtimes are arm64 only, from macOS 14.
-        config = app / 'macos/Runner/Configs/AppInfo.xcconfig'
-        config.write_text(config.read_text() + '\nARCHS = arm64\nEXCLUDED_ARCHS = x86_64\n')
-        project = app / 'macos/Runner.xcodeproj/project.pbxproj'
-        project.write_text(project.read_text().replace(
-            'MACOSX_DEPLOYMENT_TARGET = 10.15;', 'MACOSX_DEPLOYMENT_TARGET = 14.0;'))
+        configure_macos(app, deployment_target='14.0')
         # Only the debug run downloads; the release build stays without it.
         entitlements = app / 'macos/Runner/DebugProfile.entitlements'
         entitlements.write_text(entitlements.read_text().replace(
@@ -168,6 +159,9 @@ def main():
     if not ((target in ('linux', 'windows') and machine in ('amd64', 'x86_64'))
             or (target == 'macos' and machine == 'arm64')):
         raise SystemExit('This test needs Linux x64, Windows x64 or macOS arm64.')
+    folders = sorted(folder for folder, _ in FAMILIES.values())
+    require(folders == sorted(task_families().values()),
+            f'FAMILIES covers {folders}; add a model for every task family.')
     build = REPO / 'build/codex-tmp'
     build.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix=f'bundled-{target}-', dir=build))
@@ -183,7 +177,8 @@ def main():
         require(f'Downloaded: {label}' in log, f'{label} was not downloaded.')
     log = run(['dart', 'run', 'mediapipe_core:bundle_models', '--check'], app,
               root / 'check.log')
-    require('assets/mediapipe/ matches pubspec.yaml: 3 models' in log, 'The check did not pass.')
+    require(f'assets/mediapipe/ matches pubspec.yaml: {len(expected_labels())} models' in log,
+            'The check did not pass.')
 
     # A corrupted copy and an unlisted file fail the check; the command
     # replaces the first and removes the second.
@@ -217,7 +212,7 @@ def main():
     require(files == set(models.values()), f'The release ships {sorted(files)}.')
     for name in files:
         require(digest(shipped / name) == name, f'The release copy of {name} differs.')
-    strays = [path for path in bundle.rglob('*') if path.suffix in ('.tflite', '.task')]
+    strays = [path for path in bundle.rglob('*') if path.suffix in MODEL_SUFFIXES]
     require(not strays, f'The release ships other model files: {strays}')
     deployed = root / 'deployed' / bundle.name
     shutil.copytree(bundle, deployed, symlinks=True)

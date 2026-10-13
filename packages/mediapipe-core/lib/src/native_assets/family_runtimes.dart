@@ -17,13 +17,12 @@ import '../../native_assets.dart';
 const familyRuntimeAssetName = 'mediapipe.dylib';
 
 /// Google's MediaPipe build that names the release holding the libraries:
-/// the 1.1.0 development build of October 5, 2026. Files from Google's
-/// delivery of October 8 are posted there too.
-const familyRuntimeVersion = '1.1.0-dev.20261005';
+/// the 1.1.1 development build of October 9, 2026.
+const familyRuntimeVersion = '1.1.1-dev.20261009';
 
 /// Where the hooks download Google's libraries: a pre-release of this
 /// project's native downloads, holding Google's files unmodified, posted with
-/// Google's permission until Google publishes 1.1.0.
+/// Google's permission until Google publishes them.
 ///
 /// `hooks.user_defines.mediapipe_core.asset_source` replaces it for offline
 /// and mirrored builds: a directory or URL holding each file under its
@@ -37,7 +36,7 @@ final class FamilyRuntime {
   /// Pins [fileName] by digest and size.
   const FamilyRuntime(this.fileName, this.sha256, this.bytes);
 
-  /// Google's file name: a library, or an XCFramework zip on iOS.
+  /// Google's file name: a library, or a framework zip on iOS.
   final String fileName;
 
   /// SHA-256 of the only accepted bytes.
@@ -60,207 +59,218 @@ final class FamilyRuntime {
 /// Android has 32-bit ARM too, which Flutter's release builds include, though
 /// no task claims it; browsers run Google's JavaScript runtime instead.
 ///
-/// Android and iOS take every family from Google's delivery of October 8,
-/// 2026. Its macOS and Linux vision, text and audio files are the October 5
-/// bytes, and its Windows ones differ only in their build timestamp, so those
-/// pins stay.
+/// Every file comes from Google's 1.1.1 development build of October 9, 2026,
+/// unmodified. iOS has one framework zip for devices and one for the
+/// Simulator.
 const familyRuntimes = <String, Map<String, FamilyRuntime>>{
   'vision': {
     'macos/arm64': FamilyRuntime(
       'libmediapipe_tasks_vision.dylib',
-      '592cacad7df116b6645deaee48a56fbf3f42788b3067e478d12a654070a837ca',
-      26560560,
+      '1631338159bb91f74df15ea7fc606d2ca66680ebcb512baf93ae27f05d0269d1',
+      26326640,
     ),
     'android/arm64': FamilyRuntime(
       'libmediapipe_tasks_vision.so',
-      'da82f83e43fdcbe2ffb5841c887bbb84bae10670006e2e9481d57b2503fbf17c',
-      13857344,
+      '53527c51a37578d568e6f4da81a50b322bc256167d6a91136373789662ec1a78',
+      13415144,
     ),
     'android/arm': FamilyRuntime(
       'libmediapipe_tasks_vision.so',
-      'fe6d7d1e8b03a6e191b3deb3d4c1c9ee0cfdecee04568152b30f0fe7b4bc65ee',
-      9514268,
+      '1d65d948058140fd8bf10860fec209f8e65c2e6f805e3b53a19d93ed872462a2',
+      9406796,
     ),
     'android/x64': FamilyRuntime(
       'libmediapipe_tasks_vision.so',
-      '41542b554beba7dd4024d4ca547c1cca7190f4c362b805d42fb461cdffbd0624',
-      16752584,
+      'e556f9c0d87f7509ceaddb6d7923702dad09e9a2060f121c4d9c2cbea4d70de0',
+      16573320,
     ),
-    'ios/arm64': _visionIos,
-    'ios-simulator/arm64': _visionIos,
+    'ios/arm64': FamilyRuntime(
+      'MediaPipeTasksVisionC.framework.zip',
+      '2cc01b564ff0a70e7efdde59bf8c64216a3600cb39711b58480deed123812722',
+      7822529,
+    ),
+    'ios-simulator/arm64': FamilyRuntime(
+      'MediaPipeTasksVisionC.framework.zip',
+      'f7128240f061a91434327b2fbdf2adafe175c97fbfbddbd400fbbf211a830eeb',
+      17017755,
+    ),
     'linux/x64': FamilyRuntime(
       'libmediapipe_tasks_vision.so',
-      'bd7186c11136388f99fa51875a3c12d6a3bf2c2d061980d36d53d5beaab84d23',
-      29679344,
+      '5d6c88428f3369ea4af4d28f24150688f1f553776356590101bd6541dec95519',
+      29374912,
     ),
     'windows/x64': FamilyRuntime(
       'mediapipe_tasks_vision.dll',
-      '0b98a6b9d7c0e79b932d53ec80ce2183947f19e234fa657817785faaf7dd41c7',
-      24688640,
+      'c3dbd1efd98ac102c7df66e8d20ae335eee058c87aaaa459156c5b44d36fff39',
+      24088064,
     ),
   },
   'text': {
     'macos/arm64': FamilyRuntime(
       'libmediapipe_tasks_text.dylib',
-      '78c35de4d7b33c9c3687057f736bc07b37e13254f5defe7c1b0fcfcf58ba6604',
-      26121952,
+      '192612b3c891a144b88b0ed61f1a650918f65c1711dcdcd6dd673f007e41c6cf',
+      25041936,
     ),
     'android/arm64': FamilyRuntime(
       'libmediapipe_tasks_text.so',
-      '0921347d773f6c4c948ab1400b85684ffd20a7fc6eb1282ba6c346e6c7fb9355',
-      15385184,
+      '2fa7e80417a5e6dbe269240c63f5c3040c1dd1af0d5730b459b384b03425a771',
+      14638184,
     ),
     'android/arm': FamilyRuntime(
       'libmediapipe_tasks_text.so',
-      '0407eb55d10cd857cf70cd6a9db2d26072d06c4affc5043a944570259e528ce7',
-      10403924,
+      '34a179ef6f386b13c5a14e766265a3f88d38589c04c9827edd429662b1034ab7',
+      10016900,
     ),
     'android/x64': FamilyRuntime(
       'libmediapipe_tasks_text.so',
-      '8f710c27bd3e500789bb45188f792877826f722161dc1676df0192eeee161924',
-      18587392,
+      '468decef4dde90f5f83331133f2f887b08ea0ca523020e6fb339b03ca9256e8e',
+      17988672,
     ),
-    'ios/arm64': _textIos,
-    'ios-simulator/arm64': _textIos,
+    'ios/arm64': FamilyRuntime(
+      'MediaPipeTasksTextC.framework.zip',
+      '9ca52e37c9d136d544c559f832a97f1f46749141cf02b6a3a9953a059fb5f9ed',
+      8220504,
+    ),
+    'ios-simulator/arm64': FamilyRuntime(
+      'MediaPipeTasksTextC.framework.zip',
+      '197c5b51d39189195e64a9de46bc79ca0cbc87681cf4db29828801af848e49c6',
+      17780508,
+    ),
     'linux/x64': FamilyRuntime(
       'libmediapipe_tasks_text.so',
-      'e69af0bd70966f6a0e2667b89e0ba0ed5cb831c0cb23b1dc966efa5372e41bd8',
-      39004944,
+      '16cf9c7e4f917b6fcc78a8c9bcce26085a8a87f619ef4d1e37838fc573c8cb27',
+      38238304,
     ),
     'windows/x64': FamilyRuntime(
       'mediapipe_tasks_text.dll',
-      '03900017f36817242f81cc35ee5d57daaaa6d89d523d56aba01e1fe20be2557a',
-      44610048,
+      'aec6c671726c35d706e36cf4e5e951fbe021388823efd2a423d4722028882933',
+      37355520,
     ),
   },
   'audio': {
     'macos/arm64': FamilyRuntime(
       'libmediapipe_tasks_audio.dylib',
-      '5848efb7a97e4b0c38640de5484d54e31adc19c014ab6a4e2b9e250b867df209',
-      12841856,
+      '7b7f4c9b09dd9e0ac6ed504cab187b000043cb142b17ec4a3cd59bf9857e5d9d',
+      12592512,
     ),
     'android/arm64': FamilyRuntime(
       'libmediapipe_tasks_audio.so',
-      '1eb2f74479a8cb4c6671b2269bcd8c9e70eb0134df655c78d4776d86def27f14',
-      9110048,
+      '0a031886aff162adc35ce85a328e41abd8bafc9989967a2518ae18daa5b42a46',
+      8839512,
     ),
     'android/arm': FamilyRuntime(
       'libmediapipe_tasks_audio.so',
-      '52020d74c7dc2639a6c9fd640f8b697773520bdec75acdb725df1041f91b46d8',
-      6088836,
+      'dc26ed3554e9807f6a769bfedb907f7981c606e47c95bf802172a5108c9f07d0',
+      5997940,
     ),
     'android/x64': FamilyRuntime(
       'libmediapipe_tasks_audio.so',
-      '9ad57acb98ece90560eadc2740e0eae271ef27cc164ddf0bd51a73364c73322a',
-      11555856,
+      'bae6df523f084e0c4852a051e826de951bda8bdb4e3d9e9b752b225e0ab701e6',
+      11416528,
     ),
-    'ios/arm64': _audioIos,
-    'ios-simulator/arm64': _audioIos,
+    'ios/arm64': FamilyRuntime(
+      'MediaPipeTasksAudioC.framework.zip',
+      'c14914ee225b0364a6455533aa8e00755a11aa4a23d35345323fbf694de8ba2c',
+      3990222,
+    ),
+    'ios-simulator/arm64': FamilyRuntime(
+      'MediaPipeTasksAudioC.framework.zip',
+      '0e18d73a381e04b6642de3ed303c9697b170f2f51745cfce9b21265c83b6bb7c',
+      9029022,
+    ),
     'linux/x64': FamilyRuntime(
       'libmediapipe_tasks_audio.so',
-      'a5bc7dab53fe9c42a29970791770a79bfca132613c8f08864f328ba5ef9769c3',
-      20131472,
+      '9163dd2f2219dc93c0aa156d0399f48abc68eff451dd51e5796cc6f575bbb321',
+      19793248,
     ),
     'windows/x64': FamilyRuntime(
       'mediapipe_tasks_audio.dll',
-      'f94d99a584e4cbfbc5e6a068f5b4e5a1b237218c2ee7a1ccf742b82105c7d41a',
-      17534464,
+      '62bb1212eb68d9a0f31be0d01b7fe06232707bdb87517ea4d1705ea64d56bb43',
+      16985600,
     ),
   },
-  // Universal Embedder and Semantic Retriever, from Google's delivery of
-  // October 8, 2026, which added the retrieval and decision families.
   'retrieval': {
     'macos/arm64': FamilyRuntime(
       'libmediapipe_tasks_retrieval.dylib',
-      '3d8f97a2f5e719db0866b0a26c8bf11897d817586565f459735cf8f9a29a3934',
-      19237744,
+      '5e4a4269436d3a00aec6edc1e859273360fd176d0df01245f812a66c2ec4f6f2',
+      19037968,
     ),
     'android/arm64': FamilyRuntime(
       'libmediapipe_tasks_retrieval.so',
-      '4a56a9305671e645c5c26e0e1791ed85f6f1f77176e141ac50e9194bcdd12f50',
-      12297872,
+      'baf8ce4adb63b5967ea6685765f2236b58eb77b97715cdf8d1bac33e7618093e',
+      11962400,
     ),
     'android/arm': FamilyRuntime(
       'libmediapipe_tasks_retrieval.so',
-      'af37e5bfdc2d363ad713accd332601cad7c5365d6daa2dfd4864ba0d6a4876a9',
-      8386036,
+      '48e256ceb2afd545cd19fdc57274357f8d37b6843e75d1d893ba086f74be666c',
+      8295500,
     ),
     'android/x64': FamilyRuntime(
       'libmediapipe_tasks_retrieval.so',
-      '05197b0dd412b947abc5479ddcb04e79b84a2786c590424f42392b878b1abf2a',
-      15131376,
+      'a81831289812d853da47b8c70f2e595e71e52122197648d604d20bf3adb3947a',
+      14976176,
     ),
-    'ios/arm64': _retrievalIos,
-    'ios-simulator/arm64': _retrievalIos,
+    'ios/arm64': FamilyRuntime(
+      'MediaPipeTasksRetrievalC.framework.zip',
+      'c5eaf071a37213ce7aab0a6d4c30259d8d12f818e98bfb608affeb6458d7e71e',
+      5730401,
+    ),
+    'ios-simulator/arm64': FamilyRuntime(
+      'MediaPipeTasksRetrievalC.framework.zip',
+      'b6fce9ce25d4f6f3a0a1442928dc14284fea442948c608f15ff4304fb5af89f4',
+      12698868,
+    ),
     'linux/x64': FamilyRuntime(
       'libmediapipe_tasks_retrieval.so',
-      '1c89bfa537bbe03a90a3f07c1aa737c652098aed8df6cbf95d88c2d77e30d200',
-      27678224,
+      'b517d70a786788bedba90ef7eeb8634e5a324ffee5b55b4ac20a9288b7dbb57d',
+      27458208,
     ),
     'windows/x64': FamilyRuntime(
       'mediapipe_tasks_retrieval.dll',
-      '89d17f5a3c1a7a0f660267bf6354b5af2bf56f01cb0d7e917ccba15a8f0cac07',
-      22322176,
+      '12dfa699780955f95749f2bb92d4356c6c255b20d3ca54955e484e9207e7a9ad',
+      21771264,
     ),
   },
-  // Decision Maker, from the same delivery, which has no Windows library:
-  // Windows stays on the wheel's library ([wheelRuntimes]).
+  // Google's build has no Windows decision library: Windows stays on the
+  // wheel's library ([wheelRuntimes]).
   'decision': {
     'macos/arm64': FamilyRuntime(
       'libmediapipe_tasks_decision.dylib',
-      '41ee7b75ad4067f282fdcbc716ae93e157f36f84267ec781cd0aaac9d833d836',
-      9907456,
+      'd1a6c23baa9fbe194cd033db470cd97bd0438995319371fea5b12904cffa7a73',
+      16507328,
     ),
     'android/arm64': FamilyRuntime(
       'libmediapipe_tasks_decision.so',
-      '601b89b46a1793f458b63214fb32495a50a8a3bf5bf4a99e4dd58f5aac9c1642',
-      7384672,
+      'd50250289299e6f3ffc4122d833551e398c307926a145a3bc0818c58cd091147',
+      15138736,
     ),
     'android/arm': FamilyRuntime(
       'libmediapipe_tasks_decision.so',
-      'f5074c693a6c0d827897efe714ec3b9306ce4a0d54548e24ecb77f3cab910f44',
-      4867960,
+      'ecf84dce0a89686bba785c6facd1569c37a8701361a287bae52f8182913f0a29',
+      10604676,
     ),
     'android/x64': FamilyRuntime(
       'libmediapipe_tasks_decision.so',
-      '4c87c55486b57a48a60a6b408df1a0aaf4f2017762fb8732b1b7160895aaed65',
-      9725024,
+      'bee651e784f55eb19fd87eca9ff59509a84f3f316d55a5b4e0c659425cd114cf',
+      18474512,
     ),
-    'ios/arm64': _decisionIos,
-    'ios-simulator/arm64': _decisionIos,
+    'ios/arm64': FamilyRuntime(
+      'MediaPipeTasksDecisionC.framework.zip',
+      '111d94f2bbc54d680e946e4c9bf3c29ff91b954e1803301558e4cf3522cf2bd8',
+      5175893,
+    ),
+    'ios-simulator/arm64': FamilyRuntime(
+      'MediaPipeTasksDecisionC.framework.zip',
+      'd52afac86932f571b896d8dfebeaa0c3b8e2b2b5c4e6cd370b15a5c914e03101',
+      11471516,
+    ),
     'linux/x64': FamilyRuntime(
       'libmediapipe_tasks_decision.so',
-      '55ae8469d7542f8623873bc3683b52382390f76ed79c9bb2271165faf6ccb49f',
-      16116288,
+      '245b4b8fee73aeadb81f07ba63e15ad6e24a9a81486f481d87e44a08504023a0',
+      32108912,
     ),
   },
 };
-
-const _visionIos = FamilyRuntime(
-  'MediaPipeTasksVisionC.xcframework.zip',
-  '910013512896be0c2e3966a21137a931e6630e8e9babac99cef5fdc1f34f2794',
-  62968259,
-);
-const _textIos = FamilyRuntime(
-  'MediaPipeTasksTextC.xcframework.zip',
-  '2ca0f943e2d376d089c1eeabace73399597e7be232059c88b8a607bb99103c27',
-  66482595,
-);
-const _audioIos = FamilyRuntime(
-  'MediaPipeTasksAudioC.xcframework.zip',
-  'c8e6deafb6fd26df9b49a4f13516ac247b585e7a4ef7e54a526e7fedcdc4d3ac',
-  32521231,
-);
-const _retrievalIos = FamilyRuntime(
-  'MediaPipeTasksRetrievalC.xcframework.zip',
-  '507e8f7ae9931b777cf44cb0b695dd1455ccb67cac1868eca5e49f276ced632c',
-  45006655,
-);
-const _decisionIos = FamilyRuntime(
-  'MediaPipeTasksDecisionC.xcframework.zip',
-  'db5f540c8359da2628fd5e727a50ec0aaa1dd9f5e8aa120d634d0f7ff402f4f9',
-  26197715,
-);
 
 /// Google's MediaPipe library as it ships inside one of Google's official
 /// Python wheels, which holds every task Google's Python API serves. A family
@@ -284,8 +294,8 @@ final class WheelRuntime {
   final int bytes;
 }
 
-// TODO: Retire this table and bundleWheelRuntime once Google builds a
-// Windows decision library: its delivery of October 8, 2026 has every other
+// TODO: Retire this table and _bundleWheelRuntime once Google builds a
+// Windows decision library: its build of October 9, 2026 has every other
 // target, pinned in familyRuntimes. See
 // packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
 
@@ -351,7 +361,9 @@ String _unsupportedTarget(
 const familyRuntimeMinimumAndroidApi = 28;
 
 /// Bundles [family]'s library for the hook's target under
-/// [familyRuntimeAssetName], in the calling family's package.
+/// [familyRuntimeAssetName], in the calling family's package: Google's
+/// per-family library ([familyRuntimes]), or on a target Google has not
+/// built one for, the library from its wheel ([wheelRuntimes]).
 Future<void> bundleFamilyRuntime(
   BuildInput input,
   BuildOutputBuilder output, {
@@ -360,6 +372,11 @@ Future<void> bundleFamilyRuntime(
   final code = input.config.code;
   requireDynamicLinking(code);
   final target = buildTarget(code);
+  if (familyRuntimes[family]?[target] == null) {
+    if (wheelRuntimes[family]?[target] case final wheel?) {
+      return _bundleWheelRuntime(input, output, family, target, wheel);
+    }
+  }
   final runtime = requireFamilyRuntime(family, target);
   if (code.targetOS == OS.android &&
       code.android.targetNdkApi < familyRuntimeMinimumAndroidApi) {
@@ -382,14 +399,12 @@ Future<void> bundleFamilyRuntime(
   if (await download.length() != runtime.bytes) {
     throw StateError('$target $family runtime size mismatch.');
   }
-  final library = switch (code.targetOS) {
-    OS.macOS => await _prepareMacos(download),
-    OS.iOS => await _extractIosSlice(
-      download,
-      simulator: code.iOS.targetSdk == IOSSdk.iPhoneSimulator,
-    ),
-    _ => download,
-  };
+  final library = code.targetOS == OS.iOS
+      ? await _extractIosBinary(
+          download,
+          simulator: code.iOS.targetSdk == IOSSdk.iPhoneSimulator,
+        )
+      : download;
   output.dependencies.add(download.uri);
   output.assets.code.add(
     CodeAsset(
@@ -401,26 +416,16 @@ Future<void> bundleFamilyRuntime(
   );
 }
 
-/// Bundles [family]'s library from Google's wheel ([wheelRuntimes]) for the
-/// hook's target under [familyRuntimeAssetName], in the calling family's
-/// package, as [bundleFamilyRuntime] bundles a per-family library. A target
-/// with neither gets nothing on Android and iOS, so the family's tasks report
-/// it unsupported instead of failing the app's build.
-Future<void> bundleWheelRuntime(
+/// Bundles [runtime], [family]'s library from Google's wheel, for [target]
+/// under [familyRuntimeAssetName], as [bundleFamilyRuntime] bundles a
+/// per-family library.
+Future<void> _bundleWheelRuntime(
   BuildInput input,
-  BuildOutputBuilder output, {
-  required String family,
-}) async {
-  final code = input.config.code;
-  requireDynamicLinking(code);
-  final runtimes = wheelRuntimes[family];
-  if (runtimes == null) throw ArgumentError.value(family, 'family');
-  final target = buildTarget(code);
-  final runtime = runtimes[target];
-  if (runtime == null) {
-    if (code.targetOS == OS.android || code.targetOS == OS.iOS) return;
-    throw UnsupportedError(_unsupportedTarget(family, target, runtimes.keys));
-  }
+  BuildOutputBuilder output,
+  String family,
+  String target,
+  WheelRuntime runtime,
+) async {
   final wheelName = Uri.parse(runtime.wheel.url).pathSegments.last;
   final cache = Directory.fromUri(
     input.outputDirectoryShared.resolve('${runtime.wheel.sha256}/'),
@@ -449,64 +454,27 @@ Future<void> bundleWheelRuntime(
       }
     },
   );
-  final library = code.targetOS == OS.macOS
-      ? await _prepareMacos(extracted)
-      : extracted;
   output.dependencies.add(wheel.uri);
   output.assets.code.add(
     CodeAsset(
       package: input.packageName,
       name: familyRuntimeAssetName,
       linkMode: DynamicLoadingBundled(),
-      file: library.uri,
+      file: extracted.uri,
     ),
   );
 }
 
-/// A copy of Google's macOS library with room for a longer install name.
+/// The arm64 binary from Google's framework zip for an iOS device or the
+/// Simulator.
 ///
-/// Dart and Flutter rename every bundled library, but Google's macOS builds
-/// leave 40 to 80 bytes of header room, so the rename fails ("larger updated
-/// load commands do not fit"). Naming the system frameworks without their
-/// `Versions/A/` directory, which macOS resolves to the same file, frees
-/// about 150 bytes. Google's iOS device builds carry about 12 KB; until the
-/// macOS ones are linked with `-headerpad_max_install_names` as well, this
-/// copy stands in. Only load commands and the ad hoc signature change.
-Future<File> _prepareMacos(File library) => _derived(
-  library,
-  'header-room/${library.uri.pathSegments.last}',
-  (copy) async {
-    final listing = await _run('xcrun', ['otool', '-L', copy.path]);
-    final changes = <String>[];
-    for (final match in _versionedFramework.allMatches(listing)) {
-      changes.addAll([
-        '-change',
-        match[0]!,
-        '/System/Library/Frameworks/${match[1]}.framework/${match[1]}',
-      ]);
-    }
-    if (changes.isNotEmpty) {
-      await _run('xcrun', ['install_name_tool', ...changes, copy.path]);
-    }
-    await _run('codesign', ['--force', '--sign', '-', copy.path]);
-  },
-);
-
-final _versionedFramework = RegExp(
-  r'/System/Library/Frameworks/(\w+)\.framework/Versions/[A-Z]/\1',
-);
-
-/// The arm64 device or simulator binary from Google's XCFramework zip.
-///
-/// It keeps Google's file name, which Flutter names the framework after: the
-/// simulator builds have no header room for a longer install name.
-Future<File> _extractIosSlice(File zip, {required bool simulator}) {
-  final name = zip.uri.pathSegments.last.replaceFirst('.xcframework.zip', '');
-  final slice = simulator ? 'ios-arm64_x86_64-simulator' : 'ios-arm64';
+/// It keeps Google's file name, which Flutter names the framework after.
+Future<File> _extractIosBinary(File zip, {required bool simulator}) {
+  final name = zip.uri.pathSegments.last.replaceFirst('.framework.zip', '');
   return _derived(zip, '${simulator ? 'simulator' : 'device'}/$name', (
     copy,
   ) async {
-    final path = '$name.xcframework/$slice/$name.framework/$name';
+    final path = '$name.framework/$name';
     final entry = ZipDecoder()
         .decodeBytes(await zip.readAsBytes())
         .findFile(path);

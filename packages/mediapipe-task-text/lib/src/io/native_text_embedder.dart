@@ -2,6 +2,8 @@ import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show fillBaseOptions, nativeString;
 
 import '../runner/text_task_runner.dart';
 import '../types/format_context.dart';
@@ -19,7 +21,12 @@ final class NativeTextEmbedder
     requireTextTasksRuntime();
     using((arena) {
       final native = arena<mp.MpTextEmbedderOptions>();
-      fillTextBaseOptions(native.ref.baseOptions, options, arena);
+      fillBaseOptions(
+        native.ref.baseOptions,
+        arena,
+        modelPath: options.modelPath,
+        modelBytes: options.modelBytes,
+      );
       native.ref.embedderOptions
         ..l2Normalize = options.l2Normalize
         ..quantize = options.quantize;
@@ -114,6 +121,6 @@ Embedding _copyEmbedding(mp.MpEmbedding value) {
         ? null
         : value.quantizedEmbedding.asTypedList(value.valuesCount),
     headIndex: value.headIndex,
-    headName: textTaskString(value.headName),
+    headName: nativeString(value.headName),
   );
 }

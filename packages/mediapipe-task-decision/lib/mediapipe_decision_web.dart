@@ -4,7 +4,6 @@ library;
 
 import 'dart:convert';
 import 'dart:js_interop';
-import 'dart:js_interop_unsafe';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:mediapipe_core/platform_interface.dart'
@@ -19,38 +18,8 @@ abstract final class MediaPipeDecisionWeb {
     decisionBackendFactory = _WorkerDecisionMaker.create;
     // Google's runtime answers only on a hardware WebGPU adapter (UP-049),
     // so the capability query needs to know which one this browser has.
-    taskPlatformGpuReader ??= _webGpuAdapter;
+    taskPlatformGpuReader ??= readWebGpuAdapter;
   }
-}
-
-@JS('navigator.gpu')
-external JSObject? get _gpu;
-
-/// The adapter Google's runtime asks WebGPU for, named as
-/// [webGpuAdapterPrefix] and its vendor, architecture and description, with
-/// a fallback adapter marked as such; null without WebGPU.
-Future<String?> _webGpuAdapter() async {
-  final gpu = _gpu;
-  if (gpu == null) return null;
-  final adapter = await gpu
-      .callMethod<JSPromise<JSObject?>>(
-        'requestAdapter'.toJS,
-        {'powerPreference': 'high-performance'}.jsify(),
-      )
-      .toDart;
-  if (adapter == null) return null;
-  final info = adapter.getProperty<JSObject?>('info'.toJS);
-  String part(String name) =>
-      info?.getProperty<JSString?>(name.toJS)?.toDart ?? '';
-  final fallback =
-      adapter.getProperty<JSBoolean?>('isFallbackAdapter'.toJS)?.toDart ??
-      false;
-  return [
-    webGpuAdapterPrefix,
-    for (final name in ['vendor', 'architecture', 'description'])
-      if (part(name).isNotEmpty) part(name),
-    if (fallback) '(fallback adapter)',
-  ].join(' ');
 }
 
 /// Google's Decision Maker on its own worker (assets/worker.js), through

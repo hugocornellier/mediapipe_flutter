@@ -21,6 +21,11 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
+      final assets = await GalleryAssets.unpack();
+      if (!assets.bundledTasks.contains('decision_maker')) {
+        markTestSkipped('This build bundles no Decision Maker.');
+        return;
+      }
       final capabilities = await queryDecisionMakerCapabilities();
       if (!capabilities.isSupported) {
         await expectLater(

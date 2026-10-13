@@ -37,13 +37,23 @@ const _faceDetectorGpuGap =
     'CPU delegate. Face Landmarker runs on the GPU there. See '
     'upstream-issues.md UP-046.';
 
+/// Why macOS offers the CPU only: on Metal, Google's 1.1.1 library differs
+/// from Google's own 1.1.0 wheel for every task, by up to a different top
+/// class, and no wheel from the same build exists to show which output is
+/// right. The CPU matches the wheel exactly. The tasks keep `macosGpu`, which
+/// names the ones that return once a matching wheel agrees (UP-057).
+const _macosGpuGap =
+    "Google's 1.1.1 macOS library gives different results on Metal from "
+    "Google's own 1.1.0 package, and nothing can check them yet; use the CPU "
+    'delegate, which matches it exactly. See upstream-issues.md UP-057.';
+
 /// Query official FaceLandmarker platform support without creating a task.
 Future<TaskCapabilities> queryFaceLandmarkerCapabilities() async =>
     faceLandmarkerCapabilitiesForPlatform(await currentTaskPlatform());
 
 /// Face Landmarker: CPU on Google's vision library on Android, iOS, macOS,
 /// Linux and Windows, and the registered web adapter; GPU everywhere but
-/// Windows and the iOS Simulator.
+/// Windows, macOS ([_macosGpuGap]) and the iOS Simulator.
 TaskCapabilities faceLandmarkerCapabilitiesForPlatform(TaskPlatform platform) =>
     _visionTaskCapabilities(
       platform,
@@ -138,9 +148,9 @@ TaskCapabilities holisticLandmarkerCapabilitiesForPlatform(
 
 /// CPU on Google's vision library (Android, iOS, macOS arm64, Linux x64 and
 /// Windows x64) and the registered web adapter; GPU on iOS, Android and the
-/// web, with [linuxGpu] on Linux (OpenGL ES, needing EGL and a GPU driver)
-/// and with [macosGpu] on macOS (Metal), where CI compares it with Google's
-/// own GPU output on the same machine. An [androidGpuGap] withdraws the
+/// web, and with [linuxGpu] on Linux (OpenGL ES, needing EGL and a GPU
+/// driver). [macosGpu] marks the tasks that run on Metal, which macOS
+/// withdraws for now ([_macosGpuGap]). An [androidGpuGap] withdraws the
 /// Android GPU and is the reason an Android device reports, except on an
 /// emulator, which loses the GPU for every task ([_emulatorGpuGap]); an
 /// [iosGpuGap] withdraws an iPhone's GPU the same way, and the iOS Simulator
@@ -172,7 +182,6 @@ TaskCapabilities _visionTaskCapabilities(
       },
       Delegate.gpu: {
         if (linuxGpu) 'linux/x64': null,
-        if (macosGpu) 'macos/arm64': '14.0',
         if (!platform.simulator && iosGpuGap == null) 'ios/arm64': '15.0',
         if (androidGap == null) 'android/arm64': null,
         if (webAdapter) 'web/unknown': null,
@@ -187,8 +196,11 @@ TaskCapabilities _visionTaskCapabilities(
           (platform.operatingSystem == 'android' ? androidGap : null) ??
           (platform.simulator ? _simulatorGpuGap : null) ??
           (platform.operatingSystem == 'ios' ? iosGpuGap : null) ??
+          (platform.operatingSystem == 'macos' && macosGpu
+              ? _macosGpuGap
+              : null) ??
           [
-            '$name GPU requires ${_either([if (linuxGpu) 'Linux x64', if (macosGpu) 'macOS arm64', if (iosGpuGap == null) 'iOS', if (androidGpuGap == null) 'Android', 'the web adapter'])}.',
+            '$name GPU requires ${_either([if (linuxGpu) 'Linux x64', if (iosGpuGap == null) 'iOS', if (androidGpuGap == null) 'Android', 'the web adapter'])}.',
             ?desktopGpuGap,
           ].join(' '),
     },

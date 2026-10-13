@@ -1,18 +1,19 @@
 # Upstream issues and runtime compatibility findings
 
-Last updated: 2026-10-09. These are local observations unless explicitly marked
+Last updated: 2026-10-12. These are local observations unless explicitly marked
 as an external report; each entry says whether it was reported upstream. An
 exported symbol alone does not establish a working task or platform.
 
 ## Runtimes
 
-The packages run Google's per-family MediaPipe libraries, pre-release 1.1.0
-development builds of October 5, 2026 (core's `family_runtimes.dart`), on
-Android, iOS, macOS, Linux and Windows, and Google's JavaScript runtime 1.0.1
-in browsers. Their outputs are compared with Google's 1.1.0 release candidate
+The packages run Google's per-family MediaPipe libraries, a pre-release 1.1.1
+development build of October 9, 2026 (core's `family_runtimes.dart`; the
+1.1.0 development builds of October 5 and 8 before it), on Android, iOS,
+macOS, Linux and Windows, and Google's JavaScript runtime 1.0.1 in browsers.
+Their outputs are compared with Google's 1.1.0 release candidate
 wheel, `mediapipe-nightly` 1.1.0rc20260925 (core's `reference_wheels.dart`).
 With Google's agreement they are posted unmodified, for testing, as the
-pre-release `per-family-v1.1.0-dev.20261005` on
+pre-release `per-family-v1.1.1-dev.20261009` on
 `hugocornellier/mediapipe_flutter_native`, which the hooks download. CI runs
 them on Linux x64, Windows x64, macOS arm64, the arm64 iOS Simulator and the
 x86_64 Android emulator, and Firebase Test Lab on a Pixel 8a (Mali), a Galaxy
@@ -50,7 +51,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-037](#up-037-the-audio-streams-flushed-tail-is-stamped-with-a-sentinel-not-a-time) | The audio stream's flushed tail is stamped with a sentinel, not a time | Present |
 | [UP-038](#up-038-the-c-audio-stream-callback-carries-no-user-data-and-no-message) | The C audio stream callback carries no user data and no message | Present |
 | [UP-041](#up-041-two-defects-in-the-c-audio-classifier) | Two defects in the C Audio Classifier | Not re-checked |
-| [UP-042](#up-042-per-family-macos-and-simulator-libraries-have-no-header-room-for-a-rename) | Per-family macOS and simulator libraries have no header room for a rename | Found on 1.1.0 |
+| [UP-042](#up-042-per-family-macos-and-simulator-libraries-have-no-header-room-for-a-rename) | Per-family macOS and simulator libraries have no header room for a rename | Fixed in the 1.1.1 build of October 9 |
 | [UP-043](#up-043-per-family-libraries-each-define-the-same-objective-c-classes) | Per-family libraries each define the same Objective-C classes | Found on 1.1.0 |
 | [UP-044](#up-044-apple-gpu-tasks-abort-on-a-three-channel-image-instead-of-failing) | Apple GPU tasks abort on a three-channel image instead of failing | Found on 1.1.0 |
 | [UP-045](#up-045-per-family-windows-libraries-export-tensorflow-lite-and-litert) | Per-family Windows libraries export TensorFlow Lite and LiteRT | Found on 1.1.0 |
@@ -62,6 +63,11 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-051](#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again) | The browser Universal Embedder reads modelAssetPath as a file, and a second Wasm object needs the loader again | Found on 1.1.0 |
 | [UP-052](#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter) | The browser Universal Embedder runs only on a hardware WebGPU adapter | Found on 1.1.0 |
 | [UP-053](#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model) | The per-family decision library fails every evaluation with the text-only EmbeddingGemma 2 model | Found on 1.1.0 |
+| [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0 |
+| [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0 |
+| [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0 |
+| [UP-057](#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel) | The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel | Found on the 1.1.1 build of October 9 |
+| [UP-058](#up-058-universal-embedders-audio-embeddings-change-from-call-to-call) | Universal Embedder's audio embeddings change from call to call | Found on 1.1.0 and the 1.1.1 build of October 9 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -80,7 +86,7 @@ on pose presence. The defaults are all `0.5` in both APIs, which hides it.
 A probe, `tool/holistic_threshold_order_probe.py` (in git history at `3e217ac`),
 showed this by setting one threshold at a time to an extreme value on
 `pose.jpg`: only the header's arrangement makes each option act on its own
-field. The Dart wrapper (`lib/src/io/holistic_landmarker.dart`) now writes the
+field. The Dart wrapper (`lib/src/io/native_holistic_landmarker.dart`) now writes the
 header's order on every platform. It previously copied the Python order on
 Linux, Windows and the official macOS runtime, and CI could not see it because
 the references came from the same Python.
@@ -151,7 +157,7 @@ The equivalent classifier field tolerates null: `classifier_options_c.py` sets
 Google's own Image Segmenter bindings never exercise the null case because
 `MpImageSegmenterOptionsC.from_c_options` always passes `ctypes.c_char_p(b'')`.
 
-`lib/src/io/image_segmenter.dart` therefore always passes a string, using an
+`lib/src/io/native_image_segmenter.dart` therefore always passes a string, using an
 empty one when the caller requests no locale. Review this field for each new
 task rather than assuming null is accepted.
 
@@ -618,9 +624,11 @@ issue filed.
 
 ### UP-042: Per-family macOS and simulator libraries have no header room for a rename
 
-**Status:** observed October 6, 2026 in Google's pre-release per-family C
-libraries (1.1.0 development builds of October 5). Worked around in
-`mediapipe_core`'s hook. Not yet reported to Google.
+**Status:** fixed in Google's 1.1.1 development build of October 9, 2026:
+every macOS dylib and iOS slice leaves 15 to 28 KB, so the hook bundles
+Google's files as is and the workaround below is gone. Observed October 6,
+2026 in Google's pre-release per-family C libraries (1.1.0 development builds
+of October 5); reported to Google on October 8, 2026.
 
 Dart (`dart test`, `dart run`) and Flutter give every bundled library a new,
 longer install name. Google's macOS libraries leave 40 (audio), 48 (text) and
@@ -633,16 +641,15 @@ about 12 KB, so they are evidently linked with
 `-headerpad_max_install_names`; the fix is to link the macOS and simulator
 builds the same way.
 
-Until then, `bundleFamilyRuntime` names the system frameworks without their
-`Versions/A/` directory, which macOS resolves to the same files, and signs
-the copy again, freeing 144 to 168 bytes (room after: vision 248, text 208,
-audio 184, retrieval 240). Google's delivery of October 8, 2026 (decision and
-retrieval) is linked the same way: 72 to 80 bytes on macOS, and 32 on the
-simulator slices, less than any slice before. Report sent to Google on
-October 8, 2026.
-That covers the install names Dart and Flutter write for ordinary project
-paths. On iOS the frameworks keep Google's file names, so Flutter's new
-install name has the same length as Google's.
+Until the 1.1.1 build, `bundleFamilyRuntime` named the system frameworks
+without their `Versions/A/` directory, which macOS resolves to the same files,
+and signed the copy again, freeing 144 to 168 bytes (room after: vision 248,
+text 208, audio 184, retrieval 240). Google's delivery of October 8, 2026
+(decision and retrieval) was linked the same way: 72 to 80 bytes on macOS,
+and 32 on the simulator slices, less than any slice before. That covered the
+install names Dart and Flutter write for ordinary project paths. On iOS the
+frameworks keep Google's file names, so Flutter's new install name has the
+same length as Google's.
 
 ### UP-043: Per-family libraries each define the same Objective-C classes
 
@@ -655,8 +662,10 @@ the vision library defines too (`GTMSessionFetcher` and its helpers, the
 `GIPLog*` and `GTMLog*` logging classes, `IonNetworkHelper`,
 `MPPMetalSharedResources`), so a process with all three logs 68 "Class ... is
 implemented in both" warnings and uses whichever copy loaded first. On iOS
-the slices share `MPPMetalSharedResources` and miniaudio's
-`ma_ios_notification_handler`. Libraries from different releases in one app
+the slices shared `MPPMetalSharedResources` and miniaudio's
+`ma_ios_notification_handler`; since the 1.1.1 build added the usage-logging
+client on iOS, they also share `GTMSessionFetcher`, the `GIPLog*` and
+`GTMLog*` classes and `IonNetworkHelper`, as on macOS. Libraries from different releases in one app
 could then run one family's code against another family's class layout.
 
 ### UP-044: Apple GPU tasks abort on a three-channel image instead of failing
@@ -886,6 +895,146 @@ signatures; the 440M one adds `tf_lite_vision_encoder` and
 `tf_lite_vision_adapter`. Universal Embedder refuses the same model at
 creation (UP-050).
 
+### UP-054: In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2
+
+**Status:** observed October 12, 2026 with `@mediapipe/tasks-decision` and
+`@mediapipe/tasks-retrieval` 1.1.0 in Playwright's WebKit 26.6 on macOS 27,
+Apple M4 Max, on its hardware WebGPU adapter (vendor `apple`, architecture
+`apple`), and again on GitHub's `macos-26` runner (macOS 26.6.2, a virtual
+Apple M1) with the runtime from jsDelivr (CI run 38291903608). Playwright's
+Chromium 153 on the same Mac and GPU answers correctly. Safari itself was
+not tried. Worked around: the decision and
+retrieval capability queries read the browser's engine
+(`TaskPlatform.browserEngine`, from the user agent) and report both
+EmbeddingGemma 2 Decision Maker models and both retrieval tasks unsupported
+in WebKit; the gallery shows Hungry Fish, Universal Embedder and Semantic
+Retriever as cards there, and Decision Maker runs Laya. Not yet reported to
+Google.
+
+Google's own JavaScript, run in the page with no package code, shows it.
+`UniversalEmbedder.embedText` returns a 768-value vector of zeros (norm 0)
+for every text with both pinned retrieval models
+(`embeddinggemma-2-text-vision-440m.litertlm`, 388 MB, and
+`embeddinggemma-2-740m.litertlm`, 485 MB); in Chromium the same calls return
+unit vectors (norm 0.9999997 for "A dog chases a ball across the park.").
+Decision Maker with either EmbeddingGemma 2 model
+(`embeddinggemma-2-text-270m.litertlm`, 165 MB, and the 388 MB one) scores
+every option of every question 0.333 of 3 in WebKit, so the first option
+wins every tie: Hungry Fish chased every predator. Chromium answers the
+game's three sentences right with clear margins (flee 0.860 for "Predator
+nearby: a pufferfish, bigger than you."). Laya (`laya_s256.task`) gives the
+same probabilities in both browsers, so the WebGPU device itself works; the
+fault is on the EmbeddingGemma 2 path. Semantic Retriever then finds no
+document at a minimum similarity of 0, and Universal Embedder's cosine
+similarity is NaN.
+
+The two adapters differ in `subgroup-size-control` (Chromium only),
+`float16-renderable` and `float32-renderable` (WebKit only), and
+`maxBufferSize` and `maxStorageBufferBindingSize` (2 GB in WebKit, 4 GB in
+Chromium). Both offer `shader-f16` and `subgroups`.
+
+On GitHub's `macos-15` runners, which CI uses, WebKit has no
+`navigator.gpu` at all, so CI never reaches this path; on `macos-26` WebKit
+gets the Apple adapter and reproduces it.
+`gallery/tool/browser/test_gallery_journey.mjs --browser=webkit` on a Mac
+with Apple silicon, or on `macos-26`, reaches it and expects the cards.
+
+### UP-055: The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide
+
+**Status:** observed October 12, 2026 with `@mediapipe/tasks-decision` 1.1.0
+in Playwright's Chromium 153 and WebKit 26.6 on macOS 27, Apple M4 Max, on
+the GPU delegate. Worked around: `queryDecisionMakerCapabilities(model)`
+reports both GLiNER2.5-Decide models unsupported in browsers, and the
+gallery's Decision Maker page offers neither there. Not yet reported to
+Google.
+
+`DecisionMaker.createFromOptions` with `gliner_s256.task` or
+`gliner_s512.task` rejects with `RuntimeError: Aborted(). Build with
+-sASSERTIONS for more info.`, with or without `maxNumTokens` (256 or 4096).
+Laya and EmbeddingGemma 2 load from the same page.
+
+### UP-056: The browser Decision Maker ignores normalizePrior and scoringMode
+
+**Status:** read from `decision_bundle.mjs` of `@mediapipe/tasks-decision`
+1.1.0 on October 12, 2026, and confirmed by results that do not change with
+either. Documented on the options; not worked around. Not yet reported to
+Google.
+
+`evaluateBoolean` passes the condition, threshold and temperature to the
+Wasm engine, and `evaluateChoice` the criteria, instructions, context and
+temperature; neither passes `normalizePrior`, and `evaluateChoice` does not
+pass `scoringMode`. Google's C API takes both. In browsers, Laya therefore
+reads "No fish nearby." as flee (0.478, explore 0.324) on the question that
+Google's 1.1.0 wheel, with the prior normalized, answers explore.
+
+### UP-057: The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel
+
+**Status:** observed October 12, 2026 with Google's 1.1.1 development build of
+October 9 (the per-family vision library for macOS arm64) on an Apple M4 Max
+(macOS 27) and on GitHub's `macos-15` runners. Worked around: the vision
+package withdraws the macOS GPU for every task until a Python wheel from the
+same build confirms the new output. Not yet reported to Google.
+
+On the CPU, every task matches the 1.1.0 release candidate wheel
+(`mediapipe-nightly` 1.1.0rc20260925) exactly, as the October 5 build did. On
+Metal, the October 5 build matched the wheel's Metal output on the same Mac
+exactly too, but the 1.1.1 build differs for every vision task the package
+runs there, by these largest amounts on the M4 Max
+(`tool/test_macos_references.py`, and the package suites against the
+checked-in Metal references):
+
+- Image Classifier: the top score falls from 0.804 to 0.584 on one input, and
+  on three others the top class changes from "cloak", which the wheel picks on
+  the CPU and on Metal, to "abaya".
+- Image Embedder: values move by up to 0.20.
+- Image Segmenter: confidence masks move by up to 0.13.
+- Pose Landmarker: landmarks move by up to 0.094 of the image width (0.168 on
+  GitHub's runner).
+- Object Detector: on two images it finds one object fewer or one more, on
+  the group shot its first detection is a different object, and boxes move by
+  up to 24 pixels.
+- Face Detector: boxes move by up to 12 pixels and scores by up to 0.017.
+- Hand Landmarker and Gesture Recognizer: handedness scores move by up to
+  0.065.
+- Face Landmarker: landmarks move by up to 0.007.
+
+Compared with the CPU, the change goes both ways: one face box and one
+classifier score lie closer to the CPU than the wheel's Metal output does, and
+the classifier's "abaya" is not among the CPU's top three. Google's final
+1.1.0 wheel gives the same Metal output as the release candidate, and no
+newer Python wheel exists (`mediapipe-nightly` stops at 1.1.0rc20260925; npm
+has had 1.1.1 nightlies since October 8), so nothing can show which output
+Google intends. GitHub's runner and the M4 Max differ the same way, so the
+change comes from the library, not the machine.
+
+To restore the GPU once a wheel from the same build agrees: pin it in
+`packages/mediapipe-core/lib/src/native_assets/reference_wheels.dart` and
+regenerate the references, drop `_macosGpuGap` from
+`packages/mediapipe-task-vision/lib/src/capabilities.dart`, mark the macOS GPU
+cells of `tool/coverage/matrix.json` required again, and bring back the Metal
+steps this withdrawal removed from `.github/workflows/main.yaml` and
+`packages/mediapipe-task-vision/tool/test_macos_references.py`. iPhones keep
+the GPU; the 1.1.1 build has not run on one yet.
+
+### UP-058: Universal Embedder's audio embeddings change from call to call
+
+**Status:** observed October 12, 2026 on an Apple M4 Max (macOS 27) with the
+full EmbeddingGemma 2 model (`embeddinggemma-2-740m.litertlm`), through
+Google's Python API from the `mediapipe` 1.1.0 wheel and through the
+package on Google's 1.1.1 retrieval library alike. Text and image embeddings
+repeat exactly. Worked around in the tests only: they compare audio within
+0.01. Not yet reported to Google.
+
+The same samples give a different audio embedding from one call to the
+next, and from one process to the next: Google's Python embeds the audio
+package's 4.3 s `speech_16000_hz_mono.wav` with values up to 0.006 apart on
+two calls in a row, and two separate runs of
+`tool/generate_reference.py --audio` disagree by up to 0.005 per value and
+0.004 in a retrieval score. One 15,600-sample (0.975 s) clip usually
+repeats exactly, but not always: the result also moves with the audio
+embedded before it. A Semantic Retriever's scores for audio records vary
+the same way.
+
 ## History
 
 Findings about runtimes the packages no longer use: the vision source builds,
@@ -1050,8 +1199,8 @@ existing reference comparisons. Several raw, unrotated CPU cases also pass.
 
 Image decoding was checked independently: source C API and official Python
 produce exactly identical RGBA pixels for `landmark-ex1.jpg` and
-`iris-detection-ex2.jpg` (zero differing bytes). Probe:
-`build/codex-tmp/desktop/compare_decode.py`.
+`iris-detection-ex2.jpg` (zero differing bytes), with a local probe script that
+was not kept.
 
 The four landmark tasks are gated the same way:
 `landmarkTaskCapabilitiesForPlatform` covers Linux x64 and Windows x64 only, and

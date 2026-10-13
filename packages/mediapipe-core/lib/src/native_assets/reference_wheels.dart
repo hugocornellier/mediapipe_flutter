@@ -5,7 +5,8 @@
 /// records the wheel's and its C library's digests, which the tests check
 /// against these pins. It is the same MediaPipe release the family libraries
 /// were built from (`familyRuntimeVersion`): Google's `mediapipe-nightly`
-/// 1.1.0 release candidate until 1.1.0 itself is published.
+/// 1.1.0 release candidate. Google published 1.1.0 itself on October 6, 2026;
+/// the pins move to it with the next regeneration of every fixture.
 typedef ReferenceWheel = ({
   String version,
   String url,

@@ -1,7 +1,6 @@
 """Independent Image Classifier/Embedder outputs from a pinned official wheel."""
 import argparse
 import dataclasses
-import hashlib
 import json
 from pathlib import Path
 import platform
@@ -14,6 +13,8 @@ from mediapipe.tasks.python.vision.core.image_processing_options import ImagePro
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
 from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
+from tool_helpers import digest  # noqa: E402
+from official_embedding_layout import use_header_embedding_layout  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'test/fixtures/face_detection'
@@ -25,40 +26,6 @@ MODELS = {
 }
 
 
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def use_header_embedding_layout():
-    """Makes Google's Python read embedding results with the C header's layout.
-
-    As in the text package's tool/official_embedding_layout.py: the wheel's
-    ctypes declare MpEmbeddingResult as 24 bytes with the timestamp flag first,
-    while the library writes the header's 32 bytes. Python then overruns its
-    allocation on every embed (under glibc this surfaced as "corrupted size vs.
-    prev_size" on GPU) and reads the timestamp flag from padding.
-    """
-    import ctypes
-    import importlib
-    from mediapipe.tasks.python.components.containers import embedding_result_c as module
-    old = module.MpEmbeddingResultC
-    assert [name for name, _ in old._fields_] == [
-        'embeddings', 'embeddings_count', 'has_timestamp_ms', 'timestamp_ms'], old._fields_
-
-    class MpEmbeddingResultC(ctypes.Structure):
-        _fields_ = [('embeddings', ctypes.POINTER(module.MpEmbeddingC)),
-                    ('embeddings_count', ctypes.c_uint32),
-                    ('timestamp_ms', ctypes.c_int64),
-                    ('has_timestamp_ms', ctypes.c_bool)]
-    module.MpEmbeddingResultC = MpEmbeddingResultC
-    # `import mediapipe` already bound the old struct into the embedder's C
-    # signatures; rebuild them, and the vision namespace that re-exports them.
-    from mediapipe.tasks.python.vision import image_embedder
-    importlib.reload(image_embedder)
-    vision.ImageEmbedder = image_embedder.ImageEmbedder
-    vision.ImageEmbedderOptions = image_embedder.ImageEmbedderOptions
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--delegate', choices=['cpu', 'gpu'], default='cpu')
@@ -67,7 +34,7 @@ def main():
     parser.add_argument('--tasks', default=','.join(MODELS),
                         help='Comma-separated subset of ' + ', '.join(MODELS))
     args = parser.parse_args()
-    use_header_embedding_layout()
+    use_header_embedding_layout('vision')
     selected = args.tasks.split(',')
     if not selected or not set(selected) <= MODELS.keys():
         raise SystemExit('--tasks must name some of ' + ', '.join(MODELS))

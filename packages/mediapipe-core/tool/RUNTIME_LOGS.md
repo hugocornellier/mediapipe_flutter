@@ -4,8 +4,10 @@ Planned, not started: no package captures Google's runtime logs. Found on
 2026-10-04, on `main` at `3e217ac`, with Google's runtimes as pinned then:
 desktop 1.0.0 (macOS, Windows) and 1.0.1 (Linux), iOS SDK 1.0.1, Android AARs
 1.0.0, web 1.0.1. References to files that have since moved or gone were
-rechecked on 2026-10-06 at `bbf198c`. Paths are from the repository root.
-Check a finding again before building on it.
+rechecked on 2026-10-06 at `bbf198c`, and [Google's log
+callback](#googles-log-callback) was added on 2026-10-12 for Google's
+October 9 build. Paths are from the repository root. Check a finding again
+before building on it.
 
 ## Goal
 
@@ -26,6 +28,37 @@ call, as `TaskException`:
 - **Web:** the JS error's message, posted by each family's `assets/worker.js`.
 
 Warnings and info lines never arrive.
+
+## Google's log callback
+
+Since Google's October 9, 2026 build (1.1.1), which the hooks pin, every
+per-family library exports a C log callback, declared in `core/mp_logging.h`
+under `packages/mediapipe-core/native/include`:
+
+```c
+typedef void (*MpLogCallback)(int severity, const char* message,
+                              void* user_data);
+MP_EXPORT void MpSetLoggingCallback(MpLogCallback callback, void* user_data);
+MP_EXPORT void MpRemoveLoggingCallback(void);
+```
+
+Google's implementation (`mediapipe/tasks/c/core/mp_logging.cc`, public since
+2026-10-09) registers one `absl::LogSink`; `severity` is absl's (0 INFO,
+1 WARNING, 2 ERROR, 3 FATAL). It is the route to build on, with these limits:
+
+- **One registration per library.** Each family's library has its own absl,
+  so each family registers its own callback; registering again replaces the
+  library's previous one.
+- **Copy the text.** The message is a temporary `std::string`, valid only
+  during the call, and Google calls from its own threads. A
+  `NativeCallable.listener` runs later, on the isolate, so a small C shim
+  (like the text and audio stream bridges) has to copy each message and pass
+  the copy on.
+- **absl only.** TensorFlow Lite's own lines probably bypass it, and adding a
+  sink does not stop absl's stderr or logcat output. Not yet run.
+- **Not everywhere.** Decision Maker on Windows runs the 1.1.0 wheel's
+  library, which predates the callback, and browsers need the `Module.print`
+  route below.
 
 ## Where the lines go, and what could capture them
 
@@ -54,7 +87,7 @@ guarantees, and it would likely still miss TensorFlow Lite's lines. The Linux
 and Windows libraries were not inspected; a Windows DLL exports only what it
 declares.
 
-That was Google's 1.0.0 single library. The per-family 1.1.0 libraries the
+That was Google's 1.0.0 single library. The per-family libraries the
 packages bundle now export only the `Mp*` C API on macOS, Linux and iOS; the
 Windows DLLs add TensorFlow Lite's and LiteRT's C functions
 ([UP-045](../../../upstream-issues.md#up-045-per-family-windows-libraries-export-tensorflow-lite-and-litert)),
@@ -98,9 +131,9 @@ whose id has no pending request. The bundle's few direct `console.warn` and
 - The packages now bundle Google's per-family C libraries (see
   [PER_FAMILY_RUNTIMES.md](PER_FAMILY_RUNTIMES.md)), which export only `Mp*`
   functions, with no absl or tflite symbols (checked on the macOS and iOS
-  vision libraries, 2026-10-06). The C++ sink route is closed unless Google
-  adds a log function to the C API; each family is a separate library, so a
-  sink would also be needed per family.
+  vision libraries, 2026-10-06). The C++ sink route is closed; Google's
+  October 9 build adds a C log function instead
+  ([Google's log callback](#googles-log-callback)).
 - Google logs from its own threads (the thread ids in the samples differ), and
   the FFI tasks run in worker isolates (`vision_task_worker.dart`,
   `text_task_worker.dart`). A native callback into Dart has to be callable from

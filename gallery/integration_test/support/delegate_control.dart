@@ -15,7 +15,7 @@ Future<void> tapDelegate(WidgetTester tester, Delegate delegate) async {
       find.byTooltip('Settings').evaluate().isNotEmpty;
   if (sheet) {
     await tester.tap(find.byTooltip('Settings'));
-    await _settle(tester);
+    await settle(tester);
   }
   final segment = find.byKey(ValueKey('delegate-${delegate.name}'));
   final deadline = DateTime.now().add(const Duration(minutes: 2));
@@ -24,7 +24,7 @@ Future<void> tapDelegate(WidgetTester tester, Delegate delegate) async {
     final found = control.evaluate().isNotEmpty;
     // The control lists only the delegates the page offers.
     if (found && segment.evaluate().isEmpty) {
-      fail('The page offers no ${delegate.name}: ${_screen(tester)}');
+      fail('The page offers no ${delegate.name}: ${screenText(tester)}');
     }
     if (found &&
         tester.widget<Segmented<Delegate>>(control).onChanged != null) {
@@ -33,7 +33,7 @@ Future<void> tapDelegate(WidgetTester tester, Delegate delegate) async {
     if (DateTime.now().isAfter(deadline)) {
       fail(
         'The CPU/GPU control stayed ${found ? 'disabled' : 'missing'} '
-        'for ${delegate.name}: ${_screen(tester)}',
+        'for ${delegate.name}: ${screenText(tester)}',
       );
     }
     await tester.runAsync(
@@ -47,13 +47,14 @@ Future<void> tapDelegate(WidgetTester tester, Delegate delegate) async {
     // A long sheet scrolls its Close button out of the list to reach the
     // control, so its route is closed directly.
     Navigator.of(tester.element(segment)).pop();
-    await _settle(tester);
+    await settle(tester);
   }
 }
 
 /// Lets the sheet finish animating. Unlike pumpAndSettle it gives up after a
 /// few seconds, because a live camera preview never stops scheduling frames.
-Future<void> _settle(WidgetTester tester) async {
+/// Pumps until no frame is scheduled, for at most three seconds.
+Future<void> settle(WidgetTester tester) async {
   final end = DateTime.now().add(const Duration(seconds: 3));
   do {
     await tester.pump(const Duration(milliseconds: 100));
@@ -61,7 +62,7 @@ Future<void> _settle(WidgetTester tester) async {
 }
 
 /// The page's visible text, for failure messages.
-String _screen(WidgetTester tester) => tester
+String screenText(WidgetTester tester) => tester
     .widgetList<Text>(find.byType(Text))
     .map((text) => text.data)
     .whereType<String>()

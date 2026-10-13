@@ -57,6 +57,21 @@ def core_hook_defines():
     return f'    mediapipe_core:\n      asset_source: {Path(source).resolve()}\n'
 
 
+def configure_macos(app: Path, deployment_target=None):
+    """Builds the fresh app arm64-only, as Google's macOS runtimes are (Flutter
+    defaults release builds to a universal binary), and raises its deployment
+    target when the runtime needs a newer macOS than Flutter's 10.15."""
+    config = app / 'macos/Runner/Configs/AppInfo.xcconfig'
+    settings = config.read_text()
+    if 'EXCLUDED_ARCHS = x86_64' not in settings:
+        config.write_text(settings + '\nARCHS = arm64\nEXCLUDED_ARCHS = x86_64\n')
+    if deployment_target:
+        project = app / 'macos/Runner.xcodeproj/project.pbxproj'
+        project.write_text(project.read_text().replace(
+            'MACOSX_DEPLOYMENT_TARGET = 10.15;',
+            f'MACOSX_DEPLOYMENT_TARGET = {deployment_target};'))
+
+
 def consumer_environment(**extra):
     """The environment a fresh app's commands run in.
 

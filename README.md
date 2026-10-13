@@ -125,9 +125,14 @@ On macOS, build the app for Apple Silicon only (two lines in its
 | Text (EmbeddingGemma) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Text (proofread, summarize) | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | Audio | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Decision | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Retrieval | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-CPU works everywhere a family is listed; GPU (Metal, OpenGL ES, WebGL or
-Android GPU) depends on the task. Every cell is tested in CI on hosted
+CPU works everywhere a family is listed, except that browsers run Decision
+and Retrieval on WebGPU alone, which needs a hardware adapter. GPU (Metal,
+OpenGL ES, WebGL or Android GPU) depends on the task; Macs run the vision
+tasks on the CPU for now, until Google's 1.1.1 Metal results are confirmed
+([UP-057](upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)). Every cell is tested in CI on hosted
 runners, the Android emulator, the iOS Simulator and Chromium, Firefox and
 WebKit. The [vision status table](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
 lists each task, delegate, known upstream limit and physical-device result.

@@ -1,4 +1,5 @@
-import {loadVerifiedRuntime} from '../../mediapipe_core/assets/verified_runtime.js';
+import {installWorkerQueue, loadVerifiedRuntime, withoutNulls} from
+  '../../mediapipe_core/assets/verified_runtime.js';
 
 const loadRuntime = baseUrl =>
   loadVerifiedRuntime(new URL('runtime.json', import.meta.url), baseUrl, 'Text');
@@ -13,17 +14,7 @@ const taskSpecs = (TextClassifier, TextEmbedder, LanguageDetector) => ({
 
 let task;
 let spec;
-let operations = Promise.resolve();
-self.onmessage = ({data}) => {
-  // Serialize creation, requests and shutdown on the owning worker.
-  operations = operations.then(async () => {
-    try {
-      self.postMessage({id: data.id, result: await run(data.type, data.input)});
-    } catch (error) {
-      self.postMessage({id: data.id, error: error?.message || String(error)});
-    }
-  });
-};
+installWorkerQueue(run);
 
 async function run(type, input) {
   if (type === 'create') {
@@ -47,9 +38,4 @@ async function run(type, input) {
   // Quantized embeddings are typed arrays, which JSON would turn into objects.
   return JSON.stringify(spec.run(task, input),
     (_, value) => value instanceof Uint8Array ? Array.from(value) : value);
-}
-
-// Dart sends absent options as null; Google's setters want them left out.
-function withoutNulls(settings) {
-  return Object.fromEntries(Object.entries(settings).filter(([, value]) => value != null));
 }

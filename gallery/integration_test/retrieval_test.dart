@@ -20,6 +20,11 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
+      final assets = await GalleryAssets.unpack();
+      if (!assets.bundledTasks.contains('universal_embedder')) {
+        markTestSkipped('This build bundles no retrieval tasks.');
+        return;
+      }
       final capabilities = await queryUniversalEmbedderCapabilities();
       if (!capabilities.isSupported) {
         await expectLater(

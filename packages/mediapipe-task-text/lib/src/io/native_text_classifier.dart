@@ -1,7 +1,8 @@
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
-import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show copyClassifications, fillBaseOptions, fillClassifierOptions;
 
 import '../types/options.dart';
 import '../types/results.dart';
@@ -16,8 +17,13 @@ final class NativeTextClassifier
     requireTextTasksRuntime();
     using((arena) {
       final native = arena<mp.MpTextClassifierOptions>();
-      fillTextBaseOptions(native.ref.baseOptions, options, arena);
-      fillTextClassifierOptions(native.ref.classifierOptions, arena, options);
+      fillBaseOptions(
+        native.ref.baseOptions,
+        arena,
+        modelPath: options.modelPath,
+        modelBytes: options.modelBytes,
+      );
+      fillClassifierOptions(native.ref.classifierOptions, arena, options);
       final output = arena<Pointer<Void>>();
       checkTextStatus((error) => mp.classifierCreate(native, output, error));
       handle = output.value;
@@ -68,23 +74,6 @@ TextClassifierResult textClassifierResultFromNative(
   final result = pointer.ref;
   return TextClassifierResult(
     timestampMilliseconds: result.hasTimestampMs ? result.timestampMs : null,
-    classifications: [
-      for (var i = 0; i < result.classificationsCount; i++)
-        _copyHead(result.classifications[i]),
-    ],
+    classifications: copyClassifications(result),
   );
 }
-
-Classifications _copyHead(mp.MpClassifications head) => Classifications(
-  categories: [
-    for (var i = 0; i < head.categoriesCount; i++)
-      MediaPipeCategory(
-        index: head.categories[i].index,
-        score: head.categories[i].score,
-        categoryName: textTaskString(head.categories[i].categoryName),
-        displayName: textTaskString(head.categories[i].displayName),
-      ),
-  ],
-  headIndex: head.headIndex,
-  headName: textTaskString(head.headName),
-);

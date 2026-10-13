@@ -53,8 +53,14 @@ def runtime_assets(items):
                                cwd=CORE, check=True, capture_output=True,
                                text=True).stdout
     for entry in json.loads(inventory[inventory.index('['):]):
-        add(items, 'runtime', [entry['target']], entry['url'], entry['sha256'],
-            f"familyRuntimes['{entry['family']}']", name=entry['file'])
+        if 'wheel_sha256' in entry:
+            # The hook downloads the wheel and extracts the library.
+            add(items, 'runtime', [entry['target']], entry['url'],
+                entry['wheel_sha256'], f"wheelRuntimes['{entry['family']}']")
+        else:
+            add(items, 'runtime', [entry['target']], entry['url'],
+                entry['sha256'], f"familyRuntimes['{entry['family']}']",
+                name=entry['file'])
 
 
 def model_assets(items):
@@ -93,7 +99,7 @@ def main():
             if not item['urls']:
                 print(f"skipped {item['release_asset']}: not published yet")
         subprocess.run(
-            ['dart', 'run', 'mediapipe_core:prefill_assets', str(args.prefill.resolve())],
+            ['dart', 'run', 'tool/prefill_assets.dart', str(args.prefill.resolve())],
             input=json.dumps([item for item in selected if item['urls']]),
             text=True, check=True, cwd=CORE,
         )

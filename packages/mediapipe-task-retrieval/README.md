@@ -25,7 +25,11 @@ browser Universal Embedder creates a WebGPU device for itself and has no CPU
 path
 ([UP-052](../../upstream-issues.md#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter)),
 so the capability queries offer browsers only the GPU, and only on a
-hardware WebGPU adapter; there both tasks answer as the native library does.
+hardware WebGPU adapter; there both tasks answer as the native library does,
+except in WebKit, the engine of Safari and of every browser on iOS, where
+Google's runtime returns zeros for every input with both models, so the
+queries offer neither task there
+([UP-054](../../upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2)).
 Two more differences the browser runtime imposes: images and audio go in as
 bytes and samples there, never as file paths, and the index stays in memory,
 so `databasePath` is for the native platforms. In browsers the package fetches
@@ -78,8 +82,12 @@ Future<void> search() async {
 metadata; `metadataFilter` keeps only records carrying every given pair.
 `retrieveContent` takes a multimodal query of `TextPart`, `ImagePart` and
 `AudioPart`, and `insertImage`, `insertAudio` and `insertContent` index the
-other modalities. A retriever runs on its embedder's worker: dispose it before
-the embedder.
+other modalities. On Android, iOS and the desktops an image or audio record's
+text is the path it was inserted with, or its id when it came from bytes or
+samples alone. Audio needs the full model, and Google's audio embeddings vary
+slightly from call to call
+([UP-058](../../upstream-issues.md#up-058-universal-embedders-audio-embeddings-change-from-call-to-call)).
+A retriever runs on its embedder's worker: dispose it before the embedder.
 
 ## Models
 
@@ -106,7 +114,7 @@ validated, and Google's browser runtime has no CPU path.
 ## Testing
 
 `dart test` runs the unit tests and, with Google's model downloaded by
-`dart run tool/download_model.dart`, the native suite, which compares every
+`dart tool/download_models.dart`, the native suite, which compares every
 embedding and retrieval with the answers Google's own Python API gave
 (`test/fixtures/embedding_gemma_2_text_vision_reference.json`, from
 `tool/generate_reference.py` on the official mediapipe 1.1.0 wheel).

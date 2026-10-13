@@ -2,12 +2,12 @@ import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart' show nativeString;
 
 import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../runner/native_interface.dart';
 import '../types/options.dart';
 import '../types/results.dart';
-import 'native_vision_image.dart';
 import 'native_vision_task.dart';
 
 /// Google's Image Segmenter on its worker isolate.
@@ -57,7 +57,7 @@ final class NativeImageSegmenter
     try {
       return [
         for (var i = 0; i < list.ref.num_strings; i++)
-          nativeString(list.ref.strings[i]) ?? '',
+          nativeString(list.ref.strings[i], emptyIsNull: true) ?? '',
       ];
     } finally {
       mp.MpStringListFree(list);

@@ -45,7 +45,7 @@ void main() {
         expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
         expect(
           result.runtimeVersion,
-          '1.1.0',
+          '1.1.1',
           reason: '$name on ${platform.target}',
         );
         expect(
@@ -79,7 +79,7 @@ void main() {
         for (final MapEntry(key: name, value: claim) in every.entries) {
           final result = claim(platform);
           expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
-          expect(result.runtimeVersion, '1.1.0');
+          expect(result.runtimeVersion, '1.1.1');
         }
       }
     },

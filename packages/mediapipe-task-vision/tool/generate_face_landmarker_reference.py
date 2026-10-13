@@ -2,7 +2,6 @@
 
 Uses the same verified photographs and independent runtime as the detector
 goldens. Dart consumers need neither Python nor the native build toolchain.
-Also copies Google's drawing connections without changing indices or order.
 """
 import argparse
 import dataclasses
@@ -12,7 +11,6 @@ from pathlib import Path
 import mediapipe as mp
 import numpy as np
 from mediapipe.tasks.python import vision
-from mediapipe.tasks.python.vision.face_landmarker import FaceLandmarksConnections
 from mediapipe.tasks.python.vision.core.image_processing_options import ImageProcessingOptions
 
 from generate_face_detector_reference import ROOT, FIXTURES, LIBRARY_SHA256, digest, gpu_image
@@ -89,29 +87,6 @@ def main():
            if args.delegate == 'gpu' else {}),
         raw_sha256=digest(raw), cases=cases),
         default=lambda value: value.tolist(), allow_nan=False, separators=(',', ':')) + '\n')
-
-    # Generate the Dart topology from the official API rather than hand-copy it.
-    if args.delegate == 'gpu' or args.output_dir:
-        return
-    connections = {
-        'tessellation': 'TESSELATION', 'contours': 'CONTOURS',
-        'leftIris': 'LEFT_IRIS', 'rightIris': 'RIGHT_IRIS',
-    }
-    dart = ['// Copyright 2023 The MediaPipe Authors.',
-            '// Licensed under the Apache License, Version 2.0.',
-            '// Generated from MediaPipe v1.0.0 FaceLandmarksConnections.',
-            '// Regenerate: tool/generate_face_landmarker_reference.py', '',
-            "/// Google's `FaceLandmarksConnections`: the facial drawing edges, in the",
-            '/// original index order.',
-            'abstract final class FaceLandmarksConnections {']
-    for name, upstream in connections.items():
-        edges = getattr(FaceLandmarksConnections, 'FACE_LANDMARKS_' + upstream)
-        dart.extend([f'  /// Official {name} connections ({len(edges)} edges).',
-                     f'  static const List<(int, int)> {name} = ['])
-        dart.extend(f'    ({edge.start}, {edge.end}),' for edge in edges)
-        dart.append('  ];')
-    dart.extend(['}', ''])
-    (ROOT / 'lib/src/types/face_landmarks_connections.dart').write_text('\n'.join(dart))
 
 
 if __name__ == '__main__':

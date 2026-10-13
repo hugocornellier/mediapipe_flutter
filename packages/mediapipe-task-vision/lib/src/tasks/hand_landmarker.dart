@@ -39,7 +39,6 @@ final class HandLandmarker implements VisionTask {
     final runner = await VisionTaskRunner.open(
       options,
       name: 'HandLandmarker',
-      debugName: 'MediaPipe Hand Landmarker',
       backend: handLandmarkerBackendFactory,
       capabilities: queryHandLandmarkerCapabilities,
       native: nativeHandLandmarker,

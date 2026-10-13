@@ -10,7 +10,8 @@ import 'dart:typed_data';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:mediapipe_core/platform_interface.dart'
-    show classifierSettingsJson;
+    show SerialTaskQueue, classifierSettingsJson;
+import 'package:mediapipe_core/web_task_bridge.dart' show loadPackageScript;
 import 'package:mediapipe_vision/platform_interface.dart';
 import 'package:web/web.dart' as web;
 
@@ -148,9 +149,7 @@ final class WebVisionTask<R>
   WebVisionTask._(this._id, this._decode);
   final JSNumber _id;
   final R Function(Map<String, dynamic> json, Float64List? landmarks) _decode;
-  Future<void> _tail = Future.value();
-  Future<void>? _disposing;
-  static Future<void>? _loaded;
+  final _queue = SerialTaskQueue('MediaPipe task');
 
   static Future<T> _workerResult<T extends JSAny?>(JSPromise<T> promise) async {
     try {
@@ -159,29 +158,6 @@ final class WebVisionTask<R>
       throw TaskException('$cause', cause: cause);
     }
   }
-
-  static Future<void> _load() => _loaded ??= () async {
-    final script = web.HTMLScriptElement()
-      ..src = Uri.base
-          .resolve('assets/packages/mediapipe_vision/assets/bridge.js')
-          .toString();
-    final ready = Completer<void>();
-    unawaited(script.onLoad.first.then((_) => ready.complete()));
-    unawaited(
-      script.onError.first.then((_) {
-        ready.completeError(StateError('Unable to load MediaPipe web bridge.'));
-      }),
-    );
-    web.document.head!.append(script);
-    try {
-      await ready.future.timeout(const Duration(seconds: 60));
-    } catch (_) {
-      // A transient script failure must not poison every later create call.
-      script.remove();
-      _loaded = null;
-      rethrow;
-    }
-  }();
 
   /// Creates one official browser [task] from [options] in [runningMode];
   /// [settings] are the task's own options, named as in Google's JavaScript
@@ -193,7 +169,7 @@ final class WebVisionTask<R>
     Map<String, Object?> settings,
     R Function(Map<String, dynamic> json, Float64List? landmarks) decode,
   ) async {
-    await _load();
+    await loadPackageScript('mediapipe_vision', 'assets/bridge.js');
     final modelBytes = options.modelBytes;
     final modelPath = options.modelPath;
     final id = await _workerResult(
@@ -221,25 +197,18 @@ final class WebVisionTask<R>
     return WebVisionTask._(id, decode);
   }
 
-  Future<R> _submit(Map<String, Object?> input) {
-    if (_disposing != null) {
-      return Future.error(StateError('MediaPipe task has been disposed.'));
+  Future<R> _submit(Map<String, Object?> input) => _queue.add(() async {
+    final detection = await _workerResult(
+      _detect(_id, input.jsify()! as JSObject),
+    );
+    final data = jsonDecode(detection.json.toDart) as Map<String, dynamic>;
+    if (detection.masks?.toDart case final masks?) {
+      attachMaskBuffers(data['result'] as Map<String, dynamic>, [
+        for (final mask in masks) mask.toDart,
+      ]);
     }
-    final result = _tail.then((_) async {
-      final detection = await _workerResult(
-        _detect(_id, input.jsify()! as JSObject),
-      );
-      final data = jsonDecode(detection.json.toDart) as Map<String, dynamic>;
-      if (detection.masks?.toDart case final masks?) {
-        attachMaskBuffers(data['result'] as Map<String, dynamic>, [
-          for (final mask in masks) mask.toDart,
-        ]);
-      }
-      return _decode(data, detection.landmarks?.toDart);
-    });
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return result;
-  }
+    return _decode(data, detection.landmarks?.toDart);
+  });
 
   @override
   Future<R> detect(
@@ -307,8 +276,7 @@ final class WebVisionTask<R>
   bool get overlayActive => _overlayActive(_id).toDart;
 
   @override
-  Future<void> dispose() =>
-      _disposing ??= _tail.then((_) => _workerResult(_close(_id)));
+  Future<void> dispose() => _queue.close(() => _workerResult(_close(_id)));
 }
 
 /// Google's stateful MagicTouch segmenter on a worker: an image, then complete

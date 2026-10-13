@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -12,6 +11,7 @@ import 'support/mask_grids.dart';
 import 'support/official_mask_references.dart';
 import 'support/sdk_frames.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
+import 'support/device_log.dart';
 
 /// As in sdk_hand_landmarker_test.dart: `required` fails when the SDK refuses
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
@@ -31,9 +31,8 @@ const _confidenceMean = 0.02;
 /// The same input through another path (rotation, pixel format, delegate).
 const _turnedAgreement = 0.97;
 
-// Image Segmenter through Google's official mobile SDKs: iOS through the
-// package's Objective-C adapter, Android through
-// mediapipe_vision.
+// Image Segmenter through mediapipe_vision on Google's vision library, on iOS
+// and Android.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -49,7 +48,7 @@ void main() {
               "Android and iOS run Google's C library through FFI, not a plugin backend",
         );
         final assets = await GalleryAssets.unpack();
-        final model = await _model();
+        final model = await loadBundledModel('deeplab_v3.tflite');
         final frame = await loadSample('portrait.jpg');
         final references = <Delegate, ImageSegmenterResult>{};
         var shiftedClasses = false;
@@ -250,7 +249,7 @@ void main() {
         final frame = await loadSample('portrait.jpg');
         final task = await ImageSegmenter.create(
           ImageSegmenterOptions(
-            modelBytes: await _model(),
+            modelBytes: await loadBundledModel('deeplab_v3.tflite'),
             runningMode: RunningMode.video,
             outputConfidenceMasks: false,
             outputCategoryMask: true,
@@ -351,13 +350,5 @@ Map<String, Object?> _summary(MaskMatch match) => {
     'confidence_$index': {'mean': error.mean, 'max': error.max},
 };
 
-Future<Uint8List> _model() async {
-  final bytes = await rootBundle.load(bundledModelFile('deeplab_v3.tflite'));
-  return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
-}
-
-void _report(String event, Map<String, Object?> data) {
-  // Kept in the device log (logcat, the simulator console) for the record.
-  // ignore: avoid_print
-  print('SDK_SEGMENTER ${jsonEncode({'event': event, ...data})}');
-}
+void _report(String event, Map<String, Object?> data) =>
+    logRecord('SDK_SEGMENTER', {'event': event, ...data});

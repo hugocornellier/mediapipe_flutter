@@ -54,12 +54,11 @@ final class VisionTaskRunner<R> {
   /// Resolves the model, then opens the task: through [backend] where the
   /// web plugin registered one (browsers), else on Google's
   /// native runtime after [capabilities] admits the delegate and [validate]
-  /// passes, with [native] creating the task on a worker named [debugName].
-  /// [name] appears in errors.
+  /// passes, with [native] creating the task on a worker. [name] appears in
+  /// errors.
   static Future<VisionTaskRunner<R>> open<R, O extends VisionTaskOptions>(
     O options, {
     required String name,
-    required String debugName,
     required VisionBackendFactory<R, O>? backend,
     required NativeVisionTask<R> Function(O) native,
     Future<TaskCapabilities> Function()? capabilities,
@@ -79,7 +78,7 @@ final class VisionTaskRunner<R> {
     validate?.call();
     return VisionTaskRunner._(
       null,
-      await openNativeTask(options, native, name, debugName),
+      await openNativeTask(options, native, name),
       options.runningMode,
     );
   }

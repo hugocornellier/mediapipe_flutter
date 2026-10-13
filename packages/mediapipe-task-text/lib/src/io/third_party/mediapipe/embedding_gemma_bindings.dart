@@ -1,13 +1,15 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache 2.0.
 // Adapted from mediapipe==1.0.1 Python ctypes: text/text_embedder.py and
-// components/containers/embedding_result_c.py; MpBaseOptions is core's.
+// components/containers/embedding_result_c.py; MpBaseOptions and the embedding
+// structs are core's.
 // Sizes and field offsets are checked against the pinned official definitions.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
 
 import 'package:mediapipe_core/native_structs.dart';
 
-export 'package:mediapipe_core/native_structs.dart' show MpBaseOptions;
+export 'package:mediapipe_core/native_structs.dart'
+    show MpBaseOptions, MpEmbedding, MpEmbeddingResult;
 
 const _asset = 'package:mediapipe_text/mediapipe.dylib';
 
@@ -29,28 +31,6 @@ final class MpTextFormatContext extends Struct {
   external Pointer<Char> title;
   @Int32()
   external int role;
-}
-
-final class MpEmbedding extends Struct {
-  external Pointer<Float> floatEmbedding;
-  external Pointer<Uint8> quantizedEmbedding;
-  @Uint32()
-  external int valuesCount;
-  @Int32()
-  external int headIndex;
-  external Pointer<Char> headName;
-}
-
-final class MpEmbeddingResult extends Struct {
-  external Pointer<MpEmbedding> embeddings;
-  @Uint32()
-  external int embeddingsCount;
-  // The C header's order and size (32 bytes). Google's Python ctypes put the
-  // flag first and declare 24 bytes, which the library overruns.
-  @Int64()
-  external int timestampMs;
-  @Bool()
-  external bool hasTimestampMs;
 }
 
 @Native<
