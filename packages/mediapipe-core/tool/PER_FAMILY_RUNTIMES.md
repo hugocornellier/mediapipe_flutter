@@ -132,8 +132,9 @@ byte for byte.
 On an arm64 Android emulator (API 31, CPU), the three gallery suites from
 `.github/workflows/android.yaml` pass: `sdk_all_test` (every vision task
 against Google's references, rotation and the padded pose mask included, text
-and audio with the audio stream, the live tiles, and the journey through
-every page), the still image test, and the modern text suite. EmbeddingGemma's
+and audio with the audio stream, Decision Maker and the retrieval tasks when
+the build bundles them, as CI's does since October 13, the live tiles, and the
+journey through every page), the still image test, and the modern text suite. EmbeddingGemma's
 largest error is 0.0, the Proofreader matches in 9 of 9 cases and the
 Summarizer in 8 of 10, within the documented rule
 ([UP-036](../../../upstream-issues.md#up-036-ios-summarizer-generations-drift-from-googles-wheel-late-in-long-summaries)).
@@ -176,8 +177,32 @@ build of the gallery, on `39e3558` (October 13, 2026; the simulator has no GPU
 path,
 [UP-031](../../../upstream-issues.md#up-031-ios-sdk-gpu-tasks-abort-on-the-ios-simulator)).
 Decision Maker and the retrieval tasks have not run on that phone, whose free
-storage would not hold their models beside the gallery. Still open:
+storage would not hold their models beside the gallery. The debloat that
+preceded 0.1.0 (steps 1 to 9 of its plan) landed in `0f686cd`; the plan is in
+the history (`git show 0f686cd:debloat-plan.md`). Still open:
 
+- **Devices.** Decision Maker and the retrieval tasks on physical phones.
+  Add `decision_maker,universal_embedder,semantic_retriever` to the task list
+  in `.github/workflows/android-face-testlab.yml` and dispatch it:
+  `gallery/integration_test/sdk_all_test.dart` runs their tests whenever a
+  build bundles them, and skips them otherwise. The TODO in that workflow
+  marks the spot. An iPhone needs about 1.1 GB free beside the gallery for
+  their models (Laya 678 MB, EmbeddingGemma 2 388 MB), downloaded on first
+  use.
+- **Ruleset.** The `main` ruleset requires 16 checks by name. It can add the
+  Decision, Retrieval and Bundled models checks (named `Decision / package /
+  macos-15`, `Retrieval / gallery / macos/arm64` and so on since the family
+  workflow), and the "official Android SDK" and "official iOS SDK" jobs in
+  `android.yaml` and `ios.yaml` can take names that say every family runs
+  there, but the rule must change in the same step, since it names them. A
+  repository setting, not a file; the TODOs above those jobs mark them.
+- **Publish.** 0.1.0 of the six packages, as `CONTRIBUTING.md` ("Versions
+  and the first release") describes: one commit removes `publish_to: none`
+  and the `(unreleased)` marks, then `publish_check.py` and
+  `test_bundled_models.py` run, `mediapipe_core` publishes first, the five
+  families switch from `path:` to `mediapipe_core: ^0.1.0` and publish. Dry
+  runs only until then, and never `--force`. The `mediapipe_core` and
+  `mediapipe_text` names on pub.dev belong to Google's uploaders.
 - **Release builds.** A `flutter build ios` and `flutter build macos` release
   of the gallery, and an App Store validation of the iOS frameworks.
 - **Notices.** Since October 9, every family ships Google's LICENSE and

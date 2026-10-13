@@ -33,6 +33,10 @@ SCORE_THRESHOLD = 0.3
 MAX_RESULTS = 5
 
 
+# TODO: Share this helper and the rest this file repeats from
+# generate_face_detector_reference.py, and the image loading and JSON envelope
+# the image and segmenter generators repeat, in one vision_cases.py with each
+# task's spec, at the next regeneration on the pinned wheel.
 def gpu_image(image):
     """Apple's GPU upload requires RGBA; preserve RGB values and add alpha."""
     if image.image_format != mp.ImageFormat.SRGB:

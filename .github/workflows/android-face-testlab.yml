@@ -87,6 +87,10 @@ jobs:
           python3 -c 'import json, os; d = json.load(open("device.json")); assert d["form"] == "PHYSICAL", d["form"]; assert os.environ["VERSION"] in d["supportedVersionIds"], d["supportedVersionIds"]'
       # The same two commands a clean checkout runs, so CI builds what a
       # contributor with only Dart, Flutter and the Android SDK builds.
+      # TODO: Add decision_maker, universal_embedder and semantic_retriever to
+      # the task list, so the devices run Decision Maker and the retrieval
+      # tasks too (sdk_all_test.dart runs their tests when a build bundles
+      # them). See packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
       - name: Prepare the gallery with the phone suites' tasks
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/arm64 \

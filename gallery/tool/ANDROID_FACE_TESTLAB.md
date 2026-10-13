@@ -45,7 +45,9 @@ start with `SDK_FACE_LANDMARKER`.
 The manual `android-face-testlab.yml` workflow runs a larger bundle,
 `integration_test/sdk_all_test.dart`: these face checks plus every other
 official SDK suite (hand, Pose, Gesture, Holistic, detection, classification,
-embedding, both segmenters), on CPU and GPU, then the live tiles. Choose the
+embedding, both segmenters), on CPU and GPU, then the live tiles. Decision
+Maker and the retrieval tasks join once the workflow's task list bundles them
+(its TODO marks the line); the suite skips them until then. Choose the
 physical device and API level when dispatching; `gpu: required` fails a GPU
 refusal instead of recording it. The job saves the tagged measurement lines
 from logcat as `measurements.log`. It uses the same
