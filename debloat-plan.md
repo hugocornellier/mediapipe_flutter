@@ -445,7 +445,12 @@ show every one.
    `false`, zero and empty strings. The reply protocol then sits in the same
    package as `task_bridge.js`. A scratch prototype kept ordering, failure
    continuation, Retrieval's empty replies and vision's transfers. Net 36 to
-   43 lines.
+   43 lines. **Done on `chore/oct12-combined`, net 35:** the five workers
+   call `installWorkerQueue`, with Retrieval's empty reply and vision's
+   transfers and overlay flag as its `reply` and `transfers`, and four take
+   `withoutNulls` from core. Nothing set a `target`, so there is none. The
+   create, close and closed branches stay in each worker: their bodies
+   differ, and Retrieval's and vision's keep state beyond one task.
 8. **Smaller ones:** Retrieval's embedding decoder
    (`results/decoders.dart:23-57`) repeats core's `decodeEmbedding`
    (`sdk_json.dart:34-53`, which text and vision use) with stricter rules: an
@@ -870,7 +875,7 @@ debug and release.
    items.
 4. **Runtime plumbing (days 3 to 5, the riskiest):** S1 steps 4, 5 and 7.
    Core's tests with a fake worker task come first; then one family at a
-   time. Steps 4 and 5 are done on `chore/oct12-combined`, but for the
+   time. Steps 4, 5 and 7 are done on `chore/oct12-combined`, but for the
    iPhone run.
 5. **Generator (day 6):** S1 step 6, with the ABI check and every vision suite.
 6. **CI (days 6 to 7):** R3 and R10; the journey's refusal check; R2; then

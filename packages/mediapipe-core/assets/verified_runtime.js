@@ -43,3 +43,26 @@ export async function loadVerifiedRuntime(pinUrl, baseUrl, family) {
     throw error;
   }
 }
+
+// Runs each request a family's worker receives after the one before it, so
+// creation, requests and shutdown keep their order, and replies under the
+// request's id with what reply makes of run's result, or with its error.
+// transfers names what the reply hands over rather than copies.
+export function installWorkerQueue(run, {reply = result => ({result}), transfers = () => []} = {}) {
+  let operations = Promise.resolve();
+  self.onmessage = ({data}) => {
+    operations = operations.then(async () => {
+      try {
+        const result = await run(data.type, data.input);
+        self.postMessage({id: data.id, ...reply(result)}, transfers(result));
+      } catch (error) {
+        self.postMessage({id: data.id, error: error?.message || String(error)});
+      }
+    });
+  };
+}
+
+// Dart sends absent settings as null; Google's API wants them left out.
+export function withoutNulls(settings) {
+  return Object.fromEntries(Object.entries(settings).filter(([, value]) => value != null));
+}

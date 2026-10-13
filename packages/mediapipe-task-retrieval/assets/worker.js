@@ -1,4 +1,5 @@
-import {loadVerifiedRuntime} from '../../mediapipe_core/assets/verified_runtime.js';
+import {installWorkerQueue, loadVerifiedRuntime, withoutNulls} from
+  '../../mediapipe_core/assets/verified_runtime.js';
 
 const loadRuntime = baseUrl =>
   loadVerifiedRuntime(new URL('runtime.json', import.meta.url), baseUrl, 'Retrieval');
@@ -8,18 +9,8 @@ let embedder;
 // The retrievers built on this embedder, by the id Dart holds.
 const retrievers = new Map();
 let nextRetriever = 1;
-let operations = Promise.resolve();
-self.onmessage = ({data}) => {
-  // Serialize creation, requests and shutdown on the owning worker.
-  operations = operations.then(async () => {
-    try {
-      // Core's bridge hands Dart a string; a request without a result gets ''.
-      self.postMessage({id: data.id, result: (await run(data.type, data.input)) ?? ''});
-    } catch (error) {
-      self.postMessage({id: data.id, error: error?.message || String(error)});
-    }
-  });
-};
+// Core's bridge hands Dart a string; a request without a result gets ''.
+installWorkerQueue(run, {reply: result => ({result: result ?? ''})});
 
 async function run(type, input) {
   if (type === 'create') {
@@ -168,9 +159,4 @@ function part(p) {
   if (p.kind === 'text') return {text: p.text};
   if (p.kind === 'image') return {imageBytes: imageBytes(p)};
   return {audioData: audioData(p)};
-}
-
-// Dart sends absent settings as null; Google's API wants them left out.
-function withoutNulls(settings) {
-  return Object.fromEntries(Object.entries(settings).filter(([, value]) => value != null));
 }
