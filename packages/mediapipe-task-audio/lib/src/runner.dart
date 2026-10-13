@@ -5,9 +5,8 @@ library;
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart'
-    show classifierSettingsJson;
+    show SerialTaskQueue, classifierSettingsJson, taskException;
 
 import 'audio_task_backend.dart';
 import 'decoders.dart';
@@ -37,10 +36,6 @@ abstract interface class AudioStreamRunner {
   Future<void> close();
 }
 
-/// Google's failure as the one exception every task reports.
-TaskException taskException(Object error) =>
-    error is TaskException ? error : TaskException('$error', cause: error);
-
 /// [options]' model and settings, named as in Google's JavaScript API, with
 /// [modelBytes] in place of the options' model when given.
 Map<String, Object?> backendSettings(
@@ -59,8 +54,7 @@ final class BackendAudioClassifier implements AudioClassifierRunner {
   BackendAudioClassifier._(this._task);
 
   final AudioTaskBackend _task;
-  Future<void> _tail = Future.value();
-  Future<void>? _disposing;
+  final _queue = SerialTaskQueue('AudioClassifier');
 
   /// Starts Google's task through [factory] with [options]' model and
   /// settings, named as in Google's JavaScript API; with [modelBytes] in
@@ -83,31 +77,16 @@ final class BackendAudioClassifier implements AudioClassifierRunner {
   /// averaged first.
   @override
   Future<List<AudioClassifierResult>> classify(AudioData audio) {
-    if (_disposing != null) {
-      return Future.error(StateError('AudioClassifier has been disposed.'));
-    }
     final samples = monoSamples(audio.samples, audio.channels);
-    final result = _tail.then((_) async {
-      final List<Object?> json;
-      try {
-        json = await _task.classify(samples, audio.sampleRate);
-      } catch (error) {
-        throw taskException(error);
-      }
-      return decodeAudioClassifierResults(json);
-    });
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return result;
+    return _queue.add(
+      () async => decodeAudioClassifierResults(
+        await _task.classify(samples, audio.sampleRate),
+      ),
+    );
   }
 
   @override
-  Future<void> dispose() => _disposing ??= _tail.then((_) async {
-    try {
-      await _task.dispose();
-    } catch (error) {
-      throw taskException(error);
-    }
-  });
+  Future<void> dispose() => _queue.close(_task.dispose);
 }
 
 /// The stream in browsers: Google's browser runtime has no stream, so the

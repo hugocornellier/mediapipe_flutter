@@ -39,8 +39,7 @@ final class UniversalEmbedder {
   UniversalEmbedder._(this._backend, this.delegate);
 
   final RetrievalBackend _backend;
-  Future<void> _tail = Future.value();
-  Future<void>? _disposing;
+  final _queue = SerialTaskQueue('UniversalEmbedder');
 
   /// The processor the task runs on, fixed at creation.
   final Delegate delegate;
@@ -77,7 +76,7 @@ final class UniversalEmbedder {
           },
         });
       } catch (error) {
-        throw _taskException(error);
+        throw taskException(error);
       }
     } else {
       backend = await openNativeUniversalEmbedder(options);
@@ -124,29 +123,11 @@ final class UniversalEmbedder {
   /// Finishes accepted work, closes the retrievers built on this embedder and
   /// releases Google's task. Repeated calls return the same completion; any
   /// other call afterwards throws [StateError].
-  Future<void> dispose() => _disposing ??= _tail.then((_) async {
-    try {
-      await _backend.dispose();
-    } catch (error) {
-      throw _taskException(error);
-    }
-  });
+  Future<void> dispose() => _queue.close(_backend.dispose);
 
   /// Runs [request] after every request accepted before it.
-  Future<Object?> _run(Map<String, Object?> request) {
-    if (_disposing != null) {
-      throw StateError('UniversalEmbedder has been disposed.');
-    }
-    final result = _tail.then((_) async {
-      try {
-        return await _backend.run(request);
-      } catch (error) {
-        throw _taskException(error);
-      }
-    });
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return result;
-  }
+  Future<Object?> _run(Map<String, Object?> request) =>
+      _queue.add(() => _backend.run(request));
 }
 
 /// Google's Semantic Retriever: an on-device vector index over documents,
@@ -386,7 +367,3 @@ Map<String, String> checkedMetadata(Map<String, String> metadata) {
   }
   return Map.of(metadata);
 }
-
-/// Google's failure as the one exception every task reports.
-MediaPipeException _taskException(Object error) =>
-    error is MediaPipeException ? error : TaskException('$error');

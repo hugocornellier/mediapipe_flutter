@@ -391,7 +391,15 @@ show every one.
    `close`, `closing`) and `taskException(Object)` in `platform_interface.dart`,
    keeping the cause and passing `MediaPipeException` through, so every family
    reports errors the same way. A failed request must not poison the next. Net
-   22 to 80, depending on how much decoding moves.
+   22 to 80, depending on how much decoding moves. **Done on
+   `chore/oct12-combined` for the six queue owners, net 51:** nothing read
+   `closing`, so the queue has `add` and `close` only, and decoding moved
+   inside each request, so a malformed result is a `TaskException` too.
+   Text's worker passes core's mapping on, so a `RuntimeUnavailableException`
+   no longer turns into a `TaskException` there. Vision's workers and live
+   stream, and audio's stream results, keep their own conversion for step 5:
+   their failures cross isolates into fields typed `TaskException`, which the
+   audio stream documents.
 5. **One worker isolate in core** (`task_worker.dart`, native only):
    `WorkerTask<I, R, U>` (`run`, `stream`, `close`) and `TaskWorker.start(name,
    options, create)` with `run`, `stream`, `dispose` and `failure`. Text's
@@ -851,7 +859,7 @@ debug and release.
    items.
 4. **Runtime plumbing (days 3 to 5, the riskiest):** S1 steps 4, 5 and 7.
    Core's tests with a fake worker task come first; then one family at a
-   time.
+   time. Step 4 is done on `chore/oct12-combined`.
 5. **Generator (day 6):** S1 step 6, with the ABI check and every vision suite.
 6. **CI (days 6 to 7):** R3 and R10; the journey's refusal check; R2; then
    B6's ruleset edit with the new check names.

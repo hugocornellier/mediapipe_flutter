@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart' show taskException;
 
 import '../runner/text_task_runner.dart';
 
@@ -34,7 +35,7 @@ final class TextTaskWorker<I extends Object, R, U>
   int _nextId = 0;
   bool _disposing = false;
   Future<void>? _disposeFuture;
-  TaskException? _failure;
+  MediaPipeException? _failure;
 
   /// Factories must be sendable; callers use top-level function tear-offs.
   static Future<TextTaskWorker<I, R, U>> start<I extends Object, R, U, O>({
@@ -138,9 +139,9 @@ final class TextTaskWorker<I extends Object, R, U>
       case (int id, U update):
         final request = _pending[id];
         if (request != null && !request.cancelled) request.updates?.add(update);
-      case (int id, R? result, TaskException? error):
+      case (int id, R? result, MediaPipeException? error):
         _pending.remove(id)?.complete(result, error);
-      case TaskException error:
+      case MediaPipeException error:
         _fail(error);
       case List<dynamic> error:
         _fail(TaskException('Worker failed: ${error.join('\n')}'));
@@ -153,7 +154,7 @@ final class TextTaskWorker<I extends Object, R, U>
     }
   }
 
-  void _fail(TaskException error) {
+  void _fail(MediaPipeException error) {
     _failure ??= error;
     if (!_ready.isCompleted) _ready.completeError(error);
     for (final request in _pending.values) {
@@ -170,7 +171,7 @@ final class _Request<R, U> {
   final StreamController<U>? updates;
   bool cancelled = false;
 
-  void complete(R? value, TaskException? error) {
+  void complete(R? value, MediaPipeException? error) {
     finished.complete();
     final stream = updates;
     if (stream != null) {
@@ -196,7 +197,7 @@ Future<void> _worker<I extends Object, R, U, O>(
     await for (final dynamic message in commands) {
       final (id, input, streaming) = message as (int, I?, bool);
       R? result;
-      TaskException? failure;
+      MediaPipeException? failure;
       try {
         if (input == null) {
           task.close();

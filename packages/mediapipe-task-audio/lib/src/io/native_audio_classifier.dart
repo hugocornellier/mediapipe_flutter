@@ -64,29 +64,25 @@ final class _NativeAudioClassifier implements AudioClassifierRunner {
   _NativeAudioClassifier(this._task);
 
   final int _task;
-  Future<void>? _disposing;
-  Future<void> _tail = Future.value();
+  final _queue = SerialTaskQueue('AudioClassifier');
 
   @override
   Future<List<AudioClassifierResult>> classify(AudioData audio) {
-    if (_disposing != null) {
-      return Future.error(StateError('AudioClassifier has been disposed.'));
-    }
     final task = _task;
     final samples = audio.samples;
     final rate = audio.sampleRate;
     final channels = audio.channels;
-    final result = _tail.then(
-      (_) => Isolate.run(() => _classify(task, samples, rate, channels)),
+    return _queue.add(
+      () => Isolate.run(() => _classify(task, samples, rate, channels)),
     );
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return result;
   }
 
   @override
-  Future<void> dispose() => _disposing ??= _tail.then((_) {
-    checkedNativeCall((error) => mp.close(Pointer.fromAddress(_task), error));
-  });
+  Future<void> dispose() => _queue.close(
+    () => checkedNativeCall(
+      (error) => mp.close(Pointer.fromAddress(_task), error),
+    ),
+  );
 }
 
 /// Resolves core's runtime before the first call, to explain a missing one.

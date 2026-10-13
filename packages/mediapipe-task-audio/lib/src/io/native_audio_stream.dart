@@ -12,6 +12,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_structs.dart' show nativeString;
+import 'package:mediapipe_core/platform_interface.dart' show taskException;
 
 import '../runner.dart';
 import '../stream/results.dart';
@@ -89,7 +90,7 @@ final class _NativeAudioStream implements AudioStreamRunner {
         _ready.complete();
       case AudioClassifierResult result:
         _results.addGoogle(result);
-      case TaskException error:
+      case MediaPipeException error:
         _fail(error);
       case #closed:
         _closed = true;
@@ -104,7 +105,7 @@ final class _NativeAudioStream implements AudioStreamRunner {
   }
 
   /// Fails the creation, or, once the stream is open, the stream.
-  void _fail(TaskException error) {
+  void _fail(MediaPipeException error) {
     if (!_ready.isCompleted) {
       _ready.completeError(error);
     } else if (_commands != null) {
