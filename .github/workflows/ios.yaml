@@ -16,11 +16,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Hand, Pose, Gesture, Holistic, Face and Object Detector, Image Classifier
-  # and Image Embedder run through Google's prebuilt iOS vision library, so this job needs
-  # no source build. The simulator runs them on the CPU
-  # only: Google's MediaPipe aborts in its Metal preprocessing there. Metal is a
-  # phone check.
+  # Every family through Google's iOS libraries in one app: the vision tasks,
+  # text and audio, EmbeddingGemma, Proofreader and Summarizer, Decision Maker
+  # and the retrieval tasks, so this job needs no source build. The simulator
+  # runs them on the CPU only: Google's MediaPipe aborts in its Metal
+  # preprocessing there. Metal is a phone check.
   sdk-tasks:
     name: Landmark, detection and classification tasks / official iOS SDK on an arm64 simulator
     runs-on: macos-15
@@ -51,7 +51,7 @@ jobs:
       - name: Prepare the gallery with the phone suites' tasks
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target ios-simulator/arm64 \
-            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever \
+            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever,decision_maker \
             --modern-text-reference build/modern-text-reference
           cd gallery && flutter pub get
       - name: Boot an installed iPhone simulator
@@ -78,7 +78,7 @@ jobs:
         shell: bash
         run: |
           device=${{ steps.simulator.outputs.device }}
-          for test in sdk_face_landmarker_test sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test runtime_test face_landmarker_still_image_test gallery_journey_test; do
+          for test in sdk_face_landmarker_test sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test decision_maker_test retrieval_test runtime_test face_landmarker_still_image_test gallery_journey_test; do
             for attempt in 1 2; do
               status=0
               # A hosted simulator sometimes stalls while loading the app and
@@ -140,6 +140,15 @@ jobs:
           platform: ios
           delegate: cpu
           tasks: universal_embedder,semantic_retriever
+          outcome: ${{ steps.sdk.outcome }}
+      - name: Record ios CPU Decision Maker coverage (ios-sdk-simulator-decision)
+        if: always()
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: ios-sdk-simulator-decision
+          platform: ios
+          delegate: cpu
+          tasks: decision_maker
           outcome: ${{ steps.sdk.outcome }}
       - name: Record ios CPU text and audio coverage (ios-sdk-simulator-text-audio)
         if: always()

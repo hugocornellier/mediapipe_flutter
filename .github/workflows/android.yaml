@@ -16,12 +16,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Text Classifier, Text Embedder, Language Detector and Audio Classifier run
-  # through Google's Android text and audio libraries in the same app.
-  # Face and Hand Landmarker, Pose, Gesture, Holistic, Face and Object Detector, Image Classifier
-  # and Image Embedder run through Google's Android vision library and
-  # mediapipe_vision, so this job needs no source build. The emulator runs them on the CPU only; see
-  # gallery/tool/test_android_sdk_tasks.sh.
+  # Every family through Google's Android libraries in one app: the vision
+  # tasks, text and audio, EmbeddingGemma, Proofreader and Summarizer, Decision
+  # Maker and the retrieval tasks, so this job needs no source build. The
+  # emulator runs them on the CPU only; see gallery/tool/test_android_sdk_tasks.sh.
   sdk-tasks:
     name: Landmark, detection and classification tasks / official Android SDK on an x64 emulator
     runs-on: ubuntu-24.04
@@ -57,7 +55,7 @@ jobs:
       - name: Prepare the gallery with the phone suites' tasks
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64 \
-            --tasks audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever \
+            --tasks audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever,decision_maker \
             --modern-text-reference build/modern-text-reference
           cd gallery && flutter pub get
       - name: Enable Android emulator hardware acceleration
@@ -110,6 +108,15 @@ jobs:
           platform: android
           delegate: cpu
           tasks: universal_embedder,semantic_retriever
+          outcome: ${{ steps.sdk.outcome }}
+      - name: Record android CPU Decision Maker coverage (android-sdk-emulator-decision)
+        if: always()
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: android-sdk-emulator-decision
+          platform: android
+          delegate: cpu
+          tasks: decision_maker
           outcome: ${{ steps.sdk.outcome }}
       - name: Record android CPU task coverage (android-sdk-emulator)
         if: always()

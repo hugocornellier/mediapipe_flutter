@@ -298,7 +298,8 @@ What remains:
   x86_64 emulator and the iOS Simulator. Adding the tasks is not enough: the
   app Test Lab builds, `gallery/integration_test/sdk_all_test.dart`, imports
   neither `decision_maker_test.dart` nor `retrieval_test.dart`, and both
-  download their models on demand.
+  download their models on demand. (R2 made the suite import both; they run
+  once the build bundles the tasks, and skip until then.)
 - The Galaxy A12 failed 4 of 38 on October 8 and October 9. On October 8 all
   four were CameraX's "The camera device has encountered a recoverable error".
   On the 1.1.1 build it passed all 38 on October 12.
@@ -310,10 +311,10 @@ What remains:
 
 All 16 required checks report since October 11. The same edit could require
 the Decision, Retrieval and Bundled models jobs (rules list matrix jobs by
-their expanded names, such as `Decision package / macos-15`) and rename the
-jobs still called "official Android SDK" and "official iOS SDK" (R7). R2
-renames Decision's and Retrieval's checks (a reusable workflow names them
-`<caller> / <job>`), so land R2 first and edit the ruleset once.
+their expanded names, such as `Decision / package / macos-15` since R2) and
+rename the jobs still called "official Android SDK" and "official iOS SDK"
+(R7). R2 renamed Decision's and Retrieval's checks (a reusable workflow names
+them `<caller> / <job>`), so the ruleset can be edited once.
 
 ### B7. Publish
 
@@ -597,6 +598,19 @@ refused task's own card ("<title>. <reason>") and checks its reason.
 callers; Decision's phone steps in `android.yaml` and `ios.yaml`, as
 Retrieval's are; no repeated analysis and no Ubuntu web runs. About 190 to 220
 lines. It renames the checks, so it lands before B6's ruleset edit.
+
+**Done on `chore/oct12-combined`, the rest:** `family.yaml` (173 lines, inputs
+`family`, `tasks`, `integration-test`, `model-path`, `jobs`) with
+`decision.yaml` and `retrieval.yaml` as callers of 35 and 38 lines (494
+before). The checks are `Decision / package / macos-15`, `Decision / gallery /
+macos/arm64` and `Decision / web WebKit macos-26`, and the same for Retrieval.
+Decision Maker joins the phone builds: `android.yaml` runs its test and its
+pages in the one-launch suite (`sdk_all_test.dart` now imports
+`decision_maker_test.dart` and `retrieval_test.dart`, which skip when the
+build bundles neither, so Test Lab's build is unchanged until B5 adds the
+tasks), `ios.yaml` runs both files in its loop, and each records a Decision
+row. The package jobs no longer analyze (main.yaml's `make analyze` covers
+every package) and the web job runs on the two Macs only.
 
 ### R3. CI setup repeated
 
