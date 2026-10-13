@@ -303,8 +303,11 @@ What remains:
 - The Galaxy A12 failed 4 of 38 on October 8 and October 9. On October 8 all
   four were CameraX's "The camera device has encountered a recoverable error".
   On the 1.1.1 build it passed all 38 on October 12.
-- The iPhone has not run since `6c940cf` (October 7), so Google's October 8 iOS
-  rebuilds have run only in the simulator.
+- The iPhone ran on `39e3558` (October 13): every suite with the GPU required,
+  in debug and release, 37 passed and 3 skipped (the text reference check, as
+  before, and Decision Maker and the retrieval tasks, which the build left out:
+  the phone's 2.1 GB of free storage would not hold their models beside the
+  730 MB gallery).
 - Run B5 on the final code, after S1's runtime changes.
 
 ### B6. Ruleset (optional)

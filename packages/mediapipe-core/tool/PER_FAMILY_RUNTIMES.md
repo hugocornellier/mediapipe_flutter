@@ -168,13 +168,16 @@ Segmenter GPU are withdrawn there, see
 [UP-026](../../../upstream-issues.md#up-026-holistic-cannot-open-its-face-blendshapes-model-on-a-desktop-or-iphone-gpu)
 and
 [UP-023](../../../upstream-issues.md#up-023-android-image-segmenter-gpu-aborts-on-a-powervr-gpu)),
-and the fresh-app harnesses on one pinned library per family (downloaded as an
+the fresh-app harnesses on one pinned library per family (downloaded as an
 app would, or from a local folder through `MEDIAPIPE_ASSET_SOURCE`, which
-`tool/mirror_runtime_assets.py --prefill` fills). Still open:
+`tool/mirror_runtime_assets.py --prefill` fills), and the iPhone: every iOS
+suite on an iPhone 15 Pro with the GPU required, in a debug and a release
+build of the gallery, on `39e3558` (October 13, 2026; the simulator has no GPU
+path,
+[UP-031](../../../upstream-issues.md#up-031-ios-sdk-gpu-tasks-abort-on-the-ios-simulator)).
+Decision Maker and the retrieval tasks have not run on that phone, whose free
+storage would not hold their models beside the gallery. Still open:
 
-- **iPhone.** Every iOS suite on a device, with Metal, on the final branch;
-  last run on `6c940cf`. The simulator has no GPU path
-  ([UP-031](../../../upstream-issues.md#up-031-ios-sdk-gpu-tasks-abort-on-the-ios-simulator)).
 - **Release builds.** A `flutter build ios` and `flutter build macos` release
   of the gallery, and an App Store validation of the iOS frameworks.
 - **Notices.** Since October 9, every family ships Google's LICENSE and
