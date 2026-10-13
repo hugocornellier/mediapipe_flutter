@@ -182,9 +182,13 @@ try {
   assert.ok(expected.length + refused.size > 0, 'empty release task list');
   for (const id of refused) {
     if (!manifest.tasks.includes(id)) continue;
-    // The home page's card gives the capability query's reason.
+    // The home page's card reads "<title>. <the capability query's reason>",
+    // so each refused task's own card is read, not the first reason on the page.
     enter(`${id}:refused`);
-    await page.getByText(refusedReason).first().waitFor({timeout: 120000});
+    const card = page.getByText(new RegExp(`^${cases[id].title}\\. `)).first();
+    await card.waitFor({timeout: 120000});
+    const text = await card.textContent();
+    assert.match(text, refusedReason, `${id}: its card reads "${text}"`);
     report.checks.push(`${id}:refused`);
   }
 

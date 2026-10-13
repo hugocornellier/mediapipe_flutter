@@ -33,14 +33,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup
         with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
+          linux-profile: browser
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -55,7 +50,6 @@ jobs:
       - name: Prepare official web runtime and models
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target web
-          sudo apt-get update && sudo apt-get install -y ffmpeg xvfb libgl1-mesa-dri
           python3 -B gallery/tool/browser/prepare_camera.py
       - name: Install browser test dependencies
         working-directory: gallery/tool/browser
@@ -189,28 +183,58 @@ jobs:
         run: xvfb-run -a node gallery/tool/browser/test_gallery_journey.mjs --browser=firefox --headed=true
       - name: Record web CPU task coverage (web-text-audio-chromium)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite web-text-audio-chromium --platform web --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma --outcome ${{ steps.text_audio_chromium.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: web-text-audio-chromium
+          platform: web
+          delegate: cpu
+          tasks: audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma
+          outcome: ${{ steps.text_audio_chromium.outcome }}
       - name: Record web CPU task coverage (web-text-audio-firefox)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite web-text-audio-firefox --platform web --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma --outcome ${{ steps.text_audio_firefox.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: web-text-audio-firefox
+          platform: web
+          delegate: cpu
+          tasks: audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma
+          outcome: ${{ steps.text_audio_firefox.outcome }}
       - name: Record web CPU task coverage (web-text-audio-webkit)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite web-text-audio-webkit --platform web --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma --outcome ${{ steps.text_audio_webkit.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: web-text-audio-webkit
+          platform: web
+          delegate: cpu
+          tasks: audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma
+          outcome: ${{ steps.text_audio_webkit.outcome }}
       - name: Record web CPU task coverage (web-chromium-cpu)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite web-chromium-cpu --platform web --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.chromium_cpu.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: web-chromium-cpu
+          platform: web
+          delegate: cpu
+          tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker
+          outcome: ${{ steps.chromium_cpu.outcome }}
       - name: Record web GPU task coverage (web-chromium-webgl)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite web-chromium-webgl --platform web --delegate gpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.chromium_gpu.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: web-chromium-webgl
+          platform: web
+          delegate: gpu
+          tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker
+          outcome: ${{ steps.chromium_gpu.outcome }}
       - name: Record web CPU task coverage (web-firefox-cpu)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite web-firefox-cpu --platform web --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.firefox_cpu.outcome }}
-      - uses: actions/upload-artifact@v4
-        if: always()
+        uses: ./.github/actions/record-coverage
         with:
-          name: coverage-web
-          path: build/coverage/
-          if-no-files-found: error
+          suite: web-firefox-cpu
+          platform: web
+          delegate: cpu
+          tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker
+          outcome: ${{ steps.firefox_cpu.outcome }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -233,14 +257,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
+      - uses: ./.github/actions/setup
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -303,13 +320,13 @@ jobs:
           ls -la "$out"
       - name: Record web CPU task coverage (web-webkit-cpu)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite web-webkit-cpu --platform web --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.webkit_cpu.outcome }}
-      - uses: actions/upload-artifact@v4
-        if: always()
+        uses: ./.github/actions/record-coverage
         with:
-          name: coverage-web-webkit
-          path: build/coverage/
-          if-no-files-found: error
+          suite: web-webkit-cpu
+          platform: web
+          delegate: cpu
+          tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker
+          outcome: ${{ steps.webkit_cpu.outcome }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -403,14 +420,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_ref }}
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
+      - uses: ./.github/actions/setup
       - name: Build release gallery
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target web

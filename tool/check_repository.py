@@ -117,11 +117,12 @@ def runtime_versions(problems):
 
 def flutter_versions(problems):
     ci = {}
-    for workflow in sorted((REPO / '.github/workflows').glob('*.y*ml')):
-        for version in re.findall(r"flutter-version: '([^']+)'", workflow.read_text()):
-            ci.setdefault(version, []).append(workflow.name)
+    github = REPO / '.github'
+    for source in sorted([*github.glob('workflows/*.y*ml'), *github.glob('actions/*/action.yml')]):
+        for version in re.findall(r"flutter-version: '([^']+)'", source.read_text()):
+            ci.setdefault(version, []).append(str(source.relative_to(github)))
     if len(ci) != 1:
-        problems.append(f'.github/workflows: Flutter versions differ: {ci}')
+        problems.append(f'.github: Flutter versions differ: {ci}')
         return
     version = next(iter(ci))
     for doc in FLUTTER_DOCS:

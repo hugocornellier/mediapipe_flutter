@@ -588,6 +588,9 @@ unchanged, and the Universal Embedder page's run row is a `TaskRunRow` too.
   for the first `/UP-049|UP-052/` text on the page for each refused card, so
   after Decision's card matches, Retrieval's two cards pass without being read.
 
+**Done on `chore/oct12-combined`, the first part:** the journey reads each
+refused task's own card ("<title>. <reason>") and checks its reason.
+
 **Fix:** make the journey check each refused card; then one reusable workflow
 (`.github/workflows/family.yaml`, `on: workflow_call`, inputs `family`,
 `tasks`, `integration-test`, `model-path`, `coverage-tasks`) with two thin
@@ -612,6 +615,16 @@ inputs `python`, `linux-profile` (`none`, `ffi`, `gallery`, `browser`),
 `block-telemetry` and `modern-model-cache`, and the versions pinned inside it
 only. Steps must follow checkout and keep `shell:` on every run step. About 90
 to 150 lines, and one place for version bumps.
+
+**Done on `chore/oct12-combined`:** `.github/actions/setup/action.yml` (inputs
+`flutter`, `python`, `linux-profile`, `block-telemetry`, `modern-model-cache`)
+replaces the 25 Flutter blocks, 16 of the 17 Python blocks (the Pages
+verification job has no Flutter and keeps its own), the 7 hosts blocks, the 3
+model caches and 12 of the 14 apt lines; the Linux GPU job's Mesa libraries,
+the camera job's loopback packages and the Pages job's ffmpeg stay as their own
+one-line steps. `tool/check_repository.py` reads the Flutter pin from the
+action. actionlint 1.7.12 reports nothing on the result, as on the previous
+workflows.
 
 ### R4. Gallery page scaffolding
 
@@ -833,6 +846,13 @@ uploaded by 17 `coverage-*` artifact steps, whose naming
 (`.github/actions/record-coverage`, inputs `suite`, `platform`, `delegate`,
 `tasks` and `outcome`) records and uploads. About 30 lines, and one place for
 the artifact convention.
+
+**Done on `chore/oct12-combined`:** `.github/actions/record-coverage` (inputs
+`suite`, `platform`, `delegate`, `tasks`, `outcome`, `tier`) runs the recorder
+and uploads `build/coverage/<suite>.json` as `coverage-<suite>`, one artifact
+per suite, which the gate's `coverage-*` pattern collects as before; the 35
+record steps call it and the 17 upload steps are gone. The emulator's modern
+text outcome and Test Lab's GPU task list come from small output steps.
 
 ### R11. One model download tool per family
 

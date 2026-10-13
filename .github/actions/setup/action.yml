@@ -1,0 +1,72 @@
+name: Set up the toolchain
+description: >-
+  What every job installs after its checkout: the pinned Flutter and Python,
+  the Linux packages its profile needs, Google's usage logging kept off the
+  network on Windows, and the cache of the generative text models. The
+  versions are pinned here only; tool/check_repository.py reads them.
+inputs:
+  flutter:
+    description: Install the pinned Flutter.
+    default: 'true'
+  python:
+    description: Install the pinned Python.
+    default: 'true'
+  linux-profile:
+    description: >-
+      The packages a Linux runner needs: none, ffi (EGL and OpenGL ES for the
+      FFI hosts), gallery (the Flutter desktop host and GStreamer) or browser
+      (ffmpeg, Xvfb and Mesa for the Playwright browsers).
+    default: none
+  block-telemetry:
+    description: >-
+      On Windows, resolve play.googleapis.com to an unroutable address.
+      Google's Windows runtime uploads usage logs there and a task's close
+      waits for the upload, which on hosted runners sometimes takes 20 to 34 s,
+      past the tests' timeouts (upstream-issues.md UP-025).
+    default: 'false'
+  modern-model-cache:
+    description: Cache the three generative text models, 419 MB in all, by their pinned SHA-256.
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - if: ${{ inputs.flutter == 'true' }}
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.47.5'
+        channel: stable
+        cache: true
+    - if: ${{ inputs.python == 'true' }}
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.12'
+    - name: Install the Linux packages
+      if: ${{ runner.os == 'Linux' && inputs.linux-profile != 'none' }}
+      shell: bash
+      env:
+        PROFILE: ${{ inputs.linux-profile }}
+      run: |
+        # gstreamer1.0-libav decodes the gallery's H.264 sample clip, which the
+        # journey test plays in video file mode; GStreamer itself ships no
+        # H.264 decoder.
+        case "$PROFILE" in
+          ffi) packages='libegl1 libgles2' ;;
+          gallery) packages='clang cmake ninja-build pkg-config libgtk-3-dev xvfb libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good gstreamer1.0-libav libegl1 libgles2' ;;
+          browser) packages='ffmpeg xvfb libgl1-mesa-dri' ;;
+          *) echo "Unknown linux-profile: $PROFILE" >&2; exit 1 ;;
+        esac
+        sudo apt-get update && sudo apt-get install -y $packages
+    - name: Keep Google's usage logging off the network
+      if: ${{ inputs.block-telemetry == 'true' && runner.os == 'Windows' }}
+      shell: pwsh
+      run: |
+        Add-Content "$env:SystemRoot\System32\drivers\etc\hosts" "`n0.0.0.0 play.googleapis.com`n:: play.googleapis.com"
+        ipconfig /flushdns | Out-Null
+    - if: ${{ inputs.modern-model-cache == 'true' }}
+      uses: actions/cache@v6
+      with:
+        path: |
+          packages/mediapipe-task-text/models/embedding_gemma.task
+          packages/mediapipe-task-text/models/proofread_quant_200m.litertlm
+          packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
+        key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}

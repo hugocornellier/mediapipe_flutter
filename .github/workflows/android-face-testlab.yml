@@ -70,14 +70,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
+      - uses: ./.github/actions/setup
       - uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.FIREBASE_TEST_LAB_CREDENTIALS }}
@@ -160,25 +153,35 @@ jobs:
           done
           # Each suite reports its measurements as one tagged JSON line.
           grep -hE 'SDK_[A-Z_]+ \{' testlab-results/logcat > testlab-results/measurements.log || true
-      - name: Record device task coverage
-        if: always()
-        env:
-          GPU_SKIP: ${{ matrix.gpu_skip }}
-          OUTCOME: ${{ steps.testlab.outcome }}
-          MODEL: ${{ matrix.model }}
-        run: |
-          python3 -B tool/coverage/record.py --tier device --suite "android-$MODEL-cpu" --platform android --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer --outcome "$OUTCOME"
           # Not declared on Android, so their suites check the refusal or only
           # record the GPU: Interactive Segmenter's (browsers only), Face
           # Detector's (no LiteRT GPU plugin, UP-046) and Holistic's (UP-026).
-          gpu=$(python3 -c "import os; skip = set(os.environ['GPU_SKIP'].split(',')); print(','.join(t for t in 'face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker'.split(',') if t not in skip | {'interactive_segmenter', 'face_detector', 'holistic_landmarker'}))")
-          python3 -B tool/coverage/record.py --tier device --suite "android-$MODEL-gpu" --platform android --delegate gpu --tasks "$gpu" --outcome "$OUTCOME"
-      - uses: actions/upload-artifact@v4
+      - name: The GPU tasks this device ran
         if: always()
+        id: gpu
+        env:
+          GPU_SKIP: ${{ matrix.gpu_skip }}
+        run: echo "tasks=$(python3 -c "import os; skip = set(os.environ['GPU_SKIP'].split(',')); print(','.join(t for t in 'face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker'.split(',') if t not in skip | {'interactive_segmenter', 'face_detector', 'holistic_landmarker'}))")" >> "$GITHUB_OUTPUT"
+      - name: Record device CPU task coverage
+        if: always()
+        uses: ./.github/actions/record-coverage
         with:
-          name: coverage-device-android-${{ matrix.model }}
-          path: build/coverage/
-          if-no-files-found: error
+          suite: android-${{ matrix.model }}-cpu
+          platform: android
+          delegate: cpu
+          tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer
+          outcome: ${{ steps.testlab.outcome }}
+          tier: device
+      - name: Record device GPU task coverage
+        if: always()
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: android-${{ matrix.model }}-gpu
+          platform: android
+          delegate: gpu
+          tasks: ${{ steps.gpu.outputs.tasks }}
+          outcome: ${{ steps.testlab.outcome }}
+          tier: device
       - uses: actions/upload-artifact@v4
         if: always()
         with:
