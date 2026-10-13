@@ -356,6 +356,62 @@ class SurfaceCard extends StatelessWidget {
   }
 }
 
+/// A task's button, then a spinner while the task runs or how long its last
+/// run took.
+class TaskRunRow extends StatelessWidget {
+  const TaskRunRow({
+    super.key,
+    required this.button,
+    required this.busy,
+    this.milliseconds,
+  });
+
+  final Widget button;
+  final bool busy;
+  final double? milliseconds;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      button,
+      const SizedBox(width: 16),
+      if (busy)
+        const SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        )
+      else if (milliseconds case final ms?)
+        Text(
+          'Done in ${ms.toStringAsFixed(1)} ms',
+          style: TextStyle(
+            color: GalleryColors.of(context).muted,
+            fontSize: Sizes.xs,
+          ),
+        ),
+    ],
+  );
+}
+
+/// What went wrong, in an output card.
+class TaskErrorCard extends StatelessWidget {
+  const TaskErrorCard(this.error, {super.key});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) => OutputCard(
+    title: 'Error',
+    child: Text(
+      '$error',
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.error,
+        fontSize: Sizes.sm,
+      ),
+    ),
+  );
+}
+
 /// The Output card: what the task returned, as score bars or [child].
 class OutputCard extends StatelessWidget {
   const OutputCard({

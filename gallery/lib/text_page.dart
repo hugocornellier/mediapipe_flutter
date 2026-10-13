@@ -56,7 +56,7 @@ const _pairTypes = {
   EmbeddingType.codeRetrieval,
 };
 
-class _TextPageState extends State<TextPage> {
+class _TextPageState extends State<TextPage> with RevisionedState {
   late final String _id = widget.task.runtimeId;
   late final TaskSettingValues _values = TaskSettingValues(_id);
   late final List<TaskSetting> _settings = taskSettings[_id] ?? const [];
@@ -81,9 +81,6 @@ class _TextPageState extends State<TextPage> {
   String? _generated;
   List<ProofreadingCorrection>? _corrections;
   double? _milliseconds;
-
-  /// Bumped on every rebuild, so the settings sheet redraws with the page.
-  final _revision = ValueNotifier<int>(0);
 
   // The Proofreader's and Summarizer's samples are cases of Google's
   // references, so what the models write for them is known on every platform.
@@ -120,17 +117,10 @@ class _TextPageState extends State<TextPage> {
   bool get _generative => _id == 'text_proofreader' || _id == 'text_summarizer';
 
   @override
-  void setState(VoidCallback fn) {
-    super.setState(fn);
-    _revision.value++;
-  }
-
-  @override
   void dispose() {
     unawaited(_close());
     _first.dispose();
     _second.dispose();
-    _revision.dispose();
     super.dispose();
   }
 
@@ -363,7 +353,7 @@ class _TextPageState extends State<TextPage> {
   }
 
   Widget _panel() => ListenableBuilder(
-    listenable: _revision,
+    listenable: revision,
     builder: (context, _) => TaskSettingsPanel(
       settings: _settings,
       values: _values,
@@ -488,42 +478,21 @@ class _TextPageState extends State<TextPage> {
                 field(_second, 'Second text'),
               ],
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  PrimaryButton(
-                    icon: LucideIcons.play,
-                    label: _embedder ? 'Compare' : 'Run',
-                    onPressed: _busy ? null : _run,
-                  ),
-                  const SizedBox(width: 16),
-                  if (_busy)
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else if (_milliseconds case final ms?)
-                    Text(
-                      'Done in ${ms.toStringAsFixed(1)} ms',
-                      style: TextStyle(color: c.muted, fontSize: Sizes.xs),
-                    ),
-                ],
+              TaskRunRow(
+                busy: _busy,
+                milliseconds: _milliseconds,
+                button: PrimaryButton(
+                  icon: LucideIcons.play,
+                  label: _embedder ? 'Compare' : 'Run',
+                  onPressed: _busy ? null : _run,
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 22),
         if (_error case final error?)
-          OutputCard(
-            title: 'Error',
-            child: Text(
-              error,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: Sizes.sm,
-              ),
-            ),
-          )
+          TaskErrorCard(error)
         else if (_embedder)
           OutputCard(
             title: 'Similarity',

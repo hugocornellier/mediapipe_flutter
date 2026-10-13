@@ -45,7 +45,7 @@ const _clips = <String, String>{
   'two_heads_16000_hz_mono.wav': 'Animal sounds',
 };
 
-class _AudioPageState extends State<AudioPage> {
+class _AudioPageState extends State<AudioPage> with RevisionedState {
   late final TaskSettingValues _values = TaskSettingValues('audio_classifier');
   late final List<TaskSetting> _settings =
       taskSettings['audio_classifier'] ?? const [];
@@ -64,8 +64,6 @@ class _AudioPageState extends State<AudioPage> {
   AudioData? _audio;
   List<AudioClassifierResult>? _chunks;
   double? _milliseconds;
-
-  final _revision = ValueNotifier<int>(0);
 
   /// Microphone mode: the recorder's 16 kHz mono PCM as one audio stream,
   /// each window's result as it completes, newest first.
@@ -94,12 +92,6 @@ class _AudioPageState extends State<AudioPage> {
   int? _delay;
 
   @override
-  void setState(VoidCallback fn) {
-    super.setState(fn);
-    _revision.value++;
-  }
-
-  @override
   void initState() {
     super.initState();
     unawaited(_run());
@@ -109,7 +101,6 @@ class _AudioPageState extends State<AudioPage> {
   void dispose() {
     unawaited(_stopListening());
     unawaited(_task?.dispose());
-    _revision.dispose();
     super.dispose();
   }
 
@@ -375,7 +366,7 @@ class _AudioPageState extends State<AudioPage> {
   }
 
   Widget _panel() => ListenableBuilder(
-    listenable: _revision,
+    listenable: revision,
     builder: (context, _) => TaskSettingsPanel(
       settings: _settings,
       values: _values,
@@ -523,16 +514,7 @@ class _AudioPageState extends State<AudioPage> {
         ),
         const SizedBox(height: 11),
         if (_error case final error?)
-          OutputCard(
-            title: 'Error',
-            child: Text(
-              error,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: Sizes.sm,
-              ),
-            ),
-          )
+          TaskErrorCard(error)
         else
           OutputCard(
             title: _microphone ? 'Heard' : 'Sounds over time',

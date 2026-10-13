@@ -43,7 +43,7 @@ class FishGamePage extends StatefulWidget {
 }
 
 class _FishGamePageState extends State<FishGamePage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RevisionedState {
   static const _tick = 1 / 60;
 
   late final String _id = widget.task.id;
@@ -91,15 +91,6 @@ class _FishGamePageState extends State<FishGamePage>
   /// soon as it is ready.
   bool _playWhenReady = false;
 
-  /// Bumped every frame, so the settings sheet redraws with the page.
-  final _revision = ValueNotifier<int>(0);
-
-  @override
-  void setState(VoidCallback fn) {
-    super.setState(fn);
-    _revision.value++;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -128,7 +119,6 @@ class _FishGamePageState extends State<FishGamePage>
     for (final controller in _rules.values) {
       controller.dispose();
     }
-    _revision.dispose();
     unawaited(_close());
     super.dispose();
   }
@@ -257,7 +247,7 @@ class _FishGamePageState extends State<FishGamePage>
   }
 
   Widget _panel() => ListenableBuilder(
-    listenable: _revision,
+    listenable: revision,
     builder: (context, _) => TaskSettingsPanel(
       settings: taskSettings[_id] ?? const [],
       values: _values,
@@ -282,16 +272,7 @@ class _FishGamePageState extends State<FishGamePage>
     final last = _game.last;
     final muted = TextStyle(color: c.muted, fontSize: Sizes.sm);
     if (_game.error case final error?) {
-      return OutputCard(
-        title: 'Error',
-        child: Text(
-          '$error',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.error,
-            fontSize: Sizes.sm,
-          ),
-        ),
-      );
+      return TaskErrorCard(error);
     }
     return OutputCard(
       title: 'What the model decided',

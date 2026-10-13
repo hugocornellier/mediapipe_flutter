@@ -62,7 +62,7 @@ final class _Slot {
   int choice = 0;
 }
 
-class _EmbedPageState extends State<EmbedPage> {
+class _EmbedPageState extends State<EmbedPage> with RevisionedState {
   static const _id = 'image-embedder';
 
   late final List<Delegate> _delegates =
@@ -100,15 +100,6 @@ class _EmbedPageState extends State<EmbedPage> {
   Delegate? _ranOn;
   String? _error;
 
-  /// Bumped on every rebuild, so the settings sheet redraws with the page.
-  final _revision = ValueNotifier<int>(0);
-
-  @override
-  void setState(VoidCallback fn) {
-    super.setState(fn);
-    _revision.value++;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -121,7 +112,6 @@ class _EmbedPageState extends State<EmbedPage> {
   void dispose() {
     _comparison++;
     _close();
-    _revision.dispose();
     super.dispose();
   }
 
@@ -322,7 +312,7 @@ class _EmbedPageState extends State<EmbedPage> {
   }
 
   Widget _panel() => ListenableBuilder(
-    listenable: _revision,
+    listenable: revision,
     builder: (context, _) => TaskSettingsPanel(
       settings: _settings,
       values: _values,

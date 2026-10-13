@@ -609,7 +609,8 @@ to 150 lines, and one place for version bumps.
   `segment/editor_controller.dart:55` is an `int` for request invalidation,
   not the pattern. `live_page.dart:83` skips the bump on frame rebuilds. A
   `RevisionedState` mixin in `gallery/lib/ui/` with an overridable bump.
-  About 37 lines.
+  About 37 lines. **Done on `chore/oct12-combined`:** the mixin is in
+  `ui/workspace.dart`, and the live page overrides its `bumpsRevision`.
 - **Run row and error card:** the Run, spinner and "Done in N ms" row in
   `decision_page.dart:388-411`, `retrieval_page.dart:305-328` and
   `text_page.dart:493-515`, and the error `OutputCard` in five pages
@@ -617,7 +618,8 @@ to 150 lines, and one place for version bumps.
   `retrieval_page.dart:332`, `text_page.dart:518`). `TaskRunRow` and
   `TaskErrorCard` in `gallery/lib/ui/components.dart`. About 48 lines. The
   Decision and Retrieval pages share 78 normalized lines in all; these two
-  helpers and the mixin cover most of them.
+  helpers and the mixin cover most of them. **Done on `chore/oct12-combined`;** with the
+  mixin, the gallery's `lib/` is 83 lines shorter.
 - **Decision pins:** **Done on `chore/oct12-combined`:** `TaskModel.pinned`,
   and a `pin` getter for the three places that rebuilt one. As found:
   `gallery/lib/live/task_models.dart:35-65` hardcodes four

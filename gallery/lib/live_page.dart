@@ -59,7 +59,8 @@ class LivePage extends StatefulWidget {
   State<LivePage> createState() => _LivePageState();
 }
 
-class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
+class _LivePageState extends State<LivePage>
+    with WidgetsBindingObserver, RevisionedState {
   late final LiveDemo _demo = liveDemoFor(widget.task.id)!;
   late final LiveTask<Object?> _task = _demo.task();
   late final LiveCameraController<Object?> _controller =
@@ -73,16 +74,14 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
   String? _uploaded;
   String? _modelStatus;
 
-  /// Bumped on every page rebuild, so the settings sheet, which lives on its
-  /// own route, redraws when a setting, the model or a display toggle changes.
-  final _revision = ValueNotifier<int>(0);
-
   @override
   void setState(VoidCallback fn) {
     super.setState(fn);
-    if (!_frameRebuild) _revision.value++;
     _refreshMask();
   }
+
+  @override
+  bool get bumpsRevision => !_frameRebuild;
 
   /// Set while a camera frame rebuilds the page. The settings panel shows
   /// nothing a frame changes, so it and an open sheet are left alone.
@@ -303,7 +302,6 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
     _controller.close();
     _controller.dispose();
     _video.dispose();
-    _revision.dispose();
     _masks.dispose();
     _dialogRevision.dispose();
     super.dispose();
@@ -402,12 +400,12 @@ class _LivePageState extends State<LivePage> with WidgetsBindingObserver {
     }
   }
 
-  /// One instance for the page's life: it rebuilds itself on [_revision], and
+  /// One instance for the page's life: it rebuilds itself on [revision], and
   /// the phone's sheet, which shows it, then has no new widget to rebuild on.
   late final Widget _settingsPanel = _panel();
 
   Widget _panel() => ListenableBuilder(
-    listenable: _revision,
+    listenable: revision,
     builder: (context, _) => TaskSettingsPanel(
       settings: _settings,
       values: _task.settings,

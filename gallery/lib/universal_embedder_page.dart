@@ -70,7 +70,8 @@ final class _Slot {
   int choice = 0;
 }
 
-class _UniversalEmbedderPageState extends State<UniversalEmbedderPage> {
+class _UniversalEmbedderPageState extends State<UniversalEmbedderPage>
+    with RevisionedState {
   static const _id = 'universal';
 
   late final List<Delegate> _delegates = widget.task
@@ -104,15 +105,6 @@ class _UniversalEmbedderPageState extends State<UniversalEmbedderPage> {
   String? _error;
   String? _modelStatus;
 
-  /// Bumped on every rebuild, so the settings sheet redraws with the page.
-  final _revision = ValueNotifier<int>(0);
-
-  @override
-  void setState(VoidCallback fn) {
-    super.setState(fn);
-    _revision.value++;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -128,7 +120,6 @@ class _UniversalEmbedderPageState extends State<UniversalEmbedderPage> {
     for (final slot in _slots) {
       slot.controller.dispose();
     }
-    _revision.dispose();
     super.dispose();
   }
 
@@ -253,7 +244,7 @@ class _UniversalEmbedderPageState extends State<UniversalEmbedderPage> {
   }
 
   Widget _panel() => ListenableBuilder(
-    listenable: _revision,
+    listenable: revision,
     builder: (context, _) => TaskSettingsPanel(
       settings: _settings,
       values: _values,
