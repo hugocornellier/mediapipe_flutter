@@ -1,5 +1,7 @@
-"""What the maintainer tools share: a file's digest and a logged command."""
+"""What the maintainer tools share: a file's digest, a logged command, and
+the layout of the generated JSON and Dart."""
 import hashlib
+import json
 import platform
 import shutil
 import subprocess
@@ -31,3 +33,33 @@ def run(command, cwd, log, env=None, timeout=3600, expect=0, tail=25):
     if result.returncode != expect:
         raise RuntimeError(f'Exit code {result.returncode}, expected {expect}: {log}')
     return text
+
+
+def compact_json(value, indent=1, level=0):
+    """`json.dumps(value, indent=indent)`, but with a list of numbers on one
+    line, so a fixture of embeddings stays readable and short."""
+    pad, inner = ' ' * indent * level, ' ' * indent * (level + 1)
+    if isinstance(value, dict) and value:
+        items = (f'{inner}{json.dumps(key)}: {compact_json(item, indent, level + 1)}'
+                 for key, item in value.items())
+        return '{\n' + ',\n'.join(items) + '\n' + pad + '}'
+    if isinstance(value, list) and value:
+        if all(isinstance(item, (int, float)) and not isinstance(item, bool)
+               for item in value):
+            return '[' + ', '.join(json.dumps(item) for item in value) + ']'
+        items = (f'{inner}{compact_json(item, indent, level + 1)}' for item in value)
+        return '[\n' + ',\n'.join(items) + '\n' + pad + ']'
+    return json.dumps(value)
+
+
+def dart_rows(items, indent, width=80):
+    """The Dart elements `items`, each followed by a comma, packed into lines
+    of at most `width` columns at `indent`, for a `// dart format off` list."""
+    lines, line = [], ''
+    for item in items:
+        item = f'{item},'
+        if line and len(line) + 1 + len(item) > width:
+            lines.append(line)
+            line = ''
+        line = f'{line} {item}' if line else ' ' * indent + item
+    return lines + [line] if line else lines

@@ -509,6 +509,14 @@ fold. As found:
   `tool/generate_landmark_connections.py`; one generator for all three keeps
   the format in one place.
 
+**Done on `chore/oct12-combined`:** `reference_wheels.dart` says 1.1.0 is
+published and the pins move with the next regeneration.
+`generate_landmark_connections.py` writes all three tables (run on the 1.0.0
+environment the files were generated from), about seven pairs per line inside
+`// dart format off` through core's `dart_rows`: the face file is 459 lines
+and 33 KB, the hand and pose file 55 lines, with the same edges; the face
+reference generator no longer writes Dart.
+
 ### S4. Retrieval explains an unsupported target with its GPU message
 
 **Done on `chore/oct12-combined`:** a no-library reason for both delegates, as
@@ -798,6 +806,16 @@ The job names wait for the ruleset (B6).
 - This changes line counts and bytes, not files or coverage, and none of these
   files is in a package archive. Vision's JSON fixtures could follow if the
   count matters.
+
+**Done on `chore/oct12-combined`:** `compact_json` in core's `tool_helpers.py`
+writes a list of numbers on one line; Retrieval's and Decision's generators use
+it, and their three fixtures were rewritten with it (decoded JSON identical:
+10,502 to 505, 1,606 to 68 and 529 to 469 lines). `generate_sdk_references.py`
+packs the embedder vectors, the mask grids and the stroke histories into rows
+inside `// dart format off` with core's `dart_rows`, and formats its output
+itself; the masks file is 380 lines and the detections file 514, with the same
+values. Decision's `embedding_gemma_2_text_vision_reference.json` has no
+generator in the repository and was left alone.
 
 ### R9. Hungry Fish leftovers
 
