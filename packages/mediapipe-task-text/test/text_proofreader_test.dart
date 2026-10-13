@@ -7,7 +7,6 @@ library;
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -71,27 +70,6 @@ void compareStreamLoosely(
     updates.map((e) => e.chunk ?? '').join(),
     events.map((e) => e['text'] as String? ?? '').join(),
     reason: '${entry['name']} stream',
-  );
-}
-
-/// Google's generated text can depend on the requests before it on the same
-/// task (upstream-issues.md UP-036: on its x86_64 1.0.0 builds the first
-/// streamed request of a fresh task is worded differently from the reference,
-/// which was recorded after a completed one). The reference tests replay the
-/// generator's request order and compare exactly; the lifecycle tests below
-/// do not, so they require the text to follow Google's from the start for 80
-/// characters, or in full when Google's is shorter.
-void expectFollows(String? actual, String? expected, {String? reason}) {
-  final a = expected ?? '';
-  final b = actual ?? '';
-  var prefix = 0;
-  while (prefix < a.length && prefix < b.length && a[prefix] == b[prefix]) {
-    prefix++;
-  }
-  expect(
-    prefix,
-    greaterThanOrEqualTo(math.min(80, a.length)),
-    reason: '${reason ?? ''}: Google answered "$a", the task answered "$b"',
   );
 }
 

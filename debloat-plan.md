@@ -686,6 +686,25 @@ worth it (see [Keep](#keep)).
   explicit schemas, keeping every negative receipt test. About 26 lines.
 - **The coverage-matrix tests** are done ([The guards](#the-guards-step-1)).
 
+**Done on `chore/oct12-combined`, in part:** `cpuReferenceSkipReason` in
+`face_reference.dart` replaces the four inline macOS checks, whose variable is
+now `MEDIAPIPE_SAME_HOST_CPU_REFERENCES`, set by `test_macos_references.py`
+(its only writer); `pixelsImage` in `vision_fixture.dart` builds the blank,
+RGBA and rotated inputs for the landmark, segmenter and face suites (checked
+identical to the three copies over 90 cases); audio's two receipt-checked
+loaders are `loadSameHostReference` in `test/support/same_host_reference.dart`;
+text's `expectFollows` lives in `modern_text_reference.dart`. In the gallery,
+`loadAssetBytes` and `loadBundledModel` in `bundled_model_assets.dart` serve
+the six `_model` and five `asset` loaders (the audio page and the web probe
+included), `logRecord` in `support/device_log.dart` the nine `_report`
+printers, `confidenceGridError(...).mean` the interactive segmenter, and
+`settle` and `screenText` in `delegate_control.dart` the journey test. Left as
+they are: the `forDelegates` harness (each loop's refusal policy, exception
+type and cleanup differ, and nothing here can run the result before the next
+device run), text's and vision's receipt loaders (other receipt schemas), the
+widget tests' `_settle` (a frame-free wait, not the same) and the two fake
+`CameraPlatform`s (different test trees, orientations and previews).
+
 ### R6. Maintainer tools
 
 - **Vision's reference generators:** the face and object detector generators
@@ -765,6 +784,8 @@ worth it (see [Keep](#keep)).
 field it returns, which gameplay uses), and `_SeaPainter.colors`
 (`fish_game_page.dart:523`) is stored and never read.
 
+**Done on `chore/oct12-combined`:** both removed; `_waiting` stays.
+
 ### R10. Coverage recording repeated in CI
 
 `tool/coverage/record.py` runs 37 times in eight workflows and its output is
@@ -782,6 +803,14 @@ anything more. One `tool/download_models.dart` per family taking `byName`
 keys (defaulting to the family's test set; every default file name is already
 the URL's last segment) replaces them, and the Makefile's `models` targets and
 CI steps pass names. About 55 to 120 lines.
+
+**Done on `chore/oct12-combined`:** `tool/download_models.dart` in each
+family (128 lines for the five, against 181) takes `byName` names and saves
+each model under its URL's last segment, which `downloadVerified` reuses when
+the hash matches; vision, audio and Retrieval default to every model, text to
+the three classic models and Decision to Laya S256. The Makefile's model
+targets, six workflows, `tool/test_text_audio.py` and four docs pass names.
+Run against the models on disk, every family kept the same file names.
 
 ### R12. Small tool and test helpers
 
@@ -801,6 +830,14 @@ CI steps pass names. About 55 to 120 lines.
   `packages/mediapipe-task-text/tool/test_embedding_macos.py:133-136`,
   `packages/mediapipe-task-vision/tool/test_flutter_macos.py:59-64`): one
   `configure_macos(...)` beside `consumer_packages.py`. About 7 lines.
+
+**Done on `chore/oct12-combined`:** `tool/check_docs.py` parses each family's
+`byName` and fails on a model name a docs sample lists that the family lacks
+(five docs list names today); `window.officialTasks(family)` in the browser
+test's init script loads Google's runtime at the package's pin for the seven
+evaluations; the five `analysis_options.yaml` files are one `include` line;
+`configure_macos(app, deployment_target:)` in `consumer_packages.py` serves
+the three consumer-app tools.
 
 ### R13. Gallery operation queue and model selection
 

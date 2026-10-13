@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
+import 'support/device_log.dart';
 
 /// EmbeddingGemma, Proofreader and Summarizer through Google's official mobile
 /// runtime (its 1.1.0 text library, which the text package's hook bundles on
@@ -575,7 +576,5 @@ int _sharedPrefix(String a, String b) {
 }
 
 // Kept in the device log (logcat, the simulator console) for the record.
-void _report(String event, Map<String, Object?> data) {
-  // ignore: avoid_print
-  print('SDK_MODERN_TEXT ${jsonEncode({'event': event, ...data})}');
-}
+void _report(String event, Map<String, Object?> data) =>
+    logRecord('SDK_MODERN_TEXT', {'event': event, ...data});

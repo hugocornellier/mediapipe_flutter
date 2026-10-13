@@ -37,13 +37,7 @@ models_all: models
 
 .PHONY: models_vision
 models_vision:
-	cd packages/mediapipe-task-vision && dart tool/download_model.dart
-	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
-	cd packages/mediapipe-task-vision && dart tool/download_object_detector.dart
-	cd packages/mediapipe-task-vision && dart tool/download_image_tasks.dart
-	cd packages/mediapipe-task-vision && dart tool/download_landmark_tasks.dart
-	cd packages/mediapipe-task-vision && dart tool/download_segmenter_tasks.dart
-	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
+	cd packages/mediapipe-task-vision && dart tool/download_models.dart
 
 analyze:
 	@for package in $(ANALYZE_PACKAGES); do (cd "$$package" && dart analyze --fatal-infos) || exit $$?; done
@@ -86,7 +80,7 @@ test_text:
 
 .PHONY: test_audio models_audio test_audio_stream_bridge test_audio_web
 models_audio:
-	cd packages/mediapipe-task-audio && dart run tool/download_model.dart
+	cd packages/mediapipe-task-audio && dart tool/download_models.dart
 
 test_audio:
 	$(MAKE) test_audio_stream_bridge
@@ -120,11 +114,11 @@ test_vision_flutter:
 
 .PHONY: models_text
 models_text:
-	cd packages/mediapipe-task-text && dart tool/download_classic_text.dart
+	cd packages/mediapipe-task-text && dart tool/download_models.dart
 
 .PHONY: models_embedding test_embedding_macos
 models_embedding:
-	cd packages/mediapipe-task-text && dart tool/download_embedding_gemma.dart
+	cd packages/mediapipe-task-text && dart tool/download_models.dart embedding_gemma
 
 test_embedding_macos:
 	cd packages/mediapipe-task-text && python3 -B tool/test_embedding_macos.py
@@ -138,15 +132,13 @@ test_modern_text:
 .PHONY: test_modern_task_matrix
 test_modern_task_matrix:
 	cd tool/task_benchmarks && dart pub get
-	cd packages/mediapipe-task-text && dart tool/download_embedding_gemma.dart
-	cd packages/mediapipe-task-text && dart tool/download_proofreader.dart
-	cd packages/mediapipe-task-text && dart tool/download_summarizer.dart
-	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
+	cd packages/mediapipe-task-text && dart tool/download_models.dart embedding_gemma proofreader summarizer
+	cd packages/mediapipe-task-vision && dart tool/download_models.dart interactive_segmenter
 	python3 -B tool/task_benchmarks/run_macos.py
 
 .PHONY: models_proofreader test_text_stream_bridge
 models_proofreader:
-	cd packages/mediapipe-task-text && dart tool/download_proofreader.dart
+	cd packages/mediapipe-task-text && dart tool/download_models.dart proofreader
 
 test_text_stream_bridge:
 	mkdir -p build/codex-tmp
@@ -155,7 +147,7 @@ test_text_stream_bridge:
 
 .PHONY: models_summarizer
 models_summarizer:
-	cd packages/mediapipe-task-text && dart tool/download_summarizer.dart
+	cd packages/mediapipe-task-text && dart tool/download_models.dart summarizer
 
 # Run sequentially even when make is invoked with -j.
 ci:
@@ -170,7 +162,7 @@ ci:
 # Python answers, on Google's wheel library for this desktop.
 .PHONY: models_decision test_decision
 models_decision:
-	cd packages/mediapipe-task-decision && dart run tool/download_model.dart
+	cd packages/mediapipe-task-decision && dart tool/download_models.dart
 
 test_decision:
 	cd packages/mediapipe-task-decision && dart test --reporter expanded
@@ -179,7 +171,7 @@ test_decision:
 # against Google's Python answers, on Google's retrieval library for this host.
 .PHONY: models_retrieval test_retrieval
 models_retrieval:
-	cd packages/mediapipe-task-retrieval && dart run tool/download_model.dart
+	cd packages/mediapipe-task-retrieval && dart tool/download_models.dart
 
 test_retrieval:
 	cd packages/mediapipe-task-retrieval && dart test --reporter expanded

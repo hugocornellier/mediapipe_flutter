@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 
@@ -15,6 +14,7 @@ import 'live/task_settings_panel.dart';
 import 'ui/components.dart';
 import 'ui/design.dart';
 import 'ui/workspace.dart';
+import 'bundled_model_assets.dart';
 
 /// Audio Classifier on a clip, or on the microphone as Google's audio stream,
 /// laid out as the other demos are: the audio and its results beside the
@@ -101,11 +101,6 @@ class _AudioPageState extends State<AudioPage>
     super.dispose();
   }
 
-  Future<Uint8List> _asset(String path) async {
-    final data = await rootBundle.load(path);
-    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-  }
-
   Future<AudioClassifier> _open() async =>
       _task ??= await AudioClassifier.create(
         AudioClassifierOptions(
@@ -138,7 +133,7 @@ class _AudioPageState extends State<AudioPage>
     });
     try {
       final bytes =
-          _uploadedClip?.bytes ?? await _asset('assets/samples/$_clip');
+          _uploadedClip?.bytes ?? await loadAssetBytes('assets/samples/$_clip');
       final audio = decodeWav(bytes);
       final task = await _open();
       final clock = Stopwatch()..start();

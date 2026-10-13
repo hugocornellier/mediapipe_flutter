@@ -9,7 +9,7 @@ import sys
 PACKAGE = Path(__file__).resolve().parents[1]
 APP = PACKAGE.parents[1] / "build/flutter_vision_smoke"
 sys.path.insert(0, str(PACKAGE.parent / "mediapipe-core/tool"))
-from consumer_packages import consumer_environment, core_hook_defines  # noqa: E402
+from consumer_packages import configure_macos, consumer_environment, core_hook_defines  # noqa: E402
 
 
 def test_app(app=APP, package=PACKAGE):
@@ -63,11 +63,7 @@ flutter:
         (app / destination).write_text(
             (PACKAGE / "tool" / source).read_text().replace(
                 "Delegate.values", "const [Delegate.cpu]"))
-    # Flutter defaults release builds to a universal binary. This runtime is arm64.
-    config = app / "macos/Runner/Configs/AppInfo.xcconfig"
-    settings = config.read_text()
-    if "EXCLUDED_ARCHS = x86_64" not in settings:
-        config.write_text(settings + "\nARCHS = arm64\nEXCLUDED_ARCHS = x86_64\n")
+    configure_macos(app)
     run(["flutter", "pub", "get"])
     run(["flutter", "test", "-d", "macos",
          "integration_test/face_detector_test.dart", "--reporter", "expanded"])

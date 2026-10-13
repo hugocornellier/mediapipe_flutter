@@ -59,9 +59,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y libegl1 libgles2
           cd packages/mediapipe-task-text
           dart pub get
-          dart tool/download_embedding_gemma.dart
-          dart tool/download_proofreader.dart
-          dart tool/download_summarizer.dart
+          dart tool/download_models.dart embedding_gemma proofreader summarizer
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
             --venv build/codex-tmp/official-python \

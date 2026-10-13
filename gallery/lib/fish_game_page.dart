@@ -377,7 +377,7 @@ class _FishGamePageState extends State<FishGamePage>
                     children: [
                       CustomPaint(
                         key: const ValueKey('fish-sea'),
-                        painter: _SeaPainter(_game, c),
+                        painter: _SeaPainter(_game),
                       ),
                       if (_status case final status?)
                         _LoadingScreen(
@@ -498,10 +498,9 @@ class _LoadingScreen extends StatelessWidget {
 /// The sea: every fish with its name, the player's in orange with its
 /// sight, and a ring on the fish the model is thinking about.
 class _SeaPainter extends CustomPainter {
-  _SeaPainter(this.game, this.colors);
+  _SeaPainter(this.game);
 
   final FishGame game;
-  final GalleryColors colors;
 
   @override
   void paint(Canvas canvas, Size size) {

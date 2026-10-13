@@ -114,7 +114,7 @@ validated, and Google's browser runtime has no CPU path.
 ## Testing
 
 `dart test` runs the unit tests and, with Google's model downloaded by
-`dart run tool/download_model.dart`, the native suite, which compares every
+`dart tool/download_models.dart`, the native suite, which compares every
 embedding and retrieval with the answers Google's own Python API gave
 (`test/fixtures/embedding_gemma_2_text_vision_reference.json`, from
 `tool/generate_reference.py` on the official mediapipe 1.1.0 wheel).

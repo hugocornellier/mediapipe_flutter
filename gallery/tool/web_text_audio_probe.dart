@@ -153,11 +153,6 @@ Future<void> _rejects<T>(Future<Object?> Function() action) async {
   throw StateError('Expected $T');
 }
 
-Future<Uint8List> _asset(String path) async {
-  final data = await rootBundle.load(path);
-  return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-}
-
 List<Object?> _categories(Iterable<Classifications> heads) => [
   for (final head in heads)
     [
@@ -167,7 +162,9 @@ List<Object?> _categories(Iterable<Classifications> heads) => [
 ];
 
 Future<Object?> _classifier() async {
-  final model = await _asset(bundledModelFile('bert_classifier.tflite'));
+  final model = await loadAssetBytes(
+    bundledModelFile('bert_classifier.tflite'),
+  );
   final results = [];
   for (final (text, options) in classifierCases) {
     final task = await TextClassifier.create(
@@ -210,7 +207,7 @@ Future<Object?> _classifier() async {
 }
 
 Future<Object?> _embedder() async {
-  final model = await _asset(
+  final model = await loadAssetBytes(
     bundledModelFile('universal_sentence_encoder.tflite'),
   );
   final result = <String, Object?>{};
@@ -263,7 +260,7 @@ Future<Object?> _embeddingGemma() async {
     support.supportedDelegates.contains(Delegate.cpu),
     'EmbeddingGemma must be supported in browsers.',
   );
-  final model = await _asset(bundledModelFile('embedding_gemma.task'));
+  final model = await loadAssetBytes(bundledModelFile('embedding_gemma.task'));
   final result = <String, Object?>{};
   for (final quantize in [false, true]) {
     final task = await TextEmbedder.create(
@@ -304,7 +301,9 @@ Future<Object?> _embeddingGemma() async {
 Future<Object?> _language() async {
   final task = await LanguageDetector.create(
     LanguageDetectorOptions(
-      modelBytes: await _asset(bundledModelFile('language_detector.tflite')),
+      modelBytes: await loadAssetBytes(
+        bundledModelFile('language_detector.tflite'),
+      ),
       maxResults: 3,
     ),
   );
@@ -335,14 +334,16 @@ List<Object?> _chunks(List<AudioClassifierResult> result) => [
 Future<Object?> _audio() async {
   final task = await AudioClassifier.create(
     AudioClassifierOptions(
-      modelBytes: await _asset(bundledModelFile('yamnet.tflite')),
+      modelBytes: await loadAssetBytes(bundledModelFile('yamnet.tflite')),
     ),
   );
   final result = <String, Object?>{};
   try {
     for (final clip in clips) {
       result[clip] = _chunks(
-        await task.classify(decodeWav(await _asset('assets/samples/$clip'))),
+        await task.classify(
+          decodeWav(await loadAssetBytes('assets/samples/$clip')),
+        ),
       );
     }
   } finally {
@@ -366,15 +367,17 @@ Future<Object?> _audio() async {
 /// 4801 at 48 kHz, and the lone half second; and the checks' messages, which
 /// must be native platforms' to the letter.
 Future<Object?> _audioStream() async {
-  final model = await _asset(bundledModelFile('yamnet.tflite'));
+  final model = await loadAssetBytes(bundledModelFile('yamnet.tflite'));
   final speech = decodeWav(
-    await _asset('assets/samples/speech_16000_hz_mono.wav'),
+    await loadAssetBytes('assets/samples/speech_16000_hz_mono.wav'),
   );
   final result = <String, Object?>{
     'speech-100ms': await _streamed(model, speech, 1600),
     'speech-48k': await _streamed(
       model,
-      decodeWav(await _asset('assets/samples/speech_48000_hz_mono.wav')),
+      decodeWav(
+        await loadAssetBytes('assets/samples/speech_48000_hz_mono.wav'),
+      ),
       4801,
     ),
     'lone-half-second': await _streamed(
@@ -488,7 +491,7 @@ Future<Object?> _streamed(
 Future<Object?> _microphone() async {
   const rate = 16000;
   final task = await _streamTask(
-    await _asset(bundledModelFile('yamnet.tflite')),
+    await loadAssetBytes(bundledModelFile('yamnet.tflite')),
   );
   final results = <AudioClassifierResult>[];
   final done = Completer<void>();

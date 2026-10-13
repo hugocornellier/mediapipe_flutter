@@ -108,7 +108,7 @@ def main():
 
     root = test_root(output / 'consumer')
     env.update(MEDIAPIPE_CPU_REFERENCE_DIR=str(cpu),
-               MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME='1',
+               MEDIAPIPE_SAME_HOST_CPU_REFERENCES='1',
                MEDIAPIPE_LANDMARK_TASKS='hand,pose,gesture,holistic')
     run(['dart', 'pub', 'get'], root, env, output / 'dart-pub-get.log')
     # A task's close waits for Google's usage-logging upload, so a slow reply

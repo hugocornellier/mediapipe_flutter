@@ -25,6 +25,17 @@ const macosGpuWithdrawn =
     "macOS withdraws the GPU while Google's 1.1.1 Metal output differs from "
     'its 1.1.0 wheel (upstream-issues.md UP-057).';
 
+/// Why the CPU comparisons with Google's checked-in outputs are skipped on
+/// this host, or null when they run: Google's CPU output drifts between Apple
+/// CPUs, so macOS compares with same-host outputs instead, which
+/// tool/test_macos_references.py prepares and announces with
+/// MEDIAPIPE_SAME_HOST_CPU_REFERENCES=1.
+final String? cpuReferenceSkipReason =
+    Platform.isMacOS &&
+        Platform.environment['MEDIAPIPE_SAME_HOST_CPU_REFERENCES'] != '1'
+    ? 'macOS compares with same-host official outputs'
+    : null;
+
 /// Linux has no checked-in GPU references, so it runs the GPU suites only
 /// against same-host official outputs; macOS runs none ([macosGpuWithdrawn]).
 bool get gpuFaceTestsEnabled =>

@@ -28,7 +28,7 @@ REPO = PACKAGES.parent
 TEMPLATES = CORE / 'tool/bundled_models'
 sys.path.insert(0, str(CORE / 'tool'))
 from consumer_packages import (  # noqa: E402
-    consumer_environment, copy_package, core_hook_defines)
+    configure_macos, consumer_environment, copy_package, core_hook_defines)
 from families import task_families  # noqa: E402
 
 NAME = 'mediapipe_bundled_models'
@@ -144,11 +144,7 @@ hooks:
                     app / 'assets/test/portrait.rgb')
     if target == 'macos':
         # Google's macOS runtimes are arm64 only, from macOS 14.
-        config = app / 'macos/Runner/Configs/AppInfo.xcconfig'
-        config.write_text(config.read_text() + '\nARCHS = arm64\nEXCLUDED_ARCHS = x86_64\n')
-        project = app / 'macos/Runner.xcodeproj/project.pbxproj'
-        project.write_text(project.read_text().replace(
-            'MACOSX_DEPLOYMENT_TARGET = 10.15;', 'MACOSX_DEPLOYMENT_TARGET = 14.0;'))
+        configure_macos(app, deployment_target='14.0')
         # Only the debug run downloads; the release build stays without it.
         entitlements = app / 'macos/Runner/DebugProfile.entitlements'
         entitlements.write_text(entitlements.read_text().replace(

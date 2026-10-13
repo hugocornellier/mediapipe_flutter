@@ -60,7 +60,7 @@ jobs:
         run: flutter pub get
       - name: Download Google's Laya model
         working-directory: packages/mediapipe-task-decision
-        run: dart run tool/download_model.dart
+        run: dart tool/download_models.dart
       - name: Analyze
         working-directory: packages/mediapipe-task-decision
         run: dart analyze --fatal-infos

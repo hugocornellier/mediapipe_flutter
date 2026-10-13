@@ -58,6 +58,15 @@ const bundledModelsScript = runtime => {
   };
   window.bundledModelKey = key;
   window.bundledModelUrl = async file => new URL('assets/' + await key(file), document.baseURI).href;
+  // Google's official runtime for a family, at the version its package pins:
+  // the bundle's exports and the loaded wasm fileset its tasks open with.
+  window.officialTasks = async family => {
+    const pin = await (await fetch(new URL(`assets/packages/mediapipe_${family}/assets/runtime.json`, document.baseURI))).json();
+    const runtime = new URL(`${pin.package}@${pin.version}/`, window.officialRuntime);
+    const bundle = await import(new URL(`${family}_bundle.mjs`, runtime).href);
+    const files = await bundle.FilesetResolver[`for${family[0].toUpperCase()}${family.slice(1)}Tasks`](new URL('wasm', runtime).href);
+    return {bundle, files};
+  };
 };
 
 async function launch(deviceCount = 2, useFile = true) {
@@ -112,10 +121,7 @@ function median(values) {
 // Google's official IMAGE task, run in the page over PNG screenshot pixels.
 async function detectScreenshot(page, png) {
   return page.evaluate(async ({base64, spec}) => {
-    const pin = await (await fetch(new URL('assets/packages/mediapipe_vision/assets/runtime.json', document.baseURI))).json();
-    const runtime = new URL(`@mediapipe/tasks-vision@${pin.version}/`, window.officialRuntime);
-    const bundle = await import(new URL('vision_bundle.mjs', runtime));
-    const files = await bundle.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
+    const {bundle, files} = await window.officialTasks('vision');
     const task = await bundle[spec.task].createFromOptions(files, {
       baseOptions: {delegate: 'CPU', modelAssetPath: await window.bundledModelUrl(spec.model)},
       runningMode: 'IMAGE', ...spec.options,
@@ -256,10 +262,7 @@ async function apiChecks() {
   fs.writeFileSync(path.join(evidence, 'api-report.json'), JSON.stringify(api, null, 2));
   assert.equal(api.status, 'passed', JSON.stringify(api));
   const direct = await page.evaluate(async delegate => {
-    const pin = await (await fetch(new URL('assets/packages/mediapipe_vision/assets/runtime.json', document.baseURI))).json();
-    const runtime = new URL(`@mediapipe/tasks-vision@${pin.version}/`, window.officialRuntime);
-    const {FilesetResolver, FaceLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
-    const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
+    const {bundle: {FaceLandmarker}, files} = await window.officialTasks('vision');
     const task = await FaceLandmarker.createFromOptions(files, {
       baseOptions: {delegate, modelAssetPath: await window.bundledModelUrl('face_landmarker.task')},
       runningMode: 'IMAGE', numFaces: 1, outputFaceBlendshapes: true, outputFacialTransformationMatrixes: true,
@@ -290,10 +293,7 @@ async function apiChecks() {
   // Hand Landmarker through the Dart API versus Google's JavaScript on the
   // same image, runtime and delegate.
   const hand = await page.evaluate(async delegate => {
-    const pin = await (await fetch(new URL('assets/packages/mediapipe_vision/assets/runtime.json', document.baseURI))).json();
-    const runtime = new URL(`@mediapipe/tasks-vision@${pin.version}/`, window.officialRuntime);
-    const {FilesetResolver, HandLandmarker} = await import(new URL('vision_bundle.mjs', runtime));
-    const files = await FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
+    const {bundle: {HandLandmarker}, files} = await window.officialTasks('vision');
     const task = await HandLandmarker.createFromOptions(files, {
       baseOptions: {delegate, modelAssetPath: await window.bundledModelUrl('hand_landmarker.task')},
       runningMode: 'IMAGE', numHands: 2,
@@ -326,10 +326,7 @@ async function apiChecks() {
   // on the sample the Dart probe used. Holistic's IMAGE mode keeps state, so
   // only first calls are comparable.
   const landmarkTasks = await page.evaluate(async delegate => {
-    const pin = await (await fetch(new URL('assets/packages/mediapipe_vision/assets/runtime.json', document.baseURI))).json();
-    const runtime = new URL(`@mediapipe/tasks-vision@${pin.version}/`, window.officialRuntime);
-    const vision = await import(new URL('vision_bundle.mjs', runtime));
-    const files = await vision.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
+    const {bundle: vision, files} = await window.officialTasks('vision');
     const points = list => (list ?? []).map(p => [p.x, p.y, p.z]);
     const run = async (type, model, sample, options, method, parts) => {
       const task = await vision[type].createFromOptions(files, {
@@ -376,10 +373,7 @@ async function apiChecks() {
   // Face Detector, Object Detector and Image Classifier the same way. Google's
   // boxes are float pixels; the Dart API truncates them, as its C API does.
   const detectionTasks = await page.evaluate(async delegate => {
-    const pin = await (await fetch(new URL('assets/packages/mediapipe_vision/assets/runtime.json', document.baseURI))).json();
-    const runtime = new URL(`@mediapipe/tasks-vision@${pin.version}/`, window.officialRuntime);
-    const vision = await import(new URL('vision_bundle.mjs', runtime));
-    const files = await vision.FilesetResolver.forVisionTasks(new URL('wasm', runtime).href);
+    const {bundle: vision, files} = await window.officialTasks('vision');
     const response = await fetch(new URL('assets/assets/samples/portrait.jpg', document.baseURI));
     const bitmap = await createImageBitmap(await response.blob());
     const open = async (type, model, options) => vision[type].createFromOptions(files, {
@@ -954,10 +948,7 @@ async function textAudioChecks() {
   const official = await page.evaluate(async () => {
     const asset = name => new URL('assets/' + name, document.baseURI).href;
     const bytes = async name => new Uint8Array(await (await fetch(asset(name))).arrayBuffer());
-    const textPin = await (await fetch(asset('packages/mediapipe_text/assets/runtime.json'))).json();
-    const textRuntime = new URL(`@mediapipe/tasks-text@${textPin.version}/`, window.officialRuntime);
-    const text = await import(new URL('text_bundle.mjs', textRuntime).href);
-    const textFiles = await text.FilesetResolver.forTextTasks(new URL('wasm', textRuntime).href);
+    const {bundle: text, files: textFiles} = await window.officialTasks('text');
     const heads = result => result.classifications.map(h => h.categories.map(c =>
       [c.index, c.score, c.categoryName || null, c.displayName || null]));
     // The package sends an unset score threshold as 0, as Google's Python and
@@ -1016,10 +1007,7 @@ async function textAudioChecks() {
     const language = ['Hello, world!', 'Quiero agua, por favor.', 'こんにちは、元気ですか？'].map(t =>
       detector.detect(t).languages.map(l => [l.languageCode, l.probability]));
     detector.close();
-    const audioPin = await (await fetch(asset('packages/mediapipe_audio/assets/runtime.json'))).json();
-    const audioRuntime = new URL(`@mediapipe/tasks-audio@${audioPin.version}/`, window.officialRuntime);
-    const audio = await import(new URL('audio_bundle.mjs', audioRuntime).href);
-    const audioFiles = await audio.FilesetResolver.forAudioTasks(new URL('wasm', audioRuntime).href);
+    const {bundle: audio, files: audioFiles} = await window.officialTasks('audio');
     const yamnet = await audio.AudioClassifier.createFromOptions(audioFiles,
       {baseOptions: {modelAssetBuffer: await bytes(await window.bundledModelKey('yamnet.tflite'))}});
     const clips = {};

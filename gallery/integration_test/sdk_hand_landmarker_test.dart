@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -16,6 +15,7 @@ import 'support/gallery_tiles.dart';
 import 'support/official_landmark_references.dart';
 import 'support/sdk_frames.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
+import 'support/device_log.dart';
 
 /// `required` fails when the SDK refuses the GPU, as on a phone; `optional`
 /// records a refusal at creation; `skip` runs CPU only.
@@ -55,7 +55,7 @@ void main() {
               "Android and iOS run Google's C library through FFI, not a plugin backend",
         );
         final assets = await GalleryAssets.unpack();
-        final model = await _model();
+        final model = await loadBundledModel('hand_landmarker.task');
         final frame = await loadSample('thumb_up.jpg');
         final references = <Delegate, HandLandmarkerResult>{};
         for (final delegate in [
@@ -236,11 +236,6 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 2)));
 }
 
-Future<Uint8List> _model() async {
-  final bytes = await rootBundle.load(bundledModelFile('hand_landmarker.task'));
-  return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
-}
-
 /// One hand with 21 finite image and world landmarks and a handedness.
 void _hand(HandLandmarkerResult result) {
   expect(result.handLandmarks, hasLength(1));
@@ -272,8 +267,5 @@ double _delta(HandLandmarkerResult a, HandLandmarkerResult b) {
   return maximum;
 }
 
-void _report(String event, Map<String, Object?> data) {
-  // Kept in the device log (logcat, the simulator console) for the record.
-  // ignore: avoid_print
-  print('SDK_HAND_LANDMARKER ${jsonEncode({'event': event, ...data})}');
-}
+void _report(String event, Map<String, Object?> data) =>
+    logRecord('SDK_HAND_LANDMARKER', {'event': event, ...data});

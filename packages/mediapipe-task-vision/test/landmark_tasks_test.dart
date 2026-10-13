@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:test/test.dart';
 import 'support/face_reference.dart';
+import 'support/vision_fixture.dart';
 
 const _fixtures = 'test/fixtures/landmark_tasks';
 final _models = {
@@ -25,15 +26,6 @@ typedef _Task = (
   Future<Map<String, dynamic>> Function(VisionImage, int, int?),
   Future<void> Function(),
 );
-// These tasks are validated against the official wheel that ships the same
-// native library on Linux and Windows. Google's macOS CPU output drifts
-// between Apple CPUs, so macOS compares with same-host outputs
-// (tool/test_macos_references.py).
-final _unvalidatedHost =
-    Platform.isMacOS &&
-        Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] != '1'
-    ? 'macOS compares with same-host official outputs'
-    : null;
 final _selectedTasks =
     switch (Platform.environment['MEDIAPIPE_LANDMARK_TASKS']) {
       final value? => value.split(',').toSet(),
@@ -94,7 +86,7 @@ void main() {
           await close();
         }
       },
-      skip: _unvalidatedHost,
+      skip: cpuReferenceSkipReason,
     );
   }
   for (final name in _models.keys.where(_selectedTasks.contains)) {
@@ -127,7 +119,7 @@ void main() {
           _compare(results[i], frames[i]['result'], name);
         }
       },
-      skip: _unvalidatedHost,
+      skip: cpuReferenceSkipReason,
     );
     test(
       '$name native input/model errors leave later inference usable',
@@ -159,7 +151,7 @@ void main() {
         final (_, validClose) = await _create(expected);
         await validClose();
       },
-      skip: _unvalidatedHost,
+      skip: cpuReferenceSkipReason,
     );
   }
   group('gpu', () {
@@ -276,38 +268,15 @@ VisionImage _image(Map<String, dynamic> expected) {
     );
     return VisionImage.fromFile(file.path);
   }
-  var pixels = File('$_fixtures/${expected['raw']}').readAsBytesSync();
+  final pixels = File('$_fixtures/${expected['raw']}').readAsBytesSync();
   expect(sha256.convert(pixels).toString(), expected['raw_sha256']);
-  final width = expected['width'] as int;
-  final height = expected['height'] as int;
-  var format = VisionPixelFormat.rgb;
-  if (expected['input'] == 'blank') {
-    pixels = Uint8List(width * height * 3);
-  } else if (expected['input'] == 'rgba') {
-    final rgba = Uint8List(width * height * 4);
-    for (var i = 0; i < width * height; i++) {
-      rgba.setRange(i * 4, i * 4 + 3, pixels, i * 3);
-      rgba[i * 4 + 3] = 255;
-    }
-    pixels = rgba;
-    format = VisionPixelFormat.rgba;
-  } else if (expected['input'] == 'rotated') {
-    final rotated = Uint8List(pixels.length);
-    final oldWidth = height;
-    final oldHeight = width;
-    for (var y = 0; y < oldHeight; y++) {
-      for (var x = 0; x < oldWidth; x++) {
-        final output = ((oldWidth - 1 - x) * oldHeight + y) * 3;
-        rotated.setRange(output, output + 3, pixels, (y * oldWidth + x) * 3);
-      }
-    }
-    pixels = rotated;
-  }
-  return VisionImage.fromPixels(
-    pixels: pixels,
-    width: width,
-    height: height,
-    format: format,
+  // A rotated case gives its image's size; the raw file is the other way up.
+  final rotated = expected['input'] == 'rotated';
+  return pixelsImage(
+    pixels,
+    width: expected[rotated ? 'height' : 'width'] as int,
+    height: expected[rotated ? 'width' : 'height'] as int,
+    input: expected['input'] as String,
   );
 }
 

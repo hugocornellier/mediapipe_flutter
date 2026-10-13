@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -11,6 +10,8 @@ import 'package:mediapipe_gallery/main.dart';
 import 'support/official_mask_references.dart';
 import 'support/sdk_frames.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
+import 'support/device_log.dart';
+import 'support/mask_grids.dart';
 
 // Google's stateful MagicTouch Interactive Segmenter through Google's C
 // library on iOS and Android. The reference is CPU. On Android the suite also
@@ -64,7 +65,10 @@ void main() {
               officialInteractiveReference.height,
             ),
           );
-          final gridError = _gridError(file, officialInteractiveReference.grid);
+          final gridError = confidenceGridError(
+            file,
+            officialInteractiveReference.grid,
+          ).mean;
           final meanDelta = (_mean(file) - officialInteractiveReference.mean)
               .abs();
           final foregroundDelta =
@@ -84,7 +88,7 @@ void main() {
                 stroke(BrushMode.values.byName(mode), points),
             ]);
             summaries[name] = mask;
-            final error = _gridError(mask, summary.grid);
+            final error = confidenceGridError(mask, summary.grid).mean;
             final mean = (_mean(mask) - summary.mean).abs();
             final share = (_foreground(mask) - summary.foreground).abs();
             _report(name, {
@@ -191,34 +195,16 @@ void main() {
         final cpu = masks[Delegate.cpu]!, gpu = masks[Delegate.gpu]!;
         _report('cpu_gpu', {
           'agreement': _agreement(cpu, gpu),
-          'gpu_grid_error': _gridError(gpu, officialInteractiveReference.grid),
+          'gpu_grid_error': confidenceGridError(
+            gpu,
+            officialInteractiveReference.grid,
+          ).mean,
         });
       });
     },
     skip: !Platform.isAndroid || _gpu == 'skip',
     timeout: const Timeout(Duration(minutes: 4)),
   );
-}
-
-/// Mean difference between [mask]'s cell means and Google's.
-double _gridError(ConfidenceMask mask, List<List<double>> grid) {
-  final rows = grid.length, columns = grid.first.length;
-  var total = 0.0;
-  for (var r = 0; r < rows; r++) {
-    final top = r * mask.height ~/ rows, bottom = (r + 1) * mask.height ~/ rows;
-    for (var c = 0; c < columns; c++) {
-      final left = c * mask.width ~/ columns;
-      final right = (c + 1) * mask.width ~/ columns;
-      var sum = 0.0;
-      for (var y = top; y < bottom; y++) {
-        for (var x = left; x < right; x++) {
-          sum += mask.confidence[y * mask.width + x];
-        }
-      }
-      total += (sum / ((bottom - top) * (right - left)) - grid[r][c]).abs();
-    }
-  }
-  return total / (rows * columns);
 }
 
 double _mean(ConfidenceMask mask) =>
@@ -238,8 +224,5 @@ double _agreement(ConfidenceMask a, ConfidenceMask b) {
   return same / a.confidence.length;
 }
 
-void _report(String event, Map<String, Object?> data) {
-  // Kept in the device log (logcat, the simulator console) for the record.
-  // ignore: avoid_print
-  print('SDK_INTERACTIVE ${jsonEncode({'event': event, ...data})}');
-}
+void _report(String event, Map<String, Object?> data) =>
+    logRecord('SDK_INTERACTIVE', {'event': event, ...data});

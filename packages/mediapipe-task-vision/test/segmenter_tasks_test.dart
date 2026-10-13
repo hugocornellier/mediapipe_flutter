@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:test/test.dart';
 import 'support/face_reference.dart';
+import 'support/vision_fixture.dart';
 
 const _fixtures = 'test/fixtures/face_detection';
 final _models = {
@@ -15,16 +16,6 @@ typedef _Task = (
   Future<Map<String, dynamic>> Function(VisionImage, int, int?),
   Future<void> Function(),
 );
-
-// The task is validated against the official wheel that ships the same
-// native library on Linux and Windows, and on Google's macOS engine against
-// same-host outputs (tool/test_macos_references.py), since its
-// CPU output drifts between Apple CPUs.
-final _unvalidatedHost =
-    Platform.isMacOS &&
-        Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] != '1'
-    ? 'macOS compares with same-host official outputs'
-    : null;
 
 void main() {
   final reference = loadFaceReference(
@@ -56,7 +47,7 @@ void main() {
           await close();
         }
       },
-      skip: _unvalidatedHost,
+      skip: cpuReferenceSkipReason,
     );
   }
   // The reference records one VIDEO sequence per mask selection.
@@ -86,7 +77,7 @@ void main() {
       for (var i = 0; i < frames.length; i++) {
         _compare(results[i], frames[i]['result']);
       }
-    }, skip: _unvalidatedHost);
+    }, skip: cpuReferenceSkipReason);
   }
   test('the reference covers every mask selection in video mode', () {
     expect(videoFrames.keys, hasLength(3));
@@ -121,7 +112,7 @@ void main() {
         final (_, validClose) = await _create(expected);
         await validClose();
       },
-      skip: _unvalidatedHost,
+      skip: cpuReferenceSkipReason,
     );
   }
   test('the model label list orders both mask kinds', () async {
@@ -147,7 +138,7 @@ void main() {
     } finally {
       await task.dispose();
     }
-  }, skip: _unvalidatedHost);
+  }, skip: cpuReferenceSkipReason);
   // Image Segmenter's IMAGE mode on GPU, against the official GPU references
   // tool/prepare_gpu_reference.py --segmenter-tasks writes on this host (the
   // official macOS Metal path aborts in VIDEO mode; see its generator).
@@ -225,44 +216,16 @@ VisionImage _image(Map<String, dynamic> expected) {
     );
     return VisionImage.fromFile(file.path);
   }
-  const width = 301;
-  const height = 209;
-  var pixels = File('$_fixtures/portrait-301x209.rgb').readAsBytesSync();
+  // Every pixel case is the portrait, 301 by 209, or a blank of its size.
+  final pixels = File('$_fixtures/portrait-301x209.rgb').readAsBytesSync();
   if (expected['input'] != 'blank') {
     expect(sha256.convert(pixels).toString(), expected['sha256']);
   }
-  var format = VisionPixelFormat.rgb;
-  switch (expected['input']) {
-    case 'blank':
-      pixels = Uint8List(width * height * 3);
-    case 'rgba':
-      final rgba = Uint8List(width * height * 4);
-      for (var i = 0; i < width * height; i++) {
-        rgba.setRange(i * 4, i * 4 + 3, pixels, i * 3);
-        rgba[i * 4 + 3] = 255;
-      }
-      pixels = rgba;
-      format = VisionPixelFormat.rgba;
-    case 'rotated':
-      final rotated = Uint8List(pixels.length);
-      for (var y = 0; y < height; y++) {
-        for (var x = 0; x < width; x++) {
-          final output = ((width - 1 - x) * height + y) * 3;
-          rotated.setRange(output, output + 3, pixels, (y * width + x) * 3);
-        }
-      }
-      return VisionImage.fromPixels(
-        pixels: rotated,
-        width: height,
-        height: width,
-        format: format,
-      );
-  }
-  return VisionImage.fromPixels(
-    pixels: pixels,
-    width: width,
-    height: height,
-    format: format,
+  return pixelsImage(
+    pixels,
+    width: 301,
+    height: 209,
+    input: expected['input'] as String,
   );
 }
 

@@ -17,14 +17,8 @@ void main() {
     group(
       delegate.name,
       () => _testDelegate(delegate),
-      // Google's CPU output drifts between Apple CPUs, so macOS CPU compares
-      // with same-host outputs (tool/test_macos_references.py).
-      skip:
-          delegate == Delegate.cpu &&
-              Platform.isMacOS &&
-              Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
-                  '1'
-          ? 'macOS CPU compares with same-host official outputs'
+      skip: delegate == Delegate.cpu
+          ? cpuReferenceSkipReason
           : delegate == Delegate.gpu && Platform.isMacOS
           ? macosGpuWithdrawn
           : delegate == Delegate.gpu &&

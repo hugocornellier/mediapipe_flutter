@@ -55,8 +55,8 @@ def main():
 
     for package in (TEXT, AUDIO):
         run(['dart', 'pub', 'get'], package, evidence / f'{package.name}-pub.log')
-    run(['dart', 'tool/download_classic_text.dart'], TEXT, evidence / 'text-models.log')
-    run(['dart', 'run', 'tool/download_model.dart'], AUDIO, evidence / 'audio-model.log')
+    run(['dart', 'tool/download_models.dart'], TEXT, evidence / 'text-models.log')
+    run(['dart', 'tool/download_models.dart'], AUDIO, evidence / 'audio-model.log')
     text_reference = REPO / 'build/classic-text-reference'
     audio_reference = REPO / 'build/audio-reference'
     run([sys.executable, '-B', TEXT / 'tool/prepare_classic_text_reference.py',

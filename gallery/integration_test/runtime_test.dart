@@ -72,16 +72,13 @@ void main() {
       markTestSkipped('This target bundles no text or audio task.');
       return;
     }
-    Future<Uint8List> asset(String path) async {
-      final data = await rootBundle.load(path);
-      return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-    }
-
     await tester.runAsync(() async {
       if (bundled.contains('text_classifier')) {
         final classifier = await TextClassifier.create(
           TextClassifierOptions(
-            modelBytes: await asset(bundledModelFile('bert_classifier.tflite')),
+            modelBytes: await loadAssetBytes(
+              bundledModelFile('bert_classifier.tflite'),
+            ),
           ),
         );
         try {
@@ -97,12 +94,14 @@ void main() {
       if (bundled.contains('audio_classifier')) {
         final classifier = await AudioClassifier.create(
           AudioClassifierOptions(
-            modelBytes: await asset(bundledModelFile('yamnet.tflite')),
+            modelBytes: await loadAssetBytes(bundledModelFile('yamnet.tflite')),
           ),
         );
         try {
           final chunks = await classifier.classify(
-            decodeWav(await asset('assets/samples/speech_16000_hz_mono.wav')),
+            decodeWav(
+              await loadAssetBytes('assets/samples/speech_16000_hz_mono.wav'),
+            ),
           );
           expect(
             chunks.first.classifications.first.categories.first.categoryName,

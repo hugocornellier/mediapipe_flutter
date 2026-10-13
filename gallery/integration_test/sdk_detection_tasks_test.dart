@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -12,6 +11,7 @@ import 'package:mediapipe_gallery/main.dart';
 import 'support/official_detection_references.dart';
 import 'support/sdk_frames.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
+import 'support/device_log.dart';
 
 /// As in sdk_hand_landmarker_test.dart: `required` fails when the SDK refuses
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
@@ -48,7 +48,7 @@ void main() {
                 "Android and iOS run Google's C library through FFI, not a plugin backend",
           );
           final assets = await GalleryAssets.unpack();
-          final model = await _model(subject.model);
+          final model = await loadBundledModel(subject.model);
           final frame = await loadSample('portrait.jpg');
           final references = <Delegate, List<_Item>>{};
           // The package withdraws Face Detector's GPU where Google's library
@@ -184,7 +184,7 @@ void main() {
         await tester.runAsync(() async {
           final frame = await loadSample('portrait.jpg');
           final task = await subject.open(
-            await _model(subject.model),
+            await loadBundledModel(subject.model),
             Delegate.cpu,
             RunningMode.video,
           );
@@ -495,11 +495,6 @@ final _subjects = <_Subject>[
   ),
 ];
 
-Future<Uint8List> _model(String name) async {
-  final bytes = await rootBundle.load(bundledModelFile(name));
-  return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
-}
-
 /// Largest score difference, and box difference as a share of the longer
 /// side; names must match. [exact] also requires the same count.
 double _itemDelta(_Result a, _Result b, {bool exact = false}) {
@@ -522,10 +517,9 @@ double _itemDelta(_Result a, _Result b, {bool exact = false}) {
   return maximum;
 }
 
-void _report(_Subject subject, String event, Map<String, Object?> data) {
-  // Kept in the device log (logcat, the simulator console) for the record.
-  // ignore: avoid_print
-  print(
-    'SDK_DETECTION_TASK ${jsonEncode({'task': subject.name, 'event': event, ...data})}',
-  );
-}
+void _report(_Subject subject, String event, Map<String, Object?> data) =>
+    logRecord('SDK_DETECTION_TASK', {
+      'task': subject.name,
+      'event': event,
+      ...data,
+    });
