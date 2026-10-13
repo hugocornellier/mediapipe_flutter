@@ -4,10 +4,10 @@ Checked at `ebe8ffd` (`main`, October 12, 2026), which `main` now carries as
 `a9cbed4` (#84 and #85 squashed). Of the files cited here only
 `gallery/tool/browser/test_browser.mjs` differs between the two, and its
 references are at `a9cbed4`; every other line number is the same at both.
-Step 1 of the [suggested order](#suggested-order)
-([The guards](#the-guards-step-1)), B1 and B2 are done on
-`chore/oct12-combined`, with Google's 1.1.1 libraries; their changes are not
-yet reflected in the line numbers below. The first pass (#77) is done; it is summarized under
+Steps 1 and 2 of the [suggested order](#suggested-order)
+([The guards](#the-guards-step-1) and the API trims), S1 step 1, B1 and B2
+are done on `chore/oct12-combined`, with Google's 1.1.1 libraries; their
+changes are not yet reflected in the line numbers below. The first pass (#77) is done; it is summarized under
 [The first pass](#the-first-pass-77), and its full record is this file at
 `a9cbed4` (`git show a9cbed4:debloat-plan.md`).
 
@@ -367,7 +367,16 @@ show every one.
    them from the helper's. Add core tests with fake out-pointers (zero,
    nonzero, null and empty messages, a throwing `failure`). About 368 lines
    become 150 to 200; net about 170 to 220. The target string stays as it is
-   unless a synchronous getter is wanted anyway.
+   unless a synchronous getter is wanted anyway. **Done on
+   `chore/oct12-combined`, but for vision's fill and copy, which wait for
+   step 6:** all eight are in core with tests, and vision uses
+   `checkNativeStatus`, `nativeString` and `nativeStrings`. Audio no longer
+   keeps its model bytes until close, and its options go to the stream's
+   worker as they are, as text's and Decision's do: Google's C API copies the
+   model when it creates a task (`base_options_converter.cc`), and a check
+   that zeroed and freed audio's buffer right after create kept every one of
+   the speech clip's 2,605 scores. So `fillBaseOptions` takes no buffer of the
+   caller's.
 2. **Close-once handle:** `NativeTaskHandle<T extends NativeType>` (`value`,
    `close(release)`), clearing the pointer before the callback. Net about 50.
 3. **Core web helpers** (`web_task_bridge.dart`, `platform_interface.dart`),
@@ -821,11 +830,14 @@ debug and release.
    bundled-models test for every family, and R5's coverage-matrix tests for
    every family. Every later pull request then shows its API changes and
    cannot miss a family.
-2. **API trims and release docs (days 1 to 2):** B3 (internal constants, model
-   constants, the wheel fold, `VisionResult`, and the Retrieval audio and
-   insert tests or holding those calls back), S1 step 3, S2, S4, S5 and R4's
-   Decision pins. B1 and B2 are done.
-3. **FFI kit (days 2 to 3):** S1 steps 1, 2 and 8.
+2. **API trims and release docs (days 1 to 2), done on
+   `chore/oct12-combined` but for the Retrieval tests' browser cases, which
+   step 8 adds:** B3 (internal constants, model constants, the wheel fold,
+   `VisionResult`, and the Retrieval audio and insert tests or holding those
+   calls back), S1 step 3, S2, S4, S5 and R4's Decision pins. B1 and B2 are
+   done.
+3. **FFI kit (days 2 to 3):** S1 steps 1, 2 and 8. Step 1 is done on
+   `chore/oct12-combined`.
 4. **Runtime plumbing (days 3 to 5, the riskiest):** S1 steps 4, 5 and 7.
    Core's tests with a fake worker task come first; then one family at a
    time.

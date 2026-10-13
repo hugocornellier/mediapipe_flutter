@@ -1,7 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart';
 import 'package:mediapipe_core/native_structs.dart' show checkNativeStatus;
@@ -44,57 +43,6 @@ void requireTextTasksRuntime() {
       fix: tasksRuntimeUnavailable('this text task', Platform.operatingSystem),
     );
   }
-}
-
-/// Fill Google's base options from [options]' resolved model, always on
-/// the CPU, which is all the classic text tasks run on.
-void fillTextBaseOptions(
-  mp.MpBaseOptions target,
-  TaskOptions options,
-  Arena arena,
-) {
-  target
-    ..fileDescriptor = -1
-    ..delegate = 0
-    ..hostSystem = mpHostSystem;
-  if (options.modelBytes case final bytes?) {
-    final buffer = arena<Uint8>(bytes.length);
-    buffer.asTypedList(bytes.length).setAll(0, bytes);
-    target
-      ..modelAssetBuffer = buffer.cast()
-      ..modelAssetBufferCount = bytes.length;
-  } else {
-    target.modelAssetPath = nativeModelPath(
-      options.modelPath!,
-    ).toNativeUtf8(allocator: arena).cast();
-  }
-}
-
-/// Allocate all nested strings in the same short-lived arena.
-void fillTextClassifierOptions(
-  mp.MpClassifierOptions target,
-  Arena arena,
-  ClassifierSettings settings,
-) {
-  Pointer<Pointer<Char>> strings(List<String> values) {
-    if (values.isEmpty) return nullptr;
-    final array = arena<Pointer<Char>>(values.length);
-    for (var i = 0; i < values.length; i++) {
-      array[i] = values[i].toNativeUtf8(allocator: arena).cast();
-    }
-    return array;
-  }
-
-  target
-    ..displayNamesLocale =
-        settings.displayNamesLocale?.toNativeUtf8(allocator: arena).cast() ??
-        nullptr
-    ..maxResults = settings.maxResults
-    ..scoreThreshold = settings.scoreThreshold
-    ..categoryAllowlist = strings(settings.categoryAllowlist)
-    ..categoryAllowlistCount = settings.categoryAllowlist.length
-    ..categoryDenylist = strings(settings.categoryDenylist)
-    ..categoryDenylistCount = settings.categoryDenylist.length;
 }
 
 /// Runs one of Google's text calls, as core's [checkNativeStatus] does with

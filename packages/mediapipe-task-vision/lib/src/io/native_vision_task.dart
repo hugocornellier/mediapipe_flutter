@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_structs.dart'
-    show checkNativeStatus, nativeString;
+    show checkNativeStatus, nativeString, nativeStrings;
 import 'package:mediapipe_core/platform_interface.dart'
     show ClassifierSettings, nativeModelPath;
 
@@ -241,16 +241,6 @@ void checkVisionCreate(
   }
 }
 
-/// Copy metadata option strings into the task creation arena.
-Pointer<Pointer<Char>> visionOptionStrings(Arena arena, List<String> values) {
-  if (values.isEmpty) return nullptr;
-  final array = arena<Pointer<Char>>(values.length);
-  for (var i = 0; i < values.length; i++) {
-    array[i] = values[i].toNativeUtf8(allocator: arena).cast();
-  }
-  return array;
-}
-
 /// Own every category in each subject's classification result.
 ///
 /// [index] overrides the native index for heads whose raw value carries no
@@ -420,9 +410,9 @@ void setVisionClassifierOptions(
   output
     ..max_results = options.maxResults
     ..score_threshold = options.scoreThreshold
-    ..category_allowlist = visionOptionStrings(arena, options.categoryAllowlist)
+    ..category_allowlist = nativeStrings(arena, options.categoryAllowlist)
     ..category_allowlist_count = options.categoryAllowlist.length
-    ..category_denylist = visionOptionStrings(arena, options.categoryDenylist)
+    ..category_denylist = nativeStrings(arena, options.categoryDenylist)
     ..category_denylist_count = options.categoryDenylist.length;
   if (options.displayNamesLocale case final locale?) {
     output.display_names_locale = locale.toNativeUtf8(allocator: arena).cast();

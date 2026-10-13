@@ -68,5 +68,31 @@ final class MpClassifierOptions extends Struct
   set displayNamesLocale(Pointer<Char> value)
   set maxResults(int value)
   set scoreThreshold(double value)
+final class MpEmbedding extends Struct
+  Pointer<Char> get headName
+  Pointer<Float> get floatEmbedding
+  Pointer<Uint8> get quantizedEmbedding
+  int get headIndex
+  int get valuesCount
+  new MpEmbedding()
+  set floatEmbedding(Pointer<Float> value)
+  set headIndex(int value)
+  set headName(Pointer<Char> value)
+  set quantizedEmbedding(Pointer<Uint8> value)
+  set valuesCount(int value)
+final class MpEmbeddingResult extends Struct
+  Pointer<MpEmbedding> get embeddings
+  bool get hasTimestampMs
+  int get embeddingsCount
+  int get timestampMs
+  new MpEmbeddingResult()
+  set embeddings(Pointer<MpEmbedding> value)
+  set embeddingsCount(int value)
+  set hasTimestampMs(bool value)
+  set timestampMs(int value)
 function void checkNativeStatus(int Function(Pointer<Pointer<Char>>) call, void Function(Pointer<Char>) errorFree, {Object Function(String, int)? failure})
+function List<Classifications> copyClassifications(MpClassificationResult result)
+function void fillBaseOptions(MpBaseOptions target, Arena arena, {String? modelPath, Uint8List? modelBytes})
+function void fillClassifierOptions(MpClassifierOptions target, Arena arena, ClassifierSettings settings)
 function String? nativeString(Pointer<Char> value, {bool emptyIsNull = false})
+function Pointer<Pointer<Char>> nativeStrings(Arena arena, List<String> values)

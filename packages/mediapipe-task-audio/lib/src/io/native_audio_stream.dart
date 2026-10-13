@@ -30,7 +30,7 @@ Future<AudioStreamRunner> openNativeAudioStream(
   try {
     await Isolate.spawn(
       _worker,
-      (stream._events.sendPort, nativeAudioSettings(options)),
+      (stream._events.sendPort, options),
       onError: stream._events.sendPort,
       onExit: stream._events.sendPort,
       debugName: 'MediaPipe audio stream',
@@ -116,8 +116,8 @@ final class _NativeAudioStream implements AudioStreamRunner {
 /// A block as the calling isolate sends it.
 typedef _Block = (Float32List, double, int, int);
 
-Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
-  final (parent, settings) = initial;
+Future<void> _worker((SendPort, AudioClassifierOptions) initial) async {
+  final (parent, options) = initial;
   final commands = ReceivePort();
   // The bridge posts each copy's address here from Google's threads, then
   // null for the end. A port, unlike a NativeCallable, refuses a message once
@@ -139,7 +139,6 @@ Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
       bridge.eventFree(event);
     }
   });
-  Pointer<Uint8>? model;
   var slot = -1;
   Pointer<Void> task = nullptr;
   try {
@@ -158,10 +157,8 @@ Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
           'restarts.',
         );
       }
-      model = nativeModel(settings);
       task = openNativeTask(
-        settings,
-        model,
+        options,
         runningMode: audioStreamMode,
         resultCallback: callback.value,
       );
@@ -170,7 +167,6 @@ Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
   } catch (error) {
     if (slot >= 0) bridge.streamRelease(slot);
     events.close();
-    if (model case final model?) malloc.free(model);
     commands.close();
     parent.send(taskException(error));
     return;
@@ -208,7 +204,6 @@ Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
   await ended.future;
   bridge.streamRelease(slot);
   events.close();
-  if (model case final model?) malloc.free(model);
   commands.close();
   // The reply once Google's task is closed and every result sent.
   parent.send(#closed);

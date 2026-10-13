@@ -1,20 +1,26 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache 2.0.
 // Adapted from mediapipe==1.0.1 Python ctypes: core/base_options_c.py,
-// components/processors/classifier_options_c.py and
-// components/containers/classification_result_c.py.
+// components/processors/classifier_options_c.py,
+// components/containers/classification_result_c.py and
+// components/containers/embedding_result_c.py.
 // ignore_for_file: public_member_api_docs
 
 /// Google's MediaPipe C structs that more than one family binds, from the
-/// release core pins for every family (`family_runtimes.dart`). For the
-/// family packages' FFI bindings, whose ABI tests check every size and field
-/// offset against Google's wheel; not for applications.
+/// release core pins for every family (`family_runtimes.dart`), and the
+/// helpers that fill and copy them. For the family packages' FFI bindings,
+/// whose ABI tests check every size and field offset against Google's wheel;
+/// not for applications.
 library;
 
 import 'dart:ffi';
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
+import 'src/classifier_settings.dart';
 import 'src/exceptions.dart';
+import 'src/host_io.dart';
+import 'src/value_types.dart';
 
 /// `MpBaseOptions`: the model, delegate and host every task's options embed.
 final class MpBaseOptions extends Struct {
@@ -81,6 +87,107 @@ final class MpClassificationResult extends Struct {
   @Bool()
   external bool hasTimestampMs;
 }
+
+/// `MpEmbedding`: one head's vector, as floats or quantized bytes.
+final class MpEmbedding extends Struct {
+  external Pointer<Float> floatEmbedding;
+  external Pointer<Uint8> quantizedEmbedding;
+  @Uint32()
+  external int valuesCount;
+  @Int32()
+  external int headIndex;
+  external Pointer<Char> headName;
+}
+
+/// `MpEmbeddingResult`: every head, with a timestamp.
+final class MpEmbeddingResult extends Struct {
+  external Pointer<MpEmbedding> embeddings;
+  @Uint32()
+  external int embeddingsCount;
+  // The C header's order and size (32 bytes). Google's Python ctypes put the
+  // flag first and declare 24 bytes, which the library overruns.
+  @Int64()
+  external int timestampMs;
+  @Bool()
+  external bool hasTimestampMs;
+}
+
+/// Fills Google's base options for the CPU, the only delegate the C API
+/// families run on, with the model at [modelPath] or in [modelBytes]. Bytes
+/// are copied into [arena], which may free them once the task exists: Google
+/// copies the model when it creates the task.
+void fillBaseOptions(
+  MpBaseOptions target,
+  Arena arena, {
+  String? modelPath,
+  Uint8List? modelBytes,
+}) {
+  target
+    ..fileDescriptor = -1
+    ..delegate = 0
+    ..hostSystem = mpHostSystem;
+  if (modelBytes != null) {
+    final buffer = arena<Uint8>(modelBytes.length);
+    buffer.asTypedList(modelBytes.length).setAll(0, modelBytes);
+    target
+      ..modelAssetBuffer = buffer.cast()
+      ..modelAssetBufferCount = modelBytes.length;
+  } else {
+    target.modelAssetPath = nativeModelPath(
+      modelPath!,
+    ).toNativeUtf8(allocator: arena).cast();
+  }
+}
+
+/// Fills Google's classifier options from [settings], every string in
+/// [arena].
+void fillClassifierOptions(
+  MpClassifierOptions target,
+  Arena arena,
+  ClassifierSettings settings,
+) {
+  target
+    ..displayNamesLocale =
+        settings.displayNamesLocale?.toNativeUtf8(allocator: arena).cast() ??
+        nullptr
+    ..maxResults = settings.maxResults
+    ..scoreThreshold = settings.scoreThreshold
+    ..categoryAllowlist = nativeStrings(arena, settings.categoryAllowlist)
+    ..categoryAllowlistCount = settings.categoryAllowlist.length
+    ..categoryDenylist = nativeStrings(arena, settings.categoryDenylist)
+    ..categoryDenylistCount = settings.categoryDenylist.length;
+}
+
+/// Copies [values] into a C string array in [arena], or null when there are
+/// none.
+Pointer<Pointer<Char>> nativeStrings(Arena arena, List<String> values) {
+  if (values.isEmpty) return nullptr;
+  final array = arena<Pointer<Char>>(values.length);
+  for (var i = 0; i < values.length; i++) {
+    array[i] = values[i].toNativeUtf8(allocator: arena).cast();
+  }
+  return array;
+}
+
+/// Copies every head of Google's [result] before Google frees it.
+List<Classifications> copyClassifications(MpClassificationResult result) => [
+  for (var i = 0; i < result.classificationsCount; i++)
+    _copyHead(result.classifications[i]),
+];
+
+Classifications _copyHead(MpClassifications head) => Classifications(
+  categories: [
+    for (var i = 0; i < head.categoriesCount; i++)
+      MediaPipeCategory(
+        index: head.categories[i].index,
+        score: head.categories[i].score,
+        categoryName: nativeString(head.categories[i].categoryName),
+        displayName: nativeString(head.categories[i].displayName),
+      ),
+  ],
+  headIndex: head.headIndex,
+  headName: nativeString(head.headName),
+);
 
 /// Copies Google's C string, or null for a null pointer. With [emptyIsNull],
 /// an empty string is null too, as Google's Python reads optional strings.

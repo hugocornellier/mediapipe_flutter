@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_structs.dart'
-    show checkNativeStatus, nativeString;
+    show checkNativeStatus, fillBaseOptions, nativeString;
 import 'package:mediapipe_core/platform_interface.dart';
 
 import '../capabilities.dart';
@@ -56,21 +56,12 @@ final class NativeDecisionMaker {
   NativeDecisionMaker(DecisionMakerOptions options) {
     using((arena) {
       final native = arena<mp.MpDecisionMakerOptions>();
-      final base = native.ref.baseOptions
-        ..fileDescriptor = -1
-        ..delegate = 0
-        ..hostSystem = mpHostSystem;
-      if (options.modelBytes case final bytes?) {
-        final buffer = arena<Uint8>(bytes.length);
-        buffer.asTypedList(bytes.length).setAll(0, bytes);
-        base
-          ..modelAssetBuffer = buffer.cast()
-          ..modelAssetBufferCount = bytes.length;
-      } else {
-        base.modelAssetPath = nativeModelPath(
-          options.modelPath!,
-        ).toNativeUtf8(allocator: arena).cast();
-      }
+      fillBaseOptions(
+        native.ref.baseOptions,
+        arena,
+        modelPath: options.modelPath,
+        modelBytes: options.modelBytes,
+      );
       native.ref.maxNumTokens = options.maxNumTokens;
       final output = arena<Pointer<Void>>();
       _check((error) => mp.create(native, output, error));

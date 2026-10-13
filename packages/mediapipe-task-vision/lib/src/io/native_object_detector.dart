@@ -2,6 +2,7 @@ import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart' show nativeStrings;
 
 import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../runner/native_interface.dart';
@@ -27,15 +28,9 @@ final class NativeObjectDetector
         ..running_mode = nativeRunningMode(options.runningMode)
         ..max_results = options.maxResults
         ..score_threshold = options.scoreThreshold
-        ..category_allowlist = visionOptionStrings(
-          arena,
-          options.categoryAllowlist,
-        )
+        ..category_allowlist = nativeStrings(arena, options.categoryAllowlist)
         ..category_allowlist_count = options.categoryAllowlist.length
-        ..category_denylist = visionOptionStrings(
-          arena,
-          options.categoryDenylist,
-        )
+        ..category_denylist = nativeStrings(arena, options.categoryDenylist)
         ..category_denylist_count = options.categoryDenylist.length;
       if (options.displayNamesLocale case final locale?) {
         native.ref.display_names_locale = locale

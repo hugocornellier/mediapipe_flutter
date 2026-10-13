@@ -3,9 +3,7 @@ import 'package:ffi/ffi.dart';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_structs.dart'
-    show checkNativeStatus, nativeString;
-import 'package:mediapipe_core/platform_interface.dart'
-    show mpHostSystem, nativeModelPath;
+    show checkNativeStatus, fillBaseOptions, nativeString;
 
 import '../types/options.dart';
 import '../types/results.dart';
@@ -24,13 +22,11 @@ final class NativeTextSummarizer
     }
     using((arena) {
       final native = arena<mp.MpTextSummarizerOptions>();
-      native.ref.baseOptions
-        ..fileDescriptor = -1
-        ..delegate = 0
-        ..hostSystem = mpHostSystem
-        ..modelAssetPath = nativeModelPath(
-          options.modelPath!,
-        ).toNativeUtf8(allocator: arena).cast();
+      fillBaseOptions(
+        native.ref.baseOptions,
+        arena,
+        modelPath: options.modelPath,
+      );
       native.ref
         ..mode = options.mode.index
         ..maxNumTokens = options.maxNumTokens ?? 0
