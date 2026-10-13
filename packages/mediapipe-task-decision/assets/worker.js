@@ -1,4 +1,5 @@
-import {loadVerifiedRuntime} from '../../mediapipe_core/assets/verified_runtime.js';
+import {installWorkerQueue, loadVerifiedRuntime, withoutNulls} from
+  '../../mediapipe_core/assets/verified_runtime.js';
 
 const loadRuntime = baseUrl =>
   loadVerifiedRuntime(new URL('runtime.json', import.meta.url), baseUrl, 'Decision');
@@ -17,17 +18,7 @@ const methods = {
 };
 
 let task;
-let operations = Promise.resolve();
-self.onmessage = ({data}) => {
-  // Serialize creation, requests and shutdown on the owning worker.
-  operations = operations.then(async () => {
-    try {
-      self.postMessage({id: data.id, result: await run(data.type, data.input)});
-    } catch (error) {
-      self.postMessage({id: data.id, error: error?.message || String(error)});
-    }
-  });
-};
+installWorkerQueue(run);
 
 async function run(type, input) {
   if (type === 'create') {
@@ -48,9 +39,4 @@ async function run(type, input) {
   const method = methods[input.method];
   if (!method) throw new Error('Unsupported Decision Maker request: ' + input.method);
   return JSON.stringify(await method(task, input, withoutNulls(input.question)));
-}
-
-// Dart sends absent settings as null; Google's API wants them left out.
-function withoutNulls(settings) {
-  return Object.fromEntries(Object.entries(settings).filter(([, value]) => value != null));
 }

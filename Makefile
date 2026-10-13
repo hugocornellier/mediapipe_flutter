@@ -1,6 +1,13 @@
 SHELL := /bin/bash
+# Every task family, found on disk: packages/mediapipe-task-<family>. Each
+# has a models_<family> and a test_<family> target.
+TASK_FAMILIES := $(sort $(patsubst packages/mediapipe-task-%,%,$(wildcard packages/mediapipe-task-*)))
+# Families whose models download only with `make models_all`: Decision's Laya
+# (678 MB) and Retrieval's EmbeddingGemma 2 (388 MB). Their reference tests
+# skip without them; CI caches and runs them (decision.yaml, retrieval.yaml).
+LARGE_MODEL_FAMILIES := decision retrieval
 DART_PACKAGES := packages/mediapipe-core tool/task_benchmarks
-FLUTTER_PACKAGES := packages/mediapipe-task-vision packages/mediapipe-task-text packages/mediapipe-task-audio packages/mediapipe-task-decision packages/mediapipe-task-retrieval
+FLUTTER_PACKAGES := $(addprefix packages/mediapipe-task-,$(TASK_FAMILIES))
 ALL_PACKAGES := $(DART_PACKAGES) $(FLUTTER_PACKAGES)
 # The gallery's pubspec is generated per target by tool/gallery_builder, so
 # it is format-checked without package resolution
@@ -11,26 +18,26 @@ GALLERY_SOURCES := lib test integration_test tool
 GALLERY_FORMAT := dart format --language-version=3.12
 ANALYZE_PACKAGES := $(ALL_PACKAGES)
 
-.PHONY: get models analyze format check_format generate generate_text generate_vision test test_only test_core test_text test_vision test_vision_flutter ci
+.PHONY: get models models_all analyze format check_format generate check_text_abi generate_vision test test_only test_core test_text test_vision test_vision_flutter ci
 
 get:
 	@for package in $(DART_PACKAGES); do (cd "$$package" && dart pub get) || exit $$?; done
 	@for package in $(FLUTTER_PACKAGES); do (cd "$$package" && flutter pub get) || exit $$?; done
 
 # Download versioned test/example models; no model is embedded in a package.
+# Every family's but the LARGE_MODEL_FAMILIES', which `models_all` adds.
 models:
-	$(MAKE) models_text
-	$(MAKE) models_audio
-	cd packages/mediapipe-task-vision && dart tool/download_model.dart
-	cd packages/mediapipe-task-vision && dart tool/download_face_landmarker.dart
-	cd packages/mediapipe-task-vision && dart tool/download_object_detector.dart
-	cd packages/mediapipe-task-vision && dart tool/download_image_tasks.dart
-	cd packages/mediapipe-task-vision && dart tool/download_landmark_tasks.dart
-	cd packages/mediapipe-task-vision && dart tool/download_segmenter_tasks.dart
-	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
-	$(MAKE) models_embedding
-	$(MAKE) models_proofreader
-	$(MAKE) models_summarizer
+	@for target in $(addprefix models_,$(filter-out $(LARGE_MODEL_FAMILIES),$(TASK_FAMILIES))) \
+	    models_embedding models_proofreader models_summarizer; do \
+	  $(MAKE) $$target || exit $$?; \
+	done
+
+models_all: models
+	@for family in $(LARGE_MODEL_FAMILIES); do $(MAKE) models_$$family || exit $$?; done
+
+.PHONY: models_vision
+models_vision:
+	cd packages/mediapipe-task-vision && dart tool/download_models.dart
 
 analyze:
 	@for package in $(ANALYZE_PACKAGES); do (cd "$$package" && dart analyze --fatal-infos) || exit $$?; done
@@ -45,12 +52,12 @@ check_format:
 
 # Regenerate against the checked-in headers, never a floating upstream checkout.
 generate:
-	$(MAKE) generate_text
+	$(MAKE) check_text_abi
 	$(MAKE) generate_vision
 
-# The text bindings are adapted from Google's wheel's ctypes definitions;
-# the retired 2024 headers must not regenerate them.
-generate_text:
+# The text bindings are adapted from Google's wheel's ctypes definitions; the
+# retired 2024 headers must not regenerate them, so this checks them instead.
+check_text_abi:
 	cd packages/mediapipe-task-text && dart test test/classic_text_abi_test.dart --reporter expanded
 
 generate_vision:
@@ -60,11 +67,10 @@ test:
 	$(MAKE) models
 	$(MAKE) test_only
 
+# Every package's suite. Decision's and Retrieval's reference tests skip
+# unless `make models_all` downloaded their models.
 test_only:
-	$(MAKE) test_core
-	$(MAKE) test_text
-	$(MAKE) test_audio
-	$(MAKE) test_vision
+	@for package in core $(TASK_FAMILIES); do $(MAKE) test_$$package || exit $$?; done
 
 test_core:
 	cd packages/mediapipe-core && dart test --reporter expanded
@@ -74,7 +80,7 @@ test_text:
 
 .PHONY: test_audio models_audio test_audio_stream_bridge test_audio_web
 models_audio:
-	cd packages/mediapipe-task-audio && dart run tool/download_model.dart
+	cd packages/mediapipe-task-audio && dart tool/download_models.dart
 
 test_audio:
 	$(MAKE) test_audio_stream_bridge
@@ -88,7 +94,7 @@ test_audio_stream_bridge:
 	build/codex-tmp/audio_stream_bridge_test
 
 # The emulated stream and the decoders in Chrome, compiled to JavaScript and
-# to WebAssembly.
+# to WebAssembly. A contributor shortcut: CI runs these commands itself.
 test_audio_web:
 	cd packages/mediapipe-task-audio && flutter test --platform chrome test/web --reporter expanded
 	cd packages/mediapipe-task-audio && flutter test --platform chrome --wasm test/web --reporter expanded
@@ -99,6 +105,7 @@ test_vision:
 	cd packages/mediapipe-task-vision && dart test --reporter expanded --exclude-tags isolated
 	cd packages/mediapipe-task-vision && dart test --reporter expanded --tags isolated
 
+# A contributor shortcut: CI runs this command itself.
 .PHONY: test_vision_web
 test_vision_web:
 	cd packages/mediapipe-task-vision && flutter test --platform chrome test/web --reporter expanded
@@ -108,17 +115,19 @@ test_vision_flutter:
 
 .PHONY: models_text
 models_text:
-	cd packages/mediapipe-task-text && dart tool/download_classic_text.dart
+	cd packages/mediapipe-task-text && dart tool/download_models.dart
 
 .PHONY: models_embedding test_embedding_macos
 models_embedding:
-	cd packages/mediapipe-task-text && dart tool/download_embedding_gemma.dart
+	cd packages/mediapipe-task-text && dart tool/download_models.dart embedding_gemma
 
+# A contributor shortcut: CI runs the script itself.
 test_embedding_macos:
 	cd packages/mediapipe-task-text && python3 -B tool/test_embedding_macos.py
 
 # EmbeddingGemma, Proofreader and Summarizer against Google's wheel for this
-# host, as the Linux and Windows CI runners test them.
+# host, as the Linux and Windows CI runners test them (they run the script
+# itself; this is a contributor shortcut).
 .PHONY: test_modern_text
 test_modern_text:
 	python3 -B tool/test_modern_text.py
@@ -126,15 +135,13 @@ test_modern_text:
 .PHONY: test_modern_task_matrix
 test_modern_task_matrix:
 	cd tool/task_benchmarks && dart pub get
-	cd packages/mediapipe-task-text && dart tool/download_embedding_gemma.dart
-	cd packages/mediapipe-task-text && dart tool/download_proofreader.dart
-	cd packages/mediapipe-task-text && dart tool/download_summarizer.dart
-	cd packages/mediapipe-task-vision && dart tool/download_interactive_segmenter.dart
+	cd packages/mediapipe-task-text && dart tool/download_models.dart embedding_gemma proofreader summarizer
+	cd packages/mediapipe-task-vision && dart tool/download_models.dart interactive_segmenter
 	python3 -B tool/task_benchmarks/run_macos.py
 
 .PHONY: models_proofreader test_text_stream_bridge
 models_proofreader:
-	cd packages/mediapipe-task-text && dart tool/download_proofreader.dart
+	cd packages/mediapipe-task-text && dart tool/download_models.dart proofreader
 
 test_text_stream_bridge:
 	mkdir -p build/codex-tmp
@@ -143,7 +150,7 @@ test_text_stream_bridge:
 
 .PHONY: models_summarizer
 models_summarizer:
-	cd packages/mediapipe-task-text && dart tool/download_summarizer.dart
+	cd packages/mediapipe-task-text && dart tool/download_models.dart summarizer
 
 # Run sequentially even when make is invoked with -j.
 ci:
@@ -158,7 +165,7 @@ ci:
 # Python answers, on Google's wheel library for this desktop.
 .PHONY: models_decision test_decision
 models_decision:
-	cd packages/mediapipe-task-decision && dart run tool/download_model.dart
+	cd packages/mediapipe-task-decision && dart tool/download_models.dart
 
 test_decision:
 	cd packages/mediapipe-task-decision && dart test --reporter expanded
@@ -167,7 +174,7 @@ test_decision:
 # against Google's Python answers, on Google's retrieval library for this host.
 .PHONY: models_retrieval test_retrieval
 models_retrieval:
-	cd packages/mediapipe-task-retrieval && dart run tool/download_model.dart
+	cd packages/mediapipe-task-retrieval && dart tool/download_models.dart
 
 test_retrieval:
 	cd packages/mediapipe-task-retrieval && dart test --reporter expanded

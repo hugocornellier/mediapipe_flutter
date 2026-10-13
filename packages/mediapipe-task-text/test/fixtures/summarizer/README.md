@@ -10,5 +10,5 @@ and key-points modes. Inputs are original synthetic examples, including Unicode,
 empty input and a smaller token budget. Tests compare the full resulting text;
 the wrapper adds no prompts, truncation, formatting or postprocessing.
 
-The model is a separate verified download: `dart tool/download_summarizer.dart`.
+The model is a separate verified download: `dart tool/download_models.dart summarizer`.
 The comparing test is `test/text_summarizer_test.dart`.

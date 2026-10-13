@@ -263,13 +263,7 @@ String _pubspec(
       ? tasks.where(webHostTestTasks.contains)
       : tasks.where((task) => !nonVisionTasks.contains(task));
   final defines = StringBuffer();
-  for (final family in [
-    'mediapipe_vision',
-    'mediapipe_text',
-    'mediapipe_audio',
-    'mediapipe_decision',
-    'mediapipe_retrieval',
-  ]) {
+  for (final family in {for (final model in models.values) model.family}) {
     final names = {
       for (final task in tasks)
         if (models[task]!.family == family &&

@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_audio/platform_interface.dart';
@@ -12,6 +10,7 @@ import 'package:mediapipe_audio/mediapipe_audio.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:mediapipe_text/platform_interface.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
+import 'support/device_log.dart';
 
 /// Text Classifier, Text Embedder, Language Detector and Audio Classifier
 /// through Google's mobile text and audio libraries, against Google's own
@@ -27,11 +26,6 @@ const _audioBound = 2 / 256;
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<Uint8List> asset(String path) async {
-    final data = await rootBundle.load(path);
-    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-  }
-
   testWidgets('official SDK text tasks match Google\'s references', (
     tester,
   ) async {
@@ -43,7 +37,9 @@ void main() {
         reason:
             "Android and iOS run Google's C library through FFI, not a plugin backend",
       );
-      final bert = await asset(bundledModelFile('bert_classifier.tflite'));
+      final bert = await loadAssetBytes(
+        bundledModelFile('bert_classifier.tflite'),
+      );
       for (final (text, options, expected)
           in <
             (
@@ -128,7 +124,7 @@ void main() {
         throwsA(isA<TaskException>()),
       );
 
-      final use = await asset(
+      final use = await loadAssetBytes(
         bundledModelFile('universal_sentence_encoder.tflite'),
       );
       final embedder = await TextEmbedder.create(
@@ -182,7 +178,9 @@ void main() {
 
       final detector = await LanguageDetector.create(
         LanguageDetectorOptions(
-          modelBytes: await asset(bundledModelFile('language_detector.tflite')),
+          modelBytes: await loadAssetBytes(
+            bundledModelFile('language_detector.tflite'),
+          ),
           maxResults: 3,
         ),
       );
@@ -231,13 +229,15 @@ void main() {
       );
       final task = await AudioClassifier.create(
         AudioClassifierOptions(
-          modelBytes: await asset(bundledModelFile('yamnet.tflite')),
+          modelBytes: await loadAssetBytes(bundledModelFile('yamnet.tflite')),
           maxResults: 3,
         ),
       );
       try {
         final chunks = await task.classify(
-          decodeWav(await asset('assets/samples/speech_16000_hz_mono.wav')),
+          decodeWav(
+            await loadAssetBytes('assets/samples/speech_16000_hz_mono.wav'),
+          ),
         );
         const expected = [
           (0, 'Speech', 0.917969),
@@ -267,7 +267,9 @@ void main() {
         // The 48 kHz recording of the same speech is resampled by Google's
         // task; it must still hear speech first.
         final resampled = await task.classify(
-          decodeWav(await asset('assets/samples/speech_48000_hz_mono.wav')),
+          decodeWav(
+            await loadAssetBytes('assets/samples/speech_48000_hz_mono.wav'),
+          ),
         );
         expect(
           resampled.first.classifications.first.categories.first.categoryName,
@@ -286,12 +288,14 @@ void main() {
       // The default options: every category, as the native API returns.
       final every = await AudioClassifier.create(
         AudioClassifierOptions(
-          modelBytes: await asset(bundledModelFile('yamnet.tflite')),
+          modelBytes: await loadAssetBytes(bundledModelFile('yamnet.tflite')),
         ),
       );
       try {
         final chunks = await every.classify(
-          decodeWav(await asset('assets/samples/speech_16000_hz_mono.wav')),
+          decodeWav(
+            await loadAssetBytes('assets/samples/speech_16000_hz_mono.wav'),
+          ),
         );
         expect(
           chunks.first.classifications.first.categories.first.categoryName,
@@ -317,12 +321,12 @@ void main() {
     'official SDK Audio Classifier streams as Google\'s stream does',
     (tester) async {
       await tester.runAsync(() async {
-        final model = await asset(bundledModelFile('yamnet.tflite'));
+        final model = await loadAssetBytes(bundledModelFile('yamnet.tflite'));
         final speech = decodeWav(
-          await asset('assets/samples/speech_16000_hz_mono.wav'),
+          await loadAssetBytes('assets/samples/speech_16000_hz_mono.wav'),
         );
         final resampled = decodeWav(
-          await asset('assets/samples/speech_48000_hz_mono.wav'),
+          await loadAssetBytes('assets/samples/speech_48000_hz_mono.wav'),
         );
         final google = <int>[];
         debugGoogleStreamTimestamp = google.add;
@@ -531,7 +535,5 @@ double _largestDifference(
 }
 
 // Kept in the device log (logcat, the simulator console) for the record.
-void _report(String event, Map<String, Object?> data) {
-  // ignore: avoid_print
-  print('SDK_TEXT_AUDIO ${jsonEncode({'event': event, ...data})}');
-}
+void _report(String event, Map<String, Object?> data) =>
+    logRecord('SDK_TEXT_AUDIO', {'event': event, ...data});

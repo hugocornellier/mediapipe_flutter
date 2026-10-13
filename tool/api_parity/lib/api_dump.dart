@@ -113,16 +113,24 @@ Future<ApiDump> dumpLibrary({
   return ApiDump._(lines, platformTypes..sort(), conventions..sort(), names);
 }
 
+/// One analysis context per package and set of declared variables, shared by
+/// every library resolved there.
+final _collections =
+    <(String, Map<String, String>), AnalysisContextCollectionImpl>{};
+
 /// Resolves [uri] inside [packageRoot]'s analysis context.
 Future<LibraryElement> resolveLibrary({
   required String packageRoot,
   required String uri,
   required Map<String, String> declaredVariables,
 }) async {
-  final collection = AnalysisContextCollectionImpl(
-    includedPaths: [packageRoot],
-    declaredVariables: declaredVariables,
-    resourceProvider: PhysicalResourceProvider.INSTANCE,
+  final collection = _collections.putIfAbsent(
+    (packageRoot, declaredVariables),
+    () => AnalysisContextCollectionImpl(
+      includedPaths: [packageRoot],
+      declaredVariables: declaredVariables,
+      resourceProvider: PhysicalResourceProvider.INSTANCE,
+    ),
   );
   final result = await collection
       .contextFor(packageRoot)

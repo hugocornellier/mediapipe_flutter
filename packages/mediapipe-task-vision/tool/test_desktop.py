@@ -1,46 +1,21 @@
 """Validate official CPU references and isolated Flutter desktop consumers."""
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import platform
-import re
 import shutil
-import subprocess
 import sys
 import tempfile
 import urllib.request
+from urllib.parse import urlsplit
 
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
 from consumer_packages import (  # noqa: E402
     consumer_environment, copy_package, core_hook_defines, family_runtime)
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def run(command, cwd, log, env=None, timeout=900):
-    # Windows Flutter/Dart are batch entry points. Resolve them explicitly.
-    executable = str(command[0])
-    if platform.system() == 'Windows' and executable == 'dart':
-        # PATHEXT lookup can spell dart.EXE in upper case. Dart 3.12's hook
-        # runner then appends another .exe. Flutter's wrapper uses dart.exe.
-        executable = 'dart.bat'
-    command = [shutil.which(executable) or executable, *map(str, command[1:])]
-    print(' '.join(command), flush=True)
-    with log.open('w', encoding='utf-8') as output:
-        result = subprocess.run(command, cwd=cwd, env=env, stdout=output,
-                                stderr=subprocess.STDOUT, timeout=timeout)
-    print('\n'.join(log.read_text(encoding='utf-8', errors='replace').splitlines()[-25:]),
-          flush=True)
-    result.check_returncode()
-
-
-def dart_strings(source):
-    return ''.join(re.findall(r"'([^']*)'", source))
+from model_pins import model_pins  # noqa: E402
+from tool_helpers import digest, run  # noqa: E402
 
 
 def download(url, sha, destination):
@@ -74,27 +49,22 @@ def main():
     build.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix=f'desktop-{target}-', dir=build))
     print(f'Validation artifacts: {root}', flush=True)
-    model_pins = (PACKAGE / 'lib/models.dart').read_text()
-    models = [('blazeFaceShortRange', 'blaze_face_short_range.tflite'),
-              ('faceLandmarker', 'face_landmarker.task')]
+    pins = {urlsplit(pin['url']).path.rsplit('/', 1)[-1]: pin for pin in model_pins()
+            if pin['source'].startswith('mediapipe-task-vision/')}
+    models = ['blaze_face_short_range.tflite', 'face_landmarker.task']
     if args.object_detector:
-        models.append(('efficientDetLite0', 'efficientdet_lite0.tflite'))
+        models.append('efficientdet_lite0.tflite')
     if args.image_tasks:
-        models += [('efficientNetLite0', 'efficientnet_lite0.tflite'),
-                   ('mobileNetV3Small', 'mobilenet_v3_small.tflite')]
+        models += ['efficientnet_lite0.tflite', 'mobilenet_v3_small.tflite']
     if args.landmark_tasks:
-        models += [('handLandmarker', 'hand_landmarker.task'),
-                   ('gestureRecognizer', 'gesture_recognizer.task'),
-                   ('poseLandmarkerLite', 'pose_landmarker_lite.task'),
-                   ('holisticLandmarker', 'holistic_landmarker.task')]
+        models += ['hand_landmarker.task', 'gesture_recognizer.task',
+                   'pose_landmarker_lite.task', 'holistic_landmarker.task']
     if args.segmenter_tasks:
-        models += [('deepLabV3', 'deeplab_v3.tflite')]
+        models.append('deeplab_v3.tflite')
     if args.interactive_segmenter:
-        models += [('interactiveSegmenterModel', 'interactive_segmentation.task')]
-    for prefix, name in models:
-        url = dart_strings(re.search(r'const ' + prefix + r'Url\s*=(.*?);', model_pins, re.S).group(1))
-        sha = dart_strings(re.search(r'const ' + prefix + r'Sha256\s*=(.*?);', model_pins, re.S).group(1))
-        download(url, sha, PACKAGE / 'models' / name)
+        models.append('interactive_segmentation.task')
+    for name in models:
+        download(pins[name]['url'], pins[name]['sha256'], PACKAGE / 'models' / name)
 
     from cpu_reference import FACE_FILES, FACE_TASKS, generate
     references = root / 'reference'

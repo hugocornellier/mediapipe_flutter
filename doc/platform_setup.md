@@ -140,36 +140,16 @@ dart run mediapipe_core:bundle_models          # download, verify, prune
 dart run mediapipe_core:bundle_models --check  # verify only, for CI
 ```
 
-Each model is downloaded once (from `asset_source` when it is set), checked
-against its pinned SHA-256 and written into `assets/mediapipe/`, named by
-that SHA-256, with a readable `manifest.json` beside it. Whether to commit
-the folder or run the command in CI before `flutter build` is your choice.
-A task created with `model:` uses the bundled copy; a model that is not
-bundled makes `create` throw a `RuntimeUnavailableException` whose `fix`
-names the entry to add, unless the app set `ModelStore.allowDownloads = true`.
+What the command writes, how a task created with `model:` finds its model and
+how to opt in to run-time downloads are in the core README's
+[Bundled models](../packages/mediapipe-core/README.md#bundled-models) and
+[On-demand models](../packages/mediapipe-core/README.md#on-demand-models).
 
 ### Offline and mirrored builds
 
-`asset_source` points build hooks at a directory (relative to the pubspec) or
-an internal URL root holding files named by their full SHA-256. It is used
-exclusively, and every file is still checked against its pin. From a checkout
-of this repository, fill such a directory for your targets:
-
-```sh
-python3 -B packages/mediapipe-core/tool/mirror_runtime_assets.py \
-  --target ios/arm64 --target macos/arm64 --prefill /path/to/mediapipe-assets
-```
-
-At run time, `ModelStore(source: ...)` reads models from the same kind of
-source. Its cache is the one tasks created with `model:` use, keyed by SHA-256,
-so prefetching through it once lets those tasks start offline:
-
-```dart
-import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_vision/mediapipe_vision.dart';
-
-Future<void> prefetchFromIntranet() async {
-  final store = ModelStore(source: 'https://mirror.example.com/mediapipe/');
-  await store.prefetch(VisionModels.faceLandmarker);
-}
-```
+`asset_source` points the build hooks and `bundle_models` at a directory or
+an internal URL root holding files named by their full SHA-256, and
+`ModelStore(source: ...)` reads models from the same kind of source at run
+time. The core README's
+[Verified downloads and offline builds](../packages/mediapipe-core/README.md#verified-downloads-and-offline-builds)
+explains both and the tool that fills such a directory from a checkout.

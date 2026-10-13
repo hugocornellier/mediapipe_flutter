@@ -34,7 +34,6 @@ dependencies:
   hooks: ^2.2.0
   mediapipe_core:
     path: ../mediapipe-core
-  meta: ^1.18.0
 
 dev_dependencies:
   flutter_test:

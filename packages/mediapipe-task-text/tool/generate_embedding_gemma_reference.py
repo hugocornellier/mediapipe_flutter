@@ -35,7 +35,7 @@ def main():
     import mediapipe as mp
     import numpy as np
     from official_embedding_layout import use_header_embedding_layout
-    use_header_embedding_layout()
+    use_header_embedding_layout('text')
     from mediapipe.tasks.python.text import text_embedder as api
     from mediapipe.tasks.python.core.base_options_c import MpBaseOptionsC
     from mediapipe.tasks.python.components.containers.embedding_result_c import (

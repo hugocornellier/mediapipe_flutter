@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -17,6 +16,7 @@ import 'support/delegate_control.dart';
 import 'support/gallery_tiles.dart';
 import 'support/sdk_frames.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
+import 'support/device_log.dart';
 
 /// `skip` on emulators: SwiftShader GL accepts a GPU task, then TFLite's GL
 /// delegate fails on the first frame (see test_android_sdk_tasks.sh). GPU is
@@ -28,10 +28,9 @@ const _switches = [
   if (_gpu != 'skip') ...[Delegate.gpu, Delegate.cpu],
 ];
 
-// Face Landmarker through Google's official mobile SDKs: iOS through the
-// package's Objective-C adapter, Android through
-// mediapipe_vision. Runs on the iOS simulator and Android
-// emulator in CI (CPU), and on phones (CPU and GPU).
+// Face Landmarker through mediapipe_vision on Google's vision library. Runs on
+// the iOS simulator and Android emulator in CI (CPU), and on phones (CPU and
+// GPU).
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -48,7 +47,7 @@ void main() {
               'plugin backend',
         );
         final assets = await GalleryAssets.unpack();
-        final model = await _model();
+        final model = await loadBundledModel('face_landmarker.task');
         final frame = await loadSample('portrait.jpg');
         final references = <FaceLandmarkerResult>[];
         for (final delegate in _delegates) {
@@ -209,7 +208,10 @@ void main() {
       // before asking MediaPipe for the turn; geometry must remain in input space.
       for (final delegate in _delegates) {
         final task = await FaceLandmarker.create(
-          FaceLandmarkerOptions(modelBytes: await _model(), delegate: delegate),
+          FaceLandmarkerOptions(
+            modelBytes: await loadBundledModel('face_landmarker.task'),
+            delegate: delegate,
+          ),
         );
         try {
           for (final turn in [0, 90, 180, 270]) {
@@ -342,11 +344,6 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 3)));
 }
 
-Future<Uint8List> _model() async {
-  final bytes = await rootBundle.load(bundledModelFile('face_landmarker.task'));
-  return bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
-}
-
 void _face(FaceLandmarkerResult result, {bool optional = false}) {
   expect(result.faceLandmarks, hasLength(1));
   expect(result.faceLandmarks.single, hasLength(478));
@@ -422,8 +419,5 @@ void _cameraReport(LiveCameraController<FaceLandmarkerResult> c) =>
       'camera_fps': c.cameraFramesPerSecond,
     });
 
-void _report(String event, Map<String, Object?> data) {
-  // Preserved in Test Lab logcat; timings are diagnostic, not a benchmark.
-  // ignore: avoid_print
-  print('SDK_FACE_LANDMARKER ${jsonEncode({'event': event, ...data})}');
-}
+void _report(String event, Map<String, Object?> data) =>
+    logRecord('SDK_FACE_LANDMARKER', {'event': event, ...data});

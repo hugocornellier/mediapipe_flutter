@@ -16,6 +16,8 @@ import 'package:mediapipe_text/mediapipe_text.dart'
         textSummarizerCapabilitiesForPlatform;
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
+import 'live/task_models.dart' show TaskModel;
+
 /// How a tile demonstrates its task.
 enum GalleryDemo {
   /// Known to the gallery, but with no screen of its own, so it never becomes
@@ -88,7 +90,10 @@ String plannedReason(
   Set<String> bundled,
 ) {
   if (!bundled.contains(task.runtimeId)) return 'Not bundled in this build.';
-  final entry = _catalog.firstWhere((t) => t.runtimeId == task.runtimeId);
+  // A runtime can have several entries, such as Decision Maker and its game.
+  final entry = _catalog.firstWhere(
+    (t) => t.runtimeId == task.runtimeId && t.title == task.title,
+  );
   return entry.capabilities(platform).unavailableReasons[Delegate.cpu] ??
       'Not validated on this platform.';
 }
@@ -187,6 +192,39 @@ TaskCapabilities _embeddingGemma(TaskPlatform platform) =>
 /// Audio Classifier's support, from its own capability table.
 TaskCapabilities _audio(TaskPlatform platform) =>
     audioClassifierCapabilitiesForPlatform(platform);
+
+/// The EmbeddingGemma 2 model Hungry Fish plays on by default on [platform]:
+/// the text-only one where Google's runtime runs it, otherwise the text and
+/// vision one (UP-053); null where it runs neither, as in WebKit (UP-054).
+DownloadAsset? fishGameModel(TaskPlatform platform) =>
+    const [
+          DecisionModels.embeddingGemma2Text,
+          DecisionModels.embeddingGemma2TextVision,
+        ]
+        .where(
+          (model) => decisionMakerCapabilitiesForPlatform(
+            platform,
+            model: model,
+          ).isSupported,
+        )
+        .firstOrNull;
+
+/// Hungry Fish's support on [platform]: Decision Maker's with the model it
+/// plays on, so the tile is a card, with the package's reason, where neither
+/// model runs.
+TaskCapabilities fishGameCapabilitiesForPlatform(TaskPlatform platform) =>
+    decisionMakerCapabilitiesForPlatform(
+      platform,
+      model: fishGameModel(platform) ?? DecisionModels.embeddingGemma2Text,
+    );
+
+/// Whether Decision Maker on [platform] runs the alternative [model] a page
+/// offers, so a picker lists only models the package accepts there.
+bool decisionRunsModel(TaskPlatform platform, TaskModel model) =>
+    decisionMakerCapabilitiesForPlatform(
+      platform,
+      model: model.pin,
+    ).isSupported;
 
 final _catalog = <GalleryTask>[
   GalleryTask(
@@ -433,7 +471,8 @@ final _catalog = <GalleryTask>[
   // Decision Maker playing a game, as Google's web demo plays its dino game.
   // Its model is the text-only EmbeddingGemma 2 where Google's runtime
   // accepts it; on Google's per-family library the page plays on the text
-  // and vision one instead (UP-053).
+  // and vision one instead (UP-053), and in WebKit, which runs neither
+  // (UP-054), the tile is a card.
   GalleryTask(
     id: 'decision_fish_game',
     runtimeId: 'decision_maker',
@@ -446,7 +485,7 @@ final _catalog = <GalleryTask>[
         'by Decision Maker.',
     model: DecisionModels.embeddingGemma2Text,
     sample: '',
-    capabilities: decisionMakerCapabilitiesForPlatform,
+    capabilities: fishGameCapabilitiesForPlatform,
   ),
   GalleryTask(
     id: 'text_summarizer',

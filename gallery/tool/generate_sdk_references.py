@@ -3,14 +3,21 @@
 Integration tests run on a phone, a simulator or an emulator, where the
 package's JSON fixture is out of reach, so the points they compare against are
 generated into Dart from test/fixtures/landmark_tasks/official_reference.json.
-Rerun after regenerating that fixture, then run dart format on the output.
+Rerun after regenerating that fixture. The output is formatted, with its long
+numeric lists packed into rows the formatter leaves alone.
 """
 import array
 import gzip
 import json
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 
 GALLERY = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(GALLERY.parent / 'packages/mediapipe-core/tool'))
+from tool_helpers import dart_rows  # noqa: E402
+
 FIXTURE = (GALLERY.parent / 'packages/mediapipe-task-vision/test/fixtures/'
            'landmark_tasks/official_reference.json')
 OUTPUT = GALLERY / 'integration_test/support/official_landmark_references.dart'
@@ -72,6 +79,8 @@ def main():
     print(f'Wrote {OUTPUT.relative_to(GALLERY)}')
     write_detections()
     write_masks()
+    subprocess.run([shutil.which('dart') or 'dart', 'format', str(OUTPUT), str(DETECTIONS),
+                    str(MASKS)], check=True, cwd=GALLERY)
 
 
 def detection(case):
@@ -139,25 +148,37 @@ def write_detections():
         values = embedding['result']['embeddings'][0]['embedding']
         lines += [
             '',
+            '// dart format off',
             f"/// {source} float embedding of portrait.jpg ({len(values)} values, not normalized).",
             f'const {prefix}EmbedderReference = <double>[',
-            *[f'  {v:.7g},' for v in values],
+            *dart_rows([f'{v:.7g}' for v in values], 2),
             '];',
+            '// dart format on',
         ]
     DETECTIONS.write_text('\n'.join(lines) + '\n')
     print(f'Wrote {DETECTIONS.relative_to(GALLERY)}')
 
 
-def coarse_record(width, height, coarse):
-    confidence = ', '.join(
-        f'{index}: [{", ".join("[" + ", ".join(f"{v:g}" for v in row) + "]" for row in grid)}]'
-        for index, grid in coarse.get('confidence_grids', {}).items())
-    category = ', '.join('[' + ', '.join(map(str, row)) + ']'
-                         for row in coarse['category_grid'])
+def grid_rows(grid, indent, cell=str):
+    """Each row of `grid` as `[a, b, ...],` over lines of at most 80 columns."""
+    lines = []
+    for row in grid:
+        packed = dart_rows([cell(value) for value in row], indent + 1)
+        packed[0] = ' ' * indent + '[' + packed[0].lstrip()
+        packed[-1] = packed[-1][:-1] + '],'
+        lines += packed
+    return lines
+
+
+def coarse_record(name, comment, width, height, coarse):
+    """A const OfficialMasks record, as lines for a `// dart format off` region."""
+    lines = [f'/// {comment}', f'const {name} = (', f'  width: {width},',
+             f'  height: {height},', '  confidence: <int, List<List<double>>>{']
+    for index, grid in coarse.get('confidence_grids', {}).items():
+        lines += [f'    {index}: [', *grid_rows(grid, 6, lambda v: f'{v:g}'), '    ],']
     shares = ', '.join(f'{k}: {v:g}' for k, v in coarse['category_shares'].items())
-    return (f'(width: {width}, height: {height}, '
-            f'confidence: <int, List<List<double>>>{{{confidence}}}, '
-            f'category: <List<int>>[{category}], shares: <int, double>{{{shares}}})')
+    return lines + ['  },', '  category: <List<int>>[', *grid_rows(coarse['category_grid'], 4),
+                    '  ],', f'  shares: <int, double>{{{shares}}},', ');']
 
 
 def write_masks():
@@ -187,11 +208,14 @@ def write_masks():
         '  Map<int, double> shares,',
         '});',
         '',
-        "/// Image Segmenter (DeepLab-v3) on portrait.jpg.",
-        f"const officialSegmenterReference = {coarse_record(image['width'], image['height'], image['coarse'])};",
+        '// dart format off',
+        *coarse_record('officialSegmenterReference', 'Image Segmenter (DeepLab-v3) on portrait.jpg.',
+                       image['width'], image['height'], image['coarse']),
         '',
-        "/// The same, from the wheel's GPU delegate, for GPU results.",
-        f"const officialGpuSegmenterReference = {coarse_record(gpu_image['width'], gpu_image['height'], gpu_image['coarse'])};",
+        *coarse_record('officialGpuSegmenterReference',
+                       "The same, from the wheel's GPU delegate, for GPU results.",
+                       gpu_image['width'], gpu_image['height'], gpu_image['coarse']),
+        '// dart format on',
     ]
     landmarks = json.loads(FIXTURE.read_text())
     means = []
@@ -218,10 +242,11 @@ def write_masks():
                     for y in range(r * height // rows, (r + 1) * height // rows)
                     for x in range(c * width // columns, (c + 1) * width // columns)]
             row.append(f'{sum(cell) / len(cell):.4f}')
-        grid.append('[' + ', '.join(row) + ']')
+        grid.append(row)
     (x, y), = cat['strokes'][0]['points']
     lines += [
         '',
+        '// dart format off',
         "/// Google's stateful MagicTouch mask of animals.jpg for one positive",
         f'/// stroke at ({x}, {y}): cell means on a {columns} x {rows} grid, the mean,',
         '/// and the share of pixels above 0.5.',
@@ -229,7 +254,9 @@ def write_masks():
         f'  width: {width},',
         f'  height: {height},',
         f'  point: ({x}, {y}),',
-        f"  grid: <List<double>>[{', '.join(grid)}],",
+        '  grid: <List<double>>[',
+        *grid_rows(grid, 4),
+        '  ],',
         f"  mean: {cat['mean']:.6f},",
         f"  foreground: {cat['foreground_pixels'] / (width * height):.6f},",
         ');',
@@ -251,19 +278,21 @@ def write_masks():
         'const officialInteractiveSummaries = <String, OfficialInteractiveSummary>{',
     ]
     for summary in interactive.get('summaries', []):
-        strokes = ', '.join(
-            f"('{s['brush_mode']}', [{', '.join(f'({p[0]}, {p[1]})' for p in s['points'])}])"
-            for s in summary['strokes'])
-        grid = ', '.join('[' + ', '.join(f'{v:.4f}' for v in row) + ']' for row in summary['grid'])
+        lines += [f"  '{summary['name']}': (", '    strokes: [']
+        for stroke in summary['strokes']:
+            lines += [f"      ('{stroke['brush_mode']}', [",
+                      *dart_rows([f'({x}, {y})' for x, y in stroke['points']], 8),
+                      '      ]),']
         lines += [
-            f"  '{summary['name']}': (",
-            f'    strokes: [{strokes}],',
-            f'    grid: <List<double>>[{grid}],',
+            '    ],',
+            '    grid: <List<double>>[',
+            *grid_rows(summary['grid'], 6, lambda v: f'{v:.4f}'),
+            '    ],',
             f"    mean: {summary['mean']:.6f},",
             f"    foreground: {summary['foreground']:.6f},",
             '  ),',
         ]
-    lines += ['};']
+    lines += ['};', '// dart format on']
     lines += [
         '',
         '/// Mean pose segmentation mask value on pose.jpg, upright and turned as in',

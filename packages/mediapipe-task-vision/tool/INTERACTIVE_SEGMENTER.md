@@ -41,7 +41,7 @@ is Google's unchanged **30.5 MB** int8 version-1 bundle
 (`VisionModels.interactiveSegmenter`,
 `interactive_segmenter_v2/magic_touch/int8/1/interactive_segmentation.task`,
 SHA-256 `38431bc66b883404e8397f74c3579404315b9b52b04a46c6346fe906a7309b03`).
-Maintainers download it with `dart tool/download_interactive_segmenter.dart`.
+Maintainers download it with `dart tool/download_models.dart interactive_segmenter`.
 
 No platform needs a setting, and the task needs no entry in
 `mediapipe_vision.tasks`.

@@ -7,7 +7,6 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/models.dart';
 import 'package:mediapipe_vision/src/third_party/mediapipe/interactive_segmenter_bindings.dart'
     as abi;
 import 'package:mediapipe_vision/src/third_party/mediapipe/vision_bindings.dart'
@@ -100,7 +99,7 @@ void main() {
             as Map<String, dynamic>;
     expect(
       sha256.convert(File(model).readAsBytesSync()).toString(),
-      interactiveSegmenterModelSha256,
+      VisionModels.interactiveSegmenter.sha256,
     );
     expect(
       sha256

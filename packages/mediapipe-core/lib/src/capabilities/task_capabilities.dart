@@ -1,6 +1,30 @@
 import '../delegate.dart';
 import '../exceptions.dart';
 
+/// A browser's engine, for a task whose browser runtime fails in one of them.
+enum BrowserEngine {
+  /// Safari, and every browser on iOS and iPadOS.
+  webkit,
+
+  /// Chrome, Edge, Opera and the other Chromium browsers.
+  blink,
+
+  /// Firefox outside iOS.
+  gecko;
+
+  /// The engine [userAgent] names; null when it names none of these. Every
+  /// browser on iOS and iPadOS runs WebKit, whatever its own name.
+  static BrowserEngine? fromUserAgent(String userAgent) {
+    if (RegExp(r'\b(iPhone|iPad|iPod)\b').hasMatch(userAgent)) return webkit;
+    final appleWebKit = userAgent.contains('AppleWebKit/');
+    if (!appleWebKit && userAgent.contains('Firefox/')) return gecko;
+    if (!appleWebKit) return null;
+    return RegExp(r'\b(Chrome|Chromium|HeadlessChrome)/').hasMatch(userAgent)
+        ? blink
+        : webkit;
+  }
+}
+
 /// The current process platform, including its ABI (not the host CPU's ABI).
 final class TaskPlatform {
   /// Construct a platform snapshot. A null OS version means it is unknown.
@@ -10,6 +34,7 @@ final class TaskPlatform {
     this.version,
     this.gpu,
     this.simulator = false,
+    this.browserEngine,
   });
 
   /// Dart operating system name, or `web` outside native platforms.
@@ -30,19 +55,34 @@ final class TaskPlatform {
   /// device. The target is still `ios/arm64`, but a GPU path can differ.
   final bool simulator;
 
+  /// The browser's engine on the web, read from its user agent; null on
+  /// native platforms and in a browser it does not recognize.
+  final BrowserEngine? browserEngine;
+
   /// `operatingSystem/architecture`, the key used by runtime target tables.
   String get target => '$operatingSystem/$architecture';
 
   @override
   String toString() =>
       'TaskPlatform($target${version == null ? '' : ' $version'}'
-      '${gpu == null ? '' : ', $gpu'}${simulator ? ', simulator' : ''})';
+      '${gpu == null ? '' : ', $gpu'}${simulator ? ', simulator' : ''}'
+      '${browserEngine == null ? '' : ', ${browserEngine!.name}'})';
 }
 
 /// Names this device's GPU for [TaskPlatform.gpu]. An adapter package that can
 /// read it sets this when it registers, before the platform is first read; it
 /// is called once, with the rest of the platform.
 Future<String?> Function()? taskPlatformGpuReader;
+
+/// What [taskPlatformGpuReader] names, or null without one or when it fails:
+/// an unnamed GPU leaves every capability table as declared.
+Future<String?> readTaskPlatformGpu() async {
+  try {
+    return await taskPlatformGpuReader?.call();
+  } on Object {
+    return null;
+  }
+}
 
 /// Minimum product version for one process target, e.g. `macos/arm64: 14.0`.
 ///
@@ -78,11 +118,22 @@ String tasksRuntimeUnavailable(String task, String operatingSystem) =>
     'app with flutter run or flutter build (or dart run and dart test for a '
     'Dart program), which run the hook.';
 
+/// What a family reports in a browser where [package]'s plugin never
+/// registered: its native stubs throw it, and its capability queries give
+/// its message and fix as their reason.
+RuntimeUnavailableException pluginNotRegistered(String package) =>
+    RuntimeUnavailableException(
+      'The $package browser plugin did not register.',
+      fix:
+          'Depend on $package as a Flutter plugin so its web registration '
+          'runs before the first task is created.',
+    );
+
 /// The official MediaPipe release behind the tasks on [platform]: Google's
-/// 1.1.0 per-family libraries on Android, iOS, macOS, Linux and Windows, and
-/// its browser runtime 1.0.1.
+/// 1.1.1 per-family libraries (its development build of October 9, 2026) on
+/// Android, iOS, macOS, Linux and Windows, and its browser runtime 1.0.1.
 String tasksRuntimeVersionOn(TaskPlatform platform) =>
-    platform.operatingSystem == 'web' ? '1.0.1' : '1.1.0';
+    platform.operatingSystem == 'web' ? '1.0.1' : '1.1.1';
 
 /// Declared package support for one task on a platform: which [Delegate]s run
 /// there and why the others do not. This is not an inference self-test.

@@ -55,14 +55,15 @@ const models = <String, BundledModel>{
   ),
 };
 
-/// The package directory whose `lib/models.dart` lists each family's names.
-String packageOf(String family) => switch (family) {
-  'mediapipe_audio' => 'mediapipe-task-audio',
-  'mediapipe_decision' => 'mediapipe-task-decision',
-  'mediapipe_retrieval' => 'mediapipe-task-retrieval',
-  'mediapipe_text' => 'mediapipe-task-text',
-  _ => 'mediapipe-task-vision',
-};
+/// The package directory whose `lib/models.dart` lists [family]'s names:
+/// `mediapipe_<name>` is `packages/mediapipe-task-<name>`.
+String packageOf(String family) {
+  const prefix = 'mediapipe_';
+  if (!family.startsWith(prefix) || family == 'mediapipe_core') {
+    throw ArgumentError.value(family, 'family', 'is not a task family');
+  }
+  return 'mediapipe-task-${family.substring(prefix.length)}';
+}
 
 /// The text package's generative tasks and EmbeddingGemma, 419 MB of models
 /// in all, bundled by default like every other task. Their integration suite

@@ -23,12 +23,13 @@ void main() {
       ).supportedDelegates,
       {Delegate.cpu},
     );
-    // macOS 14 and iOS 15 or later, where Google's vision library runs.
+    // macOS 14 and iOS 15 or later, where Google's vision library runs; macOS
+    // on the CPU only for now (UP-057).
     expect(
       handLandmarkerCapabilitiesForPlatform(
         platform('macos', 'arm64', '14.0'),
       ).supportedDelegates,
-      both,
+      {Delegate.cpu},
     );
     expect(
       handLandmarkerCapabilitiesForPlatform(
@@ -40,7 +41,7 @@ void main() {
       platform('ios', 'arm64', '15.0'),
     );
     expect(ios.supportedDelegates, both);
-    expect(ios.runtimeVersion, '1.1.0');
+    expect(ios.runtimeVersion, '1.1.1');
     // Android runs Google's vision library: GPU on arm64 phones, and CPU on
     // the x86_64 emulator images.
     expect(
@@ -53,7 +54,7 @@ void main() {
       platform('android', 'x64'),
     );
     expect(emulator.supportedDelegates, {Delegate.cpu});
-    expect(emulator.runtimeVersion, '1.1.0');
+    expect(emulator.runtimeVersion, '1.1.1');
     // The web needs its registered adapter, absent here.
     final web = handLandmarkerCapabilitiesForPlatform(
       platform('web', 'unknown'),
@@ -71,7 +72,7 @@ void main() {
     final result = interactiveSegmenterCapabilitiesForPlatform(mac);
     expect(result.supportedDelegates, {Delegate.cpu});
     expect(result.unavailableReasons[Delegate.gpu], contains('GLSL 330'));
-    expect(result.runtimeVersion, '1.1.0');
+    expect(result.runtimeVersion, '1.1.1');
   });
 
   test("MagicTouch stays off Google's Windows library, with the reason", () {
@@ -82,15 +83,37 @@ void main() {
     expect(windows.unavailableReasons[Delegate.cpu], contains('UP-048'));
   });
 
-  test("Object Detector runs CPU and Metal on Google's macOS library", () {
+  test('macOS offers the CPU only, with the reason (UP-057)', () {
+    // Google's 1.1.1 library gives different Metal results from its 1.1.0
+    // wheel, so every task that ran on Metal reports the withdrawal; Holistic
+    // and MagicTouch keep their own, older reasons.
     const mac = TaskPlatform(
       operatingSystem: 'macos',
       architecture: 'arm64',
       version: '14.0',
     );
-    final result = objectDetectorCapabilitiesForPlatform(mac);
-    expect(result.supportedDelegates, {Delegate.cpu, Delegate.gpu});
-    expect(result.runtimeVersion, '1.1.0');
+    for (final claim in [
+      faceDetectorCapabilitiesForPlatform,
+      faceLandmarkerCapabilitiesForPlatform,
+      handLandmarkerCapabilitiesForPlatform,
+      poseLandmarkerCapabilitiesForPlatform,
+      gestureRecognizerCapabilitiesForPlatform,
+      imageClassifierCapabilitiesForPlatform,
+      imageEmbedderCapabilitiesForPlatform,
+      imageSegmenterCapabilitiesForPlatform,
+      objectDetectorCapabilitiesForPlatform,
+    ]) {
+      final result = claim(mac);
+      expect(result.supportedDelegates, {Delegate.cpu});
+      expect(result.unavailableReasons[Delegate.gpu], contains('UP-057'));
+    }
+    expect(
+      holisticLandmarkerCapabilitiesForPlatform(
+        mac,
+      ).unavailableReasons[Delegate.gpu],
+      contains('UP-026'),
+    );
+    expect(objectDetectorCapabilitiesForPlatform(mac).runtimeVersion, '1.1.1');
   });
 
   test('Face Landmarker offers GPU on Linux x64, not Windows', () {
@@ -102,8 +125,8 @@ void main() {
     expect(on('windows').unavailableReasons[Delegate.gpu], isNotNull);
   });
 
-  test("Linux and Windows report Google's 1.1.0 libraries", () {
-    for (final (os, version) in [('linux', '1.1.0'), ('windows', '1.1.0')]) {
+  test("Linux and Windows report Google's 1.1.1 libraries", () {
+    for (final (os, version) in [('linux', '1.1.1'), ('windows', '1.1.1')]) {
       final platform = TaskPlatform(operatingSystem: os, architecture: 'x64');
       for (final result in [
         faceLandmarkerCapabilitiesForPlatform(platform),
@@ -159,23 +182,23 @@ void main() {
       architecture: 'arm64',
       version: '15.0',
     );
-    for (final (claim, onLinux, onMac) in [
-      (poseLandmarkerCapabilitiesForPlatform, true, true),
-      (gestureRecognizerCapabilitiesForPlatform, true, true),
-      (imageClassifierCapabilitiesForPlatform, true, true),
-      (imageSegmenterCapabilitiesForPlatform, true, true),
+    // macOS offers no GPU for now (UP-057).
+    for (final (claim, onLinux) in [
+      (poseLandmarkerCapabilitiesForPlatform, true),
+      (gestureRecognizerCapabilitiesForPlatform, true),
+      (imageClassifierCapabilitiesForPlatform, true),
+      (imageSegmenterCapabilitiesForPlatform, true),
       // UP-027: Google's Linux runtime aborts the embedder on GPU.
-      (imageEmbedderCapabilitiesForPlatform, false, true),
+      (imageEmbedderCapabilitiesForPlatform, false),
       // UP-026: neither runtime opens Holistic's blendshapes model on GPU.
-      (holisticLandmarkerCapabilitiesForPlatform, false, false),
+      (holisticLandmarkerCapabilitiesForPlatform, false),
       // UP-046: Google's Linux library lacks Face Detector's LiteRT GPU plugin.
-      (faceDetectorCapabilitiesForPlatform, false, true),
-      (faceLandmarkerCapabilitiesForPlatform, true, true),
+      (faceDetectorCapabilitiesForPlatform, false),
+      (faceLandmarkerCapabilitiesForPlatform, true),
     ]) {
       expect(claim(linux).supportedDelegates.contains(Delegate.gpu), onLinux);
       expect(claim(windows).supportedDelegates, isNot(contains(Delegate.gpu)));
-      expect(claim(macos).supportedDelegates, contains(Delegate.cpu));
-      expect(claim(macos).supportedDelegates.contains(Delegate.gpu), onMac);
+      expect(claim(macos).supportedDelegates, {Delegate.cpu});
     }
     expect(
       holisticLandmarkerCapabilitiesForPlatform(

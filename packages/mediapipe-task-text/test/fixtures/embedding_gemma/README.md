@@ -17,6 +17,6 @@ Do not replace these references with Dart-generated outputs.
 The comparing test is `test/embedding_gemma_test.dart`. All six text tasks run
 on Google's text library; fresh-consumer tests also verify simultaneous use.
 
-The model is downloaded separately by `dart tool/download_embedding_gemma.dart`;
+The model is downloaded separately by `dart tool/download_models.dart embedding_gemma`;
 it is not committed. Its terms are Google's
 [Gemma Terms](https://ai.google.dev/gemma/terms).

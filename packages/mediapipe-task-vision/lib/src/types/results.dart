@@ -9,17 +9,16 @@ import 'package:meta/meta.dart';
 
 import 'vision_types.dart';
 
-/// The faces in an image: each a box, a score and six keypoints (right eye,
-/// left eye, nose tip, mouth, right tragion, left tragion).
+/// What every vision task's result reports about its input: the decoded
+/// size and, in video and live stream modes, the frame's timestamp.
 @immutable
-final class FaceDetectorResult {
-  /// Owns an unmodifiable copy of [detections].
-  FaceDetectorResult({
+abstract base class VisionResult {
+  /// Records the input's size and the frame's timestamp.
+  const VisionResult({
     required this.imageWidth,
     required this.imageHeight,
-    required List<Detection> detections,
     this.timestampMilliseconds,
-  }) : detections = List.unmodifiable(detections);
+  });
 
   /// Decoded input width, after any EXIF orientation correction.
   final int imageWidth;
@@ -27,12 +26,25 @@ final class FaceDetectorResult {
   /// Decoded input height, after any EXIF orientation correction.
   final int imageHeight;
 
-  /// Detections in the runtime's order.
-  final List<Detection> detections;
-
   /// The frame's timestamp in video and live stream modes, null for a
   /// still image.
   final int? timestampMilliseconds;
+}
+
+/// The faces in an image: each a box, a score and six keypoints (right eye,
+/// left eye, nose tip, mouth, right tragion, left tragion).
+@immutable
+final class FaceDetectorResult extends VisionResult {
+  /// Owns an unmodifiable copy of [detections].
+  FaceDetectorResult({
+    required super.imageWidth,
+    required super.imageHeight,
+    required List<Detection> detections,
+    super.timestampMilliseconds,
+  }) : detections = List.unmodifiable(detections);
+
+  /// Detections in the runtime's order.
+  final List<Detection> detections;
 
   @override
   String toString() =>
@@ -42,27 +54,17 @@ final class FaceDetectorResult {
 
 /// The objects in an image: each a box and its categories.
 @immutable
-final class ObjectDetectorResult {
+final class ObjectDetectorResult extends VisionResult {
   /// Owns an unmodifiable copy of [detections].
   ObjectDetectorResult({
-    required this.imageWidth,
-    required this.imageHeight,
+    required super.imageWidth,
+    required super.imageHeight,
     required List<Detection> detections,
-    this.timestampMilliseconds,
+    super.timestampMilliseconds,
   }) : detections = List.unmodifiable(detections);
-
-  /// Decoded input width, after any EXIF orientation correction.
-  final int imageWidth;
-
-  /// Decoded input height, after any EXIF orientation correction.
-  final int imageHeight;
 
   /// Detections in the runtime's order.
   final List<Detection> detections;
-
-  /// The frame's timestamp in video and live stream modes, null for a
-  /// still image.
-  final int? timestampMilliseconds;
 
   @override
   String toString() =>
@@ -73,26 +75,20 @@ final class ObjectDetectorResult {
 /// The 478 landmarks of each face, with the optional blendshapes and
 /// transformation matrixes.
 @immutable
-final class FaceLandmarkerResult {
+final class FaceLandmarkerResult extends VisionResult {
   /// Owns unmodifiable copies of the lists, in the runtime's order.
   FaceLandmarkerResult({
-    required this.imageWidth,
-    required this.imageHeight,
+    required super.imageWidth,
+    required super.imageHeight,
     required List<List<NormalizedLandmark>> faceLandmarks,
     required List<List<MediaPipeCategory>> faceBlendshapes,
     required List<Matrix> facialTransformationMatrixes,
-    this.timestampMilliseconds,
+    super.timestampMilliseconds,
   }) : faceLandmarks = ownNestedLists(faceLandmarks),
        faceBlendshapes = ownNestedLists(faceBlendshapes),
        facialTransformationMatrixes = List.unmodifiable(
          facialTransformationMatrixes,
        );
-
-  /// Decoded input width, after any EXIF orientation correction.
-  final int imageWidth;
-
-  /// Decoded input height, after any EXIF orientation correction.
-  final int imageHeight;
 
   /// 478 landmarks per face from the official bundle, both irises included.
   final List<List<NormalizedLandmark>> faceLandmarks;
@@ -103,10 +99,6 @@ final class FaceLandmarkerResult {
   /// One 4 x 4 matrix per face; empty when not requested or no face.
   final List<Matrix> facialTransformationMatrixes;
 
-  /// The frame's timestamp in video and live stream modes, null for a
-  /// still image.
-  final int? timestampMilliseconds;
-
   @override
   String toString() =>
       'FaceLandmarkerResult(${faceLandmarks.length} faces, '
@@ -115,15 +107,15 @@ final class FaceLandmarkerResult {
 
 /// The 21 landmarks of each hand, in image and world space, with handedness.
 @immutable
-final class HandLandmarkerResult {
+final class HandLandmarkerResult extends VisionResult {
   /// Owns unmodifiable copies of the lists, ordered alike.
   HandLandmarkerResult({
     required List<List<MediaPipeCategory>> handedness,
     required List<List<NormalizedLandmark>> handLandmarks,
     required List<List<Landmark>> handWorldLandmarks,
-    required this.imageWidth,
-    required this.imageHeight,
-    this.timestampMilliseconds,
+    required super.imageWidth,
+    required super.imageHeight,
+    super.timestampMilliseconds,
   }) : handedness = ownNestedLists(handedness),
        handLandmarks = ownNestedLists(handLandmarks),
        handWorldLandmarks = ownNestedLists(handWorldLandmarks);
@@ -137,16 +129,6 @@ final class HandLandmarkerResult {
   /// World landmarks in meters, 21 per hand.
   final List<List<Landmark>> handWorldLandmarks;
 
-  /// Decoded input width.
-  final int imageWidth;
-
-  /// Decoded input height.
-  final int imageHeight;
-
-  /// The frame's timestamp in video and live stream modes, null for a
-  /// still image.
-  final int? timestampMilliseconds;
-
   @override
   String toString() =>
       'HandLandmarkerResult(${handLandmarks.length} hands, '
@@ -155,16 +137,16 @@ final class HandLandmarkerResult {
 
 /// The gestures and landmarks of each hand.
 @immutable
-final class GestureRecognizerResult {
+final class GestureRecognizerResult extends VisionResult {
   /// Owns unmodifiable copies of the lists, ordered alike.
   GestureRecognizerResult({
     required List<List<MediaPipeCategory>> gestures,
     required List<List<MediaPipeCategory>> handedness,
     required List<List<NormalizedLandmark>> handLandmarks,
     required List<List<Landmark>> handWorldLandmarks,
-    required this.imageWidth,
-    required this.imageHeight,
-    this.timestampMilliseconds,
+    required super.imageWidth,
+    required super.imageHeight,
+    super.timestampMilliseconds,
   }) : gestures = ownNestedLists(gestures),
        handedness = ownNestedLists(handedness),
        handLandmarks = ownNestedLists(handLandmarks),
@@ -185,16 +167,6 @@ final class GestureRecognizerResult {
   /// World landmarks in meters, 21 per hand.
   final List<List<Landmark>> handWorldLandmarks;
 
-  /// Decoded input width.
-  final int imageWidth;
-
-  /// Decoded input height.
-  final int imageHeight;
-
-  /// The frame's timestamp in video and live stream modes, null for a
-  /// still image.
-  final int? timestampMilliseconds;
-
   @override
   String toString() =>
       'GestureRecognizerResult(${handLandmarks.length} hands, '
@@ -204,15 +176,15 @@ final class GestureRecognizerResult {
 /// The 33 landmarks of each pose, in image and world space, with optional
 /// foreground masks.
 @immutable
-final class PoseLandmarkerResult {
+final class PoseLandmarkerResult extends VisionResult {
   /// Owns unmodifiable copies of the lists and masks.
   PoseLandmarkerResult({
     required List<List<NormalizedLandmark>> poseLandmarks,
     required List<List<Landmark>> poseWorldLandmarks,
     List<ConfidenceMask>? segmentationMasks,
-    required this.imageWidth,
-    required this.imageHeight,
-    this.timestampMilliseconds,
+    required super.imageWidth,
+    required super.imageHeight,
+    super.timestampMilliseconds,
   }) : poseLandmarks = ownNestedLists(poseLandmarks),
        poseWorldLandmarks = ownNestedLists(poseWorldLandmarks),
        segmentationMasks = segmentationMasks == null
@@ -228,16 +200,6 @@ final class PoseLandmarkerResult {
   /// One foreground mask per pose, or null when not requested.
   final List<ConfidenceMask>? segmentationMasks;
 
-  /// Decoded input width.
-  final int imageWidth;
-
-  /// Decoded input height.
-  final int imageHeight;
-
-  /// The frame's timestamp in video and live stream modes, null for a
-  /// still image.
-  final int? timestampMilliseconds;
-
   @override
   String toString() =>
       'PoseLandmarkerResult(${poseLandmarks.length} poses, '
@@ -246,7 +208,7 @@ final class PoseLandmarkerResult {
 
 /// The face, pose and hand landmarks of one person.
 @immutable
-final class HolisticLandmarkerResult {
+final class HolisticLandmarkerResult extends VisionResult {
   /// Owns unmodifiable copies of the lists and the optional outputs.
   HolisticLandmarkerResult({
     required List<NormalizedLandmark> faceLandmarks,
@@ -258,9 +220,9 @@ final class HolisticLandmarkerResult {
     required List<Landmark> rightHandWorldLandmarks,
     List<MediaPipeCategory>? faceBlendshapes,
     this.poseSegmentationMask,
-    required this.imageWidth,
-    required this.imageHeight,
-    this.timestampMilliseconds,
+    required super.imageWidth,
+    required super.imageHeight,
+    super.timestampMilliseconds,
   }) : faceLandmarks = List.unmodifiable(faceLandmarks),
        poseLandmarks = List.unmodifiable(poseLandmarks),
        poseWorldLandmarks = List.unmodifiable(poseWorldLandmarks),
@@ -299,16 +261,6 @@ final class HolisticLandmarkerResult {
   /// The pose foreground mask, or null when not requested or absent.
   final ConfidenceMask? poseSegmentationMask;
 
-  /// Decoded input width.
-  final int imageWidth;
-
-  /// Decoded input height.
-  final int imageHeight;
-
-  /// The frame's timestamp in video and live stream modes, null for a
-  /// still image.
-  final int? timestampMilliseconds;
-
   @override
   String toString() =>
       'HolisticLandmarkerResult(face: ${faceLandmarks.length}, '
@@ -319,27 +271,17 @@ final class HolisticLandmarkerResult {
 
 /// The categories of every classifier head.
 @immutable
-final class ImageClassifierResult {
+final class ImageClassifierResult extends VisionResult {
   /// Owns an unmodifiable copy of [classifications].
   ImageClassifierResult({
     required List<Classifications> classifications,
-    required this.imageWidth,
-    required this.imageHeight,
-    this.timestampMilliseconds,
+    required super.imageWidth,
+    required super.imageHeight,
+    super.timestampMilliseconds,
   }) : classifications = List.unmodifiable(classifications);
 
   /// One entry per model head, in the runtime's order.
   final List<Classifications> classifications;
-
-  /// Decoded input width.
-  final int imageWidth;
-
-  /// Decoded input height.
-  final int imageHeight;
-
-  /// The frame's timestamp in video and live stream modes, null for a
-  /// still image.
-  final int? timestampMilliseconds;
 
   @override
   String toString() =>
@@ -349,27 +291,17 @@ final class ImageClassifierResult {
 
 /// The vectors of every embedder head.
 @immutable
-final class ImageEmbedderResult {
+final class ImageEmbedderResult extends VisionResult {
   /// Owns an unmodifiable copy of [embeddings].
   ImageEmbedderResult({
     required List<Embedding> embeddings,
-    required this.imageWidth,
-    required this.imageHeight,
-    this.timestampMilliseconds,
+    required super.imageWidth,
+    required super.imageHeight,
+    super.timestampMilliseconds,
   }) : embeddings = List.unmodifiable(embeddings);
 
   /// One entry per model head, in the runtime's order.
   final List<Embedding> embeddings;
-
-  /// Decoded input width.
-  final int imageWidth;
-
-  /// Decoded input height.
-  final int imageHeight;
-
-  /// The frame's timestamp in video and live stream modes, null for a
-  /// still image.
-  final int? timestampMilliseconds;
 
   @override
   String toString() =>
@@ -379,16 +311,16 @@ final class ImageEmbedderResult {
 
 /// The masks the Image Segmenter was asked for.
 @immutable
-final class ImageSegmenterResult {
+final class ImageSegmenterResult extends VisionResult {
   /// Owns unmodifiable copies of the masks and scores.
   ImageSegmenterResult({
     List<ConfidenceMask>? confidenceMasks,
     this.categoryMask,
     Float32List? qualityScores,
     List<String> labels = const [],
-    required this.imageWidth,
-    required this.imageHeight,
-    this.timestampMilliseconds,
+    required super.imageWidth,
+    required super.imageHeight,
+    super.timestampMilliseconds,
   }) : labels = List.unmodifiable(labels),
        confidenceMasks = confidenceMasks == null
            ? null
@@ -414,16 +346,6 @@ final class ImageSegmenterResult {
   /// Repeated on every result because the native task stays on its worker
   /// isolate and cannot be queried from the calling isolate.
   final List<String> labels;
-
-  /// Width of the processed image.
-  final int imageWidth;
-
-  /// Height of the processed image.
-  final int imageHeight;
-
-  /// The frame's timestamp in video and live stream modes, null for a
-  /// still image.
-  final int? timestampMilliseconds;
 
   @override
   String toString() =>

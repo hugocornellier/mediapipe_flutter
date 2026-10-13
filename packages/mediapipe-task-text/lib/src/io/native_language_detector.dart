@@ -1,6 +1,8 @@
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show fillBaseOptions, fillClassifierOptions, nativeString;
 
 import '../types/options.dart';
 import '../types/results.dart';
@@ -16,8 +18,13 @@ final class NativeLanguageDetector
     requireTextTasksRuntime();
     using((arena) {
       final native = arena<mp.MpTextClassifierOptions>();
-      fillTextBaseOptions(native.ref.baseOptions, options, arena);
-      fillTextClassifierOptions(native.ref.classifierOptions, arena, options);
+      fillBaseOptions(
+        native.ref.baseOptions,
+        arena,
+        modelPath: options.modelPath,
+        modelBytes: options.modelBytes,
+      );
+      fillClassifierOptions(native.ref.classifierOptions, arena, options);
       final output = arena<Pointer<Void>>();
       checkTextStatus((error) => mp.languageCreate(native, output, error));
       handle = output.value;
@@ -68,7 +75,7 @@ LanguageDetectorResult languageDetectorResultFromNative(
   predictions: [
     for (var i = 0; i < pointer.ref.predictionsCount; i++)
       LanguagePrediction(
-        languageCode: textTaskString(pointer.ref.predictions[i].languageCode)!,
+        languageCode: nativeString(pointer.ref.predictions[i].languageCode)!,
         probability: pointer.ref.predictions[i].probability,
       ),
   ],

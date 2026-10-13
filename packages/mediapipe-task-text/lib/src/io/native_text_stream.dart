@@ -2,13 +2,9 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:isolate';
 
-import 'package:ffi/ffi.dart';
+import 'package:mediapipe_core/native_structs.dart' show nativeString;
 
 import 'third_party/mediapipe/text_stream_bindings.dart' as mp;
-
-/// Decode a nullable native UTF-8 string before its allocation is released.
-String? nativeTextString(Pointer<Char> pointer) =>
-    pointer == nullptr ? null : pointer.cast<Utf8>().toDartString();
 
 /// Receive owned copies from the C adapter and drain through the terminal event.
 ///
@@ -47,7 +43,7 @@ Future<void> receiveNativeTextStream<U>({
         );
       }
       if (result.error != nullptr) {
-        throw exception(nativeTextString(result.error)!);
+        throw exception(nativeString(result.error)!);
       }
       if (failure == null) emit(decode(result, terminal));
     } catch (error) {

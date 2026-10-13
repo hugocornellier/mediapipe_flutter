@@ -38,7 +38,6 @@ final class FaceDetector implements VisionTask {
     final runner = await VisionTaskRunner.open(
       options,
       name: 'FaceDetector',
-      debugName: 'MediaPipe Face Detector',
       backend: faceDetectorBackendFactory,
       native: nativeFaceDetector,
       capabilities: queryFaceDetectorCapabilities,

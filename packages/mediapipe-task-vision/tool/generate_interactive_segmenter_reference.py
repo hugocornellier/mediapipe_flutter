@@ -15,16 +15,15 @@ import json
 import os
 from pathlib import Path
 import platform
-import re
 import sys
 import time
 
 from official_face_runtime import LIBRARY_NAME, LIBRARY_SHA256, RUNTIME, VERSION
+from model_pins import model_sha256  # core's tool/, which the import above adds
 
 PACKAGE = Path(__file__).resolve().parents[1]
 # The model pin the package itself uses (VisionModels.interactiveSegmenter).
-MODEL_SHA256 = re.search(r"const interactiveSegmenterModelSha256\s*=\s*'([0-9a-f]{64})'",
-                         (PACKAGE / 'lib/models.dart').read_text()).group(1)
+MODEL_SHA256 = model_sha256('interactive_segmentation.task')
 
 
 def digest(data):

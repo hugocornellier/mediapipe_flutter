@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart';
@@ -18,20 +17,15 @@ void main() {
     group(
       delegate.name,
       () => _testDelegate(delegate),
-      // Google's CPU output drifts between Apple CPUs, so macOS CPU compares
-      // with same-host outputs (tool/test_macos_references.py).
-      skip:
-          delegate == Delegate.cpu &&
-              Platform.isMacOS &&
-              Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
-                  '1'
-          ? 'macOS CPU compares with same-host official outputs'
+      skip: delegate == Delegate.cpu
+          ? cpuReferenceSkipReason
+          : delegate == Delegate.gpu && Platform.isMacOS
+          ? macosGpuWithdrawn
           : delegate == Delegate.gpu &&
-                !Platform.isMacOS &&
                 !(Platform.isLinux &&
                     Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] != null)
-          ? 'GPU object inference is validated on macOS, and on Linux against '
-                'same-host references (MEDIAPIPE_GPU_REFERENCE_DIR).'
+          ? 'GPU object inference is validated on Linux against same-host '
+                'references (MEDIAPIPE_GPU_REFERENCE_DIR).'
           : null,
     );
   }
@@ -105,9 +99,9 @@ void _testDelegate(Delegate delegate) {
   setUpAll(() async {
     expect(
       sha256.convert(File(_model).readAsBytesSync()).toString(),
-      efficientDetLite0Sha256,
+      VisionModels.objectDetector.sha256,
     );
-    expect(reference['model_sha256'], efficientDetLite0Sha256);
+    expect(reference['model_sha256'], VisionModels.objectDetector.sha256);
     expect(reference['delegate'], delegate.name.toUpperCase());
     expect(reference['score_threshold'], _scoreThreshold);
     expect(reference['max_results'], _maxResults);

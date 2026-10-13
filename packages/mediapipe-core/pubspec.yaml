@@ -43,6 +43,7 @@ dev_dependencies:
 
 flutter:
   assets:
-    - assets/verified_runtime.js
+    - path: assets/verified_runtime.js
+      platforms: [web]
     - path: assets/task_bridge.js
       platforms: [web]

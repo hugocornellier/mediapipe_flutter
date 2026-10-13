@@ -3,6 +3,10 @@ library;
 
 import 'dart:io';
 
+// TODO: Report the host environment as Flutter (MP_HOST_ENVIRONMENT_FLUTTER)
+// beside the host system. Google's usage log records neither for these
+// packages today. See packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
+
 /// Google's `MpHostSystem` value for this process, the way its Python API
 /// fills `BaseOptions.host_system` from `platform.system()`.
 int get mpHostSystem => Platform.isLinux

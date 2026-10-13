@@ -123,7 +123,7 @@ void main() {
       // Below the design's wide breakpoint the sidebar is a drawer.
       if (tester.getSize(find.byType(HomePage)).width < Sizes.wide) {
         await tester.tap(find.byTooltip('Open navigation'));
-        await _settle(tester);
+        await settle(tester);
       }
       final sidebar = find.byKey(const ValueKey('gallery-sidebar'));
       final tile = find.descendant(
@@ -141,7 +141,7 @@ void main() {
       await tester.scrollUntilVisible(tile, 250, scrollable: list);
       // scrollUntilVisible ends by jumping the list without a frame, so the
       // tile's position is stale until the list is laid out again.
-      await _settle(tester);
+      await settle(tester);
       expect(tile, findsOneWidget, reason: task.id);
       await tester.tap(tile);
       await tester.pump();
@@ -205,7 +205,7 @@ void main() {
               if (!await _liveFrames(tester, delegate, optional: optional)) {
                 gpuRefused = true;
                 _note(
-                  '${task.id}: live GPU refused, CPU from here: ${_screen(tester)}',
+                  '${task.id}: live GPU refused, CPU from here: ${screenText(tester)}',
                 );
                 await tapDelegate(tester, Delegate.cpu);
                 break;
@@ -241,7 +241,7 @@ void main() {
             )) {
               gpuRefused = true;
               _note(
-                '${task.id}: still GPU refused, CPU from here: ${_screen(tester)}',
+                '${task.id}: still GPU refused, CPU from here: ${screenText(tester)}',
               );
               continue;
             }
@@ -278,7 +278,7 @@ void main() {
             if (similarity == null) {
               gpuRefused = true;
               _note(
-                '${task.id}: GPU refused, CPU from here: ${_screen(tester)}',
+                '${task.id}: GPU refused, CPU from here: ${screenText(tester)}',
               );
               await tapDelegate(tester, Delegate.cpu);
               similarity = await _compared(
@@ -381,7 +381,7 @@ void main() {
             expect(
               find.text('Error'),
               findsNothing,
-              reason: '${task.id} ${kind.name}: ${_screen(tester)}',
+              reason: '${task.id} ${kind.name}: ${screenText(tester)}',
             );
             final answer = tester.widget<Text>(find.byKey(decisionAnswerKey));
             expected(answer.data!, '${task.id} ${kind.name}');
@@ -404,10 +404,14 @@ void main() {
           expect(
             find.text('Error'),
             findsNothing,
-            reason: '${task.id}: ${_screen(tester)}',
+            reason: '${task.id}: ${screenText(tester)}',
           );
           final (decisions, matched) = _fishScore(tester);
-          expect(matched, decisions, reason: '${task.id}: ${_screen(tester)}');
+          expect(
+            matched,
+            decisions,
+            reason: '${task.id}: ${screenText(tester)}',
+          );
           await tester.tap(find.byKey(const ValueKey('fish-play')));
           await tester.pump();
           checks.add('${task.id}:cpu:play');
@@ -432,7 +436,7 @@ void main() {
           expect(
             find.byKey(const ValueKey('universal-error')),
             findsNothing,
-            reason: '${task.id}: ${_screen(tester)}',
+            reason: '${task.id}: ${screenText(tester)}',
           );
           final dog = _universalSimilarity(tester)!;
           await tester.tap(find.byKey(const ValueKey('universal-2-elephant')));
@@ -474,13 +478,13 @@ void main() {
           expect(
             find.text('Error'),
             findsNothing,
-            reason: '${task.id}: ${_screen(tester)}',
+            reason: '${task.id}: ${screenText(tester)}',
           );
           final top = tester.widget<Text>(find.byKey(retrievalTopKey));
           expect(
             top.data,
             retrievalSampleDocuments.first,
-            reason: '${task.id}: ${_screen(tester)}',
+            reason: '${task.id}: ${screenText(tester)}',
           );
           checks.add('${task.id}:cpu:search');
           break;
@@ -537,7 +541,7 @@ void main() {
               // Switching reopens the task, so the image is tapped again.
               await tapDelegate(tester, delegate);
               await _until(tester, () => canvas.evaluate().isNotEmpty);
-              await _settle(tester);
+              await settle(tester);
               await tester.tap(canvas);
             }
             final label = delegate == Delegate.gpu ? 'GPU' : 'CPU';
@@ -571,7 +575,7 @@ void main() {
             await tester.tap(segment);
             await tester.pump();
             await tester.ensureVisible(canvas);
-            await _settle(tester);
+            await settle(tester);
           }
 
           int requests() {
@@ -789,13 +793,6 @@ const _generativeTasks = {'text_proofreader', 'text_summarizer'};
 /// Lets a drawer or menu finish animating. Unlike pumpAndSettle it gives up
 /// after a few seconds, because a live camera preview never stops scheduling
 /// frames.
-Future<void> _settle(WidgetTester tester) async {
-  final end = DateTime.now().add(const Duration(seconds: 3));
-  do {
-    await tester.pump(const Duration(milliseconds: 100));
-  } while (tester.binding.hasScheduledFrame && DateTime.now().isBefore(end));
-}
-
 /// Waits for a camera page to open its camera: null once frames arrive, or
 /// the page's message when it has no camera or could not open one.
 Future<String?> _cameraProblem(WidgetTester tester) async {
@@ -859,7 +856,7 @@ Future<bool> _liveFrames(
     );
   }
   if (optional) return false;
-  fail('No live $label frames: ${_screen(tester)}');
+  fail('No live $label frames: ${screenText(tester)}');
 }
 
 /// Waits for a still image result from [delegate] that matches [expected]. An
@@ -893,7 +890,9 @@ Future<bool> _stillRan(
     );
   }
   if (optional) return false;
-  fail('No $label still image result matching $expected: ${_screen(tester)}');
+  fail(
+    'No $label still image result matching $expected: ${screenText(tester)}',
+  );
 }
 
 /// Frames in the bundled clip, gallery/samples/scene.mp4.
@@ -934,7 +933,7 @@ Future<String> _videoRan(WidgetTester tester, String id) async {
       () => Future<void>.delayed(const Duration(milliseconds: 250)),
     );
   }
-  fail('$id: the video file did not finish: ${_screen(tester)}');
+  fail('$id: the video file did not finish: ${screenText(tester)}');
 }
 
 /// The cosine similarity Image Embedder shows, once it has one.
@@ -983,14 +982,14 @@ Future<String?> _compared(
     }
     if (error.evaluate().isNotEmpty) {
       if (optional) return null;
-      fail('$label comparison failed: ${_screen(tester)}');
+      fail('$label comparison failed: ${screenText(tester)}');
     }
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 250)),
     );
   }
   if (optional) return null;
-  fail('No $label comparison: ${_screen(tester)}');
+  fail('No $label comparison: ${screenText(tester)}');
 }
 
 /// The error a still image page shows in the theme's error colour, if any.
@@ -1009,13 +1008,6 @@ String? _imageError(WidgetTester tester) {
 }
 
 /// Every text on screen, for failure messages and notes.
-String _screen(WidgetTester tester) => tester
-    .widgetList<Text>(find.byType(Text))
-    .map((text) => text.data)
-    .whereType<String>()
-    .where((text) => text.trim().isNotEmpty)
-    .join(' | ');
-
 void _note(String message) {
   // ignore: avoid_print
   print('GALLERY_JOURNEY_NOTE $message');

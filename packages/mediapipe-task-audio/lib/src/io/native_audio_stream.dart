@@ -11,6 +11,8 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart' show nativeString;
+import 'package:mediapipe_core/platform_interface.dart' show taskException;
 
 import '../runner.dart';
 import '../stream/results.dart';
@@ -29,7 +31,7 @@ Future<AudioStreamRunner> openNativeAudioStream(
   try {
     await Isolate.spawn(
       _worker,
-      (stream._events.sendPort, nativeAudioSettings(options)),
+      (stream._events.sendPort, options),
       onError: stream._events.sendPort,
       onExit: stream._events.sendPort,
       debugName: 'MediaPipe audio stream',
@@ -88,7 +90,7 @@ final class _NativeAudioStream implements AudioStreamRunner {
         _ready.complete();
       case AudioClassifierResult result:
         _results.addGoogle(result);
-      case TaskException error:
+      case MediaPipeException error:
         _fail(error);
       case #closed:
         _closed = true;
@@ -103,7 +105,7 @@ final class _NativeAudioStream implements AudioStreamRunner {
   }
 
   /// Fails the creation, or, once the stream is open, the stream.
-  void _fail(TaskException error) {
+  void _fail(MediaPipeException error) {
     if (!_ready.isCompleted) {
       _ready.completeError(error);
     } else if (_commands != null) {
@@ -115,8 +117,8 @@ final class _NativeAudioStream implements AudioStreamRunner {
 /// A block as the calling isolate sends it.
 typedef _Block = (Float32List, double, int, int);
 
-Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
-  final (parent, settings) = initial;
+Future<void> _worker((SendPort, AudioClassifierOptions) initial) async {
+  final (parent, options) = initial;
   final commands = ReceivePort();
   // The bridge posts each copy's address here from Google's threads, then
   // null for the end. A port, unlike a NativeCallable, refuses a message once
@@ -138,7 +140,6 @@ Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
       bridge.eventFree(event);
     }
   });
-  Pointer<Uint8>? model;
   var slot = -1;
   Pointer<Void> task = nullptr;
   try {
@@ -157,10 +158,8 @@ Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
           'restarts.',
         );
       }
-      model = nativeModel(settings);
       task = openNativeTask(
-        settings,
-        model,
+        options,
         runningMode: audioStreamMode,
         resultCallback: callback.value,
       );
@@ -169,7 +168,6 @@ Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
   } catch (error) {
     if (slot >= 0) bridge.streamRelease(slot);
     events.close();
-    if (model case final model?) malloc.free(model);
     commands.close();
     parent.send(taskException(error));
     return;
@@ -207,7 +205,6 @@ Future<void> _worker((SendPort, NativeAudioSettings) initial) async {
   await ended.future;
   bridge.streamRelease(slot);
   events.close();
-  if (model case final model?) malloc.free(model);
   commands.close();
   // The reply once Google's task is closed and every result sent.
   parent.send(#closed);

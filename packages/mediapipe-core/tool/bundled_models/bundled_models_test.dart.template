@@ -21,6 +21,14 @@ void main() {
     testWidgets('a bundled vision model detects a face', (_) => checkVision());
     testWidgets('a bundled text model detects French', (_) => checkText());
     testWidgets('a bundled audio model hears a tone', (_) => checkAudio());
+    testWidgets(
+      'a bundled decision model routes a question',
+      (_) => checkDecision(),
+    );
+    testWidgets(
+      'a bundled retrieval model ranks a neighbor',
+      (_) => checkRetrieval(),
+    );
     // Before the download below caches the model.
     testWidgets(
       'a model that is not bundled is refused',

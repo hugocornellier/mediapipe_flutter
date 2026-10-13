@@ -299,7 +299,7 @@ void main() {
           ),
         ]) {
           expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: os);
-          expect(capabilities.runtimeVersion, '1.1.0');
+          expect(capabilities.runtimeVersion, '1.1.1');
           expect(
             capabilities.unavailableReasons[Delegate.gpu],
             contains('CPU'),
@@ -312,6 +312,26 @@ void main() {
         ).isSupported,
         isFalse,
       );
+    });
+
+    test('a target without the library says so for both delegates', () {
+      for (final (os, arch) in [
+        ('macos', 'x64'),
+        ('linux', 'arm64'),
+        ('windows', 'arm64'),
+      ]) {
+        final capabilities = semanticRetrieverCapabilitiesForPlatform(
+          _platform(os, arch, null),
+        );
+        expect(capabilities.supportedDelegates, isEmpty, reason: '$os/$arch');
+        for (final delegate in Delegate.values) {
+          expect(
+            capabilities.unavailableReasons[delegate],
+            allOf(contains('covers'), isNot(contains('GPU path'))),
+            reason: '$os/$arch ${delegate.name}',
+          );
+        }
+      }
     });
 
     test('browsers get the GPU on a hardware WebGPU adapter (UP-052)', () {
@@ -347,6 +367,45 @@ void main() {
         final refused = universalEmbedderCapabilitiesForPlatform(web(gpu));
         expect(refused.isSupported, isFalse, reason: '$gpu');
         expect(refused.unavailableReasons[Delegate.gpu], contains('UP-052'));
+      }
+    });
+
+    test('WebKit gets neither task: Google\'s runtime embeds everything as '
+        'zeros there (UP-054)', () {
+      TaskPlatform web(
+        BrowserEngine? engine, [
+        String gpu = 'WebGPU apple apple',
+      ]) => TaskPlatform(
+        operatingSystem: 'web',
+        architecture: 'unknown',
+        gpu: gpu,
+        browserEngine: engine,
+      );
+      retrievalBackendFactory = (_) => throw UnimplementedError();
+      addTearDown(() => retrievalBackendFactory = null);
+      for (final query in [
+        universalEmbedderCapabilitiesForPlatform,
+        semanticRetrieverCapabilitiesForPlatform,
+      ]) {
+        final refused = query(web(BrowserEngine.webkit));
+        expect(refused.isSupported, isFalse);
+        for (final delegate in Delegate.values) {
+          expect(
+            refused.unavailableReasons[delegate],
+            contains('UP-054'),
+            reason: '$delegate',
+          );
+        }
+        for (final engine in [BrowserEngine.blink, BrowserEngine.gecko, null]) {
+          expect(query(web(engine)).supportedDelegates, {Delegate.gpu});
+        }
+        // Without a hardware adapter the reason stays UP-052.
+        expect(
+          query(
+            web(BrowserEngine.webkit, 'WebGPU apple apple (fallback adapter)'),
+          ).unavailableReasons[Delegate.gpu],
+          contains('UP-052'),
+        );
       }
     });
   });

@@ -2,19 +2,18 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_core/platform_interface.dart'
-    show mpHostSystem, nativeModelPath;
+import 'package:mediapipe_core/task_worker.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show checkNativeStatus, fillBaseOptions, nativeString;
 
 import '../types/options.dart';
 import '../types/results.dart';
 import 'native_text_stream.dart';
-import 'text_task_worker.dart';
 import 'third_party/mediapipe/proofreader_bindings.dart' as mp;
 
 /// Native task owner, used serially by one persistent worker isolate.
 final class NativeTextProofreader
-    implements
-        NativeTextTask<String, TextProofreaderResult, TextProofreaderUpdate> {
+    extends WorkerTask<String, TextProofreaderResult, TextProofreaderUpdate> {
   /// Load the official CPU task.
   NativeTextProofreader(TextProofreaderOptions options) {
     if (options.delegate != Delegate.cpu) {
@@ -22,13 +21,11 @@ final class NativeTextProofreader
     }
     using((arena) {
       final native = arena<mp.MpTextProofreaderOptions>();
-      native.ref.baseOptions
-        ..fileDescriptor = -1
-        ..delegate = 0
-        ..hostSystem = mpHostSystem
-        ..modelAssetPath = nativeModelPath(
-          options.modelPath!,
-        ).toNativeUtf8(allocator: arena).cast();
+      fillBaseOptions(
+        native.ref.baseOptions,
+        arena,
+        modelPath: options.modelPath,
+      );
       native.ref
         ..maxNumTokens = options.maxNumTokens ?? 0
         // Google's default: errors only.
@@ -49,12 +46,12 @@ final class NativeTextProofreader
 
   /// Copy a completed result and close its native allocation before returning.
   @override
-  TextProofreaderResult run(String text) => using((arena) {
+  TextProofreaderResult run(String input) => using((arena) {
     final output = arena<Pointer<mp.MpTextProofreaderResult>>();
     _checked(
       (error) => mp.proofread(
         _handle,
-        text.toNativeUtf8(allocator: arena).cast(),
+        input.toNativeUtf8(allocator: arena).cast(),
         output,
         error,
       ),
@@ -65,7 +62,7 @@ final class NativeTextProofreader
     try {
       final result = output.value.ref;
       return TextProofreaderResult(
-        proofreadText: _string(result.proofreadText),
+        proofreadText: nativeString(result.proofreadText),
         corrections: _corrections(result.corrections, result.correctionsCount),
       );
     } finally {
@@ -75,32 +72,31 @@ final class NativeTextProofreader
 
   /// Await the terminal native update before releasing the callback/context.
   @override
-  Future<void> stream(String text, void Function(TextProofreaderUpdate) emit) =>
-      receiveNativeTextStream(
-        submit: (context) => using((arena) {
-          _checked(
-            (error) => mp.proofreadStreaming(
-              _handle,
-              text.toNativeUtf8(allocator: arena).cast(),
-              Native.addressOf<NativeFunction<mp.ProofreaderCallback>>(
-                mp.streamCallback,
-              ),
-              context,
-              error,
-            ),
-          );
-        }),
-        decode: (result, terminal) => TextProofreaderUpdate(
-          chunk: nativeTextString(result.text),
-          done: terminal,
-          corrections: _corrections(
-            result.corrections,
-            result.correctionsCount,
+  Future<void> stream(
+    String input,
+    void Function(TextProofreaderUpdate) emit,
+  ) => receiveNativeTextStream(
+    submit: (context) => using((arena) {
+      _checked(
+        (error) => mp.proofreadStreaming(
+          _handle,
+          input.toNativeUtf8(allocator: arena).cast(),
+          Native.addressOf<NativeFunction<mp.ProofreaderCallback>>(
+            mp.streamCallback,
           ),
+          context,
+          error,
         ),
-        emit: emit,
-        exception: TaskException.new,
       );
+    }),
+    decode: (result, terminal) => TextProofreaderUpdate(
+      chunk: nativeString(result.text),
+      done: terminal,
+      corrections: _corrections(result.corrections, result.correctionsCount),
+    ),
+    emit: emit,
+    exception: TaskException.new,
+  );
 
   /// Close after all native requests have completed.
   @override
@@ -111,9 +107,6 @@ final class NativeTextProofreader
     _checked((error) => mp.close(handle, error));
   }
 }
-
-String? _string(Pointer<Char> pointer) =>
-    pointer == nullptr ? null : pointer.cast<Utf8>().toDartString();
 
 List<ProofreadingCorrection> _corrections(
   Pointer<mp.MpCorrection> values,
@@ -126,22 +119,10 @@ List<ProofreadingCorrection> _corrections(
     for (var i = 0; i < count; i++)
       ProofreadingCorrection(
         type: ProofreadingCorrectionType.values[values[i].type],
-        text: _string(values[i].text) ?? '',
+        text: nativeString(values[i].text) ?? '',
       ),
   ];
 }
 
-void _checked(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
-  final error = arena<Pointer<Char>>();
-  try {
-    final status = call(error);
-    if (status != 0) {
-      throw TaskException(
-        _string(error.value) ?? 'MediaPipe operation failed.',
-        statusCode: status,
-      );
-    }
-  } finally {
-    if (error.value != nullptr) mp.errorFree(error.value);
-  }
-});
+void _checked(int Function(Pointer<Pointer<Char>>) call) =>
+    checkNativeStatus(call, mp.errorFree);

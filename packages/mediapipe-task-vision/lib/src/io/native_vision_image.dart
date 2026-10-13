@@ -149,33 +149,3 @@ mp.MpImagePtr _withAlpha(
   }
   return (pixels, byteCount);
 }
-
-/// Calls [call] and turns a non-OK status into an exception from [onError].
-///
-/// The native message is freed on every path, including when [onError] throws.
-void checkedCall(
-  mp.MpStatus Function(Pointer<Pointer<Char>>) call, {
-  required Object Function(String message, int statusCode) onError,
-}) {
-  final error = calloc<Pointer<Char>>();
-  try {
-    final status = call(error);
-    if (status != mp.MpStatus.kMpOk) {
-      throw onError(
-        nativeString(error.value) ?? 'MediaPipe returned ${status.name}',
-        status.value,
-      );
-    }
-  } finally {
-    if (error.value != nullptr) mp.MpErrorFree(error.value);
-    calloc.free(error);
-  }
-}
-
-/// Copies a native string, treating an empty one as absent.
-String? nativeString(Pointer<Char> pointer) {
-  if (pointer == nullptr) return null;
-  final value = pointer.cast<Utf8>().toDartString();
-  // The official Python API treats empty optional C strings as absent.
-  return value.isEmpty ? null : value;
-}

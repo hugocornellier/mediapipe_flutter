@@ -37,63 +37,15 @@ uses.
 
 ## Today (phase 1)
 
-### Selecting models
-
-Each app lists its models per family in pubspec, next to the `tasks:` setting.
-The names are the keys of `VisionModels.byName`, `TextModels.byName` and
-`AudioModels.byName`, the snake_case form of the `XxxModels` constants:
-
-```yaml
-flutter:
-  assets:
-    - assets/mediapipe/
-
-hooks:
-  user_defines:
-    mediapipe_vision:
-      models: [face_landmarker, hand_landmarker]
-    mediapipe_audio:
-      models: [yamnet]
-```
-
-### The command
-
-`dart run mediapipe_core:bundle_models`, run from the app's root
-(`packages/mediapipe-core/bin/bundle_models.dart`, with its logic in
-`packages/mediapipe-core/lib/src/model_bundler.dart`):
-
-- reads the app's pubspec and fails on a family the app doesn't depend on, an
-  unknown name (listing the valid ones), or a missing `assets/mediapipe/`
-  declaration (printing the lines to add);
-- reads each listed family's `byName` by running a generated program,
-  `.dart_tool/mediapipe_core/bundle_models_registry.dart`, with the app's
-  package configuration, since core cannot depend on the families;
-- downloads each model from Google, or from `asset_source` when it is set,
-  verifies its SHA-256, and writes it into `assets/mediapipe/` named by that
-  SHA-256, reusing files that already match;
-- removes SHA-named files that are no longer listed, and writes a readable
-  `manifest.json`;
-- with `--check`, changes nothing and exits nonzero when the folder doesn't
-  match the lists, for CI.
-
-### Run-time lookup
-
-Every family resolves `model:` through core's `resolvePinnedModel`
-(`packages/mediapipe-core/lib/src/pinned_model.dart`), which looks for the
-model in this order:
-
-1. **The store's cache.**
-2. **The app's bundled copy**, read with `rootBundle` and verified against the
-   pin. On native it is copied once into the cache, so tasks keep receiving a
-   file path; Google's iOS SDK only accepts paths. On web its bytes are used
-   directly.
-3. **A download**, only when `ModelStore.allowDownloads` is true.
-
-Otherwise task creation throws `RuntimeUnavailableException`. Its `fix` names
-the pubspec entry to add (from the family's `byName`) and the command to run.
-A bundled file that doesn't match its pin is refused with a fix that reruns
-the command. `ModelStore.find` does steps 1 and 2 without the network; an
-explicit `ModelStore.get` or `prefetch` may always download.
+What ships is described once, in the core README's
+[Bundled models](../README.md#bundled-models) and
+[On-demand models](../README.md#on-demand-models): the pubspec lists (the keys
+of each family's `XxxModels.byName`), the command (`bin/bundle_models.dart`,
+with its logic in `lib/src/model_bundler.dart`) and the lookup order every
+family's `model:` follows through core's `resolvePinnedModel`
+(`lib/src/pinned_model.dart`). Google's iOS library only accepts paths, which
+is why a bundled copy is copied into the cache once on native. The decisions
+behind it and the verification follow.
 
 ### Decisions taken
 

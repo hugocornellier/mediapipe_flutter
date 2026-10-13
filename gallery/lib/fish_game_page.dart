@@ -43,12 +43,15 @@ class FishGamePage extends StatefulWidget {
 }
 
 class _FishGamePageState extends State<FishGamePage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RevisionedState {
   static const _tick = 1 / 60;
 
   late final String _id = widget.task.id;
   late final TaskSettingValues _values = TaskSettingValues(_id);
-  late final List<TaskModel> _models = taskModels[_id] ?? const [];
+  late final List<TaskModel> _models = [
+    for (final model in taskModels[_id] ?? const <TaskModel>[])
+      if (decisionRunsModel(widget.platform, model)) model,
+  ];
   late final List<Delegate> _delegates = widget.task
       .capabilities(widget.platform)
       .supportedDelegates
@@ -56,17 +59,14 @@ class _FishGamePageState extends State<FishGamePage>
   late final Delegate _delegate = preferredDelegate(_delegates);
 
   /// The standard model: the catalog's text-only EmbeddingGemma 2 (165 MB)
-  /// where Google's runtime accepts it, Windows and browsers, and the text
-  /// and vision one (388 MB) on Google's per-family library, which fails
-  /// every evaluation with the text-only model (upstream-issues.md UP-053).
-  /// The two share a text encoder and steer the fish the same.
+  /// where Google's runtime accepts it, Windows and browsers other than
+  /// WebKit, and the text and vision one (388 MB) on Google's per-family
+  /// library, which fails every evaluation with the text-only model
+  /// (upstream-issues.md UP-053). The two share a text encoder and steer the
+  /// fish the same. WebKit runs neither (UP-054), so there the page is a card.
   late final DownloadAsset _standard =
-      decisionMakerCapabilitiesForPlatform(
-        widget.platform,
-        model: widget.task.model,
-      ).isSupported
-      ? widget.task.model
-      : DecisionModels.embeddingGemma2TextVision;
+      fishGameModel(widget.platform) ??
+      DecisionModels.embeddingGemma2TextVision;
   late final bool _textOnly = _standard.sha256 == widget.task.model.sha256;
   late final Ticker _ticker = createTicker(_frame);
   late final _game = FishGame(decide: _decide);
@@ -90,15 +90,6 @@ class _FishGamePageState extends State<FishGamePage>
   /// Whether Play was pressed while the model loaded, so the game starts as
   /// soon as it is ready.
   bool _playWhenReady = false;
-
-  /// Bumped every frame, so the settings sheet redraws with the page.
-  final _revision = ValueNotifier<int>(0);
-
-  @override
-  void setState(VoidCallback fn) {
-    super.setState(fn);
-    _revision.value++;
-  }
 
   @override
   void initState() {
@@ -128,7 +119,6 @@ class _FishGamePageState extends State<FishGamePage>
     for (final controller in _rules.values) {
       controller.dispose();
     }
-    _revision.dispose();
     unawaited(_close());
     super.dispose();
   }
@@ -154,7 +144,7 @@ class _FishGamePageState extends State<FishGamePage>
   /// The chosen model's pin: the standard EmbeddingGemma 2 unless another
   /// was chosen.
   DownloadAsset get _pin => switch (_model) {
-    final model? => DownloadAsset(url: '${model.url}', sha256: model.sha256),
+    final model? => model.pin,
     null => _standard,
   };
 
@@ -257,7 +247,7 @@ class _FishGamePageState extends State<FishGamePage>
   }
 
   Widget _panel() => ListenableBuilder(
-    listenable: _revision,
+    listenable: revision,
     builder: (context, _) => TaskSettingsPanel(
       settings: taskSettings[_id] ?? const [],
       values: _values,
@@ -282,16 +272,7 @@ class _FishGamePageState extends State<FishGamePage>
     final last = _game.last;
     final muted = TextStyle(color: c.muted, fontSize: Sizes.sm);
     if (_game.error case final error?) {
-      return OutputCard(
-        title: 'Error',
-        child: Text(
-          '$error',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.error,
-            fontSize: Sizes.sm,
-          ),
-        ),
-      );
+      return TaskErrorCard(error);
     }
     return OutputCard(
       title: 'What the model decided',
@@ -396,7 +377,7 @@ class _FishGamePageState extends State<FishGamePage>
                     children: [
                       CustomPaint(
                         key: const ValueKey('fish-sea'),
-                        painter: _SeaPainter(_game, c),
+                        painter: _SeaPainter(_game),
                       ),
                       if (_status case final status?)
                         _LoadingScreen(
@@ -517,10 +498,9 @@ class _LoadingScreen extends StatelessWidget {
 /// The sea: every fish with its name, the player's in orange with its
 /// sight, and a ring on the fish the model is thinking about.
 class _SeaPainter extends CustomPainter {
-  _SeaPainter(this.game, this.colors);
+  _SeaPainter(this.game);
 
   final FishGame game;
-  final GalleryColors colors;
 
   @override
   void paint(Canvas canvas, Size size) {

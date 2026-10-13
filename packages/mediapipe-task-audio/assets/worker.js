@@ -1,27 +1,18 @@
-import {loadVerifiedRuntime} from '../../mediapipe_core/assets/verified_runtime.js';
+import {installWorkerQueue, loadVerifiedRuntime, withoutNulls} from
+  '../../mediapipe_core/assets/verified_runtime.js';
 
 const loadRuntime = baseUrl =>
   loadVerifiedRuntime(new URL('runtime.json', import.meta.url), baseUrl, 'Audio');
 
 let task;
-let operations = Promise.resolve();
-self.onmessage = ({data}) => {
-  // Serialize creation, requests and shutdown on the owning worker.
-  operations = operations.then(async () => {
-    try {
-      self.postMessage({id: data.id, result: await run(data.type, data.input)});
-    } catch (error) {
-      self.postMessage({id: data.id, error: error?.message || String(error)});
-    }
-  });
-};
+installWorkerQueue(run);
 
 async function run(type, input) {
   if (type === 'create') {
     const {modelBytes, modelPath, delegate = 'CPU', runtimeBaseUrl, ...settings} = input;
     const {bundle: {AudioClassifier}, files} = await loadRuntime(runtimeBaseUrl);
     task = await AudioClassifier.createFromOptions(files, {
-      ...Object.fromEntries(Object.entries(settings).filter(([, value]) => value != null)),
+      ...withoutNulls(settings),
       baseOptions: {delegate, ...(modelBytes ? {modelAssetBuffer: modelBytes} : {modelAssetPath: modelPath})},
     });
     return null;

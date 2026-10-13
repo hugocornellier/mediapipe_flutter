@@ -3,7 +3,8 @@ let HolisticLandmarker, ImageClassifier, ImageEmbedder, ImageSegmenter;
 let InteractiveSegmenter, ObjectDetector, PoseLandmarker;
 let DrawingUtils;
 
-import {loadVerifiedRuntime} from '../../mediapipe_core/assets/verified_runtime.js';
+import {installWorkerQueue, loadVerifiedRuntime} from
+  '../../mediapipe_core/assets/verified_runtime.js';
 
 // The runtime this worker loaded, once: a spare worker loads it before any
 // task is asked of it (see 'preload' and the bridge's prepareSpare).
@@ -184,20 +185,12 @@ function buildTasks() { return {
 let task;
 let labels;
 let spec;
-let operations = Promise.resolve();
-self.onmessage = ({data}) => {
-  // Serialize initialization, frames and shutdown on the owning worker.
-  operations = operations.then(async () => {
-    try {
-      const result = await run(data.type, data.input);
-      const transfers = result?.masks ? [...result.masks] : [];
-      if (result?.landmarks) transfers.push(result.landmarks.buffer);
-      self.postMessage({id: data.id, result, overlayFailed: result?.overlayFailed}, transfers);
-    } catch (error) {
-      self.postMessage({id: data.id, error: error?.message || String(error)});
-    }
-  });
-};
+// Masks and landmarks move to the page rather than being copied.
+installWorkerQueue(run, {
+  reply: result => ({result, overlayFailed: result?.overlayFailed}),
+  transfers: result => [...(result?.masks ?? []),
+    ...(result?.landmarks ? [result.landmarks.buffer] : [])],
+});
 async function run(type, input) {
   if (type === 'overlay') {
     if (!input.overlay) {

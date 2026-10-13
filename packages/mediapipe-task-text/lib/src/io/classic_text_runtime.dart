@@ -1,11 +1,11 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart';
+import 'package:mediapipe_core/native_structs.dart' show checkNativeStatus;
+import 'package:mediapipe_core/task_worker.dart';
 
-import 'text_task_worker.dart';
 import 'third_party/mediapipe/classic_text_bindings.dart' as mp;
 
 /// This process's target, named as core's [tasksRuntimeTargets] names the
@@ -45,81 +45,14 @@ void requireTextTasksRuntime() {
   }
 }
 
-/// Fill Google's base options from [options]' resolved model, always on
-/// the CPU, which is all the classic text tasks run on.
-void fillTextBaseOptions(
-  mp.MpBaseOptions target,
-  TaskOptions options,
-  Arena arena,
-) {
-  target
-    ..fileDescriptor = -1
-    ..delegate = 0
-    ..hostSystem = mpHostSystem;
-  if (options.modelBytes case final bytes?) {
-    final buffer = arena<Uint8>(bytes.length);
-    buffer.asTypedList(bytes.length).setAll(0, bytes);
-    target
-      ..modelAssetBuffer = buffer.cast()
-      ..modelAssetBufferCount = bytes.length;
-  } else {
-    target.modelAssetPath = nativeModelPath(
-      options.modelPath!,
-    ).toNativeUtf8(allocator: arena).cast();
-  }
-}
-
-/// Allocate all nested strings in the same short-lived arena.
-void fillTextClassifierOptions(
-  mp.MpClassifierOptions target,
-  Arena arena,
-  ClassifierSettings settings,
-) {
-  Pointer<Pointer<Char>> strings(List<String> values) {
-    if (values.isEmpty) return nullptr;
-    final array = arena<Pointer<Char>>(values.length);
-    for (var i = 0; i < values.length; i++) {
-      array[i] = values[i].toNativeUtf8(allocator: arena).cast();
-    }
-    return array;
-  }
-
-  target
-    ..displayNamesLocale =
-        settings.displayNamesLocale?.toNativeUtf8(allocator: arena).cast() ??
-        nullptr
-    ..maxResults = settings.maxResults
-    ..scoreThreshold = settings.scoreThreshold
-    ..categoryAllowlist = strings(settings.categoryAllowlist)
-    ..categoryAllowlistCount = settings.categoryAllowlist.length
-    ..categoryDenylist = strings(settings.categoryDenylist)
-    ..categoryDenylistCount = settings.categoryDenylist.length;
-}
-
-/// Copy an optional C string into Dart.
-String? textTaskString(Pointer<Char> value) =>
-    value == nullptr ? null : value.cast<Utf8>().toDartString();
-
-/// Free Google's error string on both success and failure.
+/// Runs one of Google's text calls, as core's [checkNativeStatus] does with
+/// this family's library.
 void checkTextStatus(int Function(Pointer<Pointer<Char>>) call) =>
-    using((arena) {
-      final error = arena<Pointer<Char>>();
-      try {
-        final status = call(error);
-        if (status != 0) {
-          throw TaskException(
-            textTaskString(error.value) ?? 'MediaPipe operation failed.',
-            statusCode: status,
-          );
-        }
-      } finally {
-        if (error.value != nullptr) mp.errorFree(error.value);
-      }
-    });
+    checkNativeStatus(call, mp.errorFree);
 
 /// Synchronous native owner. Only its worker exposes asynchronous requests.
-abstract class NativeClassicTextTask<I, R>
-    implements NativeTextTask<I, R, Never> {
+abstract base class NativeClassicTextTask<I, R>
+    extends WorkerTask<I, R, Never> {
   /// Native handle, owned exclusively by this executor.
   Pointer<Void> handle = nullptr;
 
@@ -130,8 +63,4 @@ abstract class NativeClassicTextTask<I, R>
       throw ArgumentError('Text must not contain NUL.');
     }
   }
-
-  @override
-  Future<void> stream(I input, void Function(Never) emit) =>
-      throw UnsupportedError('This task has no native streaming API.');
 }

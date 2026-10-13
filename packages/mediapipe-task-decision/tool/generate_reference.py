@@ -9,7 +9,6 @@ writes them with the wheel's and model's digests:
 The package's tests compare their native answers with this file.
 """
 
-import hashlib
 import importlib.metadata
 import json
 import pathlib
@@ -18,6 +17,9 @@ import sys
 
 from mediapipe.tasks.python.core import base_options as base_options_module
 from mediapipe.tasks.python.decision import decision_maker as dm
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / 'mediapipe-core/tool'))
+from tool_helpers import compact_json, digest  # noqa: E402
 
 TEXTS = [
     'My order arrived broken and I want my money back.',
@@ -97,13 +99,13 @@ def main():
       'mediapipe': importlib.metadata.version('mediapipe'),
       'platform': f'{platform.system().lower()}/{platform.machine().lower()}',
       'library': library.name,
-      'librarySha256': hashlib.sha256(library.read_bytes()).hexdigest(),
+      'librarySha256': digest(library),
       'model': model.name,
-      'modelSha256': hashlib.sha256(model.read_bytes()).hexdigest(),
+      'modelSha256': digest(model),
       'cases': cases,
   }
   output.parent.mkdir(parents=True, exist_ok=True)
-  output.write_text(json.dumps(reference, indent=1) + '\n')
+  output.write_text(compact_json(reference) + '\n')
 
 
 if __name__ == '__main__':

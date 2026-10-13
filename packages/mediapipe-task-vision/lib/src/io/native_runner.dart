@@ -26,13 +26,12 @@ import 'native_object_detector.dart';
 import 'native_pose_landmarker.dart';
 import 'vision_task_worker.dart';
 
-/// Opens Google's native task on a worker isolate named [debugName].
+/// Opens Google's native task on a worker isolate.
 Future<NativeTaskRunner<R>> openNativeTask<R, O extends VisionTaskOptions>(
   O options,
   NativeVisionTask<R> Function(O) create,
   String name,
-  String debugName,
-) => VisionTaskWorker.create(options, create, name, debugName);
+) => VisionTaskWorker.create(options, create, name);
 
 /// Opens Google's stateful segmenter on a worker isolate, after the
 /// capability query admits the delegate here.

@@ -39,7 +39,6 @@ final class ImageSegmenter implements VisionTask {
     final runner = await VisionTaskRunner.open(
       options,
       name: 'ImageSegmenter',
-      debugName: 'MediaPipe Image Segmenter',
       backend: imageSegmenterBackendFactory,
       capabilities: queryImageSegmenterCapabilities,
       native: nativeImageSegmenter,

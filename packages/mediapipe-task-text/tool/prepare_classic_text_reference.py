@@ -5,23 +5,18 @@ changes test tolerances. Python is used only to prepare the test oracle, outside
 the fresh consumer build where native build tools and Python remain blocked.
 """
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
 import platform
 import subprocess
-import sys
 
 from generate_classic_text_reference import PACKAGE
-from official_wheels import host_runtime, venv_python
+from official_wheels import host_runtime, pinned_venv
+from tool_helpers import digest
 
 REPO = PACKAGE.parents[1]
 BASELINE = PACKAGE / 'test/fixtures/classic_text/official_reference.json'
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def reference_file():
@@ -94,12 +89,8 @@ def main():
     receipt.unlink(missing_ok=True)
     python = args.python
     if python is None:
-        environment = REPO / f'build/codex-tmp/classic-text-reference-env-{runtime["version"]}'
-        python = venv_python(environment)
-        if not python.exists():
-            subprocess.run([sys.executable, '-m', 'venv', str(environment)], check=True)
-        subprocess.run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check',
-                        runtime['wheel_url'] + '#sha256=' + runtime['wheel_sha256']], check=True)
+        python = pinned_venv(
+            REPO / f'build/codex-tmp/classic-text-reference-env-{runtime["version"]}', runtime)
     reference = output / 'official_reference.json'
     command = [str(python.absolute()), '-B', str(PACKAGE / 'tool/generate_classic_text_reference.py'),
                '--output', str(reference)]

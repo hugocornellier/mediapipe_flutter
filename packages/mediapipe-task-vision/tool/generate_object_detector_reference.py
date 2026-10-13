@@ -10,13 +10,13 @@ The Dart tests consume the checked-in JSON; they do not need Python.
 """
 import argparse
 import dataclasses
-import hashlib
 import json
 from pathlib import Path
 import platform
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
 from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
+from tool_helpers import digest  # noqa: E402
 
 import mediapipe as mp
 import numpy as np
@@ -31,10 +31,6 @@ MODEL = ROOT / "models/efficientdet_lite0.tflite"
 MODEL_SHA256 = model_sha256('efficientdet_lite0.tflite')
 SCORE_THRESHOLD = 0.3
 MAX_RESULTS = 5
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def gpu_image(image):

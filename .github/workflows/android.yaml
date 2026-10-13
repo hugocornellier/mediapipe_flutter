@@ -16,26 +16,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Text Classifier, Text Embedder, Language Detector and Audio Classifier run
-  # through Google's Android text and audio libraries in the same app.
-  # Face and Hand Landmarker, Pose, Gesture, Holistic, Face and Object Detector, Image Classifier
-  # and Image Embedder run through Google's Android vision library and
-  # mediapipe_vision, so this job needs no source build. The emulator runs them on the CPU only; see
-  # gallery/tool/test_android_sdk_tasks.sh.
+  # Every family through Google's Android libraries in one app: the vision
+  # tasks, text and audio, EmbeddingGemma, Proofreader and Summarizer, Decision
+  # Maker and the retrieval tasks, so this job needs no source build. The
+  # emulator runs them on the CPU only; see gallery/tool/test_android_sdk_tasks.sh.
   sdk-tasks:
     name: Landmark, detection and classification tasks / official Android SDK on an x64 emulator
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup
         with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
+          linux-profile: ffi
+          modern-model-cache: 'true'
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -44,24 +38,13 @@ jobs:
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
-      # The generative text models, 419 MB in all, by their pinned SHA-256.
-      - uses: actions/cache@v6
-        with:
-          path: |
-            packages/mediapipe-task-text/models/embedding_gemma.task
-            packages/mediapipe-task-text/models/proofread_quant_200m.litertlm
-            packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
-          key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
       # Google's answers for its Android libraries on the x86_64 emulator: its
       # Linux x86_64 wheel of the same release on this runner.
       - name: Google's references for EmbeddingGemma, Proofreader and Summarizer
         run: |
-          sudo apt-get update && sudo apt-get install -y libegl1 libgles2
           cd packages/mediapipe-task-text
           dart pub get
-          dart tool/download_embedding_gemma.dart
-          dart tool/download_proofreader.dart
-          dart tool/download_summarizer.dart
+          dart tool/download_models.dart embedding_gemma proofreader summarizer
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
             --venv build/codex-tmp/official-python \
@@ -69,10 +52,10 @@ jobs:
       # The same two commands a clean checkout runs, so CI builds what a
       # contributor with only Dart, Flutter and the Android SDK builds; the
       # generative text tasks are opt-in, bundled here for their suite.
-      - name: Prepare the gallery with the official SDK tasks
+      - name: Prepare the gallery with the phone suites' tasks
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64 \
-            --tasks audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever \
+            --tasks audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever,decision_maker \
             --modern-text-reference build/modern-text-reference
           cd gallery && flutter pub get
       - name: Enable Android emulator hardware acceleration
@@ -96,22 +79,54 @@ jobs:
           script: bash gallery/tool/test_android_sdk_tasks.sh emulator-5554
       - name: Record android CPU task coverage (android-sdk-emulator-text-audio)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite android-sdk-emulator-text-audio --platform android --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.sdk.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: android-sdk-emulator-text-audio
+          platform: android
+          delegate: cpu
+          tasks: audio_classifier,language_detector,text_classifier,text_embedder
+          outcome: ${{ steps.sdk.outcome }}
+      # The suite writes its outcome, since the emulator step runs it with the rest.
+      - name: Read the modern text suite's outcome
+        if: always()
+        id: modern_text
+        run: echo "outcome=$(cat build/coverage-outcomes/android-modern-text 2>/dev/null || echo failure)" >> "$GITHUB_OUTPUT"
       - name: Record android CPU modern text coverage (android-sdk-emulator-modern-text)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite android-sdk-emulator-modern-text --platform android --delegate cpu --tasks embedding_gemma,text_proofreader,text_summarizer --outcome "$(cat build/coverage-outcomes/android-modern-text 2>/dev/null || echo failure)"
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: android-sdk-emulator-modern-text
+          platform: android
+          delegate: cpu
+          tasks: embedding_gemma,text_proofreader,text_summarizer
+          outcome: ${{ steps.modern_text.outputs.outcome }}
       - name: Record android CPU retrieval coverage (android-sdk-emulator-retrieval)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite android-sdk-emulator-retrieval --platform android --delegate cpu --tasks universal_embedder,semantic_retriever --outcome ${{ steps.sdk.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: android-sdk-emulator-retrieval
+          platform: android
+          delegate: cpu
+          tasks: universal_embedder,semantic_retriever
+          outcome: ${{ steps.sdk.outcome }}
+      - name: Record android CPU Decision Maker coverage (android-sdk-emulator-decision)
+        if: always()
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: android-sdk-emulator-decision
+          platform: android
+          delegate: cpu
+          tasks: decision_maker
+          outcome: ${{ steps.sdk.outcome }}
       - name: Record android CPU task coverage (android-sdk-emulator)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite android-sdk-emulator --platform android --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.sdk.outcome }}
-      - uses: actions/upload-artifact@v4
-        if: always()
+        uses: ./.github/actions/record-coverage
         with:
-          name: coverage-android-sdk-emulator
-          path: build/coverage/
-          if-no-files-found: error
+          suite: android-sdk-emulator
+          platform: android
+          delegate: cpu
+          tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker
+          outcome: ${{ steps.sdk.outcome }}
       # Only release builds run R8, and every test above is a debug build. R8
       # removes a field that is written but never read, so a plugin that keeps
       # memory alive for native code that way loses it in release builds only

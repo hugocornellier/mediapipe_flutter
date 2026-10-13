@@ -39,7 +39,6 @@ final class PoseLandmarker implements VisionTask {
     final runner = await VisionTaskRunner.open(
       options,
       name: 'PoseLandmarker',
-      debugName: 'MediaPipe Pose Landmarker',
       backend: poseLandmarkerBackendFactory,
       capabilities: queryPoseLandmarkerCapabilities,
       validate: () => validatePoseMasks(options),

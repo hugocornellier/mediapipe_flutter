@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/models.dart';
 import 'package:test/test.dart';
 
 import 'support/face_reference.dart';
@@ -15,195 +14,172 @@ const _embedderModel = 'models/mobilenet_v3_small.tflite';
 void main() {
   final reference = loadFaceReference('image_tasks', 'official_reference.json');
   final cases = (reference['cases'] as List).cast<Map<String, dynamic>>();
-  group(
-    'CPU inference',
-    () {
-      setUpAll(() {
-        expect(
-          sha256.convert(File(_classifierModel).readAsBytesSync()).toString(),
-          efficientNetLite0Sha256,
-        );
-        expect(
-          sha256.convert(File(_embedderModel).readAsBytesSync()).toString(),
-          mobileNetV3SmallSha256,
-        );
-        expect(reference['models'], {
-          'classifier': efficientNetLite0Sha256,
-          'embedder': mobileNetV3SmallSha256,
-        });
-      });
-
-      for (final expected in cases.where((c) => c['timestamp_ms'] == null)) {
-        test(
-          'official ${expected['task']} / ${expected['input']} / ${expected['options']}',
-          () => _runCase(expected),
-        );
-      }
-
-      for (final taskName in ['classifier', 'embedder']) {
-        test('$taskName video results survive queued disposal', () async {
-          final frames = cases
-              .where(
-                (c) =>
-                    c['task'] == taskName &&
-                    c['timestamp_ms'] != null &&
-                    (taskName == 'classifier' ||
-                        (c['options'] as Map)['l2_normalize'] == false),
-              )
-              .toList();
-          if (taskName == 'classifier') {
-            final task = await ImageClassifier.create(
-              ImageClassifierOptions(
-                modelPath: _classifierModel,
-                maxResults: 3,
-                runningMode: RunningMode.video,
-              ),
-            );
-            final requests = [
-              for (final frame in frames)
-                task.classifyForVideo(
-                  _image(frame),
-                  timestampMilliseconds: frame['timestamp_ms'] as int,
-                ),
-            ];
-            final closing = task.dispose();
-            expect(identical(closing, task.dispose()), isTrue);
-            await expectLater(
-              task.classifyForVideo(
-                _image(frames.first),
-                timestampMilliseconds: 100,
-              ),
-              throwsStateError,
-            );
-            final results = await Future.wait(requests);
-            await closing;
-            for (var i = 0; i < frames.length; i++) {
-              _compareClassifier(results[i], frames[i]);
-              expect(
-                results[i].timestampMilliseconds,
-                frames[i]['timestamp_ms'],
-              );
-            }
-          } else {
-            final task = await ImageEmbedder.create(
-              ImageEmbedderOptions(
-                modelPath: _embedderModel,
-                runningMode: RunningMode.video,
-              ),
-            );
-            final requests = [
-              for (final frame in frames)
-                task.embedForVideo(
-                  _image(frame),
-                  timestampMilliseconds: frame['timestamp_ms'] as int,
-                ),
-            ];
-            final closing = task.dispose();
-            expect(identical(closing, task.dispose()), isTrue);
-            final results = await Future.wait(requests);
-            await closing;
-            for (var i = 0; i < frames.length; i++) {
-              _compareEmbedder(results[i], frames[i]);
-              expect(
-                results[i].timestampMilliseconds,
-                frames[i]['timestamp_ms'],
-              );
-            }
-          }
-        });
-      }
-
-      test(
-        'model bytes own their input and native errors leave tasks usable',
-        () async {
-          final expected = cases.first;
-          final source = File(_classifierModel).readAsBytesSync();
-          final options = ImageClassifierOptions(
-            modelBytes: source,
-            maxResults: 3,
-          );
-          source.fillRange(0, source.length, 0);
-          final task = await ImageClassifier.create(options);
-          try {
-            await expectLater(
-              task.classify(VisionImage.fromFile('missing-image.jpg')),
-              throwsA(isA<TaskException>()),
-            );
-            _compareClassifier(await task.classify(_image(expected)), expected);
-          } finally {
-            await task.dispose();
-          }
-          await expectLater(
-            ImageEmbedder.create(
-              ImageEmbedderOptions(modelBytes: Uint8List(32)),
-            ).timeout(const Duration(seconds: 10)),
-            throwsA(isA<TaskException>()),
-          );
-          final valid = await ImageEmbedder.create(
-            ImageEmbedderOptions(modelPath: _embedderModel),
-          );
-          await valid.dispose();
-        },
+  group('CPU inference', () {
+    setUpAll(() {
+      expect(
+        sha256.convert(File(_classifierModel).readAsBytesSync()).toString(),
+        VisionModels.imageClassifier.sha256,
       );
+      expect(
+        sha256.convert(File(_embedderModel).readAsBytesSync()).toString(),
+        VisionModels.imageEmbedder.sha256,
+      );
+      expect(reference['models'], {
+        'classifier': VisionModels.imageClassifier.sha256,
+        'embedder': VisionModels.imageEmbedder.sha256,
+      });
+    });
 
+    for (final expected in cases.where((c) => c['timestamp_ms'] == null)) {
       test(
-        'mode and timestamp errors do not reserve invalid requests',
-        () async {
-          final expected = cases.where((c) => c['task'] == 'embedder').first;
+        'official ${expected['task']} / ${expected['input']} / ${expected['options']}',
+        () => _runCase(expected),
+      );
+    }
+
+    for (final taskName in ['classifier', 'embedder']) {
+      test('$taskName video results survive queued disposal', () async {
+        final frames = cases
+            .where(
+              (c) =>
+                  c['task'] == taskName &&
+                  c['timestamp_ms'] != null &&
+                  (taskName == 'classifier' ||
+                      (c['options'] as Map)['l2_normalize'] == false),
+            )
+            .toList();
+        if (taskName == 'classifier') {
+          final task = await ImageClassifier.create(
+            ImageClassifierOptions(
+              modelPath: _classifierModel,
+              maxResults: 3,
+              runningMode: RunningMode.video,
+            ),
+          );
+          final requests = [
+            for (final frame in frames)
+              task.classifyForVideo(
+                _image(frame),
+                timestampMilliseconds: frame['timestamp_ms'] as int,
+              ),
+          ];
+          final closing = task.dispose();
+          expect(identical(closing, task.dispose()), isTrue);
+          await expectLater(
+            task.classifyForVideo(
+              _image(frames.first),
+              timestampMilliseconds: 100,
+            ),
+            throwsStateError,
+          );
+          final results = await Future.wait(requests);
+          await closing;
+          for (var i = 0; i < frames.length; i++) {
+            _compareClassifier(results[i], frames[i]);
+            expect(results[i].timestampMilliseconds, frames[i]['timestamp_ms']);
+          }
+        } else {
           final task = await ImageEmbedder.create(
             ImageEmbedderOptions(
               modelPath: _embedderModel,
               runningMode: RunningMode.video,
             ),
           );
-          try {
-            await expectLater(task.embed(_image(expected)), throwsStateError);
-            for (final timestamp in [-1, 0x7fffffffffffffff]) {
-              await expectLater(
-                task.embedForVideo(
-                  _image(expected),
-                  timestampMilliseconds: timestamp,
-                ),
-                throwsArgumentError,
-              );
-            }
-            await expectLater(
+          final requests = [
+            for (final frame in frames)
               task.embedForVideo(
-                _image(expected),
-                timestampMilliseconds: 10,
-                rotationDegrees: 45,
+                _image(frame),
+                timestampMilliseconds: frame['timestamp_ms'] as int,
               ),
-              throwsArgumentError,
-            );
-            _compareEmbedder(
-              await task.embedForVideo(
-                _image(expected),
-                timestampMilliseconds: 10,
-              ),
-              expected,
-            );
-            await expectLater(
-              task.embedForVideo(_image(expected), timestampMilliseconds: 10),
-              throwsArgumentError,
-            );
-          } finally {
-            await task.dispose();
+          ];
+          final closing = task.dispose();
+          expect(identical(closing, task.dispose()), isTrue);
+          final results = await Future.wait(requests);
+          await closing;
+          for (var i = 0; i < frames.length; i++) {
+            _compareEmbedder(results[i], frames[i]);
+            expect(results[i].timestampMilliseconds, frames[i]['timestamp_ms']);
           }
-        },
+        }
+      });
+    }
+
+    test(
+      'model bytes own their input and native errors leave tasks usable',
+      () async {
+        final expected = cases.first;
+        final source = File(_classifierModel).readAsBytesSync();
+        final options = ImageClassifierOptions(
+          modelBytes: source,
+          maxResults: 3,
+        );
+        source.fillRange(0, source.length, 0);
+        final task = await ImageClassifier.create(options);
+        try {
+          await expectLater(
+            task.classify(VisionImage.fromFile('missing-image.jpg')),
+            throwsA(isA<TaskException>()),
+          );
+          _compareClassifier(await task.classify(_image(expected)), expected);
+        } finally {
+          await task.dispose();
+        }
+        await expectLater(
+          ImageEmbedder.create(
+            ImageEmbedderOptions(modelBytes: Uint8List(32)),
+          ).timeout(const Duration(seconds: 10)),
+          throwsA(isA<TaskException>()),
+        );
+        final valid = await ImageEmbedder.create(
+          ImageEmbedderOptions(modelPath: _embedderModel),
+        );
+        await valid.dispose();
+      },
+    );
+
+    test('mode and timestamp errors do not reserve invalid requests', () async {
+      final expected = cases.where((c) => c['task'] == 'embedder').first;
+      final task = await ImageEmbedder.create(
+        ImageEmbedderOptions(
+          modelPath: _embedderModel,
+          runningMode: RunningMode.video,
+        ),
       );
-    },
-    // Google's CPU output drifts between Apple CPUs, so macOS compares with
-    // same-host outputs (tool/test_macos_references.py).
-    skip:
-        Platform.isMacOS &&
-            Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
-                '1'
-        ? 'macOS compares with same-host official outputs.'
-        : false,
-  );
+      try {
+        await expectLater(task.embed(_image(expected)), throwsStateError);
+        for (final timestamp in [-1, 0x7fffffffffffffff]) {
+          await expectLater(
+            task.embedForVideo(
+              _image(expected),
+              timestampMilliseconds: timestamp,
+            ),
+            throwsArgumentError,
+          );
+        }
+        await expectLater(
+          task.embedForVideo(
+            _image(expected),
+            timestampMilliseconds: 10,
+            rotationDegrees: 45,
+          ),
+          throwsArgumentError,
+        );
+        _compareEmbedder(
+          await task.embedForVideo(_image(expected), timestampMilliseconds: 10),
+          expected,
+        );
+        await expectLater(
+          task.embedForVideo(_image(expected), timestampMilliseconds: 10),
+          throwsArgumentError,
+        );
+      } finally {
+        await task.dispose();
+      }
+    });
+  }, skip: cpuReferenceSkipReason);
 
   // GPU output against Google's own GPU output from the same host (Linux's
-  // wheel on OpenGL ES, the official macOS runtime on Metal), generated by
+  // wheel on OpenGL ES; macOS withdraws Metal for now, UP-057), generated by
   // tool/prepare_gpu_reference.py --image-tasks. Nothing is checked in: GPU
   // results depend on the GPU and its driver.
   group('GPU inference', () {
@@ -288,16 +264,14 @@ void main() {
 }
 
 /// Why the GPU comparisons cannot run on this host, or null when they can.
-final _gpuSkip = Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] == null
+final _gpuSkip = Platform.isMacOS
+    ? macosGpuWithdrawn
+    : Platform.environment['MEDIAPIPE_GPU_REFERENCE_DIR'] == null
     ? 'GPU image tasks compare with same-host official GPU outputs '
           '(MEDIAPIPE_GPU_REFERENCE_DIR).'
-    : Platform.isMacOS &&
-          Platform.environment['MEDIAPIPE_OFFICIAL_MACOS_LANDMARK_RUNTIME'] !=
-              '1'
-    ? 'macOS GPU compares with same-host official outputs.'
-    : Platform.isMacOS || Platform.isLinux
+    : Platform.isLinux
     ? null
-    : 'Desktop GPU is validated on Linux and macOS.';
+    : 'Desktop GPU is validated on Linux.';
 
 // The same library and GPU as the reference, reached through another
 // process: scores and float embeddings move by float rounding on the GPU.

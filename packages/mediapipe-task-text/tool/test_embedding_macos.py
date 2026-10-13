@@ -15,7 +15,7 @@ import subprocess
 import tempfile
 
 from prepare_classic_text_reference import digest, reference_file
-from consumer_packages import consumer_environment, copy_package, core_hook_defines
+from consumer_packages import configure_macos, consumer_environment, copy_package, core_hook_defines
 
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
@@ -130,10 +130,7 @@ void main() {
   });
 }
 ''')
-    config = app / 'macos/Runner/Configs/AppInfo.xcconfig'
-    config.write_text(config.read_text() + '\nARCHS = arm64\nEXCLUDED_ARCHS = x86_64\n')
-    project = app / 'macos/Runner.xcodeproj/project.pbxproj'
-    project.write_text(project.read_text().replace('MACOSX_DEPLOYMENT_TARGET = 10.15;', 'MACOSX_DEPLOYMENT_TARGET = 14.0;'))
+    configure_macos(app, deployment_target='14.0')
 
     def run(command, log_name):
         print('Running: ' + ' '.join(command), flush=True)

@@ -3,40 +3,18 @@
 // mediapipe/tasks/c/retrieval/universal_embedder/universal_embedder.h and
 // mediapipe/tasks/c/retrieval/semantic_retriever/semantic_retriever.h, which
 // Google's Python ctypes retrieval/universal_embedder.py and
-// retrieval/semantic_retriever.py mirror. MpBaseOptions is core's, and
-// MpEmbeddingResult follows the layout the text package checked against
-// Google's wheel. Every status function returns an MpStatus and takes the
+// retrieval/semantic_retriever.py mirror. MpBaseOptions and the embedding
+// structs are core's. Every status function returns an MpStatus and takes the
 // error string last, as Google's mediapipe_c_utils.CStatusFunction does.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
 
 import 'package:mediapipe_core/native_structs.dart';
 
-export 'package:mediapipe_core/native_structs.dart' show MpBaseOptions;
+export 'package:mediapipe_core/native_structs.dart'
+    show MpBaseOptions, MpEmbedding, MpEmbeddingResult;
 
 const _asset = 'package:mediapipe_retrieval/mediapipe.dylib';
-
-final class MpEmbedding extends Struct {
-  external Pointer<Float> floatEmbedding;
-  external Pointer<Uint8> quantizedEmbedding;
-  @Uint32()
-  external int valuesCount;
-  @Int32()
-  external int headIndex;
-  external Pointer<Char> headName;
-}
-
-final class MpEmbeddingResult extends Struct {
-  external Pointer<MpEmbedding> embeddings;
-  @Uint32()
-  external int embeddingsCount;
-  // The C header's order and size (32 bytes); Google's Python declares the
-  // flag first in 24 bytes, which the library overruns.
-  @Int64()
-  external int timestampMs;
-  @Bool()
-  external bool hasTimestampMs;
-}
 
 final class MpUniversalEmbedderOptions extends Struct {
   external MpBaseOptions baseOptions;

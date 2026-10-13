@@ -544,9 +544,6 @@ final class FishGame {
   /// The model's failure, which stops the game.
   Object? error;
 
-  /// Whether an answer is on its way.
-  bool get waiting => _waiting;
-
   /// One tick of [dt] seconds.
   void tick(double dt) {
     if (error != null) return;

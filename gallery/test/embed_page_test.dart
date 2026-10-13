@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediapipe_gallery/catalog.dart';
 import 'package:mediapipe_gallery/embed_page.dart';
+import 'package:mediapipe_gallery/ui/similarity.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 const _platform = TaskPlatform(

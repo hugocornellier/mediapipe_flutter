@@ -13,32 +13,15 @@ import json
 import os
 from pathlib import Path
 import platform
-import shutil
-import subprocess
 import sys
 
 REPO = Path(__file__).resolve().parents[1]
 TEXT = REPO / 'packages/mediapipe-task-text'
 sys.path.insert(0, str(REPO / 'packages/mediapipe-core/tool'))
-from official_wheels import host_runtime, venv_python  # noqa: E402
+from official_wheels import host_runtime, pinned_venv  # noqa: E402
+from tool_helpers import run  # noqa: E402
 
 TASKS = ['embedding_gemma', 'text_proofreader', 'text_summarizer']
-
-
-def run(command, cwd, log, env=None, timeout=3600):
-    executable = str(command[0])
-    if platform.system() == 'Windows' and executable in ('dart', 'flutter'):
-        # As in the vision package's test_desktop.py: Dart's hook runner needs
-        # the batch entry point Flutter's wrapper uses.
-        executable += '.bat'
-    command = [shutil.which(executable) or executable, *map(str, command[1:])]
-    print(' '.join(command), flush=True)
-    with log.open('w', encoding='utf-8') as output:
-        result = subprocess.run(command, cwd=cwd, env=env, stdout=output,
-                                stderr=subprocess.STDOUT, timeout=timeout)
-    print('\n'.join(log.read_text(encoding='utf-8', errors='replace').splitlines()[-25:]),
-          flush=True)
-    result.check_returncode()
 
 
 def main():
@@ -48,15 +31,11 @@ def main():
     evidence = REPO / 'build/codex-tmp/modern-text'
     evidence.mkdir(parents=True, exist_ok=True)
     environment = REPO / f'build/codex-tmp/official-python-{runtime["version"]}'
-    python = venv_python(environment)
-    if not python.exists():
-        run([sys.executable, '-m', 'venv', environment], REPO, evidence / 'venv.log')
-    run([python, '-m', 'pip', 'install', '--disable-pip-version-check',
-         runtime['wheel_url'] + '#sha256=' + runtime['wheel_sha256']], REPO, evidence / 'pip.log')
+    python = pinned_venv(environment, runtime, log=evidence / 'pip.log')
 
     run(['dart', 'pub', 'get'], TEXT, evidence / 'text-pub.log')
-    for tool in ('download_embedding_gemma', 'download_proofreader', 'download_summarizer'):
-        run(['dart', f'tool/{tool}.dart'], TEXT, evidence / f'{tool}.log')
+    run(['dart', 'tool/download_models.dart', 'embedding_gemma', 'proofreader', 'summarizer'],
+        TEXT, evidence / 'text-models.log')
     reference = REPO / 'build/modern-text-reference'
     run([sys.executable, '-B', TEXT / 'tool/prepare_modern_text_reference.py',
          '--python', python, '--output-dir', reference], REPO, evidence / 'reference.log')

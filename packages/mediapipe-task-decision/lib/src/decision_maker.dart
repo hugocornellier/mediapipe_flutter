@@ -33,8 +33,7 @@ final class DecisionMaker {
   DecisionMaker._(this._backend, this.delegate);
 
   final DecisionBackend _backend;
-  Future<void> _tail = Future.value();
-  Future<void>? _disposing;
+  final _queue = SerialTaskQueue('DecisionMaker');
 
   /// The processor the task runs on, fixed at creation.
   final Delegate delegate;
@@ -58,7 +57,7 @@ final class DecisionMaker {
           'maxNumTokens': options.maxNumTokens,
         });
       } catch (error) {
-        throw _taskException(error);
+        throw taskException(error);
       }
     } else {
       backend = await openNativeDecisionMaker(options);
@@ -142,13 +141,7 @@ final class DecisionMaker {
 
   /// Finishes accepted work and releases Google's task. Repeated calls return
   /// the same completion; any other call afterwards throws [StateError].
-  Future<void> dispose() => _disposing ??= _tail.then((_) async {
-    try {
-      await _backend.dispose();
-    } catch (error) {
-      throw _taskException(error);
-    }
-  });
+  Future<void> dispose() => _queue.close(_backend.dispose);
 
   Map<String, Object?> _batch(
     String method,
@@ -168,20 +161,8 @@ final class DecisionMaker {
   };
 
   /// Runs [request] after every request accepted before it.
-  Future<Object?> _run(Map<String, Object?> request) {
-    if (_disposing != null) {
-      throw StateError('DecisionMaker has been disposed.');
-    }
-    final result = _tail.then((_) async {
-      try {
-        return await _backend.run(request);
-      } catch (error) {
-        throw _taskException(error);
-      }
-    });
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return result;
-  }
+  Future<Object?> _run(Map<String, Object?> request) =>
+      _queue.add(() => _backend.run(request));
 }
 
 /// Google's C API reads NUL-terminated strings.
@@ -191,7 +172,3 @@ String _checked(String text) {
   }
   return text;
 }
-
-/// Google's failure as the one exception every task reports.
-MediaPipeException _taskException(Object error) =>
-    error is MediaPipeException ? error : TaskException('$error');

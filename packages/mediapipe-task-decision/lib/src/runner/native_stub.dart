@@ -2,7 +2,8 @@
 /// registered browser plugin, so reaching this means it did not register.
 library;
 
-import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show pluginNotRegistered;
 
 import '../decision_backend.dart';
 import '../types/options.dart';
@@ -10,9 +11,4 @@ import '../types/options.dart';
 /// The native Decision Maker; browsers have none.
 Future<DecisionBackend> openNativeDecisionMaker(
   DecisionMakerOptions options,
-) async => throw const RuntimeUnavailableException(
-  'The MediaPipe Decision browser plugin did not register.',
-  fix:
-      'Depend on mediapipe_decision as a Flutter plugin so its web '
-      'registration runs before the first task is created.',
-);
+) async => throw pluginNotRegistered('mediapipe_decision');

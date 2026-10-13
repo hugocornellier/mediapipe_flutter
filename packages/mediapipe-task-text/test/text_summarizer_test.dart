@@ -7,7 +7,6 @@ library;
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -64,28 +63,6 @@ void compareStream(
   final actual = updates.map((e) => e.chunk ?? '').join();
   _count(actual, expected);
   expectFollows(actual, expected, reason: '${entry['name']} stream');
-}
-
-/// Google's generated text differs between builds and machines late in long
-/// summaries (upstream-issues.md UP-036): greedy decoding picks another word
-/// once floating-point noise flips a near tie. Google's per-family libraries
-/// and its reference wheel are different builds, and on most hosts, though
-/// not an M4 Mac, their summaries part after 100 to 170 characters. The text
-/// also depends on the requests before it on the same task. So every summary
-/// must follow Google's from the start for 80 characters, or in full when
-/// Google's is shorter, and the exact matches are counted.
-void expectFollows(String? actual, String? expected, {String? reason}) {
-  final a = expected ?? '';
-  final b = actual ?? '';
-  var prefix = 0;
-  while (prefix < a.length && prefix < b.length && a[prefix] == b[prefix]) {
-    prefix++;
-  }
-  expect(
-    prefix,
-    greaterThanOrEqualTo(math.min(80, a.length)),
-    reason: '${reason ?? ''}: Google answered "$a", the task answered "$b"',
-  );
 }
 
 Future<TextSummarizer> create([

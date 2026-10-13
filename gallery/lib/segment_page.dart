@@ -42,7 +42,7 @@ class SegmentPage extends StatefulWidget {
   State<SegmentPage> createState() => _SegmentPageState();
 }
 
-class _SegmentPageState extends State<SegmentPage> {
+class _SegmentPageState extends State<SegmentPage> with RevisionedState {
   EditorController? _editor;
   InteractiveSegmenter? _task;
   ui.Image? _maskImage;
@@ -50,15 +50,6 @@ class _SegmentPageState extends State<SegmentPage> {
   late final _values = TaskSettingValues(widget.task.runtimeId);
   late final List<TaskSetting> _settings =
       taskSettings[widget.task.runtimeId] ?? const [];
-
-  /// Bumped on every rebuild, so the settings sheet redraws with the page.
-  final _revision = ValueNotifier<int>(0);
-
-  @override
-  void setState(VoidCallback fn) {
-    super.setState(fn);
-    _revision.value++;
-  }
 
   /// Kept off the ends, where a mask would be all or nothing.
   double get _threshold => _values.share('threshold').clamp(0.05, 0.95);
@@ -199,7 +190,6 @@ class _SegmentPageState extends State<SegmentPage> {
     unawaited(_editor?.close());
     unawaited(_task?.dispose());
     _maskImage?.dispose();
-    _revision.dispose();
     super.dispose();
   }
 
@@ -269,7 +259,7 @@ class _SegmentPageState extends State<SegmentPage> {
       onOpenMenu: widget.onOpenMenu,
       // Rebuilt with the page, so the sheet shows the current values.
       settings: ListenableBuilder(
-        listenable: _revision,
+        listenable: revision,
         builder: (context, _) => _panel(),
       ),
       children: [

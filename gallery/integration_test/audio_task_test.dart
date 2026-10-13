@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
@@ -16,24 +15,21 @@ import 'package:mediapipe_gallery/bundled_model_assets.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<Uint8List> asset(String path) async {
-    final data = await rootBundle.load(path);
-    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-  }
-
   testWidgets('audio classifier hears speech in the bundled clip', (
     tester,
   ) async {
     await tester.runAsync(() async {
       final task = await AudioClassifier.create(
         AudioClassifierOptions(
-          modelBytes: await asset(bundledModelFile('yamnet.tflite')),
+          modelBytes: await loadAssetBytes(bundledModelFile('yamnet.tflite')),
           maxResults: 3,
         ),
       );
       try {
         final chunks = await task.classify(
-          decodeWav(await asset('assets/samples/speech_16000_hz_mono.wav')),
+          decodeWav(
+            await loadAssetBytes('assets/samples/speech_16000_hz_mono.wav'),
+          ),
         );
         expect(chunks, hasLength(5));
         expect(
@@ -57,9 +53,9 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
-      final model = await asset(bundledModelFile('yamnet.tflite'));
+      final model = await loadAssetBytes(bundledModelFile('yamnet.tflite'));
       final speech = decodeWav(
-        await asset('assets/samples/speech_16000_hz_mono.wav'),
+        await loadAssetBytes('assets/samples/speech_16000_hz_mono.wav'),
       );
       final clips = await AudioClassifier.create(
         AudioClassifierOptions(modelBytes: model, maxResults: 3),

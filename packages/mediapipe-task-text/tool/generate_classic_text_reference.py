@@ -9,9 +9,8 @@ from pathlib import Path
 import platform
 import sys
 
-from official_embedding_layout import use_header_embedding_layout
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'mediapipe-core/tool'))
+from official_embedding_layout import use_header_embedding_layout  # noqa: E402
 from official_wheels import MACOS, host_runtime  # noqa: E402
 from model_pins import model_sha256  # noqa: E402
 
@@ -35,7 +34,7 @@ def main():
         sys.path.insert(0, str(args.python_package_root.resolve()))
     os.environ.setdefault('MPLCONFIGDIR', str(PACKAGE / 'build/matplotlib'))
     import mediapipe as mp
-    use_header_embedding_layout()
+    use_header_embedding_layout('text')
     from mediapipe.tasks.python.text import text_classifier as classifier
     from mediapipe.tasks.python.text import text_embedder as embedder
     from mediapipe.tasks.python.text import language_detector as language

@@ -32,8 +32,9 @@ final class RetrievalRecord {
   /// The id the record was inserted under.
   final String id;
 
-  /// The record's text, or the matching chunk of a document; empty for an
-  /// image or audio record.
+  /// The record's text, or the matching chunk of a document. On Android,
+  /// iOS and the desktops an image or audio record's text is the path it
+  /// was inserted with, or its id when it came from bytes or samples alone.
   final String text;
 
   /// How similar the record is to the query, higher is closer.

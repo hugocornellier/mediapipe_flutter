@@ -40,7 +40,6 @@ final class HolisticLandmarker implements VisionTask {
     final runner = await VisionTaskRunner.open(
       options,
       name: 'HolisticLandmarker',
-      debugName: 'MediaPipe Holistic Landmarker',
       backend: holisticLandmarkerBackendFactory,
       capabilities: queryHolisticLandmarkerCapabilities,
       native: nativeHolisticLandmarker,

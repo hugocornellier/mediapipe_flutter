@@ -1,5 +1,7 @@
 import 'package:mediapipe_decision/mediapipe_decision.dart';
 import 'package:mediapipe_decision/platform_interface.dart';
+import 'package:mediapipe_decision/src/capabilities.dart'
+    show embeddingGemma2TextTargets;
 import 'package:mediapipe_decision/src/results/decoders.dart';
 import 'package:test/test.dart';
 
@@ -103,7 +105,13 @@ void main() {
           _platform(os, arch, version),
         );
         expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: os);
-        expect(capabilities.runtimeVersion, '1.1.0');
+        // Windows runs the 1.1.0 wheel's library, the others Google's 1.1.1
+        // per-family one.
+        expect(
+          capabilities.runtimeVersion,
+          os == 'windows' ? '1.1.0' : '1.1.1',
+          reason: os,
+        );
       }
       expect(
         decisionMakerCapabilitiesForPlatform(
@@ -209,6 +217,88 @@ void main() {
         expect(refused.isSupported, isFalse, reason: '$gpu');
         expect(refused.unavailableReasons[Delegate.gpu], contains('UP-049'));
       }
+    });
+
+    test('browsers refuse the models Google\'s runtime fails with: '
+        'EmbeddingGemma 2 in WebKit (UP-054), GLiNER2.5-Decide everywhere '
+        '(UP-055)', () {
+      TaskPlatform web(BrowserEngine? engine, [String? gpu]) => TaskPlatform(
+        operatingSystem: 'web',
+        architecture: 'unknown',
+        gpu: gpu ?? 'WebGPU apple apple',
+        browserEngine: engine,
+      );
+      decisionBackendFactory = (_) => throw UnimplementedError();
+      addTearDown(() => decisionBackendFactory = null);
+      const gemmas = [
+        DecisionModels.embeddingGemma2Text,
+        DecisionModels.embeddingGemma2TextVision,
+      ];
+      const gliners = [DecisionModels.glinerS256, DecisionModels.glinerS512];
+      for (final model in gemmas) {
+        final refused = decisionMakerCapabilitiesForPlatform(
+          web(BrowserEngine.webkit),
+          model: model,
+        );
+        expect(refused.isSupported, isFalse, reason: model.url);
+        for (final delegate in Delegate.values) {
+          expect(
+            refused.unavailableReasons[delegate],
+            allOf(contains('UP-054'), contains('layaS256')),
+            reason: '$delegate ${model.url}',
+          );
+        }
+        for (final engine in [BrowserEngine.blink, BrowserEngine.gecko, null]) {
+          expect(
+            decisionMakerCapabilitiesForPlatform(
+              web(engine),
+              model: model,
+            ).supportedDelegates,
+            {Delegate.gpu},
+            reason: '$engine ${model.url}',
+          );
+        }
+      }
+      for (final engine in [BrowserEngine.webkit, BrowserEngine.blink]) {
+        for (final model in gliners) {
+          final refused = decisionMakerCapabilitiesForPlatform(
+            web(engine),
+            model: model,
+          );
+          expect(refused.isSupported, isFalse, reason: '$engine ${model.url}');
+          expect(refused.unavailableReasons[Delegate.gpu], contains('UP-055'));
+        }
+        for (final model in [
+          null,
+          DecisionModels.layaS256,
+          DecisionModels.layaS512,
+        ]) {
+          expect(
+            decisionMakerCapabilitiesForPlatform(
+              web(engine),
+              model: model,
+            ).supportedDelegates,
+            {Delegate.gpu},
+            reason: '$engine $model',
+          );
+        }
+      }
+      // Without a hardware adapter the browser's reason stays UP-049.
+      expect(
+        decisionMakerCapabilitiesForPlatform(
+          web(BrowserEngine.webkit, 'WebGPU apple apple (fallback adapter)'),
+          model: DecisionModels.embeddingGemma2Text,
+        ).unavailableReasons[Delegate.gpu],
+        contains('UP-049'),
+      );
+      // Native platforms are untouched by the browser's refusals.
+      expect(
+        decisionMakerCapabilitiesForPlatform(
+          _platform('macos', 'arm64', '15.0'),
+          model: DecisionModels.glinerS256,
+        ).supportedDelegates,
+        {Delegate.cpu},
+      );
     });
   });
 }

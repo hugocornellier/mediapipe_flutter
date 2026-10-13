@@ -3,7 +3,10 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show checkNativeStatus, fillBaseOptions, nativeString;
 import 'package:mediapipe_core/platform_interface.dart';
+import 'package:mediapipe_core/task_worker.dart';
 
 import '../capabilities.dart';
 import '../types/options.dart';
@@ -49,26 +52,18 @@ void requireDecisionRuntime() {
 /// Google's Decision Maker, created, used and closed on one worker isolate.
 /// Requests and results are the JSON shapes of Google's JavaScript API, so
 /// both runtimes share one decoder.
-final class NativeDecisionMaker {
+final class NativeDecisionMaker
+    extends WorkerTask<Map<String, Object?>, Object?, Never> {
   /// Loads Google's task and acquires its handle.
   NativeDecisionMaker(DecisionMakerOptions options) {
     using((arena) {
       final native = arena<mp.MpDecisionMakerOptions>();
-      final base = native.ref.baseOptions
-        ..fileDescriptor = -1
-        ..delegate = 0
-        ..hostSystem = mpHostSystem;
-      if (options.modelBytes case final bytes?) {
-        final buffer = arena<Uint8>(bytes.length);
-        buffer.asTypedList(bytes.length).setAll(0, bytes);
-        base
-          ..modelAssetBuffer = buffer.cast()
-          ..modelAssetBufferCount = bytes.length;
-      } else {
-        base.modelAssetPath = nativeModelPath(
-          options.modelPath!,
-        ).toNativeUtf8(allocator: arena).cast();
-      }
+      fillBaseOptions(
+        native.ref.baseOptions,
+        arena,
+        modelPath: options.modelPath,
+        modelBytes: options.modelBytes,
+      );
       native.ref.maxNumTokens = options.maxNumTokens;
       final output = arena<Pointer<Void>>();
       _check((error) => mp.create(native, output, error));
@@ -82,6 +77,7 @@ final class NativeDecisionMaker {
   Pointer<Void> _handle = nullptr;
 
   /// Runs one request (see `DecisionBackend.run`).
+  @override
   Object? run(Map<String, Object?> request) {
     if (_handle == nullptr) throw StateError('DecisionMaker has been closed.');
     final question = request['question']! as Map<String, Object?>;
@@ -211,6 +207,7 @@ final class NativeDecisionMaker {
   }
 
   /// Releases Google's task; later calls do nothing.
+  @override
   void close() {
     if (_handle == nullptr) return;
     final task = _handle;
@@ -226,10 +223,10 @@ Map<String, Object?> _boolean(mp.MpBooleanResult result) => {
 };
 
 Map<String, Object?> _choice(mp.MpChoiceResult result) => {
-  'selectedKey': _string(result.selectedKey) ?? '',
+  'selectedKey': nativeString(result.selectedKey) ?? '',
   'probabilities': {
     for (var i = 0; i < result.count; i++)
-      _string(result.keys[i])!: result.probabilities[i],
+      nativeString(result.keys[i])!: result.probabilities[i],
   },
   'confidence': result.confidence,
 };
@@ -240,30 +237,20 @@ Map<String, Object?> _score(mp.MpScoreResult result) => {
     for (var i = 0; i < result.count; i++) result.probabilities[i],
   ],
   'confidence': result.confidence,
-  'selectedKey': _string(result.selectedKey) ?? '',
+  'selectedKey': nativeString(result.selectedKey) ?? '',
 };
 
-String? _string(Pointer<Char> value) =>
-    value == nullptr ? null : value.cast<Utf8>().toDartString();
-
 /// Frees Google's error string on success and failure alike.
-void _check(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
-  final error = arena<Pointer<Char>>();
-  try {
-    final status = call(error);
-    if (status != 0) {
-      final message = _string(error.value) ?? 'MediaPipe operation failed.';
-      throw TaskException(
-        // How Google's per-family library fails the text-only EmbeddingGemma
-        // 2 model, given by path or bytes (UP-053): name the model that runs.
-        message.startsWith('EG2 embedder') &&
-                !embeddingGemma2TextTargets.containsKey(_target)
-            ? '$message $textOnlyEmbeddingGemmaUnavailable'
-            : message,
-        statusCode: status,
-      );
-    }
-  } finally {
-    if (error.value != nullptr) mp.errorFree(error.value);
-  }
-});
+void _check(int Function(Pointer<Pointer<Char>>) call) => checkNativeStatus(
+  call,
+  mp.errorFree,
+  // How Google's per-family library fails the text-only EmbeddingGemma 2
+  // model, given by path or bytes (UP-053): name the model that runs.
+  failure: (message, status) => TaskException(
+    message.startsWith('EG2 embedder') &&
+            !embeddingGemma2TextTargets.containsKey(_target)
+        ? '$message $textOnlyEmbeddingGemmaUnavailable'
+        : message,
+    statusCode: status,
+  ),
+);

@@ -26,27 +26,24 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup
         with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      # gstreamer1.0-libav decodes the gallery's H.264 sample clip, which the
-      # journey test plays in video file mode; GStreamer itself ships no H.264
-      # decoder.
-      - name: Install Linux Flutter host dependencies
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev xvfb libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good gstreamer1.0-libav libegl1 libgles2
+          linux-profile: gallery
+          block-telemetry: 'true'
+          modern-model-cache: 'true'
       - name: Validate Linux CPU references and debug/release consumers
         id: linux_cpu
         if: runner.os == 'Linux'
         run: xvfb-run -a python3 -B packages/mediapipe-task-vision/tool/test_desktop.py --object-detector --image-tasks --landmark-tasks --segmenter-tasks --interactive-segmenter
       - name: Record linux CPU task coverage (linux-cpu)
         if: always() && runner.os == 'Linux'
-        run: python3 -B tool/coverage/record.py --suite linux-cpu --platform linux --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker --outcome ${{ steps.linux_cpu.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: linux-cpu
+          platform: linux
+          delegate: cpu
+          tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker
+          outcome: ${{ steps.linux_cpu.outcome }}
       # Core's shared runtime here is the vision package's wheel library; the
       # suites compare with Google's Python on this runner.
       - name: Text and audio against Google's Linux wheel
@@ -55,66 +52,65 @@ jobs:
         run: python3 -B tool/test_text_audio.py
       - name: Record linux CPU text and audio coverage (linux-text-audio)
         if: always() && runner.os == 'Linux'
-        run: python3 -B tool/coverage/record.py --suite linux-text-audio --platform linux --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.linux_text_audio.outcome }}
-      # The generative text models, 419 MB in all, by their pinned SHA-256.
-      - uses: actions/cache@v6
+        uses: ./.github/actions/record-coverage
         with:
-          path: |
-            packages/mediapipe-task-text/models/embedding_gemma.task
-            packages/mediapipe-task-text/models/proofread_quant_200m.litertlm
-            packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
-          key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
+          suite: linux-text-audio
+          platform: linux
+          delegate: cpu
+          tasks: audio_classifier,language_detector,text_classifier,text_embedder
+          outcome: ${{ steps.linux_text_audio.outcome }}
       - name: EmbeddingGemma, Proofreader and Summarizer against Google's Linux wheel
         id: linux_modern_text
         if: ${{ !cancelled() && runner.os == 'Linux' }}
         run: python3 -B tool/test_modern_text.py
       - name: Record linux CPU modern text coverage (linux-modern-text)
         if: always() && runner.os == 'Linux'
-        run: python3 -B tool/coverage/record.py --suite linux-modern-text --platform linux --delegate cpu --tasks embedding_gemma,text_proofreader,text_summarizer --outcome ${{ steps.linux_modern_text.outcome }}
-      - uses: actions/upload-artifact@v4
-        if: always() && runner.os == 'Linux'
+        uses: ./.github/actions/record-coverage
         with:
-          name: coverage-linux-cpu
-          path: build/coverage/
-          if-no-files-found: error
-      # Google's Windows runtime uploads usage logs to play.googleapis.com and
-      # a task's close waits for that upload, which on hosted runners
-      # sometimes takes 20 to 34 s, past the tests' 30 s timeouts
-      # (upstream-issues.md UP-025). The tests must not depend on Google's
-      # logging service, so its name resolves to an unroutable address here.
-      - name: Keep Google's usage logging off the network
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Add-Content "$env:SystemRoot\System32\drivers\etc\hosts" "`n0.0.0.0 play.googleapis.com`n:: play.googleapis.com"
-          ipconfig /flushdns | Out-Null
+          suite: linux-modern-text
+          platform: linux
+          delegate: cpu
+          tasks: embedding_gemma,text_proofreader,text_summarizer
+          outcome: ${{ steps.linux_modern_text.outcome }}
       - name: Validate Windows CPU references and debug/release consumers
         id: windows_cpu
         if: runner.os == 'Windows'
         run: python -B packages/mediapipe-task-vision/tool/test_desktop.py --object-detector --image-tasks --landmark-tasks --segmenter-tasks
       - name: Record windows CPU task coverage (windows-cpu)
         if: always() && runner.os == 'Windows'
-        run: python -B tool/coverage/record.py --suite windows-cpu --platform windows --delegate cpu --tasks face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.windows_cpu.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: windows-cpu
+          platform: windows
+          delegate: cpu
+          tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker
+          outcome: ${{ steps.windows_cpu.outcome }}
       - name: Text and audio against Google's Windows wheel
         id: windows_text_audio
         if: ${{ !cancelled() && runner.os == 'Windows' }}
         run: python -B tool/test_text_audio.py
       - name: Record windows CPU text and audio coverage (windows-text-audio)
         if: always() && runner.os == 'Windows'
-        run: python -B tool/coverage/record.py --suite windows-text-audio --platform windows --delegate cpu --tasks audio_classifier,language_detector,text_classifier,text_embedder --outcome ${{ steps.windows_text_audio.outcome }}
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: windows-text-audio
+          platform: windows
+          delegate: cpu
+          tasks: audio_classifier,language_detector,text_classifier,text_embedder
+          outcome: ${{ steps.windows_text_audio.outcome }}
       - name: EmbeddingGemma, Proofreader and Summarizer against Google's Windows wheel
         id: windows_modern_text
         if: ${{ !cancelled() && runner.os == 'Windows' }}
         run: python -B tool/test_modern_text.py
       - name: Record windows CPU modern text coverage (windows-modern-text)
         if: always() && runner.os == 'Windows'
-        run: python -B tool/coverage/record.py --suite windows-modern-text --platform windows --delegate cpu --tasks embedding_gemma,text_proofreader,text_summarizer --outcome ${{ steps.windows_modern_text.outcome }}
-      - uses: actions/upload-artifact@v4
-        if: always() && runner.os == 'Windows'
+        uses: ./.github/actions/record-coverage
         with:
-          name: coverage-windows-cpu
-          path: build/coverage/
-          if-no-files-found: error
+          suite: windows-modern-text
+          platform: windows
+          delegate: cpu
+          tasks: embedding_gemma,text_proofreader,text_summarizer
+          outcome: ${{ steps.windows_modern_text.outcome }}
       - name: Build and exercise the Linux CPU gallery
         if: runner.os == 'Linux'
         run: xvfb-run -a python3 -B gallery/tool/test_desktop.py
@@ -151,30 +147,16 @@ jobs:
       MEDIAPIPE_GPU_REFERENCE_DIR: ${{ github.workspace }}/build/gpu-reference
     steps:
       - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup
         with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - name: Install Mesa's EGL and OpenGL ES, and the Flutter Linux host
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq libegl1 libgles2 libegl-mesa0 libgl1-mesa-dri \
-            clang cmake ninja-build pkg-config libgtk-3-dev xvfb \
-            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good
+          linux-profile: gallery
+      - name: Install Mesa's EGL and OpenGL ES
+        run: sudo apt-get install -y -qq libegl-mesa0 libgl1-mesa-dri
       - name: Download the vision models
         working-directory: packages/mediapipe-task-vision
         run: |
           dart pub get
-          dart tool/download_model.dart
-          dart tool/download_face_landmarker.dart
-          dart tool/download_landmark_tasks.dart
-          dart tool/download_object_detector.dart
-          dart tool/download_image_tasks.dart
-          dart tool/download_segmenter_tasks.dart
+          dart tool/download_models.dart face_detector face_landmarker hand_landmarker gesture_recognizer pose_landmarker holistic_landmarker image_classifier image_embedder object_detector image_segmenter
       - name: Official GPU references and Dart GPU suites on llvmpipe
         id: linux_gpu
         env:
@@ -190,13 +172,13 @@ jobs:
           --landmark-tasks --object-detector --image-tasks --segmenter-tasks
       - name: Record linux GPU task coverage (linux-gpu)
         if: always()
-        run: python3 -B tool/coverage/record.py --suite linux-gpu --platform linux --delegate gpu --tasks face_landmarker,gesture_recognizer,hand_landmarker,image_classifier,image_segmenter,object_detector,pose_landmarker --outcome ${{ steps.linux_gpu.outcome }}
-      - uses: actions/upload-artifact@v4
-        if: always()
+        uses: ./.github/actions/record-coverage
         with:
-          name: coverage-linux-gpu
-          path: build/coverage/
-          if-no-files-found: error
+          suite: linux-gpu
+          platform: linux
+          delegate: gpu
+          tasks: face_landmarker,gesture_recognizer,hand_landmarker,image_classifier,image_segmenter,object_detector,pose_landmarker
+          outcome: ${{ steps.linux_gpu.outcome }}
       - name: Without the rename, the refused GPU is reported and not replaced
         working-directory: build/gpu-face-tests
         env:

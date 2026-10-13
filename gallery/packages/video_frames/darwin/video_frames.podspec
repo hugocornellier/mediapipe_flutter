@@ -1,5 +1,5 @@
 # The gallery builds with Swift Package Manager (video_frames/Package.swift);
-# this spec serves an app that still uses CocoaPods.
+# this spec serves an app that still uses CocoaPods. Nothing in CI uses it.
 Pod::Spec.new do |s|
   s.name             = 'video_frames'
   s.version          = '0.1.0'

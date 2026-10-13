@@ -50,11 +50,16 @@ class DecisionPage extends StatefulWidget {
   State<DecisionPage> createState() => _DecisionPageState();
 }
 
-class _DecisionPageState extends State<DecisionPage> {
+class _DecisionPageState extends State<DecisionPage> with RevisionedState {
   late final String _id = widget.task.runtimeId;
   late final TaskSettingValues _values = TaskSettingValues(_id);
   late final List<TaskSetting> _settings = taskSettings[_id] ?? const [];
-  late final List<TaskModel> _models = taskModels[_id] ?? const [];
+  // Only the alternatives the package accepts here: browsers run neither
+  // GLiNER2.5-Decide model (UP-055).
+  late final List<TaskModel> _models = [
+    for (final model in taskModels[_id] ?? const <TaskModel>[])
+      if (decisionRunsModel(widget.platform, model)) model,
+  ];
   late final List<Delegate> _delegates = widget.task
       .capabilities(widget.platform)
       .supportedDelegates
@@ -87,22 +92,12 @@ class _DecisionPageState extends State<DecisionPage> {
   Object? _result;
   double? _milliseconds;
 
-  /// Bumped on every rebuild, so the settings sheet redraws with the page.
-  final _revision = ValueNotifier<int>(0);
-
-  @override
-  void setState(VoidCallback fn) {
-    super.setState(fn);
-    _revision.value++;
-  }
-
   @override
   void dispose() {
     unawaited(_close());
     for (final controller in [_text, _condition, _options, _rubric]) {
       controller.dispose();
     }
-    _revision.dispose();
     super.dispose();
   }
 
@@ -114,7 +109,7 @@ class _DecisionPageState extends State<DecisionPage> {
 
   /// The chosen model's pin: the catalog's unless another was chosen.
   DownloadAsset get _pin => switch (_model) {
-    final model? => DownloadAsset(url: '${model.url}', sha256: model.sha256),
+    final model? => model.pin,
     null => widget.task.model,
   };
 
@@ -205,7 +200,7 @@ class _DecisionPageState extends State<DecisionPage> {
   }
 
   Widget _panel() => ListenableBuilder(
-    listenable: _revision,
+    listenable: revision,
     builder: (context, _) => TaskSettingsPanel(
       settings: [
         for (final setting in _settings)
@@ -378,26 +373,14 @@ class _DecisionPageState extends State<DecisionPage> {
               const SizedBox(height: 12),
               _question(),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  PrimaryButton(
-                    icon: LucideIcons.play,
-                    label: 'Ask',
-                    onPressed: _busy ? null : _run,
-                  ),
-                  const SizedBox(width: 16),
-                  if (_busy)
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else if (_milliseconds case final ms?)
-                    Text(
-                      'Done in ${ms.toStringAsFixed(1)} ms',
-                      style: TextStyle(color: c.muted, fontSize: Sizes.xs),
-                    ),
-                ],
+              TaskRunRow(
+                busy: _busy,
+                milliseconds: _milliseconds,
+                button: PrimaryButton(
+                  icon: LucideIcons.play,
+                  label: 'Ask',
+                  onPressed: _busy ? null : _run,
+                ),
               ),
               if (_modelStatus case final status?) ...[
                 const SizedBox(height: 12),
@@ -411,16 +394,7 @@ class _DecisionPageState extends State<DecisionPage> {
         ),
         const SizedBox(height: 22),
         if (_error case final error?)
-          OutputCard(
-            title: 'Error',
-            child: Text(
-              error,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: Sizes.sm,
-              ),
-            ),
-          )
+          TaskErrorCard(error)
         else
           _answer(context),
       ],

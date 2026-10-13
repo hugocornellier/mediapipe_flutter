@@ -35,10 +35,6 @@ abstract interface class TextStreamRunner<I, R, U>
   Stream<U> stream(I input);
 }
 
-/// Google's failure as the one exception every task reports.
-TaskException taskException(Object error) =>
-    error is TaskException ? error : TaskException('$error');
-
 /// The checks every text request gets on every platform before it reaches
 /// Google's runtime, so the same call fails the same way everywhere.
 final class TextTaskSession<I, R> {
@@ -155,35 +151,15 @@ final class BackendTextTask<R> implements TextTaskRunner<BackendRequest, R> {
 
   final TextTaskBackend _backend;
   final R Function(Map<String, dynamic> json) _decode;
-  Future<void> _tail = Future.value();
-  Future<void>? _disposing;
+  final _queue = SerialTaskQueue('Text task');
 
   @override
-  Future<R> run(BackendRequest request) {
-    if (_disposing != null) {
-      return Future.error(StateError('Text task has been disposed.'));
-    }
-    final result = _tail.then((_) async {
-      final Map<String, dynamic> json;
-      try {
-        json = await _backend.run(request.$1, request.$2);
-      } catch (error) {
-        throw taskException(error);
-      }
-      return _decode(json);
-    });
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return result;
-  }
+  Future<R> run(BackendRequest request) => _queue.add(
+    () async => _decode(await _backend.run(request.$1, request.$2)),
+  );
 
   @override
-  Future<void> dispose() => _disposing ??= _tail.then((_) async {
-    try {
-      await _backend.dispose();
-    } catch (error) {
-      throw taskException(error);
-    }
-  });
+  Future<void> dispose() => _queue.close(_backend.dispose);
 }
 
 /// Adapts a backend to a task whose requests carry more than text, such as

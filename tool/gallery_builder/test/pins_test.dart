@@ -18,6 +18,19 @@ Set<String> _byName(String family) {
 }
 
 void main() {
+  test('the gallery runs a task from every family', () {
+    final families = [
+      for (final entry in Directory(p.join('..', '..', 'packages')).listSync())
+        if (p.basename(entry.path).startsWith('mediapipe-task-'))
+          p.basename(entry.path),
+    ]..sort();
+    final covered = {
+      for (final model in models.values) packageOf(model.family),
+    };
+    expect(covered.toList()..sort(), families);
+    expect(() => packageOf('mediapipe_core'), throwsArgumentError);
+  });
+
   for (final MapEntry(key: task, value: model) in models.entries) {
     test('$task lists a model ${model.family} can bundle', () {
       expect(
