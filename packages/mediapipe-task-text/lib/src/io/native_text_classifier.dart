@@ -2,6 +2,7 @@ import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart' show nativeString;
 
 import '../types/options.dart';
 import '../types/results.dart';
@@ -81,10 +82,10 @@ Classifications _copyHead(mp.MpClassifications head) => Classifications(
       MediaPipeCategory(
         index: head.categories[i].index,
         score: head.categories[i].score,
-        categoryName: textTaskString(head.categories[i].categoryName),
-        displayName: textTaskString(head.categories[i].displayName),
+        categoryName: nativeString(head.categories[i].categoryName),
+        displayName: nativeString(head.categories[i].displayName),
       ),
   ],
   headIndex: head.headIndex,
-  headName: textTaskString(head.headName),
+  headName: nativeString(head.headName),
 );

@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show checkNativeStatus, nativeString;
 import 'package:mediapipe_core/platform_interface.dart'
     show ClassifierSettings, nativeModelPath;
 
@@ -92,8 +94,8 @@ MediaPipeCategory copyVisionCategory(mp.MpCategory category) =>
     MediaPipeCategory(
       index: category.index,
       score: category.score,
-      categoryName: nativeString(category.category_name),
-      displayName: nativeString(category.display_name),
+      categoryName: nativeString(category.category_name, emptyIsNull: true),
+      displayName: nativeString(category.display_name, emptyIsNull: true),
     );
 
 /// Copy every head and category into immutable Dart values.
@@ -103,7 +105,10 @@ List<Classifications> copyVisionClassifications(
   for (var i = 0; i < result.classifications_count; i++)
     Classifications(
       headIndex: result.classifications[i].head_index,
-      headName: nativeString(result.classifications[i].head_name),
+      headName: nativeString(
+        result.classifications[i].head_name,
+        emptyIsNull: true,
+      ),
       categories: [
         for (var j = 0; j < result.classifications[i].categories_count; j++)
           copyVisionCategory(result.classifications[i].categories[j]),
@@ -114,7 +119,7 @@ List<Classifications> copyVisionClassifications(
 /// Copy a native embedding, preserving quantized bytes without sign conversion.
 Embedding copyVisionEmbedding(mp.MpEmbedding value) => Embedding(
   headIndex: value.head_index,
-  headName: nativeString(value.head_name),
+  headName: nativeString(value.head_name, emptyIsNull: true),
   floatEmbedding: value.float_embedding == nullptr
       ? null
       : value.float_embedding.asTypedList(value.values_count),
@@ -207,7 +212,7 @@ Detection copyVisionDetection(mp.MpDetection value) => Detection(
       NormalizedKeypoint(
         x: value.keypoints[i].x,
         y: value.keypoints[i].y,
-        label: nativeString(value.keypoints[i].label),
+        label: nativeString(value.keypoints[i].label, emptyIsNull: true),
         score: value.keypoints[i].has_score ? value.keypoints[i].score : null,
       ),
   ],
@@ -215,10 +220,7 @@ Detection copyVisionDetection(mp.MpDetection value) => Detection(
 
 /// Release native errors and throw an owned diagnostic on non-OK status.
 void checkVisionCall(mp.MpStatus Function(Pointer<Pointer<Char>>) call) =>
-    checkedCall(
-      call,
-      onError: (message, status) => TaskException(message, statusCode: status),
-    );
+    checkNativeStatus((error) => call(error).value, mp.MpErrorFree);
 
 /// Create a task, marking Google's GPU refusals (no EGL display, a software
 /// renderer) so callers can choose CPU. The package never retries itself.
@@ -267,8 +269,14 @@ List<List<MediaPipeCategory>> copyVisionCategories(
           MediaPipeCategory(
             index: index,
             score: values[i].categories[j].score,
-            categoryName: nativeString(values[i].categories[j].category_name),
-            displayName: nativeString(values[i].categories[j].display_name),
+            categoryName: nativeString(
+              values[i].categories[j].category_name,
+              emptyIsNull: true,
+            ),
+            displayName: nativeString(
+              values[i].categories[j].display_name,
+              emptyIsNull: true,
+            ),
           ),
     ],
 ];
@@ -288,7 +296,7 @@ List<NormalizedLandmark> copyVisionNormalizedLandmarks(
       presence: values.landmarks[i].has_presence
           ? values.landmarks[i].presence
           : null,
-      name: nativeString(values.landmarks[i].name),
+      name: nativeString(values.landmarks[i].name, emptyIsNull: true),
     ),
 ];
 
@@ -305,7 +313,7 @@ List<Landmark> copyVisionWorldLandmarks(mp.MpLandmarks values) => [
       presence: values.landmarks[i].has_presence
           ? values.landmarks[i].presence
           : null,
-      name: nativeString(values.landmarks[i].name),
+      name: nativeString(values.landmarks[i].name, emptyIsNull: true),
     ),
 ];
 

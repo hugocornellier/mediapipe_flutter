@@ -1,6 +1,7 @@
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
+import 'package:mediapipe_core/native_structs.dart' show nativeString;
 
 import '../types/options.dart';
 import '../types/results.dart';
@@ -68,7 +69,7 @@ LanguageDetectorResult languageDetectorResultFromNative(
   predictions: [
     for (var i = 0; i < pointer.ref.predictionsCount; i++)
       LanguagePrediction(
-        languageCode: textTaskString(pointer.ref.predictions[i].languageCode)!,
+        languageCode: nativeString(pointer.ref.predictions[i].languageCode)!,
         probability: pointer.ref.predictions[i].probability,
       ),
   ],

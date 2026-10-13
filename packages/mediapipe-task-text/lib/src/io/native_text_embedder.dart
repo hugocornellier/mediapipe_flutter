@@ -2,6 +2,7 @@ import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart' show nativeString;
 
 import '../runner/text_task_runner.dart';
 import '../types/format_context.dart';
@@ -114,6 +115,6 @@ Embedding _copyEmbedding(mp.MpEmbedding value) {
         ? null
         : value.quantizedEmbedding.asTypedList(value.valuesCount),
     headIndex: value.headIndex,
-    headName: textTaskString(value.headName),
+    headName: nativeString(value.headName),
   );
 }

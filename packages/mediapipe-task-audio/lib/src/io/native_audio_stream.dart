@@ -11,6 +11,7 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart' show nativeString;
 
 import '../runner.dart';
 import '../stream/results.dart';

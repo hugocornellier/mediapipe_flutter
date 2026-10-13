@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart';
+import 'package:mediapipe_core/native_structs.dart' show checkNativeStatus;
 
 import 'text_task_worker.dart';
 import 'third_party/mediapipe/classic_text_bindings.dart' as mp;
@@ -96,26 +97,10 @@ void fillTextClassifierOptions(
     ..categoryDenylistCount = settings.categoryDenylist.length;
 }
 
-/// Copy an optional C string into Dart.
-String? textTaskString(Pointer<Char> value) =>
-    value == nullptr ? null : value.cast<Utf8>().toDartString();
-
-/// Free Google's error string on both success and failure.
+/// Runs one of Google's text calls, as core's [checkNativeStatus] does with
+/// this family's library.
 void checkTextStatus(int Function(Pointer<Pointer<Char>>) call) =>
-    using((arena) {
-      final error = arena<Pointer<Char>>();
-      try {
-        final status = call(error);
-        if (status != 0) {
-          throw TaskException(
-            textTaskString(error.value) ?? 'MediaPipe operation failed.',
-            statusCode: status,
-          );
-        }
-      } finally {
-        if (error.value != nullptr) mp.errorFree(error.value);
-      }
-    });
+    checkNativeStatus(call, mp.errorFree);
 
 /// Synchronous native owner. Only its worker exposes asynchronous requests.
 abstract class NativeClassicTextTask<I, R>

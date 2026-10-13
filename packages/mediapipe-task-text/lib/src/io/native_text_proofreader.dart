@@ -2,6 +2,8 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show checkNativeStatus, nativeString;
 import 'package:mediapipe_core/platform_interface.dart'
     show mpHostSystem, nativeModelPath;
 
@@ -65,7 +67,7 @@ final class NativeTextProofreader
     try {
       final result = output.value.ref;
       return TextProofreaderResult(
-        proofreadText: _string(result.proofreadText),
+        proofreadText: nativeString(result.proofreadText),
         corrections: _corrections(result.corrections, result.correctionsCount),
       );
     } finally {
@@ -91,7 +93,7 @@ final class NativeTextProofreader
           );
         }),
         decode: (result, terminal) => TextProofreaderUpdate(
-          chunk: nativeTextString(result.text),
+          chunk: nativeString(result.text),
           done: terminal,
           corrections: _corrections(
             result.corrections,
@@ -112,9 +114,6 @@ final class NativeTextProofreader
   }
 }
 
-String? _string(Pointer<Char> pointer) =>
-    pointer == nullptr ? null : pointer.cast<Utf8>().toDartString();
-
 List<ProofreadingCorrection> _corrections(
   Pointer<mp.MpCorrection> values,
   int count,
@@ -126,22 +125,10 @@ List<ProofreadingCorrection> _corrections(
     for (var i = 0; i < count; i++)
       ProofreadingCorrection(
         type: ProofreadingCorrectionType.values[values[i].type],
-        text: _string(values[i].text) ?? '',
+        text: nativeString(values[i].text) ?? '',
       ),
   ];
 }
 
-void _checked(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
-  final error = arena<Pointer<Char>>();
-  try {
-    final status = call(error);
-    if (status != 0) {
-      throw TaskException(
-        _string(error.value) ?? 'MediaPipe operation failed.',
-        statusCode: status,
-      );
-    }
-  } finally {
-    if (error.value != nullptr) mp.errorFree(error.value);
-  }
-});
+void _checked(int Function(Pointer<Pointer<Char>>) call) =>
+    checkNativeStatus(call, mp.errorFree);

@@ -2,6 +2,8 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show checkNativeStatus, nativeString;
 import 'package:mediapipe_core/platform_interface.dart'
     show mpHostSystem, nativeModelPath;
 
@@ -60,9 +62,7 @@ final class NativeTextSummarizer
       ),
     );
     try {
-      return TextSummarizerResult(
-        summary: nativeTextString(result.ref.summary),
-      );
+      return TextSummarizerResult(summary: nativeString(result.ref.summary));
     } finally {
       // Google frees the payload. The arena frees the caller-owned struct.
       mp.closeResult(result);
@@ -86,7 +86,7 @@ final class NativeTextSummarizer
           );
         }),
         decode: (result, terminal) => TextSummarizerUpdate(
-          chunk: nativeTextString(result.text),
+          chunk: nativeString(result.text),
           done: terminal,
         ),
         emit: emit,
@@ -102,17 +102,5 @@ final class NativeTextSummarizer
   }
 }
 
-void _checked(int Function(Pointer<Pointer<Char>>) call) => using((arena) {
-  final error = arena<Pointer<Char>>();
-  try {
-    final status = call(error);
-    if (status != 0) {
-      throw TaskException(
-        nativeTextString(error.value) ?? 'MediaPipe operation failed.',
-        statusCode: status,
-      );
-    }
-  } finally {
-    if (error.value != nullptr) mp.errorFree(error.value);
-  }
-});
+void _checked(int Function(Pointer<Pointer<Char>>) call) =>
+    checkNativeStatus(call, mp.errorFree);

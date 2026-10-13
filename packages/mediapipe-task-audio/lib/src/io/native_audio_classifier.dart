@@ -10,6 +10,8 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart'
+    show checkNativeStatus, nativeString;
 import 'package:mediapipe_core/platform_interface.dart';
 
 import '../runner.dart';
@@ -251,20 +253,7 @@ AudioClassifierResult _chunk(mp.MpClassificationResult result) =>
       ],
     );
 
-/// A nullable C string, decoded before Google or the bridge frees it.
-String? nativeString(Pointer<Char> value) =>
-    value == nullptr ? null : value.cast<Utf8>().toDartString();
-
-/// Runs a call of Google's C API, turning a failed status into Google's
-/// message as a [TaskException].
+/// Runs one of Google's audio calls, as core's [checkNativeStatus] does with
+/// this family's library.
 void checkedNativeCall(int Function(Pointer<Pointer<Char>> error) call) =>
-    using((arena) {
-      final error = arena<Pointer<Char>>();
-      final status = call(error);
-      if (status == 0) return;
-      final message = error.value == nullptr
-          ? 'MediaPipe status $status'
-          : error.value.cast<Utf8>().toDartString();
-      if (error.value != nullptr) mp.errorFree(error.value);
-      throw TaskException(message, statusCode: status);
-    });
+    checkNativeStatus(call, mp.errorFree);

@@ -12,6 +12,10 @@ library;
 
 import 'dart:ffi';
 
+import 'package:ffi/ffi.dart';
+
+import 'src/exceptions.dart';
+
 /// `MpBaseOptions`: the model, delegate and host every task's options embed.
 final class MpBaseOptions extends Struct {
   external Pointer<Char> modelAssetBuffer;
@@ -77,3 +81,35 @@ final class MpClassificationResult extends Struct {
   @Bool()
   external bool hasTimestampMs;
 }
+
+/// Copies Google's C string, or null for a null pointer. With [emptyIsNull],
+/// an empty string is null too, as Google's Python reads optional strings.
+String? nativeString(Pointer<Char> value, {bool emptyIsNull = false}) {
+  if (value == nullptr) return null;
+  final text = value.cast<Utf8>().toDartString();
+  return emptyIsNull && text.isEmpty ? null : text;
+}
+
+/// Runs [call], one of Google's C functions that report a failure through an
+/// error out-parameter, and throws a failure as a [TaskException] with
+/// Google's message and status, or as what [failure] makes of them.
+/// [errorFree] is the calling family's `MpErrorFree`, since each family loads
+/// its own library; it frees Google's message on every path.
+void checkNativeStatus(
+  int Function(Pointer<Pointer<Char>> error) call,
+  void Function(Pointer<Char> message) errorFree, {
+  Object Function(String message, int status)? failure,
+}) => using((arena) {
+  final error = arena<Pointer<Char>>();
+  try {
+    final status = call(error);
+    if (status != 0) {
+      final message =
+          nativeString(error.value) ?? 'MediaPipe failed with status $status.';
+      throw failure?.call(message, status) ??
+          TaskException(message, statusCode: status);
+    }
+  } finally {
+    if (error.value != nullptr) errorFree(error.value);
+  }
+});

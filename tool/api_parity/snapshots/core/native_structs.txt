@@ -68,3 +68,5 @@ final class MpClassifierOptions extends Struct
   set displayNamesLocale(Pointer<Char> value)
   set maxResults(int value)
   set scoreThreshold(double value)
+function void checkNativeStatus(int Function(Pointer<Pointer<Char>>) call, void Function(Pointer<Char>) errorFree, {Object Function(String, int)? failure})
+function String? nativeString(Pointer<Char> value, {bool emptyIsNull = false})
