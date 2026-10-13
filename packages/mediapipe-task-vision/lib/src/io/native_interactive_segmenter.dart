@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/native_structs.dart' show checkNativeStatus;
 
 import '../third_party/mediapipe/interactive_segmenter_bindings.dart' as seg;
 import '../third_party/mediapipe/vision_bindings.dart' as mp;
@@ -149,4 +150,4 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
 
 /// The stateful API's bindings return the status code as an int.
 void _checked(int Function(Pointer<Pointer<Char>>) call) =>
-    checkVisionCall((error) => mp.MpStatus.fromValue(call(error)));
+    checkNativeStatus(call, mp.MpErrorFree);

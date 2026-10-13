@@ -379,6 +379,7 @@ show every one.
    caller's.
 2. **Close-once handle:** `NativeTaskHandle<T extends NativeType>` (`value`,
    `close(release)`), clearing the pointer before the callback. Net about 50.
+   **Measured and dropped:** it added 18 lines; see [Keep](#keep).
 3. **Core web helpers** (`web_task_bridge.dart`, `platform_interface.dart`),
    **done on `chore/oct12-combined`:**
    `readWebGpuAdapter()`, `hasHardwareWebGpu(TaskPlatform)` and
@@ -816,6 +817,7 @@ The scans flag these, and they stay:
 | A generic web plugin layer and JSON backend | The four adapters already share `WebTaskWorker`; a generic layer adds about as much as it removes. |
 | A generic hook | The hooks are 12 to 42 lines and already call core; sharing the text and audio bridge builder (10 lines each) would make core depend on `native_toolchain_c`. |
 | A synchronous `"$os/$arch"` getter on its own | Three two-line copies; a new export and stub cost more. |
+| A close-once task handle (S1 step 2) | Tried on `chore/oct12-combined` across all 18 `close()` bodies: 222 lines added against 204 removed. Each close shrank by three lines, but every use of a handle gained `.value`, which re-wraps native calls (one of Hand Landmarker's grew from two lines to seven), and the class itself is 14. The copies already clear the pointer before Google's close, so it fixed nothing. |
 | One model holder for the Decision and Hungry Fish pages | They share `_pin` and the create call, but Hungry Fish memoizes an in-flight open, runs a loading clock and words its status differently; a holder with callbacks costs more than the copies. R4 takes the pins. |
 
 ## Suggested order
@@ -837,7 +839,7 @@ debug and release.
    calls back), S1 step 3, S2, S4, S5 and R4's Decision pins. B1 and B2 are
    done.
 3. **FFI kit (days 2 to 3):** S1 steps 1, 2 and 8. Step 1 is done on
-   `chore/oct12-combined`.
+   `chore/oct12-combined`, and step 2 was measured and dropped.
 4. **Runtime plumbing (days 3 to 5, the riskiest):** S1 steps 4, 5 and 7.
    Core's tests with a fake worker task come first; then one family at a
    time.
