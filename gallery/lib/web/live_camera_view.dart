@@ -130,8 +130,8 @@ class LiveCameraView extends StatelessWidget {
   }
 
   /// Records on the video element where the overlay draws the first
-  /// subject's [AlignmentProbes], for the browser suite's alignment oracle
-  /// (`tool/browser/test_browser.mjs`).
+  /// subject's [AlignmentProbes], and their mirror partners, for the browser
+  /// suite's alignment oracle (`tool/browser/test_browser.mjs`).
   ///
   /// Uses the painter's own [transform] and reads the overlay's place on the
   /// page after layout; logical pixels are CSS pixels on web. The probes and
@@ -142,7 +142,9 @@ class LiveCameraView extends StatelessWidget {
     final probed = AlignmentProbes.of(result);
     final subjects = liveSubjects(result);
     if (probed == null || subjects.isEmpty) {
-      video.removeAttribute('data-probes');
+      video
+        ..removeAttribute('data-probes')
+        ..removeAttribute('data-partners');
       return;
     }
     final subject = subjects.first;
@@ -172,7 +174,15 @@ class LiveCameraView extends StatelessWidget {
         )
         ..setAttribute('data-mirror', '${transform.mirror}')
         ..setAttribute('data-rotation', '${transform.quarterTurns * 90}')
-        ..setAttribute('data-probes', jsonEncode(probes));
+        ..setAttribute('data-probes', jsonEncode(probes))
+        ..setAttribute(
+          'data-partners',
+          jsonEncode(
+            probed.partners.map(
+              (index, partner) => MapEntry('$index', partner),
+            ),
+          ),
+        );
     });
   }
 }

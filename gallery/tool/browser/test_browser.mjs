@@ -10,20 +10,18 @@ const argumentsMap = Object.fromEntries(process.argv.slice(2).map(arg => arg.rep
 const browserName = argumentsMap.browser || 'chromium';
 const suite = argumentsMap.suite || 'all';
 const delegate = argumentsMap.delegate === 'gpu' ? 'GPU' : 'CPU';
-// The live demo the camera suite drives. Probes and mirror partners match
-// AlignmentProbes in gallery/lib/live/live_subjects.dart: the official IMAGE
-// task labels a face's landmarks by the side of the picture they appear on,
-// so across a mirror it reports each probe's left/right partner, while a hand
-// keeps its numbering (only its handedness flips).
+// The live demo the camera suite drives. The page publishes its probes and
+// their mirror partners (AlignmentProbes in gallery/lib/live/live_subjects.dart):
+// the official IMAGE task labels a face's landmarks by the side of the picture
+// they appear on, so across a mirror it reports each probe's left/right
+// partner, while a hand keeps its numbering (only its handedness flips).
 const TASKS = {
   face: {tile: /Face Landmarker/, points: '478', fixture: 'web-camera.y4m',
     task: 'FaceLandmarker', model: 'face_landmarker.task', landmarks: 'faceLandmarks',
-    options: {numFaces: 1},
-    partners: {1: 1, 152: 152, 10: 10, 468: 473, 473: 468, 61: 291, 291: 61, 33: 263, 263: 33}},
+    options: {numFaces: 1}},
   hand: {tile: /Hand Landmarker/, points: '21', fixture: 'web-camera-hand.y4m',
     task: 'HandLandmarker', model: 'hand_landmarker.task', landmarks: 'landmarks',
-    options: {numHands: 2},
-    partners: {0: 0, 4: 4, 8: 8, 12: 12, 16: 16, 20: 20, 5: 5, 17: 17}},
+    options: {numHands: 2}},
 };
 const taskName = argumentsMap.task || 'face';
 const subject = TASKS[taskName];
@@ -98,7 +96,7 @@ async function wait(page, condition, arg = null, timeout = 60000) {
 
 // Same criterion as gallery/integration_test/support/alignment_oracle.dart:
 // median probe deviation, and any single probe, as a fraction of the preview
-// diagonal.
+// diagonal. tool/check_repository.py keeps the two pairs equal.
 const alignmentTolerance = 0.015;
 const alignmentOutlierTolerance = 0.03;
 // The hand thumb tip is less stable between live VIDEO tracking and a fresh
@@ -148,6 +146,7 @@ async function alignmentCheck(page) {
     box: JSON.parse(video.getAttribute('data-overlay-box')),
     frame: JSON.parse(video.getAttribute('data-frame-box')),
     probes: JSON.parse(video.getAttribute('data-probes')),
+    partners: JSON.parse(video.getAttribute('data-partners')),
     mirror: video.getAttribute('data-mirror') === 'true',
     rotation: Number(video.getAttribute('data-rotation')),
     video: (({x, y, width, height}) => [x, y, width, height])(video.getBoundingClientRect()),
@@ -212,14 +211,14 @@ async function alignmentCheck(page) {
       const diagonal = Math.hypot(before.box[2], before.box[3]) * dpr;
       const axis = before.frame[0] + before.frame[2] / 2;
       const distance = (index, mirror, probeX, probeY) => {
-        const [seenX, seenY] = observed.landmarks[mirror ? subject.partners[index] : index];
+        const [seenX, seenY] = observed.landmarks[mirror ? before.partners[index] : index];
         return Math.hypot((before.box[0] - clip.x + probeX) * dpr - seenX * observed.width,
           (before.box[1] - clip.y + probeY) * dpr - seenY * observed.height) / diagonal;
       };
       const distances = {}, mirrored = {};
       let drift = 0;
       for (const [index, [probeX, probeY]] of Object.entries(before.probes)) {
-        assert.ok(index in subject.partners, 'no mirror partner for probe ' + index);
+        assert.ok(index in before.partners, 'no mirror partner for probe ' + index);
         distances[index] = distance(index, before.mirror, probeX, probeY);
         mirrored[index] = distance(index, !before.mirror, 2 * axis - probeX, probeY);
         const [laterX, laterY] = after.probes?.[index] ?? [probeX, probeY];

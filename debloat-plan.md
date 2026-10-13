@@ -551,7 +551,13 @@ delegate; Image Embedder offers alternate and uploaded models).
 **Fix:** `gallery/lib/ui/similarity.dart` with `SimilaritySlot<I>`, an input
 slot, `similarityCard(...)` and `chooseImage<I>(...)`; each page keeps its
 task, input kinds and settings. A slow decode must not replace a newer choice.
-About 120 to 130 lines.
+About 120 to 130 lines. **Done on `chore/oct12-combined`:** a `SimilarityState`
+mixin on `State`, as R4's `RevisionedState`, since choosing, decoding and
+comparing all run through `setState` and `mounted`. It owns the slot, the
+operation queue, the open task, `compare` and `closeEmbedder`, the image slot
+widget and the status, error and similarity card. The two pages dropped 456
+lines for the mixin's 353; both pages' keys and semantics identifiers are
+unchanged, and the Universal Embedder page's run row is a `TaskRunRow` too.
 
 ### R2. Decision and Retrieval CI
 
@@ -808,6 +814,13 @@ CI steps pass names. About 55 to 120 lines.
   `text_page.dart:311-336`): a `ModelSelection` controller in
   `gallery/lib/ui/`. About 13 lines; one place for the selection behavior.
 
+**Done on `chore/oct12-combined`:** `OperationQueue` in
+`gallery/lib/live/operation_queue.dart`, used by the three controllers and
+the similarity mixin; `ModelSelectionState`, a mixin on `State` in
+`live/task_models.dart` next to `downloadModel`, whose `modelChanged` hook
+each of the four pages implements (the live page sets its controller's model
+loader there). Net about 130 lines fewer.
+
 ### R14. Family API snapshots repeat core's
 
 Done in [the guards](#the-guards-step-1): each family's app-facing snapshot is
@@ -822,6 +835,13 @@ live in `gallery/integration_test/support/alignment_oracle.dart:43-44`,
 says it copies the Dart criterion). One spec both read or are generated from,
 keeping the browser's thumb-tip override and the two independent comparison
 algorithms. It adds about 29 lines, for one place to edit.
+
+**Done on `chore/oct12-combined`:** the web live view already published its
+probes for the browser oracle, so it now publishes their mirror partners
+too (`data-partners`), and `test_browser.mjs` reads them from the page
+instead of carrying both maps. The tolerances stay in the two oracles, since
+the Dart one runs on devices, and `tool/check_repository.py` fails if the
+pairs differ.
 
 ## Keep
 

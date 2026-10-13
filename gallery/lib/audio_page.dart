@@ -45,17 +45,14 @@ const _clips = <String, String>{
   'two_heads_16000_hz_mono.wav': 'Animal sounds',
 };
 
-class _AudioPageState extends State<AudioPage> with RevisionedState {
+class _AudioPageState extends State<AudioPage>
+    with RevisionedState, ModelSelectionState {
   late final TaskSettingValues _values = TaskSettingValues('audio_classifier');
   late final List<TaskSetting> _settings =
       taskSettings['audio_classifier'] ?? const [];
 
   String _clip = _clips.keys.first;
   ({String name, Uint8List bytes})? _uploadedClip;
-
-  String? _uploadedModel;
-  Uint8List? _modelBytes;
-  String? _modelStatus;
 
   AudioClassifier? _task;
   Future<void> _resets = Future.value();
@@ -112,8 +109,8 @@ class _AudioPageState extends State<AudioPage> with RevisionedState {
   Future<AudioClassifier> _open() async =>
       _task ??= await AudioClassifier.create(
         AudioClassifierOptions(
-          model: _modelBytes == null ? AudioModels.yamnet : null,
-          modelBytes: _modelBytes,
+          model: modelBytes == null ? AudioModels.yamnet : null,
+          modelBytes: modelBytes,
           maxResults: _values.count('maxResults'),
           scoreThreshold: _values.share('scoreThreshold'),
         ),
@@ -123,8 +120,8 @@ class _AudioPageState extends State<AudioPage> with RevisionedState {
   Future<AudioClassifier> _openStream() async {
     final task = await AudioClassifier.create(
       AudioClassifierOptions(
-        model: _modelBytes == null ? AudioModels.yamnet : null,
-        modelBytes: _modelBytes,
+        model: modelBytes == null ? AudioModels.yamnet : null,
+        modelBytes: modelBytes,
         maxResults: _values.count('maxResults'),
         scoreThreshold: _values.share('scoreThreshold'),
         runningMode: AudioRunningMode.audioStream,
@@ -331,39 +328,8 @@ class _AudioPageState extends State<AudioPage> with RevisionedState {
     }
   }
 
-  Future<void> _chooseModel(TaskModel? model) async {
-    setState(() {
-      _uploadedModel = null;
-      _modelBytes = null;
-      _modelStatus = null;
-    });
-    await _reset();
-  }
-
-  Future<void> _uploadModel() async {
-    try {
-      final file = await openFile(
-        acceptedTypeGroups: const [
-          XTypeGroup(
-            label: 'MediaPipe models',
-            extensions: ['tflite', 'task'],
-            // iOS filters by type, and models have none of their own.
-            uniformTypeIdentifiers: ['public.data'],
-          ),
-        ],
-      );
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _uploadedModel = file.name;
-        _modelBytes = bytes;
-        _modelStatus = null;
-      });
-      await _reset();
-    } on Object catch (error) {
-      if (mounted) setState(() => _modelStatus = '$error');
-    }
-  }
+  @override
+  void modelChanged() => unawaited(_reset());
 
   Widget _panel() => ListenableBuilder(
     listenable: revision,
@@ -377,10 +343,10 @@ class _AudioPageState extends State<AudioPage> with RevisionedState {
       onDelegate: (_) {},
       models: const [],
       model: null,
-      uploaded: _uploadedModel,
-      modelStatus: _modelStatus,
-      onModel: _chooseModel,
-      onUpload: _uploadModel,
+      uploaded: uploaded,
+      modelStatus: modelStatus,
+      onModel: chooseModel,
+      onUpload: uploadModel,
       bundledModel: 'yamnet.tflite',
     ),
   );

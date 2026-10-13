@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
 
@@ -56,18 +54,14 @@ const _pairTypes = {
   EmbeddingType.codeRetrieval,
 };
 
-class _TextPageState extends State<TextPage> with RevisionedState {
+class _TextPageState extends State<TextPage>
+    with RevisionedState, ModelSelectionState {
   late final String _id = widget.task.runtimeId;
   late final TaskSettingValues _values = TaskSettingValues(_id);
   late final List<TaskSetting> _settings = taskSettings[_id] ?? const [];
   late final List<TaskModel> _models = taskModels[_id] ?? const [];
   late final _first = TextEditingController(text: _samples[_id]!.$1);
   late final _second = TextEditingController(text: _samples[_id]!.$2);
-
-  TaskModel? _model;
-  String? _uploaded;
-  Uint8List? _modelBytes;
-  String? _modelStatus;
 
   /// The open task, rebuilt when a setting or the model changes.
   Object? _task;
@@ -145,7 +139,7 @@ class _TextPageState extends State<TextPage> with RevisionedState {
     if (_task case final task?) return task;
     // The bundled model by its pin, as an app passes it, unless a chosen or
     // uploaded one replaces it.
-    final bytes = _modelBytes;
+    final bytes = modelBytes;
     final model = bytes == null ? widget.task.model : null;
     return _task = switch (_id) {
       'text_classifier' => await TextClassifier.create(
@@ -298,59 +292,8 @@ class _TextPageState extends State<TextPage> with RevisionedState {
     unawaited(_reset());
   }
 
-  Future<void> _chooseModel(TaskModel? model) async {
-    if (model == null) {
-      setState(() {
-        _model = null;
-        _uploaded = null;
-        _modelBytes = null;
-        _modelStatus = null;
-      });
-      unawaited(_reset());
-      return;
-    }
-    setState(() => _modelStatus = 'Downloading ${model.name}…');
-    try {
-      final bytes = await downloadModel(model);
-      if (!mounted) return;
-      setState(() {
-        _model = model;
-        _uploaded = null;
-        _modelBytes = bytes;
-        _modelStatus = null;
-      });
-      unawaited(_reset());
-    } on Object catch (error) {
-      if (mounted) setState(() => _modelStatus = '$error');
-    }
-  }
-
-  Future<void> _upload() async {
-    try {
-      final file = await openFile(
-        acceptedTypeGroups: const [
-          XTypeGroup(
-            label: 'MediaPipe models',
-            extensions: ['tflite', 'task'],
-            // iOS filters by type, and models have none of their own.
-            uniformTypeIdentifiers: ['public.data'],
-          ),
-        ],
-      );
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      if (!mounted) return;
-      setState(() {
-        _model = null;
-        _uploaded = file.name;
-        _modelBytes = bytes;
-        _modelStatus = null;
-      });
-      unawaited(_reset());
-    } on Object catch (error) {
-      if (mounted) setState(() => _modelStatus = '$error');
-    }
-  }
+  @override
+  void modelChanged() => unawaited(_reset());
 
   Widget _panel() => ListenableBuilder(
     listenable: revision,
@@ -363,12 +306,12 @@ class _TextPageState extends State<TextPage> with RevisionedState {
       onChanged: _setSetting,
       onDelegate: (_) {},
       models: _models,
-      model: _model,
-      uploaded: _uploaded,
-      modelStatus: _modelStatus,
-      onModel: _chooseModel,
+      model: model,
+      uploaded: uploaded,
+      modelStatus: modelStatus,
+      onModel: chooseModel,
       // Google's generative tasks read a `.litertlm` file, not bytes.
-      onUpload: _generative ? null : _upload,
+      onUpload: _generative ? null : uploadModel,
       bundledModel: widget.task.modelFile,
     ),
   );

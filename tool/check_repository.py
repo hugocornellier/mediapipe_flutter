@@ -9,7 +9,8 @@ so a new family reaches them. This checks the rest:
 - **Pins that move together:** the packages' versions and SDK and Flutter
   constraints; each family's browser runtime version against its
   `assets/runtime.json`; the Flutter version in the docs against CI's; and
-  models two families pin, which must be identical so apps download them once.
+  models two families pin, which must be identical so apps download them once;
+  and the browser alignment oracle's tolerances against the Dart oracle's.
 
     python3 -B tool/check_repository.py
 
@@ -26,6 +27,10 @@ sys.path.insert(0, str(CORE_TOOL))
 from families import CORE, PACKAGES, package_folders, task_families  # noqa: E402
 from model_pins import model_pins, registries  # noqa: E402
 import test_bundled_models  # noqa: E402
+
+# The two alignment oracles, which apply one criterion in Dart and JavaScript.
+ALIGNMENT_ORACLES = ['gallery/integration_test/support/alignment_oracle.dart',
+                     'gallery/tool/browser/test_browser.mjs']
 
 # Where the docs name the Flutter version CI runs.
 FLUTTER_DOCS = ['README.md', 'gallery/tool/WEB_FACE.md',
@@ -150,10 +155,21 @@ def shared_models(problems):
             problems.append(f'{name}: listed by {sorted(assets)} but not the same inline pin')
 
 
+def alignment_tolerances(problems):
+    values = {}
+    for source in ALIGNMENT_ORACLES:
+        for name, value in re.findall(r'^const (alignment\w*Tolerance) = ([\d.]+);',
+                                      read(source), re.M):
+            values.setdefault(name, {})[source] = value
+    for name, found in values.items():
+        if len(found) != len(ALIGNMENT_ORACLES) or len(set(found.values())) != 1:
+            problems.append(f'{name}: the alignment oracles disagree: {found}')
+
+
 def main():
     problems = []
     for check in (family_lists, pubspec_pins, runtime_versions, flutter_versions,
-                  shared_models):
+                  shared_models, alignment_tolerances):
         check(problems)
     for problem in problems:
         print(problem)

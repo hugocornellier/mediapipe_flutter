@@ -60,7 +60,7 @@ class LivePage extends StatefulWidget {
 }
 
 class _LivePageState extends State<LivePage>
-    with WidgetsBindingObserver, RevisionedState {
+    with WidgetsBindingObserver, RevisionedState, ModelSelectionState {
   late final LiveDemo _demo = liveDemoFor(widget.task.id)!;
   late final LiveTask<Object?> _task = _demo.task();
   late final LiveCameraController<Object?> _controller =
@@ -70,9 +70,6 @@ class _LivePageState extends State<LivePage>
       taskSettings[widget.task.runtimeId] ?? const [];
   late final List<TaskModel> _models =
       taskModels[widget.task.runtimeId] ?? const [];
-  TaskModel? _model;
-  String? _uploaded;
-  String? _modelStatus;
 
   @override
   void setState(VoidCallback fn) {
@@ -343,61 +340,12 @@ class _LivePageState extends State<LivePage>
     }
   }
 
-  /// Downloads and verifies an official model before the task is rebuilt
-  /// with it, so a failed download leaves the running model in place.
-  Future<void> _chooseModel(TaskModel? model) async {
-    if (model == null) {
-      setState(() {
-        _model = null;
-        _uploaded = null;
-        _modelStatus = null;
-      });
-      _controller.modelLoader = null;
-      _restartCurrentMode(startCameraIfStopped: true);
-      return;
-    }
-    setState(() => _modelStatus = 'Downloading ${model.name}…');
-    try {
-      final bytes = await downloadModel(model);
-      if (!mounted) return;
-      setState(() {
-        _model = model;
-        _uploaded = null;
-        _modelStatus = null;
-      });
-      _controller.modelLoader = () async => bytes;
-      _restartCurrentMode(startCameraIfStopped: true);
-    } on Object catch (error) {
-      if (mounted) setState(() => _modelStatus = '$error');
-    }
-  }
-
-  /// A model file of the user's own, as MediaPipe Studio's Upload.
-  Future<void> _upload() async {
-    try {
-      final file = await openFile(
-        acceptedTypeGroups: const [
-          XTypeGroup(
-            label: 'MediaPipe models',
-            extensions: ['tflite', 'task'],
-            // iOS filters by type, and models have none of their own.
-            uniformTypeIdentifiers: ['public.data'],
-          ),
-        ],
-      );
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      if (!mounted) return;
-      setState(() {
-        _model = null;
-        _uploaded = file.name;
-        _modelStatus = null;
-      });
-      _controller.modelLoader = () async => bytes;
-      _restartCurrentMode(startCameraIfStopped: true);
-    } on Object catch (error) {
-      if (mounted) setState(() => _modelStatus = '$error');
-    }
+  /// Runs the chosen or uploaded model, or the bundled one again.
+  @override
+  void modelChanged() {
+    final bytes = modelBytes;
+    _controller.modelLoader = bytes == null ? null : () async => bytes;
+    _restartCurrentMode(startCameraIfStopped: true);
   }
 
   /// One instance for the page's life: it rebuilds itself on [revision], and
@@ -415,11 +363,11 @@ class _LivePageState extends State<LivePage>
       onChanged: _setSetting,
       onDelegate: _setDelegate,
       models: _models,
-      model: _model,
-      uploaded: _uploaded,
-      modelStatus: _modelStatus,
-      onModel: _chooseModel,
-      onUpload: _upload,
+      model: model,
+      uploaded: uploaded,
+      modelStatus: modelStatus,
+      onModel: chooseModel,
+      onUpload: uploadModel,
       bundledModel: widget.task.modelFile,
       standardModel: standardModelNames[widget.task.runtimeId] ?? 'Standard',
       labels: _labels,

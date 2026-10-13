@@ -15,6 +15,7 @@ import '../live/camera_selection.dart';
 import '../live/frame_timings.dart';
 import '../live/live_subjects.dart';
 import '../live/live_task.dart';
+import '../live/operation_queue.dart';
 import 'model_cache.dart';
 import 'test_hooks.dart';
 
@@ -61,7 +62,7 @@ class LiveCameraController<T> extends ChangeNotifier {
   web.MediaStream? _stream;
   StreamSubscription<web.Event>? _trackEnded;
   late final JSFunction _visibility;
-  Future<void> _operations = Future.value();
+  final _operations = OperationQueue();
   StreamSubscription<LiveResult<T>>? _results;
 
   /// Frames submitted and not yet answered, by timestamp. A frame the task
@@ -284,15 +285,6 @@ class LiveCameraController<T> extends ChangeNotifier {
     }
   }
 
-  Future<void> _enqueue(Future<void> Function() action) {
-    final future = _operations.then((_) => action());
-    _operations = future.then<void>(
-      (_) {},
-      onError: (Object _, StackTrace _) {},
-    );
-    return future;
-  }
-
   Future<List<CameraDescription>> findCameras() async {
     // Device enumeration may be empty until permission is granted. Let Start
     // request permission rather than incorrectly declaring that no camera exists.
@@ -370,7 +362,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     error = null;
     _cancelCallback();
     _changed();
-    return _enqueue(() async {
+    return _operations.add(() async {
       await _releaseCamera(preservePreview: true);
       if (_closed || generation != _generation) return;
       try {
@@ -422,7 +414,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     result = null;
     _cancelCallback();
     _changed();
-    return _enqueue(() async {
+    return _operations.add(() async {
       final keepCamera = _stream != null && description == null;
       if (keepCamera) {
         await _releaseTask();
@@ -799,7 +791,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     running = false;
     _cancelCallback();
     _changed();
-    unawaited(_enqueue(_release));
+    unawaited(_operations.add(_release));
   }
 
   /// Runs one warm-up frame and waits for its result: nothing else is in
@@ -917,7 +909,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     initializing = false;
     _cancelCallback();
     _changed();
-    return _enqueue(() async {
+    return _operations.add(() async {
       try {
         await _release();
       } finally {
@@ -938,7 +930,7 @@ class LiveCameraController<T> extends ChangeNotifier {
     _disposePausedFrame();
     _cancelCallback();
     web.document.removeEventListener('visibilitychange', _visibility);
-    return _closing = _enqueue(_release);
+    return _closing = _operations.add(_release);
   }
 
   @override

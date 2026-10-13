@@ -1,5 +1,7 @@
 import 'package:crypto/crypto.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:mediapipe_decision/mediapipe_decision.dart'
     show DecisionModels, DownloadAsset;
 
@@ -172,4 +174,81 @@ Future<Uint8List> downloadModel(TaskModel model) async {
     throw StateError('${model.name} did not match its pinned checksum.');
   }
   return _downloaded[model.sha256] = bytes;
+}
+
+/// A page whose task runs the bundled model, one of Google's others, or a
+/// file of the user's own, as the settings panel offers them.
+mixin ModelSelectionState<T extends StatefulWidget> on State<T> {
+  /// The chosen official model, or null for the bundled or uploaded one.
+  TaskModel? model;
+
+  /// The uploaded file's name while an upload is chosen.
+  String? uploaded;
+
+  /// The chosen or uploaded model's bytes, or null for the bundled one.
+  Uint8List? modelBytes;
+
+  /// A download in progress, or what failed.
+  String? modelStatus;
+
+  /// Rebuilds the task with [modelBytes], after every change.
+  void modelChanged();
+
+  /// Downloads and verifies an official model before the task is rebuilt
+  /// with it, so a failed download leaves the running model in place. Null
+  /// returns to the bundled model.
+  Future<void> chooseModel(TaskModel? chosen) async {
+    if (chosen == null) {
+      setState(() {
+        model = null;
+        uploaded = null;
+        modelBytes = null;
+        modelStatus = null;
+      });
+      modelChanged();
+      return;
+    }
+    setState(() => modelStatus = 'Downloading ${chosen.name}…');
+    try {
+      final bytes = await downloadModel(chosen);
+      if (!mounted) return;
+      setState(() {
+        model = chosen;
+        uploaded = null;
+        modelBytes = bytes;
+        modelStatus = null;
+      });
+      modelChanged();
+    } on Object catch (error) {
+      if (mounted) setState(() => modelStatus = '$error');
+    }
+  }
+
+  /// A model file of the user's own, as MediaPipe Studio's Upload.
+  Future<void> uploadModel() async {
+    try {
+      final file = await openFile(
+        acceptedTypeGroups: const [
+          XTypeGroup(
+            label: 'MediaPipe models',
+            extensions: ['tflite', 'task'],
+            // iOS filters by type, and models have none of their own.
+            uniformTypeIdentifiers: ['public.data'],
+          ),
+        ],
+      );
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        model = null;
+        uploaded = file.name;
+        modelBytes = bytes;
+        modelStatus = null;
+      });
+      modelChanged();
+    } on Object catch (error) {
+      if (mounted) setState(() => modelStatus = '$error');
+    }
+  }
 }
