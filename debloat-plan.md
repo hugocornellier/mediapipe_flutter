@@ -431,7 +431,7 @@ show every one.
    can use step 1's functions; its host-system mapping
    (`native_vision_task.dart:41-49`) becomes `mp.MpHostSystem.fromValue(mpHostSystem)`
    or goes. Check with `tool/abi_check.cc` and every vision suite. Net about
-   127 generated lines.
+   127 generated lines. **Measured and dropped:** see [Keep](#keep).
 7. **The JS worker scaffolding:** text's, audio's, Decision's and
    Retrieval's `worker.js` repeat the serialized `onmessage` queue and its
    replies, the create, close and closed branches, the `baseOptions` spread and
@@ -850,6 +850,7 @@ The scans flag these, and they stay:
 | A generic hook | The hooks are 12 to 42 lines and already call core; sharing the text and audio bridge builder (10 lines each) would make core depend on `native_toolchain_c`. |
 | A synchronous `"$os/$arch"` getter on its own | Three two-line copies; a new export and stub cost more. |
 | A close-once task handle (S1 step 2) | Tried on `chore/oct12-combined` across all 18 `close()` bodies: 222 lines added against 204 removed. Each close shrank by three lines, but every use of a handle gained `.value`, which re-wraps native calls (one of Hand Landmarker's grew from two lines to seven), and the class itself is 14. The copies already clear the pointer before Google's close, so it fixed nothing. |
+| Vision's bindings on core's structs (S1 step 6) | Tried on `chore/oct12-combined`: with the seven shared structs mapped to core's in `ffigen.yaml`, ffigen 21 drops their definitions but now writes a `$allocate` helper for every task's options struct, which it skips while a member is one of its own structs, so the generated binding grew by 42 lines. Vision's fill and copy helpers would shrink by about 50 to 60 on core's, a net of 10 to 20 for a regenerated binding, and vision's structs would then come from core's hand-written copies rather than from Google's headers. |
 | One model holder for the Decision and Hungry Fish pages | They share `_pin` and the create call, but Hungry Fish memoizes an in-flight open, runs a loading clock and words its status differently; a holder with callbacks costs more than the copies. R4 takes the pins. |
 
 ## Suggested order
@@ -878,6 +879,7 @@ debug and release.
    time. Steps 4, 5 and 7 are done on `chore/oct12-combined`, but for the
    iPhone run.
 5. **Generator (day 6):** S1 step 6, with the ABI check and every vision suite.
+   Measured and dropped on `chore/oct12-combined`.
 6. **CI (days 6 to 7):** R3 and R10; the journey's refusal check; R2; then
    B6's ruleset edit with the new check names.
 7. **Gallery (days 7 to 8):** R1, R4, R13, R15.
