@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_structs.dart' show checkNativeStatus;
+import 'package:mediapipe_core/task_worker.dart';
 
 import '../third_party/mediapipe/interactive_segmenter_bindings.dart' as seg;
 import '../third_party/mediapipe/vision_bindings.dart' as mp;
@@ -16,19 +17,8 @@ import 'native_vision_task.dart'
 
 /// One Interactive Segmenter session, owned by its persistent worker isolate:
 /// Google's vision library on Android, iOS, macOS and Linux.
-abstract interface class InteractiveSegmenterSession {
-  /// Replace the image, resetting the stroke session.
-  void setImage(VisionImage input);
-
-  /// Submit the full stroke history and copy the returned confidence mask.
-  ConfidenceMask segment(List<Stroke> strokes);
-
-  /// Release the task and its image exactly once.
-  void close();
-}
-
-/// Synchronous native owner; used only by its persistent worker isolate.
-final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
+final class NativeInteractiveSegmenter
+    extends WorkerTask<Object, ConfidenceMask?, Never> {
   /// Create the official CPU task and acquire its native handle.
   NativeInteractiveSegmenter(InteractiveSegmenterOptions options) {
     if (Platform.isWindows) {
@@ -60,8 +50,16 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
   mp.MpImagePtr _image = nullptr;
   bool _hasImage = false;
 
-  /// Replace the image, retaining native input ownership until replacement.
+  /// The worker's requests: an image to hold, or the strokes to segment it
+  /// with.
   @override
+  ConfidenceMask? run(Object input) {
+    if (input is List<Stroke>) return segment(input);
+    setImage(input as VisionImage);
+    return null;
+  }
+
+  /// Replace the image, retaining native input ownership until replacement.
   void setImage(VisionImage input) {
     final next = using(
       (arena) => createVisionImage(
@@ -86,7 +84,6 @@ final class NativeInteractiveSegmenter implements InteractiveSegmenterSession {
   }
 
   /// Submit the full history and copy the returned confidence mask.
-  @override
   ConfidenceMask segment(List<Stroke> strokes) {
     if (!_hasImage) {
       throw StateError('Call setImage successfully before segment.');

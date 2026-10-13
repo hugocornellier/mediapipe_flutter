@@ -39,7 +39,6 @@ final class ObjectDetector implements VisionTask {
     final runner = await VisionTaskRunner.open(
       options,
       name: 'ObjectDetector',
-      debugName: 'MediaPipe Object Detector',
       backend: objectDetectorBackendFactory,
       capabilities: queryObjectDetectorCapabilities,
       native: nativeObjectDetector,

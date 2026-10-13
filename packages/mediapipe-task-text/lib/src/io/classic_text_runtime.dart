@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart';
 import 'package:mediapipe_core/native_structs.dart' show checkNativeStatus;
+import 'package:mediapipe_core/task_worker.dart';
 
-import 'text_task_worker.dart';
 import 'third_party/mediapipe/classic_text_bindings.dart' as mp;
 
 /// This process's target, named as core's [tasksRuntimeTargets] names the
@@ -51,8 +51,8 @@ void checkTextStatus(int Function(Pointer<Pointer<Char>>) call) =>
     checkNativeStatus(call, mp.errorFree);
 
 /// Synchronous native owner. Only its worker exposes asynchronous requests.
-abstract class NativeClassicTextTask<I, R>
-    implements NativeTextTask<I, R, Never> {
+abstract base class NativeClassicTextTask<I, R>
+    extends WorkerTask<I, R, Never> {
   /// Native handle, owned exclusively by this executor.
   Pointer<Void> handle = nullptr;
 
@@ -63,8 +63,4 @@ abstract class NativeClassicTextTask<I, R>
       throw ArgumentError('Text must not contain NUL.');
     }
   }
-
-  @override
-  Future<void> stream(I input, void Function(Never) emit) =>
-      throw UnsupportedError('This task has no native streaming API.');
 }

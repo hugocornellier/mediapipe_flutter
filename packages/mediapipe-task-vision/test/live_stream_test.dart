@@ -737,7 +737,6 @@ void main() {
       final runner = await VisionTaskRunner.open<int, _Options>(
         _Options(events.sendPort),
         name: 'Slow',
-        debugName: 'slow live stream',
         backend: null,
         native: _Slow.new,
       );
@@ -760,7 +759,6 @@ void main() {
       final runner = await VisionTaskRunner.open<int, _Options>(
         _Options(events.sendPort, failAt: 1),
         name: 'Failing',
-        debugName: 'failing live stream',
         backend: null,
         native: _Slow.new,
       );

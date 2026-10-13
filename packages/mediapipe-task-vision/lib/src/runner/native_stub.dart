@@ -18,7 +18,6 @@ Future<NativeTaskRunner<R>> openNativeTask<R, O extends VisionTaskOptions>(
   O options,
   NativeVisionTask<R> Function(O) create,
   String name,
-  String debugName,
 ) async => _unavailable();
 
 /// Opens Google's native stateful segmenter; browsers have none.

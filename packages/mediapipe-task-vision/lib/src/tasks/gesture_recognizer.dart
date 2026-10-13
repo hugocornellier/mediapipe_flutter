@@ -40,7 +40,6 @@ final class GestureRecognizer implements VisionTask {
     final runner = await VisionTaskRunner.open(
       options,
       name: 'GestureRecognizer',
-      debugName: 'MediaPipe Gesture Recognizer',
       backend: gestureRecognizerBackendFactory,
       capabilities: queryGestureRecognizerCapabilities,
       native: nativeGestureRecognizer,

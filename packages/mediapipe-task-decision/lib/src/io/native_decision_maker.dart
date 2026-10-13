@@ -6,6 +6,7 @@ import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_structs.dart'
     show checkNativeStatus, fillBaseOptions, nativeString;
 import 'package:mediapipe_core/platform_interface.dart';
+import 'package:mediapipe_core/task_worker.dart';
 
 import '../capabilities.dart';
 import '../types/options.dart';
@@ -51,7 +52,8 @@ void requireDecisionRuntime() {
 /// Google's Decision Maker, created, used and closed on one worker isolate.
 /// Requests and results are the JSON shapes of Google's JavaScript API, so
 /// both runtimes share one decoder.
-final class NativeDecisionMaker {
+final class NativeDecisionMaker
+    extends WorkerTask<Map<String, Object?>, Object?, Never> {
   /// Loads Google's task and acquires its handle.
   NativeDecisionMaker(DecisionMakerOptions options) {
     using((arena) {
@@ -75,6 +77,7 @@ final class NativeDecisionMaker {
   Pointer<Void> _handle = nullptr;
 
   /// Runs one request (see `DecisionBackend.run`).
+  @override
   Object? run(Map<String, Object?> request) {
     if (_handle == nullptr) throw StateError('DecisionMaker has been closed.');
     final question = request['question']! as Map<String, Object?>;
@@ -204,6 +207,7 @@ final class NativeDecisionMaker {
   }
 
   /// Releases Google's task; later calls do nothing.
+  @override
   void close() {
     if (_handle == nullptr) return;
     final task = _handle;

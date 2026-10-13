@@ -413,6 +413,17 @@ show every one.
    Decision's and Retrieval's copies run only in model-gated tests). Then move
    one family at a time with every platform's suites, debug and release, the
    iPhone and Test Lab. 967 lines become 415 to 600; net 370 to 550.
+   **Done on `chore/oct12-combined` for five of the six, net 487 (the iPhone
+   run is still to come):** core's `TaskWorker` is extended by text's,
+   Decision's and Retrieval's runners, which add their family's interface,
+   and held by vision's two, so it needs neither `failure` nor a static
+   `start`; vision's checks hear a worker's failure through a callback. The
+   GPU frame budget now reopens Google's task before the next frame rather
+   than after the last one, which spares a reopening right before close, and
+   a failed reopening fails that frame and every later one. The isolate takes
+   its name from the task's, so vision's `debugName` parameter is gone.
+   Audio's stream worker stays: Google's callback delivers its results
+   unasked, while `TaskWorker` answers each request once.
 6. **Vision's bindings reuse core's structs:** in `ffigen.yaml`,
    `library-imports` (`package:mediapipe_core/native_structs.dart`) and a
    `type-map.structs` entry per shared struct, then regenerate (ffigen 21
@@ -859,7 +870,8 @@ debug and release.
    items.
 4. **Runtime plumbing (days 3 to 5, the riskiest):** S1 steps 4, 5 and 7.
    Core's tests with a fake worker task come first; then one family at a
-   time. Step 4 is done on `chore/oct12-combined`.
+   time. Steps 4 and 5 are done on `chore/oct12-combined`, but for the
+   iPhone run.
 5. **Generator (day 6):** S1 step 6, with the ABI check and every vision suite.
 6. **CI (days 6 to 7):** R3 and R10; the journey's refusal check; R2; then
    B6's ruleset edit with the new check names.

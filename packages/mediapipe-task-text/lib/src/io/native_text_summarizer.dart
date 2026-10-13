@@ -2,19 +2,18 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_core/task_worker.dart';
 import 'package:mediapipe_core/native_structs.dart'
     show checkNativeStatus, fillBaseOptions, nativeString;
 
 import '../types/options.dart';
 import '../types/results.dart';
 import 'native_text_stream.dart';
-import 'text_task_worker.dart';
 import 'third_party/mediapipe/summarizer_bindings.dart' as mp;
 
 /// Native Summarizer owner, constructed and used on one worker isolate.
 final class NativeTextSummarizer
-    implements
-        NativeTextTask<String, TextSummarizerResult, TextSummarizerUpdate> {
+    extends WorkerTask<String, TextSummarizerResult, TextSummarizerUpdate> {
   /// Create the official CPU pipeline without altering prompts or model bytes.
   NativeTextSummarizer(TextSummarizerOptions options) {
     if (options.delegate != Delegate.cpu) {
@@ -47,12 +46,12 @@ final class NativeTextSummarizer
   Pointer<Void> _handle = nullptr;
 
   @override
-  TextSummarizerResult run(String text) => using((arena) {
+  TextSummarizerResult run(String input) => using((arena) {
     final result = arena<mp.MpTextSummarizerResult>();
     _checked(
       (error) => mp.summarize(
         _handle,
-        text.toNativeUtf8(allocator: arena).cast(),
+        input.toNativeUtf8(allocator: arena).cast(),
         result,
         error,
       ),
@@ -66,13 +65,13 @@ final class NativeTextSummarizer
   });
 
   @override
-  Future<void> stream(String text, void Function(TextSummarizerUpdate) emit) =>
+  Future<void> stream(String input, void Function(TextSummarizerUpdate) emit) =>
       receiveNativeTextStream(
         submit: (context) => using((arena) {
           _checked(
             (error) => mp.summarizeStreaming(
               _handle,
-              text.toNativeUtf8(allocator: arena).cast(),
+              input.toNativeUtf8(allocator: arena).cast(),
               Native.addressOf<NativeFunction<mp.SummarizerCallback>>(
                 mp.streamCallback,
               ),

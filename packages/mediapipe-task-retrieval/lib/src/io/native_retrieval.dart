@@ -7,6 +7,7 @@ import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_structs.dart'
     show checkNativeStatus, fillBaseOptions, nativeString;
 import 'package:mediapipe_core/platform_interface.dart';
+import 'package:mediapipe_core/task_worker.dart';
 
 import '../capabilities.dart';
 import '../types/options.dart';
@@ -55,7 +56,8 @@ void requireRetrievalRuntime() {
 /// Google's Universal Embedder and the Semantic Retrievers built on it,
 /// created, used and closed on one worker isolate. Requests and results are
 /// the shapes of Google's JavaScript API, so both runtimes share one decoder.
-final class NativeUniversalEmbedder {
+final class NativeUniversalEmbedder
+    extends WorkerTask<Map<String, Object?>, Object?, Never> {
   /// Loads Google's task and acquires its handle.
   NativeUniversalEmbedder(UniversalEmbedderOptions options) {
     using((arena) {
@@ -90,6 +92,7 @@ final class NativeUniversalEmbedder {
   int _nextRetriever = 1;
 
   /// Runs one request (see `RetrievalBackend.run`).
+  @override
   Object? run(Map<String, Object?> request) {
     if (_handle == nullptr) {
       throw StateError('UniversalEmbedder has been closed.');
@@ -376,6 +379,7 @@ final class NativeUniversalEmbedder {
   }
 
   /// Releases the retrievers, then Google's embedder; later calls do nothing.
+  @override
   void close() {
     if (_handle == nullptr) return;
     final embedder = _handle;
