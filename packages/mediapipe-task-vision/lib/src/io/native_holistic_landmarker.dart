@@ -9,6 +9,32 @@ import '../types/options.dart';
 import '../types/results.dart';
 import 'native_vision_task.dart';
 
+/// [options] as Google's C Holistic Landmarker options, which
+/// [NativeHolisticLandmarker] creates the task with; the options test reads
+/// each field back.
+void fillHolisticLandmarkerOptions(
+  Arena arena,
+  mp.MpHolisticLandmarkerOptions native,
+  HolisticLandmarkerOptions options,
+) {
+  setVisionBaseOptions(arena, native.base_options, options, officialGpu: true);
+  native
+    ..running_mode = nativeRunningMode(options.runningMode)
+    ..min_face_detection_confidence = options.minFaceDetectionConfidence
+    ..min_face_suppression_threshold = options.minFaceSuppressionThreshold
+    ..min_face_presence_confidence = options.minFacePresenceConfidence
+    ..output_face_blendshapes = options.outputFaceBlendshapes
+    ..output_pose_segmentation_masks = options.outputPoseSegmentationMask
+    // Every official library, including the wheels' (Linux, Windows and
+    // the official macOS runtime), reads the header's order. Google's
+    // Python ctypes do not, so its references are generated with the
+    // header's order too (UP-005 in upstream-issues.md).
+    ..min_hand_landmarks_confidence = options.minHandLandmarksConfidence
+    ..min_pose_detection_confidence = options.minPoseDetectionConfidence
+    ..min_pose_suppression_threshold = options.minPoseSuppressionThreshold
+    ..min_pose_presence_confidence = options.minPosePresenceConfidence;
+}
+
 /// Google's Holistic Landmarker on its worker isolate.
 final class NativeHolisticLandmarker
     implements NativeVisionTask<HolisticLandmarkerResult> {
@@ -17,27 +43,7 @@ final class NativeHolisticLandmarker
     : _gpu = options.delegate == Delegate.gpu {
     using((arena) {
       final native = arena<mp.MpHolisticLandmarkerOptions>();
-      setVisionBaseOptions(
-        arena,
-        native.ref.base_options,
-        options,
-        officialGpu: true,
-      );
-      native.ref
-        ..running_mode = nativeRunningMode(options.runningMode)
-        ..min_face_detection_confidence = options.minFaceDetectionConfidence
-        ..min_face_suppression_threshold = options.minFaceSuppressionThreshold
-        ..min_face_presence_confidence = options.minFacePresenceConfidence
-        ..output_face_blendshapes = options.outputFaceBlendshapes
-        ..output_pose_segmentation_masks = options.outputPoseSegmentationMask
-        // Every official library, including the wheels' (Linux, Windows and
-        // the official macOS runtime), reads the header's order. Google's
-        // Python ctypes do not, so its references are generated with the
-        // header's order too (UP-005 in upstream-issues.md).
-        ..min_hand_landmarks_confidence = options.minHandLandmarksConfidence
-        ..min_pose_detection_confidence = options.minPoseDetectionConfidence
-        ..min_pose_suppression_threshold = options.minPoseSuppressionThreshold
-        ..min_pose_presence_confidence = options.minPosePresenceConfidence;
+      fillHolisticLandmarkerOptions(arena, native.ref, options);
       final output = arena<mp.MpHolisticLandmarkerPtr>();
       checkVisionCreate(
         (error) => mp.MpHolisticLandmarkerCreate(native, output, error),

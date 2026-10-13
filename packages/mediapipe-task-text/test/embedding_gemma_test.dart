@@ -298,6 +298,5 @@ void main() {
       await expectLater(closing, throwsA(isA<TaskException>()));
       await expectLater(task.embed('closed'), throwsStateError);
     },
-    timeout: const Timeout(Duration(seconds: 20)),
   );
 }

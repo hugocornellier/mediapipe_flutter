@@ -113,9 +113,11 @@ final class MpEmbeddingResult extends Struct {
 }
 
 /// Fills Google's base options for the CPU, the only delegate the C API
-/// families run on, with the model at [modelPath] or in [modelBytes]. Bytes
-/// are copied into [arena], which may free them once the task exists: Google
-/// copies the model when it creates the task.
+/// families run on, with the model at [modelPath] or in [modelBytes], and the
+/// host as Flutter on this OS, with [mpHostVersion], which Google's usage log
+/// records (it records neither while the environment is unknown). Bytes and
+/// strings are copied into [arena], which may free them once the task exists:
+/// Google copies them when it creates the task.
 void fillBaseOptions(
   MpBaseOptions target,
   Arena arena, {
@@ -125,7 +127,10 @@ void fillBaseOptions(
   target
     ..fileDescriptor = -1
     ..delegate = 0
-    ..hostSystem = mpHostSystem;
+    // MP_HOST_ENVIRONMENT_FLUTTER.
+    ..hostEnvironment = 5
+    ..hostSystem = mpHostSystem
+    ..hostVersion = mpHostVersion.toNativeUtf8(allocator: arena).cast();
   if (modelBytes != null) {
     final buffer = arena<Uint8>(modelBytes.length);
     buffer.asTypedList(modelBytes.length).setAll(0, modelBytes);

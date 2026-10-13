@@ -29,7 +29,6 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           linux-profile: gallery
-          block-telemetry: 'true'
           modern-model-cache: 'true'
       - name: Validate Linux CPU references and debug/release consumers
         id: linux_cpu

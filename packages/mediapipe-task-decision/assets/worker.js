@@ -26,7 +26,7 @@ async function run(type, input) {
     const {bundle: {DecisionMaker}, files} = await loadRuntime(runtimeBaseUrl);
     task = await DecisionMaker.createFromOptions(files, {
       baseOptions: {delegate, ...(modelBytes ? {modelAssetBuffer: modelBytes} : {modelAssetPath: modelPath})},
-      maxNumTokens,
+      ...withoutNulls({maxNumTokens}),
     });
     return null;
   }

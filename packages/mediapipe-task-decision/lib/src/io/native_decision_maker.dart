@@ -64,6 +64,12 @@ final class NativeDecisionMaker
         modelPath: options.modelPath,
         modelBytes: options.modelBytes,
       );
+      // TODO: Report Flutter on Windows too once Google ships a Windows
+      // decision library. The 1.1.0 wheel's library that runs there predates
+      // MP_HOST_ENVIRONMENT_FLUTTER. See
+      // packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
+      if (Platform.isWindows) native.ref.baseOptions.hostEnvironment = 0;
+      // 0 keeps the model's budget, as Google's header defines it.
       native.ref.maxNumTokens = options.maxNumTokens;
       final output = arena<Pointer<Void>>();
       _check((error) => mp.create(native, output, error));

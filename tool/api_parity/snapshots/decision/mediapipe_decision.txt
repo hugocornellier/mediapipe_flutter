@@ -53,7 +53,7 @@ final class DecisionMakerOptions extends TaskOptions
   String? get modelPath
   Uint8List? get modelBytes
   int get maxNumTokens
-  new DecisionMakerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, Delegate delegate = Delegate.cpu, int maxNumTokens = 4096})
+  new DecisionMakerOptions({DownloadAsset? model, String? modelPath, Uint8List? modelBytes, Delegate delegate = Delegate.cpu, int maxNumTokens = 0})
 abstract final class DecisionModels
   new DecisionModels()
   static DownloadAsset embeddingGemma2Text

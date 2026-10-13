@@ -206,9 +206,11 @@ flutter:
     # Windows; the references come from its wheel's own library.
     vision = family_runtime('vision', target + '/x64')
     run(['flutter', 'pub', 'get'], app, root / 'pub.log', env)
-    # Every selected task builds its own tasks per reference case.
-    run(['dart', 'test', '--reporter', 'expanded'], app, root / 'dart-tests.log',
-        env, timeout=2400)
+    # Every selected task builds its own tasks per reference case. A task's
+    # close waits for Google's usage-logging upload, so a slow reply holds a
+    # test past the default 30 s (upstream-issues.md UP-025).
+    run(['dart', 'test', '--timeout', '180s', '--reporter', 'expanded'], app,
+        root / 'dart-tests.log', env, timeout=2400)
     run(['flutter', 'test', '-d', target, 'integration_test/face_test.dart',
          '--reporter', 'expanded'], app, root / 'integration.log', env)
     report = {'target': target + '/x64', 'delegate': 'CPU', 'library_sha256': vision['sha256'],

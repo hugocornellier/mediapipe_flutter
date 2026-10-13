@@ -1,6 +1,6 @@
 # Upstream issues and runtime compatibility findings
 
-Last updated: 2026-10-12. These are local observations unless explicitly marked
+Last updated: 2026-10-13. These are local observations unless explicitly marked
 as an external report; each entry says whether it was reported upstream. An
 exported symbol alone does not establish a working task or platform.
 
@@ -66,8 +66,10 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0 |
 | [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0 |
 | [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0 |
-| [UP-057](#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel) | The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel | Found on the 1.1.1 build of October 9 |
+| [UP-057](#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel) | The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel | Found on the 1.1.1 build of October 9 and the 1.1.1 nightly |
 | [UP-058](#up-058-universal-embedders-audio-embeddings-change-from-call-to-call) | Universal Embedder's audio embeddings change from call to call | Found on 1.1.0 and the 1.1.1 build of October 9 |
+| [UP-059](#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os) | With the Flutter host environment, the usage log drops the OS | Found on the 1.1.1 build of October 9 and the 1.1.1 nightly |
+| [UP-060](#up-060-decision-maker-reserves-memory-for-its-whole-token-budget) | Decision Maker reserves memory for its whole token budget | Found on the 1.1.1 build of October 9; worked around |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -248,7 +250,8 @@ Other tasks, and other GPUs, keep the GPU delegate.
 **Status:** observed September 24 with Google's official 1.0.0 Windows wheel
 on GitHub's windows-2025 runners, first as two 30 s test timeouts in a
 [desktop run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/36004929701).
-Worked around in CI by blocking the endpoint. The package cannot turn the
+CI blocked the endpoint on Windows until October 13, 2026; it now lets the
+uploads through and gives each test 180 s. The package cannot turn the
 logging off.
 
 Google's native library carries a Clearcut usage-logging client: its embedded
@@ -288,7 +291,8 @@ Google's per-family macOS libraries wait the same way, and so do its October
 - **iOS Simulator:** with the host unroutable, closes took about 4 s.
 - **CI:** a slow reply fits the lone 30 s test timeouts in the macOS runtime
   job (#59, #79, #82 and #84). That job's tests now get 180 s each, more than
-  the upload request's own 60 s timeout.
+  the upload request's own 60 s timeout, and so do the desktop and family
+  jobs' tests on every host.
 
 ### UP-026: Holistic cannot open its face blendshapes model on a desktop or iPhone GPU
 
@@ -971,9 +975,11 @@ Google's 1.1.0 wheel, with the prior normalized, answers explore.
 
 **Status:** observed October 12, 2026 with Google's 1.1.1 development build of
 October 9 (the per-family vision library for macOS arm64) on an Apple M4 Max
-(macOS 27) and on GitHub's `macos-15` runners. Worked around: the vision
-package withdraws the macOS GPU for every task until a Python wheel from the
-same build confirms the new output. Not yet reported to Google.
+(macOS 27) and on GitHub's `macos-15` runners, and in Google's
+`mediapipe-nightly` 1.1.1rc20261013 wheel on October 13. Worked around: the
+vision package withdraws the macOS GPU for every task until Google says
+whether the new output is intended. Raised with Google on October 13, which is
+investigating.
 
 On the CPU, every task matches the 1.1.0 release candidate wheel
 (`mediapipe-nightly` 1.1.0rc20260925) exactly, as the October 5 build did. On
@@ -1001,20 +1007,28 @@ checked-in Metal references):
 Compared with the CPU, the change goes both ways: one face box and one
 classifier score lie closer to the CPU than the wheel's Metal output does, and
 the classifier's "abaya" is not among the CPU's top three. Google's final
-1.1.0 wheel gives the same Metal output as the release candidate, and no
-newer Python wheel exists (`mediapipe-nightly` stops at 1.1.0rc20260925; npm
-has had 1.1.1 nightlies since October 8), so nothing can show which output
-Google intends. GitHub's runner and the M4 Max differ the same way, so the
-change comes from the library, not the machine.
+1.1.0 wheel gives the same Metal output as the release candidate. GitHub's
+runner and the M4 Max differ the same way, so the change comes from the
+library, not the machine.
 
-To restore the GPU once a wheel from the same build agrees: pin it in
+Google's first 1.1.1 Python wheel, `mediapipe-nightly` 1.1.1rc20261013,
+gives the October 9 build's output exactly, on Metal and on the CPU, in the
+36 Image Classifier and Image Embedder cases compared (the other tasks were
+not run), so the change is in 1.1.1 itself. The likely cause is Google's
+`d59afd232c` of October 9, "Fix GPU interactive segmentation on macOS",
+which changed the macOS GPU input path every vision task shares; that is
+read from the diff, not bisected.
+
+To restore the GPU once Google confirms the new output, or once the
+packages decide to follow it: pin a 1.1.1 wheel in
 `packages/mediapipe-core/lib/src/native_assets/reference_wheels.dart` and
 regenerate the references, drop `_macosGpuGap` from
 `packages/mediapipe-task-vision/lib/src/capabilities.dart`, mark the macOS GPU
 cells of `tool/coverage/matrix.json` required again, and bring back the Metal
 steps this withdrawal removed from `.github/workflows/main.yaml` and
 `packages/mediapipe-task-vision/tool/test_macos_references.py`. iPhones keep
-the GPU; the 1.1.1 build has not run on one yet.
+the GPU: every iOS suite passed on an iPhone 15 Pro with the 1.1.1 build, GPU
+required.
 
 ### UP-058: Universal Embedder's audio embeddings change from call to call
 
@@ -1034,6 +1048,55 @@ two calls in a row, and two separate runs of
 repeats exactly, but not always: the result also moves with the audio
 embedded before it. A Semantic Retriever's scores for audio records vary
 the same way.
+
+### UP-059: With the Flutter host environment, the usage log drops the OS
+
+**Status:** observed October 13, 2026 by capturing each usage upload: on an
+Apple M4 Max (macOS 27) with Google's 1.1.1 text library of October 9 and
+with `mediapipe-nightly` 1.1.1rc20261013's library, on GitHub's Linux and
+Windows runners through the text package, and on the iOS 26.4 Simulator with
+the October 9 iOS library. Raised with Google on October 13, which is
+investigating. No workaround: the packages report Flutter, and the OS stays
+unknown until Google records it.
+
+Google's libraries record the host environment and OS from
+`MpBaseOptions.host_environment` and `host_system` in each usage upload. With
+`host_system` set to `MP_HOST_SYSTEM_MAC`, a Language Detector's upload
+records the OS as Mac when the environment is `MP_HOST_ENVIRONMENT_PYTHON`,
+and as unknown when it is `MP_HOST_ENVIRONMENT_FLUTTER`, with or without
+`host_version`, `app_id` and `app_version`; on the iOS Simulator, Python's
+value records iOS, and Flutter's unknown. The environment arrives as Flutter,
+and `host_version` arrives as given.
+
+### UP-060: Decision Maker reserves memory for its whole token budget
+
+**Status:** measured October 13, 2026 on an Apple M4 Max (macOS 27) with
+Google's 1.1.1 decision library of October 9, on the CPU, reading the
+process's footprint (what iOS limits) with `footprint`; seen on an iPhone 15
+Pro (iOS 27.0) with the October 9 iOS library. To raise with Google on the
+October 15 call. Worked around: `DecisionMakerOptions.maxNumTokens` defaults
+to 0, which Google's header defines as the model's own budget, and its
+documentation gives the cost of a larger one.
+
+Google's Decision Maker reserves memory for `MpDecisionMakerOptions.max_num_tokens`
+when it is created, whatever the length of each input, and the reservation
+grows much faster than the budget. With the text and vision EmbeddingGemma 2
+(388 MB), the footprint after creation is about 0.6 GB at 512 tokens (the
+model's default, which 0 selects), 1 GB at 2048 and 6.7 GB at 4096, the
+default of Google's Python `DecisionMakerOptions`. Laya takes about 0.7 GB
+at 4096.
+Closing the task returns the memory. On the iPhone 15 Pro, iOS stops the
+gallery at its 3.4 GB limit seconds after the Hungry Fish page creates
+EmbeddingGemma 2's Decision Maker at 4096 tokens (`exceeded mem limit:
+ActiveHard 3376 MB`), in debug and release builds alike.
+
+The budget also caps the input without saying so: a text of about 1,500
+words gets one answer at 4096 tokens, and another, identical at 0 and 512, at
+the shorter budgets, with no error. The 17 reference cases give the same
+answers at 0, 512 and 4096.
+
+For Google: whether reserving the whole budget up front is intended, and
+whether the task can report an input it cut off.
 
 ## History
 

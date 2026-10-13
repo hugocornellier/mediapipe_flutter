@@ -39,13 +39,73 @@ void main() {
       );
     });
 
-    test('options refuse a non-positive token limit', () {
+    test('options keep the model\'s token budget unless one is set', () {
+      expect(DecisionMakerOptions(modelPath: 'm.task').maxNumTokens, 0);
       expect(
-        () => DecisionMakerOptions(modelPath: 'm.task', maxNumTokens: 0),
+        DecisionMakerOptions(
+          modelPath: 'm.task',
+          maxNumTokens: 1024,
+        ).maxNumTokens,
+        1024,
+      );
+      expect(
+        () => DecisionMakerOptions(modelPath: 'm.task', maxNumTokens: -1),
         throwsArgumentError,
       );
     });
+
+    // Natively 0 reaches Google's C options, which read it as the model's
+    // budget; the browser runtime gets no value instead.
+    test('browsers get a token limit only when the app sets one', () async {
+      final sent = <Object?>[];
+      decisionBackendFactory = (options) async {
+        sent.add(options['maxNumTokens']);
+        return _IdleBackend();
+      };
+      addTearDown(() => decisionBackendFactory = null);
+      for (final tokens in [0, 1024]) {
+        final task = await DecisionMaker.create(
+          DecisionMakerOptions(modelPath: 'm.task', maxNumTokens: tokens),
+        );
+        await task.dispose();
+      }
+      expect(sent, [null, 1024]);
+    });
   });
+
+  // The native and browser runtimes both receive toJson's scoringMode, which
+  // must be Google's ScoringMode number: SCORING_AUTO 0, SCORING_SINGLE_TOKEN
+  // 1 and SCORING_FULL_OPTION 2 in its Python decision_maker.py (1.1.0).
+  test(
+    'a choice sends every option, its scoring mode as Google numbers it',
+    () {
+      final criteria = {'yes': 'agrees', 'no': ''};
+      for (final (mode, number) in [
+        (ChoiceScoringMode.auto, 0),
+        (ChoiceScoringMode.singleToken, 1),
+        (ChoiceScoringMode.fullOption, 2),
+      ]) {
+        expect(
+          ChoiceQuestion(
+            criteria,
+            instructions: 'Answer briefly.',
+            temperature: .7,
+            scoringMode: mode,
+            normalizePrior: true,
+          ).toJson(),
+          {
+            'criteria': criteria,
+            'instructions': 'Answer briefly.',
+            'temperature': .7,
+            'scoringMode': number,
+            'normalizePrior': true,
+          },
+          reason: '$mode',
+        );
+      }
+      expect(ChoiceScoringMode.values, hasLength(3));
+    },
+  );
 
   group('results decode the same way from either runtime', () {
     final question = ChoiceQuestion({
@@ -301,4 +361,14 @@ void main() {
       );
     });
   });
+}
+
+/// A browser backend that is never asked anything.
+final class _IdleBackend implements DecisionBackend {
+  @override
+  Future<Object?> run(Map<String, Object?> request) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> dispose() async {}
 }

@@ -51,8 +51,11 @@ app ships only the families it depends on, with no setting:
 - **References.** Every checked-in reference comes from Google's 1.1.0
   release candidate wheel (`mediapipe-nightly` 1.1.0rc20260925), pinned in
   `packages/mediapipe-core/lib/src/native_assets/reference_wheels.dart`,
-  which the Dart tests and `tool/official_wheels.py` share. Swap it for the
-  1.1.0 wheel once Google publishes it, and regenerate.
+  which the Dart tests and `tool/official_wheels.py` share. Google has since
+  published the final 1.1.0 wheel (October 6) and a 1.1.1 nightly (October
+  13); the pin moves, and every fixture is regenerated, once Google says
+  whether 1.1.1's Metal output is intended
+  ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
 - **Text ABI.** The Proofreader and Summarizer options gained a trailing
   `int min_log_severity` in 1.1.0; the Dart structs have it, set to Google's
   default of 4.
@@ -89,9 +92,12 @@ candidate wheel), downloading the libraries from the release:
   wheel's for every vision task, on the M4 Max (67 checks of
   `tool/test_macos_references.py`) and on GitHub's runners (68), where the
   October 5 build matched it exactly; the release candidate and the final
-  1.1.0 wheel give identical GPU output, and no newer wheel exists. The
-  vision package offers the CPU only on macOS until a wheel from the same
-  build confirms the new output
+  1.1.0 wheel give identical GPU output. Google's first 1.1.1 wheel
+  (`mediapipe-nightly` 1.1.1rc20261013, October 13) gives the October 9
+  build's output exactly in the 36 Image Classifier and Image Embedder cases
+  compared, on Metal and on the CPU, so the change is in 1.1.1 itself. The
+  vision package offers the CPU only on macOS until Google says whether the
+  new output is intended
   ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
 - **Android arm64 emulator** (API 31, CPU): the gallery's `sdk_all_test`
   (32 checks) and its still image test pass. Its logcat still shows the
@@ -105,7 +111,9 @@ candidate wheel), downloading the libraries from the release:
   Linux x64 and Windows x64 on the CPU, Linux's GPU (Mesa) against Google's
   GPU wheel, the x86_64 Android emulator, Decision Maker and Retrieval on
   every platform (WebKit on `macos-26` included), the macOS text and modern
-  task jobs, and the bundled models pass. An iPhone is still to report.
+  task jobs, and the bundled models pass.
+- **iPhone 15 Pro** (GPU required): every iOS suite passes, in a debug and a
+  release build of the gallery (see [Before the release](#before-the-release)).
 
 ### The October 5 and 8 builds (1.1.0)
 
@@ -132,8 +140,9 @@ byte for byte.
 On an arm64 Android emulator (API 31, CPU), the three gallery suites from
 `.github/workflows/android.yaml` pass: `sdk_all_test` (every vision task
 against Google's references, rotation and the padded pose mask included, text
-and audio with the audio stream, the live tiles, and the journey through
-every page), the still image test, and the modern text suite. EmbeddingGemma's
+and audio with the audio stream, Decision Maker and the retrieval tasks when
+the build bundles them, as CI's does since October 13, the live tiles, and the
+journey through every page), the still image test, and the modern text suite. EmbeddingGemma's
 largest error is 0.0, the Proofreader matches in 9 of 9 cases and the
 Summarizer in 8 of 10, within the documented rule
 ([UP-036](../../../upstream-issues.md#up-036-ios-summarizer-generations-drift-from-googles-wheel-late-in-long-summaries)).
@@ -176,8 +185,34 @@ build of the gallery, on `39e3558` (October 13, 2026; the simulator has no GPU
 path,
 [UP-031](../../../upstream-issues.md#up-031-ios-sdk-gpu-tasks-abort-on-the-ios-simulator)).
 Decision Maker and the retrieval tasks have not run on that phone, whose free
-storage would not hold their models beside the gallery. Still open:
+storage would not hold their models beside the gallery. The debloat that
+preceded 0.1.0 (steps 1 to 9 of its plan) landed in `4b4ab7a`; the plan is in
+the history (`git show 4b4ab7a:debloat-plan.md`). Still open:
 
+- **Devices.** Decision Maker and the retrieval tasks on physical phones.
+  `.github/workflows/android-face-testlab.yml` now lists
+  `universal_embedder,semantic_retriever,decision_maker` with the other 18
+  tasks on the Pixel 8a and Galaxy S24, so
+  `gallery/integration_test/sdk_all_test.dart` runs their tests there, on the
+  CPU, each phone downloading their models on first use; the Galaxy A12 (4 GB,
+  29 of its 30 minutes for the other 18) leaves them out. Its first run with
+  them is pending.
+  An iPhone needs about 1.1 GB free beside the gallery for their models
+  (Laya 678 MB, EmbeddingGemma 2 388 MB), downloaded on first use.
+- **Ruleset.** The `main` ruleset requires 16 checks by name. It can add the
+  Decision, Retrieval and Bundled models checks (named `Decision / package /
+  macos-15`, `Retrieval / gallery / macos/arm64` and so on since the family
+  workflow), and the "official Android SDK" and "official iOS SDK" jobs in
+  `android.yaml` and `ios.yaml` can take names that say every family runs
+  there, but the rule must change in the same step, since it names them. A
+  repository setting, not a file; the TODOs above those jobs mark them.
+- **Publish.** 0.1.0 of the six packages, as `CONTRIBUTING.md` ("Versions
+  and the first release") describes: one commit removes `publish_to: none`
+  and the `(unreleased)` marks, then `publish_check.py` and
+  `test_bundled_models.py` run, `mediapipe_core` publishes first, the five
+  families switch from `path:` to `mediapipe_core: ^0.1.0` and publish. Dry
+  runs only until then, and never `--force`. The `mediapipe_core` and
+  `mediapipe_text` names on pub.dev belong to Google's uploaders.
 - **Release builds.** A `flutter build ios` and `flutter build macos` release
   of the gallery, and an App Store validation of the iOS frameworks.
 - **Notices.** Since October 9, every family ships Google's LICENSE and
@@ -268,36 +303,56 @@ The October 9 build (its `BUILD_INFO` is in `packages/mediapipe-core/native`):
 
 ## Flutter host environment
 
-Planned, not started. Google's libraries record each task's host environment
-and OS in their usage log, from `MpBaseOptions.host_environment` and
-`host_system`. The packages fill only `host_system` (`mpHostSystem` in
-`packages/mediapipe-core/lib/src/host_io.dart`), and with `host_environment`
-left at 0 the library records the OS as unknown too, so a Flutter app's
-uploads carry neither; Google's Python sends PYTHON and its OS (checked on
-2026-10-08). The October 9 build adds `MP_HOST_ENVIRONMENT_FLUTTER` (5) for
-this.
+Google's libraries record each task's host environment and OS in their usage
+log, from `MpBaseOptions.host_environment` and `host_system`. Core's
+`fillBaseOptions` and the vision package's `setVisionBaseOptions` set
+`MP_HOST_ENVIRONMENT_FLUTTER` (5), which the October 9 build added, beside
+`host_system` (`mpHostSystem` in
+`packages/mediapipe-core/lib/src/host_io.dart`). Before, the environment was
+0, and the library then records neither.
 
-- Set `host_environment` to 5 in core, next to `host_system`, for every
-  family's native options, and consider `host_version` (the Flutter or Dart
-  version).
-- Not for Decision Maker on Windows while it runs the 1.1.0 wheel's library,
-  which predates the value: its conversion logs an unknown value at
-  `DFATAL`, which aborts debug builds of Google's code.
-- Browsers need nothing: Google's JavaScript runtime sets its own
-  environment.
-- Check it with a local receiver for the uploads, as the telemetry check did:
-  each upload should name FLUTTER and the OS.
+- Checked on 2026-10-13 by capturing the uploads on macOS, Linux, Windows
+  and the iOS Simulator: each names FLUTTER but records the OS as unknown,
+  where the same `host_system` with Google's Python value (3) records it
+  ([UP-059](../../../upstream-issues.md#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os)).
+- `host_version` is `mpHostVersion`, written like a browser's user agent
+  (`macOS 27.0 / Dart 3.13.4 / Flutter 3.47.5`), as Google asked on
+  2026-10-13; the upload carries it as given (checked on macOS). Flutter's
+  version comes from the define the Flutter tool sets for `FlutterVersion`.
+- Decision Maker on Windows keeps 0 while it runs the 1.1.0 wheel's library,
+  which predates the value. Google's public C conversion reads a value it
+  does not know as unknown, but the decision library's source is not public.
+- `app_id` and `app_version` stay empty: set or not, they appear nowhere in
+  the upload.
+- Browsers need nothing, and can do nothing: Google's JavaScript runtime
+  reports WEB and has no Flutter value.
 
 ## For Google
 
+Raised on the October 13, 2026 call: Google will add the missing headers to
+its next build, and is looking into the Windows decision library, the Metal
+change (UP-057), the OS in FLUTTER uploads (UP-059) and the Android
+uploader. It agreed to the package layout (core plus one package per
+family).
+
+- To raise on the October 15 call: Decision Maker reserves memory for its
+  whole token budget, 6.7 GB at Python's default of 4096 tokens with
+  EmbeddingGemma 2, and cuts a longer input off without an error. Is the
+  reservation intended, and can the task report the cut-off
+  ([UP-060](../../../upstream-issues.md#up-060-decision-maker-reserves-memory-for-its-whole-token-budget))?
 - A Windows decision library, the one target the October 9 build still
   lacks.
+- Whether 1.1.1's Metal output is intended
+  ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
 - Headers for the Proofreader, Summarizer and Interactive Segmenter, which
   the libraries export; `metadata/flatbuffer_api.h` declares functions none
   of them exports.
 - If Google wants usage logs from Android apps that load the libraries
   through FFI: a way to hand the uploader the Java VM (an exported setter or
   `JNI_OnLoad`), or a native HTTP path.
+- The OS in uploads from `MP_HOST_ENVIRONMENT_FLUTTER`, which the October 9
+  build records as unknown
+  ([UP-059](../../../upstream-issues.md#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os)).
 - The per-family decision library fails every evaluation with the text-only
   EmbeddingGemma 2 model, which the wheel's library runs
   ([UP-053](../../../upstream-issues.md#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model)).
@@ -317,11 +372,10 @@ this.
   Face Detector keeps about twice each frame
   ([UP-032](../../../upstream-issues.md#up-032-macos-gpu-tasks-keep-every-frame-until-they-close)).
 - A Python wheel from the same build as the libraries, for the references
-  ([UP-036](../../../upstream-issues.md#up-036-ios-summarizer-generations-drift-from-googles-wheel-late-in-long-summaries)),
-  and to show whether the 1.1.1 build's different Metal output is intended
-  ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
-  `mediapipe-nightly` stops at 1.1.0rc20260925, though npm has had 1.1.1
-  nightlies since October 8.
+  ([UP-036](../../../upstream-issues.md#up-036-ios-summarizer-generations-drift-from-googles-wheel-late-in-long-summaries)).
+  Google's first 1.1.1 wheel, `mediapipe-nightly` 1.1.1rc20261013, matches
+  the October 9 build's Image Classifier and Image Embedder exactly; its
+  Summarizer has not been compared.
 - An official URL.
 
 ## Sizes

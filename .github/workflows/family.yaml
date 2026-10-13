@@ -46,7 +46,6 @@ jobs:
         with:
           python: 'false'
           linux-profile: ffi
-          block-telemetry: 'true'
       - uses: actions/cache@v6
         with:
           path: ${{ inputs.model-path }}
@@ -56,9 +55,11 @@ jobs:
         run: |
           flutter pub get
           dart tool/download_models.dart
+      # A task's close waits for Google's usage-logging upload, so a slow
+      # reply holds a test past the default 30 s (upstream-issues.md UP-025).
       - name: The ${{ inputs.family }} package against Google's Python answers
         working-directory: packages/mediapipe-task-${{ inputs.family }}
-        run: dart test --reporter expanded
+        run: dart test --timeout 180s --reporter expanded
 
   gallery:
     if: ${{ inputs.jobs == 'all' || contains(inputs.jobs, 'gallery') }}
@@ -78,7 +79,6 @@ jobs:
         with:
           python: 'false'
           linux-profile: gallery
-          block-telemetry: 'true'
       # The family's tasks, and the one vision task the vision hook needs.
       - name: Prepare the gallery
         run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target ${{ matrix.target }} --tasks ${{ inputs.tasks }},image_embedder

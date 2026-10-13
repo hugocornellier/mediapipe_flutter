@@ -1,9 +1,9 @@
 name: Set up the toolchain
 description: >-
   What every job installs after its checkout: the pinned Flutter and Python,
-  the Linux packages its profile needs, Google's usage logging kept off the
-  network on Windows, and the cache of the generative text models. The
-  versions are pinned here only; tool/check_repository.py reads them.
+  the Linux packages its profile needs, and the cache of the generative text
+  models. The versions are pinned here only; tool/check_repository.py reads
+  them.
 inputs:
   flutter:
     description: Install the pinned Flutter.
@@ -17,13 +17,6 @@ inputs:
       FFI hosts), gallery (the Flutter desktop host and GStreamer) or browser
       (ffmpeg, Xvfb and Mesa for the Playwright browsers).
     default: none
-  block-telemetry:
-    description: >-
-      On Windows, resolve play.googleapis.com to an unroutable address.
-      Google's Windows runtime uploads usage logs there and a task's close
-      waits for the upload, which on hosted runners sometimes takes 20 to 34 s,
-      past the tests' timeouts (upstream-issues.md UP-025).
-    default: 'false'
   modern-model-cache:
     description: Cache the three generative text models, 419 MB in all, by their pinned SHA-256.
     default: 'false'
@@ -56,12 +49,6 @@ runs:
           *) echo "Unknown linux-profile: $PROFILE" >&2; exit 1 ;;
         esac
         sudo apt-get update && sudo apt-get install -y $packages
-    - name: Keep Google's usage logging off the network
-      if: ${{ inputs.block-telemetry == 'true' && runner.os == 'Windows' }}
-      shell: pwsh
-      run: |
-        Add-Content "$env:SystemRoot\System32\drivers\etc\hosts" "`n0.0.0.0 play.googleapis.com`n:: play.googleapis.com"
-        ipconfig /flushdns | Out-Null
     - if: ${{ inputs.modern-model-cache == 'true' }}
       uses: actions/cache@v6
       with:

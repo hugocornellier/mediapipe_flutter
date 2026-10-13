@@ -54,7 +54,10 @@ final class DecisionMaker {
           'modelBytes': options.modelBytes,
           'modelPath': options.modelPath,
           'delegate': options.delegate.name.toUpperCase(),
-          'maxNumTokens': options.maxNumTokens,
+          // Unset, Google's browser runtime keeps the model's budget.
+          'maxNumTokens': options.maxNumTokens == 0
+              ? null
+              : options.maxNumTokens,
         });
       } catch (error) {
         throw taskException(error);

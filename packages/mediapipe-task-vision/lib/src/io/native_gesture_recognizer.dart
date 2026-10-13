@@ -9,6 +9,33 @@ import '../types/options.dart';
 import '../types/results.dart';
 import 'native_vision_task.dart';
 
+/// [options] as Google's C Gesture Recognizer options, which
+/// [NativeGestureRecognizer] creates the task with; the options test reads each
+/// field back.
+void fillGestureRecognizerOptions(
+  Arena arena,
+  mp.MpGestureRecognizerOptions native,
+  GestureRecognizerOptions options,
+) {
+  setVisionBaseOptions(arena, native.base_options, options, officialGpu: true);
+  native.running_mode = nativeRunningMode(options.runningMode);
+  native
+    ..num_hands = options.numHands
+    ..min_hand_detection_confidence = options.minHandDetectionConfidence
+    ..min_hand_presence_confidence = options.minHandPresenceConfidence
+    ..min_tracking_confidence = options.minTrackingConfidence;
+  setVisionClassifierOptions(
+    arena,
+    native.canned_gestures_classifier_options,
+    options.cannedGesturesClassifierOptions,
+  );
+  setVisionClassifierOptions(
+    arena,
+    native.custom_gestures_classifier_options,
+    options.customGesturesClassifierOptions,
+  );
+}
+
 /// Google's Gesture Recognizer on its worker isolate.
 final class NativeGestureRecognizer
     implements NativeVisionTask<GestureRecognizerResult> {
@@ -17,28 +44,7 @@ final class NativeGestureRecognizer
     : _gpu = options.delegate == Delegate.gpu {
     using((arena) {
       final native = arena<mp.MpGestureRecognizerOptions>();
-      setVisionBaseOptions(
-        arena,
-        native.ref.base_options,
-        options,
-        officialGpu: true,
-      );
-      native.ref.running_mode = nativeRunningMode(options.runningMode);
-      native.ref
-        ..num_hands = options.numHands
-        ..min_hand_detection_confidence = options.minHandDetectionConfidence
-        ..min_hand_presence_confidence = options.minHandPresenceConfidence
-        ..min_tracking_confidence = options.minTrackingConfidence;
-      setVisionClassifierOptions(
-        arena,
-        native.ref.canned_gestures_classifier_options,
-        options.cannedGesturesClassifierOptions,
-      );
-      setVisionClassifierOptions(
-        arena,
-        native.ref.custom_gestures_classifier_options,
-        options.customGesturesClassifierOptions,
-      );
+      fillGestureRecognizerOptions(arena, native.ref, options);
       final output = arena<mp.MpGestureRecognizerPtr>();
       checkVisionCreate(
         (error) => mp.MpGestureRecognizerCreate(native, output, error),

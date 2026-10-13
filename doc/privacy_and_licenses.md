@@ -29,9 +29,12 @@ and self-hosting the browser runtime replace these hosts with your own; see
 
 Google's MediaPipe runtimes send usage metrics to Google: the task, its
 running mode, latencies and input counts, never the images, audio or text it
-processes. Google's NOTICE opens with its MediaPipe Tasks privacy notice,
-which makes the app's developer responsible for getting users' informed
-consent where the law requires it. The packages cannot turn the logging off.
+processes. On native platforms the packages also name Flutter as the host
+environment, with the versions of the OS, Dart and Flutter (for example
+`iOS 26.4 / Dart 3.13.4 / Flutter 3.47.5`), which the uploads record.
+Google's NOTICE opens with its MediaPipe Tasks privacy notice, which makes
+the app's developer responsible for getting users' informed consent where the
+law requires it. The packages cannot turn the logging off.
 
 | Where | What the packages bundle | Usage logging |
 | --- | --- | --- |

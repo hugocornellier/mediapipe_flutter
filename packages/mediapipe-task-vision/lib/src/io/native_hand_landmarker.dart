@@ -9,6 +9,23 @@ import '../types/options.dart';
 import '../types/results.dart';
 import 'native_vision_task.dart';
 
+/// [options] as Google's C Hand Landmarker options, which
+/// [NativeHandLandmarker] creates the task with; the options test reads each
+/// field back.
+void fillHandLandmarkerOptions(
+  Arena arena,
+  mp.MpHandLandmarkerOptions native,
+  HandLandmarkerOptions options,
+) {
+  setVisionBaseOptions(arena, native.base_options, options, officialGpu: true);
+  native.running_mode = nativeRunningMode(options.runningMode);
+  native
+    ..num_hands = options.numHands
+    ..min_hand_detection_confidence = options.minHandDetectionConfidence
+    ..min_hand_presence_confidence = options.minHandPresenceConfidence
+    ..min_tracking_confidence = options.minTrackingConfidence;
+}
+
 /// Google's Hand Landmarker on its worker isolate.
 final class NativeHandLandmarker
     implements NativeVisionTask<HandLandmarkerResult> {
@@ -17,18 +34,7 @@ final class NativeHandLandmarker
     : _gpu = options.delegate == Delegate.gpu {
     using((arena) {
       final native = arena<mp.MpHandLandmarkerOptions>();
-      setVisionBaseOptions(
-        arena,
-        native.ref.base_options,
-        options,
-        officialGpu: true,
-      );
-      native.ref.running_mode = nativeRunningMode(options.runningMode);
-      native.ref
-        ..num_hands = options.numHands
-        ..min_hand_detection_confidence = options.minHandDetectionConfidence
-        ..min_hand_presence_confidence = options.minHandPresenceConfidence
-        ..min_tracking_confidence = options.minTrackingConfidence;
+      fillHandLandmarkerOptions(arena, native.ref, options);
       final output = arena<mp.MpHandLandmarkerPtr>();
       checkVisionCreate(
         (error) => mp.MpHandLandmarkerCreate(native, output, error),

@@ -45,7 +45,14 @@ start with `SDK_FACE_LANDMARKER`.
 The manual `android-face-testlab.yml` workflow runs a larger bundle,
 `integration_test/sdk_all_test.dart`: these face checks plus every other
 official SDK suite (hand, Pose, Gesture, Holistic, detection, classification,
-embedding, both segmenters), on CPU and GPU, then the live tiles. Choose the
+embedding, both segmenters), on CPU and GPU, then the text and audio tasks,
+EmbeddingGemma, Proofreader and Summarizer on the CPU, and the live tiles. The
+Pixel 8a and Galaxy S24 also run Decision Maker, Universal Embedder and
+Semantic Retriever on the CPU (21 tasks, 18 bundled models): the phone
+downloads Decision Maker's Laya (678 MB) and the retrieval tasks' EmbeddingGemma
+2 (388 MB) on first use. The Galaxy A12 (4 GB) runs the other 18, which took it
+29 minutes; each run gets 45, the most Test Lab allows on a physical device.
+Choose the
 physical device and API level when dispatching; `gpu: required` fails a GPU
 refusal instead of recording it. The job saves the tagged measurement lines
 from logcat as `measurements.log`. It uses the same

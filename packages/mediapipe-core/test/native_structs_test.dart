@@ -8,7 +8,7 @@ import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_structs.dart';
 import 'package:mediapipe_core/platform_interface.dart'
-    show ClassifierSettings, mpHostSystem;
+    show ClassifierSettings, mpHostSystem, mpHostVersion;
 import 'package:test/test.dart';
 
 void main() {
@@ -126,7 +126,9 @@ void main() {
       expect(fromBytes.modelAssetPath, nullptr);
       expect(fromBytes.fileDescriptor, -1);
       expect(fromBytes.delegate, 0);
+      expect(fromBytes.hostEnvironment, 5);
       expect(fromBytes.hostSystem, mpHostSystem);
+      expect(nativeString(fromBytes.hostVersion), mpHostVersion);
 
       final fromPath = arena<MpBaseOptions>().ref;
       fillBaseOptions(fromPath, arena, modelPath: 'models/x.task');
@@ -134,6 +136,19 @@ void main() {
       expect(fromPath.modelAssetBuffer, nullptr);
       expect(fromPath.modelAssetBufferCount, 0);
     });
+  });
+
+  test('mpHostVersion names the OS, Dart and Flutter like a user agent', () {
+    expect(
+      mpHostVersion,
+      matches(r'^(macOS|iOS|Android|Linux|Windows)( [\d.]+)? / Dart \S+'),
+    );
+    expect(
+      mpHostVersion.endsWith(
+        ' / Flutter ${const String.fromEnvironment('FLUTTER_VERSION')}',
+      ),
+      const bool.hasEnvironment('FLUTTER_VERSION'),
+    );
   });
 
   test('fillClassifierOptions writes every setting', () {

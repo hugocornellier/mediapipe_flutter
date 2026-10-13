@@ -30,6 +30,8 @@ CATEGORY_GRID = (32, 24)
 
 def mask_array(mask, float32):
     if float32:
+        # TODO: Re-test this 1.0.0 workaround on the pinned 1.1.0 wheel and
+        # remove it if the direct copy passes.
         # In 1.0.0, float32's contiguous-copy path calls the uint8 ImageFrame
         # overload and aborts for padded rows. Scalar access is safe on both.
         return mask.numpy_view().copy() if mask.is_contiguous() else np.asarray(
@@ -142,6 +144,8 @@ def main():
                 record('image', kind, image, configuration, task.segment(image, processing),
                        rotation_degrees=rotation, timestamp_ms=None)
         if args.delegate == 'gpu':
+            # TODO: Re-test this 1.0.0 workaround on the pinned 1.1.0 wheel and
+            # generate the GPU VIDEO references if it no longer aborts.
             # Google's 1.0.0 macOS Metal path aborts in VIDEO mode on the
             # third frame with both mask kinds ("unsupported ImageFrame
             # format: 1" in gpu_buffer_storage_cv_pixel_buffer.cc). GPU

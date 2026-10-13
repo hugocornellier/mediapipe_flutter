@@ -59,10 +59,12 @@ def main():
     env = {**os.environ,
            'MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR': str(text_reference),
            'MEDIAPIPE_AUDIO_REFERENCE_DIR': str(audio_reference)}
-    # The text package's generative tasks run in tool/test_modern_text.py.
+    # The text package's generative tasks run in tool/test_modern_text.py. A
+    # task's close waits for Google's usage-logging upload, so a slow reply
+    # holds a test past the default 30 s (upstream-issues.md UP-025).
     for package, name, extra in ((TEXT, 'text', ['--exclude-tags', 'modern-text']),
                                  (AUDIO, 'audio', [])):
-        run(['dart', 'test', *extra, '--reporter', 'expanded'],
+        run(['dart', 'test', *extra, '--timeout', '180s', '--reporter', 'expanded'],
             package, evidence / f'{name}-tests.log', env)
     receipts = {name: json.loads((folder / 'provenance.json').read_text(encoding='utf-8'))
                 for name, folder in [('text', text_reference), ('audio', audio_reference)]}

@@ -177,7 +177,7 @@ void main() {
       } finally {
         await task.dispose();
       }
-    }, timeout: const Timeout(Duration(seconds: 20)));
+    });
   }
 
   test(

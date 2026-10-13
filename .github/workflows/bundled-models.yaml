@@ -31,7 +31,6 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           linux-profile: gallery
-          block-telemetry: 'true'
       # The store's lock, downloads and file replacement on this host's file
       # system. The rest of core's suite runs on macOS in main.yaml.
       - name: Model store and bundling unit tests

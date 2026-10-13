@@ -43,7 +43,7 @@ Not published yet. The first release.
   apps that do not use them.
 - On macOS every task runs on the CPU for now: Google's 1.1.1 library gives
   different Metal results from its 1.1.0 wheel, so the GPU stays withdrawn
-  until a wheel from the same build confirms them (UP-057).
+  until Google says whether the change is intended (UP-057).
 - On macOS, a GPU task reopens its native task after converting 1 GiB of
   frames, since Google's macOS GPU path keeps every frame until the task
   closes (UP-032 in upstream-issues.md). Tasks that reopen hold their model

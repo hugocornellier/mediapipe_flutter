@@ -15,5 +15,9 @@ Not published yet.
   text-only EmbeddingGemma 2 (UP-053), and its browser runtime embeds every
   text as zeros with either EmbeddingGemma 2 model in WebKit (UP-054) and
   aborts with GLiNER2.5-Decide in every browser (UP-055).
+- `maxNumTokens` defaults to 0, the model's own token budget, rather than
+  the 4096 of Google's Python API: Google's engine reserves memory for the
+  whole budget, 6.7 GB with EmbeddingGemma 2 at 4096, beyond what iOS gives
+  an iPhone app (UP-060).
 - In browsers Google's runtime ignores `normalizePrior` and `scoringMode`
   (UP-056), as the questions' documentation says.

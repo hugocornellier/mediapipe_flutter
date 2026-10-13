@@ -7,7 +7,7 @@ import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_structs.dart'
     show checkNativeStatus, nativeString, nativeStrings;
 import 'package:mediapipe_core/platform_interface.dart'
-    show ClassifierSettings, nativeModelPath;
+    show ClassifierSettings, mpHostVersion, nativeModelPath;
 
 import '../runner/native_interface.dart' show VisionTaskInput;
 import '../third_party/mediapipe/vision_bindings.dart' as mp;
@@ -41,6 +41,7 @@ void setVisionBaseOptions(
   base.delegate = options.delegate == Delegate.gpu
       ? mp.MpDelegate.MP_DELEGATE_GPU
       : mp.MpDelegate.MP_DELEGATE_CPU;
+  base.host_environment = mp.MpHostEnvironment.MP_HOST_ENVIRONMENT_FLUTTER;
   base.host_system = Platform.isLinux
       ? mp.MpHostSystem.MP_HOST_SYSTEM_LINUX
       : Platform.isWindows
@@ -50,6 +51,7 @@ void setVisionBaseOptions(
       : Platform.isAndroid
       ? mp.MpHostSystem.MP_HOST_SYSTEM_ANDROID
       : mp.MpHostSystem.MP_HOST_SYSTEM_MAC;
+  base.host_version = mpHostVersion.toNativeUtf8(allocator: arena).cast();
   if (options.modelPath case final path?) {
     base.model_asset_path = nativeModelPath(
       path,

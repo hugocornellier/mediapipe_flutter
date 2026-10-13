@@ -3,10 +3,12 @@
 /// The reference tools run Google's own Python API from this wheel, and the
 /// tests compare the family libraries with what it answered. Each receipt
 /// records the wheel's and its C library's digests, which the tests check
-/// against these pins. It is the same MediaPipe release the family libraries
-/// were built from (`familyRuntimeVersion`): Google's `mediapipe-nightly`
-/// 1.1.0 release candidate. Google published 1.1.0 itself on October 6, 2026;
-/// the pins move to it with the next regeneration of every fixture.
+/// against these pins. It is Google's `mediapipe-nightly` 1.1.0 release
+/// candidate, a release older than the family libraries
+/// (`familyRuntimeVersion`, Google's 1.1.1 build of October 9). Google
+/// published 1.1.0 itself on October 6, 2026 and a 1.1.1 nightly on
+/// October 13; the pins move with the next regeneration of every fixture,
+/// once Google says whether 1.1.1's Metal output is intended (UP-057).
 typedef ReferenceWheel = ({
   String version,
   String url,

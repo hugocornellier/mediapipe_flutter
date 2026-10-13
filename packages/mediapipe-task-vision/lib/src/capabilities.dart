@@ -39,13 +39,15 @@ const _faceDetectorGpuGap =
 
 /// Why macOS offers the CPU only: on Metal, Google's 1.1.1 library differs
 /// from Google's own 1.1.0 wheel for every task, by up to a different top
-/// class, and no wheel from the same build exists to show which output is
-/// right. The CPU matches the wheel exactly. The tasks keep `macosGpu`, which
-/// names the ones that return once a matching wheel agrees (UP-057).
+/// class, and its 1.1.1 nightly wheel matches the library where compared;
+/// Google is checking whether the change is intended. The CPU matches the 1.1.0 wheel exactly.
+/// The tasks keep `macosGpu`, which names the ones that return once Google
+/// confirms the new output (UP-057).
 const _macosGpuGap =
     "Google's 1.1.1 macOS library gives different results on Metal from "
-    "Google's own 1.1.0 package, and nothing can check them yet; use the CPU "
-    'delegate, which matches it exactly. See upstream-issues.md UP-057.';
+    "Google's own 1.1.0 package, and Google is checking whether that is "
+    'intended; use the CPU delegate, which matches that package exactly. See '
+    'upstream-issues.md UP-057.';
 
 /// Query official FaceLandmarker platform support without creating a task.
 Future<TaskCapabilities> queryFaceLandmarkerCapabilities() async =>

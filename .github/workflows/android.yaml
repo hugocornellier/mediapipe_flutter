@@ -21,6 +21,10 @@ jobs:
   # Maker and the retrieval tasks, so this job needs no source build. The
   # emulator runs them on the CPU only; see gallery/tool/test_android_sdk_tasks.sh.
   sdk-tasks:
+    # TODO: Rename this job: it runs every family, not the landmark tasks on
+    # an SDK alone. The main ruleset requires it by this name, so the rule
+    # changes in the same step. See
+    # packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
     name: Landmark, detection and classification tasks / official Android SDK on an x64 emulator
     runs-on: ubuntu-24.04
     timeout-minutes: 90

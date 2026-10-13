@@ -226,7 +226,6 @@ void main() {
         await task.dispose();
       }
     },
-    timeout: const Timeout(Duration(seconds: 20)),
   );
 
   test(

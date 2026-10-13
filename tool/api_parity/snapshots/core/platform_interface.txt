@@ -29,6 +29,7 @@ function void holdModelBytes(TaskOptions options, Uint8List bytes)
 getter int get maxStreamTimestampMilliseconds
 function StateError? missingLinuxGraphicsLibraries(String loaderError)
 getter int get mpHostSystem
+getter String get mpHostVersion
 function String nativeModelPath(String path)
 function RuntimeUnavailableException pluginNotRegistered(String package)
 function void requireDelegate(TaskCapabilities capabilities, Delegate delegate)

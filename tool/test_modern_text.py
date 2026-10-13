@@ -51,7 +51,10 @@ def main():
         run([binary], REPO, evidence / 'bridge-test.log')
 
     env = {**os.environ, 'MEDIAPIPE_MODERN_TEXT_REFERENCE_DIR': str(reference)}
-    run(['dart', 'test', '--tags', 'modern-text', '--reporter', 'expanded'], TEXT,
+    # A task's close waits for Google's usage-logging upload, so a slow reply
+    # holds a test past the default 30 s (upstream-issues.md UP-025).
+    run(['dart', 'test', '--tags', 'modern-text', '--timeout', '180s',
+         '--reporter', 'expanded'], TEXT,
         evidence / 'modern-text-tests.log', env)
     receipt = json.loads((reference / 'provenance.json').read_text(encoding='utf-8'))
     (evidence / 'report.json').write_text(json.dumps({

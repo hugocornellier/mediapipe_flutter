@@ -177,6 +177,51 @@ void main() {
     );
   });
 
+  test('prefetch downloads once, then get serves the cached copy', () async {
+    final store = ModelStore(cacheDirectory: '${root.path}/models');
+    await store.prefetch(asset('good'));
+    expect(requests, 1);
+    expect(
+      await File((await store.get(asset('good'))).path!).readAsBytes(),
+      good,
+    );
+    expect(requests, 1);
+  });
+
+  test('an unreachable host names the network setting it may need', () async {
+    // A port nothing listens on, so every request is refused.
+    final closed = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final port = closed.port;
+    await closed.close();
+    final store = ModelStore(cacheDirectory: '${root.path}/models');
+    await expectLater(
+      store.get(
+        DownloadAsset(url: 'http://127.0.0.1:$port/model', sha256: digest),
+      ),
+      throwsA(
+        isA<ModelDownloadException>().having(
+          (error) => error.hint,
+          'hint',
+          Platform.isMacOS
+              ? contains('com.apple.security.network.client')
+              : Platform.isAndroid
+              ? contains('INTERNET')
+              : isNull,
+        ),
+      ),
+    );
+  });
+
+  test('a server that answers gives no network hint', () async {
+    final store = ModelStore(cacheDirectory: '${root.path}/models');
+    await expectLater(
+      store.get(asset('missing')),
+      throwsA(
+        isA<ModelDownloadException>().having((e) => e.hint, 'hint', isNull),
+      ),
+    );
+  });
+
   test('interrupted response leaves no usable model', () async {
     final store = ModelStore(cacheDirectory: '${root.path}/models');
     await expectLater(

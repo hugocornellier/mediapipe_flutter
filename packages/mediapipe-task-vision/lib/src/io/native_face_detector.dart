@@ -16,6 +16,20 @@ import 'native_vision_task.dart'
         runVisionRequest,
         setVisionBaseOptions;
 
+/// [options] as Google's C Face Detector options, which [NativeFaceDetector]
+/// creates the task with; the options test reads each field back.
+void fillFaceDetectorOptions(
+  Arena arena,
+  mp.MpFaceDetectorOptions native,
+  FaceDetectorOptions options,
+) {
+  setVisionBaseOptions(arena, native.base_options, options, officialGpu: true);
+  native
+    ..running_mode = nativeRunningMode(options.runningMode)
+    ..min_detection_confidence = options.minDetectionConfidence
+    ..min_suppression_threshold = options.minSuppressionThreshold;
+}
+
 /// Internal synchronous owner, used exclusively by the detector's worker isolate.
 final class NativeFaceDetector implements NativeVisionTask<FaceDetectorResult> {
   /// Creates the official IMAGE or VIDEO task with the requested delegate.
@@ -23,16 +37,7 @@ final class NativeFaceDetector implements NativeVisionTask<FaceDetectorResult> {
     : _gpu = options.delegate == Delegate.gpu {
     using((arena) {
       final native = arena<mp.MpFaceDetectorOptions>();
-      setVisionBaseOptions(
-        arena,
-        native.ref.base_options,
-        options,
-        officialGpu: true,
-      );
-      native.ref
-        ..running_mode = nativeRunningMode(options.runningMode)
-        ..min_detection_confidence = options.minDetectionConfidence
-        ..min_suppression_threshold = options.minSuppressionThreshold;
+      fillFaceDetectorOptions(arena, native.ref, options);
       final output = arena<mp.MpFaceDetectorPtr>();
       checkVisionCreate(
         (error) => mp.MpFaceDetectorCreate(native, output, error),

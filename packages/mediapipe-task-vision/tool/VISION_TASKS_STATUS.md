@@ -23,6 +23,10 @@ Every target uses Google's official runtime, with no rebuild of MediaPipe:
 CPU everywhere a cell has an entry; the entry names the GPU path when there is
 one. ✗ means the package refuses the task on that target.
 
+TODO: Generate this table from `tool/coverage/matrix.json` and the capability
+queries. The footnotes on supported cells ([d], [g], [h], [i]) have no home in
+the matrix yet, so the table is kept by hand against `capabilities.dart`.
+
 | Task | Web | iOS | Android | macOS | Linux | Windows |
 | --- | --- | --- | --- | --- | --- | --- |
 | Face Detector | WebGL | Metal | CPU [i] | CPU [h] | CPU [i] | CPU |
@@ -99,9 +103,10 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
 - [g] UP-008 and UP-029: the stroke segmenter's GPU path fails on macOS and
   aborts on Linux.
 - [h] UP-057: Google's 1.1.1 macOS library gives different Metal results
-  from its 1.1.0 wheel for every task, by up to a different top class, and no
-  wheel from the same build exists to check them, so the package offers the
-  CPU only on macOS until one does.
+  from its 1.1.0 wheel for every task, by up to a different top class. Its
+  1.1.1 nightly wheel matches the library in the Image Classifier and Image
+  Embedder cases compared, so the change is in 1.1.1; the package offers the
+  CPU only on macOS until Google says whether it is intended.
 - [i] UP-046: Google's Linux and Android libraries ship without the LiteRT
   plugin Face Detector's GPU graph needs, so the package offers the CPU there.
 - UP-023: Google's Android Java SDK aborted the app in its Image Segmenter
@@ -115,5 +120,5 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
   run on an Adreno GPU yet.
 - UP-025: Google's Windows runtime uploads usage logs to
   `play.googleapis.com`, and closing a task waits for the upload: usually one
-  round trip, sometimes 20 to 34 s. CI blocks the host so tests do not depend
-  on it.
+  round trip, sometimes 20 to 34 s. CI's tests get 180 s each so a slow
+  upload does not fail them.
