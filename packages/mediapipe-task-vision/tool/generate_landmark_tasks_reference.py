@@ -1,7 +1,6 @@
 """Independent Hand, Gesture, Pose and Holistic outputs from the official wheel."""
 import argparse
 import dataclasses
-import hashlib
 import json
 from pathlib import Path
 
@@ -12,6 +11,7 @@ from mediapipe.tasks.python.vision.core.image_processing_options import ImagePro
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
 from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
+from tool_helpers import digest  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'test/fixtures/landmark_tasks'
@@ -52,10 +52,6 @@ def use_header_holistic_order():
         options.update(zip(wheel, values))
         return original(*positional, **options)
     holistic.MpHolisticLandmarkerOptionsC.from_c_options = header_order
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def mask_output(mask):

@@ -28,10 +28,9 @@ const _switches = [
   if (_gpu != 'skip') ...[Delegate.gpu, Delegate.cpu],
 ];
 
-// Face Landmarker through Google's official mobile SDKs: iOS through the
-// package's Objective-C adapter, Android through
-// mediapipe_vision. Runs on the iOS simulator and Android
-// emulator in CI (CPU), and on phones (CPU and GPU).
+// Face Landmarker through mediapipe_vision on Google's vision library. Runs on
+// the iOS simulator and Android emulator in CI (CPU), and on phones (CPU and
+// GPU).
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

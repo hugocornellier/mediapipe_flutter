@@ -15,21 +15,14 @@ import os
 from pathlib import Path
 import platform
 import shutil
-import subprocess
 
 from cpu_reference import FACE_FILES, FACE_TASKS, generate, install
 from consumer_packages import core_hook_defines
+from tool_helpers import run
 
 PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
 
-
-def run(command, cwd, env, log):
-    with log.open('w') as output:
-        result = subprocess.run(command, cwd=cwd, env=env, stdout=output,
-                                stderr=subprocess.STDOUT)
-    print('\n'.join(log.read_text().splitlines()[-30:]), flush=True)
-    result.check_returncode()
 
 
 def test_root(root):
@@ -110,15 +103,15 @@ def main():
     env.update(MEDIAPIPE_CPU_REFERENCE_DIR=str(cpu),
                MEDIAPIPE_SAME_HOST_CPU_REFERENCES='1',
                MEDIAPIPE_LANDMARK_TASKS='hand,pose,gesture,holistic')
-    run(['dart', 'pub', 'get'], root, env, output / 'dart-pub-get.log')
+    run(['dart', 'pub', 'get'], root, output / 'dart-pub-get.log', env=env)
     # A task's close waits for Google's usage-logging upload, so a slow reply
     # holds a test past the default 30 s (upstream-issues.md UP-025); the
     # upload request itself gives up after 60 s.
     run(['dart', 'test', 'test/face_landmarker_test.dart',
          'test/landmark_tasks_test.dart', 'test/image_tasks_test.dart',
          'test/object_detector_test.dart', 'test/segmenter_tasks_test.dart',
-         '--timeout', '180s', '--reporter', 'expanded'], root, env,
-        output / 'dart-tests.log')
+         '--timeout', '180s', '--reporter', 'expanded'], root,
+        output / 'dart-tests.log', env=env)
     print('Official macOS runtime comparisons passed for Face, Hand, Pose, '
           'Gesture, Holistic, Object Detector, Image Classifier, Image '
           'Embedder and Image Segmenter on the CPU.', flush=True)

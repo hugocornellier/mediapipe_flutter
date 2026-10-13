@@ -12,6 +12,7 @@ from mediapipe.tasks.python.vision.core.image_processing_options import ImagePro
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
 from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
+from tool_helpers import digest  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'test/fixtures/face_detection'
@@ -25,10 +26,6 @@ MODELS = {
 # reach 0.5 somewhere, and of cell-centre classes for category masks.
 CONFIDENCE_GRID = (16, 12)
 CATEGORY_GRID = (32, 24)
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def mask_array(mask, float32):

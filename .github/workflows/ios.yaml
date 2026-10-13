@@ -37,17 +37,11 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - name: Download the official SDK task models
+      - name: Download the vision task models
         working-directory: packages/mediapipe-task-vision
         run: |
           dart pub get
-          dart tool/download_face_landmarker.dart
-          dart tool/download_landmark_tasks.dart
-          dart tool/download_model.dart
-          dart tool/download_image_tasks.dart
-          dart tool/download_object_detector.dart
-          dart tool/download_segmenter_tasks.dart
-          dart tool/download_interactive_segmenter.dart
+          dart tool/download_models.dart
       # The generative text models, 419 MB in all, by their pinned SHA-256.
       - uses: actions/cache@v6
         with:
@@ -62,14 +56,12 @@ jobs:
         run: |
           cd packages/mediapipe-task-text
           dart pub get
-          dart tool/download_embedding_gemma.dart
-          dart tool/download_proofreader.dart
-          dart tool/download_summarizer.dart
+          dart tool/download_models.dart embedding_gemma proofreader summarizer
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
             --venv build/codex-tmp/official-python \
             --output-dir build/modern-text-reference
-      - name: Prepare the gallery with the official SDK tasks
+      - name: Prepare the gallery with the phone suites' tasks
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target ios-simulator/arm64 \
             --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever \

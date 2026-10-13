@@ -21,9 +21,8 @@ const _gpu = String.fromEnvironment('SDK_GPU', defaultValue: 'optional');
 /// image must still embed to nearly the same direction.
 const _crossRuntime = 0.99;
 
-// Image Embedder through Google's official mobile SDKs: iOS through the
-// package's Objective-C adapter, Android through
-// mediapipe_vision.
+// Image Embedder through mediapipe_vision on Google's vision library, on iOS
+// and Android.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

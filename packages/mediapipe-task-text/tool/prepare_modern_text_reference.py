@@ -14,7 +14,6 @@ runtime too: the gallery's preparers bundle the result for the simulator and
 emulator suites.
 """
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import platform
@@ -23,17 +22,14 @@ import sys
 
 PACKAGE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
-from official_wheels import host_runtime, venv_python  # noqa: E402
+from official_wheels import host_runtime, pinned_venv  # noqa: E402
+from tool_helpers import digest  # noqa: E402
 
 GENERATORS = {
     'embedding_gemma': 'generate_embedding_gemma_reference.py',
     'proofreader': 'generate_proofreader_reference.py',
     'summarizer': 'generate_summarizer_reference.py',
 }
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def main():
@@ -51,13 +47,7 @@ def main():
     args.output_dir.mkdir(parents=True, exist_ok=True)
     python = args.python
     if args.venv:
-        python = venv_python(args.venv)
-        if not python.exists():
-            subprocess.run([sys.executable, '-m', 'venv', str(args.venv)], check=True)
-        with (args.output_dir / 'pip.log').open('w', encoding='utf-8') as handle:
-            subprocess.run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check',
-                            runtime['wheel_url'] + '#sha256=' + runtime['wheel_sha256']],
-                           check=True, stdout=handle, stderr=subprocess.STDOUT)
+        python = pinned_venv(args.venv, runtime, log=args.output_dir / 'pip.log')
     references = {}
     for task, generator in GENERATORS.items():
         output = args.output_dir / f'{task}.json'

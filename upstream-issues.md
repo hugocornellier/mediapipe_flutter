@@ -86,7 +86,7 @@ on pose presence. The defaults are all `0.5` in both APIs, which hides it.
 A probe, `tool/holistic_threshold_order_probe.py` (in git history at `3e217ac`),
 showed this by setting one threshold at a time to an extreme value on
 `pose.jpg`: only the header's arrangement makes each option act on its own
-field. The Dart wrapper (`lib/src/io/holistic_landmarker.dart`) now writes the
+field. The Dart wrapper (`lib/src/io/native_holistic_landmarker.dart`) now writes the
 header's order on every platform. It previously copied the Python order on
 Linux, Windows and the official macOS runtime, and CI could not see it because
 the references came from the same Python.
@@ -157,7 +157,7 @@ The equivalent classifier field tolerates null: `classifier_options_c.py` sets
 Google's own Image Segmenter bindings never exercise the null case because
 `MpImageSegmenterOptionsC.from_c_options` always passes `ctypes.c_char_p(b'')`.
 
-`lib/src/io/image_segmenter.dart` therefore always passes a string, using an
+`lib/src/io/native_image_segmenter.dart` therefore always passes a string, using an
 empty one when the caller requests no locale. Review this field for each new
 task rather than assuming null is accepted.
 
@@ -1199,8 +1199,8 @@ existing reference comparisons. Several raw, unrotated CPU cases also pass.
 
 Image decoding was checked independently: source C API and official Python
 produce exactly identical RGBA pixels for `landmark-ex1.jpg` and
-`iris-detection-ex2.jpg` (zero differing bytes). Probe:
-`build/codex-tmp/desktop/compare_decode.py`.
+`iris-detection-ex2.jpg` (zero differing bytes), with a local probe script that
+was not kept.
 
 The four landmark tasks are gated the same way:
 `landmarkTaskCapabilitiesForPlatform` covers Linux x64 and Windows x64 only, and

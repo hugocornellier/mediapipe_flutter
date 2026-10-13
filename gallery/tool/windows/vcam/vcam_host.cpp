@@ -4,7 +4,9 @@
 //       Creates and starts the virtual camera, then keeps it alive until the
 //       process ends (session lifetime) or the named event
 //       Local\MediaPipeFixtureCameraStop is set. --auto tries current-user
-//       session, all-users session and all-users system scopes in turn.
+//       session, all-users session and all-users system scopes in turn. CI
+//       runs plain `start` and ends the process; the flags and the stop event
+//       serve a contributor's own machine.
 //   vcam_host list
 //       Prints every video capture device; exits 0 only when the fixture
 //       camera is among them.

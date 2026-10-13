@@ -67,7 +67,7 @@ jobs:
       # The same two commands a clean checkout runs, so CI builds what a
       # contributor with only Dart, Flutter and the Android SDK builds; the
       # generative text tasks are opt-in, bundled here for their suite.
-      - name: Prepare the gallery with the official SDK tasks
+      - name: Prepare the gallery with the phone suites' tasks
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64 \
             --tasks audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever \

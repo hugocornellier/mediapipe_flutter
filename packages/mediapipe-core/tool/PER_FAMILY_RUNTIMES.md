@@ -7,7 +7,7 @@ posted unmodified as the pre-release `per-family-v1.1.1-dev.20261009` on
 `hugocornellier/mediapipe_flutter_native`, beside the earlier builds in
 `per-family-v1.1.0-dev.20261005`; the hooks download them, and CI and Firebase
 Test Lab run them (see [Validated](#validated) and
-[Before merging](#before-merging)). Paths are from the repository root.
+[Before the release](#before-the-release)). Paths are from the repository root.
 
 ## What changed
 
@@ -158,33 +158,25 @@ bit-identical output, so those were 1.1.0 changes (Face Detector's GPU path
 moved to LiteRT), not the packaging. The GPU memory test failed only when other
 test files shared its process; it now runs alone (`--tags isolated`).
 
-## Before merging
+## Before the release
 
-- **Hosting.** Done: the pre-release above. An official URL from Google
-  would replace it.
-- **Linux and Windows.** Done on CI; see [Validated](#validated).
+Done: the hosting above (an official URL from Google would replace it), Linux
+and Windows in CI, the Android phones on Test Lab (the Pixel 8a, Galaxy S24
+and Galaxy A12, GPU required; Face Detector's, Holistic's and PowerVR's Image
+Segmenter GPU are withdrawn there, see
+[UP-046](../../../upstream-issues.md#up-046-face-detectors-gpu-needs-a-litert-plugin-the-linux-and-android-libraries-do-not-ship),
+[UP-026](../../../upstream-issues.md#up-026-holistic-cannot-open-its-face-blendshapes-model-on-a-desktop-or-iphone-gpu)
+and
+[UP-023](../../../upstream-issues.md#up-023-android-image-segmenter-gpu-aborts-on-a-powervr-gpu)),
+and the fresh-app harnesses on one pinned library per family (downloaded as an
+app would, or from a local folder through `MEDIAPIPE_ASSET_SOURCE`, which
+`tool/mirror_runtime_assets.py --prefill` fills). Still open:
+
 - **iPhone.** Every iOS suite on a device, with Metal, on the final branch;
   last run on `6c940cf`. The simulator has no GPU path
   ([UP-031](../../../upstream-issues.md#up-031-ios-sdk-gpu-tasks-abort-on-the-ios-simulator)).
-- **Android phones.** Done on Test Lab: the Pixel 8a, Galaxy S24 and Galaxy
-  A12, GPU required. Face Detector's GPU
-  ([UP-046](../../../upstream-issues.md#up-046-face-detectors-gpu-needs-a-litert-plugin-the-linux-and-android-libraries-do-not-ship))
-  and Holistic's
-  ([UP-026](../../../upstream-issues.md#up-026-holistic-cannot-open-its-face-blendshapes-model-on-a-desktop-or-iphone-gpu))
-  are withdrawn on Android, and Image Segmenter's on PowerVR
-  ([UP-023](../../../upstream-issues.md#up-023-android-image-segmenter-gpu-aborts-on-a-powervr-gpu)).
-  The Adreno off-by-one
-  ([UP-024](../../../upstream-issues.md#up-024-android-image-segmenter-gpu-category-mask-is-one-class-low-on-adreno))
-  is gone on the C library.
 - **Release builds.** A `flutter build ios` and `flutter build macos` release
   of the gallery, and an App Store validation of the iOS frameworks.
-- **CI and tools.** The source builds, the macOS engine archive and the
-  consumer tools built on them are gone, with their CI jobs. The fresh-app
-  harnesses check one pinned library per family, downloaded as an app would;
-  `MEDIAPIPE_ASSET_SOURCE` (written into the app's
-  `hooks.user_defines.mediapipe_core.asset_source`, see
-  `tool/consumer_packages.py`) points them at a local folder instead.
-  `tool/mirror_runtime_assets.py --prefill` fills such a folder.
 - **Notices.** Since October 9, every family ships Google's LICENSE and
   NOTICE, identical across families; the NOTICE opens with Google's
   MediaPipe Tasks privacy notice. The release posts both, and

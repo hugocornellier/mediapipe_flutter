@@ -12,11 +12,11 @@ Every target uses Google's official runtime, with no rebuild of MediaPipe:
 | Target | Runtime |
 | --- | --- |
 | Web | `@mediapipe/tasks-vision` 1.0.1 JavaScript/WASM through `mediapipe_vision` |
-| iOS arm64 and simulator | Google's 1.1.0 vision library (`MediaPipeTasksVisionC`), which this package's hook bundles |
-| Android arm64 and x86_64 | Google's 1.1.0 vision library (`libmediapipe_tasks_vision.so`), which this package's hook bundles |
-| macOS arm64 | Google's 1.1.0 vision library (`libmediapipe_tasks_vision`) |
-| Linux x64 | Google's 1.1.0 vision library (not yet run in CI) |
-| Windows x64 | Google's 1.1.0 vision library (not yet run in CI) |
+| iOS arm64 and simulator | Google's 1.1.1 vision library (`MediaPipeTasksVisionC`), which this package's hook bundles |
+| Android arm64 and x86_64 | Google's 1.1.1 vision library (`libmediapipe_tasks_vision.so`), which this package's hook bundles |
+| macOS arm64 | Google's 1.1.1 vision library (`libmediapipe_tasks_vision`) |
+| Linux x64 | Google's 1.1.1 vision library |
+| Windows x64 | Google's 1.1.1 vision library |
 
 ## Support
 
@@ -25,12 +25,12 @@ one. ✗ means the package refuses the task on that target.
 
 | Task | Web | iOS | Android | macOS | Linux | Windows |
 | --- | --- | --- | --- | --- | --- | --- |
-| Face Detector | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
+| Face Detector | WebGL | Metal | CPU [i] | CPU [h] | CPU [i] | CPU |
 | Face Landmarker | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
 | Hand Landmarker | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
 | Pose Landmarker | WebGL | Metal | GPU | CPU [h] | GL ES [d] | CPU |
 | Gesture Recognizer | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
-| Holistic Landmarker | WebGL | CPU [e] | GPU | CPU [e] | CPU [e] | CPU |
+| Holistic Landmarker | WebGL | CPU [e] | CPU [e] | CPU [e] | CPU [e] | CPU |
 | Object Detector | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
 | Image Classifier | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
 | Image Embedder | WebGL | Metal | GPU | CPU [h] | CPU [f] | CPU |
@@ -53,10 +53,11 @@ OpenGL ES is software (SwiftShader).
   in CI (`gallery/integration_test/sdk_*_test.dart`). On an iPhone 15 Pro, Face,
   Hand, Pose, Gesture and Holistic Landmarker ran on CPU and Metal, within 0.014
   of each other; the other tasks' Metal paths have not run on a device yet.
-- **Android:** on Google's 1.1.0 vision library, every task matches Google's
-  references on an arm64 emulator (API 31, CPU), from the same integration
-  tests, rotation and the padded pose mask included; CI's x86_64 emulator and
-  Firebase Test Lab's phones wait until Google publishes the library. Earlier,
+- **Android:** on Google's vision library, every task matches Google's
+  references on CI's x86_64 emulator and an arm64 emulator (API 31, CPU), from
+  the same integration tests, rotation and the padded pose mask included, and
+  on Firebase Test Lab's Pixel 8a, Galaxy S24 and Galaxy A12 with the GPU
+  required (`../../mediapipe-core/tool/PER_FAMILY_RUNTIMES.md`). Earlier,
   on Google's Java SDK (tasks-vision 1.0.0), every task matched on the CI
   emulator and in Firebase Test Lab (`integration_test/sdk_all_test.dart`, 27
   tests, CPU then GPU): Google's CPU references on a Pixel 8a (Mali), a Galaxy
@@ -101,6 +102,8 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
   from its 1.1.0 wheel for every task, by up to a different top class, and no
   wheel from the same build exists to check them, so the package offers the
   CPU only on macOS until one does.
+- [i] UP-046: Google's Linux and Android libraries ship without the LiteRT
+  plugin Face Detector's GPU graph needs, so the package offers the CPU there.
 - UP-023: Google's Android Java SDK aborted the app in its Image Segmenter
   on a PowerVR GPU (Galaxy A12, Pixel 10, Pixel 11), inside its result
   conversion. CPU works there, and GPU matched Google's GPU reference on Mali

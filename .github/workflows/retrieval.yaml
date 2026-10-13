@@ -63,7 +63,7 @@ jobs:
         run: flutter pub get
       - name: Download Google's EmbeddingGemma 2 models
         working-directory: packages/mediapipe-task-retrieval
-        run: dart run tool/download_model.dart
+        run: dart tool/download_models.dart
       - name: Analyze
         working-directory: packages/mediapipe-task-retrieval
         run: dart analyze --fatal-infos

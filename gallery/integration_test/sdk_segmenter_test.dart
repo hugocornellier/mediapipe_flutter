@@ -31,9 +31,8 @@ const _confidenceMean = 0.02;
 /// The same input through another path (rotation, pixel format, delegate).
 const _turnedAgreement = 0.97;
 
-// Image Segmenter through Google's official mobile SDKs: iOS through the
-// package's Objective-C adapter, Android through
-// mediapipe_vision.
+// Image Segmenter through mediapipe_vision on Google's vision library, on iOS
+// and Android.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

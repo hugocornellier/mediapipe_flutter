@@ -13,10 +13,11 @@ import platform
 import sys
 
 from prepare_gpu_reference import difference
-from test_desktop import PACKAGE, REPO, digest, run
+from test_desktop import PACKAGE, REPO
 
 sys.path.insert(0, str(REPO / 'packages/mediapipe-core/tool'))
-from official_wheels import reference_wheel  # noqa: E402
+from official_wheels import pinned_venv, reference_wheel  # noqa: E402
+from tool_helpers import digest, run  # noqa: E402
 
 FACE_TASKS = [('face_detector', 'face_detection'),
               ('face_landmarker', 'face_landmarker')]
@@ -44,15 +45,8 @@ def wheel_pin(target):
 
 def install(root, target):
     """Creates an isolated environment holding only the pinned official wheel."""
-    wheel_url, wheel_sha, _, _ = wheel_pin(target)
     root.mkdir(parents=True, exist_ok=True)
-    environment = root / 'python'
-    run([sys.executable, '-m', 'venv', environment], REPO, root / 'venv.log')
-    python = environment / ('Scripts/python.exe' if platform.system() == 'Windows'
-                            else 'bin/python')
-    run([python, '-m', 'pip', 'install', '--disable-pip-version-check',
-         wheel_url + '#sha256=' + wheel_sha], REPO, root / 'pip.log')
-    return python
+    return pinned_venv(root / 'python', reference_wheel(target), log=root / 'pip.log')
 
 
 def generate(root, output, target, tasks=FACE_TASKS, files=FACE_FILES,

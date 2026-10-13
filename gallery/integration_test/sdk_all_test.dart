@@ -13,7 +13,7 @@ import 'sdk_modern_text_test.dart' as modern_text;
 import 'sdk_segmenter_test.dart' as segmenter;
 import 'sdk_text_audio_test.dart' as text_audio;
 
-// Every official SDK suite in one app launch: on Firebase Test Lab, where each
+// Every phone suite in one app launch: on Firebase Test Lab, where each
 // device run counts against a small daily quota, and on the CI emulator, where
 // each extra install and launch risked losing the emulator. Build with
 // SDK_GPU=required on a physical device so a GPU refusal fails its test instead

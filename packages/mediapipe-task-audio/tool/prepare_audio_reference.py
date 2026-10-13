@@ -6,23 +6,18 @@ the audio stream mode reference, from one run. Set
 MEDIAPIPE_AUDIO_REFERENCE_DIR to the output directory to test against them.
 """
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import platform
 import subprocess
-import sys
 
 from generate_audio_reference import FIXTURES, PACKAGE, host_runtime
-from official_wheels import venv_python
+from official_wheels import pinned_venv
+from tool_helpers import digest
 
 REPO = PACKAGE.parents[1]
 BASELINE = FIXTURES / 'official_reference.json'
 STREAM_BASELINE = FIXTURES / 'official_stream_reference.json'
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def differences(baseline, current):
@@ -84,12 +79,7 @@ def main():
     receipt.unlink(missing_ok=True)
     python = args.python
     if python is None:
-        environment = REPO / f'build/codex-tmp/official-python-{runtime["version"]}'
-        python = venv_python(environment)
-        if not python.exists():
-            subprocess.run([sys.executable, '-m', 'venv', str(environment)], check=True)
-        subprocess.run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check',
-                        runtime['wheel_url'] + '#sha256=' + runtime['wheel_sha256']], check=True)
+        python = pinned_venv(REPO / f'build/codex-tmp/official-python-{runtime["version"]}', runtime)
     reference = output / 'official_reference.json'
     stream_reference = output / 'official_stream_reference.json'
     log_file = output / 'official-python.log'

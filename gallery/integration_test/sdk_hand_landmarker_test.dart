@@ -36,10 +36,8 @@ final _official = officialLandmarkReferences['hand']!['hand']!;
 /// is the cross-runtime one the Android face test uses for CPU against GPU.
 const _crossRuntime = 0.03;
 
-// Hand Landmarker through Google's official mobile SDKs: iOS through the
-// package's Objective-C adapter, Android through
-// mediapipe_vision. Runs on the iOS simulator and Android
-// emulator in CI, and on phones.
+// Hand Landmarker through mediapipe_vision on Google's vision library. Runs on
+// the iOS simulator and Android emulator in CI, and on phones.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

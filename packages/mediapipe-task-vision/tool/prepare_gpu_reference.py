@@ -8,7 +8,6 @@ library, runtime version, model digests and input fixture bytes.
 """
 
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -22,6 +21,8 @@ PACKAGE = Path(__file__).resolve().parents[1]
 REPO = PACKAGE.parents[1]
 sys.path.insert(0, str(REPO / "packages/mediapipe-core/tool"))
 from consumer_packages import core_hook_defines  # noqa: E402
+from official_wheels import pinned_venv, reference_wheel  # noqa: E402
+from tool_helpers import digest  # noqa: E402
 
 FACE_TASKS = (("face_detector", "face_detection"),
               ("face_landmarker", "face_landmarker"))
@@ -58,10 +59,6 @@ CPU_REFERENCES = {
     "segmenter": ([("segmenter_tasks", "segmenter_tasks")],
                   ["segmenter_tasks/official_reference.json"]),
 }
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def difference(reference, current):
@@ -241,14 +238,7 @@ def main():
         provenance.unlink()
     python = args.python
     if python is None:
-        environment = REPO / "build/codex-tmp/gpu-reference-env"
-        if not (environment / "bin/python").exists():
-            subprocess.run([sys.executable, "-m", "venv", str(environment)], check=True)
-        python = environment / "bin/python"
-        subprocess.run([
-            str(python), "-m", "pip", "install", "--disable-pip-version-check",
-            wheel_url + "#sha256=" + wheel_sha256,
-        ], check=True)
+        python = pinned_venv(REPO / "build/codex-tmp/gpu-reference-env", reference_wheel(target))
     python = python.absolute()
     env = {**os.environ, "MPLCONFIGDIR": str(output / "matplotlib")}
     summaries = {}

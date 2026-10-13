@@ -27,9 +27,8 @@ const _boxShare = 0.02;
 /// Scores may move by this much between runtime builds and delegates.
 const _scoreDelta = 0.05;
 
-// Face Detector, Object Detector and Image Classifier through Google's
-// official mobile SDKs: iOS through the package's Objective-C adapter, Android
-// through mediapipe_vision.
+// Face Detector, Object Detector and Image Classifier through mediapipe_vision
+// on Google's vision library, on iOS and Android.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

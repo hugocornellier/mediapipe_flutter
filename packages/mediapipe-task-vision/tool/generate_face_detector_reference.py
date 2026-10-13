@@ -6,13 +6,13 @@ The Dart tests consume the checked-in JSON; they do not need Python.
 """
 import argparse
 import dataclasses
-import hashlib
 import json
 from pathlib import Path
 import platform
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
 from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
+from tool_helpers import digest  # noqa: E402
 
 import mediapipe as mp
 import numpy as np
@@ -23,10 +23,6 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "test/fixtures/face_detection"
 MODEL = ROOT / "models/blaze_face_short_range.tflite"
 MODEL_SHA256 = model_sha256('blaze_face_short_range.tflite')
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def gpu_image(image):

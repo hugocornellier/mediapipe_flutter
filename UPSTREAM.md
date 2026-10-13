@@ -52,5 +52,5 @@ git log --oneline HEAD..upstream/main
 ```
 
 Review incoming changes before merging them because package identities differ.
-The initial fork and rename do not add task implementations or replace native
-SDKs. Use the upstream revision above when comparing inherited behavior.
+The initial fork and rename do not add task implementations or replace
+Google's native libraries. Use the upstream revision above when comparing inherited behavior.

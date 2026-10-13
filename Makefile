@@ -18,7 +18,7 @@ GALLERY_SOURCES := lib test integration_test tool
 GALLERY_FORMAT := dart format --language-version=3.12
 ANALYZE_PACKAGES := $(ALL_PACKAGES)
 
-.PHONY: get models models_all analyze format check_format generate generate_text generate_vision test test_only test_core test_text test_vision test_vision_flutter ci
+.PHONY: get models models_all analyze format check_format generate check_text_abi generate_vision test test_only test_core test_text test_vision test_vision_flutter ci
 
 get:
 	@for package in $(DART_PACKAGES); do (cd "$$package" && dart pub get) || exit $$?; done
@@ -52,12 +52,12 @@ check_format:
 
 # Regenerate against the checked-in headers, never a floating upstream checkout.
 generate:
-	$(MAKE) generate_text
+	$(MAKE) check_text_abi
 	$(MAKE) generate_vision
 
-# The text bindings are adapted from Google's wheel's ctypes definitions;
-# the retired 2024 headers must not regenerate them.
-generate_text:
+# The text bindings are adapted from Google's wheel's ctypes definitions; the
+# retired 2024 headers must not regenerate them, so this checks them instead.
+check_text_abi:
 	cd packages/mediapipe-task-text && dart test test/classic_text_abi_test.dart --reporter expanded
 
 generate_vision:
@@ -94,7 +94,7 @@ test_audio_stream_bridge:
 	build/codex-tmp/audio_stream_bridge_test
 
 # The emulated stream and the decoders in Chrome, compiled to JavaScript and
-# to WebAssembly.
+# to WebAssembly. A contributor shortcut: CI runs these commands itself.
 test_audio_web:
 	cd packages/mediapipe-task-audio && flutter test --platform chrome test/web --reporter expanded
 	cd packages/mediapipe-task-audio && flutter test --platform chrome --wasm test/web --reporter expanded
@@ -105,6 +105,7 @@ test_vision:
 	cd packages/mediapipe-task-vision && dart test --reporter expanded --exclude-tags isolated
 	cd packages/mediapipe-task-vision && dart test --reporter expanded --tags isolated
 
+# A contributor shortcut: CI runs this command itself.
 .PHONY: test_vision_web
 test_vision_web:
 	cd packages/mediapipe-task-vision && flutter test --platform chrome test/web --reporter expanded
@@ -120,11 +121,13 @@ models_text:
 models_embedding:
 	cd packages/mediapipe-task-text && dart tool/download_models.dart embedding_gemma
 
+# A contributor shortcut: CI runs the script itself.
 test_embedding_macos:
 	cd packages/mediapipe-task-text && python3 -B tool/test_embedding_macos.py
 
 # EmbeddingGemma, Proofreader and Summarizer against Google's wheel for this
-# host, as the Linux and Windows CI runners test them.
+# host, as the Linux and Windows CI runners test them (they run the script
+# itself; this is a contributor shortcut).
 .PHONY: test_modern_text
 test_modern_text:
 	python3 -B tool/test_modern_text.py

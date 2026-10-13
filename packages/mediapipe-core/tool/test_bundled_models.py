@@ -12,13 +12,11 @@ models and pass the offline checks from a copy of its bundle.
 CI runs it on the Linux x64 (under xvfb-run) and Windows x64 runners; it runs
 on macOS arm64 as well.
 """
-import hashlib
 import json
 from pathlib import Path
 import platform
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 
@@ -29,6 +27,8 @@ TEMPLATES = CORE / 'tool/bundled_models'
 sys.path.insert(0, str(CORE / 'tool'))
 from consumer_packages import (  # noqa: E402
     configure_macos, consumer_environment, copy_package, core_hook_defines)
+from tool_helpers import digest  # noqa: E402
+from tool_helpers import run as run_logged  # noqa: E402
 from families import task_families  # noqa: E402
 
 NAME = 'mediapipe_bundled_models'
@@ -47,30 +47,10 @@ SHA_NAME = re.compile(r'[0-9a-f]{64}')
 MODEL_SUFFIXES = ('.tflite', '.task', '.litertlm')
 
 
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
 def run(command, cwd, log, expect=0, timeout=1800):
-    """Runs [command] with its output in [log], which it returns. Fails
-    unless the exit code is [expect]."""
-    executable = str(command[0])
-    if platform.system() == 'Windows' and executable == 'dart':
-        # As in the vision package's test_desktop.py: Dart's hook runner needs
-        # the batch entry point Flutter's wrapper uses.
-        executable = 'dart.bat'
-    command = [shutil.which(executable) or executable, *map(str, command[1:])]
-    print(' '.join(command), flush=True)
-    with log.open('w', encoding='utf-8') as output:
-        result = subprocess.run(command, cwd=cwd, stdout=output,
-                                stderr=subprocess.STDOUT, timeout=timeout,
-                                env=consumer_environment())
-    text = log.read_text(encoding='utf-8', errors='replace')
-    print('\n'.join(text.splitlines()[-25:]), flush=True)
-    if result.returncode != expect:
-        raise RuntimeError(f'Exit code {result.returncode}, expected {expect}: '
-                           f'{log}')
-    return text
+    """Runs `command` as a consumer app's shell would, its output in `log`."""
+    return run_logged(command, cwd, log, env=consumer_environment(), expect=expect,
+                      timeout=timeout)
 
 
 def require(condition, message):

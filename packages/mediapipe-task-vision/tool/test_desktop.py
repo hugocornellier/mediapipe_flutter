@@ -1,11 +1,9 @@
 """Validate official CPU references and isolated Flutter desktop consumers."""
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import platform
 import shutil
-import subprocess
 import sys
 import tempfile
 import urllib.request
@@ -17,27 +15,7 @@ sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
 from consumer_packages import (  # noqa: E402
     consumer_environment, copy_package, core_hook_defines, family_runtime)
 from model_pins import model_pins  # noqa: E402
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def run(command, cwd, log, env=None, timeout=900):
-    # Windows Flutter/Dart are batch entry points. Resolve them explicitly.
-    executable = str(command[0])
-    if platform.system() == 'Windows' and executable == 'dart':
-        # PATHEXT lookup can spell dart.EXE in upper case. Dart 3.12's hook
-        # runner then appends another .exe. Flutter's wrapper uses dart.exe.
-        executable = 'dart.bat'
-    command = [shutil.which(executable) or executable, *map(str, command[1:])]
-    print(' '.join(command), flush=True)
-    with log.open('w', encoding='utf-8') as output:
-        result = subprocess.run(command, cwd=cwd, env=env, stdout=output,
-                                stderr=subprocess.STDOUT, timeout=timeout)
-    print('\n'.join(log.read_text(encoding='utf-8', errors='replace').splitlines()[-25:]),
-          flush=True)
-    result.check_returncode()
+from tool_helpers import digest, run  # noqa: E402
 
 
 def download(url, sha, destination):

@@ -27,9 +27,8 @@ const _only = String.fromEnvironment('SDK_TASKS');
 /// is the cross-runtime one the Android face test uses for CPU against GPU.
 const _crossRuntime = 0.03;
 
-// Pose Landmarker, Gesture Recognizer and Holistic Landmarker through Google's
-// official mobile SDKs: iOS through the package's Objective-C adapter, Android
-// through mediapipe_vision.
+// Pose Landmarker, Gesture Recognizer and Holistic Landmarker through
+// mediapipe_vision on Google's vision library, on iOS and Android.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

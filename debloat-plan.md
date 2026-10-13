@@ -734,6 +734,18 @@ widget tests' `_settle` (a frame-free wait, not the same) and the two fake
   fallback for contributors without Swift Package Manager. Keep both (decided
   October 12) and label each as unused by CI.
 
+**Done on `chore/oct12-combined`, in part:** `digest` and the logged `run` live
+in `packages/mediapipe-core/tool/tool_helpers.py`, `pinned_venv` in
+`official_wheels.py` and the UP-032 layout fix in core's
+`official_embedding_layout.py` (`use_header_embedding_layout(family)`); the
+twenty copies are gone and every caller was run once (the classic text, CPU,
+image tasks, audio and EmbeddingGemma generators). `run` defaults to a 3600 s
+timeout where some copies had 900 or 1800. `generate_text` is `check_text_abi`,
+and the four contributor shortcuts are labelled in the Makefile, as are the
+vcam flags and the podspec. Not done: the vision generators' `vision_cases.py`
+and the segmenter generator's two 1.0.0 workarounds, which wait for a
+regeneration on the pinned wheel.
+
 ### R7. Docs that drifted
 
 - `packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md:3` still says "Status on
@@ -760,6 +772,15 @@ widget tests' `_settle` (a frame-free wait, not the same) and the two fake
   and `image_segmenter.dart` (now `native_holistic_landmarker.dart` and
   `native_image_segmenter.dart`), and `:1054` points to a probe in an ignored
   local `build/` folder.
+
+**Done on `chore/oct12-combined`, in part:** "Before the release" keeps the
+iPhone, release builds and notices entries and sums up what was done; the test
+headers, step names and `UPSTREAM.md` say mediapipe_vision on Google's vision
+library; the status table's Face Detector and Holistic rows and its library
+rows follow `capabilities.dart` and the 1.1.1 library by hand (a generated
+table is not done); `doc/platform_setup.md` and `MODEL_BUNDLING.md` link to the
+core README's bundling sections; `upstream-issues.md` names the current files.
+The job names wait for the ruleset (B6).
 
 ### R8. Generated data layout
 

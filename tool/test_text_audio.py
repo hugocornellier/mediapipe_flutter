@@ -12,31 +12,14 @@ import json
 import os
 from pathlib import Path
 import platform
-import shutil
-import subprocess
 import sys
 
 REPO = Path(__file__).resolve().parents[1]
 TEXT = REPO / 'packages/mediapipe-task-text'
 AUDIO = REPO / 'packages/mediapipe-task-audio'
 sys.path.insert(0, str(REPO / 'packages/mediapipe-core/tool'))
-from official_wheels import host_runtime, venv_python  # noqa: E402
-
-
-def run(command, cwd, log, env=None, timeout=1800):
-    executable = str(command[0])
-    if platform.system() == 'Windows' and executable == 'dart':
-        # As in the vision package's test_desktop.py: Dart's hook runner needs
-        # the batch entry point Flutter's wrapper uses.
-        executable = 'dart.bat'
-    command = [shutil.which(executable) or executable, *map(str, command[1:])]
-    print(' '.join(command), flush=True)
-    with log.open('w', encoding='utf-8') as output:
-        result = subprocess.run(command, cwd=cwd, env=env, stdout=output,
-                                stderr=subprocess.STDOUT, timeout=timeout)
-    print('\n'.join(log.read_text(encoding='utf-8', errors='replace').splitlines()[-25:]),
-          flush=True)
-    result.check_returncode()
+from official_wheels import host_runtime, pinned_venv  # noqa: E402
+from tool_helpers import run  # noqa: E402
 
 
 def main():
@@ -47,11 +30,7 @@ def main():
     evidence = REPO / 'build/codex-tmp/text-audio'
     evidence.mkdir(parents=True, exist_ok=True)
     environment = REPO / f'build/codex-tmp/official-python-{runtime["version"]}'
-    python = venv_python(environment)
-    if not python.exists():
-        run([sys.executable, '-m', 'venv', environment], REPO, evidence / 'venv.log')
-    run([python, '-m', 'pip', 'install', '--disable-pip-version-check',
-         runtime['wheel_url'] + '#sha256=' + runtime['wheel_sha256']], REPO, evidence / 'pip.log')
+    python = pinned_venv(environment, runtime, log=evidence / 'pip.log')
 
     for package in (TEXT, AUDIO):
         run(['dart', 'pub', 'get'], package, evidence / f'{package.name}-pub.log')
