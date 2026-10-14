@@ -197,7 +197,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "device"
+        "gpu": "unsupported: Google's Android library aborts the app reading the GPU mask on PowerVR and Adreno 630 GPUs, as its Java SDK did (upstream-issues.md UP-061, UP-023)"
       },
       "ios": {
         "cpu": "required",

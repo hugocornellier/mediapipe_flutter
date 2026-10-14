@@ -12,7 +12,15 @@ final _claims = <String, TaskCapabilities Function(TaskPlatform)>{
 
 Never _unused(Map<String, Object?> options) => throw UnimplementedError();
 
+const _arm32 = TaskPlatform(operatingSystem: 'android', architecture: 'arm');
+
 void main() {
+  test('32-bit Android runs the Audio Classifier on the CPU', () {
+    expect(audioClassifierCapabilitiesForPlatform(_arm32).supportedDelegates, {
+      Delegate.cpu,
+    });
+  });
+
   setUpAll(() => audioTaskBackendFactory = _unused);
   tearDownAll(() => audioTaskBackendFactory = null);
 

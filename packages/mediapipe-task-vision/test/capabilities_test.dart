@@ -1,7 +1,26 @@
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'package:test/test.dart';
 
+const _arm32 = TaskPlatform(operatingSystem: 'android', architecture: 'arm');
+
 void main() {
+  test('32-bit Android runs the vision tasks on the CPU only', () {
+    for (final capabilities in [
+      faceDetectorCapabilitiesForPlatform(_arm32),
+      handLandmarkerCapabilitiesForPlatform(_arm32),
+      imageSegmenterCapabilitiesForPlatform(_arm32),
+      interactiveSegmenterCapabilitiesForPlatform(_arm32),
+    ]) {
+      expect(capabilities.supportedDelegates, {Delegate.cpu});
+    }
+    expect(
+      faceDetectorCapabilitiesForPlatform(
+        _arm32,
+      ).unavailableReasons[Delegate.gpu],
+      contains('32-bit Android'),
+    );
+  });
+
   test('Hand Landmarker follows each official runtime and adapter', () {
     TaskPlatform platform(String os, String architecture, [String? version]) =>
         TaskPlatform(
@@ -215,16 +234,21 @@ void main() {
   });
 
   test(
-    'Image Segmenter offers only CPU on an Android PowerVR GPU (UP-023)',
+    'Image Segmenter offers only CPU on every Android GPU (UP-061, UP-023)',
     () {
       TaskPlatform android(String? gpu) => TaskPlatform(
         operatingSystem: 'android',
         architecture: 'arm64',
         gpu: gpu,
       );
+      // Google's task aborted the app on PowerVR and on a Pixel 3's Adreno
+      // 630, and a GPU nobody has tried may be next.
       for (final gpu in [
-        'PowerVR D-Series DXT-48-1536 (Imagination Technologies)',
         'PowerVR Rogue GE8320 (Imagination Technologies)',
+        'Adreno (TM) 630 (Qualcomm)',
+        'Mali-G715 (ARM)',
+        'Adreno (TM) 750 (Qualcomm)',
+        null,
       ]) {
         final capabilities = imageSegmenterCapabilitiesForPlatform(
           android(gpu),
@@ -232,21 +256,7 @@ void main() {
         expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: gpu);
         expect(
           capabilities.unavailableReasons[Delegate.gpu],
-          allOf(contains('UP-023'), contains(gpu)),
-        );
-      }
-      // Other GPUs, and a GPU the adapter could not name, keep both delegates.
-      for (final gpu in [
-        'Mali-G715 (ARM)',
-        'Adreno (TM) 750 (Qualcomm)',
-        null,
-      ]) {
-        expect(
-          imageSegmenterCapabilitiesForPlatform(
-            android(gpu),
-          ).supportedDelegates,
-          {Delegate.cpu, Delegate.gpu},
-          reason: gpu,
+          allOf(contains('UP-061'), contains('UP-023')),
         );
       }
       // Only Image Segmenter is withdrawn, and only on Android.
@@ -294,8 +304,13 @@ void main() {
       'image segmenter': imageSegmenterCapabilitiesForPlatform,
       'object detector': objectDetectorCapabilitiesForPlatform,
     };
-    // Withdrawn on every Android GPU, phones included (UP-046, UP-026).
-    const phoneCpuOnly = {'face detector', 'holistic landmarker'};
+    // Withdrawn on every Android GPU, phones included (UP-046, UP-026,
+    // UP-061).
+    const phoneCpuOnly = {
+      'face detector',
+      'holistic landmarker',
+      'image segmenter',
+    };
     for (final MapEntry(key: name, value: claim) in every.entries) {
       final capabilities = claim(emulator);
       expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: name);

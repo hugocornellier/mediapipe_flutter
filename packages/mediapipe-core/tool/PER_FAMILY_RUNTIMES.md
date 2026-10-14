@@ -38,8 +38,9 @@ app ships only the families it depends on, with no setting:
 - **Linux and Windows.** Google's per-family libraries replace the wheel
   libraries. Not run yet.
 - **Android.** Each family's hook bundles Google's `.so` for the app's ABIs
-  (arm64-v8a, armeabi-v7a and x86_64; no task claims armeabi-v7a), and every
-  task calls the C API through FFI, as on iOS and the desktop. The Java
+  (arm64-v8a, armeabi-v7a and x86_64; armeabi-v7a serves the vision, classic
+  text and audio tasks on the CPU, and the large models stay on 64-bit), and
+  every task calls the C API through FFI, as on iOS and the desktop. The Java
   plugins, core's `TaskHost` library, Google's AARs and their Gradle setup are
   gone, with the `official_android_sdk` setting; the vision plugin only names
   the GPU. The libraries need Android 9: a `minSdk` below 28 fails the build
@@ -341,6 +342,12 @@ family).
   Embedder does the same with its input length. Is the reservation intended,
   and can the tasks report the cut-off
   ([UP-060](../../../upstream-issues.md#up-060-decision-maker-and-universal-embedder-reserve-memory-for-their-whole-token-budget))?
+- Image Segmenter's GPU mask aborts the app on a Pixel 3 when its size is
+  read, and every image accessor converts it first, so no caller can check;
+  Google's Java SDK aborted the same way on PowerVR (UP-023), so it is in
+  MediaPipe's shared GPU path. The package offers no Image Segmenter GPU on
+  Android until it is fixed
+  ([UP-061](../../../upstream-issues.md#up-061-image-segmenters-gpu-mask-aborts-the-app-when-it-is-read-on-a-pixel-3)).
 - A Windows decision library, the one target the October 9 build still
   lacks.
 - Whether 1.1.1's Metal output is intended

@@ -13,7 +13,7 @@ Every target uses Google's official runtime, with no rebuild of MediaPipe:
 | --- | --- |
 | Web | `@mediapipe/tasks-vision` 1.0.1 JavaScript/WASM through `mediapipe_vision` |
 | iOS arm64 and simulator | Google's 1.1.1 vision library (`MediaPipeTasksVisionC`), which this package's hook bundles |
-| Android arm64 and x86_64 | Google's 1.1.1 vision library (`libmediapipe_tasks_vision.so`), which this package's hook bundles |
+| Android arm64, x86_64 and 32-bit armeabi-v7a (CPU) | Google's 1.1.1 vision library (`libmediapipe_tasks_vision.so`), which this package's hook bundles |
 | macOS arm64 | Google's 1.1.1 vision library (`libmediapipe_tasks_vision`) |
 | Linux x64 | Google's 1.1.1 vision library |
 | Windows x64 | Google's 1.1.1 vision library |
@@ -38,7 +38,7 @@ the matrix yet, so the table is kept by hand against `capabilities.dart`.
 | Object Detector | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
 | Image Classifier | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
 | Image Embedder | WebGL | Metal | GPU | CPU [h] | CPU [f] | CPU |
-| Image Segmenter | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
+| Image Segmenter | WebGL | Metal | CPU [j] | CPU [h] | GL ES | CPU |
 | Interactive Segmenter (strokes) | WebGL | CPU | CPU | CPU [g] | CPU [g] | ✗ [b] |
 
 Pose and Holistic segmentation masks are returned on every target. Android
@@ -109,11 +109,12 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
   CPU only on macOS until Google says whether it is intended.
 - [i] UP-046: Google's Linux and Android libraries ship without the LiteRT
   plugin Face Detector's GPU graph needs, so the package offers the CPU there.
-- UP-023: Google's Android Java SDK aborted the app in its Image Segmenter
-  on a PowerVR GPU (Galaxy A12, Pixel 10, Pixel 11), inside its result
-  conversion. CPU works there, and GPU matched Google's GPU reference on Mali
-  (Pixel 8a). Its C library has not run on a PowerVR GPU yet, so the package
-  still withdraws that task's GPU on PowerVR, named by the vision plugin.
+- [j] UP-061 and UP-023: Google's Android Image Segmenter aborts the app when
+  it reads a GPU mask: its C library on a Pixel 3 (Adreno 630), and its Java
+  SDK before it on PowerVR GPUs (Galaxy A12, Pixel 10, Pixel 11). No caller
+  can catch it, so the package offers the CPU only on Android, where every
+  check passes; the GPU had matched Google's GPU reference on Mali (Pixel
+  8a) and Adreno 750 (Galaxy S24).
 - UP-024: the same SDK's Image Segmenter category mask was one class low on
   GPU on an Adreno GPU (Galaxy S24): person read 14, not 15. Confidence masks
   were right, so the most confident class recovers it. Its C library has not

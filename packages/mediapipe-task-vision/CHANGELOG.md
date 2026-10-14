@@ -8,6 +8,11 @@ Not published yet. The first release.
   Linux, Windows and the web, through Google's official runtimes. Windows has
   no Interactive Segmenter: Google's Windows runtime takes about 25 seconds
   a stroke (UP-048).
+- On 32-bit Android (armeabi-v7a) every task runs on the CPU; the GPU is not
+  offered there yet.
+- Image Segmenter offers only the CPU on Android: Google's Android task
+  aborts the app when it reads a GPU mask on PowerVR and Adreno 630 GPUs,
+  in its C library and its Java SDK alike (UP-061, UP-023).
 - Every task is one class with the same API on every platform, and
   `mediapipe_vision.dart` is the only app library. Tasks use Google's verbs
   (`detect`, `recognize`, `classify`, `embed` and `segment`, and their

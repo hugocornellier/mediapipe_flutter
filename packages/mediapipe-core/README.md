@@ -10,7 +10,7 @@ hook uses to bundle its own:
 
 | Platform | Runtime |
 | --- | --- |
-| Android 9+ (arm64-v8a, x86_64), iOS 15+ (device, arm64 simulator), macOS 14+ arm64, Linux x64, Windows x64 | Google's MediaPipe 1.1.0 C library for each family (`MediaPipeTasksVisionC`, `libmediapipe_tasks_text`, and so on), bundled by that family's hook |
+| Android 9+ (arm64-v8a, x86_64; armeabi-v7a on the CPU, without the large models), iOS 15+ (device, arm64 simulator), macOS 14+ arm64, Linux x64, Windows x64 | Google's MediaPipe 1.1.0 C library for each family (`MediaPipeTasksVisionC`, `libmediapipe_tasks_text`, and so on), bundled by that family's hook |
 | Web | Google's JavaScript runtime, through each family's web plugin |
 
 An app ships only the libraries of the families it depends on, and needs no

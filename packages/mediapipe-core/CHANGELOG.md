@@ -7,6 +7,11 @@ Google's text package; [MIGRATION.md](MIGRATION.md) maps that API.
 - The shared layer of every task family. `mediapipe_core.dart` is the one
   library apps see, through each family's library, which re-exports it;
   `platform_interface.dart` is for family packages and plugins.
+- 32-bit Android (armeabi-v7a), whose libraries Google builds for API 28 too:
+  `tasksRuntimeTargets` includes it, for the vision, classic text and audio
+  tasks on the CPU; `largeModelRuntimeTargets` leaves it out for the tasks
+  whose models a 32-bit process cannot hold, which refuse it with
+  `largeModelNeeds64Bit`.
 - Downloads, verifies and prepares Google's MediaPipe 1.1.1 C library for
   each family (`bundleFamilyRuntime`), which the vision, text, audio,
   retrieval and decision hooks bundle on Android 9+, iOS, macOS arm64, Linux

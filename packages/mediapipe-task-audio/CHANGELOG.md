@@ -5,6 +5,7 @@ Not published yet. The first release.
 - Audio Classifier on Android, iOS, macOS, Linux, Windows and the web,
   through Google's official runtimes, classifying PCM clips (`AudioData`,
   with a WAV decoder) at any sample rate.
+- On 32-bit Android (armeabi-v7a) the Audio Classifier runs on the CPU.
 - Audio stream mode on every platform: `AudioClassifierOptions(runningMode:
   AudioRunningMode.audioStream)` creates a task that takes blocks of any
   length with `classifyAsync(block, timestampMilliseconds:)` and delivers one

@@ -17,9 +17,7 @@ import 'support/device_log.dart';
 /// the GPU, `optional` records a refusal at creation, `skip` runs CPU only.
 const _gpu = String.fromEnvironment('SDK_GPU', defaultValue: 'optional');
 
-/// Tasks a device run keeps on CPU. The package itself now withdraws
-/// `image_segmenter` GPU on PowerVR (UP-023); the device workflow still lists it
-/// for the Galaxy A12 so that phone records no GPU coverage for the task.
+/// Tasks a device run keeps on CPU.
 const _gpuSkipped = String.fromEnvironment('SDK_GPU_SKIP_TASKS');
 
 /// Another runtime build and JPEG decoder than the reference's: the masks
@@ -52,21 +50,19 @@ void main() {
         final frame = await loadSample('portrait.jpg');
         final references = <Delegate, ImageSegmenterResult>{};
         var shiftedClasses = false;
-        // The package declares the GPU unsupported on a PowerVR GPU (UP-023)
-        // and refuses to create it. A phone that must run the GPU may lose it
-        // only to that documented gap, not to a misread GPU name.
+        // On Android the package declares the GPU unsupported (UP-061,
+        // UP-023) and refuses to create it; iPhones offer it, the simulator
+        // does not. A phone that must run the GPU may lose it only to that
+        // documented gap.
         final capabilities = await queryImageSegmenterCapabilities();
         final gpuDeclared = capabilities.supportedDelegates.contains(
           Delegate.gpu,
         );
+        if (Platform.isAndroid) expect(gpuDeclared, isFalse);
         if (!gpuDeclared && _gpu == 'required') {
           expect(
-            capabilities.platform.gpu,
-            anyOf(contains('PowerVR'), contains('Imagination')),
-          );
-          expect(
             capabilities.unavailableReasons[Delegate.gpu],
-            contains('UP-023'),
+            contains('UP-061'),
           );
           // Asked for anyway, the package refuses it before Google's task
           // exists, so the app lives on to run the CPU checks below.
@@ -82,7 +78,7 @@ void main() {
               isA<RuntimeUnavailableException>().having(
                 (error) => error.fix,
                 'fix',
-                contains('UP-023'),
+                contains('UP-061'),
               ),
             ),
           );

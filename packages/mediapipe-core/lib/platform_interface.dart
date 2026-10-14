@@ -9,6 +9,8 @@ export 'src/capabilities/platform_stub.dart'
     if (dart.library.io) 'src/capabilities/platform_io.dart';
 export 'src/capabilities/task_capabilities.dart'
     show
+        largeModelNeeds64Bit,
+        largeModelRuntimeTargets,
         pluginNotRegistered,
         requireDelegate,
         taskPlatformGpuReader,
