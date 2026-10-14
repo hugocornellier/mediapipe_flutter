@@ -337,9 +337,10 @@ family).
 
 - To raise on the October 15 call: Decision Maker reserves memory for its
   whole token budget, 6.7 GB at Python's default of 4096 tokens with
-  EmbeddingGemma 2, and cuts a longer input off without an error. Is the
-  reservation intended, and can the task report the cut-off
-  ([UP-060](../../../upstream-issues.md#up-060-decision-maker-reserves-memory-for-its-whole-token-budget))?
+  EmbeddingGemma 2, and cuts a longer input off without an error; Universal
+  Embedder does the same with its input length. Is the reservation intended,
+  and can the tasks report the cut-off
+  ([UP-060](../../../upstream-issues.md#up-060-decision-maker-and-universal-embedder-reserve-memory-for-their-whole-token-budget))?
 - A Windows decision library, the one target the October 9 build still
   lacks.
 - Whether 1.1.1's Metal output is intended

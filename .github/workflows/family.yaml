@@ -25,6 +25,10 @@ on:
         description: The model files the package test downloads, one per line, for the cache
         type: string
         required: true
+      download-models:
+        description: The models tool/download_models.dart downloads by name, space-separated, or its default set
+        type: string
+        default: ''
       jobs:
         description: Jobs to run (package, gallery, web), comma-separated, or all
         type: string
@@ -54,7 +58,7 @@ jobs:
         working-directory: packages/mediapipe-task-${{ inputs.family }}
         run: |
           flutter pub get
-          dart tool/download_models.dart
+          dart tool/download_models.dart ${{ inputs.download-models }}
       # A task's close waits for Google's usage-logging upload, so a slow
       # reply holds a test past the default 30 s (upstream-issues.md UP-025).
       - name: The ${{ inputs.family }} package against Google's Python answers
@@ -96,6 +100,14 @@ jobs:
         run: |
           run() { if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a "$@"; else "$@"; fi; }
           run flutter test -d ${{ matrix.device }} integration_test/gallery_journey_test.dart --reporter expanded
+      # The same journey in a release build: AOT and kReleaseMode can fail
+      # what debug passes (tool/ci/run_release_suite.py).
+      - name: The journey through the ${{ inputs.family }} pages in a release build
+        shell: bash
+        run: |
+          python=python3; if [ "$RUNNER_OS" = Windows ]; then python=python; fi
+          run() { if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a "$@"; else "$@"; fi; }
+          run "$python" -B tool/ci/run_release_suite.py --target ${{ matrix.device }} --suite integration_test/gallery_journey_test.dart --timeout 900
       - name: Record ${{ matrix.device }} CPU ${{ inputs.family }} coverage
         if: always()
         uses: ./.github/actions/record-coverage

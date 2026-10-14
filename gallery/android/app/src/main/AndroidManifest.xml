@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Release builds too: the debug and profile manifests grant INTERNET to
+         debug tooling alone, and Decision Maker's and the retrieval tasks'
+         models download on first use. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- The Audio Classifier demo classifies microphone windows. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />

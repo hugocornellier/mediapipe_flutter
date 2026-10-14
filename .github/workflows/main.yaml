@@ -41,6 +41,10 @@ jobs:
       - name: Exercise every prepared gallery page through its sidebar
         working-directory: gallery
         run: flutter test -d macos integration_test/gallery_journey_test.dart --reporter expanded
+      # The same journey in a release build: AOT and kReleaseMode can fail
+      # what debug passes (tool/ci/run_release_suite.py).
+      - name: Exercise every prepared gallery page in a release build
+        run: python3 -B tool/ci/run_release_suite.py --target macos --suite integration_test/gallery_journey_test.dart --timeout 900
 
   modern-task-matrix:
     name: Modern tasks / options and sustained CPU inference

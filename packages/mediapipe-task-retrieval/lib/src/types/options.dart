@@ -75,6 +75,12 @@ final class UniversalEmbedderOptions extends TaskOptions {
   final bool l2Normalize;
 
   /// The most tokens the text encoder reads, or 0 for the model's default.
+  ///
+  /// Google's engine reserves memory for the whole length when the task is
+  /// created: with EmbeddingGemma 2 on a Mac's CPU, about 0.4 GB at the
+  /// model's default and 6 GB at 4096, beyond what iOS gives an iPhone 15 Pro
+  /// app (about 3.4 GB). Raise it only for longer inputs, on a device with the
+  /// memory for them (upstream-issues.md UP-060).
   final int maxInputLength;
 
   /// The vision tokens per image, or 0 for the model's default.

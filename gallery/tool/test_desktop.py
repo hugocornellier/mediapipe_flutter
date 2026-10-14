@@ -80,6 +80,11 @@ def main():
             raise RuntimeError(f'{libraries[0]} is not the pinned {family} library')
         runtimes[family] = {'file': str(libraries[0].relative_to(bundle)),
                             'sha256': sha}
+    # The journey again in a release build (tool/ci/run_release_suite.py),
+    # which rebuilds the bundle with the journey as its entry point.
+    run([sys.executable, '-B', REPO / 'tool/ci/run_release_suite.py', '--target', target,
+         '--suite', 'integration_test/gallery_journey_test.dart', '--timeout', '900'],
+        'release-journey', timeout=1800)
     (evidence / 'report.json').write_text(json.dumps({
         'target': f'{target}/x64', 'delegates': ['cpu'], 'runtimes': runtimes,
         'checks': ['native-camera-registration-and-enumeration',
@@ -89,7 +94,7 @@ def main():
                    'face-landmarker-still-image-inference-and-overlay',
                    'every-sidebar-task-gallery-journey',
                    'live-tasks-face-hand',
-                   'release-build'],
+                   'release-build', 'every-sidebar-task-gallery-journey-release'],
         'physical_webcam_tested': False,
     }, indent=2) + '\n')
     print(f'CPU gallery validation passed: {evidence}', flush=True)

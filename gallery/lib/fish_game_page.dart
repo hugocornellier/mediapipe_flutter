@@ -380,7 +380,7 @@ class _FishGamePageState extends State<FishGamePage>
                         painter: _SeaPainter(_game),
                       ),
                       if (_status case final status?)
-                        _LoadingScreen(
+                        FishLoadingScreen(
                           status: status,
                           seconds: _loadingSeconds,
                           starting: _playWhenReady,
@@ -444,8 +444,9 @@ class _FishGamePageState extends State<FishGamePage>
 
 /// What covers the sea while the model loads: what is loading, for how long,
 /// and whether the game starts as soon as it is ready.
-class _LoadingScreen extends StatelessWidget {
-  const _LoadingScreen({
+class FishLoadingScreen extends StatelessWidget {
+  const FishLoadingScreen({
+    super.key,
     required this.status,
     required this.seconds,
     required this.starting,
@@ -462,33 +463,44 @@ class _LoadingScreen extends StatelessWidget {
     child: Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(
-              width: 36,
-              height: 36,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 3,
+        // Wraps at the sea's width, then scales down in a short sea rather
+        // than overflowing: a 360-point-wide phone, such as a Galaxy S24,
+        // leaves it 254 by 133 points.
+        child: LayoutBuilder(
+          builder: (context, box) => FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: box.maxWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 3,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    status,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${seconds}s${starting ? ' · the game starts when it is ready' : ''}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 18),
-            Text(
-              status,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${seconds}s${starting ? ' · the game starts when it is ready' : ''}',
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-          ],
+          ),
         ),
       ),
     ),

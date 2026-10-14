@@ -30,7 +30,7 @@ android {
         versionName = flutter.versionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         if (testLabAbi != null) {
-            require(testLabAbi == "arm64-v8a")
+            require(testLabAbi == "arm64-v8a" || testLabAbi == "armeabi-v7a")
             ndk { abiFilters.clear(); abiFilters.add(testLabAbi) }
         }
     }

@@ -31,5 +31,9 @@ jobs:
       family: decision
       tasks: decision_maker
       integration-test: decision_maker_test
-      model-path: packages/mediapipe-task-decision/models/laya_s256.task
+      # EmbeddingGemma 2 for memory_budget_test.dart's macOS check (UP-060).
+      model-path: |
+        packages/mediapipe-task-decision/models/laya_s256.task
+        packages/mediapipe-task-decision/models/embeddinggemma-2-text-vision-440m.litertlm
+      download-models: laya_s256 embedding_gemma_2_text_vision
       jobs: ${{ inputs.jobs || 'all' }}

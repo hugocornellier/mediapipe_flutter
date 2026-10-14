@@ -150,3 +150,57 @@ jobs:
           path: gallery/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
           if-no-files-found: error
+
+  # The same phone suites in a release build, which only this job runs: R8,
+  # AOT and kReleaseMode can fail what the debug job above passes. Its own job,
+  # so the debug job's coverage rows stay its own; tool/ci/run_release_suite.py
+  # builds the suites as the release app and reads their report from logcat.
+  sdk-tasks-release:
+    name: Every phone suite in a release build / official Android SDK on an x64 emulator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          linux-profile: ffi
+          modern-model-cache: 'true'
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Google's references for EmbeddingGemma, Proofreader and Summarizer
+        run: |
+          cd packages/mediapipe-task-text
+          dart pub get
+          dart tool/download_models.dart embedding_gemma proofreader summarizer
+          cd ../..
+          python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
+            --venv build/codex-tmp/official-python \
+            --output-dir build/modern-text-reference
+      - name: Prepare the gallery with the phone suites' tasks
+        run: |
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/x64 \
+            --tasks audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever,decision_maker \
+            --modern-text-reference build/modern-text-reference
+          cd gallery && flutter pub get
+      - name: Enable Android emulator hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Every phone suite and the gallery journey in a release build
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated
+          script: python3 -B tool/ci/run_release_suite.py --target android --device emulator-5554 --suite integration_test/sdk_all_test.dart --define SDK_GPU=skip --timeout 2400

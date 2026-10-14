@@ -440,10 +440,16 @@ void main() {
           );
           final dog = _universalSimilarity(tester)!;
           await tester.tap(find.byKey(const ValueKey('universal-2-elephant')));
+          // The picture's own label: semantics finders read debugSemantics,
+          // which release builds leave empty.
           await _until(
             tester,
             () => find
-                .bySemanticsLabel('Image 2: Elephant')
+                .byWidgetPredicate(
+                  (widget) =>
+                      widget is Image &&
+                      widget.semanticLabel == 'Image 2: Elephant',
+                )
                 .evaluate()
                 .isNotEmpty,
           );
@@ -1034,5 +1040,5 @@ Future<void> _until(
       () => Future<void>.delayed(const Duration(milliseconds: 250)),
     );
   }
-  fail('Gallery action timed out');
+  fail('Gallery action timed out: ${screenText(tester)}');
 }

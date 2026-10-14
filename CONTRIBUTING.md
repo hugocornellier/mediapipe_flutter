@@ -42,6 +42,15 @@ it bundles one model per family with `dart run mediapipe_core:bundle_models`
 and runs them offline. CI runs the
 rest (Android emulator, Linux, Windows and three browsers).
 
+CI also runs the gallery's device suites in release builds, which `flutter
+test` and `flutter drive` cannot: `tool/ci/run_release_suite.py` builds a
+suite as the release app, launches it and reads flutter_test's report from its
+output. After preparing the gallery, run one locally with, for example,
+`python3 -B tool/ci/run_release_suite.py --target macos --suite
+integration_test/gallery_journey_test.dart`. In a device suite, check a
+widget's own properties rather than the semantics tree: `find.bySemanticsLabel`
+reads `RenderObject.debugSemantics`, which release builds leave empty.
+
 One browser path CI does not reach: on GitHub's `macos-15` runners, which
 CI uses, WebKit has no WebGPU at all, so Decision Maker and the retrieval
 tasks never run in WebKit there (`macos-26` has it). After a change to either family or to Google's browser

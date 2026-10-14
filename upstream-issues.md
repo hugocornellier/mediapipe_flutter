@@ -69,7 +69,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-057](#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel) | The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel | Found on the 1.1.1 build of October 9 and the 1.1.1 nightly |
 | [UP-058](#up-058-universal-embedders-audio-embeddings-change-from-call-to-call) | Universal Embedder's audio embeddings change from call to call | Found on 1.1.0 and the 1.1.1 build of October 9 |
 | [UP-059](#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os) | With the Flutter host environment, the usage log drops the OS | Found on the 1.1.1 build of October 9 and the 1.1.1 nightly |
-| [UP-060](#up-060-decision-maker-reserves-memory-for-its-whole-token-budget) | Decision Maker reserves memory for its whole token budget | Found on the 1.1.1 build of October 9; worked around |
+| [UP-060](#up-060-decision-maker-and-universal-embedder-reserve-memory-for-their-whole-token-budget) | Decision Maker and Universal Embedder reserve memory for their whole token budget | Found on the 1.1.1 build of October 9; worked around |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -1068,15 +1068,18 @@ and as unknown when it is `MP_HOST_ENVIRONMENT_FLUTTER`, with or without
 value records iOS, and Flutter's unknown. The environment arrives as Flutter,
 and `host_version` arrives as given.
 
-### UP-060: Decision Maker reserves memory for its whole token budget
+### UP-060: Decision Maker and Universal Embedder reserve memory for their whole token budget
 
 **Status:** measured October 13, 2026 on an Apple M4 Max (macOS 27) with
 Google's 1.1.1 decision library of October 9, on the CPU, reading the
 process's footprint (what iOS limits) with `footprint`; seen on an iPhone 15
 Pro (iOS 27.0) with the October 9 iOS library. To raise with Google on the
 October 15 call. Worked around: `DecisionMakerOptions.maxNumTokens` defaults
-to 0, which Google's header defines as the model's own budget, and its
-documentation gives the cost of a larger one.
+to 0, which Google's header defines as the model's own budget, as
+`UniversalEmbedderOptions.maxInputLength` already did, and both options'
+documentation gives the cost of a larger one. Each package's
+`memory_budget_test.dart` fails on macOS when a pinned model adds more than
+1.5 GB at the defaults.
 
 Google's Decision Maker reserves memory for `MpDecisionMakerOptions.max_num_tokens`
 when it is created, whatever the length of each input, and the reservation
@@ -1095,8 +1098,14 @@ words gets one answer at 4096 tokens, and another, identical at 0 and 512, at
 the shorter budgets, with no error. The 17 reference cases give the same
 answers at 0, 512 and 4096.
 
+Google's Universal Embedder does the same with
+`MpUniversalEmbedderOptions.max_input_length`: after creating it and embedding
+one sentence, the footprint grows by about 0.4 GB with the text and vision
+EmbeddingGemma 2 and 0.2 GB with the audio one at 0, the model's default, and
+by 6.0 and 5.9 GB at 4096.
+
 For Google: whether reserving the whole budget up front is intended, and
-whether the task can report an input it cut off.
+whether the tasks can report an input they cut off.
 
 ## History
 

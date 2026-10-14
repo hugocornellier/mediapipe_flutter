@@ -55,8 +55,27 @@ jobs:
               {'model': 'a12', 'version': '31', 'name': 'Galaxy A12 PowerVR',
                'gpu_skip': 'image_segmenter', 'extra_tasks': ''},
           ]
+          # Run when named, outside 'all': the oldest Android the packages support
+          # (minSdk 28, which Google's libraries target too), and a 32-bit-only
+          # phone for the armeabi-v7a libraries every family ships. abi is the
+          # APK's one ABI; tasks replaces the phone suites' list, for a phone
+          # without the memory for every task.
+          named = [
+              # Google's Image Segmenter aborts the app on its GPU (image_frame.cc:
+              # "Check failed: ImageFormat::UNKNOWN != format_"), October 14.
+              {'model': 'blueline', 'version': '28', 'name': 'Pixel 3 Adreno API 28',
+               'gpu_skip': 'image_segmenter',
+               'extra_tasks': 'universal_embedder,semantic_retriever,decision_maker'},
+              {'model': 'a10', 'version': '29', 'name': 'Galaxy A10 32-bit', 'gpu_skip': '',
+               'extra_tasks': '', 'abi': 'armeabi-v7a',
+               'tasks': 'audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder'},
+          ]
           wanted = os.environ['WANTED'].replace(' ', '').split(',')
           chosen = [d for d in devices if 'all' in wanted or d['model'] in wanted]
+          chosen += [d for d in named if d['model'] in wanted]
+          for device in chosen:
+              device.setdefault('abi', 'arm64-v8a')
+              device.setdefault('tasks', '')
           assert chosen, f'No known device in {wanted}'
           print('matrix=' + json.dumps({'include': chosen}))
           PY
@@ -93,15 +112,23 @@ jobs:
         env:
           MODEL: ${{ matrix.model }}
           VERSION: ${{ matrix.version }}
+          ABI: ${{ matrix.abi }}
         run: |
           gcloud firebase test android models describe "$MODEL" --project "$FIREBASE_PROJECT_ID" --format=json > device.json
-          python3 -c 'import json, os; d = json.load(open("device.json")); assert d["form"] == "PHYSICAL", d["form"]; assert os.environ["VERSION"] in d["supportedVersionIds"], d["supportedVersionIds"]'
-      # The phone suites' tasks, plus the device's extra_tasks.
+          python3 -c 'import json, os; d = json.load(open("device.json")); assert d["form"] == "PHYSICAL", d["form"]; assert os.environ["VERSION"] in d["supportedVersionIds"], d["supportedVersionIds"]; assert os.environ["ABI"] in d["supportedAbis"], d["supportedAbis"]'
+      # The phone suites' tasks, plus the device's extra_tasks, or its own
+      # tasks; and the Flutter platform for its ABI.
       - name: The tasks this device runs
         id: tasks
         env:
           EXTRA: ${{ matrix.extra_tasks }}
-        run: echo "all=audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer${EXTRA:+,$EXTRA}" >> "$GITHUB_OUTPUT"
+          OWN: ${{ matrix.tasks }}
+          ABI: ${{ matrix.abi }}
+        run: |
+          base=audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer
+          echo "all=${OWN:-$base${EXTRA:+,$EXTRA}}" >> "$GITHUB_OUTPUT"
+          if [ "$ABI" = armeabi-v7a ]; then platform=android-arm; else platform=android-arm64; fi
+          echo "platform=$platform" >> "$GITHUB_OUTPUT"
       # The same two commands a clean checkout runs, so CI builds what a
       # contributor with only Dart, Flutter and the Android SDK builds.
       - name: Prepare the gallery with the phone suites' tasks
@@ -114,18 +141,21 @@ jobs:
         working-directory: gallery
         env:
           GPU_SKIP: ${{ matrix.gpu_skip }}
+          ABI: ${{ matrix.abi }}
+          PLATFORM: ${{ steps.tasks.outputs.platform }}
         run: |
           target="$PWD/integration_test/sdk_all_test.dart"
           # A physical GPU must work: a refusal fails its test.
           defines="$(printf 'SDK_GPU=required' | base64),$(printf 'SDK_GPU_SKIP_TASKS=%s' "$GPU_SKIP" | base64),$(printf 'SDK_MODERN_TEXT=true' | base64)"
-          flutter build apk --config-only --debug --target "$target" --target-platform android-arm64
+          flutter build apk --config-only --debug --target "$target" --target-platform "$PLATFORM"
           cd android
-          ./gradlew app:assembleAndroidTest -Pmediapipe.testLabAbi=arm64-v8a
-          ./gradlew app:assembleDebug -Ptarget="$target" -Ptarget-platform=android-arm64 \
-            -Pdart-defines="$defines" -Pmediapipe.testLabAbi=arm64-v8a
+          ./gradlew app:assembleAndroidTest -Pmediapipe.testLabAbi="$ABI"
+          ./gradlew app:assembleDebug -Ptarget="$target" -Ptarget-platform="$PLATFORM" \
+            -Pdart-defines="$defines" -Pmediapipe.testLabAbi="$ABI"
       - name: Verify packaged runtime and models
         env:
           TASKS: ${{ steps.tasks.outputs.all }}
+          ABI: ${{ matrix.abi }}
         run: |
           python3 - <<'PY'
           import json
@@ -137,13 +167,14 @@ jobs:
               tasks = json.loads(apk.read('assets/flutter_assets/assets/manifest.json'))['tasks']
           expected = os.environ['TASKS'].split(',')
           assert len(tasks) == len(expected), (tasks, expected)
-          # bundle_models names each model by its SHA-256; the 18 bundled models.
-          # Decision Maker's and the retrieval tasks' are too large to bundle: the
-          # phone downloads them on first use.
+          # bundle_models names each model by its SHA-256; every model the
+          # manifest lists. Decision Maker's and the retrieval tasks' are too
+          # large to bundle: the phone downloads them on first use.
           with open('gallery/assets/mediapipe/manifest.json') as manifest:
               models = [entry['file'] for entry in json.load(manifest)['models']]
-          assert len(models) == 18, models
-          references = ['embedding_gemma.json', 'proofreader.json', 'summarizer.json']
+          assert models, 'no bundled models'
+          references = (['embedding_gemma.json', 'proofreader.json', 'summarizer.json']
+                        if 'text_summarizer' in expected else [])
           # One library per family, with the text and audio stream adapters.
           libraries = ['libflutter.so', 'libmediapipe_tasks_vision.so', 'libmediapipe_tasks_text.so',
                        'libmediapipe_tasks_audio.so', 'libmediapipe_text_stream.so',
@@ -152,7 +183,7 @@ jobs:
               libraries.append('libmediapipe_tasks_decision.so')
           if 'universal_embedder' in expected:
               libraries.append('libmediapipe_tasks_retrieval.so')
-          required = {*[f'lib/arm64-v8a/{library}' for library in libraries],
+          required = {*[f"lib/{os.environ['ABI']}/{library}" for library in libraries],
                       *[f'assets/flutter_assets/assets/mediapipe/{m}' for m in models],
                       *[f'assets/flutter_assets/assets/references/modern_text/{r}' for r in references]}
           assert required <= names, sorted(required - names)
