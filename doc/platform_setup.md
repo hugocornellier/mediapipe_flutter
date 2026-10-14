@@ -47,9 +47,13 @@ instead.
 
 - iOS 15.0 or newer. Each family bundles Google's MediaPipe library for that
   family (`MediaPipeTasksVisionC`, `MediaPipeTasksTextC`,
-  `MediaPipeTasksAudioC`), so an app ships only the families it uses; no
+  `MediaPipeTasksAudioC`, `MediaPipeTasksDecisionC`,
+  `MediaPipeTasksRetrievalC`), so an app ships only the families it uses; no
   CocoaPods or native plugin is involved. The build extracts only the device
   or simulator slice it needs.
+- For the App Store, the app's `PrivacyInfo.xcprivacy` declares the
+  required-reason APIs Google's libraries call; see
+  [privacy and licenses](privacy_and_licenses.md#app-store-privacy-manifest).
 - On the iOS Simulator only the CPU is offered: Google's MediaPipe aborts on
   the simulator's GPU path. Devices keep Metal.
 - Downloaded models live in the app's Application Support folder, excluded

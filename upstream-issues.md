@@ -1,6 +1,6 @@
 # Upstream issues and runtime compatibility findings
 
-Last updated: 2026-10-13. These are local observations unless explicitly marked
+Last updated: 2026-10-14. These are local observations unless explicitly marked
 as an external report; each entry says whether it was reported upstream. An
 exported symbol alone does not establish a working task or platform.
 
@@ -71,6 +71,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-059](#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os) | With the Flutter host environment, the usage log drops the OS | Found on the 1.1.1 build of October 9 and the 1.1.1 nightly |
 | [UP-060](#up-060-decision-maker-and-universal-embedder-reserve-memory-for-their-whole-token-budget) | Decision Maker and Universal Embedder reserve memory for their whole token budget | Found on the 1.1.1 build of October 9; worked around |
 | [UP-061](#up-061-image-segmenters-gpu-mask-aborts-the-app-when-it-is-read-on-a-pixel-3) | Image Segmenter's GPU mask aborts the app when it is read, on a Pixel 3 | Found on the 1.1.1 build of October 9; worked around |
+| [UP-062](#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest) | The iOS libraries call required-reason APIs and ship no privacy manifest | Found on the 1.1.1 build of October 9; worked around in the gallery |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -1144,6 +1145,43 @@ the first accessor aborts.
 
 For Google: return an error status instead of aborting, or a mask the CPU
 view can read, on this GPU.
+
+### UP-062: The iOS libraries call required-reason APIs and ship no privacy manifest
+
+**Status:** read October 14, 2026 from Google's 1.1.1 iOS libraries of
+October 9, in a release archive of the gallery with every family
+(`flutter build ipa`). Not reported upstream yet. Worked around in the
+gallery, whose `ios/Runner/PrivacyInfo.xcprivacy` declares the APIs, and
+[privacy_and_licenses.md](doc/privacy_and_licenses.md#app-store-privacy-manifest)
+tells apps to do the same. No upload to App Store Connect has tested it:
+the gallery's `com.example` bundle ID cannot be uploaded.
+
+App Store Connect refuses an iOS upload whose code calls an API on Apple's
+required-reason list without a declared reason (ITMS-91053), in the app or
+in a framework it embeds. Each of Google's framework zips holds the binary and
+its Info.plist only, and the binaries import:
+
+| Library | Imports | Apple's category |
+| --- | --- | --- |
+| Every family's (vision, text, audio, decision, retrieval) | `stat`, `fstat` | File timestamp |
+| Every family's | `NSUserDefaults` | User defaults |
+| Retrieval's | `statfs`, `fstatfs` | Disk space |
+
+From the binaries' strings, the user defaults probably belong to the
+GTMSessionFetcher that the usage logging uploads through, and the disk space
+calls to the SQLite that the retrieval library embeds. The libraries are
+otherwise ready for the store: arm64 only, iOS 15.0 in the binaries as in
+the Info.plists Flutter writes, and signed by the build.
+
+A manifest from Google would not reach apps through the packages yet:
+Flutter 3.47.5 wraps each native-assets library in a framework of its own
+making, with no way to add a `PrivacyInfo.xcprivacy`, so apps declare the
+APIs in their own manifest.
+
+For Google: a privacy manifest for each iOS library, with the reasons for
+these APIs and the data its usage logging collects, which apps must also
+describe in their App Privacy answers; or the reasons, for the packages to
+document.
 
 ## History
 

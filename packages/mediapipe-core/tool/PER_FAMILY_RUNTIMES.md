@@ -214,8 +214,17 @@ the history (`git show 4b4ab7a:debloat-plan.md`). Still open:
   families switch from `path:` to `mediapipe_core: ^0.1.0` and publish. Dry
   runs only until then, and never `--force`. The `mediapipe_core` and
   `mediapipe_text` names on pub.dev belong to Google's uploaders.
-- **Release builds.** A `flutter build ios` and `flutter build macos` release
-  of the gallery, and an App Store validation of the iOS frameworks.
+- **Release builds.** On October 14 the gallery with every family built in
+  release for iOS (`flutter build ipa`, 670 MB app) and macOS (697 MB). Every
+  framework in both is arm64 only, built for iOS 15.0 or macOS 14.0 as its
+  Info.plist and the app say, and signed; the macOS app is sandboxed with
+  the camera, microphone and network entitlements. Google's iOS libraries
+  call required-reason APIs without a privacy manifest, which the gallery
+  now declares
+  ([UP-062](../../../upstream-issues.md#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest)).
+  Left: an App Store Connect validation, which needs a bundle ID of the
+  account's own instead of `com.example.mediapipeGallery` and an Apple
+  Distribution certificate.
 - **Notices.** Since October 9, every family ships Google's LICENSE and
   NOTICE, identical across families; the NOTICE opens with Google's
   MediaPipe Tasks privacy notice. The release posts both, and
@@ -350,6 +359,10 @@ family).
   ([UP-061](../../../upstream-issues.md#up-061-image-segmenters-gpu-mask-aborts-the-app-when-it-is-read-on-a-pixel-3)).
 - A Windows decision library, the one target the October 9 build still
   lacks.
+- A privacy manifest for each iOS library, or the reasons for the
+  required-reason APIs they call (`stat`, `fstat`, `NSUserDefaults`, and
+  `statfs` in retrieval), for apps to declare
+  ([UP-062](../../../upstream-issues.md#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest)).
 - Whether 1.1.1's Metal output is intended
   ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
 - Headers for the Proofreader, Summarizer and Interactive Segmenter, which
