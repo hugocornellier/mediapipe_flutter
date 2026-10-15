@@ -21,11 +21,7 @@ jobs:
   # Maker and the retrieval tasks, so this job needs no source build. The
   # emulator runs them on the CPU only; see gallery/tool/test_android_sdk_tasks.sh.
   sdk-tasks:
-    # TODO: Rename this job: it runs every family, not the landmark tasks on
-    # an SDK alone. The main ruleset requires it by this name, so the rule
-    # changes in the same step. See
-    # packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
-    name: Landmark, detection and classification tasks / official Android SDK on an x64 emulator
+    name: Every phone suite / official Android SDK on an x64 emulator
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -155,8 +151,29 @@ jobs:
   # AOT and kReleaseMode can fail what the debug job above passes. Its own job,
   # so the debug job's coverage rows stay its own; tool/ci/run_release_suite.py
   # builds the suites as the release app and reads their report from logcat.
+  # It runs twice: on Android 15, and on Android 9 (API 28), the oldest the
+  # packages support, which Google's libraries target too and no other
+  # emulator job runs.
   sdk-tasks-release:
-    name: Every phone suite in a release build / official Android SDK on an x64 emulator
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Every phone suite in a release build / official Android SDK on an x64 emulator
+            api-level: 35
+            camera: -camera-back emulated
+            defines: --define SDK_GPU=skip
+          # Every camera of the Android 9 image aborts the emulator once a
+          # stream starts ("FATAL | Unknown format: 0x18", after "Unsupported
+          # camera format ... 825382478", NV21, from the virtual scene): emulated
+          # or virtual scene, front or back, SwiftShader or guest rendering, on
+          # October 14. The job runs without one; the Pixel 3 on Test Lab covers
+          # the camera on Android 9.
+          - name: Every phone suite in a release build / official Android SDK on an x64 Android 9 emulator
+            api-level: 28
+            camera: -camera-back none -camera-front none
+            defines: --define SDK_GPU=skip --define SDK_CAMERA=none
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -196,11 +213,11 @@ jobs:
       - name: Every phone suite and the gallery journey in a release build
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           profile: pixel_6
           ram-size: 4096M
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated
-          script: python3 -B tool/ci/run_release_suite.py --target android --device emulator-5554 --suite integration_test/sdk_all_test.dart --define SDK_GPU=skip --timeout 2400
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim ${{ matrix.camera }}
+          script: python3 -B tool/ci/run_release_suite.py --target android --device emulator-5554 --suite integration_test/sdk_all_test.dart ${{ matrix.defines }} --timeout 2400

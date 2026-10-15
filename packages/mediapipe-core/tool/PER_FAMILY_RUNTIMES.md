@@ -200,13 +200,13 @@ the history (`git show 4b4ab7a:debloat-plan.md`). Still open:
   them is pending.
   An iPhone needs about 1.1 GB free beside the gallery for their models
   (Laya 678 MB, EmbeddingGemma 2 388 MB), downloaded on first use.
-- **Ruleset.** The `main` ruleset requires 16 checks by name. It can add the
-  Decision, Retrieval and Bundled models checks (named `Decision / package /
-  macos-15`, `Retrieval / gallery / macos/arm64` and so on since the family
-  workflow), and the "official Android SDK" and "official iOS SDK" jobs in
-  `android.yaml` and `ios.yaml` can take names that say every family runs
-  there, but the rule must change in the same step, since it names them. A
-  repository setting, not a file; the TODOs above those jobs mark them.
+- **Ruleset.** Since October 14 the `main` ruleset requires 35 checks by
+  name, the Decision, Retrieval and Bundled models checks and the Android
+  release suite among them. The phone suite jobs in `android.yaml` and
+  `ios.yaml` are now "Every phone suite / official Android SDK on an x64
+  emulator" and "... official iOS SDK on an arm64 simulator", and the rule
+  requires them by those names. The macOS 14 and Android 9 jobs can join it
+  once they have passed on `main`.
 - **Publish.** 0.1.0 of the six packages, as `CONTRIBUTING.md` ("Versions
   and the first release") describes: one commit removes `publish_to: none`
   and the `(unreleased)` marks, then `publish_check.py` and
