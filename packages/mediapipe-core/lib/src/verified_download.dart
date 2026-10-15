@@ -55,6 +55,9 @@ Future<File> downloadVerified(
   final failures = <DownloadFailure>[];
   final connection = _Connection(client ?? http.Client());
   try {
+    // TODO: Retry transient failures with backoff and resume a dropped
+    // download before moving to the next location; today each gets one
+    // attempt. See packages/mediapipe-core/tool/ASSET_HOSTING.md.
     for (final location in locations) {
       final temporary = await destination.parent.createTemp('.download-');
       final partial = File.fromUri(temporary.uri.resolve('asset'));
