@@ -22,11 +22,7 @@ jobs:
   # runs them on the CPU only: Google's MediaPipe aborts in its Metal
   # preprocessing there. Metal is a phone check.
   sdk-tasks:
-    # TODO: Rename this job: it runs every family, not the landmark tasks on
-    # an SDK alone. The main ruleset requires it by this name, so the rule
-    # changes in the same step. See
-    # packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
-    name: Landmark, detection and classification tasks / official iOS SDK on an arm64 simulator
+    name: Every phone suite / official iOS SDK on an arm64 simulator
     runs-on: macos-15
     timeout-minutes: 110
     steps:

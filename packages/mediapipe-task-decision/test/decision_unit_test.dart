@@ -4,11 +4,22 @@ import 'package:mediapipe_decision/src/capabilities.dart'
     show embeddingGemma2TextTargets;
 import 'package:mediapipe_decision/src/results/decoders.dart';
 import 'package:test/test.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show largeModelNeeds64Bit;
 
 TaskPlatform _platform(String os, String arch, [String? version]) =>
     TaskPlatform(operatingSystem: os, architecture: arch, version: version);
 
+const _arm32 = TaskPlatform(operatingSystem: 'android', architecture: 'arm');
+
 void main() {
+  test('32-bit Android refuses Decision Maker, its models need 64-bit', () {
+    final capabilities = decisionMakerCapabilitiesForPlatform(_arm32);
+    expect(capabilities.supportedDelegates, isEmpty);
+    expect(capabilities.unavailableReasons[Delegate.cpu], largeModelNeeds64Bit);
+    expect(capabilities.unavailableReasons[Delegate.gpu], largeModelNeeds64Bit);
+  });
+
   group('questions are checked the same way everywhere', () {
     test(
       'a boolean needs a threshold in [0, 1] and a positive temperature',

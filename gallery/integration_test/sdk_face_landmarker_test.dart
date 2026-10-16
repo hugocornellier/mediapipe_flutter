@@ -14,6 +14,7 @@ import 'package:mediapipe_gallery/main.dart';
 
 import 'support/delegate_control.dart';
 import 'support/gallery_tiles.dart';
+import 'support/no_camera.dart';
 import 'support/sdk_frames.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
 import 'support/device_log.dart';
@@ -236,9 +237,10 @@ void main() {
         FaceLandmarkerLiveTask(),
       );
       try {
-        final cameras = await controller.findCameras();
-        // The iOS simulator has no camera; Android emulators emulate one.
-        if (cameras.isEmpty && Platform.isIOS) {
+        final cameras = await camerasOrNone(controller.findCameras);
+        // The iOS simulator has no camera; Android emulators emulate one,
+        // except where SDK_CAMERA says the job runs without.
+        if (cameras.isEmpty && (Platform.isIOS || runsWithoutCamera)) {
           _report('camera', {'cameras': 0});
           return;
         }
@@ -304,8 +306,8 @@ void main() {
       );
       await tester.pump();
     }
-    if (controller.cameras.isEmpty && Platform.isIOS) {
-      expect(find.textContaining('No camera found'), findsOneWidget);
+    if (controller.cameras.isEmpty && (Platform.isIOS || runsWithoutCamera)) {
+      expectNoCameraMessage();
       _report('gallery', {'cameras': 0});
       await tester.runAsync(controller.close);
       await tester.pumpWidget(const MaterialApp(home: SizedBox()));

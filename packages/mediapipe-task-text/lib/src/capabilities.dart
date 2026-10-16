@@ -12,12 +12,13 @@ import 'text_task_backend.dart' show textTaskBackendFactory;
 TaskCapabilities _onEveryRuntime(
   TaskPlatform platform, {
   required String gpuUnavailableReason,
+  RuntimeTargets targets = tasksRuntimeTargets,
 }) => TaskCapabilities.cpuOnTargets(
   platform: platform,
   gpuUnavailableReason: gpuUnavailableReason,
   runtimeVersion: tasksRuntimeVersionOn(platform),
   targets: {
-    ...tasksRuntimeTargets,
+    ...targets,
     if (textTaskBackendFactory != null) 'web/unknown': null,
   },
 );
@@ -36,7 +37,7 @@ const _noBrowserGenerativeTasks =
 /// task.
 TaskCapabilities _generative(TaskPlatform platform) {
   const gpu = "Google's task accepts only the CPU delegate.";
-  const targets = tasksRuntimeTargets;
+  const targets = largeModelRuntimeTargets;
   if (platform.operatingSystem == 'web') {
     return TaskCapabilities.onTargets(
       platform: platform,
@@ -85,18 +86,23 @@ Future<TaskCapabilities> queryTextEmbedderCapabilities([
 
 /// Text Embedder support on [platform]: CPU on Google's text library and the
 /// registered browser backend, for the classic embedders and
-/// EmbeddingGemma alike. Every runtime formats EmbeddingGemma's prompts.
+/// EmbeddingGemma alike, which 32-bit Android cannot hold. Every runtime
+/// formats EmbeddingGemma's prompts.
 TaskCapabilities textEmbedderCapabilitiesForPlatform(
   TaskPlatform platform, {
   DownloadAsset? model,
-}) => _onEveryRuntime(
-  platform,
-  gpuUnavailableReason: model?.sha256 == TextModels.embeddingGemma.sha256
-      ? "Google's EmbeddingGemma pipeline runs on the CPU only; its macOS "
-            'Metal interpreter fails during creation (observed with '
-            'MediaPipe 1.0.1).'
-      : _classicGpu,
-);
+}) {
+  final embeddingGemma = model?.sha256 == TextModels.embeddingGemma.sha256;
+  return _onEveryRuntime(
+    platform,
+    gpuUnavailableReason: embeddingGemma
+        ? "Google's EmbeddingGemma pipeline runs on the CPU only; its macOS "
+              'Metal interpreter fails during creation (observed with '
+              'MediaPipe 1.0.1).'
+        : _classicGpu,
+    targets: embeddingGemma ? largeModelRuntimeTargets : tasksRuntimeTargets,
+  );
+}
 
 /// Query Proofreader support on this platform without a model.
 Future<TaskCapabilities> queryTextProofreaderCapabilities() async =>

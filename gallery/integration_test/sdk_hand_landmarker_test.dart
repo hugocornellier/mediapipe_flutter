@@ -12,6 +12,7 @@ import 'package:mediapipe_gallery/live/live_camera_view.dart';
 import 'package:mediapipe_gallery/main.dart';
 
 import 'support/gallery_tiles.dart';
+import 'support/no_camera.dart';
 import 'support/official_landmark_references.dart';
 import 'support/sdk_frames.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
@@ -223,7 +224,7 @@ void main() {
     });
     await tester.pump();
     if (controller.cameras.isEmpty) {
-      expect(find.textContaining('No camera found'), findsOneWidget);
+      expectNoCameraMessage();
     } else {
       expect(controller.error, isNull);
       expect(controller.processedFrames, greaterThanOrEqualTo(10));

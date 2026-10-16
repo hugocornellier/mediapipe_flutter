@@ -43,6 +43,12 @@ const _faceDetectorGpuGap =
 /// Google is checking whether the change is intended. The CPU matches the 1.1.0 wheel exactly.
 /// The tasks keep `macosGpu`, which names the ones that return once Google
 /// confirms the new output (UP-057).
+/// 32-bit Android (armeabi-v7a) runs the vision tasks on the CPU; this
+/// package has not validated Google's GPU path there.
+const _arm32GpuGap =
+    "The GPU on 32-bit Android (armeabi-v7a) is not validated; the vision "
+    'tasks run there on the CPU.';
+
 const _macosGpuGap =
     "Google's 1.1.1 macOS library gives different results on Metal from "
     "Google's own 1.1.0 package, and Google is checking whether that is "
@@ -177,6 +183,8 @@ TaskCapabilities _visionTaskCapabilities(
         'macos/arm64': '14.0',
         'ios/arm64': '15.0',
         'android/arm64': null,
+        // 32-bit Arm (armeabi-v7a): Google's library for it, on the CPU.
+        'android/arm': null,
         // Google's library ships x86_64; the emulator CI job runs it on the
         // CPU.
         'android/x64': null,
@@ -195,6 +203,7 @@ TaskCapabilities _visionTaskCapabilities(
           '$name requires Linux x64, Windows x64, macOS arm64, iOS, '
           'Android, or the web adapter package.',
       Delegate.gpu:
+          (platform.target == 'android/arm' ? _arm32GpuGap : null) ??
           (platform.operatingSystem == 'android' ? androidGap : null) ??
           (platform.simulator ? _simulatorGpuGap : null) ??
           (platform.operatingSystem == 'ios' ? iosGpuGap : null) ??
@@ -216,22 +225,23 @@ String _either(List<String> items) => switch (items) {
   _ => '${items.take(items.length - 1).join(', ')}, or ${items.last}',
 };
 
-/// Whether [platform] is an Android device whose GPU is Imagination's PowerVR,
-/// as the vision package's Android plugin names it.
-bool _androidPowerVr(TaskPlatform platform) {
-  final gpu = platform.gpu?.toLowerCase() ?? '';
-  return platform.operatingSystem == 'android' &&
-      (gpu.contains('powervr') || gpu.contains('imagination'));
-}
-
 /// Query Image Segmenter support on this process platform without a model.
 Future<TaskCapabilities> queryImageSegmenterCapabilities() async =>
     imageSegmenterCapabilitiesForPlatform(await currentTaskPlatform());
 
+/// Why Image Segmenter offers no GPU on Android: Google's Android task aborts
+/// the app when it reads a GPU mask on a PowerVR GPU and on a Pixel 3's
+/// Adreno 630, in its Java SDK and its C library alike, which no caller can
+/// catch (upstream-issues.md UP-061 and UP-023).
+const _androidSegmenterGpuGap =
+    "Google's Android Image Segmenter aborts the app when it reads a GPU "
+    'mask on PowerVR and Adreno 630 GPUs, in its Java SDK and its C library '
+    'alike, which no caller can catch; use the CPU delegate. See '
+    'upstream-issues.md UP-061 and UP-023.';
+
 /// Image Segmenter, declared as [imageClassifierCapabilitiesForPlatform],
-/// except on an Android PowerVR GPU: there Google's task aborts the app when it
-/// converts a GPU result, which no caller can catch (upstream-issues.md
-/// UP-023), so only the CPU is offered.
+/// except on Android, where only the CPU is offered
+/// ([_androidSegmenterGpuGap]).
 TaskCapabilities imageSegmenterCapabilitiesForPlatform(TaskPlatform platform) =>
     _visionTaskCapabilities(
       platform,
@@ -239,11 +249,7 @@ TaskCapabilities imageSegmenterCapabilitiesForPlatform(TaskPlatform platform) =>
       webAdapter: imageSegmenterBackendFactory != null,
       linuxGpu: true,
       macosGpu: true,
-      androidGpuGap: _androidPowerVr(platform)
-          ? "Google's Android Image Segmenter aborts the app on this PowerVR "
-                'GPU (${platform.gpu}); use the CPU delegate. See '
-                'upstream-issues.md UP-023.'
-          : null,
+      androidGpuGap: _androidSegmenterGpuGap,
     );
 
 /// Query Image Classifier support on this process platform without a model.
@@ -297,6 +303,7 @@ TaskCapabilities interactiveSegmenterCapabilitiesForPlatform(
         'linux/x64': null,
         'ios/arm64': '15.0',
         'android/arm64': null,
+        'android/arm': null,
         'android/x64': null,
         if (adapter) 'web/unknown': null,
       },

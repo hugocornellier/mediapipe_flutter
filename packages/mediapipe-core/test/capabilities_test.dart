@@ -50,6 +50,31 @@ void main() {
       );
     },
   );
+  // Google builds every family for 32-bit Android too; the tasks whose
+  // models it cannot hold stay on 64-bit processes, and say why.
+  test('32-bit Android runs the shared targets but not the large models', () {
+    const arm32 = TaskPlatform(operatingSystem: 'android', architecture: 'arm');
+    TaskCapabilities on(RuntimeTargets targets) =>
+        TaskCapabilities.cpuOnTargets(
+          platform: arm32,
+          gpuUnavailableReason: 'CPU only.',
+          runtimeVersion: '1.1.1',
+          targets: targets,
+        );
+    expect(tasksRuntimeTargets.keys, contains('android/arm'));
+    expect(largeModelRuntimeTargets.keys, isNot(contains('android/arm')));
+    expect(
+      tasksRuntimeTargets.keys.toSet().difference(
+        largeModelRuntimeTargets.keys.toSet(),
+      ),
+      {'android/arm'},
+    );
+    expect(on(tasksRuntimeTargets).supportedDelegates, {Delegate.cpu});
+    final large = on(largeModelRuntimeTargets);
+    expect(large.supportedDelegates, isEmpty);
+    expect(large.unavailableReasons[Delegate.cpu], largeModelNeeds64Bit);
+  });
+
   test('minimum OS accepts CPU and preserves the upstream GPU explanation', () {
     final result = _support(
       const TaskPlatform(

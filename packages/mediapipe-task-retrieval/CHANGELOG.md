@@ -6,6 +6,9 @@ Not published yet.
   Windows and the web, through Google's official MediaPipe runtimes: its
   per-family 1.1.1 retrieval C library natively and `@mediapipe/tasks-retrieval`
   in browsers.
+- Universal Embedder and Semantic Retriever need 64-bit Android: 32-bit
+  (armeabi-v7a) cannot hold their models, and their capability queries say
+  so.
 - `UniversalEmbedder` embeds text, encoded images and audio samples into one
   space, with `cosineSimilarity`; `SemanticRetriever` indexes documents,
   images, audio and mixed content with metadata and retrieves the nearest

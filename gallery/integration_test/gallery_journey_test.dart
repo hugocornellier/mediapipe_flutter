@@ -24,6 +24,7 @@ import 'package:mediapipe_gallery/ui/design.dart';
 import 'package:mediapipe_gallery/universal_embedder_page.dart';
 
 import 'support/delegate_control.dart';
+import 'support/no_camera.dart';
 
 /// GPU coverage follows the SDK suites: 'required' on physical phones fails a
 /// GPU refusal, 'skip' on emulators and simulators never tries GPU, and the
@@ -189,13 +190,21 @@ void main() {
           expect(delegates, isNotEmpty, reason: task.id);
           final camera = await _cameraProblem(tester);
           if (camera != null) {
-            // Emulators and phones have cameras; desktop runners and
-            // simulators may not.
-            expect(
-              defaultTargetPlatform,
-              isNot(TargetPlatform.android),
-              reason: '${task.id}: $camera',
-            );
+            // Emulators and phones have cameras, except a job that runs
+            // without one on purpose; desktop runners and simulators may not.
+            if (runsWithoutCamera) {
+              expect(
+                saysNoCamera(camera),
+                isTrue,
+                reason: '${task.id}: $camera',
+              );
+            } else {
+              expect(
+                defaultTargetPlatform,
+                isNot(TargetPlatform.android),
+                reason: '${task.id}: $camera',
+              );
+            }
             checks.add('${task.id}:camera:none');
             _note('${task.id}: no camera ($camera)');
           } else {

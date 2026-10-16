@@ -6,6 +6,10 @@ Not published yet. The first release of this rewrite, replacing Google's
 
 - Text Classifier, Text Embedder and Language Detector on Android, iOS,
   macOS, Linux, Windows and the web, through Google's official runtimes.
+- On 32-bit Android (armeabi-v7a) the Text Classifier, Text Embedder and
+  Language Detector run on the CPU; EmbeddingGemma, the Proofreader and the
+  Summarizer need 64-bit Android, since their models take more memory than a
+  32-bit process holds.
 - EmbeddingGemma, as a `TextEmbedder` with `TextModels.embeddingGemma`, on the
   same six platforms, with Google's prompt formatting on every runtime:
   `embed(text, {formatContext})` with `EmbeddingType`, `TextRole` and

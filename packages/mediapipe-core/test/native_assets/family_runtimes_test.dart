@@ -51,12 +51,11 @@ void main() {
   test('every family has a library on every target the tasks claim', () {
     for (final MapEntry(key: family, value: runtimes)
         in familyRuntimes.entries) {
-      // Flutter's Android release builds include 32-bit ARM, which no task
-      // claims; the simulator is part of the iOS claim. A target Google has
-      // not built the family for yet comes from its wheel (wheelRuntimes).
+      // The simulator is part of the iOS claim. A target Google has not
+      // built the family for yet comes from its wheel (wheelRuntimes).
       expect(
         {...runtimes.keys, ...?wheelRuntimes[family]?.keys},
-        {...tasksRuntimeTargets.keys, 'ios-simulator/arm64', 'android/arm'},
+        {...tasksRuntimeTargets.keys, 'ios-simulator/arm64'},
         reason: family,
       );
       for (final MapEntry(key: target, value: runtime) in runtimes.entries) {

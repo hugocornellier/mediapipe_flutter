@@ -18,10 +18,11 @@ String _runtimeVersionOn(TaskPlatform platform) =>
     ? _browserRuntimeVersion
     : tasksRuntimeVersionOn(platform);
 
-/// Where Google's retrieval library runs: core's shared targets, which
-/// Google's per-family build covers as its vision, text and audio libraries
-/// do.
-const retrievalRuntimeTargets = tasksRuntimeTargets;
+/// Where Google's retrieval library runs: core's shared 64-bit targets,
+/// which Google's per-family build covers as its vision, text and audio
+/// libraries do. 32-bit Android cannot hold its models
+/// ([largeModelNeeds64Bit]).
+const retrievalRuntimeTargets = largeModelRuntimeTargets;
 
 const _desktopGpu =
     "Google's retrieval library runs the tasks on the CPU; this package has "
@@ -62,6 +63,9 @@ const embeddingGemma2WebKitUnavailable =
 /// not in WebKit, where it embeds everything as zeros (UP-054).
 TaskCapabilities _capabilities(TaskPlatform platform) {
   final web = platform.operatingSystem == 'web';
+  final noLibrary = platform.target == 'android/arm'
+      ? largeModelNeeds64Bit
+      : _noLibrary;
   final browserRuns =
       retrievalBackendFactory != null && hasHardwareWebGpu(platform);
   final webKit = platform.browserEngine == BrowserEngine.webkit;
@@ -74,7 +78,7 @@ TaskCapabilities _capabilities(TaskPlatform platform) {
     unavailableReasons: {
       // Without a hardware adapter both delegates end on Google's WebGPU check.
       Delegate.cpu: !web
-          ? _noLibrary
+          ? noLibrary
           : browserRuns && webKit
           ? embeddingGemma2WebKitUnavailable
           : hasHardwareWebGpu(platform)
@@ -88,7 +92,7 @@ TaskCapabilities _capabilities(TaskPlatform platform) {
                 : _noWebGpu(platform)
           : retrievalRuntimeTargets.containsKey(platform.target)
           ? _desktopGpu
-          : _noLibrary,
+          : noLibrary,
     },
     runtimeVersion: _runtimeVersionOn(platform),
   );

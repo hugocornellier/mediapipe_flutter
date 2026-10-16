@@ -38,8 +38,9 @@ app ships only the families it depends on, with no setting:
 - **Linux and Windows.** Google's per-family libraries replace the wheel
   libraries. Not run yet.
 - **Android.** Each family's hook bundles Google's `.so` for the app's ABIs
-  (arm64-v8a, armeabi-v7a and x86_64; no task claims armeabi-v7a), and every
-  task calls the C API through FFI, as on iOS and the desktop. The Java
+  (arm64-v8a, armeabi-v7a and x86_64; armeabi-v7a serves the vision, classic
+  text and audio tasks on the CPU, and the large models stay on 64-bit), and
+  every task calls the C API through FFI, as on iOS and the desktop. The Java
   plugins, core's `TaskHost` library, Google's AARs and their Gradle setup are
   gone, with the `official_android_sdk` setting; the vision plugin only names
   the GPU. The libraries need Android 9: a `minSdk` below 28 fails the build
@@ -199,13 +200,13 @@ the history (`git show 4b4ab7a:debloat-plan.md`). Still open:
   them is pending.
   An iPhone needs about 1.1 GB free beside the gallery for their models
   (Laya 678 MB, EmbeddingGemma 2 388 MB), downloaded on first use.
-- **Ruleset.** The `main` ruleset requires 16 checks by name. It can add the
-  Decision, Retrieval and Bundled models checks (named `Decision / package /
-  macos-15`, `Retrieval / gallery / macos/arm64` and so on since the family
-  workflow), and the "official Android SDK" and "official iOS SDK" jobs in
-  `android.yaml` and `ios.yaml` can take names that say every family runs
-  there, but the rule must change in the same step, since it names them. A
-  repository setting, not a file; the TODOs above those jobs mark them.
+- **Ruleset.** Since October 14 the `main` ruleset requires 35 checks by
+  name, the Decision, Retrieval and Bundled models checks and the Android
+  release suite among them. The phone suite jobs in `android.yaml` and
+  `ios.yaml` are now "Every phone suite / official Android SDK on an x64
+  emulator" and "... official iOS SDK on an arm64 simulator", and the rule
+  requires them by those names. The macOS 14 and Android 9 jobs can join it
+  once they have passed on `main`.
 - **Publish.** 0.1.0 of the six packages, as `CONTRIBUTING.md` ("Versions
   and the first release") describes: one commit removes `publish_to: none`
   and the `(unreleased)` marks, then `publish_check.py` and
@@ -213,8 +214,17 @@ the history (`git show 4b4ab7a:debloat-plan.md`). Still open:
   families switch from `path:` to `mediapipe_core: ^0.1.0` and publish. Dry
   runs only until then, and never `--force`. The `mediapipe_core` and
   `mediapipe_text` names on pub.dev belong to Google's uploaders.
-- **Release builds.** A `flutter build ios` and `flutter build macos` release
-  of the gallery, and an App Store validation of the iOS frameworks.
+- **Release builds.** On October 14 the gallery with every family built in
+  release for iOS (`flutter build ipa`, 670 MB app) and macOS (697 MB). Every
+  framework in both is arm64 only, built for iOS 15.0 or macOS 14.0 as its
+  Info.plist and the app say, and signed; the macOS app is sandboxed with
+  the camera, microphone and network entitlements. Google's iOS libraries
+  call required-reason APIs without a privacy manifest, which the gallery
+  now declares
+  ([UP-062](../../../upstream-issues.md#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest)).
+  Left: an App Store Connect validation, which needs a bundle ID of the
+  account's own instead of `com.example.mediapipeGallery` and an Apple
+  Distribution certificate.
 - **Notices.** Since October 9, every family ships Google's LICENSE and
   NOTICE, identical across families; the NOTICE opens with Google's
   MediaPipe Tasks privacy notice. The release posts both, and
@@ -341,8 +351,18 @@ family).
   Embedder does the same with its input length. Is the reservation intended,
   and can the tasks report the cut-off
   ([UP-060](../../../upstream-issues.md#up-060-decision-maker-and-universal-embedder-reserve-memory-for-their-whole-token-budget))?
+- Image Segmenter's GPU mask aborts the app on a Pixel 3 when its size is
+  read, and every image accessor converts it first, so no caller can check;
+  Google's Java SDK aborted the same way on PowerVR (UP-023), so it is in
+  MediaPipe's shared GPU path. The package offers no Image Segmenter GPU on
+  Android until it is fixed
+  ([UP-061](../../../upstream-issues.md#up-061-image-segmenters-gpu-mask-aborts-the-app-when-it-is-read-on-a-pixel-3)).
 - A Windows decision library, the one target the October 9 build still
   lacks.
+- A privacy manifest for each iOS library, or the reasons for the
+  required-reason APIs they call (`stat`, `fstat`, `NSUserDefaults`, and
+  `statfs` in retrieval), for apps to declare
+  ([UP-062](../../../upstream-issues.md#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest)).
 - Whether 1.1.1's Metal output is intended
   ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
 - Headers for the Proofreader, Summarizer and Interactive Segmenter, which

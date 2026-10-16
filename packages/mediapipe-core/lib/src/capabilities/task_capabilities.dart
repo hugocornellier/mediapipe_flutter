@@ -97,8 +97,19 @@ typedef RuntimeTargets = Map<String, String?>;
 /// This mirrors core's build-time table of Google's libraries
 /// (`familyRuntimes`); the two are kept in step so that a platform is never
 /// reported supported without a library, or bundled without a validated
-/// support claim.
+/// support claim. 32-bit Android (armeabi-v7a), whose libraries Google
+/// builds for API 28 too, serves the tasks whose models it can hold; see
+/// [largeModelRuntimeTargets].
 const tasksRuntimeTargets = <String, String?>{
+  ...largeModelRuntimeTargets,
+  'android/arm': null,
+};
+
+/// [tasksRuntimeTargets] on 64-bit processes only, for the tasks whose
+/// models need more memory than a 32-bit Android phone gives an app:
+/// Decision Maker's, the retrieval tasks', EmbeddingGemma, and the
+/// Proofreader's and Summarizer's.
+const largeModelRuntimeTargets = <String, String?>{
   'macos/arm64': '14.0',
   'linux/x64': null,
   'windows/x64': null,
@@ -107,6 +118,12 @@ const tasksRuntimeTargets = <String, String?>{
   'android/arm64': null,
   'android/x64': null,
 };
+
+/// Why a task on [largeModelRuntimeTargets] refuses 32-bit Android.
+const largeModelNeeds64Bit =
+    "This task's models need more memory than a 32-bit Android process "
+    '(armeabi-v7a) holds, so it runs on 64-bit Android (arm64-v8a or '
+    'x86_64). Vision, classic text and audio tasks run on 32-bit Android.';
 
 /// Why [task] cannot run in this process on [operatingSystem]
 /// ([TaskPlatform.operatingSystem]): the build bundled no MediaPipe library
@@ -253,6 +270,10 @@ final class TaskCapabilities {
     RuntimeTargets targets,
   ) {
     if (!targets.containsKey(platform.target)) {
+      if (platform.target == 'android/arm' &&
+          targets.containsKey('android/arm64')) {
+        return largeModelNeeds64Bit;
+      }
       final supported = targets.entries
           .map((e) => e.value == null ? e.key : '${e.key} (${e.value}+)')
           .join(', ');

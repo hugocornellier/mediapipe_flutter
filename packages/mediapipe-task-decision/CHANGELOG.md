@@ -6,6 +6,8 @@ Not published yet.
   Google's official MediaPipe runtimes: its per-family 1.1.1 decision C
   library everywhere but Windows, the C library from Google's 1.1.0 Python
   wheel there, and `@mediapipe/tasks-decision` in browsers.
+- Decision Maker needs 64-bit Android: 32-bit (armeabi-v7a) cannot hold its
+  models, and `queryDecisionMakerCapabilities` says so.
 - `evaluateBoolean`, `evaluateChoice` and `evaluateScore` with Google's
   `BooleanQuestion`, `ChoiceQuestion` and `ScoreQuestion`, plus their batch
   forms, with the same results on every platform.

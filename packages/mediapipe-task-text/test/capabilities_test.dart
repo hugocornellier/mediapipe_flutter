@@ -1,6 +1,8 @@
 import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:mediapipe_text/platform_interface.dart';
 import 'package:test/test.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show largeModelNeeds64Bit;
 
 /// Where core's runtime serves the text tasks (every task on CPU), and where
 /// the registered Android and browser backends do.
@@ -23,7 +25,32 @@ const _web = TaskPlatform(operatingSystem: 'web', architecture: 'unknown');
 Never _unused(String task, Map<String, Object?> options) =>
     throw UnimplementedError();
 
+const _arm32 = TaskPlatform(operatingSystem: 'android', architecture: 'arm');
+
 void main() {
+  test('32-bit Android runs the classic text tasks, not the large models', () {
+    expect(textClassifierCapabilitiesForPlatform(_arm32).supportedDelegates, {
+      Delegate.cpu,
+    });
+    expect(languageDetectorCapabilitiesForPlatform(_arm32).supportedDelegates, {
+      Delegate.cpu,
+    });
+    for (final capabilities in [
+      textEmbedderCapabilitiesForPlatform(
+        _arm32,
+        model: TextModels.embeddingGemma,
+      ),
+      textProofreaderCapabilitiesForPlatform(_arm32),
+      textSummarizerCapabilitiesForPlatform(_arm32),
+    ]) {
+      expect(capabilities.supportedDelegates, isEmpty);
+      expect(
+        capabilities.unavailableReasons[Delegate.cpu],
+        largeModelNeeds64Bit,
+      );
+    }
+  });
+
   final every = <String, TaskCapabilities Function(TaskPlatform)>{
     'text classifier': textClassifierCapabilitiesForPlatform,
     'language detector': languageDetectorCapabilitiesForPlatform,

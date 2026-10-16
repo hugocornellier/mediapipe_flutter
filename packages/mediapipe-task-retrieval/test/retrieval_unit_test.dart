@@ -5,6 +5,8 @@ import 'package:mediapipe_retrieval/mediapipe_retrieval.dart';
 import 'package:mediapipe_retrieval/platform_interface.dart';
 import 'package:mediapipe_retrieval/src/results/decoders.dart';
 import 'package:test/test.dart';
+import 'package:mediapipe_core/platform_interface.dart'
+    show largeModelNeeds64Bit;
 
 TaskPlatform _platform(String os, String arch, [String? version]) =>
     TaskPlatform(operatingSystem: os, architecture: arch, version: version);
@@ -50,7 +52,25 @@ final class _FakeBackend implements RetrievalBackend {
   Future<void> dispose() async => disposed = true;
 }
 
+const _arm32 = TaskPlatform(operatingSystem: 'android', architecture: 'arm');
+
 void main() {
+  test(
+    '32-bit Android refuses the retrieval tasks, their models need 64-bit',
+    () {
+      for (final capabilities in [
+        universalEmbedderCapabilitiesForPlatform(_arm32),
+        semanticRetrieverCapabilitiesForPlatform(_arm32),
+      ]) {
+        expect(capabilities.supportedDelegates, isEmpty);
+        expect(
+          capabilities.unavailableReasons[Delegate.cpu],
+          largeModelNeeds64Bit,
+        );
+      }
+    },
+  );
+
   group('options are checked the same way everywhere', () {
     test('embedder options refuse negative limits and bad paths', () {
       expect(

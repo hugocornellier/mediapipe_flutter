@@ -48,6 +48,28 @@ task's close waits for its upload, so refuse the connection (for example
 through the hosts file) rather than drop its packets, which makes each close
 wait for the upload to time out (about 4 seconds on iOS).
 
+## App Store privacy manifest
+
+App Store Connect refuses an iOS app whose code calls an API on Apple's
+required-reason list without declaring why (ITMS-91053). Google's iOS
+libraries call some and carry no privacy manifest, and a Flutter build cannot
+add one to them
+([UP-062](../upstream-issues.md#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest)),
+so an app that uses these packages declares them in its own
+`ios/Runner/PrivacyInfo.xcprivacy`, added to the Runner target in Xcode:
+
+| Families | Category (`NSPrivacyAccessedAPIType`) | Called through | The gallery's reason |
+| --- | --- | --- | --- |
+| Every family | `NSPrivacyAccessedAPICategoryFileTimestamp` | `stat`, `fstat` | `C617.1`: files inside the app's container, such as its models |
+| Every family | `NSPrivacyAccessedAPICategoryUserDefaults` | `NSUserDefaults` | `CA92.1`: values only the app reads |
+| `mediapipe_retrieval` | `NSPrivacyAccessedAPICategoryDiskSpace` | `statfs`, `fstatfs` | `E174.1`: checking for space before writing files |
+
+The reasons are the gallery's reading of what Google's code does, which
+Google has not confirmed; the app's developer answers for the ones it
+declares. [The gallery's manifest](../gallery/ios/Runner/PrivacyInfo.xcprivacy)
+is a starting point. The usage logging above is data the app's App Privacy
+answers in App Store Connect must describe.
+
 ## Licenses
 
 - This repository's source: [Apache-2.0](../LICENSE), with upstream notices

@@ -22,10 +22,11 @@ String _runtimeVersionOn(TaskPlatform platform) =>
       _ => tasksRuntimeVersionOn(platform),
     };
 
-/// Where Google's C library with Decision Maker runs: core's shared targets,
-/// from its per-family library (`familyRuntimes`) everywhere but Windows,
-/// where core's `wheelRuntimes` pins the wheel's library.
-const decisionRuntimeTargets = tasksRuntimeTargets;
+/// Where Google's C library with Decision Maker runs: core's shared 64-bit
+/// targets, from its per-family library (`familyRuntimes`) everywhere but
+/// Windows, where core's `wheelRuntimes` pins the wheel's library. 32-bit
+/// Android cannot hold its models ([largeModelNeeds64Bit]).
+const decisionRuntimeTargets = largeModelRuntimeTargets;
 
 /// Where Google's native runtime accepts the text-only EmbeddingGemma 2
 /// model (`DecisionModels.embeddingGemma2Text`): Windows, on the library
@@ -125,6 +126,9 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
   DownloadAsset? model,
 }) {
   final web = platform.operatingSystem == 'web';
+  final noLibrary = platform.target == 'android/arm'
+      ? largeModelNeeds64Bit
+      : _noLibrary;
   final textOnlyGemma =
       model?.sha256 == DecisionModels.embeddingGemma2Text.sha256;
   // The library here has the task but not this model.
@@ -151,7 +155,7 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
       Delegate.cpu: !web
           ? libraryRefusesModel
                 ? textOnlyEmbeddingGemmaUnavailable
-                : _noLibrary
+                : noLibrary
           : browserRefusal ??
                 (hasHardwareWebGpu(platform)
                     ? _browserCpu
@@ -164,7 +168,7 @@ TaskCapabilities decisionMakerCapabilitiesForPlatform(
           ? textOnlyEmbeddingGemmaUnavailable
           : decisionRuntimeTargets.containsKey(platform.target)
           ? _desktopGpu
-          : _noLibrary,
+          : noLibrary,
     },
     runtimeVersion: _runtimeVersionOn(platform),
   );

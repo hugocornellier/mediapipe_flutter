@@ -18,8 +18,18 @@ instead.
   `libmediapipe_tasks_audio.so`), so an app ships only the families it uses:
   about 13 MB for vision, 15 MB for text and 8 MB for audio on arm64-v8a. No
   Google AAR or other Gradle dependency is involved. Tasks run on arm64-v8a
-  and x86_64; the armeabi-v7a library is bundled, since Flutter's release
-  builds include that ABI, but no task claims it yet.
+  and x86_64. On 32-bit phones (armeabi-v7a) the vision, classic text and
+  audio tasks run on the CPU; Decision Maker, the retrieval tasks,
+  EmbeddingGemma, the Proofreader and the Summarizer need 64-bit, since
+  their models take more memory than a 32-bit process holds, and their
+  capability queries say so.
+- Which ABIs an app carries is the app's choice, and each family bundles its
+  library only for those. A Play App Bundle (`flutter build appbundle`)
+  delivers each phone its own ABI's libraries alone, so 32-bit support costs
+  a 64-bit phone nothing. `flutter build apk --split-per-abi` builds one APK
+  per ABI, and `flutter build apk --target-platform android-arm64` (or
+  `ndk.abiFilters` in Gradle) leaves 32-bit out, about 44 MB lighter with
+  all five families.
 - On an emulator only the CPU is offered: it renders OpenGL ES in software
   (SwiftShader), where Google's GPU inference fails. Phones keep the GPU.
 - To download models at run time, add the `INTERNET` permission to
@@ -37,9 +47,13 @@ instead.
 
 - iOS 15.0 or newer. Each family bundles Google's MediaPipe library for that
   family (`MediaPipeTasksVisionC`, `MediaPipeTasksTextC`,
-  `MediaPipeTasksAudioC`), so an app ships only the families it uses; no
+  `MediaPipeTasksAudioC`, `MediaPipeTasksDecisionC`,
+  `MediaPipeTasksRetrievalC`), so an app ships only the families it uses; no
   CocoaPods or native plugin is involved. The build extracts only the device
   or simulator slice it needs.
+- For the App Store, the app's `PrivacyInfo.xcprivacy` declares the
+  required-reason APIs Google's libraries call; see
+  [privacy and licenses](privacy_and_licenses.md#app-store-privacy-manifest).
 - On the iOS Simulator only the CPU is offered: Google's MediaPipe aborts on
   the simulator's GPU path. Devices keep Metal.
 - Downloaded models live in the app's Application Support folder, excluded
