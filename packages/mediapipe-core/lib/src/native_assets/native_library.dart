@@ -2,7 +2,7 @@ import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
 
 export '../download_asset.dart';
-export '../verified_download.dart';
+export '../verified_download.dart' show downloadVerified;
 
 /// Where build hooks fetch pinned assets instead of their URLs, for offline
 /// and mirrored builds: `hooks.user_defines.mediapipe_core.asset_source`,

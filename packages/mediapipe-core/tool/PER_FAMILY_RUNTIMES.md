@@ -4,11 +4,11 @@ Status on 2026-10-19: every family, on Android, iOS, macOS, Linux and
 Windows, pins Google's MediaPipe 1.2.0 nightly build of October 18, 2026
 (see [Google's builds](#googles-builds)), which Google publishes at
 `https://storage.googleapis.com/mediapipe-assets/prebuilts/mediapipe_tasks_c/20261018/mediapipe_tasks_c_20261018.zip`.
-The hooks fetch the pinned files unmodified from the pre-release
-`per-family-v1.2.0-nightly.20261018` on
-`hugocornellier/mediapipe_flutter_native`, beside the earlier builds in
-`per-family-v1.1.1-dev.20261009` and `per-family-v1.1.0-dev.20261005`, and CI
-and Firebase Test Lab run them (see [Validated](#validated) and
+The hooks read each pinned file from that archive with HTTP range requests,
+falling back to the mirror pre-release `per-family-v1.2.0-nightly.20261018` on
+`hugocornellier/mediapipe_flutter_native` (not posted yet), beside the
+earlier builds in `per-family-v1.1.1-dev.20261009` and
+`per-family-v1.1.0-dev.20261005`, and CI and Firebase Test Lab run them (see [Validated](#validated) and
 [Before the release](#before-the-release)). Paths are from the repository root.
 
 ## What changed
@@ -65,12 +65,23 @@ app ships only the families it depends on, with no setting:
 
 ## Local builds
 
-`familyRuntimeBaseUrl` points at that pre-release. Google gives several
+`familyRuntimeArchiveUrl` names Google's archive, and each `FamilyRuntime`
+names its file's path in it. `downloadVerified` reads a zip member with HTTP
+range requests: the archive's last 64 KiB for the central directory, then the
+member's local header and its compressed bytes, which it inflates, so a hook
+downloads one library and not the 483 MB archive. Each request gets three
+attempts on a connection error, a timeout or HTTP 408, 429, 500, 502, 503 or
+504, with a random backoff of up to 1 s × 2^attempt (at most 30 s) or the
+host's `Retry-After`, and a dropped download resumes from its last byte.
+Another status, a host that ignores ranges or a digest mismatch moves to the
+mirror at once.
+
+`familyRuntimeBaseUrl` points at the mirror pre-release. Google gives several
 targets' libraries the same file name (four different
-`libmediapipe_tasks_vision.so`), so each release asset is named
+`libmediapipe_tasks_vision.so`), so each mirror asset is named
 `<sha256>-<Google's file name>`; the hook checks its SHA-256 and size and
 saves it under Google's name. `hooks.user_defines.mediapipe_core.asset_source`
-replaces the release with a directory holding each file under its SHA-256,
+replaces both hosts with a directory holding each file under its SHA-256,
 for offline builds. That setting covers every pinned download, so the
 directory must also hold the models an app bundles. The gallery builder takes
 `--asset-source`.

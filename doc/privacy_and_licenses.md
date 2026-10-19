@@ -11,7 +11,8 @@ At build time, the build hooks fetch the native runtime for the target:
 
 | What | Host |
 | --- | --- |
-| Google's per-family MediaPipe libraries (Android, iOS, macOS, Linux, Windows), nightly builds posted unmodified for testing as a pre-release of `hugocornellier/mediapipe_flutter_native` | `github.com`, which redirects to `release-assets.githubusercontent.com` |
+| Google's per-family MediaPipe libraries (Android, iOS, macOS, Linux, Windows), read from Google's nightly archive | `storage.googleapis.com` |
+| The same files, only when Google's archive fails: a mirror posted unmodified as a pre-release of `hugocornellier/mediapipe_flutter_native` | `github.com`, which redirects to `release-assets.githubusercontent.com` |
 
 At run time:
 

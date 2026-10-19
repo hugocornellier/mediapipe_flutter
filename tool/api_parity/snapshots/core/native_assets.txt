@@ -15,12 +15,14 @@ final class DownloadFailure
 final class FamilyRuntime
   DownloadAsset get asset
   String get fileName
+  String get path
   String get sha256
   int get bytes
-  new FamilyRuntime(String fileName, String sha256, int bytes)
+  new FamilyRuntime(String path, String sha256, int bytes)
 function String buildTarget(CodeConfig code)
 function Future<void> bundleFamilyRuntime(BuildInput input, BuildOutputBuilder output, {required String family})
 function Future<File> downloadVerified(DownloadAsset asset, File destination, {Client? client, String? source})
+getter String get familyRuntimeArchiveUrl
 getter String get familyRuntimeAssetName
 getter String get familyRuntimeBaseUrl
 getter int get familyRuntimeMinimumAndroidApi

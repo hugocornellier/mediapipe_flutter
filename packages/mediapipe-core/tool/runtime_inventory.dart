@@ -5,7 +5,8 @@ import 'package:mediapipe_core/native_assets.dart';
 /// Prints Google's libraries the hooks bundle, as JSON for
 /// `tool/mirror_runtime_assets.py` and the fresh-app harnesses
 /// (`tool/consumer_packages.py`): every per-family library `familyRuntimes`
-/// pins. A library Google has not published yet has an empty URL.
+/// pins, with its URLs in fallback order: the member of Google's archive,
+/// then the mirror.
 void main() {
   print(
     jsonEncode([
@@ -17,7 +18,7 @@ void main() {
             'target': target,
             'file': runtime.fileName,
             'sha256': runtime.sha256,
-            'url': runtime.asset.url,
+            'urls': runtime.asset.urls.toList(),
           },
     ]),
   );
