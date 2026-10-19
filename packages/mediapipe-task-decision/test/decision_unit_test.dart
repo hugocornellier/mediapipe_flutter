@@ -1,7 +1,5 @@
 import 'package:mediapipe_decision/mediapipe_decision.dart';
 import 'package:mediapipe_decision/platform_interface.dart';
-import 'package:mediapipe_decision/src/capabilities.dart'
-    show embeddingGemma2TextTargets;
 import 'package:mediapipe_decision/src/results/decoders.dart';
 import 'package:test/test.dart';
 import 'package:mediapipe_core/platform_interface.dart'
@@ -176,13 +174,7 @@ void main() {
           _platform(os, arch, version),
         );
         expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: os);
-        // Windows runs the 1.1.0 wheel's library, the others Google's 1.1.1
-        // per-family one.
-        expect(
-          capabilities.runtimeVersion,
-          os == 'windows' ? '1.1.0' : '1.1.1',
-          reason: os,
-        );
+        expect(capabilities.runtimeVersion, '1.2.0', reason: os);
       }
       expect(
         decisionMakerCapabilitiesForPlatform(
@@ -192,34 +184,17 @@ void main() {
       );
     });
 
-    test('the text-only EmbeddingGemma 2 runs on the wheel library and in '
-        'browsers alone (UP-053)', () {
-      const text = DecisionModels.embeddingGemma2Text;
+    test('every pinned native model runs wherever the task runs', () {
       for (final (os, arch, version) in [
         ('macos', 'arm64', '15.0'),
         ('linux', 'x64', null),
+        ('windows', 'x64', null),
         ('android', 'arm64', '14'),
         ('android', 'x64', '14'),
         ('ios', 'arm64', '17.0'),
       ]) {
         final platform = _platform(os, arch, version);
-        final refused = decisionMakerCapabilitiesForPlatform(
-          platform,
-          model: text,
-        );
-        expect(refused.isSupported, isFalse, reason: os);
-        for (final delegate in Delegate.values) {
-          expect(
-            refused.unavailableReasons[delegate],
-            allOf(contains('UP-053'), contains('embeddingGemma2TextVision')),
-            reason: '$os $delegate',
-          );
-        }
-        for (final model in [
-          null,
-          DecisionModels.embeddingGemma2TextVision,
-          DecisionModels.layaS256,
-        ]) {
+        for (final model in [null, ...DecisionModels.byName.values]) {
           expect(
             decisionMakerCapabilitiesForPlatform(
               platform,
@@ -230,23 +205,6 @@ void main() {
           );
         }
       }
-      final windows = decisionMakerCapabilitiesForPlatform(
-        _platform('windows', 'x64'),
-        model: text,
-      );
-      expect(windows.supportedDelegates, {Delegate.cpu});
-      expect(windows.supportedTargets.keys, embeddingGemma2TextTargets.keys);
-      decisionBackendFactory = (_) => throw UnimplementedError();
-      addTearDown(() => decisionBackendFactory = null);
-      final browser = decisionMakerCapabilitiesForPlatform(
-        const TaskPlatform(
-          operatingSystem: 'web',
-          architecture: 'unknown',
-          gpu: 'WebGPU apple metal-3',
-        ),
-        model: text,
-      );
-      expect(browser.supportedDelegates, {Delegate.gpu});
     });
 
     test('every pinned model has a bundling name', () {

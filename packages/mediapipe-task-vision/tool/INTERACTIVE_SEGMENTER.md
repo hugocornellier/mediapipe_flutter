@@ -5,9 +5,9 @@ current image-and-strokes API, not the legacy one-point ROI wrapper. The
 complete official model bundle and native inference graph are preserved. It
 runs through Google's own runtime on each platform:
 
-- **Android, iOS, macOS arm64 (14+), Linux x64:** Google's 1.1.0 vision
+- **Android, iOS, macOS arm64 (14+), Linux x64:** Google's 1.2.0 vision
   library, which the vision package's hook bundles.
-- **Web:** `@mediapipe/tasks-vision` 1.0.1.
+- **Web:** `@mediapipe/tasks-vision` 1.2.0-rc.20261018.
 
 Browsers run it on CPU or WebGL 2, every other platform on the CPU. Google's
 Windows library exports the stateful API as well and its masks agree with the

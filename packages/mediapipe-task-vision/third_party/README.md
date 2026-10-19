@@ -1,8 +1,8 @@
 # Native provenance
 
 The vision tasks run on Google's MediaPipe vision library, one of the C
-libraries Google builds per task family, here from MediaPipe
-`1.1.1-dev.20261009`. This package's build hook bundles it as
+libraries Google builds per task family, here from MediaPipe 1.2.0, the
+nightly build of October 18, 2026. This package's build hook bundles it as
 `package:mediapipe_vision/mediapipe.dylib` through `mediapipe_core`, which pins
 every platform's file by SHA-256 and size
 (`mediapipe_core/lib/src/native_assets/family_runtimes.dart`). No MediaPipe

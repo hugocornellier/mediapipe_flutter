@@ -60,7 +60,7 @@ void main() {
       platform('ios', 'arm64', '15.0'),
     );
     expect(ios.supportedDelegates, both);
-    expect(ios.runtimeVersion, '1.1.1');
+    expect(ios.runtimeVersion, '1.2.0');
     // Android runs Google's vision library: GPU on arm64 phones, and CPU on
     // the x86_64 emulator images.
     expect(
@@ -73,7 +73,7 @@ void main() {
       platform('android', 'x64'),
     );
     expect(emulator.supportedDelegates, {Delegate.cpu});
-    expect(emulator.runtimeVersion, '1.1.1');
+    expect(emulator.runtimeVersion, '1.2.0');
     // The web needs its registered adapter, absent here.
     final web = handLandmarkerCapabilitiesForPlatform(
       platform('web', 'unknown'),
@@ -91,7 +91,7 @@ void main() {
     final result = interactiveSegmenterCapabilitiesForPlatform(mac);
     expect(result.supportedDelegates, {Delegate.cpu});
     expect(result.unavailableReasons[Delegate.gpu], contains('GLSL 330'));
-    expect(result.runtimeVersion, '1.1.1');
+    expect(result.runtimeVersion, '1.2.0');
   });
 
   test("MagicTouch stays off Google's Windows library, with the reason", () {
@@ -103,9 +103,9 @@ void main() {
   });
 
   test('macOS offers the CPU only, with the reason (UP-057)', () {
-    // Google's 1.1.1 library gives different Metal results from its 1.1.0
-    // wheel, so every task that ran on Metal reports the withdrawal; Holistic
-    // and MagicTouch keep their own, older reasons.
+    // Google's library since 1.1.1 gives different Metal results from its
+    // 1.1.0 wheel, so every task that ran on Metal reports the withdrawal;
+    // Holistic and MagicTouch keep their own, older reasons.
     const mac = TaskPlatform(
       operatingSystem: 'macos',
       architecture: 'arm64',
@@ -132,7 +132,7 @@ void main() {
       ).unavailableReasons[Delegate.gpu],
       contains('UP-026'),
     );
-    expect(objectDetectorCapabilitiesForPlatform(mac).runtimeVersion, '1.1.1');
+    expect(objectDetectorCapabilitiesForPlatform(mac).runtimeVersion, '1.2.0');
   });
 
   test('Face Landmarker offers GPU on Linux x64, not Windows', () {
@@ -144,8 +144,8 @@ void main() {
     expect(on('windows').unavailableReasons[Delegate.gpu], isNotNull);
   });
 
-  test("Linux and Windows report Google's 1.1.1 libraries", () {
-    for (final (os, version) in [('linux', '1.1.1'), ('windows', '1.1.1')]) {
+  test("Linux and Windows report Google's 1.2.0 libraries", () {
+    for (final (os, version) in [('linux', '1.2.0'), ('windows', '1.2.0')]) {
       final platform = TaskPlatform(operatingSystem: os, architecture: 'x64');
       for (final result in [
         faceLandmarkerCapabilitiesForPlatform(platform),

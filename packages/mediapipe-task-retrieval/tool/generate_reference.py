@@ -8,7 +8,9 @@ structs:
     python -I tool/generate_reference.py <embeddinggemma-2-text-vision-440m.litertlm> <output.json>
 
 With --audio, it records the audio cases instead, on the full model, the
-only one that embeds audio:
+only one that embeds audio. Google's audio embeddings changed in 1.2.0, so
+they come from its nightly wheel of the pinned build (mediapipe-nightly
+1.2.0rc20261018):
 
     python -I tool/generate_reference.py --audio <embeddinggemma-2-740m.litertlm> <output.json>
 
@@ -121,9 +123,17 @@ def _samples(path):
             struct.unpack(f'<{frames}h', clip.readframes(frames))]
 
 
+def _wheel_version():
+  """The installed release wheel's version, or the nightly wheel's."""
+  try:
+    return importlib.metadata.version('mediapipe')
+  except importlib.metadata.PackageNotFoundError:
+    return importlib.metadata.version('mediapipe-nightly')
+
+
 def _provenance(model, library):
   return {
-      'mediapipe': importlib.metadata.version('mediapipe'),
+      'mediapipe': _wheel_version(),
       'platform': f'{platform.system().lower()}/{platform.machine().lower()}',
       'library': library.name,
       'librarySha256': digest(library),

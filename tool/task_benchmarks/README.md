@@ -1,7 +1,7 @@
 # Modern macOS task validation and benchmarks
 
 This maintainer tool exercises the public Dart APIs for EmbeddingGemma,
-Proofreader, Summarizer and stateful MagicTouch on Google's per-family 1.1.1
+Proofreader, Summarizer and stateful MagicTouch on Google's per-family 1.2.0
 libraries. It builds a native AOT executable with `dart build cli`; no Bazel,
 CMake or custom inference implementation is involved.
 

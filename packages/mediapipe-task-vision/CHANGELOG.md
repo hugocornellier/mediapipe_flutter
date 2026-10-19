@@ -46,7 +46,7 @@ Not published yet. The first release.
   `ModelStore.allowDownloads` is true; app-supplied paths and bytes work too.
 - The `tasks` build setting leaves the face tasks' own macOS libraries out of
   apps that do not use them.
-- On macOS every task runs on the CPU for now: Google's 1.1.1 library gives
+- On macOS every task runs on the CPU for now: Google's library since 1.1.1 gives
   different Metal results from its 1.1.0 wheel, so the GPU stays withdrawn
   until Google says whether the change is intended (UP-057).
 - On macOS, a GPU task reopens its native task after converting 1 GiB of

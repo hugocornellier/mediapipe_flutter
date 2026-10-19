@@ -11,7 +11,7 @@ reference and switches live capture CPU → GPU → CPU. Hosted Linux uses
 SwiftShader software WebGL; this validates the GPU code path, not physical GPU
 performance. The deployed release repeats the live delegate-switch test.
 
-The gallery uses the official checksum-pinned Google Tasks Vision 1.0.1 runtime,
+The gallery uses the official checksum-pinned Google Tasks Vision runtime,
 with inference on a module worker. Its five live landmark tasks and two live
 detectors use Google's DrawingUtils on a worker canvas when supported, for both
 CPU and GPU. The Flutter painter remains a fallback when canvas transfer or

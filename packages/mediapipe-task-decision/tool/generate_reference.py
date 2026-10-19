@@ -1,8 +1,7 @@
 """Records Google's own answers for the Decision Maker test cases.
 
-Runs Google's Python Decision Maker from the official mediapipe 1.1.0 wheel,
-the library the package bundles on the desktop, over the cases below and
-writes them with the wheel's and model's digests:
+Runs Google's Python Decision Maker from the official mediapipe 1.1.0 wheel
+over the cases below and writes them with the wheel's and model's digests:
 
     python -I tool/generate_reference.py <laya_s256.task> <output.json>
 

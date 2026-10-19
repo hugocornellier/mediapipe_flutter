@@ -19,11 +19,11 @@ String? get _hostLibrary => referenceWheel(
 )?.librarySha256;
 
 /// Why no GPU suite runs on macOS: the package withdraws Metal while Google's
-/// 1.1.1 library gives different results there from its 1.1.0 wheel. The
+/// library since 1.1.1 gives different results there from its 1.1.0 wheel. The
 /// checked-in physical-Mac GPU references stay for when it returns.
 const macosGpuWithdrawn =
-    "macOS withdraws the GPU while Google's 1.1.1 Metal output differs from "
-    'its 1.1.0 wheel (upstream-issues.md UP-057).';
+    "macOS withdraws the GPU while Google's Metal output since 1.1.1 differs "
+    'from its 1.1.0 wheel (upstream-issues.md UP-057).';
 
 /// Why the CPU comparisons with Google's checked-in outputs are skipped on
 /// this host, or null when they run: Google's CPU output drifts between Apple

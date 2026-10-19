@@ -64,11 +64,6 @@ final class NativeDecisionMaker
         modelPath: options.modelPath,
         modelBytes: options.modelBytes,
       );
-      // TODO: Report Flutter on Windows too once Google ships a Windows
-      // decision library. The 1.1.0 wheel's library that runs there predates
-      // MP_HOST_ENVIRONMENT_FLUTTER. See
-      // packages/mediapipe-core/tool/PER_FAMILY_RUNTIMES.md.
-      if (Platform.isWindows) native.ref.baseOptions.hostEnvironment = 0;
       // 0 keeps the model's budget, as Google's header defines it.
       native.ref.maxNumTokens = options.maxNumTokens;
       final output = arena<Pointer<Void>>();
@@ -247,16 +242,5 @@ Map<String, Object?> _score(mp.MpScoreResult result) => {
 };
 
 /// Frees Google's error string on success and failure alike.
-void _check(int Function(Pointer<Pointer<Char>>) call) => checkNativeStatus(
-  call,
-  mp.errorFree,
-  // How Google's per-family library fails the text-only EmbeddingGemma 2
-  // model, given by path or bytes (UP-053): name the model that runs.
-  failure: (message, status) => TaskException(
-    message.startsWith('EG2 embedder') &&
-            !embeddingGemma2TextTargets.containsKey(_target)
-        ? '$message $textOnlyEmbeddingGemmaUnavailable'
-        : message,
-    statusCode: status,
-  ),
-);
+void _check(int Function(Pointer<Pointer<Char>>) call) =>
+    checkNativeStatus(call, mp.errorFree);

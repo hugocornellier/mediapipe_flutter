@@ -62,8 +62,7 @@ void main() {
     expect(fishGameModel(chromium), same(DecisionModels.embeddingGemma2Text));
   });
 
-  test('Google\'s per-family library plays Hungry Fish on the text and '
-      'vision model (UP-053)', () {
+  test('native platforms play Hungry Fish on the text-only model', () {
     expect(
       fishGameModel(
         const TaskPlatform(
@@ -72,7 +71,7 @@ void main() {
           version: '15.0',
         ),
       ),
-      same(DecisionModels.embeddingGemma2TextVision),
+      same(DecisionModels.embeddingGemma2Text),
     );
   });
 

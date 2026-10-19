@@ -4,7 +4,7 @@ Face, Hand, Pose, Gesture and Holistic Landmarker, Object Detector, Image
 Classifier, Image Embedder and Image Segmenter run on the CPU. Each is
 compared with the official wheel's output, generated on this machine: the
 wheel's CPU results drift between Apple CPUs, as cpu_reference.py records for
-every native job. Metal is withdrawn while Google's 1.1.1 library gives
+every native job. Metal is withdrawn while Google's library since 1.1.1 gives
 different results there from its 1.1.0 wheel (upstream-issues.md UP-057);
 prepare_gpu_reference.py still writes the macOS Metal references for when it
 returns.

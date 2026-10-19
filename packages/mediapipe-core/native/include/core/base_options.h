@@ -1,4 +1,4 @@
-/* Copyright 2026 The MediaPipe Authors.
+/* Copyright 2023 The MediaPipe Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ enum MpHostEnvironment {
   MP_HOST_ENVIRONMENT_PYTHON = 3,
   MP_HOST_ENVIRONMENT_WEB = 4,
   MP_HOST_ENVIRONMENT_FLUTTER = 5,
+  MP_HOST_ENVIRONMENT_FLUTTER_WEB = 6,
 };
 
 // Host OS on which MediaPipe tasks are running.

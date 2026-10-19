@@ -31,7 +31,7 @@ Warnings and info lines never arrive.
 
 ## Google's log callback
 
-Since Google's October 9, 2026 build (1.1.1), which the hooks pin, every
+Since Google's October 9, 2026 build (1.1.1), and in the 1.2.0 build the hooks pin, every
 per-family library exports a C log callback, declared in `core/mp_logging.h`
 under `packages/mediapipe-core/native/include`:
 
@@ -56,9 +56,7 @@ Google's implementation (`mediapipe/tasks/c/core/mp_logging.cc`, public since
   the copy on.
 - **absl only.** TensorFlow Lite's own lines probably bypass it, and adding a
   sink does not stop absl's stderr or logcat output. Not yet run.
-- **Not everywhere.** Decision Maker on Windows runs the 1.1.0 wheel's
-  library, which predates the callback, and browsers need the `Module.print`
-  route below.
+- **Not everywhere.** Browsers need the `Module.print` route below.
 
 ## Where the lines go, and what could capture them
 

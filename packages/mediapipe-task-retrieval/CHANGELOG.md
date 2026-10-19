@@ -4,7 +4,7 @@ Not published yet.
 
 - Universal Embedder and Semantic Retriever on Android, iOS, macOS, Linux,
   Windows and the web, through Google's official MediaPipe runtimes: its
-  per-family 1.1.1 retrieval C library natively and `@mediapipe/tasks-retrieval`
+  per-family 1.2.0 retrieval C library natively and `@mediapipe/tasks-retrieval`
   in browsers.
 - Universal Embedder and Semantic Retriever need 64-bit Android: 32-bit
   (armeabi-v7a) cannot hold their models, and their capability queries say

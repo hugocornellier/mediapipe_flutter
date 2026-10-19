@@ -5,8 +5,6 @@ import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
 import 'package:mediapipe_core/native_assets.dart';
-import 'package:mediapipe_core/src/native_assets/family_runtimes.dart'
-    show wheelRuntimes;
 import 'package:mediapipe_core/platform_interface.dart'
     show tasksRuntimeTargets;
 import 'package:test/test.dart';
@@ -51,13 +49,11 @@ void main() {
   test('every family has a library on every target the tasks claim', () {
     for (final MapEntry(key: family, value: runtimes)
         in familyRuntimes.entries) {
-      // The simulator is part of the iOS claim. A target Google has not
-      // built the family for yet comes from its wheel (wheelRuntimes).
-      expect(
-        {...runtimes.keys, ...?wheelRuntimes[family]?.keys},
-        {...tasksRuntimeTargets.keys, 'ios-simulator/arm64'},
-        reason: family,
-      );
+      // The simulator is part of the iOS claim.
+      expect(runtimes.keys.toSet(), {
+        ...tasksRuntimeTargets.keys,
+        'ios-simulator/arm64',
+      }, reason: family);
       for (final MapEntry(key: target, value: runtime) in runtimes.entries) {
         expect(runtime.sha256, matches(RegExp(r'^[a-f0-9]{64}$')));
         expect(runtime.bytes, greaterThan(1000000));
@@ -68,38 +64,6 @@ void main() {
           _ =>
             'MediaPipeTasks${family[0].toUpperCase()}${family.substring(1)}C'
                 '.framework.zip',
-        });
-      }
-    }
-  });
-
-  test('wheel libraries come from Google\'s 1.1.0 wheels on the desktop', () {
-    for (final MapEntry(key: family, value: runtimes)
-        in wheelRuntimes.entries) {
-      // Google's wheels exist for the desktops only, and a target its
-      // per-family delivery covers needs no wheel stand-in.
-      expect(runtimes, isNotEmpty, reason: family);
-      for (final target in runtimes.keys) {
-        expect({'macos/arm64', 'linux/x64', 'windows/x64'}, contains(target));
-        expect(
-          familyRuntimes[family]?.keys ?? const <String>[],
-          isNot(contains(target)),
-          reason: '$family $target',
-        );
-      }
-      for (final MapEntry(key: target, value: runtime) in runtimes.entries) {
-        expect(runtime.wheel.sha256, matches(RegExp(r'^[a-f0-9]{64}$')));
-        expect(runtime.sha256, matches(RegExp(r'^[a-f0-9]{64}$')));
-        expect(runtime.bytes, greaterThan(10000000));
-        expect(
-          runtime.wheel.url,
-          startsWith('https://files.pythonhosted.org/packages/'),
-        );
-        expect(runtime.wheel.url, contains('/mediapipe-1.1.0-py3-none-'));
-        expect(runtime.path, switch (target.split('/').first) {
-          'macos' => 'mediapipe/tasks/c/libmediapipe.dylib',
-          'linux' => 'mediapipe/tasks/c/libmediapipe.so',
-          _ => 'mediapipe/tasks/c/libmediapipe.dll',
         });
       }
     }

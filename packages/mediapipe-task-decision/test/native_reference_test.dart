@@ -7,19 +7,21 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:mediapipe_decision/mediapipe_decision.dart';
-import 'package:mediapipe_decision/src/capabilities.dart'
-    show embeddingGemma2TextTargets;
 import 'package:test/test.dart';
 
 /// Google's Laya model; `make models_decision` downloads it.
 final _laya =
     Platform.environment['MEDIAPIPE_DECISION_MODEL'] ?? 'models/laya_s256.task';
 
-/// Google's text and vision EmbeddingGemma 2 (388 MB), when set: the
-/// bi-encoder Google's per-family library runs, which fails with the
-/// text-only one (upstream-issues.md UP-053). The same cases check it
-/// against the wheel's answers for it, locally; CI downloads Laya alone.
-final _gemma = Platform.environment['MEDIAPIPE_DECISION_EG2_MODEL'];
+/// Google's text and vision EmbeddingGemma 2 (388 MB) and its text-only
+/// one (165 MB), when set: the two share a text encoder, so the same cases
+/// check both against Google's Python answers, locally; CI downloads Laya
+/// alone.
+final _gemmas = {
+  'EmbeddingGemma 2': Platform.environment['MEDIAPIPE_DECISION_EG2_MODEL'],
+  'EmbeddingGemma 2 text':
+      Platform.environment['MEDIAPIPE_DECISION_EG2_TEXT_MODEL'],
+};
 
 final _host =
     '${Platform.operatingSystem}/${Abi.current().toString().split('_').last}';
@@ -30,12 +32,13 @@ String? _missing(String model, String name) =>
 void main() {
   final laya = _missing(_laya, 'Laya');
   _suite('Laya', _laya, 'laya_s256_reference.json', laya);
-  if (_gemma case final gemma?) {
+  for (final MapEntry(key: name, value: gemma) in _gemmas.entries) {
+    if (gemma == null) continue;
     _suite(
-      'EmbeddingGemma 2',
+      name,
       gemma,
       'embedding_gemma_2_text_vision_reference.json',
-      _missing(gemma, 'EmbeddingGemma 2'),
+      _missing(gemma, name),
     );
   }
 
@@ -50,59 +53,6 @@ void main() {
       throwsStateError,
     );
   });
-
-  // Google's per-family library fails every evaluation with the text-only
-  // EmbeddingGemma 2 (UP-053): a pinned model is refused before any download,
-  // and the library's own failure, for a model given by path, names the fix.
-  final perFamily = !embeddingGemma2TextTargets.containsKey(_host);
-  test('the text-only EmbeddingGemma 2 is refused before any download', () {
-    expect(
-      DecisionMaker.create(
-        DecisionMakerOptions(model: DecisionModels.embeddingGemma2Text),
-      ),
-      throwsA(
-        isA<RuntimeUnavailableException>().having(
-          (error) => error.fix,
-          'fix',
-          allOf(contains('UP-053'), contains('embeddingGemma2TextVision')),
-        ),
-      ),
-    );
-  }, skip: perFamily ? null : 'the wheel library runs the model');
-
-  final textOnly = Platform.environment['MEDIAPIPE_DECISION_EG2_TEXT_MODEL'];
-  test(
-    'the library\'s failure with the text-only model names the fix',
-    () async {
-      final task = await DecisionMaker.create(
-        DecisionMakerOptions(modelPath: textOnly!),
-      );
-      try {
-        await expectLater(
-          task.evaluateBoolean('text', BooleanQuestion('A condition.')),
-          throwsA(
-            isA<TaskException>()
-                .having((error) => error.statusCode, 'statusCode', 13)
-                .having(
-                  (error) => error.message,
-                  'message',
-                  allOf(
-                    startsWith('EG2 embedder invocation failed.'),
-                    contains('UP-053'),
-                  ),
-                ),
-          ),
-        );
-      } finally {
-        await task.dispose();
-      }
-    },
-    skip: textOnly == null
-        ? 'set MEDIAPIPE_DECISION_EG2_TEXT_MODEL to the 270M model'
-        : perFamily
-        ? null
-        : 'the wheel library runs the model',
-  );
 
   test('Google\'s failures are TaskExceptions', () async {
     await expectLater(

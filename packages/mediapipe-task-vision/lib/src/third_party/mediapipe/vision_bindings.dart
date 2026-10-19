@@ -1,6 +1,6 @@
 // Copyright 2026 The MediaPipe Authors.
 // Licensed under the Apache License, Version 2.0.
-// Generated from Google's unmodified MediaPipe 1.1.1 headers; see
+// Generated from Google's unmodified MediaPipe 1.2.0 headers; see
 // packages/mediapipe-core/native/README.md.
 
 // AUTO GENERATED FILE, DO NOT EDIT.
@@ -2004,7 +2004,8 @@ enum MpHostEnvironment {
   MP_HOST_ENVIRONMENT_IOS(2),
   MP_HOST_ENVIRONMENT_PYTHON(3),
   MP_HOST_ENVIRONMENT_WEB(4),
-  MP_HOST_ENVIRONMENT_FLUTTER(5);
+  MP_HOST_ENVIRONMENT_FLUTTER(5),
+  MP_HOST_ENVIRONMENT_FLUTTER_WEB(6);
 
   final int value;
   const MpHostEnvironment(this.value);
@@ -2016,6 +2017,7 @@ enum MpHostEnvironment {
     3 => MP_HOST_ENVIRONMENT_PYTHON,
     4 => MP_HOST_ENVIRONMENT_WEB,
     5 => MP_HOST_ENVIRONMENT_FLUTTER,
+    6 => MP_HOST_ENVIRONMENT_FLUTTER_WEB,
     _ => throw ArgumentError('Unknown value for MpHostEnvironment: $value'),
   };
 }

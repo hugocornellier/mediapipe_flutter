@@ -11,8 +11,7 @@ At build time, the build hooks fetch the native runtime for the target:
 
 | What | Host |
 | --- | --- |
-| Google's per-family MediaPipe libraries (Android, iOS, macOS, Linux, Windows), development builds posted unmodified for testing as a pre-release of `hugocornellier/mediapipe_flutter_native` until Google publishes them | `github.com`, which redirects to `release-assets.githubusercontent.com` |
-| Decision Maker's Windows library, from Google's 1.1.0 Python wheel, since Google's per-family build has no Windows decision library | `files.pythonhosted.org` |
+| Google's per-family MediaPipe libraries (Android, iOS, macOS, Linux, Windows), nightly builds posted unmodified for testing as a pre-release of `hugocornellier/mediapipe_flutter_native` | `github.com`, which redirects to `release-assets.githubusercontent.com` |
 
 At run time:
 
@@ -31,16 +30,17 @@ Google's MediaPipe runtimes send usage metrics to Google: the task, its
 running mode, latencies and input counts, never the images, audio or text it
 processes. On native platforms the packages also name Flutter as the host
 environment, with the versions of the OS, Dart and Flutter (for example
-`iOS 26.4 / Dart 3.13.4 / Flutter 3.47.5`), which the uploads record.
+`iOS 26.4 / Dart 3.13.4 / Flutter 3.47.5`), which the uploads record. In
+browsers they name Flutter Web as the host environment.
 Google's NOTICE opens with its MediaPipe Tasks privacy notice, which makes
 the app's developer responsible for getting users' informed consent where the
 law requires it. The packages cannot turn the logging off.
 
 | Where | What the packages bundle | Usage logging |
 | --- | --- | --- |
-| macOS, Linux, Windows | Google's per-family 1.1.1 libraries; on Windows, Decision Maker uses its 1.1.0 wheel's library | An uploader to `https://play.googleapis.com/log` in every library. Observed uploading on macOS with Google's October 5 build, one request per task close with the process name in the User-Agent, and on Windows with its 1.0.0 library ([UP-025](../upstream-issues.md#up-025-windows-task-closes-wait-for-googles-usage-logging-upload)); on Linux read from the binary, not run |
-| iOS | Google's per-family 1.1.1 libraries | The same uploader. Observed uploading on the iOS Simulator with Google's October 8 build: one request per task close, with the app's bundle ID and version in the User-Agent |
-| Android | Google's per-family 1.1.1 libraries | The same uploader, which reaches the network through Java. A library loaded through FFI, as here, cannot reach it: tasks log `Failed to get JNIEnv in AndroidNetworkManager::OnAttachedToJvm()` and, as far as the logs and the binary show, send nothing. No network capture has confirmed it |
+| macOS, Linux, Windows | Google's per-family 1.2.0 libraries | An uploader to `https://play.googleapis.com/log` in every library. Observed uploading on macOS with Google's October 5 build, one request per task close with the process name in the User-Agent, and on Windows with its 1.0.0 library ([UP-025](../upstream-issues.md#up-025-windows-task-closes-wait-for-googles-usage-logging-upload)); on Linux read from the binary, not run |
+| iOS | Google's per-family 1.2.0 libraries | The same uploader. Observed uploading on the iOS Simulator with Google's October 8 build: one request per task close, with the app's bundle ID and version in the User-Agent |
+| Android | Google's per-family 1.2.0 libraries | The same uploader. Up to the 1.1.1 build it reached the network through Java, which a library loaded through FFI, as here, cannot: tasks logged `Failed to get JNIEnv in AndroidNetworkManager::OnAttachedToJvm()` and, as far as the logs and the binary showed, sent nothing. Google says its 1.2.0 nightlies upload from Android; that message is gone from them, and no network capture has checked it yet |
 | Browsers | Google's JavaScript runtimes | Requests from the page to `https://odml.pa.googleapis.com/v1/log` when a task closes and every 60 seconds while one is open (observed with Face Detector) |
 
 Block those endpoints if your policy requires it: inference is unaffected. A

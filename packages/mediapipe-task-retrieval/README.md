@@ -17,10 +17,10 @@ pipeline.
 | Universal Embedder | `UniversalEmbedder` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Semantic Retriever | `SemanticRetriever` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-The runtimes are Google's MediaPipe 1.1.0: its per-family retrieval C
+The runtimes are Google's MediaPipe 1.2.0: its per-family retrieval C
 library, which this package's build hook downloads and checks against its
 SHA-256 on Android 9+, iOS 15+, macOS 14+, Linux and Windows, on the CPU; and
-`@mediapipe/tasks-retrieval` 1.1.0 in browsers, on the GPU delegate. Google's
+`@mediapipe/tasks-retrieval` 1.2.0-rc.20261018 in browsers, on the GPU delegate. Google's
 browser Universal Embedder creates a WebGPU device for itself and has no CPU
 path
 ([UP-052](../../upstream-issues.md#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter)),
@@ -115,6 +115,10 @@ validated, and Google's browser runtime has no CPU path.
 
 `dart test` runs the unit tests and, with Google's model downloaded by
 `dart tool/download_models.dart`, the native suite, which compares every
-embedding and retrieval with the answers Google's own Python API gave
-(`test/fixtures/embedding_gemma_2_text_vision_reference.json`, from
-`tool/generate_reference.py` on the official mediapipe 1.1.0 wheel).
+embedding and retrieval with the answers Google's own Python API gave, as
+`tool/generate_reference.py` records them: text and images from the official
+mediapipe 1.1.0 wheel
+(`test/fixtures/embedding_gemma_2_text_vision_reference.json`), and audio,
+whose embeddings Google changed in 1.2.0, from its `mediapipe-nightly`
+1.2.0rc20261018 wheel, the pinned build
+(`test/fixtures/embedding_gemma_2_audio_reference.json`).

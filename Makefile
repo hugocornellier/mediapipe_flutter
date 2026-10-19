@@ -162,7 +162,7 @@ ci:
 	$(MAKE) test_vision_flutter
 
 # Decision Maker's Laya model (678 MB) and its native suite against Google's
-# Python answers, on Google's wheel library for this desktop.
+# Python answers, on Google's decision library for this host.
 .PHONY: models_decision test_decision
 models_decision:
 	cd packages/mediapipe-task-decision && dart tool/download_models.dart
