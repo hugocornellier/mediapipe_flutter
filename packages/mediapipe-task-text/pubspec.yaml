@@ -40,6 +40,7 @@ dependencies:
 
 dev_dependencies:
   crypto: ^3.0.6
+  ffigen: ^21.0.0
   flutter_test:
     sdk: flutter
   lints: ^6.1.0

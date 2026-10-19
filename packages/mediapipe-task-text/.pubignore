@@ -40,3 +40,5 @@ build/
 /native/text_stream_bridge_test.c
 # It includes the repository's shared options, which are not published.
 /analysis_options.yaml
+# Inputs to ../mediapipe-core/tool/generate_bindings.dart.
+/ffigen*.yaml

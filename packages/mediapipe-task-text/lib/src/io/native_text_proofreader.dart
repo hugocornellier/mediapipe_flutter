@@ -9,7 +9,8 @@ import 'package:mediapipe_core/native_structs.dart'
 import '../types/options.dart';
 import '../types/results.dart';
 import 'native_text_stream.dart';
-import 'third_party/mediapipe/proofreader_bindings.dart' as mp;
+import 'third_party/mediapipe/generative_text_bindings.dart' as mp;
+import 'third_party/mediapipe/text_stream_bindings.dart' as bridge;
 
 /// Native task owner, used serially by one persistent worker isolate.
 final class NativeTextProofreader
@@ -22,19 +23,19 @@ final class NativeTextProofreader
     using((arena) {
       final native = arena<mp.MpTextProofreaderOptions>();
       fillBaseOptions(
-        native.ref.baseOptions,
+        native.ref.base_options,
         arena,
         modelPath: options.modelPath,
       );
       native.ref
-        ..maxNumTokens = options.maxNumTokens ?? 0
+        ..max_num_tokens = options.maxNumTokens ?? 0
         // Google's default: errors only.
-        ..minLogSeverity = 4;
+        ..min_log_severity = 4;
       if (options.cacheDirectory case final directory?) {
-        native.ref.cacheDir = directory.toNativeUtf8(allocator: arena).cast();
+        native.ref.cache_dir = directory.toNativeUtf8(allocator: arena).cast();
       }
-      final handle = arena<Pointer<Void>>();
-      _checked((error) => mp.create(native, handle, error));
+      final handle = arena<mp.MpTextProofreaderPtr>();
+      _checked((error) => mp.MpTextProofreaderCreate(native, handle, error));
       _handle = handle.value;
       if (_handle == nullptr) {
         throw StateError('MediaPipe returned no Proofreader.');
@@ -42,14 +43,14 @@ final class NativeTextProofreader
     });
   }
 
-  Pointer<Void> _handle = nullptr;
+  mp.MpTextProofreaderPtr _handle = nullptr;
 
   /// Copy a completed result and close its native allocation before returning.
   @override
   TextProofreaderResult run(String input) => using((arena) {
     final output = arena<Pointer<mp.MpTextProofreaderResult>>();
     _checked(
-      (error) => mp.proofread(
+      (error) => mp.MpTextProofreaderProofread(
         _handle,
         input.toNativeUtf8(allocator: arena).cast(),
         output,
@@ -62,11 +63,11 @@ final class NativeTextProofreader
     try {
       final result = output.value.ref;
       return TextProofreaderResult(
-        proofreadText: nativeString(result.proofreadText),
-        corrections: _corrections(result.corrections, result.correctionsCount),
+        proofreadText: nativeString(result.proofread_text),
+        corrections: _corrections(result.corrections, result.corrections_count),
       );
     } finally {
-      mp.closeResult(output.value);
+      mp.MpTextProofreaderCloseResult(output.value);
     }
   });
 
@@ -78,12 +79,12 @@ final class NativeTextProofreader
   ) => receiveNativeTextStream(
     submit: (context) => using((arena) {
       _checked(
-        (error) => mp.proofreadStreaming(
+        (error) => mp.MpTextProofreaderProofreadStreaming(
           _handle,
           input.toNativeUtf8(allocator: arena).cast(),
-          Native.addressOf<NativeFunction<mp.ProofreaderCallback>>(
-            mp.streamCallback,
-          ),
+          Native.addressOf<
+            NativeFunction<mp.MpTextProofreaderCallbackFunction>
+          >(bridge.proofreaderCallback),
           context,
           error,
         ),
@@ -104,7 +105,7 @@ final class NativeTextProofreader
     if (_handle == nullptr) return;
     final handle = _handle;
     _handle = nullptr;
-    _checked((error) => mp.close(handle, error));
+    _checked((error) => mp.MpTextProofreaderClose(handle, error));
   }
 }
 
@@ -118,11 +119,18 @@ List<ProofreadingCorrection> _corrections(
   return [
     for (var i = 0; i < count; i++)
       ProofreadingCorrection(
-        type: ProofreadingCorrectionType.values[values[i].type],
+        type: switch (values[i].type) {
+          mp.MpCorrectionType.MP_CORRECTION_TYPE_SAME =>
+            ProofreadingCorrectionType.same,
+          mp.MpCorrectionType.MP_CORRECTION_TYPE_INSERTION =>
+            ProofreadingCorrectionType.insertion,
+          mp.MpCorrectionType.MP_CORRECTION_TYPE_DELETION =>
+            ProofreadingCorrectionType.deletion,
+        },
         text: nativeString(values[i].text) ?? '',
       ),
   ];
 }
 
-void _checked(int Function(Pointer<Pointer<Char>>) call) =>
-    checkNativeStatus(call, mp.errorFree);
+void _checked(mp.MpStatus Function(Pointer<Pointer<Char>>) call) =>
+    checkNativeStatus((error) => call(error).value, mp.MpErrorFree);

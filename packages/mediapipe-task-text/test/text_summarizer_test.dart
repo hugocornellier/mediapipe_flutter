@@ -11,7 +11,7 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
-import 'package:mediapipe_text/src/io/third_party/mediapipe/summarizer_bindings.dart'
+import 'package:mediapipe_text/src/io/third_party/mediapipe/generative_text_bindings.dart'
     as mp;
 import 'package:test/test.dart';
 
@@ -102,9 +102,9 @@ void main() {
     using((arena) {
       final options = arena<mp.MpTextSummarizerOptions>();
       options.ref
-        ..mode = 1
-        ..maxNumTokens = 64
-        ..cacheDir = Pointer.fromAddress(1234);
+        ..mode = mp.MpTextSummarizerMode.MP_TEXT_SUMMARIZER_MODE_KEYPOINTS
+        ..max_num_tokens = 64
+        ..cache_dir = Pointer.fromAddress(1234);
       final bytes = options
           .cast<Uint8>()
           .asTypedList(sizeOf<mp.MpTextSummarizerOptions>())

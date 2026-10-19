@@ -12,16 +12,18 @@ that several families ship is byte-identical in each. Includes are relative to
 and `mediapipe_tasks_<family>.h`, which Google generates without a license
 header, includes a family's whole API.
 
-The vision package's `tool/generate_bindings.dart` generates its bindings from
-them, and its `tool/abi_check.cc` checks the struct sizes those bindings
-assume. The other families' bindings are written by hand and match these
-headers. The headers are not published, and no hook compiles against them.
+`tool/generate_bindings.dart` generates a family's bindings from them with
+the family's `ffigen.yaml`: the vision package's, and the text package's
+Proofreader and Summarizer. Each of those packages' `tool/abi_check.cc` checks
+the struct sizes its bindings assume. The other bindings are written by hand
+and match these headers. The headers are not published, and no hook compiles
+against them.
 
 Until the October 16 build Google's headers left out three APIs the
 libraries export: the Proofreader and Summarizer (text) and the modern
-Interactive Segmenter (vision). Their bindings were written from Google's
-Python ctypes before the headers shipped.
+Interactive Segmenter (vision). The Interactive Segmenter's bindings were
+written from Google's Python ctypes before the headers shipped.
 
 To update, replace `include/` and `BUILD_INFO` with the headers of the build
-the hooks pin, merging the families' trees, then run `make generate_vision`
-and `make test_vision`.
+the hooks pin, merging the families' trees, then run `make generate`,
+`make test_vision` and `make test_text_stream_bridge`.

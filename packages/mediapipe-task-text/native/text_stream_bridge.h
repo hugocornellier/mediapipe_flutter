@@ -13,8 +13,9 @@
 #define MP_FLUTTER_EXPORT __attribute__((visibility("default")))
 #endif
 
-// Official mediapipe==1.0.1 Python ctypes layouts, text/text_proofreader.py.
-// These are callback views owned by Google and valid only during the callback.
+// Views of Google's callback results (text_proofreader.h, text_summarizer.h),
+// owned by Google and valid only during the callback. tool/abi_check.cc checks
+// that their layouts match Google's.
 typedef struct {
   int type;
   const char* text;

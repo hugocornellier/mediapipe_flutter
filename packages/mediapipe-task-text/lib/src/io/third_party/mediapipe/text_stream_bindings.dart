@@ -1,14 +1,11 @@
 // Internal callback-copy adapter ABI; no MediaPipe inference code.
+// tool/abi_check.cc checks its callback views against Google's headers.
 // ignore_for_file: public_member_api_docs
 import 'dart:ffi';
 
-const _bridge = 'package:mediapipe_text/text_stream_bridge.dylib';
+import 'generative_text_bindings.dart';
 
-final class MpCorrection extends Struct {
-  @Int32()
-  external int type;
-  external Pointer<Char> text;
-}
+const _bridge = 'package:mediapipe_text/text_stream_bridge.dylib';
 
 final class MpFlutterTextEvent extends Struct {
   external Pointer<Char> text;
@@ -47,3 +44,25 @@ external void streamFree(Pointer<Void> context);
   assetId: _bridge,
 )
 external void eventFree(Pointer<MpFlutterTextEvent> event);
+
+/// Copies each Proofreader update for the stream's Dart port.
+@Native<MpTextProofreaderCallbackFunction>(
+  symbol: 'MpFlutterProofreaderCallback',
+  assetId: _bridge,
+)
+external void proofreaderCallback(
+  Pointer<Void> context,
+  Pointer<MpTextProofreaderStreamResult> result,
+  Pointer<Char> error,
+);
+
+/// Copies each Summarizer update for the stream's Dart port.
+@Native<MpTextSummarizerCallbackFunction>(
+  symbol: 'MpFlutterSummarizerCallback',
+  assetId: _bridge,
+)
+external void summarizerCallback(
+  Pointer<Void> context,
+  Pointer<MpTextSummarizerStreamResult> result,
+  Pointer<Char> error,
+);

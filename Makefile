@@ -18,7 +18,7 @@ GALLERY_SOURCES := lib test integration_test tool
 GALLERY_FORMAT := dart format --language-version=3.12
 ANALYZE_PACKAGES := $(ALL_PACKAGES)
 
-.PHONY: get models models_all analyze format check_format generate check_text_abi generate_vision test test_only test_core test_text test_vision test_vision_flutter ci
+.PHONY: get models models_all analyze format check_format generate check_text_abi generate_text generate_vision test test_only test_core test_text test_vision test_vision_flutter ci
 
 get:
 	@for package in $(DART_PACKAGES); do (cd "$$package" && dart pub get) || exit $$?; done
@@ -53,15 +53,21 @@ check_format:
 # Regenerate against the checked-in headers, never a floating upstream checkout.
 generate:
 	$(MAKE) check_text_abi
+	$(MAKE) generate_text
 	$(MAKE) generate_vision
 
-# The text bindings are adapted from Google's wheel's ctypes definitions; the
-# retired 2024 headers must not regenerate them, so this checks them instead.
+# The classic text bindings are adapted from Google's wheel's ctypes
+# definitions; the retired 2024 headers must not regenerate them, so this
+# checks them instead.
 check_text_abi:
 	cd packages/mediapipe-task-text && dart test test/classic_text_abi_test.dart --reporter expanded
 
+# The Proofreader and Summarizer, from Google's headers.
+generate_text:
+	cd packages/mediapipe-task-text && dart ../mediapipe-core/tool/generate_bindings.dart
+
 generate_vision:
-	cd packages/mediapipe-task-vision && dart tool/generate_bindings.dart
+	cd packages/mediapipe-task-vision && dart ../mediapipe-core/tool/generate_bindings.dart
 
 test:
 	$(MAKE) models
@@ -144,6 +150,7 @@ models_proofreader:
 	cd packages/mediapipe-task-text && dart tool/download_models.dart proofreader
 
 test_text_stream_bridge:
+	clang++ -std=c++17 -fsyntax-only -Wall -Wextra -Werror -I packages/mediapipe-core/native/include packages/mediapipe-task-text/tool/abi_check.cc
 	mkdir -p build/codex-tmp
 	clang -Wall -Wextra -Werror -g -fsanitize=address -pthread packages/mediapipe-task-text/native/text_stream_bridge.c packages/mediapipe-task-text/native/text_stream_bridge_test.c -o build/codex-tmp/text_stream_bridge_test
 	build/codex-tmp/text_stream_bridge_test

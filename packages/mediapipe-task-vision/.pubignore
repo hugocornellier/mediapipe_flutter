@@ -35,7 +35,7 @@ build/
 /tool/
 /test/
 /dart_test.yaml
-# Inputs to tool/generate_bindings.dart.
+# Inputs to ../mediapipe-core/tool/generate_bindings.dart.
 /ffigen*.yaml
 # It includes the repository's shared options, which are not published.
 /analysis_options.yaml

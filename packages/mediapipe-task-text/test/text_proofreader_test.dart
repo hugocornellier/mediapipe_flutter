@@ -11,7 +11,7 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
-import 'package:mediapipe_text/src/io/third_party/mediapipe/proofreader_bindings.dart'
+import 'package:mediapipe_text/src/io/third_party/mediapipe/generative_text_bindings.dart'
     as mp;
 import 'package:test/test.dart';
 
@@ -129,8 +129,8 @@ void main() {
           value.cast<Uint8>().asTypedList(length).buffer.asByteData();
       final options = arena<mp.MpTextProofreaderOptions>();
       options.ref
-        ..maxNumTokens = 123
-        ..cacheDir = Pointer.fromAddress(456);
+        ..max_num_tokens = 123
+        ..cache_dir = Pointer.fromAddress(456);
       final fields = abi['_MpTextProofreaderOptionsC']['offsets'];
       final data = bytes(options, sizeOf<mp.MpTextProofreaderOptions>());
       expect(data.getInt32(fields['max_num_tokens'], Endian.host), 123);
@@ -138,7 +138,7 @@ void main() {
       final stream = arena<mp.MpTextProofreaderStreamResult>();
       stream.ref
         ..chunk = Pointer.fromAddress(123)
-        ..correctionsCount = 7
+        ..corrections_count = 7
         ..corrections = Pointer.fromAddress(456)
         ..done = true;
       final streamData = bytes(
