@@ -5,6 +5,7 @@
 #include "vision/core/image_processing_options.h"
 #include "vision/face_detector/face_detector.h"
 #include "vision/face_landmarker/face_landmarker.h"
+#include "vision/interactive_segmenter/interactive_segmenter.h"
 
 static_assert(sizeof(MpStatus) == 4);
 static_assert(sizeof(MpImageFormat) == 4);
@@ -21,3 +22,8 @@ static_assert(sizeof(MpFaceLandmarkerResult) == 48);
 static_assert(sizeof(MpNormalizedLandmark) == 40);
 static_assert(sizeof(MpNormalizedLandmarks) == 16);
 static_assert(sizeof(MpMatrix) == 16);
+static_assert(sizeof(MpBrushMode) == 4);
+static_assert(sizeof(MpInteractiveSegmenterOptions) == 72);
+static_assert(sizeof(MpStrokePoint) == 8);
+static_assert(sizeof(MpStroke) == 24);
+static_assert(sizeof(MpStrokes) == 16);

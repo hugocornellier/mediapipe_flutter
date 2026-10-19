@@ -3,10 +3,8 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
-import 'package:mediapipe_core/native_structs.dart' show checkNativeStatus;
 import 'package:mediapipe_core/task_worker.dart';
 
-import '../third_party/mediapipe/interactive_segmenter_bindings.dart' as seg;
 import '../third_party/mediapipe/vision_bindings.dart' as mp;
 import '../types/options.dart';
 import '../types/strokes.dart';
@@ -36,17 +34,17 @@ final class NativeInteractiveSegmenter
       );
     }
     using((arena) {
-      final native = arena<seg.MpInteractiveSegmenterOptions>();
+      final native = arena<mp.MpInteractiveSegmenterOptions>();
       setVisionBaseOptions(arena, native.ref.base_options, options);
-      final output = arena<Pointer<Void>>();
-      _checked(
-        (error) => seg.MpInteractiveSegmenterCreate(native, output, error),
+      final output = arena<mp.MpInteractiveSegmenterPtr>();
+      checkVisionCall(
+        (error) => mp.MpInteractiveSegmenterCreate(native, output, error),
       );
       _task = output.value;
     });
   }
 
-  Pointer<Void> _task = nullptr;
+  mp.MpInteractiveSegmenterPtr _task = nullptr;
   mp.MpImagePtr _image = nullptr;
   bool _hasImage = false;
 
@@ -71,8 +69,8 @@ final class NativeInteractiveSegmenter
     );
     try {
       _hasImage = false;
-      _checked(
-        (error) => seg.MpInteractiveSegmenterSetImage(_task, next, error),
+      checkVisionCall(
+        (error) => mp.MpInteractiveSegmenterSetImage(_task, next, error),
       );
     } catch (_) {
       mp.MpImageFree(next);
@@ -89,30 +87,30 @@ final class NativeInteractiveSegmenter
       throw StateError('Call setImage successfully before segment.');
     }
     return using((arena) {
-      final native = arena<seg.MpStrokes>();
-      final values = arena<seg.MpStroke>(strokes.length);
+      final native = arena<mp.MpStrokes>();
+      final values = arena<mp.MpStroke>(strokes.length);
       native.ref
         ..strokes = values
         ..strokes_count = strokes.length;
       for (var i = 0; i < strokes.length; i++) {
         final stroke = strokes[i];
-        final points = arena<seg.MpStrokePoint>(stroke.points.length);
+        final points = arena<mp.MpStrokePoint>(stroke.points.length);
         for (var j = 0; j < stroke.points.length; j++) {
           points[j]
             ..x = stroke.points[j].x
             ..y = stroke.points[j].y;
         }
         values[i]
-          ..brush_mode = stroke.brushMode.nativeValue
+          ..brush_mode = mp.MpBrushMode.fromValue(stroke.brushMode.nativeValue)
           ..points = points
           ..points_count = stroke.points.length
           ..is_completed = stroke.isCompleted;
       }
       final output = arena<mp.MpImagePtr>();
       try {
-        _checked(
+        checkVisionCall(
           (error) =>
-              seg.MpInteractiveSegmenterSegment(_task, native, output, error),
+              mp.MpInteractiveSegmenterSegment(_task, native, output, error),
         );
         if (output.value == nullptr) {
           throw StateError('MediaPipe returned no mask.');
@@ -137,14 +135,10 @@ final class NativeInteractiveSegmenter
     _task = nullptr;
     _hasImage = false;
     try {
-      _checked((error) => seg.MpInteractiveSegmenterClose(task, error));
+      checkVisionCall((error) => mp.MpInteractiveSegmenterClose(task, error));
     } finally {
       if (_image != nullptr) mp.MpImageFree(_image);
       _image = nullptr;
     }
   }
 }
-
-/// The stateful API's bindings return the status code as an int.
-void _checked(int Function(Pointer<Pointer<Char>>) call) =>
-    checkNativeStatus(call, mp.MpErrorFree);

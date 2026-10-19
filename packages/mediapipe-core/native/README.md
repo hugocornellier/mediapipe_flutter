@@ -19,11 +19,6 @@ the struct sizes its bindings assume. The other bindings are written by hand
 and match these headers. The headers are not published, and no hook compiles
 against them.
 
-Until the October 16 build Google's headers left out three APIs the
-libraries export: the Proofreader and Summarizer (text) and the modern
-Interactive Segmenter (vision). The Interactive Segmenter's bindings were
-written from Google's Python ctypes before the headers shipped.
-
 To update, replace `include/` and `BUILD_INFO` with the headers of the build
 the hooks pin, merging the families' trees, then run `make generate`,
 `make test_vision` and `make test_text_stream_bridge`.
