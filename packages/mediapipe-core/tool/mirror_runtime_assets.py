@@ -3,8 +3,8 @@
 
 Runtimes are Google's per-family libraries, as core's `familyRuntimes` pins
 them (read through tool/runtime_inventory.dart); models are the families'
-pinned models. A library Google has not published yet is listed without a URL
-and left out of --prefill.
+pinned models. A runtime's URLs are the member of Google's archive, then the
+mirror's file.
 """
 
 import argparse
@@ -53,14 +53,9 @@ def runtime_assets(items):
                                cwd=CORE, check=True, capture_output=True,
                                text=True).stdout
     for entry in json.loads(inventory[inventory.index('['):]):
-        if 'wheel_sha256' in entry:
-            # The hook downloads the wheel and extracts the library.
-            add(items, 'runtime', [entry['target']], entry['url'],
-                entry['wheel_sha256'], f"wheelRuntimes['{entry['family']}']")
-        else:
-            add(items, 'runtime', [entry['target']], entry['url'],
-                entry['sha256'], f"familyRuntimes['{entry['family']}']",
-                name=entry['file'])
+        for url in entry['urls']:
+            add(items, 'runtime', [entry['target']], url, entry['sha256'],
+                f"familyRuntimes['{entry['family']}']", name=entry['file'])
 
 
 def model_assets(items):

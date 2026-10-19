@@ -6,18 +6,6 @@ import 'package:mediapipe_core/platform_interface.dart';
 
 import 'retrieval_backend.dart' show retrievalBackendFactory;
 
-/// The release of `@mediapipe/tasks-retrieval` that `assets/runtime.json`
-/// pins for browsers (`tool/check_repository.py` checks the two agree).
-const _browserRuntimeVersion = '1.1.0';
-
-/// The release behind both tasks on [platform]: Google's per-family
-/// retrieval library natively (its 1.1.1 build of October 9, 2026) and the
-/// browser runtime in browsers.
-String _runtimeVersionOn(TaskPlatform platform) =>
-    platform.operatingSystem == 'web'
-    ? _browserRuntimeVersion
-    : tasksRuntimeVersionOn(platform);
-
 /// Where Google's retrieval library runs: core's shared 64-bit targets,
 /// which Google's per-family build covers as its vision, text and audio
 /// libraries do. 32-bit Android cannot hold its models
@@ -40,7 +28,7 @@ final _noPlugin = '${_unregistered.message} ${_unregistered.fix}';
 /// Google's browser Universal Embedder creates a WebGPU device for itself
 /// and has no CPU path (upstream-issues.md UP-052).
 const _browserCpu =
-    "Google's browser Universal Embedder (@mediapipe/tasks-retrieval 1.1.0) "
+    "Google's browser Universal Embedder (@mediapipe/tasks-retrieval) "
     'runs on a WebGPU device only (upstream-issues.md UP-052). Use '
     'Delegate.gpu.';
 
@@ -53,7 +41,7 @@ String _noWebGpu(TaskPlatform platform) =>
 /// Why both tasks are unavailable in WebKit (UP-054).
 const embeddingGemma2WebKitUnavailable =
     "In WebKit, the engine of Safari and of every browser on iOS, Google's "
-    'browser Universal Embedder (@mediapipe/tasks-retrieval 1.1.0) returns '
+    'browser Universal Embedder (@mediapipe/tasks-retrieval) returns '
     'zeros for every input with both EmbeddingGemma 2 models, so no document '
     'matches any query (upstream-issues.md UP-054). Use a Chromium browser.';
 
@@ -94,7 +82,7 @@ TaskCapabilities _capabilities(TaskPlatform platform) {
           ? _desktopGpu
           : noLibrary,
     },
-    runtimeVersion: _runtimeVersionOn(platform),
+    runtimeVersion: tasksRuntimeVersionOn(platform),
   );
 }
 

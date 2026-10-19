@@ -12,12 +12,16 @@ Google's text package; [MIGRATION.md](MIGRATION.md) maps that API.
   tasks on the CPU; `largeModelRuntimeTargets` leaves it out for the tasks
   whose models a 32-bit process cannot hold, which refuse it with
   `largeModelNeeds64Bit`.
-- Downloads, verifies and prepares Google's MediaPipe 1.1.1 C library for
+- Downloads, verifies and prepares Google's MediaPipe 1.2.0 C library for
   each family (`bundleFamilyRuntime`), which the vision, text, audio,
   retrieval and decision hooks bundle on Android 9+, iOS, macOS arm64, Linux
-  x64 and Windows x64, so an app ships only the families it uses; Decision
-  Maker's Windows library comes from Google's wheel, which
-  `bundleFamilyRuntime` picks on its own.
+  x64 and Windows x64, so an app ships only the families it uses. Each
+  library is read from Google's nightly archive with HTTP range requests,
+  then from a mirror.
+- `downloadVerified` reads a member of a zip archive (a `.zip` URL with the
+  member as its fragment), retries a request three times on a connection
+  error, a timeout or HTTP 408, 429, 500, 502, 503 or 504, honoring
+  `Retry-After`, and resumes a dropped download.
 - Shared types: `TaskOptions` (the base of every options class, with `model`,
   `modelPath`, `modelBytes` and `delegate`), one `Delegate`,
   `TaskCapabilities`, and the value types `MediaPipeCategory`,

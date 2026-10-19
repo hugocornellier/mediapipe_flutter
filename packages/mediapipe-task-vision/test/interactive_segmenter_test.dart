@@ -7,8 +7,6 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:ffi/ffi.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
-import 'package:mediapipe_vision/src/third_party/mediapipe/interactive_segmenter_bindings.dart'
-    as abi;
 import 'package:mediapipe_vision/src/third_party/mediapipe/vision_bindings.dart'
     as mp;
 import 'package:test/test.dart';
@@ -327,10 +325,10 @@ void main() {
       final sizes = {
         'MpBaseOptionsC': sizeOf<mp.MpBaseOptions>(),
         'InteractiveSegmenterOptionsC':
-            sizeOf<abi.MpInteractiveSegmenterOptions>(),
-        'MpStrokePointC': sizeOf<abi.MpStrokePoint>(),
-        'MpStrokeC': sizeOf<abi.MpStroke>(),
-        'MpStrokesC': sizeOf<abi.MpStrokes>(),
+            sizeOf<mp.MpInteractiveSegmenterOptions>(),
+        'MpStrokePointC': sizeOf<mp.MpStrokePoint>(),
+        'MpStrokeC': sizeOf<mp.MpStroke>(),
+        'MpStrokesC': sizeOf<mp.MpStrokes>(),
       };
       for (final entry in sizes.entries) {
         expect(entry.value, reference['abi'][entry.key]['size']);
@@ -359,14 +357,14 @@ void main() {
         for (final entry in offsets.entries) {
           expect(data.getUint32(entry.value as int, Endian.host), expected++);
         }
-        final stroke = arena<abi.MpStroke>();
+        final stroke = arena<mp.MpStroke>();
         stroke.ref
-          ..brush_mode = 3
+          ..brush_mode = mp.MpBrushMode.MP_BRUSH_MODE_LASSO
           ..points = Pointer.fromAddress(123)
           ..points_count = 9
           ..is_completed = true;
         final bytes = ByteData.sublistView(
-          stroke.cast<Uint8>().asTypedList(sizeOf<abi.MpStroke>()),
+          stroke.cast<Uint8>().asTypedList(sizeOf<mp.MpStroke>()),
         );
         final fields = reference['abi']['MpStrokeC']['offsets'];
         expect(bytes.getInt32(fields['brush_mode'] as int, Endian.host), 3);

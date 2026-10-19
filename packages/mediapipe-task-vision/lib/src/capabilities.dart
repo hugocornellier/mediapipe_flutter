@@ -37,10 +37,11 @@ const _faceDetectorGpuGap =
     'CPU delegate. Face Landmarker runs on the GPU there. See '
     'upstream-issues.md UP-046.';
 
-/// Why macOS offers the CPU only: on Metal, Google's 1.1.1 library differs
-/// from Google's own 1.1.0 wheel for every task, by up to a different top
-/// class, and its 1.1.1 nightly wheel matches the library where compared;
-/// Google is checking whether the change is intended. The CPU matches the 1.1.0 wheel exactly.
+/// Why macOS offers the CPU only: on Metal, Google's library since 1.1.1
+/// differs from Google's own 1.1.0 wheel for every task, by up to a
+/// different top class, and its 1.1.1 nightly wheel matches the library
+/// where compared; Google is checking whether the change is intended. The
+/// CPU matches the 1.1.0 wheel exactly.
 /// The tasks keep `macosGpu`, which names the ones that return once Google
 /// confirms the new output (UP-057).
 /// 32-bit Android (armeabi-v7a) runs the vision tasks on the CPU; this
@@ -50,8 +51,8 @@ const _arm32GpuGap =
     'tasks run there on the CPU.';
 
 const _macosGpuGap =
-    "Google's 1.1.1 macOS library gives different results on Metal from "
-    "Google's own 1.1.0 package, and Google is checking whether that is "
+    "Since 1.1.1, Google's macOS library gives different results on Metal "
+    "from Google's own 1.1.0 package, and Google is checking whether that is "
     'intended; use the CPU delegate, which matches that package exactly. See '
     'upstream-issues.md UP-057.';
 

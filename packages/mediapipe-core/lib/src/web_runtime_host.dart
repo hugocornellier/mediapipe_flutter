@@ -17,7 +17,9 @@ final class WebRuntimePin {
     if (package is! String ||
         !RegExp(r'^@mediapipe/tasks-[a-z]+$').hasMatch(package) ||
         version is! String ||
-        !RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version) ||
+        !RegExp(
+          r'^\d+\.\d+\.\d+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$',
+        ).hasMatch(version) ||
         integrity is! String ||
         files is! List ||
         files.isEmpty ||
@@ -57,7 +59,7 @@ final class WebRuntimePin {
   /// npm package, such as `@mediapipe/tasks-vision`.
   final String package;
 
-  /// Pinned npm version.
+  /// Pinned npm version, a release or a prerelease such as `1.2.0-rc.20261018`.
   final String version;
 
   /// Base64 SHA-512 of the npm tarball, as npm's `integrity` records it.

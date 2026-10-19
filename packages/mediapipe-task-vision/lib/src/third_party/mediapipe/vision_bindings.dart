@@ -1,6 +1,6 @@
 // Copyright 2026 The MediaPipe Authors.
 // Licensed under the Apache License, Version 2.0.
-// Generated from Google's unmodified MediaPipe 1.1.1 headers; see
+// Generated from Google's unmodified MediaPipe 1.2.0 headers; see
 // packages/mediapipe-core/native/README.md.
 
 // AUTO GENERATED FILE, DO NOT EDIT.
@@ -1098,6 +1098,96 @@ MpStatus MpImageSegmenterSegmentImage(
 
 @ffi.Native<
   ffi.UnsignedInt Function(
+    MpInteractiveSegmenterPtr,
+    ffi.Pointer<ffi.Pointer<ffi.Char>>,
+  )
+>(symbol: 'MpInteractiveSegmenterClose')
+external int _MpInteractiveSegmenterClose(
+  MpInteractiveSegmenterPtr segmenter,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+);
+
+MpStatus MpInteractiveSegmenterClose(
+  MpInteractiveSegmenterPtr segmenter,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+) {
+  return MpStatus.fromValue(_MpInteractiveSegmenterClose(segmenter, error_msg));
+}
+
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    ffi.Pointer<MpInteractiveSegmenterOptions>,
+    ffi.Pointer<MpInteractiveSegmenterPtr>,
+    ffi.Pointer<ffi.Pointer<ffi.Char>>,
+  )
+>(symbol: 'MpInteractiveSegmenterCreate')
+external int _MpInteractiveSegmenterCreate(
+  ffi.Pointer<MpInteractiveSegmenterOptions> options,
+  ffi.Pointer<MpInteractiveSegmenterPtr> segmenter,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+);
+
+MpStatus MpInteractiveSegmenterCreate(
+  ffi.Pointer<MpInteractiveSegmenterOptions> options,
+  ffi.Pointer<MpInteractiveSegmenterPtr> segmenter,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+) {
+  return MpStatus.fromValue(
+    _MpInteractiveSegmenterCreate(options, segmenter, error_msg),
+  );
+}
+
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    MpInteractiveSegmenterPtr,
+    ffi.Pointer<MpStrokes>,
+    ffi.Pointer<MpImagePtr>,
+    ffi.Pointer<ffi.Pointer<ffi.Char>>,
+  )
+>(symbol: 'MpInteractiveSegmenterSegment')
+external int _MpInteractiveSegmenterSegment(
+  MpInteractiveSegmenterPtr segmenter,
+  ffi.Pointer<MpStrokes> strokes,
+  ffi.Pointer<MpImagePtr> mask,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+);
+
+MpStatus MpInteractiveSegmenterSegment(
+  MpInteractiveSegmenterPtr segmenter,
+  ffi.Pointer<MpStrokes> strokes,
+  ffi.Pointer<MpImagePtr> mask,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+) {
+  return MpStatus.fromValue(
+    _MpInteractiveSegmenterSegment(segmenter, strokes, mask, error_msg),
+  );
+}
+
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    MpInteractiveSegmenterPtr,
+    MpImagePtr,
+    ffi.Pointer<ffi.Pointer<ffi.Char>>,
+  )
+>(symbol: 'MpInteractiveSegmenterSetImage')
+external int _MpInteractiveSegmenterSetImage(
+  MpInteractiveSegmenterPtr segmenter,
+  MpImagePtr image,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+);
+
+MpStatus MpInteractiveSegmenterSetImage(
+  MpInteractiveSegmenterPtr segmenter,
+  MpImagePtr image,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> error_msg,
+) {
+  return MpStatus.fromValue(
+    _MpInteractiveSegmenterSetImage(segmenter, image, error_msg),
+  );
+}
+
+@ffi.Native<
+  ffi.UnsignedInt Function(
     MpObjectDetectorPtr,
     ffi.Pointer<ffi.Pointer<ffi.Char>>,
   )
@@ -1415,6 +1505,24 @@ final class MpBaseOptions extends ffi.Struct {
     ..ref.ca_bundle_path = ca_bundle_path
     ..ref.app_id = app_id
     ..ref.app_version = app_version;
+}
+
+enum MpBrushMode {
+  MP_BRUSH_MODE_UNSPECIFIED(0),
+  MP_BRUSH_MODE_POSITIVE(1),
+  MP_BRUSH_MODE_NEGATIVE(2),
+  MP_BRUSH_MODE_LASSO(3);
+
+  final int value;
+  const MpBrushMode(this.value);
+
+  static MpBrushMode fromValue(int value) => switch (value) {
+    0 => MP_BRUSH_MODE_UNSPECIFIED,
+    1 => MP_BRUSH_MODE_POSITIVE,
+    2 => MP_BRUSH_MODE_NEGATIVE,
+    3 => MP_BRUSH_MODE_LASSO,
+    _ => throw ArgumentError('Unknown value for MpBrushMode: $value'),
+  };
 }
 
 final class MpCategories extends ffi.Struct {
@@ -2004,7 +2112,8 @@ enum MpHostEnvironment {
   MP_HOST_ENVIRONMENT_IOS(2),
   MP_HOST_ENVIRONMENT_PYTHON(3),
   MP_HOST_ENVIRONMENT_WEB(4),
-  MP_HOST_ENVIRONMENT_FLUTTER(5);
+  MP_HOST_ENVIRONMENT_FLUTTER(5),
+  MP_HOST_ENVIRONMENT_FLUTTER_WEB(6);
 
   final int value;
   const MpHostEnvironment(this.value);
@@ -2016,6 +2125,7 @@ enum MpHostEnvironment {
     3 => MP_HOST_ENVIRONMENT_PYTHON,
     4 => MP_HOST_ENVIRONMENT_WEB,
     5 => MP_HOST_ENVIRONMENT_FLUTTER,
+    6 => MP_HOST_ENVIRONMENT_FLUTTER_WEB,
     _ => throw ArgumentError('Unknown value for MpHostEnvironment: $value'),
   };
 }
@@ -2185,6 +2295,14 @@ final class MpImageSegmenterResult extends ffi.Struct {
     ..ref.quality_scores = quality_scores
     ..ref.quality_scores_count = quality_scores_count;
 }
+
+final class MpInteractiveSegmenterInternal extends ffi.Opaque {}
+
+final class MpInteractiveSegmenterOptions extends ffi.Struct {
+  external MpBaseOptions base_options;
+}
+
+typedef MpInteractiveSegmenterPtr = ffi.Pointer<MpInteractiveSegmenterInternal>;
 
 final class MpLandmark extends ffi.Struct {
   @ffi.Float()
@@ -2616,4 +2734,63 @@ final class MpStringList extends ffi.Struct {
   }) => $allocator<MpStringList>()
     ..ref.strings = strings
     ..ref.num_strings = num_strings;
+}
+
+final class MpStroke extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int brush_modeAsInt;
+
+  MpBrushMode get brush_mode => MpBrushMode.fromValue(brush_modeAsInt);
+  set brush_mode(MpBrushMode value) => brush_modeAsInt = value.value;
+
+  external ffi.Pointer<MpStrokePoint> points;
+
+  @ffi.Uint32()
+  external int points_count;
+
+  @ffi.Bool()
+  external bool is_completed;
+
+  static ffi.Pointer<MpStroke> $allocate(
+    ffi.Allocator $allocator, {
+    required MpBrushMode brush_mode,
+    required ffi.Pointer<MpStrokePoint> points,
+    required int points_count,
+    required bool is_completed,
+  }) => $allocator<MpStroke>()
+    ..ref.brush_mode = brush_mode
+    ..ref.points = points
+    ..ref.points_count = points_count
+    ..ref.is_completed = is_completed;
+}
+
+final class MpStrokePoint extends ffi.Struct {
+  @ffi.Float()
+  external double x;
+
+  @ffi.Float()
+  external double y;
+
+  static ffi.Pointer<MpStrokePoint> $allocate(
+    ffi.Allocator $allocator, {
+    required double x,
+    required double y,
+  }) => $allocator<MpStrokePoint>()
+    ..ref.x = x
+    ..ref.y = y;
+}
+
+final class MpStrokes extends ffi.Struct {
+  external ffi.Pointer<MpStroke> strokes;
+
+  @ffi.Uint32()
+  external int strokes_count;
+
+  static ffi.Pointer<MpStrokes> $allocate(
+    ffi.Allocator $allocator, {
+    required ffi.Pointer<MpStroke> strokes,
+    required int strokes_count,
+  }) => $allocator<MpStrokes>()
+    ..ref.strokes = strokes
+    ..ref.strokes_count = strokes_count;
 }

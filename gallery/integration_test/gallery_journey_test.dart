@@ -401,8 +401,7 @@ void main() {
           // The model steers the fish: Google's wording gets every sentence
           // the game writes right, so each decision matches the scene.
           await tester.tap(find.byKey(const ValueKey('fish-play')));
-          // The first game downloads Google's EmbeddingGemma 2: 165 MB, or
-          // the 388 MB text and vision one on the per-family library (UP-053).
+          // The first game downloads Google's 165 MB EmbeddingGemma 2.
           await _until(
             tester,
             () =>

@@ -10,7 +10,7 @@ hook uses to bundle its own:
 
 | Platform | Runtime |
 | --- | --- |
-| Android 9+ (arm64-v8a, x86_64; armeabi-v7a on the CPU, without the large models), iOS 15+ (device, arm64 simulator), macOS 14+ arm64, Linux x64, Windows x64 | Google's MediaPipe 1.1.0 C library for each family (`MediaPipeTasksVisionC`, `libmediapipe_tasks_text`, and so on), bundled by that family's hook |
+| Android 9+ (arm64-v8a, x86_64; armeabi-v7a on the CPU, without the large models), iOS 15+ (device, arm64 simulator), macOS 14+ arm64, Linux x64, Windows x64 | Google's MediaPipe 1.2.0 C library for each family (`MediaPipeTasksVisionC`, `libmediapipe_tasks_text`, and so on), bundled by that family's hook |
 | Web | Google's JavaScript runtime, through each family's web plugin |
 
 An app ships only the libraries of the families it depends on, and needs no
@@ -49,8 +49,16 @@ and platform plugins need and apps do not.
 
 Every native runtime and model pin names a primary URL, optional published
 mirrors, and one SHA-256. Core tries URLs in order and checks the digest before
-publishing a file. It reports every failed location when none matches. Pins
-do not currently name mirrors because no alternate copies have been published.
+publishing a file. It reports every failed location when none matches. Each
+native library's primary URL names its file inside Google's nightly archive,
+which core reads with HTTP range requests, and its mirror is a copy in a
+GitHub pre-release. Model pins name no mirrors.
+
+Each request gets three attempts on a connection error, a timeout or HTTP
+408, 429, 500, 502, 503 or 504, waiting a random backoff or the host's
+`Retry-After` (at most 30 seconds), and a dropped download resumes where it
+stopped. Any other failure, including a digest mismatch, moves to the next
+URL at once.
 
 For offline or mirrored builds, point every download at a local directory or
 an internal HTTP(S) root holding files named by their full SHA-256. That

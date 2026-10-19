@@ -27,6 +27,10 @@ export async function loadVerifiedRuntime(pinUrl, baseUrl, family) {
     urls.push(url);
     return url;
   }
+  // Google's usage logs name the host from this global (FLUTTER_WEB = 6 in
+  // its HostEnvironment enum, read from @mediapipe/tasks-* 1.2.0-rc.20261017
+  // on); without it they report a plain web page (WEB = 4).
+  globalThis.__HOST_ENVIRONMENT__ = 'FLUTTER_WEB';
   try {
     const bundle = await import(await verified(`${family.toLowerCase()}_bundle.mjs`));
     // The resolver only picks the variant this browser supports (SIMD or

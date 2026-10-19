@@ -147,10 +147,11 @@ RuntimeUnavailableException pluginNotRegistered(String package) =>
     );
 
 /// The official MediaPipe release behind the tasks on [platform]: Google's
-/// 1.1.1 per-family libraries (its development build of October 9, 2026) on
-/// Android, iOS, macOS, Linux and Windows, and its browser runtime 1.0.1.
+/// 1.2.0 per-family libraries (its nightly build of October 18, 2026) on
+/// Android, iOS, macOS, Linux and Windows, and in browsers its runtime from
+/// the same night's npm nightly.
 String tasksRuntimeVersionOn(TaskPlatform platform) =>
-    platform.operatingSystem == 'web' ? '1.0.1' : '1.1.1';
+    platform.operatingSystem == 'web' ? '1.2.0-rc.20261018' : '1.2.0';
 
 /// Declared package support for one task on a platform: which [Delegate]s run
 /// there and why the others do not. This is not an inference self-test.

@@ -72,7 +72,7 @@ void main() {
         expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
         expect(
           result.runtimeVersion,
-          '1.1.1',
+          '1.2.0',
           reason: '$name on ${platform.target}',
         );
         expect(
@@ -106,7 +106,7 @@ void main() {
         for (final MapEntry(key: name, value: claim) in every.entries) {
           final result = claim(platform);
           expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
-          expect(result.runtimeVersion, '1.1.1');
+          expect(result.runtimeVersion, '1.2.0');
         }
       }
     },
@@ -123,7 +123,7 @@ void main() {
     ]) {
       final result = every[name]!(_web);
       expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
-      expect(result.runtimeVersion, '1.0.1');
+      expect(result.runtimeVersion, '1.2.0-rc.20261018');
     }
     for (final name in ['proofreader', 'summarizer']) {
       final result = every[name]!(_web);

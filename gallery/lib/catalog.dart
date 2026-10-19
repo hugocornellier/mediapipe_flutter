@@ -194,20 +194,15 @@ TaskCapabilities _audio(TaskPlatform platform) =>
     audioClassifierCapabilitiesForPlatform(platform);
 
 /// The EmbeddingGemma 2 model Hungry Fish plays on by default on [platform]:
-/// the text-only one where Google's runtime runs it, otherwise the text and
-/// vision one (UP-053); null where it runs neither, as in WebKit (UP-054).
+/// the text-only one, or null where Google's runtime cannot run it, as in
+/// WebKit (UP-054).
 DownloadAsset? fishGameModel(TaskPlatform platform) =>
-    const [
-          DecisionModels.embeddingGemma2Text,
-          DecisionModels.embeddingGemma2TextVision,
-        ]
-        .where(
-          (model) => decisionMakerCapabilitiesForPlatform(
-            platform,
-            model: model,
-          ).isSupported,
-        )
-        .firstOrNull;
+    decisionMakerCapabilitiesForPlatform(
+      platform,
+      model: DecisionModels.embeddingGemma2Text,
+    ).isSupported
+    ? DecisionModels.embeddingGemma2Text
+    : null;
 
 /// Hungry Fish's support on [platform]: Decision Maker's with the model it
 /// plays on, so the tile is a card, with the package's reason, where neither
@@ -455,8 +450,7 @@ final _catalog = <GalleryTask>[
     sample: '',
     capabilities: textProofreaderCapabilitiesForPlatform,
   ),
-  // Decision Maker, on Google's per-family library (its wheel's on Windows)
-  // and its browser runtime.
+  // Decision Maker, on Google's per-family library and its browser runtime.
   GalleryTask(
     id: 'decision_maker',
     category: GalleryCategory.decision,
@@ -469,10 +463,8 @@ final _catalog = <GalleryTask>[
     capabilities: decisionMakerCapabilitiesForPlatform,
   ),
   // Decision Maker playing a game, as Google's web demo plays its dino game.
-  // Its model is the text-only EmbeddingGemma 2 where Google's runtime
-  // accepts it; on Google's per-family library the page plays on the text
-  // and vision one instead (UP-053), and in WebKit, which runs neither
-  // (UP-054), the tile is a card.
+  // Its model is the text-only EmbeddingGemma 2; in WebKit, which runs no
+  // EmbeddingGemma 2 model (UP-054), the tile is a card.
   GalleryTask(
     id: 'decision_fish_game',
     runtimeId: 'decision_maker',

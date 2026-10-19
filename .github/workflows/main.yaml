@@ -134,7 +134,7 @@ jobs:
       - name: Generate official CPU text references on this runner
         run: python3 -B packages/mediapipe-task-text/tool/prepare_classic_text_reference.py
       # No Metal references: the vision package withdraws the macOS GPU while
-      # Google's 1.1.1 library differs there from its 1.1.0 wheel
+      # Google's library since 1.1.1 differs there from its 1.1.0 wheel
       # (upstream-issues.md UP-057).
       # make get/models already ran above for the independent references.
       # Keep the remaining make ci checks, with visible stage boundaries.

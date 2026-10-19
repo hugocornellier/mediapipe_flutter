@@ -58,16 +58,10 @@ class _FishGamePageState extends State<FishGamePage>
       .toList();
   late final Delegate _delegate = preferredDelegate(_delegates);
 
-  /// The standard model: the catalog's text-only EmbeddingGemma 2 (165 MB)
-  /// where Google's runtime accepts it, Windows and browsers other than
-  /// WebKit, and the text and vision one (388 MB) on Google's per-family
-  /// library, which fails every evaluation with the text-only model
-  /// (upstream-issues.md UP-053). The two share a text encoder and steer the
-  /// fish the same. WebKit runs neither (UP-054), so there the page is a card.
-  late final DownloadAsset _standard =
-      fishGameModel(widget.platform) ??
-      DecisionModels.embeddingGemma2TextVision;
-  late final bool _textOnly = _standard.sha256 == widget.task.model.sha256;
+  /// The standard model: the catalog's text-only EmbeddingGemma 2 (165 MB).
+  /// WebKit runs no EmbeddingGemma 2 model (UP-054), so there the page is a
+  /// card.
+  DownloadAsset get _standard => widget.task.model;
   late final Ticker _ticker = createTicker(_frame);
   late final _game = FishGame(decide: _decide);
   late final _rules = {
@@ -150,8 +144,7 @@ class _FishGamePageState extends State<FishGamePage>
 
   Future<DecisionMaker> _open() => _opening ??= () async {
     final pin = _pin;
-    final name =
-        _model?.name ?? 'EmbeddingGemma 2 (${_textOnly ? 165 : 388} MB)';
+    final name = _model?.name ?? 'EmbeddingGemma 2 (165 MB)';
     _loadingSeconds = 0;
     _loadingClock?.cancel();
     _loadingClock = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -263,7 +256,7 @@ class _FishGamePageState extends State<FishGamePage>
       onModel: _chooseModel,
       onUpload: null,
       bundledModel: widget.task.modelFile,
-      standardModel: 'EmbeddingGemma 2 (${_textOnly ? '270M' : '440M'})',
+      standardModel: 'EmbeddingGemma 2 (270M)',
     ),
   );
 

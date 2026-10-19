@@ -9,6 +9,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:mediapipe_core/src/native_assets/reference_wheels.dart'
+    show referenceWheels;
 import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:test/test.dart';
 
@@ -22,22 +24,21 @@ Map<String, dynamic> loadReference(String task) {
   return jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
 }
 
-/// Google's releases generate different text, so a reference is only
-/// Google's answer for this host when it came from the release line its
-/// runtime reports: a reference from Google's 1.1.0 release candidate wheel
-/// counts for the 1.1.1 libraries, and the comparisons check each answer.
+/// A reference is Google's answer only when it came from the wheel the tests
+/// pin (core's `referenceWheels`), an older release than the libraries, so
+/// the comparisons check each answer against the runtime the task supports
+/// here.
 Future<void> expectReferenceRuntime(
   Map<String, dynamic> reference,
   Future<TaskCapabilities> Function() capabilities,
 ) async {
-  final support = await capabilities();
-  final line = support.runtimeVersion.split('.').take(2).join('.');
+  expect((await capabilities()).supportedDelegates, contains(Delegate.cpu));
   expect(
-    reference['runtime'],
-    startsWith('mediapipe==$line.'),
+    {for (final wheel in referenceWheels.values) 'mediapipe==${wheel.version}'},
+    contains(reference['runtime']),
     reason:
         'The reference was generated with another MediaPipe version than '
-        "this host's pinned runtime. Generate same-host references with "
+        "the pinned reference wheel. Generate same-host references with "
         'tool/prepare_modern_text_reference.py and point '
         'MEDIAPIPE_MODERN_TEXT_REFERENCE_DIR at them.',
   );

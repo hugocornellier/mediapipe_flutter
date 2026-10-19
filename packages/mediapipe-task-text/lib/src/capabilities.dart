@@ -25,7 +25,7 @@ TaskCapabilities _onEveryRuntime(
 
 const _classicGpu = 'The official classic text tasks run on CPU only.';
 
-/// Google's browser text runtime (`@mediapipe/tasks-text` 1.0.1) has no
+/// Google's browser text runtime (`@mediapipe/tasks-text`) has no
 /// Proofreader or Summarizer; see upstream-issues.md UP-034.
 const _noBrowserGenerativeTasks =
     "Google's browser text runtime has no Proofreader or Summarizer "

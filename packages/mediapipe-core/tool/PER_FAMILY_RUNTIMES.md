@@ -1,12 +1,14 @@
 # Per-family runtimes
 
-Status on 2026-10-12: every family, on Android, iOS, macOS, Linux and
-Windows, pins Google's MediaPipe 1.1.1 development build of October 9, 2026
-(see [Google's builds](#googles-builds)). With Google's agreement its files are
-posted unmodified as the pre-release `per-family-v1.1.1-dev.20261009` on
-`hugocornellier/mediapipe_flutter_native`, beside the earlier builds in
-`per-family-v1.1.0-dev.20261005`; the hooks download them, and CI and Firebase
-Test Lab run them (see [Validated](#validated) and
+Status on 2026-10-19: every family, on Android, iOS, macOS, Linux and
+Windows, pins Google's MediaPipe 1.2.0 nightly build of October 18, 2026
+(see [Google's builds](#googles-builds)), which Google publishes at
+`https://storage.googleapis.com/mediapipe-assets/prebuilts/mediapipe_tasks_c/20261018/mediapipe_tasks_c_20261018.zip`.
+The hooks read each pinned file from that archive with HTTP range requests,
+falling back to the mirror pre-release `per-family-v1.2.0-nightly.20261018` on
+`hugocornellier/mediapipe_flutter_native` (not posted yet), beside the
+earlier builds in `per-family-v1.1.1-dev.20261009` and
+`per-family-v1.1.0-dev.20261005`, and CI and Firebase Test Lab run them (see [Validated](#validated) and
 [Before the release](#before-the-release)). Paths are from the repository root.
 
 ## What changed
@@ -63,12 +65,23 @@ app ships only the families it depends on, with no setting:
 
 ## Local builds
 
-`familyRuntimeBaseUrl` points at that pre-release. Google gives several
+`familyRuntimeArchiveUrl` names Google's archive, and each `FamilyRuntime`
+names its file's path in it. `downloadVerified` reads a zip member with HTTP
+range requests: the archive's last 64 KiB for the central directory, then the
+member's local header and its compressed bytes, which it inflates, so a hook
+downloads one library and not the 483 MB archive. Each request gets three
+attempts on a connection error, a timeout or HTTP 408, 429, 500, 502, 503 or
+504, with a random backoff of up to 1 s × 2^attempt (at most 30 s) or the
+host's `Retry-After`, and a dropped download resumes from its last byte.
+Another status, a host that ignores ranges or a digest mismatch moves to the
+mirror at once.
+
+`familyRuntimeBaseUrl` points at the mirror pre-release. Google gives several
 targets' libraries the same file name (four different
-`libmediapipe_tasks_vision.so`), so each release asset is named
+`libmediapipe_tasks_vision.so`), so each mirror asset is named
 `<sha256>-<Google's file name>`; the hook checks its SHA-256 and size and
 saves it under Google's name. `hooks.user_defines.mediapipe_core.asset_source`
-replaces the release with a directory holding each file under its SHA-256,
+replaces both hosts with a directory holding each file under its SHA-256,
 for offline builds. That setting covers every pinned download, so the
 directory must also hold the models an app bundles. The gallery builder takes
 `--asset-source`.
@@ -239,7 +252,7 @@ the simulator, Apple's ld on iOS devices, Android API 28 with 16 KB pages).
 - **Retrieval** (`mediapipe_retrieval`) runs Universal Embedder and Semantic
   Retriever on every target through `familyRuntimes['retrieval']`: Android
   arm64, arm and x86_64; iOS device and simulator; macOS arm64; Linux x64;
-  Windows x64; and in browsers on `@mediapipe/tasks-retrieval` 1.1.0. The
+  Windows x64; and in browsers on `@mediapipe/tasks-retrieval`. The
   October 9 library exports 60 functions, identical on every platform: the
   two tasks, the Text and Image Embedder and `MpImage` functions they depend
   on, and the shared error, string list and logging functions.
@@ -249,21 +262,20 @@ the simulator, Apple's ld on iOS devices, Android API 28 with 16 KB pages).
   models.
 - **Decision Maker** (`mediapipe_decision`) runs on the per-family decision
   library through `familyRuntimes['decision']` on Android arm64, arm and
-  x86_64, iOS device and simulator, macOS arm64 and Linux x64, and on
-  `@mediapipe/tasks-decision` in browsers. The October 9 library exports 24
-  Decision Maker functions (the 13 Google's Python declares, plus schema, JSON,
-  context and prewarm evaluation) and the shared helpers; its answers match
-  Google's wheel to float precision with
-  Laya and with the text and vision EmbeddingGemma 2, but it fails every
-  evaluation with the text-only EmbeddingGemma 2, which the wheel's library
-  runs ([UP-053](../../../upstream-issues.md#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model)):
-  the package's capability query and `create` say so, and
-  `DecisionModels.embeddingGemma2TextVision` is the bi-encoder for it.
-  Windows alone stays on the wheel's all-in-one library (`wheelRuntimes`),
-  since no build has a Windows decision library yet. The TODO above
-  `wheelRuntimes` marks it. Google's C header for Decision Maker ships with
-  the October 9 build (`packages/mediapipe-core/native/include`), and the
-  package's bindings match it.
+  x86_64, iOS device and simulator, macOS arm64, Linux x64 and Windows x64,
+  and on `@mediapipe/tasks-decision` in browsers. The October 9 library
+  exports 24 Decision Maker functions (the 13 Google's Python declares, plus
+  schema, JSON, context and prewarm evaluation) and the shared helpers; its
+  answers match Google's wheel to float precision with Laya and with the
+  text and vision EmbeddingGemma 2. Until the October 18 build it failed
+  every evaluation with the text-only EmbeddingGemma 2
+  ([UP-053](../../../upstream-issues.md#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model)),
+  and Windows, which had no decision library, ran the C library from
+  Google's 1.1.0 wheel. The October 18 build has a Windows decision library,
+  and its macOS library answers the text-only model's cases as Google's
+  wheel does. Google's C header for Decision Maker
+  (`packages/mediapipe-core/native/include`) matches the package's
+  bindings.
 
 ## Google's builds
 
@@ -271,7 +283,8 @@ the simulator, Apple's ld on iOS devices, Android API 28 with 16 KB pages).
 | --- | --- |
 | October 5, 2026, 1.1.0 development | vision, text and audio on every target |
 | October 8, 2026, 1.1.0 development | retrieval and decision; Android and iOS rebuilds of vision, text and audio |
-| October 9, 2026, 1.1.1 development (pinned) | every family on every target |
+| October 9, 2026, 1.1.1 development | every family on every target |
+| October 16 to 18, 2026, 1.2.0 nightly (October 18 pinned) | every family on every target, Windows decision included |
 
 The October 8 phone rebuilds added Google's usage-logging client
 (`TasksStatsProtoLogger`, with a Clearcut uploader to
@@ -311,6 +324,26 @@ The October 9 build (its `BUILD_INFO` is in `packages/mediapipe-core/native`):
   x86 libraries come too; no task claims them, so the release does not post
   them.
 
+The October 16 to 18 nightlies (official Kokoro builds, one zip a day at
+Google's URL above; the October 18 `BUILD_INFO` is in
+`packages/mediapipe-core/native`):
+
+- **Windows decision.** `decision/windows_x86_64/mediapipe_tasks_decision.dll`
+  exports the full Decision Maker API, so Windows no longer runs the 1.1.0
+  wheel's library.
+- **Headers.** Each family's headers are under `<family>/include/`, now with
+  the Proofreader, Summarizer and modern Interactive Segmenter;
+  `metadata/flatbuffer_api.h` is gone, and the umbrella headers
+  (`mediapipe_tasks_<family>.h`) are generated, with no license text.
+- **Host environment.** `core/base_options.h` adds
+  `MP_HOST_ENVIRONMENT_FLUTTER_WEB` (6), the value for Google's JavaScript
+  runtime.
+- **Android uploader.** The `Failed to get JNIEnv` message is gone from the
+  Android libraries; an upload from an app has not been captured yet.
+- **Text-only EmbeddingGemma 2.** The decision library runs it (UP-053
+  fixed, checked on macOS arm64).
+- iOS framework zips still hold only the binary and `Info.plist` (UP-062).
+
 ## Flutter host environment
 
 Google's libraries record each task's host environment and OS in their usage
@@ -329,20 +362,20 @@ log, from `MpBaseOptions.host_environment` and `host_system`. Core's
   (`macOS 27.0 / Dart 3.13.4 / Flutter 3.47.5`), as Google asked on
   2026-10-13; the upload carries it as given (checked on macOS). Flutter's
   version comes from the define the Flutter tool sets for `FlutterVersion`.
-- Decision Maker on Windows keeps 0 while it runs the 1.1.0 wheel's library,
-  which predates the value. Google's public C conversion reads a value it
-  does not know as unknown, but the decision library's source is not public.
 - `app_id` and `app_version` stay empty: set or not, they appear nowhere in
   the upload.
-- Browsers need nothing, and can do nothing: Google's JavaScript runtime
-  reports WEB and has no Flutter value.
+- In browsers core's worker loader (`assets/verified_runtime.js`) sets
+  `globalThis.__HOST_ENVIRONMENT__ = 'FLUTTER_WEB'` before Google's bundle
+  loads; Google's JavaScript runtime reads it from 1.2.0-rc.20261017 on, and
+  reports WEB without it.
 
 ## For Google
 
 Raised on the October 13, 2026 call: Google will add the missing headers to
 its next build, and is looking into the Windows decision library, the Metal
 change (UP-057), the OS in FLUTTER uploads (UP-059) and the Android
-uploader. It agreed to the package layout (core plus one package per
+uploader. The October 16 to 18 nightlies bring the headers, the Windows
+decision library and, Google says, the Android uploader. It agreed to the package layout (core plus one package per
 family).
 
 - To raise on the October 15 call: Decision Maker reserves memory for its
@@ -357,26 +390,18 @@ family).
   MediaPipe's shared GPU path. The package offers no Image Segmenter GPU on
   Android until it is fixed
   ([UP-061](../../../upstream-issues.md#up-061-image-segmenters-gpu-mask-aborts-the-app-when-it-is-read-on-a-pixel-3)).
-- A Windows decision library, the one target the October 9 build still
-  lacks.
 - A privacy manifest for each iOS library, or the reasons for the
   required-reason APIs they call (`stat`, `fstat`, `NSUserDefaults`, and
   `statfs` in retrieval), for apps to declare
   ([UP-062](../../../upstream-issues.md#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest)).
 - Whether 1.1.1's Metal output is intended
   ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
-- Headers for the Proofreader, Summarizer and Interactive Segmenter, which
-  the libraries export; `metadata/flatbuffer_api.h` declares functions none
-  of them exports.
 - If Google wants usage logs from Android apps that load the libraries
   through FFI: a way to hand the uploader the Java VM (an exported setter or
   `JNI_OnLoad`), or a native HTTP path.
 - The OS in uploads from `MP_HOST_ENVIRONMENT_FLUTTER`, which the October 9
-  build records as unknown
+  build records as unknown (not rechecked on the October 18 build)
   ([UP-059](../../../upstream-issues.md#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os)).
-- The per-family decision library fails every evaluation with the text-only
-  EmbeddingGemma 2 model, which the wheel's library runs
-  ([UP-053](../../../upstream-issues.md#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model)).
 - The families each define the same Objective-C classes
   ([UP-043](../../../upstream-issues.md#up-043-per-family-libraries-each-define-the-same-objective-c-classes)).
 - Apple GPU tasks abort on a three-channel image, as Google's 1.0.0 library
@@ -397,7 +422,7 @@ family).
   Google's first 1.1.1 wheel, `mediapipe-nightly` 1.1.1rc20261013, matches
   the October 9 build's Image Classifier and Image Embedder exactly; its
   Summarizer has not been compared.
-- An official URL.
+- An official URL for releases; the nightlies have one since October 16.
 
 ## Sizes
 

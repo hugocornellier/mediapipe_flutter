@@ -62,7 +62,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-050](#up-050-universal-embedder-refuses-the-text-only-embeddinggemma-2-model) | Universal Embedder refuses the text-only EmbeddingGemma 2 model | Found on 1.1.0 |
 | [UP-051](#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again) | The browser Universal Embedder reads modelAssetPath as a file, and a second Wasm object needs the loader again | Found on 1.1.0 |
 | [UP-052](#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter) | The browser Universal Embedder runs only on a hardware WebGPU adapter | Found on 1.1.0 |
-| [UP-053](#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model) | The per-family decision library fails every evaluation with the text-only EmbeddingGemma 2 model | Found on 1.1.0 |
+| [UP-053](#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model) | The per-family decision library fails every evaluation with the text-only EmbeddingGemma 2 model | Fixed in the 1.2.0 nightly of October 18 |
 | [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0 |
 | [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0 |
 | [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0 |
@@ -870,17 +870,22 @@ reason (UP-049).
 
 ### UP-053: The per-family decision library fails every evaluation with the text-only EmbeddingGemma 2 model
 
-**Status:** observed October 9, 2026 with Google's per-family decision
-library of October 8, 2026 (`libmediapipe_tasks_decision.dylib`, macOS
-arm64); the gallery's Hungry Fish, which played on this model, showed an
-error on the arm64 iOS Simulator too. Google's 1.1.0 wheel library of
-October 6 (`libmediapipe.dylib`, macOS arm64) runs the same model through
-the same calls. Worked around: `queryDecisionMakerCapabilities(model)`
-reports the text-only model unsupported on the per-family library and
-`create` refuses it there before any download;
-`DecisionModels.embeddingGemma2TextVision` pins the text and vision model,
-which the library runs, and the gallery's Hungry Fish plays on it there.
-Not yet reported to Google.
+**Status:** fixed in Google's 1.2.0 nightly of October 18, 2026: on macOS
+arm64 its decision library answers every case of
+`packages/mediapipe-task-decision/test/fixtures/embedding_gemma_2_text_vision_reference.json`
+with the text-only model as Google's wheel does, within 1e-6 (run with
+`MEDIAPIPE_DECISION_EG2_TEXT_MODEL`, October 19). The other targets run it
+in CI. The package's workaround (the capability query and `create`
+refusing the model on the per-family library, and the gallery's Hungry
+Fish playing on the text and vision model there) is gone. Never reported
+to Google.
+
+Observed October 9, 2026 with Google's per-family decision library of
+October 8, 2026 (`libmediapipe_tasks_decision.dylib`, macOS arm64); the
+gallery's Hungry Fish, which played on this model, showed an error on the
+arm64 iOS Simulator too. Google's 1.1.0 wheel library of October 6
+(`libmediapipe.dylib`, macOS arm64) runs the same model through the same
+calls.
 
 Google's Decision Maker guide lists EmbeddingGemma 2 as a bi-encoder
 backend, and its web demo starts with the text-only 270M model
@@ -1042,7 +1047,10 @@ full EmbeddingGemma 2 model (`embeddinggemma-2-740m.litertlm`), through
 Google's Python API from the `mediapipe` 1.1.0 wheel and through the
 package on Google's 1.1.1 retrieval library alike. Text and image embeddings
 repeat exactly. Worked around in the tests only: they compare audio within
-0.01. Not yet reported to Google.
+0.01. Not yet reported to Google. Still seen on October 19 with the 1.2.0
+build of October 18, whose audio embeddings also moved from 1.1.0's by up to
+0.017 per value, as Google's own `mediapipe-nightly` 1.2.0rc20261018 wheel's
+did, so the audio reference now comes from that wheel.
 
 The same samples give a different audio embedding from one call to the
 next, and from one process to the next: Google's Python embeds the audio

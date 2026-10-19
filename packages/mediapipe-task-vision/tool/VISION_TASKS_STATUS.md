@@ -11,12 +11,12 @@ Every target uses Google's official runtime, with no rebuild of MediaPipe:
 
 | Target | Runtime |
 | --- | --- |
-| Web | `@mediapipe/tasks-vision` 1.0.1 JavaScript/WASM through `mediapipe_vision` |
-| iOS arm64 and simulator | Google's 1.1.1 vision library (`MediaPipeTasksVisionC`), which this package's hook bundles |
-| Android arm64, x86_64 and 32-bit armeabi-v7a (CPU) | Google's 1.1.1 vision library (`libmediapipe_tasks_vision.so`), which this package's hook bundles |
-| macOS arm64 | Google's 1.1.1 vision library (`libmediapipe_tasks_vision`) |
-| Linux x64 | Google's 1.1.1 vision library |
-| Windows x64 | Google's 1.1.1 vision library |
+| Web | `@mediapipe/tasks-vision` 1.2.0-rc.20261018 JavaScript/WASM through `mediapipe_vision` |
+| iOS arm64 and simulator | Google's 1.2.0 vision library (`MediaPipeTasksVisionC`), which this package's hook bundles |
+| Android arm64, x86_64 and 32-bit armeabi-v7a (CPU) | Google's 1.2.0 vision library (`libmediapipe_tasks_vision.so`), which this package's hook bundles |
+| macOS arm64 | Google's 1.2.0 vision library (`libmediapipe_tasks_vision`) |
+| Linux x64 | Google's 1.2.0 vision library |
+| Windows x64 | Google's 1.2.0 vision library |
 
 ## Support
 
@@ -102,7 +102,7 @@ Details and reproductions are in [upstream-issues.md](../../../upstream-issues.m
 - [f] UP-027: Google's Linux runtime aborts the Image Embedder on OpenGL ES.
 - [g] UP-008 and UP-029: the stroke segmenter's GPU path fails on macOS and
   aborts on Linux.
-- [h] UP-057: Google's 1.1.1 macOS library gives different Metal results
+- [h] UP-057: Google's macOS library since 1.1.1 gives different Metal results
   from its 1.1.0 wheel for every task, by up to a different top class. Its
   1.1.1 nightly wheel matches the library in the Image Classifier and Image
   Embedder cases compared, so the change is in 1.1.1; the package offers the

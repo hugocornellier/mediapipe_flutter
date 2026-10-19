@@ -11,7 +11,7 @@ import 'package:mediapipe_gallery/bundled_model_assets.dart';
 import 'support/device_log.dart';
 
 /// EmbeddingGemma, Proofreader and Summarizer through Google's official mobile
-/// runtime (its 1.1.0 text library, which the text package's hook bundles on
+/// runtime (its 1.2.0 text library, which the text package's hook bundles on
 /// Android and iOS), against Google's own outputs for the same model, runtime
 /// version and inputs: the references the gallery's preparers bundle under
 /// assets/references when these tasks are selected
@@ -90,22 +90,21 @@ void main() {
     return file.path;
   }
 
-  /// A reference is Google's answer here only when it came from the release
-  /// line this device's library has.
+  /// A reference is Google's answer only when it came from the wheel the
+  /// tests pin, Google's 1.1.0 release candidate (core's `referenceWheels`),
+  /// an older release than the device's library; the comparisons check each
+  /// answer.
   Future<void> expectReferenceRuntime(
     Map<String, dynamic> reference,
     TaskCapabilities support,
   ) async {
     expect(support.supportedDelegates, {Delegate.cpu});
-    // A reference from Google's 1.1.0 release candidate wheel counts for the
-    // 1.1.1 library; the comparisons check each answer.
-    final line = support.runtimeVersion.split('.').take(2).join('.');
     expect(
       reference['runtime'],
-      startsWith('mediapipe==$line.'),
+      startsWith('mediapipe==1.1.0rc'),
       reason:
-          'bundle references generated with the wheel of this runtime\'s '
-          'release (prepare_gallery.dart --modern-text-reference)',
+          'bundle references generated with the pinned reference wheel '
+          '(prepare_gallery.dart --modern-text-reference)',
     );
   }
 

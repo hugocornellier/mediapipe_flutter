@@ -5,9 +5,9 @@ current image-and-strokes API, not the legacy one-point ROI wrapper. The
 complete official model bundle and native inference graph are preserved. It
 runs through Google's own runtime on each platform:
 
-- **Android, iOS, macOS arm64 (14+), Linux x64:** Google's 1.1.0 vision
+- **Android, iOS, macOS arm64 (14+), Linux x64:** Google's 1.2.0 vision
   library, which the vision package's hook bundles.
-- **Web:** `@mediapipe/tasks-vision` 1.0.1.
+- **Web:** `@mediapipe/tasks-vision` 1.2.0-rc.20261018.
 
 Browsers run it on CPU or WebGL 2, every other platform on the CPU. Google's
 Windows library exports the stateful API as well and its masks agree with the
@@ -191,14 +191,13 @@ There is no silent CPU fallback and no modified substitute pipeline.
 
 ## Native provenance
 
-The modern stateful symbols are present in Google's official libraries while
-the public C/C++ source API still describes the legacy segmenter. The package
-binds them in Google's vision library
-(`package:mediapipe_vision/mediapipe.dylib`) on macOS, Linux and iOS. The Dart
-FFI declarations
-(`lib/src/third_party/mediapipe/interactive_segmenter_bindings.dart`) are adapted
-from the official ctypes definitions. Tests compare ABI sizes and field
-offsets with metadata generated from those definitions.
+The package binds the modern stateful API in Google's vision library
+(`package:mediapipe_vision/mediapipe.dylib`) on macOS, Linux and iOS. Its
+bindings are generated with the other vision tasks' from Google's
+`vision/interactive_segmenter/interactive_segmenter.h`, which Google's
+headers ship since the October 16 build, and `tool/abi_check.cc` checks their
+struct sizes. Tests also compare the sizes and field offsets with Google's
+Python ctypes definitions.
 
 The vision package's hook bundles Google's library unmodified except on macOS,
 where it shortens the system framework paths and signs the copy again to make

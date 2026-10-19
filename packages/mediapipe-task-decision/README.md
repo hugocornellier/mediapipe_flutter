@@ -15,31 +15,21 @@ generating text. Every call runs Google's official MediaPipe pipeline.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Decision Maker | `DecisionMaker` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-The runtimes are Google's MediaPipe 1.1.0: its per-family decision C
-library, which this package's build hook downloads and checks against its
-SHA-256 on Android 9+, iOS 15+, macOS 14+ and Linux, on the CPU; the C
-library from Google's official Python wheel on Windows, which that delivery
-lacks, downloaded from PyPI and checked the same way; and
-`@mediapipe/tasks-decision` 1.1.0 in browsers, on the GPU delegate. Google's
+The runtimes are Google's MediaPipe 1.2.0: its per-family decision C
+library (its nightly build of October 18, 2026), which this package's build
+hook downloads and checks against its SHA-256 on Android 9+, iOS 15+, macOS
+14+, Linux and Windows, on the CPU; and `@mediapipe/tasks-decision`
+1.2.0-rc.20261018 in browsers, on the GPU delegate. Google's
 browser runtime fails every evaluation on the CPU delegate and on browsers
 without a hardware WebGPU adapter
 ([UP-049](../../upstream-issues.md#up-049-the-browser-decision-maker-fails-every-evaluation-without-a-hardware-webgpu-adapter)),
 so `queryDecisionMakerCapabilities()` offers browsers only the GPU, and only
 on such an adapter; there it answers as the desktop library does.
 
-Google's per-family decision library (its build of October 9, 2026) covers
-every target but Windows, so Windows alone bundles the library from
-Google's 1.1.0 wheel until Google builds one;
-the bindings are the same, since both libraries export the same C API. The
-per-family library fails every evaluation with the text-only EmbeddingGemma
-2 model, which the wheel's library and Google's browser runtime run
-([UP-053](../../upstream-issues.md#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model)):
-`queryDecisionMakerCapabilities(model)` says where a model runs, `create`
-refuses one the runtime here cannot before downloading it, and
-`DecisionModels.embeddingGemma2TextVision` answers the same on every
-runtime.
-
-Google's browser runtime fails with some models too. In WebKit, the engine
+Google's browser runtime fails with some models:
+`queryDecisionMakerCapabilities(model)` says where a model runs, and
+`create` refuses one the runtime here cannot before downloading it. In
+WebKit, the engine
 of Safari and of every browser on iOS, it embeds every text as zeros with
 both EmbeddingGemma 2 models, so every option scores the same
 ([UP-054](../../upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2));
@@ -93,9 +83,8 @@ Future<void> decide() async {
 `DecisionModels` pins Google's decision models: Laya and GLiNER2.5-Decide
 (`layaS256`, `layaS512`, `glinerS256`, `glinerS512`: 678 MB to 1.08 GB),
 and EmbeddingGemma 2, which answers as fast at a fraction of the download:
-`embeddingGemma2Text` (165 MB) on Windows and in browsers other than
-WebKit, and `embeddingGemma2TextVision` (388 MB) everywhere but WebKit
-(UP-053 and UP-054 above). They are
+`embeddingGemma2Text` (165 MB) and `embeddingGemma2TextVision` (388 MB),
+which answer the same, everywhere but WebKit (UP-054 above). They are
 large, so an app usually downloads one on first use rather than bundling
 it: set
 `ModelStore.allowDownloads = true` before `create`, or pass `modelPath`.

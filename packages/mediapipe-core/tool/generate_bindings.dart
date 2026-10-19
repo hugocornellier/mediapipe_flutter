@@ -1,3 +1,8 @@
+/// Generates a family's bindings from Google's headers with the family's
+/// `ffigen.yaml`. Run it from the family's package:
+/// `dart ../mediapipe-core/tool/generate_bindings.dart [config]`.
+library;
+
 import 'dart:io';
 
 /// Google's unmodified MediaPipe C API headers, which core vendors once for
@@ -25,7 +30,7 @@ Future<void> main(List<String> arguments) async {
   }
   final sdk = await Process.run('xcrun', ['--show-sdk-path']);
   if (sdk.exitCode != 0) {
-    throw StateError('Xcode is required to regenerate the macOS bindings.');
+    throw StateError('Xcode is required to regenerate the bindings.');
   }
   final path = (sdk.stdout as String).trim();
   final process = await Process.start(Platform.resolvedExecutable, [

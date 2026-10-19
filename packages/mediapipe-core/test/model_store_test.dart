@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_assets.dart'
     show DownloadException, downloadVerified;
+import 'package:mediapipe_core/src/verified_download.dart' show retryWait;
 import 'package:test/test.dart';
 
 void main() {
@@ -17,6 +18,9 @@ void main() {
 
   setUp(() async {
     requests = 0;
+    final wait = retryWait;
+    retryWait = (_) async {};
+    addTearDown(() => retryWait = wait);
     root = await Directory.systemTemp.createTemp('mediapipe-model-store-');
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen((request) async {
