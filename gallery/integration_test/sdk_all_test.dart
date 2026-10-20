@@ -14,6 +14,7 @@ import 'sdk_landmark_tasks_test.dart' as landmarks;
 import 'sdk_modern_text_test.dart' as modern_text;
 import 'sdk_segmenter_test.dart' as segmenter;
 import 'sdk_text_audio_test.dart' as text_audio;
+import 'telemetry_probe_test.dart' as telemetry;
 
 // Every phone suite in one app launch: on Firebase Test Lab, where each
 // device run counts against a small daily quota, and on the CI emulator, where
@@ -27,12 +28,17 @@ import 'sdk_text_audio_test.dart' as text_audio;
 // the Test Lab build sets: one phone execution covers every suite, while the
 // CI emulator runs them as a launch of their own, since the generative models
 // take minutes on an emulated CPU. Decision Maker and the retrieval tasks run
-// when the build bundles them, and skip otherwise.
+// when the build bundles them, and skip otherwise. TELEMETRY_PROBE, also set
+// by the Test Lab build, first watches the sockets Google's usage logger opens
+// when tasks close, before any other suite has run.
 void main() {
   // The binding reports the run as finished to Android from a tearDownAll it
   // registers when first created. Created inside a suite's group, it would end
   // the instrumentation after that group; created here, after every group.
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  if (const bool.fromEnvironment('TELEMETRY_PROBE')) {
+    group('telemetry probe', telemetry.main);
+  }
   group('face landmarker', face.main);
   group('hand', hand.main);
   group('landmark tasks', landmarks.main);
