@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
@@ -5,7 +6,11 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+import 'package:mediapipe_decision/mediapipe_decision.dart';
 import 'package:mediapipe_gallery/bundled_model_assets.dart';
+import 'package:mediapipe_gallery/main.dart' show GalleryAssets;
+import 'package:mediapipe_retrieval/mediapipe_retrieval.dart';
 import 'package:mediapipe_text/mediapipe_text.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
@@ -13,10 +18,13 @@ import 'support/device_log.dart';
 import 'support/sdk_frames.dart';
 
 /// Whether Google's usage logger uploads from a real Android phone: runs Face
-/// Detector and Language Detector, closes each, and meanwhile watches this
-/// process's own sockets from another isolate. Any connected TCP socket to
-/// port 443 is logged with its peer and the bytes TCP_INFO counts for it, so
-/// the log shows whether a close opened a connection and how much it carried.
+/// Detector and Language Detector twice, then Audio Classifier, Universal
+/// Embedder and Decision Maker once where the build bundles them, closes each,
+/// and meanwhile watches this process's own sockets from another isolate. Any
+/// connected TCP socket to port 443 is logged with its peer and the bytes
+/// TCP_INFO counts for it, so the log shows whether a close opened a
+/// connection and how much it carried. Large models download before the
+/// watch starts, so their connections stay out of it.
 /// The API 31 emulator, through a TLS proxy, showed one connection per close to
 /// play.googleapis.com carrying a POST /log that Google answered with 200.
 /// Reports only: it never fails on what the network did.
@@ -26,14 +34,13 @@ void main() {
   testWidgets('usage-log connections at task close', (tester) async {
     if (!Platform.isAndroid) return;
     await tester.runAsync(() async {
-      final results = ReceivePort();
       final marks = <String, int>{};
       int now() => DateTime.now().microsecondsSinceEpoch;
-      final watcher = await Isolate.spawn(_watch, (
-        results.sendPort,
-        const Duration(seconds: 40),
-      ));
-      await Future<void>.delayed(const Duration(seconds: 2));
+      Future<void> close(String name, Future<void> Function() dispose) async {
+        marks['$name close start'] = now();
+        await dispose();
+        marks['$name close end'] = now();
+      }
 
       final frame = await loadSample('portrait.jpg');
       final face = await loadAssetBytes(
@@ -42,14 +49,36 @@ void main() {
       final language = await loadAssetBytes(
         bundledModelFile('language_detector.tflite'),
       );
+      final yamnet = await loadAssetBytes(bundledModelFile('yamnet.tflite'));
+      final speech = decodeWav(
+        await loadAssetBytes('assets/samples/speech_16000_hz_mono.wav'),
+      );
+      final bundled = (await GalleryAssets.unpack()).bundledTasks;
+      final embedderPath = bundled.contains('universal_embedder')
+          ? await GalleryAssets.downloadedModelPath(
+              RetrievalModels.embeddingGemma2TextVision,
+            )
+          : null;
+      final decisionPath = bundled.contains('decision_maker')
+          ? await GalleryAssets.downloadedModelPath(DecisionModels.layaS256)
+          : null;
+
+      final results = ReceivePort();
+      final replies = StreamIterator(results);
+      final watcher = await Isolate.spawn(_watch, (
+        results.sendPort,
+        const Duration(minutes: 10),
+      ));
+      await replies.moveNext();
+      final stop = replies.current as SendPort;
+      await Future<void>.delayed(const Duration(seconds: 2));
+
       for (var round = 0; round < 2; round++) {
         final detector = await FaceDetector.create(
           FaceDetectorOptions(modelBytes: face),
         );
         final faces = (await detector.detect(frame.image)).detections.length;
-        marks['face $round close start'] = now();
-        await detector.dispose();
-        marks['face $round close end'] = now();
+        await close('face $round', detector.dispose);
         logRecord('SDK_TELEMETRY_TASK', {
           'task': 'face_detector',
           'round': round,
@@ -63,9 +92,7 @@ void main() {
         final top = (await text.detect(
           'Bonjour tout le monde',
         )).predictions.first.languageCode;
-        marks['language $round close start'] = now();
-        await text.dispose();
-        marks['language $round close end'] = now();
+        await close('language $round', text.dispose);
         logRecord('SDK_TELEMETRY_TASK', {
           'task': 'language_detector',
           'round': round,
@@ -74,10 +101,67 @@ void main() {
         await Future<void>.delayed(const Duration(seconds: 3));
       }
 
+      final audio = await AudioClassifier.create(
+        AudioClassifierOptions(modelBytes: yamnet, maxResults: 1),
+      );
+      final heard = await audio.classify(speech);
+      await close('audio', audio.dispose);
+      logRecord('SDK_TELEMETRY_TASK', {
+        'task': 'audio_classifier',
+        'top': heard.first.classifications.first.categories.first.categoryName,
+      });
+      await Future<void>.delayed(const Duration(seconds: 3));
+
+      if (embedderPath == null) {
+        logRecord('SDK_TELEMETRY_TASK', {
+          'task': 'universal_embedder',
+          'skipped': 'not in this build',
+        });
+      } else {
+        final embedder = await UniversalEmbedder.create(
+          UniversalEmbedderOptions(
+            modelPath: embedderPath,
+            delegate: Delegate.cpu,
+          ),
+        );
+        final vector = (await embedder.embedText(
+          'A puppy playing fetch outside.',
+        )).embeddings.single;
+        await close('embedder', embedder.dispose);
+        logRecord('SDK_TELEMETRY_TASK', {
+          'task': 'universal_embedder',
+          'dimensions': vector.length,
+        });
+        await Future<void>.delayed(const Duration(seconds: 3));
+      }
+
+      if (decisionPath == null) {
+        logRecord('SDK_TELEMETRY_TASK', {
+          'task': 'decision_maker',
+          'skipped': 'not in this build',
+        });
+      } else {
+        final decision = await DecisionMaker.create(
+          DecisionMakerOptions(modelPath: decisionPath, delegate: Delegate.cpu),
+        );
+        final answer = await decision.evaluateBoolean(
+          'My order arrived broken and I want my money back.',
+          BooleanQuestion('The customer wants a refund.'),
+        );
+        await close('decision', decision.dispose);
+        logRecord('SDK_TELEMETRY_TASK', {
+          'task': 'decision_maker',
+          'refund': answer.value,
+        });
+        await Future<void>.delayed(const Duration(seconds: 3));
+      }
+
+      stop.send(null);
+      await replies.moveNext();
       final (sweeps, seen) =
-          await results.first as (int, List<Map<String, Object?>>);
+          replies.current as (int, List<Map<String, Object?>>);
       watcher.kill();
-      results.close();
+      await replies.cancel();
       String? during(int first, int last) {
         for (final name in marks.keys.where((k) => k.endsWith('start'))) {
           final start = marks[name]!;
@@ -126,9 +210,14 @@ typedef _MallocNative = Pointer<Uint8> Function(IntPtr);
 typedef _Malloc = Pointer<Uint8> Function(int);
 
 /// Sweeps file descriptors 0..2047 for connected internet sockets with peer
-/// port 443 until the window ends, then sends one record per connection seen.
+/// port 443 until told to stop (or the window ends), then sends one record per
+/// connection seen. Its first message is the port that stops it.
 Future<void> _watch((SendPort, Duration) args) async {
   final (reply, window) = args;
+  final control = ReceivePort();
+  var stopped = false;
+  control.listen((_) => stopped = true);
+  reply.send(control.sendPort);
   final libc = DynamicLibrary.process();
   final getpeername = libc.lookupFunction<_PeerNative, _Peer>('getpeername');
   final getsockname = libc.lookupFunction<_PeerNative, _Peer>('getsockname');
@@ -141,7 +230,7 @@ Future<void> _watch((SendPort, Duration) args) async {
   final seen = <String, Map<String, Object?>>{};
   final end = DateTime.now().add(window);
   var sweeps = 0;
-  while (DateTime.now().isBefore(end)) {
+  while (!stopped && DateTime.now().isBefore(end)) {
     for (var fd = 0; fd < 2048; fd++) {
       length.value = 128;
       if (getpeername(fd, address, length) != 0) continue;
@@ -190,5 +279,6 @@ Future<void> _watch((SendPort, Duration) args) async {
     // Yields to the event loop now and then; a sweep is about a millisecond.
     if (sweeps % 50 == 0) await Future<void>.delayed(Duration.zero);
   }
+  control.close();
   reply.send((sweeps, seen.values.toList()));
 }
