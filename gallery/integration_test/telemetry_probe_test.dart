@@ -19,12 +19,12 @@ import 'support/sdk_frames.dart';
 
 /// Whether Google's usage logger uploads from a real Android phone: runs Face
 /// Detector and Language Detector twice, then Audio Classifier, Universal
-/// Embedder and Decision Maker once where the build bundles them, closes each,
-/// and meanwhile watches this process's own sockets from another isolate. Any
-/// connected TCP socket to port 443 is logged with its peer and the bytes
-/// TCP_INFO counts for it, so the log shows whether a close opened a
-/// connection and how much it carried. Large models download before the
-/// watch starts, so their connections stay out of it.
+/// Embedder, Semantic Retriever and Decision Maker once where the build
+/// bundles them, closes each, and meanwhile watches this process's own sockets
+/// from another isolate. Any connected TCP socket to port 443 is logged with
+/// its peer and the bytes TCP_INFO counts for it, so the log shows whether a
+/// close opened a connection and how much it carried. Large models download
+/// before the watch starts, so their connections stay out of it.
 /// The API 31 emulator, through a TLS proxy, showed one connection per close to
 /// play.googleapis.com carrying a POST /log that Google answered with 200.
 /// Reports only: it never fails on what the network did.
@@ -127,6 +127,20 @@ void main() {
         final vector = (await embedder.embedText(
           'A puppy playing fetch outside.',
         )).embeddings.single;
+        // Google's MpSemanticRetrieverOptions has no base_options, so its
+        // upload (task 29) carries no host fields; this shows whether its
+        // close opens a connection of its own.
+        final retriever = await SemanticRetriever.create(
+          SemanticRetrieverOptions(embedder: embedder),
+        );
+        await retriever.insertDocument('doc-1', 'A dog chasing a ball.');
+        final found = await retriever.retrieve('A puppy outside.', limit: 1);
+        await close('retriever', retriever.dispose);
+        logRecord('SDK_TELEMETRY_TASK', {
+          'task': 'semantic_retriever',
+          'records': found.records.length,
+        });
+        await Future<void>.delayed(const Duration(seconds: 3));
         await close('embedder', embedder.dispose);
         logRecord('SDK_TELEMETRY_TASK', {
           'task': 'universal_embedder',
