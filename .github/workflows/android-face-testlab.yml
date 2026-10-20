@@ -153,7 +153,7 @@ jobs:
         run: |
           target="$PWD/integration_test/sdk_all_test.dart"
           # A physical GPU must work: a refusal fails its test.
-          defines="$(printf 'SDK_GPU=%s' "$GPU" | base64),$(printf 'SDK_GPU_SKIP_TASKS=%s' "$GPU_SKIP" | base64),$(printf 'SDK_MODERN_TEXT=true' | base64)"
+          defines="$(printf 'SDK_GPU=%s' "$GPU" | base64),$(printf 'SDK_GPU_SKIP_TASKS=%s' "$GPU_SKIP" | base64),$(printf 'SDK_MODERN_TEXT=true' | base64),$(printf 'TELEMETRY_PROBE=true' | base64)"
           flutter build apk --config-only --debug --target "$target" --target-platform "$PLATFORM"
           cd android
           ./gradlew app:assembleAndroidTest -Pmediapipe.testLabAbi="$ABI"
