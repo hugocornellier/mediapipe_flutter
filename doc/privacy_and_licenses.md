@@ -41,10 +41,12 @@ law requires it. The packages cannot turn the logging off.
 | --- | --- | --- |
 | macOS, Linux, Windows | Google's per-family 1.2.0 libraries | An uploader to `https://play.googleapis.com/log` in every library. Observed with Google's October 18 build on all three: one request per task close, which Google accepts (HTTP 200). On macOS the User-Agent carries the process name. On Windows a close waits for its upload ([UP-025](../upstream-issues.md#up-025-windows-task-closes-wait-for-googles-usage-logging-upload)) |
 | iOS | Google's per-family 1.2.0 libraries | The same uploader. Observed with the October 18 build on the iOS Simulator and on an iPhone: one request per task close, which Google accepts, with the app's bundle ID and version, the iOS version and the device model in the User-Agent |
-| Android | Google's per-family 1.2.0 libraries | The same uploader, which since the 1.2.0 nightlies opens its own connection rather than going through Java. Observed with the October 18 build on an emulator: one request per task close, which Google accepts |
+| Android | Google's per-family 1.2.0 libraries | The same uploader, which since the 1.2.0 nightlies opens its own connection rather than going through Java. Observed with the October 18 build on an emulator, where Google accepts one request per task close, and on physical phones from Android 10 to 15, 64-bit and 32-bit, where each task close opens one connection to Google of the same size |
 | Browsers | Google's JavaScript runtimes | Requests from the page to `https://odml.pa.googleapis.com/v1/log` when a task closes and every 60 seconds while one is open. Observed with the October 18 build in Chromium, which Google accepts |
 
-The observations above are of vision and text tasks.
+Every family uploads, Decision Maker included: on macOS each was observed
+uploading with the October 18 build. The other platforms were observed with
+vision and text tasks.
 
 Block those endpoints if your policy requires it: inference is unaffected. A
 task's close waits for its upload, so refuse the connection (for example
