@@ -4,7 +4,8 @@ name: Usage-log capture
 # run a task. Windows: read from Windows' own WinINet capture trace; nothing
 # is intercepted or rerouted. Linux: the runner trusts a temporary recorder
 # (tool/ci/telemetry_capture.py) that saves each upload and forwards it to
-# Google unchanged. Run it by hand, or push the branch ci/telemetry-capture.
+# Google unchanged. Each job runs the text, audio, retrieval and Decision
+# packages. Run it by hand, or push the branch ci/telemetry-capture.
 
 on:
   push:
@@ -18,7 +19,7 @@ jobs:
   capture:
     name: capture / windows-2025
     runs-on: windows-2025
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
@@ -37,6 +38,17 @@ jobs:
         env:
           MEDIAPIPE_UPLOAD_WAIT: '1'
         run: dart test test/upload_wait_test.dart --reporter expanded
+      - name: Audio, Retrieval and Decision through their packages
+        shell: bash
+        run: |
+          run() {
+            (cd "packages/mediapipe-task-$1" && flutter pub get > /dev/null &&
+              dart tool/download_models.dart $2 &&
+              dart test "test/$3" --timeout 300s --reporter expanded) || echo "::warning::$1 failed"
+          }
+          run audio yamnet audio_classifier_test.dart
+          run retrieval embedding_gemma_2_text_vision native_reference_test.dart
+          run decision laya_s256 native_reference_test.dart
       - name: Stop the trace and export its payloads
         if: always()
         shell: pwsh
@@ -66,7 +78,7 @@ jobs:
   capture-linux:
     name: capture / ubuntu-24.04
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
@@ -103,6 +115,17 @@ jobs:
           flutter pub get
           dart tool/download_models.dart
           dart test test/classic_text_lifecycle_test.dart --plain-name 'language preserves concurrent response order' --timeout 180s --reporter expanded
+      - name: Audio, Retrieval and Decision through their packages
+        shell: bash
+        run: |
+          run() {
+            (cd "packages/mediapipe-task-$1" && flutter pub get > /dev/null &&
+              dart tool/download_models.dart $2 &&
+              dart test "test/$3" --timeout 300s --reporter expanded) || echo "::warning::$1 failed"
+          }
+          run audio yamnet audio_classifier_test.dart
+          run retrieval embedding_gemma_2_text_vision native_reference_test.dart
+          run decision laya_s256 native_reference_test.dart
       - name: What the uploads carried
         if: always()
         shell: bash
