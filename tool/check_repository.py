@@ -3,9 +3,11 @@
 Tools find the task families on disk (packages/mediapipe-core/tool/families.py),
 so a new family reaches them. This checks the rest:
 
-- **Lists by family:** the README's support table, CONTRIBUTING's first
-  release, core's bundlable and web runtime families, each family's Makefile
-  targets and coverage-matrix test, and the bundled-models test's subset.
+- **Lists by family:** the README's support table (a row per family, and a ✓
+  wherever the coverage matrix has a cell that is not unsupported),
+  CONTRIBUTING's first release, core's bundlable and web runtime families,
+  each family's Makefile targets and coverage-matrix test, and the
+  bundled-models test's subset.
 - **Pins that move together:** the packages' versions and SDK and Flutter
   constraints; each family's browser runtime version against its
   `assets/runtime.json`; the Flutter version in the docs against CI's; and
@@ -35,6 +37,22 @@ ALIGNMENT_ORACLES = ['gallery/integration_test/support/alignment_oracle.dart',
 # Where the docs name the Flutter version CI runs.
 FLUTTER_DOCS = ['README.md', 'gallery/tool/WEB_FACE.md',
                 'packages/mediapipe-task-vision/README.md']
+
+# The README's "Where it runs" rows and the coverage-matrix tasks each stands
+# for; together they must cover the matrix.
+README_ROWS = {
+    'Vision': ['face_detector', 'face_landmarker', 'gesture_recognizer',
+               'hand_landmarker', 'holistic_landmarker', 'image_classifier',
+               'image_embedder', 'image_segmenter', 'interactive_segmenter',
+               'object_detector', 'pose_landmarker'],
+    'Text (classify, embed, detect language)': ['language_detector', 'text_classifier',
+                                                'text_embedder'],
+    'Text (EmbeddingGemma)': ['embedding_gemma'],
+    'Text (proofread, summarize)': ['text_proofreader', 'text_summarizer'],
+    'Audio': ['audio_classifier'],
+    'Decision': ['decision_maker'],
+    'Retrieval': ['semantic_retriever', 'universal_embedder'],
+}
 
 
 def read(relative):
@@ -74,13 +92,45 @@ def family_lists(problems):
             continue
         for task in re.findall(r"^  '(\w+)':", test.read_text(encoding='utf-8'), re.M):
             owners.setdefault(task, []).append(family)
-    for task in json.loads(read('tool/coverage/matrix.json'))['cells']:
+    cells = json.loads(read('tool/coverage/matrix.json'))['cells']
+    for task in cells:
         if len(owners.get(task, [])) != 1:
             problems.append(f'tool/coverage/matrix.json: {task} is checked by '
                             f'{owners.get(task, [])}, not one family')
+    where_it_runs(problems, table, cells)
     bundled = sorted(folder for folder, _ in test_bundled_models.FAMILIES.values())
     if bundled != sorted(families.values()):
         problems.append(f'test_bundled_models.py: FAMILIES covers {bundled}')
+
+
+def where_it_runs(problems, table, cells):
+    """The README's ✓ cells: one wherever a row's task has a matrix cell, on
+    either delegate, that is not unsupported (pending cells count: the package
+    claims them)."""
+    lines = table.splitlines()
+    first = next(i for i, line in enumerate(lines) if line.startswith('| Family'))
+    rows = []
+    for line in lines[first:]:
+        if not line.startswith('|'):
+            break
+        rows.append([cell.strip() for cell in line.strip().strip('|').split('|')])
+    platforms = [column.split()[0].lower() for column in rows[0][1:]]
+    found = {row[0]: dict(zip(platforms, row[1:])) for row in rows[2:]}
+    listed = sorted(task for tasks in README_ROWS.values() for task in tasks)
+    if listed != sorted(cells):
+        problems.append(f'check_repository.py: README_ROWS covers {listed}, '
+                        f'tool/coverage/matrix.json has {sorted(cells)}')
+    for row, tasks in README_ROWS.items():
+        if row not in found:
+            problems.append(f'README.md: "Where it runs" has no "{row}" row')
+            continue
+        for platform in platforms:
+            runs = any(not cells[task][platform][delegate].startswith('unsupported')
+                       for task in tasks if task in cells for delegate in ('cpu', 'gpu'))
+            mark = found[row].get(platform, '')
+            if (mark == '✓') != runs:
+                problems.append(f'README.md: "Where it runs" {row} / {platform} is '
+                                f'"{mark}", the matrix says {"✓" if runs else "blank"}')
 
 
 def pubspec_pins(problems):
