@@ -23,9 +23,10 @@ Every target uses Google's official runtime, with no rebuild of MediaPipe:
 CPU everywhere a cell has an entry; the entry names the GPU path when there is
 one. ✗ means the package refuses the task on that target.
 
-TODO: Generate this table from `tool/coverage/matrix.json` and the capability
-queries. The footnotes on supported cells ([d], [g], [h], [i]) have no home in
-the matrix yet, so the table is kept by hand against `capabilities.dart`.
+`test/status_table_test.dart` checks every cell against the capability
+queries (✗, CPU, or the platform's GPU name) and that each footnote is
+defined under [Upstream limits](#upstream-limits). The footnotes themselves
+have no home in `tool/coverage/matrix.json` yet, so they are kept by hand.
 
 | Task | Web | iOS | Android | macOS | Linux | Windows |
 | --- | --- | --- | --- | --- | --- | --- |
