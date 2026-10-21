@@ -63,7 +63,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-051](#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again) | The browser Universal Embedder reads modelAssetPath as a file, and a second Wasm object needs the loader again | Found on 1.1.0 |
 | [UP-052](#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter) | The browser Universal Embedder runs only on a hardware WebGPU adapter | Found on 1.1.0 |
 | [UP-053](#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model) | The per-family decision library fails every evaluation with the text-only EmbeddingGemma 2 model | Fixed in the 1.2.0 nightly of October 18 |
-| [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0; raised October 20 |
+| [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0, still in the 1.2.0 nightlies of October 18 and 21; raised October 20 |
 | [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0; raised October 20 |
 | [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0; raised October 20 |
 | [UP-057](#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel) | The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel | Found on the 1.1.1 build of October 9 and the 1.1.1 nightly |
@@ -928,7 +928,17 @@ retrieval capability queries read the browser's engine
 EmbeddingGemma 2 Decision Maker models and both retrieval tasks unsupported
 in WebKit; the gallery shows Hungry Fish, Universal Embedder and Semantic
 Retriever as cards there, and Decision Maker runs Laya. Raised with Google
-on October 20, 2026; not retested on 1.2.0.
+on October 20, 2026. Retested October 21, 2026 with the 1.2.0 nightlies of
+October 18 (the pin) and October 21, Google's npm tarballs verified and
+served locally, in the same Playwright WebKit 26.6 on the same Mac: the
+Universal Embedder still returns 768 zeros for every text with the 388 MB
+model, while Chromium 153 returns unit vectors (cosine 0.88 between the dog
+and puppy sentences, 0.63 between the dog and the stock market). The
+Decision Maker's symptom changed: with that model on the GPU it no longer
+ties at 0.333 but gives "eat" 0.9996 to 0.9999 for all three Hungry Fish
+sentences, predator included (Chromium: flee 0.73, eat 0.40, ignore 0.73),
+so the first-option tie-break is gone and the answers are still wrong. Laya
+gives the same probabilities in both engines to six decimals, as before.
 
 Google's own JavaScript, run in the page with no package code, shows it.
 `UniversalEmbedder.embedText` returns a 768-value vector of zeros (norm 0)

@@ -427,6 +427,11 @@ text (UP-064); the audio embeddings' shift and run-to-run variation
 - A license comment on the five umbrella headers, and the Apache text
   corrected in `audio_classifier.h`
   ([UP-064](../../../upstream-issues.md#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it)).
+- WebKit still embeds every text as zeros with EmbeddingGemma 2 in the
+  browser runtime's 1.2.0 nightlies of October 18 and 21 (retested October
+  21 with Google's own JavaScript); its Decision Maker now answers "eat" at
+  0.9996 or more for every Hungry Fish sentence instead of tying at 0.333
+  ([UP-054](../../../upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2)).
 - The families each define the same Objective-C classes
   ([UP-043](../../../upstream-issues.md#up-043-per-family-libraries-each-define-the-same-objective-c-classes)).
 - Apple GPU tasks abort on a three-channel image, as Google's 1.0.0 library
