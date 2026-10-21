@@ -393,15 +393,16 @@ October 18 build. It agreed to the package layout (core plus one package per
 family).
 
 Raised on the October 20, 2026 call, with the October 18 build observed
-uploading on every platform and family: the Semantic Retriever's uploads
-without host fields (UP-063); no library version in native uploads, while
-web sends 1.2.0; web's empty host_version (a `__HOST_VERSION__` next to
-`__HOST_ENVIRONMENT__`); whether Decision Maker's new logging is intended;
-closes that wait for the upload on phones too (UP-025); the native
-nightly's cadence, how long dated builds stay in the bucket, and whether
-per-family builds will be part of official releases; the headers' license
-text (UP-064); the audio embeddings' shift and run-to-run variation
-(UP-058); and, as fixed, UP-053.
+uploading on every platform and family: no library version in native
+uploads, while web sends 1.2.0; the Semantic Retriever's uploads without
+host fields (UP-063); the headers' license text (UP-064); and the audio
+embeddings' shift and run-to-run variation (UP-058). Google will look into
+all four and fix the headers. Not reached, so still to raise: web's empty
+host_version (a `__HOST_VERSION__` next to `__HOST_ENVIRONMENT__`);
+whether Decision Maker's new logging is intended; closes that wait for the
+upload on phones too (UP-025); and the native nightly's cadence, how long
+dated builds stay in the bucket, and whether per-family builds will be
+part of official releases.
 
 - Raised on the October 15 call: Decision Maker reserves memory for its
   whole token budget, 6.7 GB at Python's default of 4096 tokens with
@@ -422,10 +423,10 @@ text (UP-064); the audio embeddings' shift and run-to-run variation
 - Whether 1.1.1's Metal output is intended
   ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
 - Let the Semantic Retriever take base options, or copy its embedder's
-  host fields into its own usage uploads
+  host fields into its own usage uploads; Google is looking into it
   ([UP-063](../../../upstream-issues.md#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version)).
 - A license comment on the five umbrella headers, and the Apache text
-  corrected in `audio_classifier.h`
+  corrected in `audio_classifier.h`; Google will fix it
   ([UP-064](../../../upstream-issues.md#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it)).
 - WebKit still embeds every text as zeros with EmbeddingGemma 2 in the
   browser runtime's 1.2.0 nightlies of October 18 and 21 (retested October

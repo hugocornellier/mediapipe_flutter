@@ -38,7 +38,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-015](#up-015-pose-gpu-treats-rotated-input-differently-from-pose-cpu) | Pose GPU treats rotated input differently from Pose CPU | Not re-tested |
 | [UP-017](#up-017-image-segmenter-stretches-the-upright-mask-over-a-rotated-input) | Image Segmenter stretches the upright mask over a rotated input | Not re-tested |
 | [UP-023](#up-023-android-image-segmenter-gpu-aborts-on-a-powervr-gpu) | Android Image Segmenter GPU aborts on a PowerVR GPU | Not re-tested: the GPU stays withdrawn on PowerVR |
-| [UP-025](#up-025-windows-task-closes-wait-for-googles-usage-logging-upload) | Windows task closes wait for Google's usage-logging upload | Present on Android phones with the 1.2.0 nightly of October 18; raised October 20 |
+| [UP-025](#up-025-windows-task-closes-wait-for-googles-usage-logging-upload) | Windows task closes wait for Google's usage-logging upload | Present on Android phones with the 1.2.0 nightly of October 18; not yet raised |
 | [UP-026](#up-026-holistic-cannot-open-its-face-blendshapes-model-on-a-desktop-or-iphone-gpu) | Holistic cannot open its face blendshapes model on a desktop or iPhone GPU | Present (iPhone, macOS and Android) |
 | [UP-027](#up-027-linux-image-embedder-aborts-on-opengl-es) | Linux Image Embedder aborts on OpenGL ES | Not re-tested |
 | [UP-028](#up-028-pose-segmentation-masks-fail-on-metal) | Pose segmentation masks fail on Metal | Present (re-tested) |
@@ -67,13 +67,13 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0; raised October 20 |
 | [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0; raised October 20 |
 | [UP-057](#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel) | The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel | Found on the 1.1.1 build of October 9 and the 1.1.1 nightly |
-| [UP-058](#up-058-universal-embedders-audio-embeddings-change-from-call-to-call) | Universal Embedder's audio embeddings change from call to call | Found on 1.1.0, still on the 1.2.0 nightly of October 18; raised October 20 |
+| [UP-058](#up-058-universal-embedders-audio-embeddings-change-from-call-to-call) | Universal Embedder's audio embeddings change from call to call | Found on 1.1.0, still on the 1.2.0 nightly of October 18; raised October 20, Google is looking into it |
 | [UP-059](#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os) | With the Flutter host environment, the usage log drops the OS | Fixed in the 1.2.0 nightly of October 18 |
 | [UP-060](#up-060-decision-maker-and-universal-embedder-reserve-memory-for-their-whole-token-budget) | Decision Maker and Universal Embedder reserve memory for their whole token budget | Found on the 1.1.1 build of October 9; worked around |
 | [UP-061](#up-061-image-segmenters-gpu-mask-aborts-the-app-when-it-is-read-on-a-pixel-3) | Image Segmenter's GPU mask aborts the app when it is read, on a Pixel 3 | Found on the 1.1.1 build of October 9; worked around |
 | [UP-062](#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest) | The iOS libraries call required-reason APIs and ship no privacy manifest | Found on the 1.1.1 build of October 9; worked around in the gallery |
-| [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | Present on the 1.2.0 nightly of October 18 and in Google's Python; raised October 20 |
-| [UP-064](#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it) | The umbrella headers have no license text, and the Audio Classifier header misstates it | Present on the 1.2.0 nightly of October 18; raised October 20 |
+| [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | Present on the 1.2.0 nightly of October 18 and in Google's Python; raised October 20, Google is looking into it |
+| [UP-064](#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it) | The umbrella headers have no license text, and the Audio Classifier header misstates it | Present on the 1.2.0 nightly of October 18; raised October 20, Google will fix it |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -262,7 +262,8 @@ uploads through and gives each test 180 s. The package cannot turn the
 logging off. Android phones wait the same way with the 1.2.0 nightly of
 October 18 (Test Lab, October 20): a close took 60 to 500 ms on the Pixel
 8a, Galaxy S24, Galaxy A10 and Galaxy A12, once 1.9 s on the A12, and 1.0 to
-2.5 s on the Pixel 3 (Android 9). Raised with Google on October 20, 2026.
+2.5 s on the Pixel 3 (Android 9). On the agenda for October 20, 2026, but
+not reached; still to raise with Google.
 
 Google's native library carries a Clearcut usage-logging client: its embedded
 source paths include
@@ -1066,7 +1067,7 @@ compare audio within 0.01. Still seen on October 19 with the 1.2.0 build of
 October 18, whose audio embeddings also moved from 1.1.0's by up to 0.017 per
 value, as Google's own `mediapipe-nightly` 1.2.0rc20261018 wheel's did, so
 the audio reference now comes from that wheel. Raised with Google on
-October 20, 2026.
+October 20, 2026; Google said it would look into it.
 
 The same samples give a different audio embedding from one call to the
 next, and from one process to the next: Google's Python embeds the audio
@@ -1219,7 +1220,7 @@ on GitHub's Linux and Windows runners (CI run 39398538766) and on the iOS
 Simulator. Google's own Python API does the same (`mediapipe-nightly`
 1.1.0rc20260925 on the same Mac), so it is the C API's design, not the
 packages'. The browser retriever records all three. Raised with Google on
-October 20, 2026. No workaround: `MpSemanticRetrieverOptions` has no
+October 20, 2026; Google said it would look into it. No workaround: `MpSemanticRetrieverOptions` has no
 `base_options`, so the packages have nowhere to put the fields.
 
 Every other task's options struct in the October 18 headers (20 of them,
@@ -1246,7 +1247,8 @@ fields into its own usage logger.
 **Status:** read October 20, 2026 from Google's
 `mediapipe_tasks_c_20261018.zip` (the 1.2.0 nightly of October 18), whose
 headers are byte-identical to `packages/mediapipe-core/native/include`.
-Raised with Google on October 20, 2026. Cosmetic; nothing to work around.
+Raised with Google on October 20, 2026; Google said it would look into it
+and fix it. Cosmetic; nothing to work around.
 
 The five generated umbrella headers, `mediapipe_tasks_<family>.h`
 ("Generated file. DO NOT EDIT."), open with no license comment, while the
