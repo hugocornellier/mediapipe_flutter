@@ -14,10 +14,10 @@ final class BooleanResult {
   /// threshold.
   final bool value;
 
-  /// Calibrated probability that the condition holds, in [0, 1].
+  /// Calibrated probability that the condition holds, in `[0, 1]`.
   final double probabilityTrue;
 
-  /// How certain the answer is relative to the threshold, in [0, 1].
+  /// How certain the answer is relative to the threshold, in `[0, 1]`.
   final double confidence;
 
   @override
@@ -44,7 +44,7 @@ final class ChoiceResult {
   /// to 1.
   final Map<String, double> probabilities;
 
-  /// How certain the choice is, from its margin and entropy, in [0, 1].
+  /// How certain the choice is, from its margin and entropy, in `[0, 1]`.
   final double confidence;
 
   /// The most likely options that together cover at least 90% of the
@@ -77,7 +77,7 @@ final class ScoreResult {
   /// The probability of each level, lowest first.
   final List<double> probabilities;
 
-  /// How certain the grade is, in [0, 1].
+  /// How certain the grade is, in `[0, 1]`.
   final double confidence;
 
   /// Google's key for the most likely level: its index, as text.

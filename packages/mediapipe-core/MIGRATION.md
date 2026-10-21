@@ -17,4 +17,4 @@ family packages use `platform_interface.dart`.
 | `TaskExecutor`, `TaskResult`, the FFI helpers, `io.dart` and `interface.dart` | Not public |
 
 Google's `mediapipe_text` 0.0.1 users: see
-[the text migration guide](../mediapipe-task-text/MIGRATION.md).
+[the text migration guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-text/MIGRATION.md).
