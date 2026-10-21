@@ -38,7 +38,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-015](#up-015-pose-gpu-treats-rotated-input-differently-from-pose-cpu) | Pose GPU treats rotated input differently from Pose CPU | Not re-tested |
 | [UP-017](#up-017-image-segmenter-stretches-the-upright-mask-over-a-rotated-input) | Image Segmenter stretches the upright mask over a rotated input | Not re-tested |
 | [UP-023](#up-023-android-image-segmenter-gpu-aborts-on-a-powervr-gpu) | Android Image Segmenter GPU aborts on a PowerVR GPU | Not re-tested: the GPU stays withdrawn on PowerVR |
-| [UP-025](#up-025-windows-task-closes-wait-for-googles-usage-logging-upload) | Windows task closes wait for Google's usage-logging upload | Not re-tested |
+| [UP-025](#up-025-windows-task-closes-wait-for-googles-usage-logging-upload) | Windows task closes wait for Google's usage-logging upload | Present on Android phones with the 1.2.0 nightly of October 18; raised October 20 |
 | [UP-026](#up-026-holistic-cannot-open-its-face-blendshapes-model-on-a-desktop-or-iphone-gpu) | Holistic cannot open its face blendshapes model on a desktop or iPhone GPU | Present (iPhone, macOS and Android) |
 | [UP-027](#up-027-linux-image-embedder-aborts-on-opengl-es) | Linux Image Embedder aborts on OpenGL ES | Not re-tested |
 | [UP-028](#up-028-pose-segmentation-masks-fail-on-metal) | Pose segmentation masks fail on Metal | Present (re-tested) |
@@ -63,15 +63,17 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-051](#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again) | The browser Universal Embedder reads modelAssetPath as a file, and a second Wasm object needs the loader again | Found on 1.1.0 |
 | [UP-052](#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter) | The browser Universal Embedder runs only on a hardware WebGPU adapter | Found on 1.1.0 |
 | [UP-053](#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model) | The per-family decision library fails every evaluation with the text-only EmbeddingGemma 2 model | Fixed in the 1.2.0 nightly of October 18 |
-| [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0 |
-| [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0 |
-| [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0 |
+| [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0; raised October 20 |
+| [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0; raised October 20 |
+| [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0; raised October 20 |
 | [UP-057](#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel) | The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel | Found on the 1.1.1 build of October 9 and the 1.1.1 nightly |
-| [UP-058](#up-058-universal-embedders-audio-embeddings-change-from-call-to-call) | Universal Embedder's audio embeddings change from call to call | Found on 1.1.0 and the 1.1.1 build of October 9 |
-| [UP-059](#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os) | With the Flutter host environment, the usage log drops the OS | Found on the 1.1.1 build of October 9 and the 1.1.1 nightly |
+| [UP-058](#up-058-universal-embedders-audio-embeddings-change-from-call-to-call) | Universal Embedder's audio embeddings change from call to call | Found on 1.1.0, still on the 1.2.0 nightly of October 18; raised October 20 |
+| [UP-059](#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os) | With the Flutter host environment, the usage log drops the OS | Fixed in the 1.2.0 nightly of October 18 |
 | [UP-060](#up-060-decision-maker-and-universal-embedder-reserve-memory-for-their-whole-token-budget) | Decision Maker and Universal Embedder reserve memory for their whole token budget | Found on the 1.1.1 build of October 9; worked around |
 | [UP-061](#up-061-image-segmenters-gpu-mask-aborts-the-app-when-it-is-read-on-a-pixel-3) | Image Segmenter's GPU mask aborts the app when it is read, on a Pixel 3 | Found on the 1.1.1 build of October 9; worked around |
 | [UP-062](#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest) | The iOS libraries call required-reason APIs and ship no privacy manifest | Found on the 1.1.1 build of October 9; worked around in the gallery |
+| [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | Present on the 1.2.0 nightly of October 18 and in Google's Python; raised October 20 |
+| [UP-064](#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it) | The umbrella headers have no license text, and the Audio Classifier header misstates it | Present on the 1.2.0 nightly of October 18; raised October 20 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -257,7 +259,10 @@ on GitHub's windows-2025 runners, first as two 30 s test timeouts in a
 [desktop run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/36004929701).
 CI blocked the endpoint on Windows until October 13, 2026; it now lets the
 uploads through and gives each test 180 s. The package cannot turn the
-logging off.
+logging off. Android phones wait the same way with the 1.2.0 nightly of
+October 18 (Test Lab, October 20): a close took 60 to 500 ms on the Pixel
+8a, Galaxy S24, Galaxy A10 and Galaxy A12, once 1.9 s on the A12, and 1.0 to
+2.5 s on the Pixel 3 (Android 9). Raised with Google on October 20, 2026.
 
 Google's native library carries a Clearcut usage-logging client: its embedded
 source paths include
@@ -877,8 +882,8 @@ with the text-only model as Google's wheel does, within 1e-6 (run with
 `MEDIAPIPE_DECISION_EG2_TEXT_MODEL`, October 19). The other targets run it
 in CI. The package's workaround (the capability query and `create`
 refusing the model on the per-family library, and the gallery's Hungry
-Fish playing on the text and vision model there) is gone. Never reported
-to Google.
+Fish playing on the text and vision model there) is gone. Raised with
+Google on October 20, 2026, as fixed.
 
 Observed October 9, 2026 with Google's per-family decision library of
 October 8, 2026 (`libmediapipe_tasks_decision.dylib`, macOS arm64); the
@@ -922,8 +927,8 @@ retrieval capability queries read the browser's engine
 (`TaskPlatform.browserEngine`, from the user agent) and report both
 EmbeddingGemma 2 Decision Maker models and both retrieval tasks unsupported
 in WebKit; the gallery shows Hungry Fish, Universal Embedder and Semantic
-Retriever as cards there, and Decision Maker runs Laya. Not yet reported to
-Google.
+Retriever as cards there, and Decision Maker runs Laya. Raised with Google
+on October 20, 2026; not retested on 1.2.0.
 
 Google's own JavaScript, run in the page with no package code, shows it.
 `UniversalEmbedder.embedText` returns a 768-value vector of zeros (norm 0)
@@ -959,8 +964,8 @@ with Apple silicon, or on `macos-26`, reaches it and expects the cards.
 in Playwright's Chromium 153 and WebKit 26.6 on macOS 27, Apple M4 Max, on
 the GPU delegate. Worked around: `queryDecisionMakerCapabilities(model)`
 reports both GLiNER2.5-Decide models unsupported in browsers, and the
-gallery's Decision Maker page offers neither there. Not yet reported to
-Google.
+gallery's Decision Maker page offers neither there. Raised with Google on
+October 20, 2026.
 
 `DecisionMaker.createFromOptions` with `gliner_s256.task` or
 `gliner_s512.task` rejects with `RuntimeError: Aborted(). Build with
@@ -971,8 +976,8 @@ Laya and EmbeddingGemma 2 load from the same page.
 
 **Status:** read from `decision_bundle.mjs` of `@mediapipe/tasks-decision`
 1.1.0 on October 12, 2026, and confirmed by results that do not change with
-either. Documented on the options; not worked around. Not yet reported to
-Google.
+either. Documented on the options; not worked around. Raised with Google
+on October 20, 2026.
 
 `evaluateBoolean` passes the condition, threshold and temperature to the
 Wasm engine, and `evaluateChoice` the criteria, instructions, context and
@@ -1045,12 +1050,13 @@ required.
 **Status:** observed October 12, 2026 on an Apple M4 Max (macOS 27) with the
 full EmbeddingGemma 2 model (`embeddinggemma-2-740m.litertlm`), through
 Google's Python API from the `mediapipe` 1.1.0 wheel and through the
-package on Google's 1.1.1 retrieval library alike. Text and image embeddings
-repeat exactly. Worked around in the tests only: they compare audio within
-0.01. Not yet reported to Google. Still seen on October 19 with the 1.2.0
-build of October 18, whose audio embeddings also moved from 1.1.0's by up to
-0.017 per value, as Google's own `mediapipe-nightly` 1.2.0rc20261018 wheel's
-did, so the audio reference now comes from that wheel.
+package on Google's 1.1.1 retrieval library alike, both on the CPU. Text and
+image embeddings repeat exactly. Worked around in the tests only: they
+compare audio within 0.01. Still seen on October 19 with the 1.2.0 build of
+October 18, whose audio embeddings also moved from 1.1.0's by up to 0.017 per
+value, as Google's own `mediapipe-nightly` 1.2.0rc20261018 wheel's did, so
+the audio reference now comes from that wheel. Raised with Google on
+October 20, 2026.
 
 The same samples give a different audio embedding from one call to the
 next, and from one process to the next: Google's Python embeds the audio
@@ -1064,22 +1070,26 @@ the same way.
 
 ### UP-059: With the Flutter host environment, the usage log drops the OS
 
-**Status:** observed October 13, 2026 by capturing each usage upload: on an
-Apple M4 Max (macOS 27) with Google's 1.1.1 text library of October 9 and
-with `mediapipe-nightly` 1.1.1rc20261013's library, on GitHub's Linux and
-Windows runners through the text package, and on the iOS 26.4 Simulator with
-the October 9 iOS library. Raised with Google on October 13, which is
-investigating. No workaround: the packages report Flutter, and the OS stays
-unknown until Google records it.
+**Status:** fixed in Google's 1.2.0 nightly of October 18, 2026. Observed
+October 20 by capturing each upload with that build: macOS records the OS
+as Mac, Linux as Linux, Windows as Windows, the iOS Simulator and an iPhone
+15 Pro (iOS 27) as iOS, and the Android emulator as Android, each with the
+Flutter environment and the host_version as given; browsers record the OS
+with the Flutter Web environment, from a worker too. Found October 13, 2026
+with the October 9 build on macOS, Linux, Windows and the iOS Simulator, and
+raised with Google that day. One task still records nothing: the Semantic
+Retriever's uploads carry no OS, environment or host_version
+([UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version)).
 
 Google's libraries record the host environment and OS from
-`MpBaseOptions.host_environment` and `host_system` in each usage upload. With
-`host_system` set to `MP_HOST_SYSTEM_MAC`, a Language Detector's upload
-records the OS as Mac when the environment is `MP_HOST_ENVIRONMENT_PYTHON`,
-and as unknown when it is `MP_HOST_ENVIRONMENT_FLUTTER`, with or without
-`host_version`, `app_id` and `app_version`; on the iOS Simulator, Python's
-value records iOS, and Flutter's unknown. The environment arrives as Flutter,
-and `host_version` arrives as given.
+`MpBaseOptions.host_environment` and `host_system` in each usage upload.
+Before the fix, with `host_system` set to `MP_HOST_SYSTEM_MAC`, a Language
+Detector's upload recorded the OS as Mac when the environment was
+`MP_HOST_ENVIRONMENT_PYTHON`, and as unknown when it was
+`MP_HOST_ENVIRONMENT_FLUTTER`, with or without `host_version`, `app_id` and
+`app_version`; on the iOS Simulator, Python's value recorded iOS, and
+Flutter's unknown. The environment arrived as Flutter, and `host_version` as
+given.
 
 ### UP-060: Decision Maker and Universal Embedder reserve memory for their whole token budget
 
@@ -1190,6 +1200,50 @@ For Google: a privacy manifest for each iOS library, with the reasons for
 these APIs and the data its usage logging collects, which apps must also
 describe in their App Privacy answers; or the reasons, for the packages to
 document.
+
+### UP-063: Semantic Retriever's usage uploads carry no OS, host environment or host version
+
+**Status:** observed October 20, 2026 with Google's 1.2.0 nightly of
+October 18 by capturing each usage upload: on an Apple M4 Max (macOS 27),
+on GitHub's Linux and Windows runners (CI run 39398538766) and on the iOS
+Simulator. Google's own Python API does the same (`mediapipe-nightly`
+1.1.0rc20260925 on the same Mac), so it is the C API's design, not the
+packages'. The browser retriever records all three. Raised with Google on
+October 20, 2026. No workaround: `MpSemanticRetrieverOptions` has no
+`base_options`, so the packages have nowhere to put the fields.
+
+Every other task's options struct in the October 18 headers (20 of them,
+from `MpFaceDetectorOptions` to `MpDecisionMakerOptions` and
+`MpUniversalEmbedderOptions`) holds a `struct MpBaseOptions base_options`,
+with the model path, the delegate and the `host_environment`, `host_system`
+and `host_version` that the usage uploads record. `MpSemanticRetrieverOptions`
+holds the database path, the embedding dimension, the embedder pointers
+(`MpUniversalEmbedderPtr`, `MpTextEmbedderPtr`, `MpImageEmbedderPtr`) and the
+chunking settings, nothing else. The retriever is built on an embedder whose
+options carry the host fields, yet its own events (task 29: session start,
+invocation report, session end) go out with platform 0, host environment 0
+(UNKNOWN) and an empty host_version, in the same upload body as the
+embedder's complete events (task 28), and Google accepts both (HTTP 200). On
+the Android emulator the retriever's close opens its own connection with a
+body about 115 bytes smaller than the other tasks', which fits a body
+without the host fields.
+
+For Google: let the retriever take base options, or copy its embedder's host
+fields into its own usage logger.
+
+### UP-064: The umbrella headers have no license text, and the Audio Classifier header misstates it
+
+**Status:** read October 20, 2026 from Google's
+`mediapipe_tasks_c_20261018.zip` (the 1.2.0 nightly of October 18), whose
+headers are byte-identical to `packages/mediapipe-core/native/include`.
+Raised with Google on October 20, 2026. Cosmetic; nothing to work around.
+
+The five generated umbrella headers, `mediapipe_tasks_<family>.h`
+("Generated file. DO NOT EDIT."), open with no license comment, while the
+task headers carry the Apache 2.0 one. Of those, only
+`audio/audio_classifier/audio_classifier.h` says "You may not obtain a copy
+of the License at" on its fifth line; the other 44 say "You may obtain a
+copy of the License at", as the Apache text does.
 
 ## History
 

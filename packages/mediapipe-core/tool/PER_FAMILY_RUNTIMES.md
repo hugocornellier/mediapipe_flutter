@@ -386,11 +386,24 @@ log, from `MpBaseOptions.host_environment` and `host_system`. Core's
 Raised on the October 13, 2026 call: Google will add the missing headers to
 its next build, and is looking into the Windows decision library, the Metal
 change (UP-057), the OS in FLUTTER uploads (UP-059) and the Android
-uploader. The October 16 to 18 nightlies bring the headers, the Windows
-decision library and, Google says, the Android uploader. It agreed to the package layout (core plus one package per
+uploader. The October 16 to 18 nightlies brought the headers, the Windows
+decision library, the OS in FLUTTER uploads (UP-059, fixed) and an Android
+uploader that opens its own connection with no JVM, all observed with the
+October 18 build. It agreed to the package layout (core plus one package per
 family).
 
-- To raise on the October 15 call: Decision Maker reserves memory for its
+Raised on the October 20, 2026 call, with the October 18 build observed
+uploading on every platform and family: the Semantic Retriever's uploads
+without host fields (UP-063); no library version in native uploads, while
+web sends 1.2.0; web's empty host_version (a `__HOST_VERSION__` next to
+`__HOST_ENVIRONMENT__`); whether Decision Maker's new logging is intended;
+closes that wait for the upload on phones too (UP-025); the native
+nightly's cadence, how long dated builds stay in the bucket, and whether
+per-family builds will be part of official releases; the headers' license
+text (UP-064); the audio embeddings' shift and run-to-run variation
+(UP-058); and, as fixed, UP-053.
+
+- Raised on the October 15 call: Decision Maker reserves memory for its
   whole token budget, 6.7 GB at Python's default of 4096 tokens with
   EmbeddingGemma 2, and cuts a longer input off without an error; Universal
   Embedder does the same with its input length. Is the reservation intended,
@@ -408,12 +421,12 @@ family).
   ([UP-062](../../../upstream-issues.md#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest)).
 - Whether 1.1.1's Metal output is intended
   ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
-- If Google wants usage logs from Android apps that load the libraries
-  through FFI: a way to hand the uploader the Java VM (an exported setter or
-  `JNI_OnLoad`), or a native HTTP path.
-- The OS in uploads from `MP_HOST_ENVIRONMENT_FLUTTER`, which the October 9
-  build records as unknown (not rechecked on the October 18 build)
-  ([UP-059](../../../upstream-issues.md#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os)).
+- Let the Semantic Retriever take base options, or copy its embedder's
+  host fields into its own usage uploads
+  ([UP-063](../../../upstream-issues.md#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version)).
+- A license comment on the five umbrella headers, and the Apache text
+  corrected in `audio_classifier.h`
+  ([UP-064](../../../upstream-issues.md#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it)).
 - The families each define the same Objective-C classes
   ([UP-043](../../../upstream-issues.md#up-043-per-family-libraries-each-define-the-same-objective-c-classes)).
 - Apple GPU tasks abort on a three-channel image, as Google's 1.0.0 library
