@@ -73,9 +73,14 @@ runs:
       with:
         path: ~/.cache/apt-debs
         key: ${{ steps.apt.outputs.key }}
-    # A miss downloads the files under a time limit, retrying the whole
-    # download, then installs from them and leaves them for the cache. A hit
-    # that cannot install falls back to the same download.
+    # A miss downloads the files under a time limit, switching to another
+    # Ubuntu mirror when one fails or is too slow, then installs from them and
+    # leaves them for the cache. A hit that cannot install falls back to the
+    # same download. The runner's own mirror (azure.archive.ubuntu.com, then
+    # archive.ubuntu.com) served 70 KB/s to two jobs and held both to their
+    # limits (2026-10-22), and archive.ubuntu.com did not answer at all from
+    # three runners that day. The others are mirrors of other operators that
+    # answered at 8 to 45 MB/s.
     - name: Install the Linux packages
       if: ${{ steps.apt.outcome == 'success' }}
       shell: bash
@@ -85,14 +90,7 @@ runs:
       run: |
         export DEBIAN_FRONTEND=noninteractive
         debs="$HOME/.cache/apt-debs"
-        retry() {
-          for attempt in 1 2 3; do
-            "$@" && return 0
-            echo "Attempt $attempt of '$*' failed." >&2
-            sleep 10
-          done
-          return 1
-        }
+        sources=/etc/apt/sources.list.d/ubuntu.sources
         if [ "$CACHE_HIT" = true ]; then
           if ! compgen -G "$debs/*.deb" > /dev/null; then
             echo 'Every package of this profile is already on the image.'
@@ -101,14 +99,45 @@ runs:
           sudo -E dpkg -i "$debs"/*.deb && exit 0
           echo 'The cached packages did not install; downloading them.' >&2
         fi
-        retry sudo timeout --kill-after=10 120 apt-get update
+        # The files a mirror delivered stay in /var/cache/apt/archives, so the
+        # next mirror only fetches what is missing.
         sudo apt-get clean
-        retry sudo timeout --kill-after=10 480 apt-get install -y --download-only $PACKAGES
+        downloaded=false
+        for mirror in default http://us.archive.ubuntu.com/ubuntu http://mirrors.edge.kernel.org/ubuntu; do
+          if [ "$mirror" != default ]; then
+            if [ ! -f "$sources" ]; then
+              echo "No $sources to point at $mirror." >&2
+              break
+            fi
+            echo "Switching apt to $mirror."
+            # Both stanzas, the security suite too: these mirrors carry it.
+            sudo sed -i -E "s#^URIs: .*#URIs: $mirror#" "$sources"
+          fi
+          start=$SECONDS
+          if sudo timeout --kill-after=10 90 apt-get update &&
+            sudo timeout --kill-after=10 240 apt-get install -y --download-only $PACKAGES; then
+            echo "Mirror $mirror delivered the packages in $((SECONDS - start)) s."
+            downloaded=true
+            break
+          fi
+          echo "Mirror $mirror failed after $((SECONDS - start)) s." >&2
+        done
+        $downloaded || { echo 'No mirror delivered the packages.' >&2; exit 1; }
         rm -rf "$debs" && mkdir -p "$debs"
         echo "$PACKAGES" > "$debs/packages.txt"
         find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp {} "$debs" \;
         sudo -E apt-get install -y --no-download $PACKAGES
-    - if: ${{ inputs.modern-model-cache == 'true' }}
+    # Only main saves the models, as in family.yaml: a pull request reads
+    # main's copy.
+    - if: ${{ inputs.modern-model-cache == 'true' && github.event_name == 'pull_request' }}
+      uses: actions/cache/restore@v6
+      with:
+        path: |
+          packages/mediapipe-task-text/models/embedding_gemma.task
+          packages/mediapipe-task-text/models/proofread_quant_200m.litertlm
+          packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
+        key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
+    - if: ${{ inputs.modern-model-cache == 'true' && github.event_name != 'pull_request' }}
       uses: actions/cache@v6
       with:
         path: |
