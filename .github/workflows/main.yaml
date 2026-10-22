@@ -8,12 +8,25 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # nightly-compare.yaml: once on the pinned build, once on a nightly.
+  workflow_call:
+    inputs:
+      side:
+        description: baseline (the pins on this ref) or nightly (the run's nightly-pin artifact).
+        type: string
+        required: true
 
 # A newer push on the same branch supersedes the queued matrix; the hosted
 # macOS pool is small enough that stale runs otherwise starve the latest one.
 concurrency:
-  group: macos-tasks-${{ github.ref }}
+  group: macos-tasks-${{ github.ref }}${{ inputs.side && format('-nightly-{0}-{1}', inputs.side, github.run_id) || '' }}
   cancel-in-progress: true
+
+# nightly-compare.yaml calls this workflow twice in one run, on the pinned
+# build and on Google's nightly; the suffix keeps the two calls' artifacts
+# apart. It is empty in every other run.
+env:
+  ARTIFACT_SUFFIX: ${{ inputs.side && format('-{0}', inputs.side) || '' }}
 
 jobs:
   gallery-vision-still-images:
@@ -22,6 +35,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+      - if: inputs.side == 'nightly'
+        uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
         with:
           python: 'false'
@@ -52,6 +67,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+      - if: inputs.side == 'nightly'
+        uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
         with:
           python: 'false'
@@ -72,7 +89,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: modern-task-matrix
+          name: modern-task-matrix${{ env.ARTIFACT_SUFFIX }}
           path: build/task-benchmarks/ci/
           if-no-files-found: error
 
@@ -84,6 +101,8 @@ jobs:
       MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
       - uses: actions/checkout@v7
+      - if: inputs.side == 'nightly'
+        uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
       - name: Generate official CPU text references on this runner
         run: |
@@ -112,7 +131,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: embedding-gemma-validation
+          name: embedding-gemma-validation${{ env.ARTIFACT_SUFFIX }}
           path: |
             build/codex-tmp/embedding-consumer-*/report.json
             build/codex-tmp/embedding-consumer-*/*.log
@@ -128,6 +147,8 @@ jobs:
       MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
       - uses: actions/checkout@v7
+      - if: inputs.side == 'nightly'
+        uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
       - run: flutter --version
       - run: make get models
@@ -179,7 +200,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: official-classic-text-reference
+          name: official-classic-text-reference${{ env.ARTIFACT_SUFFIX }}
           path: |
             build/classic-text-reference/*.json
             build/classic-text-reference/*.log
@@ -197,6 +218,8 @@ jobs:
       MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
       - uses: actions/checkout@v7
+      - if: inputs.side == 'nightly'
+        uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
       - run: make get models
       - name: Generate official CPU text references on this runner
@@ -215,6 +238,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
+      - if: inputs.side == 'nightly'
+        uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
       - name: Download the pinned models
         working-directory: packages/mediapipe-task-vision
@@ -237,7 +262,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: official-macos-runtime-validation
+          name: official-macos-runtime-validation${{ env.ARTIFACT_SUFFIX }}
           path: |
             packages/mediapipe-task-vision/build/macos-reference-validation/*.log
           if-no-files-found: warn

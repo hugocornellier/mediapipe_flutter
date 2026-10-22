@@ -8,12 +8,25 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # nightly-compare.yaml: once on the pinned build, once on a nightly.
+  workflow_call:
+    inputs:
+      side:
+        description: baseline (the pins on this ref) or nightly (the run's nightly-pin artifact).
+        type: string
+        required: true
 
 # A newer push on the same branch supersedes the queued matrix; the hosted
 # macOS pool is small enough that stale runs otherwise starve the latest one.
 concurrency:
-  group: ios-simulator-${{ github.ref }}
+  group: ios-simulator-${{ github.ref }}${{ inputs.side && format('-nightly-{0}-{1}', inputs.side, github.run_id) || '' }}
   cancel-in-progress: true
+
+# nightly-compare.yaml calls this workflow twice in one run, on the pinned
+# build and on Google's nightly; the suffix keeps the two calls' artifacts
+# apart. It is empty in every other run.
+env:
+  ARTIFACT_SUFFIX: ${{ inputs.side && format('-{0}', inputs.side) || '' }}
 
 jobs:
   # Every family through Google's iOS libraries in one app: the vision tasks,
@@ -27,6 +40,8 @@ jobs:
     timeout-minutes: 110
     steps:
       - uses: actions/checkout@v7
+      - if: inputs.side == 'nightly'
+        uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
         with:
           modern-model-cache: 'true'
@@ -196,6 +211,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ios-simulator-sdk-tasks
+          name: ios-simulator-sdk-tasks${{ env.ARTIFACT_SUFFIX }}
           path: gallery/sdk-ios-simulator.log
           if-no-files-found: warn
