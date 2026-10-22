@@ -78,9 +78,9 @@ runs:
     # leaves them for the cache. A hit that cannot install falls back to the
     # same download. The runner's own mirror (azure.archive.ubuntu.com, then
     # archive.ubuntu.com) served 70 KB/s to two jobs and held both to their
-    # limits (2026-10-22), and archive.ubuntu.com did not answer at all from
-    # three runners that day. The others are mirrors of other operators that
-    # answered at 8 to 45 MB/s.
+    # limits (2026-10-22), and archive.ubuntu.com delivered no 15 MB index in
+    # 40 s to three runners that day. The others are mirrors of other operators
+    # that answered at 8 to 45 MB/s, and carry the security suite too.
     - name: Install the Linux packages
       if: ${{ steps.apt.outcome == 'success' }}
       shell: bash
