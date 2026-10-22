@@ -21,4 +21,6 @@ against them.
 
 To update, replace `include/` and `BUILD_INFO` with the headers of the build
 the hooks pin, merging the families' trees, then run `make generate`,
-`make test_vision` and `make test_text_stream_bridge`.
+`make test_vision` and `make test_text_stream_bridge`. For another nightly,
+`tool/pin_nightly.py` moves them with the pins, and stops if the C API changed
+beyond comments.
