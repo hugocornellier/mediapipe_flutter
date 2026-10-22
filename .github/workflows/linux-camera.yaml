@@ -32,8 +32,16 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           linux-profile: gallery
+      # The setup action's cache hit runs no apt-get update, so these install
+      # through apt-install, which updates apt and switches mirrors when one
+      # is slow. The kernel headers must match the running kernel.
+      - name: Name the kernel headers
+        id: kernel
+        run: echo "headers=linux-headers-$(uname -r)" >> "$GITHUB_OUTPUT"
       - name: Install the camera, virtual device and screenshot dependencies
-        run: sudo apt-get install -y ffmpeg imagemagick v4l-utils "linux-headers-$(uname -r)" v4l2loopback-dkms
+        uses: ./.github/actions/apt-install
+        with:
+          packages: ffmpeg imagemagick v4l-utils ${{ steps.kernel.outputs.headers }} v4l2loopback-dkms
       - name: Create the loopback camera and stream the portrait into it
         run: |
           # The hosted Azure kernel ships videodev in linux-modules-extra, and

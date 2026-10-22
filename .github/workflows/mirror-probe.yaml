@@ -1,0 +1,48 @@
+name: Mirror probe
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/mirror-probe.yaml
+
+jobs:
+  drill:
+    name: Fallback drill
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # A key no run has saved, so the packages are downloaded.
+      ImageVersion: drill-2
+    steps:
+      - uses: actions/checkout@v7
+      - name: Make the runner's own mirror unreachable
+        run: |
+          printf 'http://10.255.255.1/ubuntu/\tpriority:1\n' | sudo tee /etc/apt/apt-mirrors.txt
+      - uses: ./.github/actions/setup
+        with:
+          flutter: 'false'
+          python: 'false'
+          linux-profile: gallery
+      - name: The packages are installed
+        run: dpkg -s clang libgtk-3-dev xvfb | grep -E '^(Package|Status)'
+
+  hit-then-install:
+    name: Hit, then another install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          flutter: 'false'
+          python: 'false'
+          linux-profile: gallery
+      - name: Install what the camera job installs
+        uses: ./.github/actions/apt-install
+        with:
+          packages: ffmpeg imagemagick v4l-utils
+      - name: The packages are installed
+        run: dpkg -s ffmpeg imagemagick v4l-utils | grep -E '^(Package|Status)'

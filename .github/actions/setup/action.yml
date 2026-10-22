@@ -73,56 +73,40 @@ runs:
       with:
         path: ~/.cache/apt-debs
         key: ${{ steps.apt.outputs.key }}
-    # A miss downloads the files under a time limit, switching to another
-    # Ubuntu mirror when one fails or is too slow, then installs from them and
-    # leaves them for the cache. A hit that cannot install falls back to the
-    # same download. The runner's own mirror (azure.archive.ubuntu.com, then
-    # archive.ubuntu.com) served 70 KB/s to two jobs and held both to their
-    # limits (2026-10-22), and archive.ubuntu.com delivered no 15 MB index in
-    # 40 s to three runners that day. The others are mirrors of other operators
-    # that answered at 8 to 45 MB/s, and carry the security suite too.
-    - name: Install the Linux packages
-      if: ${{ steps.apt.outcome == 'success' }}
+    # A hit installs the files with dpkg. It runs no apt-get update, so a later
+    # step of a workflow that installs more packages uses apt-install.
+    - name: Install the cached Linux packages
+      id: cached
+      if: ${{ steps.apt-cache.outputs.cache-hit == 'true' }}
       shell: bash
-      env:
-        PACKAGES: ${{ steps.apt.outputs.packages }}
-        CACHE_HIT: ${{ steps.apt-cache.outputs.cache-hit }}
       run: |
         export DEBIAN_FRONTEND=noninteractive
         debs="$HOME/.cache/apt-debs"
-        sources=/etc/apt/sources.list.d/ubuntu.sources
-        if [ "$CACHE_HIT" = true ]; then
-          if ! compgen -G "$debs/*.deb" > /dev/null; then
-            echo 'Every package of this profile is already on the image.'
-            exit 0
-          fi
-          sudo -E dpkg -i "$debs"/*.deb && exit 0
+        if ! compgen -G "$debs/*.deb" > /dev/null; then
+          echo 'Every package of this profile is already on the image.'
+          echo installed=true >> "$GITHUB_OUTPUT"
+        elif sudo -E dpkg -i "$debs"/*.deb; then
+          echo installed=true >> "$GITHUB_OUTPUT"
+        else
           echo 'The cached packages did not install; downloading them.' >&2
         fi
-        # The files a mirror delivered stay in /var/cache/apt/archives, so the
-        # next mirror only fetches what is missing.
-        sudo apt-get clean
-        downloaded=false
-        for mirror in default http://us.archive.ubuntu.com/ubuntu http://mirrors.edge.kernel.org/ubuntu; do
-          if [ "$mirror" != default ]; then
-            if [ ! -f "$sources" ]; then
-              echo "No $sources to point at $mirror." >&2
-              break
-            fi
-            echo "Switching apt to $mirror."
-            # Both stanzas, the security suite too: these mirrors carry it.
-            sudo sed -i -E "s#^URIs: .*#URIs: $mirror#" "$sources"
-          fi
-          start=$SECONDS
-          if sudo timeout --kill-after=10 90 apt-get update &&
-            sudo timeout --kill-after=10 240 apt-get install -y --download-only $PACKAGES; then
-            echo "Mirror $mirror delivered the packages in $((SECONDS - start)) s."
-            downloaded=true
-            break
-          fi
-          echo "Mirror $mirror failed after $((SECONDS - start)) s." >&2
-        done
-        $downloaded || { echo 'No mirror delivered the packages.' >&2; exit 1; }
+    # A miss, or a hit that could not install, downloads the files under time
+    # limits, from another mirror when one fails.
+    - name: Download the Linux packages
+      if: ${{ steps.apt.outcome == 'success' && steps.cached.outputs.installed != 'true' }}
+      uses: ./.github/actions/apt-install
+      with:
+        packages: ${{ steps.apt.outputs.packages }}
+        install: 'false'
+    # Installs from the downloaded files and leaves them for the cache.
+    - name: Install the downloaded Linux packages
+      if: ${{ steps.apt.outcome == 'success' && steps.cached.outputs.installed != 'true' }}
+      shell: bash
+      env:
+        PACKAGES: ${{ steps.apt.outputs.packages }}
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        debs="$HOME/.cache/apt-debs"
         rm -rf "$debs" && mkdir -p "$debs"
         echo "$PACKAGES" > "$debs/packages.txt"
         find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp {} "$debs" \;
