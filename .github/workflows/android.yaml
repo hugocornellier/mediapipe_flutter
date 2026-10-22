@@ -63,6 +63,18 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      # The emulator action downloads the system image itself and gives up on
+      # the first corrupt archive ("Error on ZipFile unknown archive",
+      # 2026-10-22), so install it here, retried, and the action finds it.
+      - name: Download the Android 35 system image
+        run: |
+          image='system-images;android-35;google_apis;x86_64'
+          for attempt in 1 2 3 4; do
+            sdkmanager --install "$image" && exit 0
+            echo "Attempt $attempt of installing $image failed." >&2
+            sleep 20
+          done
+          exit 1
       - name: Official references, pixel formats, rotation, VIDEO, camera and every live tile
         id: sdk
         uses: reactivecircus/android-emulator-runner@v2
@@ -210,6 +222,18 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      # The emulator action downloads the system image itself and gives up on
+      # the first corrupt archive ("Error on ZipFile unknown archive",
+      # 2026-10-22), so install it here, retried, and the action finds it.
+      - name: Download the Android ${{ matrix.api-level }} system image
+        run: |
+          image='system-images;android-${{ matrix.api-level }};google_apis;x86_64'
+          for attempt in 1 2 3 4; do
+            sdkmanager --install "$image" && exit 0
+            echo "Attempt $attempt of installing $image failed." >&2
+            sleep 20
+          done
+          exit 1
       - name: Every phone suite and the gallery journey in a release build
         uses: reactivecircus/android-emulator-runner@v2
         with:

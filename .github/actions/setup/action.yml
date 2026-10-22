@@ -33,7 +33,20 @@ runs:
       uses: actions/setup-python@v7
       with:
         python-version: '3.12'
-    - name: Install the Linux packages
+    # An apt mirror that serves 3 to 5 minutes a package, or hangs after the
+    # InRelease files, held two jobs until their limits (2026-10-22). Every apt
+    # call after this step, here and in the workflows, retries and gives up on
+    # a silent connection.
+    - name: Make apt retry and give up on a silent connection
+      if: ${{ runner.os == 'Linux' && inputs.linux-profile != 'none' }}
+      shell: bash
+      run: |
+        printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' |
+          sudo tee /etc/apt/apt.conf.d/99ci-fail-fast
+    # The key names the runner image, whose installed packages decide which
+    # .deb files a profile needs, and the package list.
+    - name: Choose the Linux packages
+      id: apt
       if: ${{ runner.os == 'Linux' && inputs.linux-profile != 'none' }}
       shell: bash
       env:
@@ -48,7 +61,53 @@ runs:
           browser) packages='ffmpeg xvfb libgl1-mesa-dri' ;;
           *) echo "Unknown linux-profile: $PROFILE" >&2; exit 1 ;;
         esac
-        sudo apt-get update && sudo apt-get install -y $packages
+        hash=$(echo "$packages" | sha256sum | cut -c1-16)
+        echo "packages=$packages" >> "$GITHUB_OUTPUT"
+        echo "key=apt-v1-${ImageOS:-linux}-${ImageVersion:-unknown}-$PROFILE-$hash" >> "$GITHUB_OUTPUT"
+    # The .deb files of the profile and everything it pulls in, so a hit
+    # installs without a download or an apt-get update.
+    - name: Restore the Linux packages
+      id: apt-cache
+      if: ${{ steps.apt.outcome == 'success' }}
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/apt-debs
+        key: ${{ steps.apt.outputs.key }}
+    # A miss downloads the files under a time limit, retrying the whole
+    # download, then installs from them and leaves them for the cache. A hit
+    # that cannot install falls back to the same download.
+    - name: Install the Linux packages
+      if: ${{ steps.apt.outcome == 'success' }}
+      shell: bash
+      env:
+        PACKAGES: ${{ steps.apt.outputs.packages }}
+        CACHE_HIT: ${{ steps.apt-cache.outputs.cache-hit }}
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        debs="$HOME/.cache/apt-debs"
+        retry() {
+          for attempt in 1 2 3; do
+            "$@" && return 0
+            echo "Attempt $attempt of '$*' failed." >&2
+            sleep 10
+          done
+          return 1
+        }
+        if [ "$CACHE_HIT" = true ]; then
+          if ! compgen -G "$debs/*.deb" > /dev/null; then
+            echo 'Every package of this profile is already on the image.'
+            exit 0
+          fi
+          sudo -E dpkg -i "$debs"/*.deb && exit 0
+          echo 'The cached packages did not install; downloading them.' >&2
+        fi
+        retry sudo timeout --kill-after=10 120 apt-get update
+        sudo apt-get clean
+        retry sudo timeout --kill-after=10 480 apt-get install -y --download-only $PACKAGES
+        rm -rf "$debs" && mkdir -p "$debs"
+        echo "$PACKAGES" > "$debs/packages.txt"
+        find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp {} "$debs" \;
+        sudo -E apt-get install -y --no-download $PACKAGES
     - if: ${{ inputs.modern-model-cache == 'true' }}
       uses: actions/cache@v6
       with:
