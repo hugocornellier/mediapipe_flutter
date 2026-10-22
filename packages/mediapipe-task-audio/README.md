@@ -50,16 +50,16 @@ network permission, as
 describes.
 
 ```dart
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 
-Future<void> classifyClip(String wavPath) async {
+Future<void> classifyClip(Uint8List wavBytes) async {
   final classifier = await AudioClassifier.create(
     AudioClassifierOptions(model: AudioModels.yamnet, maxResults: 3),
   );
   try {
-    final clip = decodeWav(await File(wavPath).readAsBytes());
+    final clip = decodeWav(wavBytes);
     for (final chunk in await classifier.classify(clip)) {
       final top = chunk.classifications.first.categories.first;
       print('${chunk.timestampMilliseconds} ms: ${top.categoryName}');
@@ -70,6 +70,8 @@ Future<void> classifyClip(String wavPath) async {
 }
 ```
 
+The WAV bytes can come from an asset (`rootBundle.load`), a file picker or a
+download, so the same code runs on every platform, browsers included.
 `classify` returns one result per chunk the model reads (0.975 s for YAMNet),
 each with its start time. It runs on a background isolate and serves calls in
 order. `AudioData` takes interleaved samples in -1 to 1 at any sample rate and

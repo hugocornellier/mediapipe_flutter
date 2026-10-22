@@ -3,7 +3,10 @@ and the model names their pubspec samples list exist.
 
 Every ```dart block that has an `import` is a complete sample: each becomes a
 library in a scratch Flutter app that depends on every package by path,
-and `flutter analyze` must report nothing. Blocks without imports are
+and `flutter analyze` must report nothing. Samples must also work in
+browsers: the app builds for the web with every sample imported, and since
+that build accepts `dart:io` and `dart:isolate` (they fail only at run time),
+a sample importing either fails outright. Blocks without imports are
 fragments and are skipped. Relative Markdown links must point at files that
 exist in the repository. Every name under `hooks.user_defines.<family>.models`
 must be a key of that family's `byName`.
@@ -12,6 +15,7 @@ import argparse
 import functools
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -32,6 +36,8 @@ REPOSITORY = re.compile(
     r'https://github\.com/hugocornellier/mediapipe_flutter/(?:blob|tree)/main/'
     r'([^?\s]+)')
 MODELS = re.compile(r'^\s*mediapipe_(\w+):\n\s*models: \[([^\]]*)\]', re.M)
+# The web build accepts these imports and fails only when the code runs.
+NATIVE_ONLY = re.compile(r"^import 'dart:(io|isolate)'", re.M)
 
 
 def snippets(doc):
@@ -81,9 +87,34 @@ def unknown_models(doc):
                 yield f'mediapipe_{family} has no model named {name}'
 
 
+def web_failures(app, origins):
+    """Builds the snippets app for the web with every sample imported and
+    returns what the build reports against them."""
+    imports = ''.join(f"import '{name}' as s{index};\n"
+                      for index, name in enumerate(origins))
+    # The imports are what is checked: every sample must compile for the web.
+    (app / 'lib/main.dart').write_text(f'{imports}\nvoid main() {{}}\n')
+    result = subprocess.run(['flutter', 'build', 'web', '--no-pub'], cwd=app,
+                            capture_output=True, text=True)
+    if result.returncode == 0:
+        return []
+    output = result.stdout + result.stderr
+    failures = []
+    lines = output.splitlines() + ['']
+    for line, message in zip(lines, lines[1:]):
+        # dart2js prints the position, then the error on the next line.
+        found = re.search(r'lib/(snippet_\d+\.dart):(\d+)', line)
+        if found:
+            failures.append(f'{origins[found.group(1)]} (+{found.group(2)}): '
+                            f'web build: {message.strip()}')
+    return failures or [f'web build failed:\n{output[-3000:]}']
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('docs', nargs='*', default=DOCS)
+    parser.add_argument('--skip-web', action='store_true',
+                        help='analyze only, without the web build')
     args = parser.parse_args()
     failures = []
     for doc in args.docs:
@@ -93,7 +124,13 @@ def main():
             failures.append(f'{doc}: {problem}')
     with tempfile.TemporaryDirectory(prefix='mediapipe-doc-') as tmp:
         app = Path(tmp) / 'doc_snippets'
-        (app / 'lib').mkdir(parents=True)
+        app.mkdir()
+        # A web app scaffold, so the same app can also build for the web.
+        subprocess.run(['flutter', 'create', '--platforms=web', '--no-pub',
+                        '--project-name=doc_snippets', '.'], cwd=app,
+                       check=True, capture_output=True)
+        shutil.rmtree(app / 'test')
+        (app / 'lib/main.dart').unlink()
         dependencies = ''.join(
             f'  {package_name(folder)}:\n    path: {PACKAGES / folder}\n'
             for folder in package_folders())
@@ -113,6 +150,9 @@ dependencies:
                 name = f'snippet_{len(origins)}.dart'
                 (app / 'lib' / name).write_text(code)
                 origins[name] = f'{doc}:{line}'
+                for library in NATIVE_ONLY.findall(code):
+                    failures.append(f'{doc}:{line}: imports dart:{library}, '
+                                    'which browsers lack')
         subprocess.run(['flutter', 'pub', 'get'], cwd=app, check=True,
                        capture_output=True)
         result = subprocess.run(['flutter', 'analyze', '--no-fatal-infos'],
@@ -122,6 +162,8 @@ dependencies:
             if found and ('error' in line or 'warning' in line):
                 failures.append(f'{origins[found.group(1)]} (+{found.group(2)}): '
                                 f'{line.strip()}')
+        if not args.skip_web:
+            failures += web_failures(app, origins)
         print(f'{len(origins)} Dart samples compiled from {len(args.docs)} docs')
     for failure in failures:
         print(failure)
