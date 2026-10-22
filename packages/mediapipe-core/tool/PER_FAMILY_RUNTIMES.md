@@ -290,7 +290,13 @@ the simulator, Apple's ld on iOS devices, Android API 28 with 16 KB pages).
 every library's SHA-256 and size, computed as the hooks check them, Google's
 headers, `BUILD_INFO` and notices, and the sentences that name the pinned
 build. It stops, writing nothing, if the C API or the MediaPipe version
-changed. It does not post the mirror release.
+changed. It does not post the mirror release: a build this project adopts
+gets one, keeping the plain archive URL. Runs that only compare a nightly
+with the pinned build pass `--generation`, which pins the archive URL to the
+generation it hashed (`...zip?generation=<x-goog-generation>`): Google's
+bucket keeps that generation when the name is uploaded again, and the hooks
+read it with the same range requests, so no mirror is needed.
+`tool/test_pin_nightly.py` tests the rewriting offline.
 
 The October 8 phone rebuilds added Google's usage-logging client
 (`TasksStatsProtoLogger`, with a Clearcut uploader to

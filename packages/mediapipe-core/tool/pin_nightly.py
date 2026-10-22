@@ -15,11 +15,20 @@ it. This moves what a bump moves together:
 
     python3 -B packages/mediapipe-core/tool/pin_nightly.py --nightly newest
     python3 -B packages/mediapipe-core/tool/pin_nightly.py --nightly 20261018
+    python3 -B packages/mediapipe-core/tool/pin_nightly.py --nightly newest \
+        --generation --report build/pin.json
 
 `newest` is the newest complete build: its `BUILD_INFO` names its date and
 every family, and its archive holds every file the pins name, with each
 family's headers and notices. It prints why it skipped any newer folder.
 `--dry-run` reports without writing.
+
+`--generation` pins the archive URL to the generation it hashed
+(`...zip?generation=<x-goog-generation>`), which the bucket keeps when the
+name is uploaded again; comparison runs of a nightly use it. A build this
+project adopts keeps the plain URL, and its files get a mirror release.
+`--report` writes what it found as JSON, the C API changes included, even
+when it stops.
 
 Nothing is written, and the exit status is non-zero, when the C API changed
 beyond comments (the bindings would need regenerating), when the MediaPipe
@@ -62,7 +71,8 @@ DOWNLOAD_LIMIT = 4 * 10 ** 9
 
 # The sentences that name the pinned build, by file from the repository root.
 # `{long}` is "October 18, 2026", `{day}` "October 18", `{iso}` "2026-10-18"
-# and `{stamp}` "20261018"; `{version}` is BUILD_INFO's mediapipe_version.
+# and `{stamp}` "20261018"; `{version}` is BUILD_INFO's mediapipe_version, and
+# `{generation}` the archive's generation query on a line of its own, if any.
 # Each must be in its file, as the current pin renders it. Other mentions of
 # a build are its history, or the browser runtime's npm pin, and stay.
 SENTENCES = {
@@ -70,7 +80,7 @@ SENTENCES = {
         'libraries: the {version} nightly build of {long}.',
         "const familyRuntimeVersion = '{version}-nightly.{stamp}';",
         "/// Google's archive of the {long} build, where the hooks download",
-        "    'mediapipe_tasks_c/{stamp}/mediapipe_tasks_c_{stamp}.zip';",
+        "    'mediapipe_tasks_c/{stamp}/mediapipe_tasks_c_{stamp}.zip{generation}';",
         "/// Every file comes from Google's nightly build of {long}\n"
         '/// (MediaPipe {version}), unmodified.',
     ],
@@ -286,15 +296,18 @@ class Archive:
 
 
 def current_pins():
-    """The current pin: `{'stamp', 'version', 'paths'}` from `familyRuntimes`,
-    `paths` in source order."""
+    """The current pin: `{'stamp', 'version', 'generation', 'paths'}` from
+    `familyRuntimes`, `paths` in source order and `generation` None for the
+    plain archive URL."""
     source = FAMILY_RUNTIMES.read_text(encoding='utf-8')
     version, stamp = re.search(
         r"^const familyRuntimeVersion = '([^']+)-nightly\.(\d{8})';", source, re.M).groups()
+    generation = re.search(r"\.zip'\n\s*'\?generation=(\d+)';", source)
     paths = re.findall(r"FamilyRuntime\(\s*'([^']+)',\s*'[0-9a-f]{64}',\s*\d+,\s*\)", source)
     if len(paths) != source.count(': FamilyRuntime(\n'):
         raise SystemExit(f'{FAMILY_RUNTIMES}: a FamilyRuntime entry is not parseable')
-    return {'stamp': stamp, 'version': version, 'paths': paths}
+    return {'stamp': stamp, 'version': version, 'paths': paths,
+            'generation': generation and generation.group(1)}
 
 
 def parse_build_info(text):
@@ -399,25 +412,26 @@ def compare_headers(new):
     same = sum(1 for name in set(old) & set(new) if old[name] == new[name])
     print(f'Headers: {len(new)} merged; {same} identical, {len(comment_only)} '
           f'changed in comments only, {len(changes)} API changes.')
-    return changes
+    return changes, comment_only
 
 
-def render(template, stamp, version):
+def render(template, stamp, version, generation=None):
     date = datetime.date(int(stamp[:4]), int(stamp[4:6]), int(stamp[6:]))
     day = f'{date:%B} {date.day}'
+    query = f"'\n    '?generation={generation}" if generation else ''
     return template.format(long=f'{day}, {date.year}', day=day, iso=date.isoformat(),
-                           stamp=stamp, version=version)
+                           stamp=stamp, version=version, generation=query)
 
 
-def rewritten_sources(old, stamp, version, digests):
+def rewritten_sources(old, stamp, version, generation, digests):
     """`{path: new text}` for every file `SENTENCES` names, with the pins in
     `family_runtimes.dart` replaced by `digests`."""
     texts, problems = {}, []
     for relative, templates in SENTENCES.items():
         text = (REPO / relative).read_text(encoding='utf-8')
         for template in templates:
-            before = render(template, old['stamp'], old['version'])
-            after = render(template, stamp, version)
+            before = render(template, old['stamp'], old['version'], old['generation'])
+            after = render(template, stamp, version, generation)
             if before not in text:
                 problems.append(f'{relative}: no "{before}"')
             text = text.replace(before, after)
@@ -444,6 +458,10 @@ def main():
                         help='a build folder, YYYYMMDD, or newest')
     parser.add_argument('--dry-run', action='store_true',
                         help='report what would change without writing')
+    parser.add_argument('--generation', action='store_true',
+                        help='pin the archive URL to the generation hashed')
+    parser.add_argument('--report', type=Path,
+                        help='write what was found to this JSON file')
     args = parser.parse_args()
     if args.nightly != 'newest' and not re.fullmatch(r'\d{8}', args.nightly):
         parser.error('--nightly takes YYYYMMDD or newest')
@@ -451,10 +469,21 @@ def main():
     fetcher = Fetcher()
     stamp, info_text, archive = pick_build(fetcher, args.nightly, old['paths'])
     info = parse_build_info(info_text)
+    report = {'nightly': stamp, 'previous': old['stamp'], 'build_info': info,
+              'archive': archive.url, 'generation': archive.generation,
+              'api_changes': None, 'comment_only_headers': None,
+              'notices_changed': [], 'written': False}
+
+    def write_report():
+        if args.report:
+            args.report.parent.mkdir(parents=True, exist_ok=True)
+            args.report.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+
     print(f"Pinning {stamp}: MediaPipe {info['mediapipe_version']}, Kokoro build "
           f"{info.get('kokoro_build_number')}, changelist {info.get('piper_changelist')}; "
           f'archive {archive.size} bytes, generation {archive.generation}.')
     if info['mediapipe_version'] != old['version']:
+        write_report()
         raise SystemExit(f"MediaPipe {info['mediapipe_version']} replaces "
                          f"{old['version']}: the tests and docs name the version, so "
                          'move it by hand.')
@@ -463,8 +492,10 @@ def main():
         raise SystemExit("The archive's BUILD_INFO is not the one beside it.")
 
     new_headers = headers(archive, archive.entries)
-    changes = compare_headers(new_headers)
+    changes, comment_only = compare_headers(new_headers)
+    report['api_changes'], report['comment_only_headers'] = changes, comment_only
     if changes:
+        write_report()
         raise SystemExit('The C API changed, so the bindings need regenerating '
                          '(make generate); nothing written:\n  ' + '\n  '.join(changes))
     notices = {}
@@ -475,6 +506,7 @@ def main():
         notices[name] = copies.pop()
         vendored = (NOTICES / name).read_bytes()
         if notices[name] != vendored:
+            report['notices_changed'].append(name)
             print(f'{name} changed: {len(vendored)} -> {len(notices[name])} bytes; '
                   'third_party/README.md may describe the old one.')
 
@@ -482,11 +514,15 @@ def main():
     for path in old['paths']:
         digests[path] = archive.digest(path)
         print(f'  {digests[path][0]} {digests[path][1]:>9} {path}')
-    texts = rewritten_sources(old, stamp, old['version'], digests)
+    generation = archive.generation if args.generation else None
+    if args.generation and not generation:
+        raise SystemExit(f'{archive.url}: no x-goog-generation header to pin.')
+    texts = rewritten_sources(old, stamp, old['version'], generation, digests)
     changed = [relative for relative, text in texts.items()
                if (REPO / relative).read_text(encoding='utf-8') != text]
     print(f'Downloaded {fetcher.downloaded} bytes.')
     if args.dry_run:
+        write_report()
         print(f'Would rewrite {len(changed)} files; dry run, nothing written.')
         return
     for relative in changed:
@@ -511,6 +547,8 @@ def main():
         patterns = [part for mention in sorted(mentions) for part in ('-e', mention)]
         subprocess.run(['git', 'grep', '-n', '-F', *patterns, '--', '.', ':!*.h',
                         f':!{Path(__file__).resolve().relative_to(REPO)}'], cwd=REPO)
+    report['written'] = True
+    write_report()
     print(f'Pinned {stamp}. Then: git diff --stat, and the checks in CONTRIBUTING.md.')
 
 
