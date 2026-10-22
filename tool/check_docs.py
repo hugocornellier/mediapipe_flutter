@@ -28,6 +28,9 @@ DOCS = [
 ]
 BLOCK = re.compile(r'^```dart\n(.*?)^```', re.S | re.M)
 LINK = re.compile(r'\]\(([^)\s]+)\)')
+REPOSITORY = re.compile(
+    r'https://github\.com/hugocornellier/mediapipe_flutter/(?:blob|tree)/main/'
+    r'([^?\s]+)')
 MODELS = re.compile(r'^\s*mediapipe_(\w+):\n\s*models: \[([^\]]*)\]', re.M)
 
 
@@ -40,13 +43,25 @@ def snippets(doc):
 
 
 def broken_links(doc):
+    """Relative links to missing files, links to missing files on this
+    repository's main branch, and relative links that leave a package: a
+    package's README is also its pub.dev and API docs page, where those break.
+    """
     text = (REPO / doc).read_text()
+    package = re.match(r'packages/[^/]+/', doc)
     for target in LINK.findall(text):
+        repository = REPOSITORY.match(target)
+        if repository:
+            if not (REPO / repository.group(1).split('#', 1)[0]).exists():
+                yield target
+            continue
         if re.match(r'[a-z]+:', target) or target.startswith('#'):
             continue
-        path = (REPO / doc).parent / target.split('#', 1)[0]
+        path = ((REPO / doc).parent / target.split('#', 1)[0]).resolve()
         if not path.exists():
             yield target
+        elif package and not path.is_relative_to(REPO / package.group(0)):
+            yield f'{target} (outside the package: link to GitHub instead)'
 
 
 @functools.cache

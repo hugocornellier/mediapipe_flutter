@@ -279,10 +279,10 @@ final class NormalizedLandmark {
     this.name,
   });
 
-  /// Horizontal coordinate relative to the image width; may leave [0, 1].
+  /// Horizontal coordinate relative to the image width; may leave `[0, 1]`.
   final double x;
 
-  /// Vertical coordinate relative to the image height; may leave [0, 1].
+  /// Vertical coordinate relative to the image height; may leave `[0, 1]`.
   final double y;
 
   /// Relative depth, scaled like [x]; not meters.

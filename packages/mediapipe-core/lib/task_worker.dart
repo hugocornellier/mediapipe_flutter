@@ -13,6 +13,10 @@ import 'src/serial_task_queue.dart' show taskException;
 /// A task's native side, made, used and closed on its worker isolate only.
 /// [I] is a request, [R] its result and [U] a streamed update.
 abstract base class WorkerTask<I, R, U> {
+  /// For subclasses, which the `create` function given to [TaskWorker.start]
+  /// makes on the worker isolate.
+  WorkerTask();
+
   /// Runs one request to its result.
   R run(I input);
 
