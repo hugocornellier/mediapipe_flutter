@@ -41,6 +41,6 @@ runs:
           --delegate "$DELEGATE" --tasks "$TASKS" --outcome "$OUTCOME"
     - uses: actions/upload-artifact@v4
       with:
-        name: coverage-${{ inputs.suite }}
+        name: coverage-${{ inputs.suite }}${{ env.ARTIFACT_SUFFIX }}
         path: build/coverage/${{ inputs.suite }}.json
         if-no-files-found: error

@@ -258,6 +258,29 @@ void main() {
       );
     });
 
+    // tool/pin_nightly.py --generation pins one generation of Google's
+    // archive, which a later upload to the same name does not replace.
+    test("keeps the URL's query, such as a generation, on every range", () async {
+      final requests = <(Uri, String?)>[];
+      final client = MockClient.streaming((request, _) async {
+        requests.add((request.url, request.headers['range']));
+        return _serve(request, archive);
+      });
+      expect(
+        await (await download(
+          client,
+          url:
+              '$_archive?generation=1792585037995595#text/linux_x86_64/libtext.so',
+        )).readAsBytes(),
+        bytes,
+      );
+      expect(requests, hasLength(greaterThanOrEqualTo(3)));
+      for (final (url, range) in requests) {
+        expect(url.toString(), '$_archive?generation=1792585037995595');
+        expect(range, isNotNull);
+      }
+    });
+
     test('resumes a dropped range', () async {
       final ranges = <String>[];
       var dropped = false;
