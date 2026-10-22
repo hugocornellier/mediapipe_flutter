@@ -505,12 +505,12 @@ def main():
                 print(f'{relative}:{number} is {len(line)} columns: rewrap it.')
     if stamp != old['stamp']:
         print(f"Still naming the {old['stamp']} build (its history, or the browser "
-              'runtime, which this does not move):')
+              'runtime, which this does not move):', flush=True)
         mentions = {render(form, old['stamp'], old['version'])
                     for form in ('{stamp}', '{iso}', '{day}')}
         patterns = [part for mention in sorted(mentions) for part in ('-e', mention)]
-        subprocess.run(['git', 'grep', '-n', '-F', *patterns, '--', '.', ':!*.h'],
-                       cwd=REPO)
+        subprocess.run(['git', 'grep', '-n', '-F', *patterns, '--', '.', ':!*.h',
+                        f':!{Path(__file__).resolve().relative_to(REPO)}'], cwd=REPO)
     print(f'Pinned {stamp}. Then: git diff --stat, and the checks in CONTRIBUTING.md.')
 
 
