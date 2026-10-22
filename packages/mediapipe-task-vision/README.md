@@ -57,13 +57,13 @@ One setting in `mediapipe_core` covers every task family. From the app
 root, `dart run mediapipe_core:web_runtime web/mediapipe` writes the
 verified runtimes; then set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';`
 before creating a task (`mediapipe_vision.dart` exports the class). See
-[core's README](../mediapipe-core/README.md#web-runtime).
+[core's README](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-core/README.md#web-runtime).
 
 ### Native runtimes and the task list
 
 Every vision task runs on Google's MediaPipe vision library with no setting
 (Windows has no Interactive Segmenter), which this package's hook bundles
-(see [core's README](../mediapipe-core/README.md)).
+(see [core's README](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-core/README.md)).
 
 The `tasks` list only checks the names against the tasks validated on the
 target: a Windows build fails if it names `interactive_segmenter`, which

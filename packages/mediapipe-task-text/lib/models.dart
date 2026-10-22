@@ -1,3 +1,8 @@
+/// The verified official models of the text tasks, [TextModels], which
+/// `mediapipe_text.dart` also exports. `bundle_models` reads them from this
+/// library alone.
+library;
+
 import 'package:mediapipe_core/mediapipe_core.dart';
 
 /// Verified official models accepted by text task options.

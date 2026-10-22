@@ -1,3 +1,8 @@
+/// The verified official models of the Audio Classifier, [AudioModels], which
+/// `mediapipe_audio.dart` also exports. `bundle_models` reads them from this
+/// library alone.
+library;
+
 import 'package:mediapipe_core/mediapipe_core.dart';
 
 /// Verified official models accepted by audio task options.

@@ -1,3 +1,8 @@
+/// The verified official models of the retrieval tasks, [RetrievalModels],
+/// which `mediapipe_retrieval.dart` also exports. `bundle_models` reads them
+/// from this library alone.
+library;
+
 import 'package:mediapipe_core/mediapipe_core.dart';
 
 /// Verified official models accepted by `UniversalEmbedderOptions`.

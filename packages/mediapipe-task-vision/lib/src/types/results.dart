@@ -335,7 +335,7 @@ final class ImageSegmenterResult extends VisionResult {
   /// The winning category per pixel, or null when not requested.
   final CategoryMask? categoryMask;
 
-  /// Per-category quality in [0, 1], or null when the model reports none.
+  /// Per-category quality in `[0, 1]`, or null when the model reports none.
   ///
   /// Google's Python bindings drop this field, so it has no independent
   /// reference output; only its shape and range are checked.
