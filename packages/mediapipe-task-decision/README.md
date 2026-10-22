@@ -22,7 +22,7 @@ hook downloads and checks against its SHA-256 on Android 9+, iOS 15+, macOS
 1.2.0-rc.20261018 in browsers, on the GPU delegate. Google's
 browser runtime fails every evaluation on the CPU delegate and on browsers
 without a hardware WebGPU adapter
-([UP-049](../../upstream-issues.md#up-049-the-browser-decision-maker-fails-every-evaluation-without-a-hardware-webgpu-adapter)),
+([UP-049](https://github.com/hugocornellier/mediapipe_flutter/blob/main/upstream-issues.md#up-049-the-browser-decision-maker-fails-every-evaluation-without-a-hardware-webgpu-adapter)),
 so `queryDecisionMakerCapabilities()` offers browsers only the GPU, and only
 on such an adapter; there it answers as the desktop library does.
 
@@ -32,14 +32,14 @@ Google's browser runtime fails with some models:
 WebKit, the engine
 of Safari and of every browser on iOS, it embeds every text as zeros with
 both EmbeddingGemma 2 models, so every option scores the same
-([UP-054](../../upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2));
+([UP-054](https://github.com/hugocornellier/mediapipe_flutter/blob/main/upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2));
 in every browser it aborts while it creates the task with either
 GLiNER2.5-Decide model
-([UP-055](../../upstream-issues.md#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide)).
+([UP-055](https://github.com/hugocornellier/mediapipe_flutter/blob/main/upstream-issues.md#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide)).
 `queryDecisionMakerCapabilities(model)` reports both, and Laya runs in every
 browser with a hardware WebGPU adapter. The browser runtime also ignores
 `normalizePrior` and `scoringMode`
-([UP-056](../../upstream-issues.md#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode)).
+([UP-056](https://github.com/hugocornellier/mediapipe_flutter/blob/main/upstream-issues.md#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode)).
 
 ## Quick start
 

@@ -215,7 +215,7 @@ void refuseDeferredImage(VisionImage image) {
 /// one (Image Classifier and Image Embedder).
 @immutable
 final class VisionRegionOfInterest {
-  /// Requires ordered coordinates in [0, 1] with nonzero width and height.
+  /// Requires ordered coordinates in `[0, 1]` with nonzero width and height.
   VisionRegionOfInterest({
     required this.left,
     required this.top,
@@ -272,7 +272,7 @@ abstract interface class VisionTask {
   Future<void> dispose();
 }
 
-/// Requires a finite confidence in [0, 1].
+/// Requires a finite confidence in `[0, 1]`.
 void checkConfidence(double value, String name) {
   if (!value.isFinite || value < 0 || value > 1) {
     throw ArgumentError.value(value, name, 'Must be finite and in [0, 1]');
