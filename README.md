@@ -145,6 +145,9 @@ supported delegates and why any other is unavailable.
   [vision](packages/mediapipe-task-vision/README.md#samples-for-every-task),
   [text](packages/mediapipe-task-text/README.md#quick-start) and
   [audio](packages/mediapipe-task-audio/README.md#use).
+- [Object detection guide](doc/guides/vision/object_detector.md), with a
+  [sample app](samples/object_detection/) for every platform, following
+  Google's Android guide and sample.
 - [Platform setup](doc/platform_setup.md): permissions, entitlements, minimum
   OS versions, offline builds and browser hosting.
 - [Privacy and licenses](doc/privacy_and_licenses.md): what is downloaded, from
