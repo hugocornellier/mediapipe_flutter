@@ -1,11 +1,11 @@
 # Per-family runtimes
 
 Status on 2026-10-19: every family, on Android, iOS, macOS, Linux and
-Windows, pins Google's MediaPipe 1.2.0 nightly build of October 18, 2026
+Windows, pins Google's MediaPipe 1.2.0 nightly build of October 21, 2026
 (see [Google's builds](#googles-builds)), which Google publishes at
-`https://storage.googleapis.com/mediapipe-assets/prebuilts/mediapipe_tasks_c/20261018/mediapipe_tasks_c_20261018.zip`.
+`https://storage.googleapis.com/mediapipe-assets/prebuilts/mediapipe_tasks_c/20261021/mediapipe_tasks_c_20261021.zip`.
 The hooks read each pinned file from that archive with HTTP range requests,
-falling back to the mirror pre-release `per-family-v1.2.0-nightly.20261018` on
+falling back to the mirror pre-release `per-family-v1.2.0-nightly.20261021` on
 `hugocornellier/mediapipe_flutter_native` (not posted yet), beside the
 earlier builds in `per-family-v1.1.1-dev.20261009` and
 `per-family-v1.1.0-dev.20261005`, and CI and Firebase Test Lab run them (see [Validated](#validated) and

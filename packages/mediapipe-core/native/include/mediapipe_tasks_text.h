@@ -1,7 +1,7 @@
 // MediaPipe Tasks C API: text domain.
 //
 // Generated file. DO NOT EDIT.
-// Source revision: 1001798245
+// Source revision: 1003846843
 //
 
 #ifndef MEDIAPIPE_TASKS_C_TEXT_H_
