@@ -286,6 +286,12 @@ the simulator, Apple's ld on iOS devices, Android API 28 with 16 KB pages).
 | October 9, 2026, 1.1.1 development | every family on every target |
 | October 16 to 18, 2026, 1.2.0 nightly (October 18 pinned) | every family on every target, Windows decision included |
 
+`tool/pin_nightly.py --nightly <YYYYMMDD|newest>` pins another nightly:
+every library's SHA-256 and size, computed as the hooks check them, Google's
+headers, `BUILD_INFO` and notices, and the sentences that name the pinned
+build. It stops, writing nothing, if the C API or the MediaPipe version
+changed. It does not post the mirror release.
+
 The October 8 phone rebuilds added Google's usage-logging client
 (`TasksStatsProtoLogger`, with a Clearcut uploader to
 `https://play.googleapis.com/log`), which the desktop and retrieval libraries
