@@ -43,7 +43,14 @@ jobs:
           cache-dependency-path: gallery/tool/browser/package-lock.json
       # The gallery's models where bundle_models keeps them, named by their
       # pinned SHA-256s, so a run reuses them; EmbeddingGemma alone is 184 MB.
-      - uses: actions/cache@v6
+      # Only main saves them, as in family.yaml: a pull request reads main's copy.
+      - if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v6
+        with:
+          path: gallery/assets/mediapipe
+          key: gallery-web-models-${{ hashFiles('packages/mediapipe-task-*/lib/models.dart') }}
+      - if: github.event_name != 'pull_request'
+        uses: actions/cache@v6
         with:
           path: gallery/assets/mediapipe
           key: gallery-web-models-${{ hashFiles('packages/mediapipe-task-*/lib/models.dart') }}
@@ -51,11 +58,15 @@ jobs:
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target web
           python3 -B gallery/tool/browser/prepare_camera.py
+      # The browsers' system packages come from the setup action's browser
+      # profile, cached and from another mirror when one is slow; the dry run
+      # fails and names them if this Playwright needs more.
       - name: Install browser test dependencies
         working-directory: gallery/tool/browser
         run: |
           npm ci
-          npx playwright install --with-deps chromium firefox webkit
+          npx playwright install chromium firefox webkit
+          npx playwright install-deps --dry-run chromium firefox webkit
       - name: Analyze and test vision browser code
         working-directory: packages/mediapipe-task-vision
         run: |
@@ -371,9 +382,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      # ffmpeg and the browser's packages through the browser profile, cached
+      # and from another mirror when one is slow, as the browser job installs
+      # them; a bare apt-get here had neither.
+      - uses: ./.github/actions/setup
         with:
-          python-version: '3.12'
+          flutter: 'false'
+          linux-profile: browser
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -385,11 +400,11 @@ jobs:
         run: python3 -B gallery/tool/check_web_deployment.py
       - name: Prepare release browser verification
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg
           python3 -B gallery/tool/browser/prepare_camera.py
           cd gallery/tool/browser
           npm ci
-          npx playwright install --with-deps --no-shell chromium
+          npx playwright install --no-shell chromium
+          npx playwright install-deps --dry-run chromium
       - name: Verify public live camera gallery
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
