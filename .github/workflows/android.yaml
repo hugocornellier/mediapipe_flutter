@@ -75,6 +75,9 @@ jobs:
             sleep 20
           done
           exit 1
+      # Gradle downloads a missing NDK during the debug and release builds and
+      # gave up on one corrupt archive (2026-10-22), so install it here, retried.
+      - uses: ./.github/actions/android-ndk
       - name: Official references, pixel formats, rotation, VIDEO, camera and every live tile
         id: sdk
         uses: reactivecircus/android-emulator-runner@v2
@@ -234,6 +237,9 @@ jobs:
             sleep 20
           done
           exit 1
+      # As in the job above: Gradle's own NDK download gives up on one corrupt
+      # archive.
+      - uses: ./.github/actions/android-ndk
       - name: Every phone suite and the gallery journey in a release build
         uses: reactivecircus/android-emulator-runner@v2
         with:
