@@ -10,7 +10,9 @@ name: Android devices (Firebase Test Lab)
 # Embedder and Semantic Retriever, downloading their models (Laya 678 MB,
 # EmbeddingGemma 2 388 MB) on first use; the Galaxy A12 (4 GB) took 29 of its
 # 30 minutes for the other tasks, so they would take it past Test Lab's 45.
-# Manual only:
+# The oldest Android the packages support (Pixel 3, API 28) and a 32-bit
+# phone (Galaxy A10) run too; `all` runs all five, about 95 minutes for the
+# Pixel 3, and a dispatch may name fewer. Manual only:
 # each run bills physical devices, so it is dispatched for a branch, whose own
 # copy of this file then runs. It signs in with the FIREBASE_TEST_LAB_CREDENTIALS
 # repository secret. Its coverage rows are the device tier that
@@ -20,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       devices:
-        description: Comma-separated Test Lab model IDs to run, or all
+        description: Comma-separated Test Lab model IDs to run (akita, e1q, a12, blueline, a10), or all
         required: false
         default: all
 
@@ -32,7 +34,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # The phones covering Mali, Adreno and PowerVR; a dispatch may pick some.
+  # The phones covering Mali, Adreno and PowerVR, the oldest Android and a
+  # 32-bit phone; a dispatch may pick some.
   devices:
     runs-on: ubuntu-latest
     outputs:
@@ -54,9 +57,9 @@ jobs:
               {'model': 'a12', 'version': '31', 'name': 'Galaxy A12 PowerVR',
                'gpu_skip': '', 'extra_tasks': ''},
           ]
-          # Run when named, outside 'all': the oldest Android the packages support
-          # (minSdk 28, which Google's libraries target too), and a 32-bit-only
-          # phone for the armeabi-v7a libraries every family ships. abi is the
+          # The oldest Android the packages support (minSdk 28, which Google's
+          # libraries target too), and a 32-bit-only phone for the armeabi-v7a
+          # libraries every family ships; both in 'all', and slower. abi is the
           # APK's one ABI; tasks replaces the phone suites' list, for a phone
           # without the memory for every task; gpu is SDK_GPU (default required),
           # skip for a phone the packages offer no GPU on.
@@ -73,8 +76,7 @@ jobs:
                'tasks': 'audio_classifier,face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,language_detector,object_detector,pose_landmarker,text_classifier,text_embedder'},
           ]
           wanted = os.environ['WANTED'].replace(' ', '').split(',')
-          chosen = [d for d in devices if 'all' in wanted or d['model'] in wanted]
-          chosen += [d for d in named if d['model'] in wanted]
+          chosen = [d for d in devices + named if 'all' in wanted or d['model'] in wanted]
           for device in chosen:
               device.setdefault('abi', 'arm64-v8a')
               device.setdefault('tasks', '')
