@@ -63,9 +63,9 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-051](#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again) | The browser Universal Embedder reads modelAssetPath as a file, and a second Wasm object needs the loader again | Found on 1.1.0 |
 | [UP-052](#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter) | The browser Universal Embedder runs only on a hardware WebGPU adapter | Found on 1.1.0 |
 | [UP-053](#up-053-the-per-family-decision-library-fails-every-evaluation-with-the-text-only-embeddinggemma-2-model) | The per-family decision library fails every evaluation with the text-only EmbeddingGemma 2 model | Fixed in the 1.2.0 nightly of October 18 |
-| [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0, still in the 1.2.0 nightlies of October 18 and 21; raised October 20 |
-| [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0; raised October 20 |
-| [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0; raised October 20 |
+| [UP-054](#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2) | In WebKit, the browser runtime embeds every input as zeros with EmbeddingGemma 2 | Found on 1.1.0, still in the 1.2.0 nightlies of October 18 and 21; on the October 20 agenda |
+| [UP-055](#up-055-the-browser-decision-maker-aborts-while-it-creates-the-task-with-gliner25-decide) | The browser Decision Maker aborts while it creates the task with GLiNER2.5-Decide | Found on 1.1.0; on the October 20 agenda |
+| [UP-056](#up-056-the-browser-decision-maker-ignores-normalizeprior-and-scoringmode) | The browser Decision Maker ignores normalizePrior and scoringMode | Found on 1.1.0; on the October 20 agenda |
 | [UP-057](#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel) | The 1.1.1 macOS library gives different Metal results from Google's 1.1.0 wheel | Found on the 1.1.1 build of October 9 and the 1.1.1 nightly |
 | [UP-058](#up-058-universal-embedders-audio-embeddings-change-from-call-to-call) | Universal Embedder's audio embeddings change from call to call | Found on 1.1.0, still on the 1.2.0 nightly of October 18; raised October 20, Google is looking into it |
 | [UP-059](#up-059-with-the-flutter-host-environment-the-usage-log-drops-the-os) | With the Flutter host environment, the usage log drops the OS | Fixed in the 1.2.0 nightly of October 18 |
@@ -883,8 +883,8 @@ with the text-only model as Google's wheel does, within 1e-6 (run with
 `MEDIAPIPE_DECISION_EG2_TEXT_MODEL`, October 19). The other targets run it
 in CI. The package's workaround (the capability query and `create`
 refusing the model on the per-family library, and the gallery's Hungry
-Fish playing on the text and vision model there) is gone. Raised with
-Google on October 20, 2026, as fixed.
+Fish playing on the text and vision model there) is gone. On the October
+20, 2026 agenda as fixed; whether the call reached it is not recorded.
 
 Observed October 9, 2026 with Google's per-family decision library of
 October 8, 2026 (`libmediapipe_tasks_decision.dylib`, macOS arm64); the
@@ -928,10 +928,10 @@ retrieval capability queries read the browser's engine
 (`TaskPlatform.browserEngine`, from the user agent) and report both
 EmbeddingGemma 2 Decision Maker models and both retrieval tasks unsupported
 in WebKit; the gallery shows Hungry Fish, Universal Embedder and Semantic
-Retriever as cards there, and Decision Maker runs Laya. Raised with Google
-on October 20, 2026. Retested October 21, 2026 with the 1.2.0 nightlies of
-October 18 (the pin) and October 21, Google's npm tarballs verified and
-served locally, in the same Playwright WebKit 26.6 on the same Mac: the
+Retriever as cards there, and Decision Maker runs Laya. On the October 20,
+2026 agenda; whether the call reached it is not recorded. Retested
+October 21, 2026 with the 1.2.0 nightlies of October 18 (the pin) and
+October 21, Google's npm tarballs verified and served locally, in the same Playwright WebKit 26.6 on the same Mac: the
 Universal Embedder still returns 768 zeros for every text with the 388 MB
 model, while Chromium 153 returns unit vectors (cosine 0.88 between the dog
 and puppy sentences, 0.63 between the dog and the stock market). The
@@ -975,8 +975,8 @@ with Apple silicon, or on `macos-26`, reaches it and expects the cards.
 in Playwright's Chromium 153 and WebKit 26.6 on macOS 27, Apple M4 Max, on
 the GPU delegate. Worked around: `queryDecisionMakerCapabilities(model)`
 reports both GLiNER2.5-Decide models unsupported in browsers, and the
-gallery's Decision Maker page offers neither there. Raised with Google on
-October 20, 2026.
+gallery's Decision Maker page offers neither there. On the October 20, 2026
+agenda; whether the call reached it is not recorded.
 
 `DecisionMaker.createFromOptions` with `gliner_s256.task` or
 `gliner_s512.task` rejects with `RuntimeError: Aborted(). Build with
@@ -987,8 +987,8 @@ Laya and EmbeddingGemma 2 load from the same page.
 
 **Status:** read from `decision_bundle.mjs` of `@mediapipe/tasks-decision`
 1.1.0 on October 12, 2026, and confirmed by results that do not change with
-either. Documented on the options; not worked around. Raised with Google
-on October 20, 2026.
+either. Documented on the options; not worked around. On the October 20,
+2026 agenda; whether the call reached it is not recorded.
 
 `evaluateBoolean` passes the condition, threshold and temperature to the
 Wasm engine, and `evaluateChoice` the criteria, instructions, context and
@@ -1220,8 +1220,9 @@ on GitHub's Linux and Windows runners (CI run 39398538766) and on the iOS
 Simulator. Google's own Python API does the same (`mediapipe-nightly`
 1.1.0rc20260925 on the same Mac), so it is the C API's design, not the
 packages'. The browser retriever records all three. Raised with Google on
-October 20, 2026; Google said it would look into it. No workaround: `MpSemanticRetrieverOptions` has no
-`base_options`, so the packages have nowhere to put the fields.
+October 20, 2026; Google said it would look into it. No workaround:
+`MpSemanticRetrieverOptions` has no `base_options`, so the packages have
+nowhere to put the fields.
 
 Every other task's options struct in the October 18 headers (20 of them,
 from `MpFaceDetectorOptions` to `MpDecisionMakerOptions` and
