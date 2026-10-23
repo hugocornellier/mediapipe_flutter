@@ -159,11 +159,13 @@ jobs:
       # The family's tasks, and the vision task a web build lists for the hook.
       - name: Prepare the web gallery
         run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target web --tasks ${{ inputs.tasks }},face_detector
+      # No --with-deps: these are macOS runners, where Playwright installs no
+      # system packages, and on Linux its own apt-get has no time limit.
       - name: Install Playwright's ${{ matrix.engine }}
         working-directory: gallery/tool/browser
         run: |
           npm ci
-          npx playwright install --with-deps ${{ matrix.browser }}
+          npx playwright install ${{ matrix.browser }}
       - name: Build the release gallery
         working-directory: gallery
         run: flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn

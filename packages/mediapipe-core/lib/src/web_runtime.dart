@@ -5,6 +5,9 @@ library;
 /// The browser runtime's location, shared by the vision, text and audio
 /// packages. Exists on every platform; only browsers read it.
 abstract final class MediaPipeWebRuntime {
+  // TODO: Load each family's runtime from a copy its package ships, with
+  // jsDelivr and unpkg only as fallbacks, so one CDN's outage stops no app.
+  // See packages/mediapipe-core/tool/ASSET_HOSTING.md.
   /// jsDelivr's copy of npm, where each family's pinned runtime loads from
   /// unless the app sets [baseUrl].
   static const defaultBaseUrl = 'https://cdn.jsdelivr.net/npm/';
