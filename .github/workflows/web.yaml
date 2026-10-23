@@ -43,7 +43,14 @@ jobs:
           cache-dependency-path: gallery/tool/browser/package-lock.json
       # The gallery's models where bundle_models keeps them, named by their
       # pinned SHA-256s, so a run reuses them; EmbeddingGemma alone is 184 MB.
-      - uses: actions/cache@v6
+      # Only main saves them, as in family.yaml: a pull request reads main's copy.
+      - if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v6
+        with:
+          path: gallery/assets/mediapipe
+          key: gallery-web-models-${{ hashFiles('packages/mediapipe-task-*/lib/models.dart') }}
+      - if: github.event_name != 'pull_request'
+        uses: actions/cache@v6
         with:
           path: gallery/assets/mediapipe
           key: gallery-web-models-${{ hashFiles('packages/mediapipe-task-*/lib/models.dart') }}
