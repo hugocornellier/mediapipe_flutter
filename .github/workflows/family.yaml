@@ -51,7 +51,18 @@ jobs:
         with:
           python: 'false'
           linux-profile: ffi
-      - uses: actions/cache@v6
+      # Only main saves the models: a pull request that saved its own copy added
+      # up to 1.9 GB to the repository's 10 GB of cache, and the eviction that
+      # followed took the Linux packages' cache with it (2026-10-22). A pull
+      # request reads main's copy, and downloads the models when main has none
+      # for its models.dart.
+      - if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ inputs.model-path }}
+          key: ${{ inputs.family }}-models-${{ hashFiles(format('packages/mediapipe-task-{0}/lib/models.dart', inputs.family)) }}
+      - if: github.event_name != 'pull_request'
+        uses: actions/cache@v6
         with:
           path: ${{ inputs.model-path }}
           key: ${{ inputs.family }}-models-${{ hashFiles(format('packages/mediapipe-task-{0}/lib/models.dart', inputs.family)) }}

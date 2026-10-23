@@ -149,8 +149,11 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           linux-profile: gallery
+      # Through apt-install: the setup action's cache hit runs no apt-get update.
       - name: Install Mesa's EGL and OpenGL ES
-        run: sudo apt-get install -y -qq libegl-mesa0 libgl1-mesa-dri
+        uses: ./.github/actions/apt-install
+        with:
+          packages: libegl-mesa0 libgl1-mesa-dri
       - name: Download the vision models
         working-directory: packages/mediapipe-task-vision
         run: |

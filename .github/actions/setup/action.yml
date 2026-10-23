@@ -33,7 +33,20 @@ runs:
       uses: actions/setup-python@v7
       with:
         python-version: '3.12'
-    - name: Install the Linux packages
+    # An apt mirror that serves 3 to 5 minutes a package, or hangs after the
+    # InRelease files, held two jobs until their limits (2026-10-22). Every apt
+    # call after this step, here and in the workflows, retries and gives up on
+    # a silent connection.
+    - name: Make apt retry and give up on a silent connection
+      if: ${{ runner.os == 'Linux' && inputs.linux-profile != 'none' }}
+      shell: bash
+      run: |
+        printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' |
+          sudo tee /etc/apt/apt.conf.d/99ci-fail-fast
+    # The key names the runner image, whose installed packages decide which
+    # .deb files a profile needs, and the package list.
+    - name: Choose the Linux packages
+      id: apt
       if: ${{ runner.os == 'Linux' && inputs.linux-profile != 'none' }}
       shell: bash
       env:
@@ -48,8 +61,67 @@ runs:
           browser) packages='ffmpeg xvfb libgl1-mesa-dri' ;;
           *) echo "Unknown linux-profile: $PROFILE" >&2; exit 1 ;;
         esac
-        sudo apt-get update && sudo apt-get install -y $packages
-    - if: ${{ inputs.modern-model-cache == 'true' }}
+        hash=$(echo "$packages" | sha256sum | cut -c1-16)
+        echo "packages=$packages" >> "$GITHUB_OUTPUT"
+        echo "key=apt-v1-${ImageOS:-linux}-${ImageVersion:-unknown}-$PROFILE-$hash" >> "$GITHUB_OUTPUT"
+    # The .deb files of the profile and everything it pulls in, so a hit
+    # installs without a download or an apt-get update.
+    - name: Restore the Linux packages
+      id: apt-cache
+      if: ${{ steps.apt.outcome == 'success' }}
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/apt-debs
+        key: ${{ steps.apt.outputs.key }}
+    # A hit installs the files with dpkg. It runs no apt-get update, so a later
+    # step of a workflow that installs more packages uses apt-install.
+    - name: Install the cached Linux packages
+      id: cached
+      if: ${{ steps.apt-cache.outputs.cache-hit == 'true' }}
+      shell: bash
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        debs="$HOME/.cache/apt-debs"
+        if ! compgen -G "$debs/*.deb" > /dev/null; then
+          echo 'Every package of this profile is already on the image.'
+          echo installed=true >> "$GITHUB_OUTPUT"
+        elif sudo -E dpkg -i "$debs"/*.deb; then
+          echo installed=true >> "$GITHUB_OUTPUT"
+        else
+          echo 'The cached packages did not install; downloading them.' >&2
+        fi
+    # A miss, or a hit that could not install, downloads the files under time
+    # limits, from another mirror when one fails.
+    - name: Download the Linux packages
+      if: ${{ steps.apt.outcome == 'success' && steps.cached.outputs.installed != 'true' }}
+      uses: ./.github/actions/apt-install
+      with:
+        packages: ${{ steps.apt.outputs.packages }}
+        install: 'false'
+    # Installs from the downloaded files and leaves them for the cache.
+    - name: Install the downloaded Linux packages
+      if: ${{ steps.apt.outcome == 'success' && steps.cached.outputs.installed != 'true' }}
+      shell: bash
+      env:
+        PACKAGES: ${{ steps.apt.outputs.packages }}
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        debs="$HOME/.cache/apt-debs"
+        rm -rf "$debs" && mkdir -p "$debs"
+        echo "$PACKAGES" > "$debs/packages.txt"
+        find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp {} "$debs" \;
+        sudo -E apt-get install -y --no-download $PACKAGES
+    # Only main saves the models, as in family.yaml: a pull request reads
+    # main's copy.
+    - if: ${{ inputs.modern-model-cache == 'true' && github.event_name == 'pull_request' }}
+      uses: actions/cache/restore@v6
+      with:
+        path: |
+          packages/mediapipe-task-text/models/embedding_gemma.task
+          packages/mediapipe-task-text/models/proofread_quant_200m.litertlm
+          packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
+        key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
+    - if: ${{ inputs.modern-model-cache == 'true' && github.event_name != 'pull_request' }}
       uses: actions/cache@v6
       with:
         path: |
