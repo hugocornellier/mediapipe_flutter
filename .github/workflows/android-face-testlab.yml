@@ -107,7 +107,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: ./.github/actions/setup
-      # Gradle's own NDK download gives up on one corrupt archive.
+      # Gradle's own NDK and CMake downloads give up on one corrupt archive.
       - uses: ./.github/actions/android-ndk
       - uses: google-github-actions/auth@v3
         with:
