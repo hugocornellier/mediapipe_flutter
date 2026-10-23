@@ -73,7 +73,7 @@ jobs:
         with:
           python: 'false'
           linux-profile: ${{ matrix.target == 'linux' && 'gallery' || 'none' }}
-      # Gradle's own NDK download gives up on one corrupt archive.
+      # Gradle's own NDK and CMake downloads give up on one corrupt archive.
       - if: matrix.target == 'android'
         uses: ./.github/actions/android-ndk
       - run: flutter pub get
