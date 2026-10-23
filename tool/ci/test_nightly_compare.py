@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import nightly_compare as compare  # noqa: E402
@@ -130,6 +131,22 @@ class Judge(unittest.TestCase):
                          ['baseline', 'nightly'])
 
 
+    def test_gh_allows_a_logs_colours_when_asked(self):
+        calls = []
+
+        def fake(arguments, **_):
+            calls.append(arguments)
+            refused = '--allow-escape-sequences' not in arguments
+            return subprocess.CompletedProcess(
+                arguments, 1 if refused else 0, '' if refused else 'log',
+                'the response contains terminal escape sequences; pass '
+                '--allow-escape-sequences to output it anyway' if refused else '')
+
+        with unittest.mock.patch.object(compare.subprocess, 'run', fake):
+            self.assertEqual(compare.gh('api', 'logs'), 'log')
+        self.assertEqual(calls[1], ['gh', 'api', '--allow-escape-sequences', 'logs'])
+
+
 class EndToEnd(unittest.TestCase):
     def run_compare(self, folder, jobs, logs, report, scale='1'):
         (folder / 'pin').mkdir()
@@ -153,13 +170,17 @@ class EndToEnd(unittest.TestCase):
     def test_outputs(self):
         report = {'nightly': '20261021', 'previous': '20261018', 'generation': '1',
                   'api_changes': [], 'web': {'note': 'browser runtimes moved'}}
-        jobs = [job(1, 'D (baseline) / CPU'), job(2, 'D (nightly) / CPU')]
+        jobs = [job(1, 'D (baseline) / CPU'), job(2, 'D (nightly) / CPU'),
+                # Outside the daily set: left out, not reported as infrastructure.
+                job(3, 'A (baseline) / ${{ matrix.name }}', 'skipped'),
+                job(4, 'A (nightly) / ${{ matrix.name }}', 'skipped')]
         logs = {1: Records.LOG, 2: Records.LOG}
         with tempfile.TemporaryDirectory() as folder:
             output, summary = self.run_compare(Path(folder), jobs, logs, report)
-        self.assertEqual(output['issue'], 'false')
+        self.assertEqual((output['issue'], output['infra_only']), ('false', 'false'))
         self.assertEqual(output['title'], 'Nightly 20261021 differs from the pinned 20261018')
         self.assertIn('| D / CPU | success | success | 4 / 4 |', summary)
+        self.assertNotIn('matrix.name', summary)
         with tempfile.TemporaryDirectory() as folder:
             output, summary = self.run_compare(Path(folder), jobs, logs, report, '-1')
         self.assertEqual((output['issue'], output['escalate']), ('true', 'true'))

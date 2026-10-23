@@ -273,13 +273,22 @@ def pair_jobs(jobs):
     return dict(sorted(pairs.items()))
 
 
+ESCAPES = '--allow-escape-sequences'
+
+
 def gh(*arguments):
+    arguments = list(arguments)
     for attempt in range(4):
         result = subprocess.run(['gh', *arguments], capture_output=True, text=True,
                                 encoding='utf-8', errors='replace')
         if result.returncode == 0:
             return result.stdout
         print(f'gh {" ".join(arguments)}: {result.stderr.strip()}', flush=True)
+        # Newer gh refuses to print a job log with colours unless told to;
+        # records() strips them. Older gh has no such flag, so only on request.
+        if ESCAPES in result.stderr and ESCAPES not in arguments:
+            arguments.insert(1, ESCAPES)
+            continue
         time.sleep(15 * (attempt + 1))
     raise SystemExit(f'gh {" ".join(arguments)} failed')
 
@@ -339,6 +348,9 @@ def main():
         findings.append(f'C API changed: {", ".join(api_changes)}')
     for name, sides in pair_jobs(jobs).items():
         base, new = sides.get('baseline'), sides.get('nightly')
+        # A job outside this run's scope (the release emulators in the daily set).
+        if all(side and side.get('conclusion') == 'skipped' for side in (base, new)):
+            continue
         verdict, notes = judge(base, new)
         a, b = records(log_of(base)), records(log_of(new))
         saved[name] = {'baseline': {' '.join(k): v for k, v in a.items()},
