@@ -6,6 +6,7 @@ name: Nightly comparison
 # use, and Google's C headers. A C API change, a suite that fails on the
 # nightly only, or a value the nightly moves beyond its tolerance opens one
 # issue per nightly; a daily run that finds one then runs the full matrix.
+# A pull request run does neither: its findings stay in its summary.
 # Nothing here pushes, releases or uses a secret besides GITHUB_TOKEN.
 on:
   schedule:
@@ -50,7 +51,7 @@ env:
   ISSUE_LABEL: nightly-drift
   NIGHTLY_COMPARE_ISSUE_PREFIX: ''
   # Multiplies every tolerance; a negative scale makes every value drift,
-  # which tests the issue path.
+  # which tests the issue path (on a dispatch; a pull request opens none).
   NIGHTLY_COMPARE_TOLERANCE_SCALE: '1'
 
 jobs:
@@ -295,9 +296,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SCOPE: ${{ needs.pin.outputs.scope }}
         run: python3 -B tool/ci/nightly_compare.py --pin build/nightly-pin --scope "$SCOPE" --out build/nightly-compare
+      # A pull request is followed on the pull request itself, so its run
+      # opens no issue and dispatches nothing; the summary says what a
+      # scheduled run would have done.
       - name: Say what a scheduled run would do next
-        if: ${{ github.event_name == 'pull_request' && steps.compare.outputs.escalate == 'true' && needs.pin.outputs.scope == 'daily' }}
-        run: echo 'A scheduled run would now dispatch the full matrix for this nightly; a pull request run does not.' >> "$GITHUB_STEP_SUMMARY"
+        if: ${{ github.event_name == 'pull_request' && steps.compare.outputs.issue == 'true' }}
+        env:
+          TITLE: ${{ steps.compare.outputs.title }}
+          ESCALATE: ${{ steps.compare.outputs.escalate == 'true' && needs.pin.outputs.scope == 'daily' }}
+        run: |
+          echo "A scheduled run would now open or comment on the issue \"$TITLE\"; a pull request run does not." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$ESCALATE" = true ]; then
+            echo 'It would also dispatch the full matrix for this nightly.' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -315,7 +326,7 @@ jobs:
   issue:
     name: Open or update the nightly's issue
     needs: compare
-    if: ${{ always() && needs.compare.outputs.issue == 'true' }}
+    if: ${{ always() && needs.compare.outputs.issue == 'true' && github.event_name != 'pull_request' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
