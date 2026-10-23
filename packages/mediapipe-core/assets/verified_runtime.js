@@ -13,6 +13,9 @@ export async function loadVerifiedRuntime(pinUrl, baseUrl, family) {
   async function verified(name) {
     const expected = pin.sha384[name];
     if (!expected) throw new Error(`MediaPipe runtime ${name}: not pinned`);
+    // TODO: Try the package's own copy, then fallback roots, retrying
+    // transient failures; one failed fetch fails the task today. See
+    // packages/mediapipe-core/tool/ASSET_HOSTING.md.
     const file = await fetch(new URL(name, base));
     if (!file.ok) throw new Error(`MediaPipe runtime ${name}: HTTP ${file.status}`);
     const bytes = await file.arrayBuffer();
