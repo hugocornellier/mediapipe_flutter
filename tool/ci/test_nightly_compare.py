@@ -157,7 +157,10 @@ class EndToEnd(unittest.TestCase):
         (folder / 'jobs.json').write_text(json.dumps(jobs))
         for id, text in logs.items():
             (folder / 'logs' / f'{id}.log').write_text(text)
+        # Not the workflow's own settings, which the pin job's run of these
+        # tests inherits.
         env = dict(os.environ, NIGHTLY_COMPARE_TOLERANCE_SCALE=scale,
+                   NIGHTLY_COMPARE_ISSUE_PREFIX='',
                    GITHUB_OUTPUT=str(folder / 'output'), GITHUB_STEP_SUMMARY='')
         subprocess.run([sys.executable, '-B', str(REPO / 'tool/ci/nightly_compare.py'),
                         '--pin', str(folder / 'pin'), '--out', str(folder / 'out'),
