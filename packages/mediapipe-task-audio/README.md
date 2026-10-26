@@ -18,8 +18,8 @@ runtime.
 
 ## Use
 
-Bundle the model with your app: list it in the app's pubspec and declare the
-folder it goes in.
+Add `mediapipe_audio: ^0.1.0` to your app's dependencies. Bundle the model
+with your app: list it in the app's pubspec and declare the folder it goes in.
 
 ```yaml
 flutter:

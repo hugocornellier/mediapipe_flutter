@@ -39,6 +39,8 @@ browser with a hardware WebGPU adapter. The browser runtime also ignores
 
 ## Quick start
 
+Add `mediapipe_decision: ^0.1.0` to your app's dependencies, then:
+
 ```dart
 import 'package:mediapipe_decision/mediapipe_decision.dart';
 

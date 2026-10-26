@@ -29,8 +29,8 @@ their original identity. Existing package versions are preserved at this stage.
 On 2026-09-30 the packages took Google's names again (`mediapipe_core`,
 `mediapipe_vision`, `mediapipe_text`, `mediapipe_genai`, plus the new
 `mediapipe_audio`), since this code is meant to replace Google's packages, and
-took version 0.1.0, the first release after Google's 0.0.1 previews (not
-published yet; see CONTRIBUTING.md). Directory names (`packages/mediapipe-core`,
+took version 0.1.0, the first release after Google's 0.0.1 previews (see
+CONTRIBUTING.md). Directory names (`packages/mediapipe-core`,
 `packages/mediapipe-task-*`) are unchanged. The `mediapipe_flutter_native`
 release host keeps its name, and validation evidence keeps the names it was
 recorded with.
