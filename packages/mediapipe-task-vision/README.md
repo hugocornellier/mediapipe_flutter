@@ -9,11 +9,6 @@ MediaPipe task runtimes on supported platforms.
 **[See every task and platform](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)** ·
 **[Browse the gallery's source](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery)**
 
-> **Not published yet:** This package currently has
-> `publish_to: none`. The checkout instructions below work now. Once the
-> packages are published to pub.dev, apps can replace the path dependencies
-> with published versions; there is no published version to install today.
-
 ## Tasks
 
 | Kind | Dart classes |
@@ -29,21 +24,26 @@ the [Interactive Segmenter guide](https://github.com/hugocornellier/mediapipe_fl
 ## Installation
 
 Use **Flutter 3.47.5 stable** to match CI. The package requires Dart 3.12 or
-newer and the usual toolchain for your target platform. Clone the repository
-beside your app:
-
-```sh
-git clone https://github.com/hugocornellier/mediapipe_flutter.git
-```
-
-Add the vision package to your app's `pubspec.yaml`:
+newer and the usual toolchain for your target platform. Add the vision
+package to your app's `pubspec.yaml`:
 
 ```yaml
 dependencies:
   flutter:
     sdk: flutter
+  mediapipe_vision: ^0.1.0
+```
+
+To use the repository's current code instead, clone it beside your app,
+depend on the package by path and point `mediapipe_core` at the clone too:
+
+```yaml
+dependencies:
   mediapipe_vision:
     path: ../mediapipe_flutter/packages/mediapipe-task-vision
+dependency_overrides:
+  mediapipe_core:
+    path: ../mediapipe_flutter/packages/mediapipe-core
 ```
 
 On Android, iOS, macOS, Linux and Windows the package's build hook bundles

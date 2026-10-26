@@ -221,12 +221,13 @@ the history (`git show 4b4ab7a:debloat-plan.md`). Still open:
   requires them by those names. The macOS 14 and Android 9 jobs can join it
   once they have passed on `main`.
 - **Publish.** 0.1.0 of the six packages, as `CONTRIBUTING.md` ("Versions
-  and the first release") describes: one commit removes `publish_to: none`
-  and the `(unreleased)` marks, then `publish_check.py` and
-  `test_bundled_models.py` run, `mediapipe_core` publishes first, the five
-  families switch from `path:` to `mediapipe_core: ^0.1.0` and publish. Dry
-  runs only until then, and never `--force`. The `mediapipe_core` and
-  `mediapipe_text` names on pub.dev belong to Google's uploaders.
+  and the first release") describes. The pubspecs are publishable as checked
+  in (no `publish_to: none`, families on `mediapipe_core: ^0.1.0` with a
+  checked-in `pubspec_overrides.yaml` for the checkout); `publish_check.py`
+  and `test_bundled_models.py` run first, then `mediapipe_core` publishes and
+  the five families after it. Dry runs only until then, and never `--force`.
+  The `mediapipe_core` and `mediapipe_text` names on pub.dev belong to
+  Google's uploaders.
 - **Release builds.** On October 14 the gallery with every family built in
   release for iOS (`flutter build ipa`, 670 MB app) and macOS (697 MB). Every
   framework in both is arm64 only, built for iOS 15.0 or macOS 14.0 as its

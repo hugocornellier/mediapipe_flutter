@@ -1,11 +1,11 @@
 """Runs `flutter pub publish --dry-run` for each package, as pub.dev would see it.
 
-Each package is copied outside the repository (pub applies the enclosing
-repository's .gitignore), without `publish_to: none`, and with its path
-dependencies on sibling packages turned into the version constraints a
-published package carries. A `pubspec_overrides.yaml` resolves those against
-the sibling copies, since they are not on pub.dev yet. Nothing is published:
-this tool never runs `pub publish` without `--dry-run`.
+Each package is copied outside the repository, as git tracks it (pub applies
+the enclosing repository's .gitignore and the package's .pubignore). The
+family packages depend on `mediapipe_core` by version, and their checked-in
+`pubspec_overrides.yaml` resolves it against the sibling copy, as a checkout
+does; pub leaves that file out of the archive. Nothing is published: this
+tool never runs `pub publish` without `--dry-run`.
 
 Exit status is non-zero unless every package validates with zero warnings.
 """
@@ -22,13 +22,6 @@ sys.path.insert(0, str(CORE / 'tool'))
 from families import PACKAGES, package_folders  # noqa: E402
 
 FAMILY = package_folders()
-PATH_DEPENDENCY = re.compile(
-    r'^  (mediapipe_[a-z]+):\n    path: \.\./(mediapipe-[a-z-]+)\n', re.M)
-
-
-def version(package):
-    text = (PACKAGES / package / 'pubspec.yaml').read_text()
-    return re.search(r'^version: (\S+)$', text, re.M).group(1)
 
 
 def copy(package, target):
@@ -47,21 +40,6 @@ def copy(package, target):
 def prepare(package, root):
     target = root / package
     copy(package, target)
-    pubspec = target / 'pubspec.yaml'
-    text = re.sub(r'(?:^#.*\n)*^publish_to: none\n', '', pubspec.read_text(),
-                  flags=re.M)
-    overrides = []
-
-    def constraint(match):
-        name, directory = match.groups()
-        overrides.append(f'  {name}:\n    path: ../{directory}\n')
-        return f'  {name}: ^{version(directory)}\n'
-
-    text = PATH_DEPENDENCY.sub(constraint, text)
-    pubspec.write_text(text)
-    if overrides:
-        (target / 'pubspec_overrides.yaml').write_text(
-            'dependency_overrides:\n' + ''.join(overrides))
     return target
 
 
@@ -81,8 +59,8 @@ def main():
                 capture_output=True, text=True)
             output = result.stdout + result.stderr
             size = re.search(r'Total compressed archive size: (.+)\.', output)
-            # The only expected hint: siblings resolve through the override
-            # until mediapipe_core itself is on pub.dev.
+            # The only expected hint: a family's mediapipe_core resolves
+            # through its pubspec_overrides.yaml, as in a checkout.
             clean = re.search(r'Package has 0 warnings(\.| and)', output) is not None
             print(f'{package}: {"ok" if clean else "FAILED"}, '
                   f'archive {size.group(1) if size else "unknown"}', flush=True)

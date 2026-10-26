@@ -1,6 +1,6 @@
-## 0.1.0 (unreleased)
+## 0.1.0
 
-Not published yet.
+The first release.
 
 - Universal Embedder and Semantic Retriever on Android, iOS, macOS, Linux,
   Windows and the web, through Google's official MediaPipe runtimes: its

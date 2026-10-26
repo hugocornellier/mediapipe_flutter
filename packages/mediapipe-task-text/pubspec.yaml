@@ -9,9 +9,6 @@ topics:
   - nlp
   - text-classification
   - embeddings
-# Not published yet; `tool/publish_check.py` in mediapipe-core runs the
-# publish dry run on a copy without this line.
-publish_to: none
 
 platforms:
   android:
@@ -34,8 +31,7 @@ dependencies:
   ffi: ^2.1.4
   hooks: ^2.2.0
   native_toolchain_c: ^0.19.3
-  mediapipe_core:
-    path: ../mediapipe-core
+  mediapipe_core: ^0.1.0
   meta: ^1.18.0
 
 dev_dependencies:

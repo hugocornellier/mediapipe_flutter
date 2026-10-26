@@ -14,9 +14,6 @@ runtime for its platform, with Google's pinned models bundled at build time.
 
 **[Try the live gallery](https://hugocornellier.github.io/mediapipe_flutter/)**
 
-> **Not on pub.dev yet.** The packages set `publish_to: none` until they are
-> published; for now, depend on them by path from a checkout (below).
-
 ## Which package do I need?
 
 | Package | Use it for | Guide |
@@ -34,20 +31,27 @@ shared download code, model store and browser runtime settings
 
 ## Quick start
 
-Use Flutter 3.47.5 stable, the version CI tests (Dart 3.12 or newer). Clone
-the repository beside your app and add a family by path:
-
-```sh
-git clone https://github.com/hugocornellier/mediapipe_flutter.git
-```
+Use Flutter 3.47.5 stable, the version CI tests (Dart 3.12 or newer). Add a
+family to your app:
 
 ```yaml
 # Your app's pubspec.yaml
 dependencies:
   flutter:
     sdk: flutter
+  mediapipe_vision: ^0.1.0
+```
+
+To use the repository's current code instead, clone it beside your app and
+depend on the family by path, with `mediapipe_core` pointed at the clone too:
+
+```yaml
+dependencies:
   mediapipe_vision:
     path: ../mediapipe_flutter/packages/mediapipe-task-vision
+dependency_overrides:
+  mediapipe_core:
+    path: ../mediapipe_flutter/packages/mediapipe-core
 ```
 
 List the models your app uses in the same pubspec, and declare the folder

@@ -155,6 +155,9 @@ environment:
 dependencies:
   mediapipe_vision:
     path: {PACKAGE}
+dependency_overrides:
+  mediapipe_core:
+    path: {PACKAGE.parent / 'mediapipe-core'}
 dev_dependencies:
   crypto: ^3.0.6
   test: ^1.31.0

@@ -69,10 +69,9 @@ retrieval tasks to be cards with their reason
 
 ## Versions and the first release
 
-Nothing from this repository is on pub.dev yet. The first release will be
-0.1.0 of `mediapipe_core`, `mediapipe_vision`, `mediapipe_text`,
-`mediapipe_audio`, `mediapipe_decision` and `mediapipe_retrieval`, published
-together.
+The first release is 0.1.0 of `mediapipe_core`, `mediapipe_vision`,
+`mediapipe_text`, `mediapipe_audio`, `mediapipe_decision` and
+`mediapipe_retrieval`, published together.
 
 On pub.dev, `mediapipe_core` and `mediapipe_text` (and the removed
 `mediapipe_genai`) are Google's 0.0.1 previews from May 2024, published from
@@ -84,19 +83,23 @@ previews. `mediapipe_vision`, `mediapipe_audio`, `mediapipe_decision` and
 `mediapipe_retrieval` were free names on October 9, 2026, kept at 0.1.0 so
 all six release together.
 
-Until the first release:
+Until 0.1.0 is on pub.dev:
 
-- Every package stays at `version: 0.1.0` with `publish_to: none`, however
-  much changes.
-- Each CHANGELOG has one section, `## 0.1.0 (unreleased)`, describing the
-  package as it will ship. Edit that section; do not add version sections,
-  and do not call a change breaking or list what it renamed, since no
-  release came before it.
+- Every package stays at `version: 0.1.0`, however much changes.
+- Each CHANGELOG has one section, `## 0.1.0`, describing the package as it
+  ships. Edit that section; do not add version sections, and do not call a
+  change breaking or list what it renamed, since no release came before it.
 - `MIGRATION.md` covers only Google's published 0.0.1 API. Changes between
   unpublished states never need a migration note.
 
-At the first release, remove `publish_to: none` and the `(unreleased)` marks
-in one commit, then run `publish_check.py` and the bundled-model check above.
+The pubspecs are publishable as checked in: no `publish_to: none`, and each
+family depends on `mediapipe_core: ^0.1.0`, as its published copy must. A
+checked-in `pubspec_overrides.yaml` beside each family pubspec (and in the
+sample, the benchmarks and every generated consumer app) points
+`mediapipe_core` at the sibling package instead, so a checkout builds against
+itself; pub leaves that file out of the published archive. Before publishing,
+run `publish_check.py` and the bundled-model check above, then publish
+`mediapipe_core` first and the five families after it, never with `--force`.
 
 ## How to add a task
 

@@ -136,6 +136,9 @@ dependencies:
     sdk: flutter
   mediapipe_vision:
     path: ../packages/mediapipe-task-vision
+dependency_overrides:
+  mediapipe_core:
+    path: ../packages/mediapipe-core
 dev_dependencies:
   crypto: ^3.0.6
   test: ^1.31.0

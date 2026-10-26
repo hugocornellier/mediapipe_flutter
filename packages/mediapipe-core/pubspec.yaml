@@ -7,9 +7,6 @@ topics:
   - mediapipe
   - machine-learning
   - ffi
-# Not published yet; `tool/publish_check.py` in mediapipe-core runs the
-# publish dry run on a copy without this line.
-publish_to: none
 
 platforms:
   android:

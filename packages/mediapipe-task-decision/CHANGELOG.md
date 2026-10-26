@@ -1,6 +1,6 @@
-## 0.1.0 (unreleased)
+## 0.1.0
 
-Not published yet.
+The first release.
 
 - Decision Maker on Android, iOS, macOS, Linux, Windows and the web, through
   Google's official MediaPipe runtimes: its per-family 1.2.0 decision C

@@ -6,10 +6,6 @@ platform, plus Proofreader and Summarizer on every platform but the web.
 Every task runs Google's official MediaPipe pipeline, and Google's pinned
 models are bundled with your app at build time.
 
-> **Not on pub.dev yet.** Depend on it by path from a checkout of
-> [the repository](https://github.com/hugocornellier/mediapipe_flutter) until
-> it is published.
-
 ## Tasks and platforms
 
 | Task | Class | Android | iOS | macOS arm64 | Linux x64 | Windows x64 | Web |

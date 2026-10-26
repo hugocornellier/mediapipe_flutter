@@ -101,7 +101,10 @@ dependencies:
   crypto: ^3.0.6
   mediapipe_core:
     path: ../packages/mediapipe-core
-{dependencies}dev_dependencies:
+{dependencies}dependency_overrides:
+  mediapipe_core:
+    path: ../packages/mediapipe-core
+dev_dependencies:
   flutter_test:
     sdk: flutter
   integration_test:

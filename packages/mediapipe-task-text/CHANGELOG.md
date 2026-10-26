@@ -1,6 +1,6 @@
-## 0.1.0 (unreleased)
+## 0.1.0
 
-Not published yet. The first release of this rewrite, replacing Google's
+The first release of this rewrite, replacing Google's
 `mediapipe_text` 0.0.1 (May 2024) with a new API;
 [MIGRATION.md](MIGRATION.md) maps it.
 

@@ -134,6 +134,10 @@ def main():
         dependencies = ''.join(
             f'  {package_name(folder)}:\n    path: {PACKAGES / folder}\n'
             for folder in package_folders())
+        # The families depend on mediapipe_core from pub.dev; the snippets
+        # compile against this checkout's copy.
+        overrides = (f'dependency_overrides:\n  mediapipe_core:\n'
+                     f'    path: {PACKAGES / "mediapipe-core"}\n')
         (app / 'pubspec.yaml').write_text(f"""name: doc_snippets
 publish_to: none
 environment:
@@ -141,7 +145,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-{dependencies}""")
+{dependencies}{overrides}""")
         (app / 'analysis_options.yaml').write_text(
             'analyzer:\n  errors:\n    avoid_print: ignore\n')
         origins = {}

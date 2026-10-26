@@ -1,6 +1,6 @@
-## 0.1.0 (unreleased)
+## 0.1.0
 
-Not published yet. The first release of this rewrite, replacing Google's
+The first release of this rewrite, replacing Google's
 `mediapipe_core` 0.0.1 (May 2024), which held only the shared containers of
 Google's text package; [MIGRATION.md](MIGRATION.md) maps that API.
 

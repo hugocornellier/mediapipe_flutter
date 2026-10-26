@@ -5,10 +5,6 @@ choice or score question about a piece of text and get Google's answer with
 calibrated probabilities, in one forward pass of a small model rather than by
 generating text. Every call runs Google's official MediaPipe pipeline.
 
-> **Not on pub.dev yet.** Depend on it by path from a checkout of
-> [the repository](https://github.com/hugocornellier/mediapipe_flutter) until
-> it is published.
-
 ## Platforms
 
 | Task | Class | Android | iOS | macOS arm64 | Linux x64 | Windows x64 | Web |

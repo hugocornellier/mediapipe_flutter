@@ -24,6 +24,7 @@ def test_app(app=APP, package=PACKAGE):
             "--project-name", "mediapipe_vision_smoke", str(app),
         ], env=env, check=True)
     dependency = json.dumps(os.path.relpath(package, app))
+    core = json.dumps(os.path.relpath(Path(package).parent / "mediapipe-core", app))
     (app / "pubspec.yaml").write_text(f"""name: mediapipe_vision_smoke
 publish_to: none
 environment:
@@ -33,6 +34,9 @@ dependencies:
     sdk: flutter
   mediapipe_vision:
     path: {dependency}
+dependency_overrides:
+  mediapipe_core:
+    path: {core}
 dev_dependencies:
   integration_test:
     sdk: flutter

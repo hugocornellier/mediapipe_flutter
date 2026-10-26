@@ -6,10 +6,6 @@ Retriever indexes documents, images, audio and mixed records on the device and
 finds the ones nearest a query. Every call runs Google's official MediaPipe
 pipeline.
 
-> **Not on pub.dev yet.** Depend on it by path from a checkout of
-> [the repository](https://github.com/hugocornellier/mediapipe_flutter) until
-> it is published.
-
 ## Platforms
 
 | Task | Class | Android | iOS | macOS arm64 | Linux x64 | Windows x64 | Web |

@@ -310,6 +310,12 @@ dependencies:
   lucide_icons_flutter: ^3.1.20
 $camera
 
+# The families depend on mediapipe_core from pub.dev; the gallery builds
+# against this repository's copy.
+dependency_overrides:
+  mediapipe_core:
+    path: ../packages/mediapipe-core
+
 dev_dependencies:
   camera_platform_interface: ^2.13.1
   flutter_lints: ^6.0.0
