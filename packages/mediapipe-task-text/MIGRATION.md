@@ -1,7 +1,7 @@
 # Migrating from Google's mediapipe_text 0.0.1
 
 Google published `mediapipe_text` 0.0.1 in May 2024. This package's first
-release, 0.1.0 (not published yet), replaces its API. Import only
+release, 0.1.0, replaces its API. Import only
 `package:mediapipe_text/mediapipe_text.dart`; it re-exports what apps need from
 `mediapipe_core`, so apps no longer import `mediapipe_core.dart` themselves.
 

@@ -1,6 +1,6 @@
-## 0.1.0 (unreleased)
+## 0.1.0
 
-Not published yet. The first release.
+The first release.
 
 - Face Detector, Face Landmarker, Hand Landmarker, Gesture Recognizer, Pose
   Landmarker, Holistic Landmarker, Object Detector, Image Classifier, Image

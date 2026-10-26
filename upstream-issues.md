@@ -304,6 +304,15 @@ Google's per-family macOS libraries wait the same way, and so do its October
   job (#59, #79, #82 and #84). That job's tests now get 180 s each, more than
   the upload request's own 60 s timeout, and so do the desktop and family
   jobs' tests on every host.
+- **macOS, October 23:** the "Every package" job of the macOS workflow ran
+  `make test_only`, whose suites still had the default 30 s. In
+  [one run](https://github.com/hugocornellier/mediapipe_flutter/actions/runs/39978702710)
+  the audio test that opens and then closes 64 streams timed out after 30 s
+  and finished 8 s later; the eleven runs before it took 2 to 3 s. The
+  library logged `Network error: 503 for url: https://play.googleapis.com/log`
+  22 s into the wait, and the job beside it saw the same answers for the next
+  twenty minutes. The Makefile's `dart test` lines now pass `--timeout 180s`
+  as the family workflow does.
 
 ### UP-026: Holistic cannot open its face blendshapes model on a desktop or iPhone GPU
 

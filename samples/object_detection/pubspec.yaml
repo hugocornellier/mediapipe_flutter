@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Not on pub.dev yet, so the sample uses the package from this repository.
+  # The sample uses the package from this repository, not pub.dev.
   mediapipe_vision:
     path: ../../packages/mediapipe-task-vision
   # The vision package decodes no video; the gallery's plugin decodes files

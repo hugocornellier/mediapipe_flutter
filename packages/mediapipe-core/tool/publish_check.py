@@ -1,16 +1,19 @@
 """Runs `flutter pub publish --dry-run` for each package, as pub.dev would see it.
 
-Each package is copied outside the repository (pub applies the enclosing
-repository's .gitignore), without `publish_to: none`, and with its path
-dependencies on sibling packages turned into the version constraints a
-published package carries. A `pubspec_overrides.yaml` resolves those against
-the sibling copies, since they are not on pub.dev yet. Nothing is published:
-this tool never runs `pub publish` without `--dry-run`.
+Each package is copied outside the repository, as git tracks it (pub applies
+the enclosing repository's .gitignore and the package's .pubignore). The
+family packages depend on `mediapipe_core` by version, and their checked-in
+`pubspec_overrides.yaml` resolves it against the sibling copy, as a checkout
+does; pub leaves that file out of the archive. Nothing is published: this
+tool never runs `pub publish` without `--dry-run`.
 
 Exit status is non-zero unless every package validates with zero warnings.
+`archive_files` reads the files the dry run lists, which
+tool/check_archives.py stages and builds an app against.
 """
 import argparse
 from pathlib import Path
+import platform
 import re
 import shutil
 import subprocess
@@ -22,13 +25,6 @@ sys.path.insert(0, str(CORE / 'tool'))
 from families import PACKAGES, package_folders  # noqa: E402
 
 FAMILY = package_folders()
-PATH_DEPENDENCY = re.compile(
-    r'^  (mediapipe_[a-z]+):\n    path: \.\./(mediapipe-[a-z-]+)\n', re.M)
-
-
-def version(package):
-    text = (PACKAGES / package / 'pubspec.yaml').read_text()
-    return re.search(r'^version: (\S+)$', text, re.M).group(1)
 
 
 def copy(package, target):
@@ -47,22 +43,61 @@ def copy(package, target):
 def prepare(package, root):
     target = root / package
     copy(package, target)
-    pubspec = target / 'pubspec.yaml'
-    text = re.sub(r'(?:^#.*\n)*^publish_to: none\n', '', pubspec.read_text(),
-                  flags=re.M)
-    overrides = []
-
-    def constraint(match):
-        name, directory = match.groups()
-        overrides.append(f'  {name}:\n    path: ../{directory}\n')
-        return f'  {name}: ^{version(directory)}\n'
-
-    text = PATH_DEPENDENCY.sub(constraint, text)
-    pubspec.write_text(text)
-    if overrides:
-        (target / 'pubspec_overrides.yaml').write_text(
-            'dependency_overrides:\n' + ''.join(overrides))
     return target
+
+
+def flutter_dry_run():
+    """The dry-run command. On Windows, flutter is a batch entry point that
+    a bare name does not find (as tool_helpers.run resolves it)."""
+    executable = 'flutter.bat' if platform.system() == 'Windows' else 'flutter'
+    return [shutil.which(executable) or executable,
+            'pub', 'publish', '--dry-run']
+
+
+# One entry of the tree the dry run prints: the branch prefix, the name and,
+# for a file, its size. Directories have no size. Pub draws the tree with
+# Unicode box characters, or with `|-- `, `'-- ` and `|   ` on Windows.
+TREE_ENTRY = re.compile(
+    r"^((?:[│| ]   )*)(?:[├└]── |[|']-- )(.+?)"
+    r"(?: \(((?:<1|\d+) [KMGT]?B)\))?$")
+
+
+def archive_files(output):
+    """The files `flutter pub publish --dry-run` lists in `output`, relative
+    to the package: exactly what the archive would hold."""
+    lines = output.splitlines()
+    start = next((index for index, line in enumerate(lines)
+                  if line.startswith('Publishing ')), None)
+    if start is None:
+        raise ValueError(f'The dry run listed no package:\n{output}')
+    files, folders = [], []
+    for line in lines[start + 1:]:
+        entry = TREE_ENTRY.match(line)
+        if not entry:
+            break
+        depth = len(entry.group(1)) // 4
+        del folders[depth:]
+        if entry.group(3) is None:
+            folders.append(entry.group(2))
+        else:
+            files.append('/'.join([*folders, entry.group(2)]))
+    if 'pubspec.yaml' not in files:
+        raise ValueError(f'The dry run listed no pubspec.yaml:\n{output}')
+    return files
+
+
+def dry_run(package_dir):
+    """Runs the dry run in `package_dir`, a copy from `prepare`, and returns
+    its output; fails unless pub accepted the package. Pub writes UTF-8 on
+    every host (the tree's box characters), whatever the console's code
+    page says, so the output is decoded as such."""
+    result = subprocess.run(flutter_dry_run(), cwd=package_dir,
+                            capture_output=True, encoding='utf-8',
+                            errors='replace')
+    output = result.stdout + result.stderr
+    if result.returncode != 0:
+        raise RuntimeError(f'{package_dir.name}: the dry run failed:\n{output}')
+    return output
 
 
 def main():
@@ -76,13 +111,13 @@ def main():
         for package in FAMILY:
             prepare(package, root)
         for package in args.packages:
-            result = subprocess.run(
-                ['flutter', 'pub', 'publish', '--dry-run'], cwd=root / package,
-                capture_output=True, text=True)
+            result = subprocess.run(flutter_dry_run(), cwd=root / package,
+                                    capture_output=True, encoding='utf-8',
+                                    errors='replace')
             output = result.stdout + result.stderr
             size = re.search(r'Total compressed archive size: (.+)\.', output)
-            # The only expected hint: siblings resolve through the override
-            # until mediapipe_core itself is on pub.dev.
+            # The only expected hint: a family's mediapipe_core resolves
+            # through its pubspec_overrides.yaml, as in a checkout.
             clean = re.search(r'Package has 0 warnings(\.| and)', output) is not None
             print(f'{package}: {"ok" if clean else "FAILED"}, '
                   f'archive {size.group(1) if size else "unknown"}', flush=True)

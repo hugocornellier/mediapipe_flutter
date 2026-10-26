@@ -6,10 +6,6 @@ Retriever indexes documents, images, audio and mixed records on the device and
 finds the ones nearest a query. Every call runs Google's official MediaPipe
 pipeline.
 
-> **Not on pub.dev yet.** Depend on it by path from a checkout of
-> [the repository](https://github.com/hugocornellier/mediapipe_flutter) until
-> it is published.
-
 ## Platforms
 
 | Task | Class | Android | iOS | macOS arm64 | Linux x64 | Windows x64 | Web |
@@ -37,6 +33,8 @@ the model itself, since Google's task reads a `modelAssetPath` as a file
 ([UP-051](https://github.com/hugocornellier/mediapipe_flutter/blob/main/upstream-issues.md#up-051-the-browser-universal-embedder-reads-modelassetpath-as-a-file-and-a-second-wasm-object-needs-the-loader-again)).
 
 ## Quick start
+
+Add `mediapipe_retrieval: ^0.1.0` to your app's dependencies, then:
 
 ```dart
 import 'package:mediapipe_retrieval/mediapipe_retrieval.dart';

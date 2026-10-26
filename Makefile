@@ -74,15 +74,17 @@ test:
 	$(MAKE) test_only
 
 # Every package's suite. Decision's and Retrieval's reference tests skip
-# unless `make models_all` downloaded their models.
+# unless `make models_all` downloaded their models. Each suite gets 180 s a
+# test, as in CI: a task's close waits for Google's usage-logging upload, and
+# a slow reply holds a test past the default 30 s (upstream-issues.md UP-025).
 test_only:
 	@for package in core $(TASK_FAMILIES); do $(MAKE) test_$$package || exit $$?; done
 
 test_core:
-	cd packages/mediapipe-core && dart test --reporter expanded
+	cd packages/mediapipe-core && dart test --timeout 180s --reporter expanded
 
 test_text:
-	cd packages/mediapipe-task-text && dart test --reporter expanded
+	cd packages/mediapipe-task-text && dart test --timeout 180s --reporter expanded
 
 .PHONY: test_audio models_audio test_audio_stream_bridge test_audio_web
 models_audio:
@@ -90,7 +92,7 @@ models_audio:
 
 test_audio:
 	$(MAKE) test_audio_stream_bridge
-	cd packages/mediapipe-task-audio && dart test --reporter expanded
+	cd packages/mediapipe-task-audio && dart test --timeout 180s --reporter expanded
 
 # The audio stream's callback-copy bridge, its slots and their threads,
 # under AddressSanitizer.
@@ -108,8 +110,8 @@ test_audio_web:
 # The C ABI sizes the vision bindings assume, against the vendored headers.
 test_vision:
 	clang++ -std=c++17 -fsyntax-only -Wall -Wextra -Werror -I packages/mediapipe-core/native/include packages/mediapipe-task-vision/tool/abi_check.cc
-	cd packages/mediapipe-task-vision && dart test --reporter expanded --exclude-tags isolated
-	cd packages/mediapipe-task-vision && dart test --reporter expanded --tags isolated
+	cd packages/mediapipe-task-vision && dart test --timeout 180s --reporter expanded --exclude-tags isolated
+	cd packages/mediapipe-task-vision && dart test --timeout 180s --reporter expanded --tags isolated
 
 # A contributor shortcut: CI runs this command itself.
 .PHONY: test_vision_web
@@ -175,7 +177,7 @@ models_decision:
 	cd packages/mediapipe-task-decision && dart tool/download_models.dart
 
 test_decision:
-	cd packages/mediapipe-task-decision && dart test --reporter expanded
+	cd packages/mediapipe-task-decision && dart test --timeout 180s --reporter expanded
 
 # The retrieval tasks' EmbeddingGemma 2 model (388 MB) and their native suite
 # against Google's Python answers, on Google's retrieval library for this host.
@@ -184,4 +186,4 @@ models_retrieval:
 	cd packages/mediapipe-task-retrieval && dart tool/download_models.dart
 
 test_retrieval:
-	cd packages/mediapipe-task-retrieval && dart test --reporter expanded
+	cd packages/mediapipe-task-retrieval && dart test --timeout 180s --reporter expanded

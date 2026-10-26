@@ -62,15 +62,13 @@ are required.
 
 ### Dependencies
 
-The Object Detector is in the `mediapipe_vision` package. It is not on pub.dev
-yet, so add it by path from a clone of this repository:
+The Object Detector is in the `mediapipe_vision` package:
 
 ```yaml
 dependencies:
   flutter:
     sdk: flutter
-  mediapipe_vision:
-    path: ../mediapipe_flutter/packages/mediapipe-task-vision
+  mediapipe_vision: ^0.1.0
 ```
 
 On Android, iOS, macOS, Linux and Windows the package's build hook downloads

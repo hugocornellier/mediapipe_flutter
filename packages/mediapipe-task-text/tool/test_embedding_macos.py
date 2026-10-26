@@ -53,6 +53,9 @@ dependencies:
     path: ../packages/mediapipe-task-text
   mediapipe_vision:
     path: ../packages/mediapipe-task-vision
+dependency_overrides:
+  mediapipe_core:
+    path: ../packages/mediapipe-core
 dev_dependencies:
   integration_test:
     sdk: flutter
