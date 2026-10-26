@@ -52,21 +52,25 @@ def run(command, cwd, log, timeout=2400):
 def stage(root):
     """Copies every package out of the repository, lists each archive with
     the dry run and stages exactly those files under `root/packages`."""
-    copies = root / 'copies'
     staged = root / 'packages'
-    for folder in package_folders():
-        prepare(folder, copies)
-    for folder in package_folders():
-        files = archive_files(dry_run(copies / folder))
-        for relative in files:
-            source = copies / folder / relative
-            if not source.is_file():
-                raise RuntimeError(f'{folder}: the dry run lists {relative}, '
-                                   'which the copy lacks.')
-            destination = staged / folder / relative
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, destination)
-        print(f'{folder}: staged {len(files)} files', flush=True)
+    # The copies live outside the repository, as publish_check.py keeps them:
+    # under the checkout, its .gitignore (`build/`) would hide every file
+    # from pub, which then lists an empty package.
+    with tempfile.TemporaryDirectory(prefix='mediapipe-archives-') as tmp:
+        copies = Path(tmp)
+        for folder in package_folders():
+            prepare(folder, copies)
+        for folder in package_folders():
+            files = archive_files(dry_run(copies / folder))
+            for relative in files:
+                source = copies / folder / relative
+                if not source.is_file():
+                    raise RuntimeError(f'{folder}: the dry run lists '
+                                       f'{relative}, which the copy lacks.')
+                destination = staged / folder / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, destination)
+            print(f'{folder}: staged {len(files)} files', flush=True)
     return staged
 
 
