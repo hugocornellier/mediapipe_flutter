@@ -55,9 +55,11 @@ def flutter_dry_run():
 
 
 # One entry of the tree the dry run prints: the branch prefix, the name and,
-# for a file, its size. Directories have no size.
+# for a file, its size. Directories have no size. Pub draws the tree with
+# Unicode box characters, or with `|-- `, `'-- ` and `|   ` on Windows.
 TREE_ENTRY = re.compile(
-    r'^((?:[│ ]   )*)[├└]── (.+?)(?: \(((?:<1|\d+) [KMGT]?B)\))?$')
+    r"^((?:[│| ]   )*)(?:[├└]── |[|']-- )(.+?)"
+    r"(?: \(((?:<1|\d+) [KMGT]?B)\))?$")
 
 
 def archive_files(output):
@@ -67,7 +69,7 @@ def archive_files(output):
     start = next((index for index, line in enumerate(lines)
                   if line.startswith('Publishing ')), None)
     if start is None:
-        raise ValueError('The dry run listed no package.')
+        raise ValueError(f'The dry run listed no package:\n{output}')
     files, folders = [], []
     for line in lines[start + 1:]:
         entry = TREE_ENTRY.match(line)
@@ -80,7 +82,7 @@ def archive_files(output):
         else:
             files.append('/'.join([*folders, entry.group(2)]))
     if 'pubspec.yaml' not in files:
-        raise ValueError('The dry run listed no pubspec.yaml.')
+        raise ValueError(f'The dry run listed no pubspec.yaml:\n{output}')
     return files
 
 
