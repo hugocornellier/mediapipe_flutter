@@ -30,6 +30,7 @@ make test                      # downloads the test models, runs every package's
 python3 -B tool/check_docs.py  # README samples compile (web too), links resolve
 python3 -B tool/check_repository.py  # family lists and shared pins agree
 python3 -B packages/mediapipe-core/tool/publish_check.py   # pub dry run
+python3 -B tool/check_archives.py    # an app builds from the archives' files
 python3 -B packages/mediapipe-core/tool/test_bundled_models.py
 ```
 
@@ -37,9 +38,12 @@ python3 -B packages/mediapipe-core/tool/test_bundled_models.py
 so their reference tests skip; run `make models_all` first to include them.
 CI runs them with cached models.
 
-The last one builds fresh apps from the packages as pub.dev would ship them:
-it bundles one model per family with `dart run mediapipe_core:bundle_models`
-and runs them offline. CI runs the
+The last two build fresh apps from the packages as pub.dev would ship them.
+`check_archives.py` stages exactly the files the pub dry run lists and builds
+an app that imports every family, for this desktop and the web by default
+(name targets to build others: `macos linux windows web android ios`); CI
+builds all six. `test_bundled_models.py` bundles one model per family with
+`dart run mediapipe_core:bundle_models` and runs them offline. CI runs the
 rest (Android emulator, Linux, Windows and three browsers).
 
 CI also runs the gallery's device suites in release builds, which `flutter
@@ -98,7 +102,8 @@ checked-in `pubspec_overrides.yaml` beside each family pubspec (and in the
 sample, the benchmarks and every generated consumer app) points
 `mediapipe_core` at the sibling package instead, so a checkout builds against
 itself; pub leaves that file out of the published archive. Before publishing,
-run `publish_check.py` and the bundled-model check above, then publish
+run `publish_check.py`, `check_archives.py` and the bundled-model check
+above, then publish
 `mediapipe_core` first and the five families after it, never with `--force`.
 
 ## How to add a task

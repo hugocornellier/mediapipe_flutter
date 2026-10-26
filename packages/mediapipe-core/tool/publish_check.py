@@ -8,6 +8,8 @@ does; pub leaves that file out of the archive. Nothing is published: this
 tool never runs `pub publish` without `--dry-run`.
 
 Exit status is non-zero unless every package validates with zero warnings.
+`archive_files` reads the files the dry run lists, which
+tool/check_archives.py stages and builds an app against.
 """
 import argparse
 from pathlib import Path
@@ -41,6 +43,47 @@ def prepare(package, root):
     target = root / package
     copy(package, target)
     return target
+
+
+# One entry of the tree the dry run prints: the branch prefix, the name and,
+# for a file, its size. Directories have no size.
+TREE_ENTRY = re.compile(
+    r'^((?:[│ ]   )*)[├└]── (.+?)(?: \(((?:<1|\d+) [KMGT]?B)\))?$')
+
+
+def archive_files(output):
+    """The files `flutter pub publish --dry-run` lists in `output`, relative
+    to the package: exactly what the archive would hold."""
+    lines = output.splitlines()
+    start = next((index for index, line in enumerate(lines)
+                  if line.startswith('Publishing ')), None)
+    if start is None:
+        raise ValueError('The dry run listed no package.')
+    files, folders = [], []
+    for line in lines[start + 1:]:
+        entry = TREE_ENTRY.match(line)
+        if not entry:
+            break
+        depth = len(entry.group(1)) // 4
+        del folders[depth:]
+        if entry.group(3) is None:
+            folders.append(entry.group(2))
+        else:
+            files.append('/'.join([*folders, entry.group(2)]))
+    if 'pubspec.yaml' not in files:
+        raise ValueError('The dry run listed no pubspec.yaml.')
+    return files
+
+
+def dry_run(package_dir):
+    """Runs the dry run in `package_dir`, a copy from `prepare`, and returns
+    its output; fails unless pub accepted the package."""
+    result = subprocess.run(['flutter', 'pub', 'publish', '--dry-run'],
+                            cwd=package_dir, capture_output=True, text=True)
+    output = result.stdout + result.stderr
+    if result.returncode != 0:
+        raise RuntimeError(f'{package_dir.name}: the dry run failed:\n{output}')
+    return output
 
 
 def main():
