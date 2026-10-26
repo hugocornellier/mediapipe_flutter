@@ -13,6 +13,7 @@ tool/check_archives.py stages and builds an app against.
 """
 import argparse
 from pathlib import Path
+import platform
 import re
 import shutil
 import subprocess
@@ -43,6 +44,14 @@ def prepare(package, root):
     target = root / package
     copy(package, target)
     return target
+
+
+def flutter_dry_run():
+    """The dry-run command. On Windows, flutter is a batch entry point that
+    a bare name does not find (as tool_helpers.run resolves it)."""
+    executable = 'flutter.bat' if platform.system() == 'Windows' else 'flutter'
+    return [shutil.which(executable) or executable,
+            'pub', 'publish', '--dry-run']
 
 
 # One entry of the tree the dry run prints: the branch prefix, the name and,
@@ -78,8 +87,8 @@ def archive_files(output):
 def dry_run(package_dir):
     """Runs the dry run in `package_dir`, a copy from `prepare`, and returns
     its output; fails unless pub accepted the package."""
-    result = subprocess.run(['flutter', 'pub', 'publish', '--dry-run'],
-                            cwd=package_dir, capture_output=True, text=True)
+    result = subprocess.run(flutter_dry_run(), cwd=package_dir,
+                            capture_output=True, text=True)
     output = result.stdout + result.stderr
     if result.returncode != 0:
         raise RuntimeError(f'{package_dir.name}: the dry run failed:\n{output}')
@@ -97,9 +106,8 @@ def main():
         for package in FAMILY:
             prepare(package, root)
         for package in args.packages:
-            result = subprocess.run(
-                ['flutter', 'pub', 'publish', '--dry-run'], cwd=root / package,
-                capture_output=True, text=True)
+            result = subprocess.run(flutter_dry_run(), cwd=root / package,
+                                    capture_output=True, text=True)
             output = result.stdout + result.stderr
             size = re.search(r'Total compressed archive size: (.+)\.', output)
             # The only expected hint: a family's mediapipe_core resolves
