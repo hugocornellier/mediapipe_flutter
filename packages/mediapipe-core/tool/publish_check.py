@@ -88,9 +88,12 @@ def archive_files(output):
 
 def dry_run(package_dir):
     """Runs the dry run in `package_dir`, a copy from `prepare`, and returns
-    its output; fails unless pub accepted the package."""
+    its output; fails unless pub accepted the package. Pub writes UTF-8 on
+    every host (the tree's box characters), whatever the console's code
+    page says, so the output is decoded as such."""
     result = subprocess.run(flutter_dry_run(), cwd=package_dir,
-                            capture_output=True, text=True)
+                            capture_output=True, encoding='utf-8',
+                            errors='replace')
     output = result.stdout + result.stderr
     if result.returncode != 0:
         raise RuntimeError(f'{package_dir.name}: the dry run failed:\n{output}')
@@ -109,7 +112,8 @@ def main():
             prepare(package, root)
         for package in args.packages:
             result = subprocess.run(flutter_dry_run(), cwd=root / package,
-                                    capture_output=True, text=True)
+                                    capture_output=True, encoding='utf-8',
+                                    errors='replace')
             output = result.stdout + result.stderr
             size = re.search(r'Total compressed archive size: (.+)\.', output)
             # The only expected hint: a family's mediapipe_core resolves
