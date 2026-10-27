@@ -70,6 +70,7 @@ jobs:
       generation: ${{ steps.pin.outputs.generation }}
       scope: ${{ steps.pin.outputs.scope }}
       web: ${{ steps.pin.outputs.web }}
+      skip_tasks: ${{ steps.pin.outputs.skip_tasks }}
     steps:
       - uses: actions/checkout@v7
       - name: Test the pin and comparison tools
@@ -113,6 +114,7 @@ jobs:
           PATCHED: ${{ steps.pin.outputs.patched }}
           API_CHANGED: ${{ steps.pin.outputs.api_changed }}
           WEB_NOTE: ${{ steps.pin.outputs.web_note }}
+          SKIP_TASKS: ${{ steps.pin.outputs.skip_tasks }}
         run: |
           if [ -n "$COMPARED" ]; then
             echo "Nightly $NIGHTLY (generation $GENERATION) was compared already ($COMPARED); nothing to run." >> "$GITHUB_STEP_SUMMARY"
@@ -123,10 +125,13 @@ jobs:
           else
             echo 'report=true' >> "$GITHUB_OUTPUT"
             echo "compare=$PATCHED" >> "$GITHUB_OUTPUT"
-            if [ "$API_CHANGED" = true ]; then
-              echo "Nightly $NIGHTLY changes the C API: no suites run; the compare job reports it." >> "$GITHUB_STEP_SUMMARY"
+            if [ "$API_CHANGED" = true ] && [ "$PATCHED" != true ]; then
+              echo "Nightly $NIGHTLY changes the C API that every suite needs: no suites run; the compare job reports it." >> "$GITHUB_STEP_SUMMARY"
             else
               echo "Nightly $NIGHTLY against the pinned $PREVIOUS, $SCOPE set. Browser: $WEB_NOTE." >> "$GITHUB_STEP_SUMMARY"
+              if [ -n "$SKIP_TASKS" ]; then
+                echo "Left out on both sides, because their C API changed: $SKIP_TASKS." >> "$GITHUB_STEP_SUMMARY"
+              fi
             fi
           fi
       - uses: actions/upload-artifact@v4
@@ -138,7 +143,9 @@ jobs:
 
   # The existing workflows, called once per side. Daily: Linux CPU and Mesa
   # GPU (desktop.yaml), the Android 15 emulator (android.yaml). Full: every
-  # desktop and Android job, iOS (ios.yaml) and macOS (main.yaml).
+  # desktop and Android job, iOS (ios.yaml) and macOS (main.yaml). A task
+  # whose own C API the nightly changed, and that only the gallery app runs,
+  # is left out of both sides (skip_tasks, MEDIAPIPE_SKIP_TASKS).
   desktop:
     name: Desktop (${{ matrix.side }})
     needs: pin
@@ -153,6 +160,7 @@ jobs:
     with:
       side: ${{ matrix.side }}
       scope: ${{ needs.pin.outputs.scope }}
+      skip_tasks: ${{ needs.pin.outputs.skip_tasks }}
 
   android:
     name: Android (${{ matrix.side }})
@@ -168,6 +176,7 @@ jobs:
     with:
       side: ${{ matrix.side }}
       scope: ${{ needs.pin.outputs.scope }}
+      skip_tasks: ${{ needs.pin.outputs.skip_tasks }}
 
   ios:
     name: iOS (${{ matrix.side }})
@@ -182,6 +191,7 @@ jobs:
     uses: ./.github/workflows/ios.yaml
     with:
       side: ${{ matrix.side }}
+      skip_tasks: ${{ needs.pin.outputs.skip_tasks }}
 
   macos:
     name: macOS (${{ matrix.side }})
@@ -196,11 +206,13 @@ jobs:
     uses: ./.github/workflows/main.yaml
     with:
       side: ${{ matrix.side }}
+      skip_tasks: ${{ needs.pin.outputs.skip_tasks }}
 
   # web.yaml cannot be called here: its Pages deploy job needs pages and
   # id-token write, which a caller must grant. This runs its browser steps for
   # Google's runtime: the WebGL API suite in Chromium and text and audio in
-  # WebKit, each against Google's own JavaScript of the same build.
+  # WebKit, each against Google's own JavaScript of the same build. It takes
+  # no skip_tasks: browsers run Google's JavaScript, not the C headers.
   web:
     name: Web (${{ matrix.side }}) / Chromium WebGL API and WebKit text and audio
     needs: pin

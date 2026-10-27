@@ -1,21 +1,24 @@
 """Pins a Google nightly for .github/workflows/nightly-compare.yaml.
 
-Runs `packages/mediapipe-core/tool/pin_nightly.py --generation`, which hashes
-Google's archive once and pins its generation, then moves the browser
-runtimes to the npm prerelease of the same night (`1.2.0-rc.<YYYYMMDD>`) when
-npm has it for every family. The changed files go to `<out>/files/` for the
-comparison jobs to copy over their checkout (.github/actions/nightly-pin),
-next to the change as a patch, pin_nightly's report and its log:
+Runs `packages/mediapipe-core/tool/pin_nightly.py --generation
+--skip-changed-tasks`, which hashes Google's archive once and pins its
+generation (past a C API change confined to tasks the comparison can leave
+out), then moves the browser runtimes to the npm prerelease of the same night
+(`1.2.0-rc.<YYYYMMDD>`) when npm has it for every family. The changed files
+go to `<out>/files/` for the comparison jobs to copy over their checkout
+(.github/actions/nightly-pin), next to the change as a patch, pin_nightly's
+report and its log:
 
     python3 -B tool/ci/nightly_pin.py --nightly newest --out build/nightly-pin
 
 With GITHUB_OUTPUT set it writes the step outputs: nightly, generation,
-previous, scope, patched (true when the patch exists), api_changed, web (true
-when the browser runtimes moved too) and web_note. It fails only when
-pin_nightly stopped for another reason than a C API change (no complete
-build, or a new MediaPipe version, which is moved by hand). npm failing, after
-retries, leaves the browser runtimes as they are and says so in web_note: the
-native comparison runs without them.
+previous, scope, patched (true when the patch exists), api_changed (any C
+API change), skip_tasks (the tasks to leave out on both sides, comma
+separated), web (true when the browser runtimes moved too) and web_note. It
+fails only when pin_nightly stopped for another reason than a C API change
+(no complete build, or a new MediaPipe version, which is moved by hand). npm
+failing, after retries, leaves the browser runtimes as they are and says so
+in web_note: the native comparison runs without them.
 
 The browser pins are each family's `assets/runtime.json` (version, the
 tarball's npm integrity, every loaded file's SHA-384) and the version core's
@@ -175,14 +178,14 @@ def main():
     with open(log_path, 'w', encoding='utf-8') as log:
         status = subprocess.run(
             [sys.executable, '-B', str(PIN_NIGHTLY), '--nightly', args.nightly,
-             '--generation', '--report', str(report_path)],
+             '--generation', '--skip-changed-tasks', '--report', str(report_path)],
             cwd=REPO, stdout=log, stderr=subprocess.STDOUT).returncode
     print(log_path.read_text(encoding='utf-8'), end='', flush=True)
     if not report_path.exists():
         raise SystemExit(f'pin_nightly.py exited {status} before choosing a build.')
     report = json.loads(report_path.read_text(encoding='utf-8'))
     api_changed = bool(report['api_changes'])
-    if status != 0 and not api_changed:
+    if status != 0 and not report.get('blocking_changes'):
         raise SystemExit(f'pin_nightly.py exited {status}.')
     patched = status == 0 and report['written']
     web, web_note = False, 'not pinned: the native pin did not apply'
@@ -206,6 +209,7 @@ def main():
              'previous': report['previous'],
              'scope': scope_of(args.event, args.schedule, args.full),
              'patched': str(patched).lower(), 'api_changed': str(api_changed).lower(),
+             'skip_tasks': ','.join(report.get('skipped_tasks') or {}) if patched else '',
              'web': str(web).lower(), 'web_note': web_note})
 
 

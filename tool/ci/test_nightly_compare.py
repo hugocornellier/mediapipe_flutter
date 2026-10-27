@@ -193,6 +193,21 @@ class EndToEnd(unittest.TestCase):
             output, summary = self.run_compare(Path(folder), [], {}, api)
         self.assertEqual((output['issue'], output['escalate']), ('true', 'false'))
         self.assertIn('+int b(void);', summary)
+        self.assertIn('the nightly was not run', summary)
+        # A change pin_nightly confined to one task: the rest ran, and the
+        # issue still says what changed.
+        confined = dict(report, api_changes=['changed retrieval/semantic_retriever/s.h',
+                                             'added audio/audio_transcriber/a.h'],
+                        blocking_changes=[], new_tasks=['audio_transcriber'],
+                        skipped_tasks={'semantic_retriever': ['changed s.h']})
+        with tempfile.TemporaryDirectory() as folder:
+            output, summary = self.run_compare(Path(folder), jobs, logs, confined)
+        self.assertEqual((output['issue'], output['escalate']), ('true', 'false'))
+        self.assertNotIn('not run', summary)
+        self.assertIn('Left out on both sides until its bindings are regenerated: '
+                      'semantic_retriever.', summary)
+        self.assertIn('untested until bindings exist: audio_transcriber.', summary)
+        self.assertIn('| D / CPU | success | success | 4 / 4 |', summary)
 
 
 class Pin(unittest.TestCase):
