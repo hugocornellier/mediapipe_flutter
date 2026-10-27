@@ -57,11 +57,25 @@ Future<void> main(List<String> arguments) async {
     exitCode = 64;
     return;
   }
+  // nightly-compare.yaml leaves out, on both sides, a task whose C API a
+  // Google nightly changed until its bindings are regenerated
+  // (packages/mediapipe-core/tool/pin_nightly.py --skip-changed-tasks).
+  final skipped = (Platform.environment['MEDIAPIPE_SKIP_TASKS'] ?? '')
+      .split(',')
+      .map((task) => task.trim())
+      .where(tasks.contains)
+      .toSet();
+  if (skipped.isNotEmpty) {
+    stdout.writeln(
+      'Leaving out ${(skipped.toList()..sort()).join(', ')} '
+      '(MEDIAPIPE_SKIP_TASKS).',
+    );
+  }
 
   try {
     await _prepare(
       target,
-      tasks.toList()..sort(),
+      tasks.difference(skipped).toList()..sort(),
       referenceDirectory: options.option('modern-text-reference'),
       assetSource: switch (options.option('asset-source')) {
         final path? => p.absolute(path),

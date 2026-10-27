@@ -15,7 +15,9 @@ pairs them by name, then reads, through the GitHub API:
   drifts when the nightly moves it by more than that tolerance; other changed
   values are listed only.
 
-With pin_nightly.py's report it adds the C header API changes. It writes the
+With pin_nightly.py's report it adds the C header API changes: those that
+stopped every suite, the tasks left out on both sides because their own API
+changed, and the tasks new in the nightly. It writes the
 job summary table (summary.md, and $GITHUB_STEP_SUMMARY), findings.json, the
 issue body (issue.md) and the step outputs: issue (a C API change, a
 regression or drift: open the nightly's issue), escalate (a regression or
@@ -383,14 +385,27 @@ def main():
     issue = bool(api_changes) or regression
     web = report.get('web') or {}
     comment_only = report.get('comment_only_headers') or []
+    # A report from before per-task decisions stopped on every change.
+    blocking = report.get('blocking_changes', api_changes) or []
+    skipped = report.get('skipped_tasks') or {}
+    new_tasks = report.get('new_tasks') or []
+    if blocking:
+        api = ('C API: **changed** in what every suite needs ('
+               + '; '.join(blocking) + '); the nightly was not run.')
+    elif api_changes:
+        api = ('C API: **changed** (' + ', '.join(api_changes) + ').'
+               + (' Left out on both sides until its bindings are regenerated: '
+                  + ', '.join(skipped) + '.' if skipped else '')
+               + (' New in the nightly, untested until bindings exist: '
+                  + ', '.join(new_tasks) + '.' if new_tasks else '')
+               + ' Every other task ran.')
+    else:
+        api = 'C API: unchanged' + (f' ({len(comment_only)} headers changed in comments only).'
+                                    if comment_only else '.')
     lines = [
         f'### Nightly {nightly} against the pinned {previous} ({args.scope} set)',
         '',
-        f"Google's archive generation {report.get('generation')}. "
-        + ('C API: **changed** (' + ', '.join(api_changes) + '); the nightly was not run.'
-           if api_changes else
-           'C API: unchanged' + (f' ({len(comment_only)} headers changed in comments only).'
-                                 if comment_only else '.'))
+        f"Google's archive generation {report.get('generation')}. {api}"
         + f" Browser: {web.get('note', 'not pinned')}.",
         '',
     ]

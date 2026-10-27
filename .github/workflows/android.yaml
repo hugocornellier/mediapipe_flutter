@@ -15,6 +15,12 @@ on:
         description: baseline (the pins on this ref) or nightly (the run's nightly-pin artifact).
         type: string
         required: true
+      skip_tasks:
+        description: >-
+          Comma-separated gallery tasks to leave out, on both sides, because
+          the nightly changed their C API (nightly-compare.yaml's pin job).
+        type: string
+        default: ''
       scope:
         description: daily runs nightly-compare.yaml's daily set; full runs every job.
         type: string
@@ -31,6 +37,7 @@ concurrency:
 # apart. It is empty in every other run.
 env:
   ARTIFACT_SUFFIX: ${{ inputs.side && format('-{0}', inputs.side) || '' }}
+  MEDIAPIPE_SKIP_TASKS: ${{ inputs.skip_tasks }}
 
 jobs:
   # Every family through Google's Android libraries in one app: the vision

@@ -30,6 +30,13 @@ project adopts keeps the plain URL, and its files get a mirror release.
 `--report` writes what it found as JSON, the C API changes included, even
 when it stops.
 
+`--skip-changed-tasks` is for comparison runs: a C API change confined to
+tasks the comparison can leave out (`SKIPPABLE`) no longer stops the pin. The
+report names those tasks (`skipped_tasks`), and nightly-compare.yaml runs
+every other task on the nightly. A task new in the nightly is news, not a
+stop: nothing calls it yet. A build this project adopts still stops on any
+C API change.
+
 Nothing is written, and the exit status is non-zero, when the C API changed
 beyond comments (the bindings would need regenerating), when the MediaPipe
 version changed (tests and docs name it), or when a sentence to update is
@@ -108,6 +115,22 @@ SENTENCES = {
     'packages/mediapipe-task-vision/third_party/README.md': [
         'here from MediaPipe {version}, the\nnightly build of {long}.',
     ],
+}
+
+
+# The families whose headers sit in a folder per task, `<family>/<task>/`.
+TASK_FAMILIES = ('audio', 'decision', 'retrieval', 'text', 'vision')
+
+# The tasks nightly-compare.yaml can leave out alone, with the tasks a change
+# to each leaves out (the Semantic Retriever runs on the Universal
+# Embedder). Its suites run these only inside the gallery app, which
+# prepare_gallery.dart builds without the tasks MEDIAPIPE_SKIP_TASKS names.
+# Every other task also runs in its package's own suites, which test the
+# package whole, so a change to one still stops every suite.
+SKIPPABLE = {
+    'decision_maker': ('decision_maker',),
+    'semantic_retriever': ('semantic_retriever',),
+    'universal_embedder': ('universal_embedder', 'semantic_retriever'),
 }
 
 
@@ -390,29 +413,82 @@ def headers(archive, names):
     return merged
 
 
+def task_of(name):
+    """The task whose own header `name` is (`<family>/<task>/...`), or None
+    for a shared one: core/, components/, a family's core/, an umbrella."""
+    parts = name.split('/')
+    if len(parts) == 3 and parts[0] in TASK_FAMILIES and parts[1] != 'core':
+        return parts[1]
+    return None
+
+
+def without_includes(source):
+    """`strip_comments` of a header without its #include lines: what an
+    umbrella header (mediapipe_tasks_<family>.h) declares itself."""
+    return strip_comments(re.sub(r'^[ \t]*#[ \t]*include\b[^\n]*', '', source, flags=re.M))
+
+
+def classify_headers(old, new):
+    """How the headers `new` differ from `old`, both `{relative path: bytes}`,
+    task by task: a dict of `changes` (every API change beyond comments, one
+    line each), `blocking` (those that stop every suite), `skipped` (`{task:
+    its changes}`, the tasks the comparison leaves out), `new_tasks` (tasks
+    only `new` has) and `comment_only` (headers changed in comments only)."""
+    old_tasks = {task_of(name) for name in old} - {None}
+    new_tasks = sorted({task_of(name) for name in new} - {None} - old_tasks)
+    changes, blocking, comment_only, skipped = [], [], [], {}
+    for name in sorted(set(old) | set(new)):
+        before, after = old.get(name), new.get(name)
+        if before == after:
+            continue
+        if before is not None and after is not None:
+            before, after = before.decode('utf-8'), after.decode('utf-8')
+            if strip_comments(before) == strip_comments(after):
+                comment_only.append(name)
+                continue
+            line = f'changed {name}'
+        else:
+            line = f"{'added' if before is None else 'removed'} {name}"
+        changes.append(line)
+        task = task_of(name)
+        if task in new_tasks:
+            continue  # A new task: nothing calls it until its bindings exist.
+        if task is None and before is None:
+            continue  # A new shared header: a header that includes it changed too.
+        if task is None and '/' not in name and after is not None and \
+                without_includes(before) == without_includes(after):
+            continue  # An umbrella's includes: each included header is judged.
+        if task is None:
+            blocking.append(f'{line}: shared by every task')
+        elif task not in SKIPPABLE:
+            blocking.append(f"{line}: {task} also runs in its package's own suites, "
+                            'which cannot leave one task out')
+        else:
+            for user in SKIPPABLE[task]:
+                skipped.setdefault(user, []).append(line)
+    return {'changes': changes, 'blocking': blocking, 'comment_only': comment_only,
+            'skipped': dict(sorted(skipped.items())), 'new_tasks': new_tasks}
+
+
 def compare_headers(new):
-    """Prints how `new` differs from `native/include`; returns the API
-    changes (beyond comments), one line each."""
+    """Prints how `new` differs from `native/include`; returns
+    `classify_headers`'s verdict."""
     old = {str(path.relative_to(HEADERS)): path.read_bytes()
            for path in HEADERS.rglob('*') if path.is_file()}
-    changes = [f'added {name}' for name in sorted(set(new) - set(old))]
-    changes += [f'removed {name}' for name in sorted(set(old) - set(new))]
-    comment_only = []
+    verdict = classify_headers(old, new)
     for name in sorted(set(old) & set(new)):
-        if old[name] == new[name]:
-            continue
-        before, after = old[name].decode('utf-8'), new[name].decode('utf-8')
-        if strip_comments(before) != strip_comments(after):
-            changes.append(f'changed {name}')
-        else:
-            comment_only.append(name)
-        for line in difflib.unified_diff(before.splitlines(), after.splitlines(),
-                                         f'a/{name}', f'b/{name}', n=0, lineterm=''):
-            print(f'    {line}')
+        if old[name] != new[name]:
+            for line in difflib.unified_diff(
+                    old[name].decode('utf-8').splitlines(), new[name].decode('utf-8').splitlines(),
+                    f'a/{name}', f'b/{name}', n=0, lineterm=''):
+                print(f'    {line}')
     same = sum(1 for name in set(old) & set(new) if old[name] == new[name])
-    print(f'Headers: {len(new)} merged; {same} identical, {len(comment_only)} '
-          f'changed in comments only, {len(changes)} API changes.')
-    return changes, comment_only
+    print(f'Headers: {len(new)} merged; {same} identical, '
+          f"{len(verdict['comment_only'])} changed in comments only, "
+          f"{len(verdict['changes'])} API changes.")
+    for line in verdict['changes']:
+        print(f'  {line}')
+    return verdict
 
 
 def render(template, stamp, version, generation=None):
@@ -462,6 +538,9 @@ def main():
                         help='pin the archive URL to the generation hashed')
     parser.add_argument('--report', type=Path,
                         help='write what was found to this JSON file')
+    parser.add_argument('--skip-changed-tasks', action='store_true',
+                        help='for a comparison: pin past a C API change confined to '
+                             'tasks it can leave out, and name them in the report')
     args = parser.parse_args()
     if args.nightly != 'newest' and not re.fullmatch(r'\d{8}', args.nightly):
         parser.error('--nightly takes YYYYMMDD or newest')
@@ -471,7 +550,8 @@ def main():
     info = parse_build_info(info_text)
     report = {'nightly': stamp, 'previous': old['stamp'], 'build_info': info,
               'archive': archive.url, 'generation': archive.generation,
-              'api_changes': None, 'comment_only_headers': None,
+              'api_changes': None, 'blocking_changes': None, 'skipped_tasks': {},
+              'new_tasks': [], 'comment_only_headers': None,
               'notices_changed': [], 'written': False}
 
     def write_report():
@@ -492,12 +572,24 @@ def main():
         raise SystemExit("The archive's BUILD_INFO is not the one beside it.")
 
     new_headers = headers(archive, archive.entries)
-    changes, comment_only = compare_headers(new_headers)
-    report['api_changes'], report['comment_only_headers'] = changes, comment_only
-    if changes:
+    verdict = compare_headers(new_headers)
+    # Without --skip-changed-tasks every API change stops the pin.
+    blocking = (verdict['blocking'] if args.skip_changed_tasks else
+                [f'{line}: the bindings need regenerating' for line in verdict['changes']])
+    report.update(api_changes=verdict['changes'], blocking_changes=blocking,
+                  comment_only_headers=verdict['comment_only'],
+                  new_tasks=verdict['new_tasks'] if args.skip_changed_tasks else [],
+                  skipped_tasks=verdict['skipped'] if args.skip_changed_tasks else {})
+    if blocking:
         write_report()
         raise SystemExit('The C API changed, so the bindings need regenerating '
-                         '(make generate); nothing written:\n  ' + '\n  '.join(changes))
+                         '(make generate); nothing written:\n  ' + '\n  '.join(blocking))
+    if report['new_tasks']:
+        print(f"New in {stamp}, untested until bindings exist: "
+              f"{', '.join(report['new_tasks'])}.")
+    for task, lines in report['skipped_tasks'].items():
+        print(f"Leaving out {task}, whose C API changed ({'; '.join(lines)}); "
+              'every other task runs.')
     notices = {}
     for name in ('LICENSE', 'NOTICE'):
         copies = {archive.read(f'{family}/{name}') for family in families(old['paths'])}

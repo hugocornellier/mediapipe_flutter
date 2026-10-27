@@ -68,6 +68,8 @@ void main() {
           UniversalEmbedder.cosineSimilarity(query, cat),
           closeTo(0.565313, tolerance),
         );
+        // A build may leave the retriever out (MEDIAPIPE_SKIP_TASKS).
+        if (!assets.bundledTasks.contains('semantic_retriever')) return;
 
         final retriever = await SemanticRetriever.create(
           SemanticRetrieverOptions(embedder: embedder),

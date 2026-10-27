@@ -1,19 +1,24 @@
 """Pins a Google nightly for .github/workflows/nightly-compare.yaml.
 
-Runs `packages/mediapipe-core/tool/pin_nightly.py --generation`, which hashes
-Google's archive once and pins its generation, then moves the browser
-runtimes to the npm prerelease of the same night (`1.2.0-rc.<YYYYMMDD>`) when
-npm has it for every family. The changed files go to `<out>/files/` for the
-comparison jobs to copy over their checkout (.github/actions/nightly-pin),
-next to the change as a patch, pin_nightly's report and its log:
+Runs `packages/mediapipe-core/tool/pin_nightly.py --generation
+--skip-changed-tasks`, which hashes Google's archive once and pins its
+generation (past a C API change confined to tasks the comparison can leave
+out), then moves the browser runtimes to the npm prerelease of the same night
+(`1.2.0-rc.<YYYYMMDD>`) when npm has it for every family. The changed files
+go to `<out>/files/` for the comparison jobs to copy over their checkout
+(.github/actions/nightly-pin), next to the change as a patch, pin_nightly's
+report and its log:
 
     python3 -B tool/ci/nightly_pin.py --nightly newest --out build/nightly-pin
 
 With GITHUB_OUTPUT set it writes the step outputs: nightly, generation,
-previous, scope, patched (true when the patch exists), api_changed, web (true
-when the browser runtimes moved too) and web_note. It fails only when
-pin_nightly stopped for another reason than a C API change (no complete
-build, or a new MediaPipe version, which is moved by hand).
+previous, scope, patched (true when the patch exists), api_changed (any C
+API change), skip_tasks (the tasks to leave out on both sides, comma
+separated), web (true when the browser runtimes moved too) and web_note. It
+fails only when pin_nightly stopped for another reason than a C API change
+(no complete build, or a new MediaPipe version, which is moved by hand). npm
+failing, after retries, leaves the browser runtimes as they are and says so
+in web_note: the native comparison runs without them.
 
 The browser pins are each family's `assets/runtime.json` (version, the
 tarball's npm integrity, every loaded file's SHA-384) and the version core's
@@ -22,6 +27,7 @@ tarball's npm integrity, every loaded file's SHA-384) and the version core's
 import argparse
 import base64
 import hashlib
+import http.client
 import io
 import json
 import os
@@ -29,6 +35,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tarfile
+import time
 import urllib.error
 import urllib.request
 
@@ -42,6 +49,8 @@ WEB_VERSION_NAMED = [
 ]
 # The weekly cron line; any other schedule is the daily set.
 FULL_SCHEDULE = '0 14 * * 0'
+# Seconds between attempts at an npm request that failed in a way that may pass.
+RETRY_DELAYS = (5, 20)
 
 
 def scope_of(event, schedule, full):
@@ -66,9 +75,24 @@ def web_version(current, stamp):
     return f'{prefix}-rc.{stamp}'
 
 
+def passing(error):
+    """Whether a failed request may succeed when tried again: no answer, a
+    dropped connection, or a server error."""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code == 429 or error.code >= 500
+    return True
+
+
 def fetch(url):
-    with urllib.request.urlopen(urllib.request.Request(url), timeout=120) as response:
-        return response.read()
+    for delay in (*RETRY_DELAYS, None):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url), timeout=120) as response:
+                return response.read()
+        except (OSError, http.client.HTTPException) as error:
+            if delay is None or not passing(error):
+                raise
+            print(f'{url}: {error}; trying again in {delay} s', file=sys.stderr, flush=True)
+            time.sleep(delay)
 
 
 def registry_entry(package, version):
@@ -97,32 +121,38 @@ def file_pins(pin, tarball):
 
 def pin_web(stamp):
     """Moves every browser runtime to night `stamp`; returns a note, and
-    whether it did."""
+    whether it did. Nothing is written until every tarball is in and checked,
+    so a failure leaves all of them as they were."""
     pins = runtime_pins()
     old = {pin['version'] for pin in pins.values()}
     if len(old) != 1:
         raise SystemExit(f'The families pin different browser runtimes: {sorted(old)}')
     old = old.pop()
     version = web_version(old, stamp)
-    entries = {path: registry_entry(pin['package'], version) for path, pin in pins.items()}
-    missing = [pins[path]['package'] for path, entry in entries.items() if entry is None]
-    if missing:
-        return f"npm has no {version} of {', '.join(missing)} yet", False
-    for path, pin in pins.items():
-        dist = entries[path]['dist']
-        tarball = fetch(dist['tarball'])
-        integrity, sha384 = file_pins(pin, tarball)
-        if dist.get('integrity') != f'sha512-{integrity}':
-            raise SystemExit(f"{pin['package']}@{version}: the tarball does not match "
-                             "npm's integrity")
-        pin.update(version=version, integrity=integrity, sha384=sha384)
-        path.write_text(json.dumps(pin, indent=2) + '\n', encoding='utf-8')
-    for relative in WEB_VERSION_NAMED:
-        path = REPO / relative
-        text = path.read_text(encoding='utf-8')
+    named = {relative: (REPO / relative).read_text(encoding='utf-8')
+             for relative in WEB_VERSION_NAMED}
+    for relative, text in named.items():
         if f"'{old}'" not in text:
             raise SystemExit(f"{relative} does not name '{old}'")
-        path.write_text(text.replace(f"'{old}'", f"'{version}'"), encoding='utf-8')
+    try:
+        entries = {path: registry_entry(pin['package'], version) for path, pin in pins.items()}
+        missing = [pins[path]['package'] for path, entry in entries.items() if entry is None]
+        if missing:
+            return f"npm has no {version} of {', '.join(missing)} yet", False
+        tarballs = {path: fetch(entries[path]['dist']['tarball']) for path in pins}
+    except (OSError, http.client.HTTPException) as error:
+        return f'not pinned: npm failed for {version} ({error})', False
+    for path, pin in pins.items():
+        integrity, sha384 = file_pins(pin, tarballs[path])
+        if entries[path]['dist'].get('integrity') != f'sha512-{integrity}':
+            return (f"not pinned: the tarball of {pin['package']}@{version} does not "
+                    "match npm's integrity"), False
+        pin.update(version=version, integrity=integrity, sha384=sha384)
+    for path, pin in pins.items():
+        path.write_text(json.dumps(pin, indent=2) + '\n', encoding='utf-8')
+    for relative, text in named.items():
+        (REPO / relative).write_text(text.replace(f"'{old}'", f"'{version}'"),
+                                     encoding='utf-8')
     return f'browser runtimes moved from {old} to {version}', True
 
 
@@ -148,14 +178,14 @@ def main():
     with open(log_path, 'w', encoding='utf-8') as log:
         status = subprocess.run(
             [sys.executable, '-B', str(PIN_NIGHTLY), '--nightly', args.nightly,
-             '--generation', '--report', str(report_path)],
+             '--generation', '--skip-changed-tasks', '--report', str(report_path)],
             cwd=REPO, stdout=log, stderr=subprocess.STDOUT).returncode
     print(log_path.read_text(encoding='utf-8'), end='', flush=True)
     if not report_path.exists():
         raise SystemExit(f'pin_nightly.py exited {status} before choosing a build.')
     report = json.loads(report_path.read_text(encoding='utf-8'))
     api_changed = bool(report['api_changes'])
-    if status != 0 and not api_changed:
+    if status != 0 and not report.get('blocking_changes'):
         raise SystemExit(f'pin_nightly.py exited {status}.')
     patched = status == 0 and report['written']
     web, web_note = False, 'not pinned: the native pin did not apply'
@@ -179,6 +209,7 @@ def main():
              'previous': report['previous'],
              'scope': scope_of(args.event, args.schedule, args.full),
              'patched': str(patched).lower(), 'api_changed': str(api_changed).lower(),
+             'skip_tasks': ','.join(report.get('skipped_tasks') or {}) if patched else '',
              'web': str(web).lower(), 'web_note': web_note})
 
 
