@@ -45,7 +45,7 @@ concurrency:
 env:
   # What a pull request run compares: a nightly (YYYYMMDD or newest), and the
   # full matrix or the daily set.
-  PULL_REQUEST_NIGHTLY: '20261023'
+  PULL_REQUEST_NIGHTLY: newest
   PULL_REQUEST_FULL: 'false'
   # The issue a finding opens or comments on: one per nightly, by exact title.
   ISSUE_LABEL: nightly-drift
