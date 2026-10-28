@@ -1,0 +1,73 @@
+name: Gallery test build
+
+permissions:
+  contents: read
+
+# A one-off build of the release gallery for testers, on the tree of the
+# upstream PR. It runs only on test-build/ branches.
+on:
+  push:
+    branches: ['test-build/**']
+
+jobs:
+  linux:
+    name: Gallery release / linux x64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup
+        with:
+          linux-profile: gallery
+          modern-model-cache: 'true'
+      - name: Prepare the gallery with every task
+        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target linux/x64
+      - name: Build
+        working-directory: gallery
+        run: |
+          flutter pub get
+          flutter build linux --release
+      - name: Package
+        run: |
+          mkdir -p dist
+          tar -C gallery/build/linux/x64/release -czf dist/mediapipe-gallery-linux-x64.tar.gz bundle
+          ls -la dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gallery-test-linux-x64
+          path: dist/mediapipe-gallery-linux-x64.tar.gz
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  windows:
+    name: Gallery release / windows x64
+    runs-on: windows-2022
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup
+        with:
+          modern-model-cache: 'true'
+      - name: Prepare the gallery with every task
+        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target windows/x64
+      - name: Build
+        working-directory: gallery
+        run: |
+          flutter pub get
+          flutter build windows --release
+      - name: Package
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path gallery/build/windows/x64/runner/Release/* -DestinationPath dist/mediapipe-gallery-windows-x64.zip
+          Get-ChildItem dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gallery-test-windows-x64
+          path: dist/mediapipe-gallery-windows-x64.zip
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
