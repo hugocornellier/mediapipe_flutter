@@ -1,0 +1,4009 @@
+
+
+
+
+
+
+
+
+
+<!doctype html>
+<html 
+      lang="en"
+      dir="ltr">
+  <head>
+    <meta name="google-signin-client-id" content="721724668570-nbkv1cfusk7kk4eni4pjvepaus73b13t.apps.googleusercontent.com"><meta name="google-signin-scope"
+          content="profile email https://www.googleapis.com/auth/developerprofiles https://www.googleapis.com/auth/developerprofiles.award https://www.googleapis.com/auth/devprofiles.full_control.firstparty"><meta property="og:site_name" content="Google for Developers">
+    <meta property="og:type" content="website"><meta name="theme-color" content="#1a73e8"><meta charset="utf-8">
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <link rel="manifest" href="https://developers.google.com/_pwa/developers/manifest.json"
+          crossorigin="use-credentials">
+    <link rel="preconnect" href="//www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="//fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="//www.google-analytics.com" crossorigin><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Google+Sans:400,500|Roboto:400,400italic,500,500italic,700,700italic|Roboto+Mono:400,500,700&display=swap">
+      <link rel="stylesheet"
+            href="//fonts.googleapis.com/css2?family=Material+Icons&family=Material+Symbols+Outlined&display=block"><link rel="stylesheet" href="https://www.gstatic.com/devrel-devsite/prod/v9ce9cb5b22b62a465ff52c45061a0a6a2d86a80b685e9aa8a182b203fdfbf420/developers/css/app.css">
+      <link rel="shortcut icon" href="https://www.gstatic.com/devrel-devsite/prod/v9ce9cb5b22b62a465ff52c45061a0a6a2d86a80b685e9aa8a182b203fdfbf420/developers/images/favicon-new.png">
+    <link rel="apple-touch-icon" href="https://www.gstatic.com/devrel-devsite/prod/v9ce9cb5b22b62a465ff52c45061a0a6a2d86a80b685e9aa8a182b203fdfbf420/developers/images/touchicon-180-new.png"><link rel="canonical" href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector"><link rel="search" type="application/opensearchdescription+xml"
+            title="Google for Developers" href="https://developers.google.com/s/opensearch.xml">
+      <link rel="alternate" hreflang="en"
+          href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector" /><link rel="alternate" hreflang="x-default" href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector" /><title>Object detection task guide &nbsp;|&nbsp; Google AI Edge &nbsp;|&nbsp; Google for Developers</title>
+
+<meta property="og:title" content="Object detection task guide &nbsp;|&nbsp; Google AI Edge &nbsp;|&nbsp; Google for Developers"><meta property="og:url" content="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector"><meta property="og:image" content="https://developers.google.com/static/edge/images/share.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="675"><meta property="og:locale" content="en"><meta name="twitter:card" content="summary_large_image">
+  
+
+  
+
+  
+
+
+    <meta name="robots" content="noindex">
+<style>
+devsite-book-nav{position:absolute!important;left:0;width:269px;z-index:1}
+.mpf-banner{background:#fef7e0;border-bottom:1px solid #f9ab00;color:#202124;font:14px/20px Roboto,sans-serif;padding:10px 24px;text-align:center}
+.mpf-banner a{color:#1a73e8}
+.mpf-option{margin-top:40px}
+.mpf-note{color:#5f6368;font-size:14px}
+.mpf-new td{background:#e8f0fe}
+.mpf-tag{background:#1a73e8;border-radius:4px;color:#fff;font:500 12px/20px Roboto,sans-serif;margin-left:8px;padding:0 6px;vertical-align:middle}
+</style>
+</head>
+  <body class="color-scheme--light"
+        template="page"
+        theme="google-blue"
+        type="article"
+        
+        
+        
+        layout="docs"
+        
+        
+        
+        
+        
+          
+            concierge='closed'
+          
+        
+        display-toc
+        ready><div class="mpf-banner"><strong>Mockup, not an official Google page.</strong> Google's Object Detector overview with a proposed Flutter row, shown in options A to D under <a href="#get_started">Get Started</a>. Original: <a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector">developers.google.com</a>. Page content &copy; Google, used under CC BY 4.0.</div>
+  
+    <devsite-progress type="indeterminate" id="app-progress"></devsite-progress>
+  
+  
+    <a href="#main-content" class="skip-link button">
+      
+      Skip to main content
+    </a>
+    <section class="devsite-wrapper">
+      <devsite-cookie-notification-bar></devsite-cookie-notification-bar>
+        <devsite-header role="banner">
+  
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="devsite-header--inner" data-nosnippet>
+  <div class="devsite-top-logo-row-wrapper-wrapper">
+    <div class="devsite-top-logo-row-wrapper">
+      <div class="devsite-top-logo-row">
+        <button type="button" id="devsite-hamburger-menu"
+          class="devsite-header-icon-button button-flat material-icons gc-analytics-event"
+          data-category="Site-Wide Custom Events"
+          data-label="Navigation menu button"
+          visually-hidden
+          aria-label="Open menu">
+        </button>
+        
+<div class="devsite-product-name-wrapper">
+
+  <a href="https://developers.google.com/" class="devsite-site-logo-link gc-analytics-event"
+   data-category="Site-Wide Custom Events" data-label="Site logo" track-type="globalNav"
+   track-name="googleForDevelopers" track-metadata-position="nav"
+   track-metadata-eventDetail="nav">
+  
+  <picture>
+    
+    <img src="https://www.gstatic.com/devrel-devsite/prod/v9ce9cb5b22b62a465ff52c45061a0a6a2d86a80b685e9aa8a182b203fdfbf420/developers/images/lockup-new.svg" class="devsite-site-logo" alt="Google for Developers">
+  </picture>
+  
+</a>
+
+
+
+</div>
+        <div class="devsite-top-logo-row-middle">
+          <div class="devsite-header-upper-tabs">
+            
+           </div>
+          
+<devsite-search
+    enable-signin
+    enable-search
+    enable-suggestions
+      enable-query-completion
+    
+    enable-search-summaries
+    project-name="Google AI Edge"
+    tenant-name="Google for Developers"
+    project-scope="/edge"
+    url-scoped="https://developers.google.com/s/results/edge"
+    
+    
+    
+    >
+  <form class="devsite-search-form" action="https://developers.google.com/s/results" method="GET">
+    <div class="devsite-search-container">
+      <button type="button"
+              search-open
+              class="devsite-search-button devsite-header-icon-button button-flat material-icons"
+              
+              aria-label="Open search"></button>
+      <div class="devsite-searchbox">
+        <input
+          aria-activedescendant=""
+          aria-autocomplete="list"
+          
+          aria-label="Search"
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          autocomplete="off"
+          class="devsite-search-field devsite-search-query"
+          name="q"
+          
+          placeholder="Search"
+          role="combobox"
+          type="text"
+          value=""
+          >
+          <div class="devsite-search-image material-icons" aria-hidden="true">
+            
+              <svg class="devsite-search-ai-image" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <g clip-path="url(#clip0_6641_386)">
+                    <path d="M19.6 21L13.3 14.7C12.8 15.1 12.225 15.4167 11.575 15.65C10.925 15.8833 10.2333 16 9.5 16C7.68333 16 6.14167 15.375 4.875 14.125C3.625 12.8583 3 11.3167 3 9.5C3 7.68333 3.625 6.15 4.875 4.9C6.14167 3.63333 7.68333 3 9.5 3C10.0167 3 10.5167 3.05833 11 3.175C11.4833 3.275 11.9417 3.43333 12.375 3.65L10.825 5.2C10.6083 5.13333 10.3917 5.08333 10.175 5.05C9.95833 5.01667 9.73333 5 9.5 5C8.25 5 7.18333 5.44167 6.3 6.325C5.43333 7.19167 5 8.25 5 9.5C5 10.75 5.43333 11.8167 6.3 12.7C7.18333 13.5667 8.25 14 9.5 14C10.6667 14 11.6667 13.625 12.5 12.875C13.35 12.1083 13.8417 11.15 13.975 10H15.975C15.925 10.6333 15.7833 11.2333 15.55 11.8C15.3333 12.3667 15.05 12.8667 14.7 13.3L21 19.6L19.6 21ZM17.5 12C17.5 10.4667 16.9667 9.16667 15.9 8.1C14.8333 7.03333 13.5333 6.5 12 6.5C13.5333 6.5 14.8333 5.96667 15.9 4.9C16.9667 3.83333 17.5 2.53333 17.5 0.999999C17.5 2.53333 18.0333 3.83333 19.1 4.9C20.1667 5.96667 21.4667 6.5 23 6.5C21.4667 6.5 20.1667 7.03333 19.1 8.1C18.0333 9.16667 17.5 10.4667 17.5 12Z" fill="#5F6368"/>
+                  </g>
+                <defs>
+                <clipPath id="clip0_6641_386">
+                <rect width="24" height="24" fill="white"/>
+                </clipPath>
+                </defs>
+              </svg>
+            
+          </div>
+          <div class="devsite-search-shortcut-icon-container" aria-hidden="true">
+            <kbd class="devsite-search-shortcut-icon">/</kbd>
+          </div>
+      </div>
+    </div>
+  </form>
+  <button type="button"
+          search-close
+          class="devsite-search-button devsite-header-icon-button button-flat material-icons"
+          
+          aria-label="Close search"></button>
+</devsite-search>
+
+        </div>
+
+        
+
+          
+
+          
+
+          
+
+          
+
+          
+<devsite-language-selector>
+  <ul role="presentation">
+    
+    
+    <li role="presentation">
+      <a role="menuitem" lang="en"
+        >English</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="de"
+        >Deutsch</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="es"
+        >Español</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="fr"
+        >Français</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="id"
+        >Indonesia</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="pt_br"
+        >Português – Brasil</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ru"
+        >Русский</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="zh_cn"
+        >中文 – 简体</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ja"
+        >日本語</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ko"
+        >한국어</a>
+    </li>
+    
+  </ul>
+</devsite-language-selector>
+
+
+          
+
+        
+
+        
+          <devsite-user 
+                        
+                        
+                          enable-profiles
+                        
+                        
+                          fp-auth
+                        
+                        id="devsite-user">
+            
+              
+              <span class="button devsite-top-button" aria-hidden="true" visually-hidden>Sign in</span>
+            
+          </devsite-user>
+        
+        
+        
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="devsite-collapsible-section
+    ">
+    <div class="devsite-header-background">
+      
+        
+          <div class="devsite-product-id-row"
+           >
+            <div class="devsite-product-description-row">
+              
+                
+                <div class="devsite-product-id">
+                  
+                  
+                  
+                    <ul class="devsite-breadcrumb-list"
+  >
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+    
+    
+      
+        
+  <a href="https://developers.google.com/edge"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Lower Header"
+      
+        data-value="1"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="1"
+      
+        track-metadata-eventdetail="Google AI Edge"
+      
+    >
+    
+          Google AI Edge
+        
+  </a>
+  
+      
+    
+  </li>
+  
+</ul>
+                </div>
+                
+              
+              
+            </div>
+            
+          </div>
+          
+        
+      
+      
+        <div class="devsite-doc-set-nav-row">
+          
+          
+            
+            
+  <devsite-tabs class="lower-tabs">
+
+    <nav class="devsite-tabs-wrapper" aria-label="Lower tabs">
+      
+        
+          <tab class="devsite-dropdown
+    
+    
+    
+    ">
+  
+    <a href="https://developers.google.com/edge/litert"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://developers.google.com/edge/litert"
+    
+       track-type="nav"
+       track-metadata-position="nav - litert"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: LiteRT"
+         
+           track-name="litert"
+         
+       >
+    LiteRT
+  
+    </a>
+    
+      <button
+         aria-haspopup="menu"
+         aria-expanded="false"
+         aria-label="Dropdown menu for LiteRT"
+         track-type="nav"
+         track-metadata-eventdetail="https://developers.google.com/edge/litert"
+         track-metadata-position="nav - litert"
+         track-metadata-module="primary nav"
+         
+          
+            data-category="Site-Wide Custom Events"
+          
+            data-label="Tab: LiteRT"
+          
+            track-name="litert"
+          
+        
+         class="devsite-tabs-dropdown-toggle devsite-icon devsite-icon-arrow-drop-down"></button>
+    
+  
+  <div class="devsite-tabs-dropdown" role="menu" aria-label="submenu" hidden>
+    <div class="devsite-tabs-dropdown-content">
+      
+      
+        <div class="devsite-tabs-dropdown-column
+                    ">
+          
+            <ul class="devsite-tabs-dropdown-section
+                       ">
+              
+              
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/edge/litert/android"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/edge/litert/android"
+                     track-metadata-position="nav - litert"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Android
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/edge/litert/ios/quickstart"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/edge/litert/ios/quickstart"
+                     track-metadata-position="nav - litert"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      iOS & macOS
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/edge/litert/web"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/edge/litert/web"
+                     track-metadata-position="nav - litert"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Web
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/edge/litert/next/python"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/edge/litert/next/python"
+                     track-metadata-position="nav - litert"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Desktop
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/edge/litert/microcontrollers/overview"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/edge/litert/microcontrollers/overview"
+                     track-metadata-position="nav - litert"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Embedded & IoT
+                    </div>
+                    
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </div>
+      
+    </div>
+  </div>
+</tab>
+        
+      
+        
+          <tab  >
+            
+    <a href="https://developers.google.com/edge/litert-lm"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://developers.google.com/edge/litert-lm"
+    
+       track-type="nav"
+       track-metadata-position="nav - litert-lm"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: LiteRT-LM"
+         
+           track-name="litert-lm"
+         
+       >
+    LiteRT-LM
+  
+    </a>
+    
+  
+          </tab>
+        
+      
+        
+          <tab class="devsite-dropdown
+    
+    devsite-active
+    
+    ">
+  
+    <a href="https://developers.google.com/edge/mediapipe/solutions/guide"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://developers.google.com/edge/mediapipe/solutions/guide"
+    
+       track-type="nav"
+       track-metadata-position="nav - mediapipe"
+       track-metadata-module="primary nav"
+       aria-label="MediaPipe, selected" 
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: MediaPipe"
+         
+           track-name="mediapipe"
+         
+       >
+    MediaPipe
+  
+    </a>
+    
+      <button
+         aria-haspopup="menu"
+         aria-expanded="false"
+         aria-label="Dropdown menu for MediaPipe"
+         track-type="nav"
+         track-metadata-eventdetail="https://developers.google.com/edge/mediapipe/solutions/guide"
+         track-metadata-position="nav - mediapipe"
+         track-metadata-module="primary nav"
+         
+          
+            data-category="Site-Wide Custom Events"
+          
+            data-label="Tab: MediaPipe"
+          
+            track-name="mediapipe"
+          
+        
+         class="devsite-tabs-dropdown-toggle devsite-icon devsite-icon-arrow-drop-down"></button>
+    
+  
+  <div class="devsite-tabs-dropdown" role="menu" aria-label="submenu" hidden>
+    <div class="devsite-tabs-dropdown-content">
+      
+      
+        <div class="devsite-tabs-dropdown-column
+                    ">
+          
+            <ul class="devsite-tabs-dropdown-section
+                       ">
+              
+              
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/edge/mediapipe/solutions/guide"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/edge/mediapipe/solutions/guide"
+                     track-metadata-position="nav - mediapipe"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      MediaPipe Solutions
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/edge/mediapipe/framework"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/edge/mediapipe/framework"
+                     track-metadata-position="nav - mediapipe"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      MediaPipe Framework
+                    </div>
+                    
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </div>
+      
+    </div>
+  </div>
+</tab>
+        
+      
+        
+          <tab  >
+            
+    <a href="https://developers.google.com/edge/model-explorer"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://developers.google.com/edge/model-explorer"
+    
+       track-type="nav"
+       track-metadata-position="nav - model explorer"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: Model Explorer"
+         
+           track-name="model explorer"
+         
+       >
+    Model Explorer
+  
+    </a>
+    
+  
+          </tab>
+        
+      
+        
+          <tab  >
+            
+    <a href="https://developers.google.com/edge/ai-edge-portal"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://developers.google.com/edge/ai-edge-portal"
+    
+       track-type="nav"
+       track-metadata-position="nav - ai edge portal"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: AI Edge Portal"
+         
+           track-name="ai edge portal"
+         
+       >
+    AI Edge Portal
+  
+    </a>
+    
+  
+          </tab>
+        
+      
+        
+          <tab  >
+            
+    <a href="https://developers.google.com/edge/tensor-sdk"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://developers.google.com/edge/tensor-sdk"
+    
+       track-type="nav"
+       track-metadata-position="nav - google tensor sdk"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: Google Tensor SDK"
+         
+           track-name="google tensor sdk"
+         
+       >
+    Google Tensor SDK
+  
+    </a>
+    
+  
+          </tab>
+        
+      
+        
+          <tab class="devsite-dropdown
+    
+    
+    
+    ">
+  
+    <button
+      class="devsite-tabs-content devsite-tabs-dropdown-only gc-analytics-event  devsite-icon devsite-icon-arrow-drop-down"
+  
+       track-type="nav"
+       track-metadata-position="nav - apps"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: Apps"
+         
+           track-name="apps"
+         
+       >
+    Apps
+  
+  </button>
+  
+  <div class="devsite-tabs-dropdown" role="menu" aria-label="submenu" hidden>
+    <div class="devsite-tabs-dropdown-content">
+      
+      
+        <div class="devsite-tabs-dropdown-column
+                    ">
+          
+            <ul class="devsite-tabs-dropdown-section
+                       ">
+              
+              
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/edge/gallery"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/edge/gallery"
+                     track-metadata-position="nav - apps"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      AI Edge Gallery
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/edge/eloquent"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/edge/eloquent"
+                     track-metadata-position="nav - apps"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      AI Edge Eloquent
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/edge/foresight"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/edge/foresight"
+                     track-metadata-position="nav - apps"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      AI Edge Foresight
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://google-ai-edge.github.io/mediapipe-samples-web"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://google-ai-edge.github.io/mediapipe-samples-web"
+                     track-metadata-position="nav - apps"
+                     track-metadata-module="tertiary nav"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      MediaPipe Demos
+                    </div>
+                    
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </div>
+      
+    </div>
+  </div>
+</tab>
+        
+      
+        
+          <tab  >
+            
+    <a href="https://developers.google.com/edge/api"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://developers.google.com/edge/api"
+    
+       track-type="nav"
+       track-metadata-position="nav - api reference"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: API Reference"
+         
+           track-name="api reference"
+         
+       >
+    API Reference
+  
+    </a>
+    
+  
+          </tab>
+        
+      
+    </nav>
+
+  </devsite-tabs>
+
+          
+          
+        </div>
+      
+    </div>
+  </div>
+
+</div>
+
+
+
+  
+
+  
+</devsite-header>
+        <devsite-book-nav scrollbars >
+          
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="devsite-book-nav-filter"
+     hidden>
+  <span class="filter-list-icon material-icons" aria-hidden="true"></span>
+  <input type="text"
+         placeholder="Filter"
+         
+         aria-label="Type to filter"
+         role="searchbox">
+  
+  <span class="filter-clear-button hidden"
+        data-title="Clear filter"
+        aria-label="Clear filter"
+        role="button"
+        tabindex="0"></span>
+</div>
+
+<nav class="devsite-book-nav devsite-nav nocontent" data-nosnippet
+     aria-label="Side menu">
+  <div class="devsite-mobile-header">
+    <button type="button"
+            id="devsite-close-nav"
+            class="devsite-header-icon-button button-flat material-icons gc-analytics-event"
+            data-category="Site-Wide Custom Events"
+            data-label="Close navigation"
+            aria-label="Close navigation">
+    </button>
+    <div class="devsite-product-name-wrapper">
+
+  <a href="https://developers.google.com/" class="devsite-site-logo-link gc-analytics-event"
+   data-category="Site-Wide Custom Events" data-label="Site logo" track-type="globalNav"
+   track-name="googleForDevelopers" track-metadata-position="nav"
+   track-metadata-eventDetail="nav">
+  
+  <picture>
+    
+    <img src="https://www.gstatic.com/devrel-devsite/prod/v9ce9cb5b22b62a465ff52c45061a0a6a2d86a80b685e9aa8a182b203fdfbf420/developers/images/lockup-new.svg" class="devsite-site-logo" alt="Google for Developers">
+  </picture>
+  
+</a>
+
+
+</div>
+  </div>
+
+  <div class="devsite-book-nav-wrapper">
+    <div class="devsite-mobile-nav-top">
+      
+        <ul class="devsite-nav-list">
+          
+            <li class="devsite-nav-item">
+              
+  
+  <a href="https://developers.google.com/edge"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              devsite-nav-active"
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: AI Edge"
+      
+        track-name="ai edge"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: AI Edge"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      AI Edge
+   </span>
+    
+  
+  </a>
+  
+
+  
+              
+                <ul class="devsite-nav-responsive-tabs">
+                  
+                    
+                    
+                    
+                    <li class="devsite-nav-item">
+                      
+  
+  <a href="https://developers.google.com/edge/litert"
+    
+       class="devsite-nav-title gc-analytics-event
+              devsite-nav-has-children
+              "
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: LiteRT"
+      
+        track-name="litert"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: LiteRT"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      LiteRT
+   </span>
+    
+    <span class="devsite-nav-icon material-icons" data-icon="forward"
+          >
+    </span>
+    
+  
+  </a>
+  
+
+  
+    <ul class="devsite-nav-responsive-tabs devsite-nav-has-menu
+                devsite-lower-tab-item">
+      
+<li class="devsite-nav-item">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: LiteRT"
+      
+        track-name="litert"
+      
+    >
+  
+    <span class="devsite-nav-text" tooltip menu="LiteRT">
+      More
+   </span>
+    
+    <span class="devsite-nav-icon material-icons" data-icon="forward"
+          menu="LiteRT">
+    </span>
+    
+  
+  </span>
+  
+
+</li>
+
+    </ul>
+  
+                    </li>
+                  
+                    
+                    
+                    
+                    <li class="devsite-nav-item">
+                      
+  
+  <a href="https://developers.google.com/edge/litert-lm"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: LiteRT-LM"
+      
+        track-name="litert-lm"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: LiteRT-LM"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      LiteRT-LM
+   </span>
+    
+  
+  </a>
+  
+
+  
+                    </li>
+                  
+                    
+                    
+                    
+                    <li class="devsite-nav-item">
+                      
+  
+  <a href="https://developers.google.com/edge/mediapipe/solutions/guide"
+    
+       class="devsite-nav-title gc-analytics-event
+              devsite-nav-has-children
+              devsite-nav-active"
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: MediaPipe"
+      
+        track-name="mediapipe"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: MediaPipe"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip menu="_book">
+      MediaPipe
+   </span>
+    
+    <span class="devsite-nav-icon material-icons" data-icon="forward"
+          menu="_book">
+    </span>
+    
+  
+  </a>
+  
+
+  
+    <ul class="devsite-nav-responsive-tabs devsite-nav-has-menu
+                devsite-lower-tab-item">
+      
+<li class="devsite-nav-item">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: MediaPipe"
+      
+        track-name="mediapipe"
+      
+    >
+  
+    <span class="devsite-nav-text" tooltip menu="MediaPipe">
+      More
+   </span>
+    
+    <span class="devsite-nav-icon material-icons" data-icon="forward"
+          menu="MediaPipe">
+    </span>
+    
+  
+  </span>
+  
+
+</li>
+
+    </ul>
+  
+                    </li>
+                  
+                    
+                    
+                    
+                    <li class="devsite-nav-item">
+                      
+  
+  <a href="https://developers.google.com/edge/model-explorer"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Model Explorer"
+      
+        track-name="model explorer"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Model Explorer"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Model Explorer
+   </span>
+    
+  
+  </a>
+  
+
+  
+                    </li>
+                  
+                    
+                    
+                    
+                    <li class="devsite-nav-item">
+                      
+  
+  <a href="https://developers.google.com/edge/ai-edge-portal"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: AI Edge Portal"
+      
+        track-name="ai edge portal"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: AI Edge Portal"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      AI Edge Portal
+   </span>
+    
+  
+  </a>
+  
+
+  
+                    </li>
+                  
+                    
+                    
+                    
+                    <li class="devsite-nav-item">
+                      
+  
+  <a href="https://developers.google.com/edge/tensor-sdk"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Google Tensor SDK"
+      
+        track-name="google tensor sdk"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Google Tensor SDK"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Google Tensor SDK
+   </span>
+    
+  
+  </a>
+  
+
+  
+                    </li>
+                  
+                    
+                    
+                    
+                    <li class="devsite-nav-item">
+                      
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Apps"
+      
+        track-name="apps"
+      
+    >
+  
+    <span class="devsite-nav-text" tooltip >
+      Apps
+   </span>
+    
+  
+  </span>
+  
+
+  
+    <ul class="devsite-nav-responsive-tabs devsite-nav-has-menu
+                devsite-lower-tab-item">
+      
+<li class="devsite-nav-item">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Apps"
+      
+        track-name="apps"
+      
+    >
+  
+    <span class="devsite-nav-text" tooltip menu="Apps">
+      More
+   </span>
+    
+    <span class="devsite-nav-icon material-icons" data-icon="forward"
+          menu="Apps">
+    </span>
+    
+  
+  </span>
+  
+
+</li>
+
+    </ul>
+  
+                    </li>
+                  
+                    
+                    
+                    
+                    <li class="devsite-nav-item">
+                      
+  
+  <a href="https://developers.google.com/edge/api"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: API Reference"
+      
+        track-name="api reference"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: API Reference"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      API Reference
+   </span>
+    
+  
+  </a>
+  
+
+  
+                    </li>
+                  
+                </ul>
+              
+            </li>
+          
+          
+          
+        </ul>
+      
+    </div>
+    
+      <div class="devsite-mobile-nav-bottom">
+        
+          
+          <ul class="devsite-nav-list" menu="_book">
+            <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>MediaPipe Solutions</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/guide"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/tasks"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Tasks</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-deprecated"><a href="https://developers.google.com/edge/mediapipe/solutions/model_maker"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Model Maker</span><span class="devsite-nav-icon material-icons"
+        data-icon="deprecated"
+        data-title="Deprecated"
+        aria-hidden="true"></span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/studio"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Studio Demos</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Audio tasks</span>
+      </div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Audio classification</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/audio/audio_classifier"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/audio/audio_classifier/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/audio/audio_classifier/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/audio/audio_classifier/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/audio/audio_classifier/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Decision tasks</span>
+      </div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Decision maker</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/decision/decision_maker"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/decision/decision_maker/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/decision/decision_maker/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/decision/decision_maker/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/decision/decision_maker/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/decision/decision_maker/best-practices"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Best Practices</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Generative AI tasks</span>
+      </div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>LLM Inference</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Retrieval tasks</span>
+      </div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Semantic retriever</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/retrieval/semantic_retriever"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/retrieval/semantic_retriever/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/retrieval/semantic_retriever/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/retrieval/semantic_retriever/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/retrieval/semantic_retriever/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Universal embedder</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/retrieval/universal_embedder"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/retrieval/universal_embedder/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/retrieval/universal_embedder/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/retrieval/universal_embedder/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/retrieval/universal_embedder/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Text tasks</span>
+      </div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Language detection</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/language_detector"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/language_detector/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/language_detector/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/language_detector/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/language_detector/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Text classification</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_classifier"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_classifier/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_classifier/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_classifier/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_classifier/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li><li class="devsite-nav-item
+           devsite-nav-deprecated"><a href="https://developers.google.com/edge/mediapipe/solutions/customization/text_classifier"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Customize</span><span class="devsite-nav-icon material-icons"
+        data-icon="deprecated"
+        data-title="Deprecated"
+        aria-hidden="true"></span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Text embedding</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_embedder"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_embedder/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_embedder/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_embedder/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_embedder/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Text proofreading</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_proofreader"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_proofreader/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_proofreader/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_proofreader/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Text summarization</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_summarizer"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_summarizer/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_summarizer/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/text/text_summarizer/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Vision tasks</span>
+      </div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Face detection</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_detector"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_detector/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_detector/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_detector/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_detector/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Face landmark detection</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Gesture recognition</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/gesture_recognizer"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/gesture_recognizer/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/gesture_recognizer/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/gesture_recognizer/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/gesture_recognizer/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li><li class="devsite-nav-item
+           devsite-nav-deprecated"><a href="https://developers.google.com/edge/mediapipe/solutions/customization/gesture_recognizer"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Customize</span><span class="devsite-nav-icon material-icons"
+        data-icon="deprecated"
+        data-title="Deprecated"
+        aria-hidden="true"></span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Hand landmark detection</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Holistic landmark detection</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/holistic_landmarker"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/holistic_landmarker/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/holistic_landmarker/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/holistic_landmarker/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/holistic_landmarker/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Image classification</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_classifier"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_classifier/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_classifier/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_classifier/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_classifier/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li><li class="devsite-nav-item
+           devsite-nav-deprecated"><a href="https://developers.google.com/edge/mediapipe/solutions/customization/image_classifier"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Customize</span><span class="devsite-nav-icon material-icons"
+        data-icon="deprecated"
+        data-title="Deprecated"
+        aria-hidden="true"></span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Image embedding</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_embedder"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_embedder/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_embedder/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_embedder/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_embedder/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Image segmentation</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_segmenter"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_segmenter/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_segmenter/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_segmenter/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_segmenter/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Interactive segmentation</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/interactive_segmenter"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/interactive_segmenter/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/interactive_segmenter/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/interactive_segmenter/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Object detection</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li><li class="devsite-nav-item
+           devsite-nav-deprecated"><a href="https://developers.google.com/edge/mediapipe/solutions/customization/object_detector"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Customize</span><span class="devsite-nav-icon material-icons"
+        data-icon="deprecated"
+        data-title="Deprecated"
+        aria-hidden="true"></span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Pose landmark detection</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/web_js"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Platform setup guides</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/setup_android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android setup</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/setup_ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iOS setup</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/setup_python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Python setup</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/setup_web"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Web setup</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Build from source</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/solutions/build_python"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Build Python Wheel Package</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>MediaPipe Framework</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/install"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Installation</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Getting started</span>
+      </div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Framework on Android</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/hello_world_android"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Hello world!</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/android_archive_library"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Android Archive</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Framework on iOS</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/hello_world_ios"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Hello world!</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/python_framework"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Framework in Python</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Framework in C++</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/cpp"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/hello_world_cpp"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Hello world!</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Framework concepts</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/framework_concepts/overview"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/framework_concepts/calculators"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Calculators</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Graphs</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/framework_concepts/graphs"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li><li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/framework_concepts/graphs_cpp"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Building graphs with C++</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/framework_concepts/packets"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Packets</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/framework_concepts/synchronization"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Synchronization</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/framework_concepts/gpu"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>GPU</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/framework_concepts/realtime_streams"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Real-time Streams</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Framework tools</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/tools/visualizer"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Visualizer</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Resources</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/help"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Getting Help</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/faq"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>FAQ</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/troubleshooting"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Troubleshooting</span></a></li>
+
+  <li class="devsite-nav-item"><a href="https://developers.google.com/edge/mediapipe/framework/getting_started/gpu_support"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>GPU Support</span></a></li>
+          </ul>
+        
+        
+          
+    
+  
+        
+        
+          
+    
+      
+      <ul class="devsite-nav-list" menu="LiteRT"
+          aria-label="Side menu" hidden>
+        
+          
+            
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/edge/litert/android"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Android"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Android
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/edge/litert/ios/quickstart"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: iOS &amp; macOS"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      iOS &amp; macOS
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/edge/litert/web"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Web"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Web
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/edge/litert/next/python"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Desktop"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Desktop
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/edge/litert/microcontrollers/overview"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Embedded &amp; IoT"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Embedded &amp; IoT
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+          
+        
+      </ul>
+    
+  
+    
+  
+    
+      
+      <ul class="devsite-nav-list" menu="MediaPipe"
+          aria-label="Side menu" hidden>
+        
+          
+            
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/edge/mediapipe/solutions/guide"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: MediaPipe Solutions"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      MediaPipe Solutions
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/edge/mediapipe/framework"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: MediaPipe Framework"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      MediaPipe Framework
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+          
+        
+      </ul>
+    
+  
+    
+  
+    
+  
+    
+  
+    
+      
+      <ul class="devsite-nav-list" menu="Apps"
+          aria-label="Side menu" hidden>
+        
+          
+            
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/edge/gallery"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: AI Edge Gallery"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      AI Edge Gallery
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/edge/eloquent"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: AI Edge Eloquent"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      AI Edge Eloquent
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/edge/foresight"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: AI Edge Foresight"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      AI Edge Foresight
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://google-ai-edge.github.io/mediapipe-samples-web"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: MediaPipe Demos"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      MediaPipe Demos
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+          
+        
+      </ul>
+    
+  
+    
+  
+        
+      </div>
+    
+  </div>
+</nav>
+          
+        </devsite-book-nav>
+      
+      <section id="gc-wrapper">
+        <main role="main" id="main-content" class="devsite-main-content"
+            
+              has-book-nav
+              has-sidebar
+            >
+          <div class="devsite-sidebar">
+            <div class="devsite-sidebar-content">
+                
+                <devsite-toc class="devsite-nav"
+                            role="navigation"
+                            aria-label="On this page"
+                            depth="2"
+                            scrollbars
+                            data-nosnippet
+                  ></devsite-toc>
+                <devsite-recommendations-sidebar class="nocontent devsite-nav" data-nosnippet>
+                </devsite-recommendations-sidebar>
+            </div>
+          </div>
+          <devsite-content>
+            
+              
+
+
+
+
+
+
+
+
+
+
+<article class="devsite-article">
+  
+  
+  
+  
+  
+
+  <div class="devsite-article-meta nocontent" role="navigation" data-nosnippet>
+    
+    
+    <ul class="devsite-breadcrumb-list"
+  
+    aria-label="Breadcrumb">
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+    
+    
+      
+        
+  <a href="https://developers.google.com/"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Breadcrumbs"
+      
+        data-value="1"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="1"
+      
+        track-metadata-eventdetail=""
+      
+    >
+    
+          Home
+        
+  </a>
+  
+      
+    
+  </li>
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+      
+      <div class="devsite-breadcrumb-guillemet material-icons" aria-hidden="true"></div>
+    
+    
+    
+      
+        
+  <a href="https://developers.google.com/products"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Breadcrumbs"
+      
+        data-value="2"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="2"
+      
+        track-metadata-eventdetail=""
+      
+    >
+    
+          Products
+        
+  </a>
+  
+      
+    
+  </li>
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+      
+      <div class="devsite-breadcrumb-guillemet material-icons" aria-hidden="true"></div>
+    
+    
+    
+      
+        
+  <a href="https://developers.google.com/edge"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Breadcrumbs"
+      
+        data-value="3"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="3"
+      
+        track-metadata-eventdetail="Google AI Edge"
+      
+    >
+    
+          Google AI Edge
+        
+  </a>
+  
+      
+    
+  </li>
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+      
+      <div class="devsite-breadcrumb-guillemet material-icons" aria-hidden="true"></div>
+    
+    
+    
+      
+        
+  <a href="https://developers.google.com/edge/mediapipe/solutions/guide"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Breadcrumbs"
+      
+        data-value="4"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="4"
+      
+        track-metadata-eventdetail=""
+      
+    >
+    
+          MediaPipe
+        
+  </a>
+  
+      
+    
+  </li>
+  
+</ul>
+    
+      
+    <devsite-thumb-rating position="header">
+    </devsite-thumb-rating>
+  
+    
+  </div>
+  
+    <devsite-feedback
+  position="header"
+  project-name="Google AI Edge"
+  product-id="5336252"
+  bucket="documentation"
+  context=""
+  version="t-devsite-webserver-20261014-r02-rc00.481037794032955999"
+  data-label="Send Feedback Button"
+  track-type="feedback"
+  track-name="sendFeedbackLink"
+  track-metadata-position="header"
+  class="nocontent"
+  data-nosnippet
+  
+  
+  
+    project-icon="https://www.gstatic.com/devrel-devsite/prod/v9ce9cb5b22b62a465ff52c45061a0a6a2d86a80b685e9aa8a182b203fdfbf420/developers/images/touchicon-180-new.png"
+  
+  
+  
+  >
+
+  <button>
+  
+    
+    Send feedback
+  
+  </button>
+</devsite-feedback>
+  
+    <h1 class="devsite-page-title" tabindex="-1">
+      Object detection task guide<devsite-actions hidden data-nosnippet><devsite-feature-tooltip
+      ack-key="AckCollectionsBookmarkTooltipDismiss"
+      analytics-category="Site-Wide Custom Events"
+      analytics-action-show="Callout Profile displayed"
+      analytics-action-close="Callout Profile dismissed"
+      analytics-label="Create Collection Callout"
+      class="devsite-page-bookmark-tooltip nocontent"
+      data-nosnippet
+      dismiss-button="true"
+      id="devsite-collections-dropdown"
+      
+      dismiss-button-text="Dismiss"
+
+      
+      close-button-text="Got it">
+
+    
+    
+      <devsite-bookmark></devsite-bookmark>
+    
+
+    <span slot="popout-heading">
+      
+      Stay organized with collections
+    </span>
+    <span slot="popout-contents">
+      
+      Save and categorize content based on your preferences.
+    </span>
+  </devsite-feature-tooltip>
+    <devsite-llm-tools></devsite-llm-tools></devsite-actions>
+  
+      
+    </h1>
+  <div class="devsite-page-title-meta"><devsite-view-release-notes></devsite-view-release-notes></div>
+  
+
+  <devsite-toc class="devsite-nav"
+    depth="2"
+    devsite-toc-embedded
+    >
+  </devsite-toc>
+  <div class="devsite-article-body clearfix
+  ">
+
+  
+    
+    
+
+
+
+
+
+
+<p><img src="https://developers.google.com/static/mediapipe/images/solutions/examples/object_detector.png" alt="A cat and a dog that are highlighted with bounding boxes that are correctly
+labeled" width="400px" class="attempt-right"> </p>
+
+<p>The MediaPipe Object Detector task lets you detect the presence and location of
+multiple classes of objects within images or videos. For example, an object
+detector can locate dogs in an image. This task operates on image data with a
+machine learning (ML) model, accepting static data or a continuous video stream
+as input and outputting a list of detection results. Each detection result
+represents an object that appears within the image or video.</p>
+
+<p><a class="button button-with-icon button-primary"
+  href="https://google-ai-edge.github.io/mediapipe-samples-web/#/vision/object_detector"
+  target="_blank">
+  Try it!<span class="material-icons icon-after"
+  aria-hidden="true" translate="no">arrow_forward</span>
+</a></p>
+
+<h2 id="get_started" data-text="Get Started" tabindex="-1">Get Started</h2>
+
+<p>Start using this task by following one of these implementation guides for the
+platform you are working on:</p>
+
+<h3 id="option_a" class="mpf-option" data-text="Option A: a plain "Flutter" row" tabindex="-1">Option A: a plain "Flutter" row</h3>
+<p class="mpf-note">The cleanest, identical to Google's style. Web support is only stated in the Guide, so a web developer may read the Web row as their only option.</p>
+<table>
+<thead><tr><th style="text-align: left">Platform</th><th style="text-align: left">Code Example</th><th style="text-align: left">Guide</th></tr></thead>
+<tbody>
+<tr><td style="text-align: left">Android</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/object_detection/android">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/android">Guide</a></td></tr>
+<tr class="mpf-new"><td style="text-align: left">Flutter</td><td style="text-align: left"><a href="https://github.com/google/flutter-mediapipe/tree/main/samples/object_detection">Code example</a></td><td style="text-align: left"><a href="https://github.com/google/flutter-mediapipe/blob/main/doc/guides/vision/object_detector.md">Guide</a></td></tr>
+<tr><td style="text-align: left">iOS</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/object_detection/ios">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/ios">Guide</a></td></tr>
+<tr><td style="text-align: left">Python</td><td style="text-align: left"><a href="https://colab.research.google.com/github/googlesamples/mediapipe/blob/main/examples/object_detection/python/object_detector.ipynb">Colab</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/python">Guide</a></td></tr>
+<tr><td style="text-align: left">Web</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples-web/blob/main/src/tasks/object-detector.ts">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/web_js">Guide</a></td></tr>
+</tbody>
+</table>
+
+<h3 id="option_b" class="mpf-option" data-text="Option B: platforms in brackets" tabindex="-1">Option B: platforms in brackets</h3>
+<p class="mpf-note">Clear in one cell, and the table keeps Google's shape. The label is a little longer than the others.</p>
+<table>
+<thead><tr><th style="text-align: left">Platform</th><th style="text-align: left">Code Example</th><th style="text-align: left">Guide</th></tr></thead>
+<tbody>
+<tr><td style="text-align: left">Android</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/object_detection/android">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/android">Guide</a></td></tr>
+<tr class="mpf-new"><td style="text-align: left">Flutter (mobile, desktop, web)</td><td style="text-align: left"><a href="https://github.com/google/flutter-mediapipe/tree/main/samples/object_detection">Code example</a></td><td style="text-align: left"><a href="https://github.com/google/flutter-mediapipe/blob/main/doc/guides/vision/object_detector.md">Guide</a></td></tr>
+<tr><td style="text-align: left">iOS</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/object_detection/ios">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/ios">Guide</a></td></tr>
+<tr><td style="text-align: left">Python</td><td style="text-align: left"><a href="https://colab.research.google.com/github/googlesamples/mediapipe/blob/main/examples/object_detection/python/object_detector.ipynb">Colab</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/python">Guide</a></td></tr>
+<tr><td style="text-align: left">Web</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples-web/blob/main/src/tasks/object-detector.ts">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/web_js">Guide</a></td></tr>
+</tbody>
+</table>
+
+<h3 id="option_c" class="mpf-option" data-text="Option C: B, plus the Web row relabeled" tabindex="-1">Option C: B, plus the Web row relabeled</h3>
+<p class="mpf-note">No ambiguity between the two web paths, but it edits Google's own row, a harder sell upstream.</p>
+<table>
+<thead><tr><th style="text-align: left">Platform</th><th style="text-align: left">Code Example</th><th style="text-align: left">Guide</th></tr></thead>
+<tbody>
+<tr><td style="text-align: left">Android</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/object_detection/android">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/android">Guide</a></td></tr>
+<tr class="mpf-new"><td style="text-align: left">Flutter (mobile, desktop, web)</td><td style="text-align: left"><a href="https://github.com/google/flutter-mediapipe/tree/main/samples/object_detection">Code example</a></td><td style="text-align: left"><a href="https://github.com/google/flutter-mediapipe/blob/main/doc/guides/vision/object_detector.md">Guide</a></td></tr>
+<tr><td style="text-align: left">iOS</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/object_detection/ios">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/ios">Guide</a></td></tr>
+<tr><td style="text-align: left">Python</td><td style="text-align: left"><a href="https://colab.research.google.com/github/googlesamples/mediapipe/blob/main/examples/object_detection/python/object_detector.ipynb">Colab</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/python">Guide</a></td></tr>
+<tr><td style="text-align: left">Web (JavaScript)</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples-web/blob/main/src/tasks/object-detector.ts">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/web_js">Guide</a></td></tr>
+</tbody>
+</table>
+
+<h3 id="option_d" class="mpf-option" data-text="Option D: a plain row with a live web demo" tabindex="-1">Option D: a plain row with a live web demo</h3>
+<p class="mpf-note">The demo link shows web support the way Colab does for Python, but "Flutter" alone still does not say it covers web.</p>
+<table>
+<thead><tr><th style="text-align: left">Platform</th><th style="text-align: left">Code Example</th><th style="text-align: left">Guide</th></tr></thead>
+<tbody>
+<tr><td style="text-align: left">Android</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/object_detection/android">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/android">Guide</a></td></tr>
+<tr class="mpf-new"><td style="text-align: left">Flutter</td><td style="text-align: left"><a href="https://github.com/google/flutter-mediapipe/tree/main/samples/object_detection">Code example</a> &middot; <a href="https://google.github.io/flutter-mediapipe/">Try it</a></td><td style="text-align: left"><a href="https://github.com/google/flutter-mediapipe/blob/main/doc/guides/vision/object_detector.md">Guide</a></td></tr>
+<tr><td style="text-align: left">iOS</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/object_detection/ios">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/ios">Guide</a></td></tr>
+<tr><td style="text-align: left">Python</td><td style="text-align: left"><a href="https://colab.research.google.com/github/googlesamples/mediapipe/blob/main/examples/object_detection/python/object_detector.ipynb">Colab</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/python">Guide</a></td></tr>
+<tr><td style="text-align: left">Web</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples-web/blob/main/src/tasks/object-detector.ts">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/web_js">Guide</a></td></tr>
+</tbody>
+</table>
+
+<h3 id="option_recommended" class="mpf-option" data-text="Recommended: B plus D's demo link" tabindex="-1">Recommended: B plus D's demo link<span class="mpf-tag">Recommended</span></h3>
+<p class="mpf-note">Brackets say web is included at a glance, the demo proves it, and Google's own rows stay untouched.</p>
+<table>
+<thead><tr><th style="text-align: left">Platform</th><th style="text-align: left">Code Example</th><th style="text-align: left">Guide</th></tr></thead>
+<tbody>
+<tr><td style="text-align: left">Android</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/object_detection/android">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/android">Guide</a></td></tr>
+<tr class="mpf-new"><td style="text-align: left">Flutter (mobile, desktop, web)</td><td style="text-align: left"><a href="https://github.com/google/flutter-mediapipe/tree/main/samples/object_detection">Code example</a> &middot; <a href="https://google.github.io/flutter-mediapipe/">Try it</a></td><td style="text-align: left"><a href="https://github.com/google/flutter-mediapipe/blob/main/doc/guides/vision/object_detector.md">Guide</a></td></tr>
+<tr><td style="text-align: left">iOS</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/object_detection/ios">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/ios">Guide</a></td></tr>
+<tr><td style="text-align: left">Python</td><td style="text-align: left"><a href="https://colab.research.google.com/github/googlesamples/mediapipe/blob/main/examples/object_detection/python/object_detector.ipynb">Colab</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/python">Guide</a></td></tr>
+<tr><td style="text-align: left">Web</td><td style="text-align: left"><a href="https://github.com/google-ai-edge/mediapipe-samples-web/blob/main/src/tasks/object-detector.ts">Code example</a></td><td style="text-align: left"><a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/web_js">Guide</a></td></tr>
+</tbody>
+</table>
+
+<p>These platform-specific guides walk you through a basic implementation of this
+task, including a recommended model, and code example with recommended
+configuration options.</p>
+
+<h2 id="task_details" data-text="Task details" tabindex="-1">Task details</h2>
+
+<p>This section describes the capabilities, inputs, and outputs of this task.</p>
+
+<h3 id="features" data-text="Features" tabindex="-1">Features</h3>
+
+<ul>
+<li><strong>Input image processing</strong> - Processing includes image rotation, resizing,
+normalization, and color space conversion.</li>
+<li><strong>Label map locale</strong> - Set the language used for display names</li>
+<li><strong>Score threshold</strong> - Filter results based on prediction scores.</li>
+<li><strong>Top-k detection</strong> - Filter the number detection results.</li>
+<li><strong>Label allowlist and denylist</strong> - Specify the categories detected.</li>
+</ul>
+
+<table>
+  <thead>
+    <tr>
+      <th>Task inputs</th>
+      <th>Task outputs</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>The Object Detector API accepts an input of one of the following data types:
+<br>
+<ul>
+<li>Still images</li>
+</ul>
+<ul>
+<li>Decoded video frames</li>
+</ul>
+<ul>
+<li>Live video feed</li>
+</ul>
+</td>
+      <td>The Object Detector API outputs the following results for detected objects:
+<br>
+<ul>
+<li>Category of object</li>
+</ul>
+<ul>
+<li>Probability score</li>
+</ul>
+<ul>
+<li>Bounding box coordinates</li>
+</ul>
+</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="configurations_options" data-text="Configurations options" tabindex="-1">Configurations options</h3>
+
+<p>This task has the following configuration options:</p>
+
+
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+
+<table>
+  <thead>
+    <tr>
+      <th>Option Name</th>
+      <th>Description</th>
+      <th>Value Range</th>
+      <th>Default Value</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr>
+      <td><code translate="no" dir="ltr">running_mode</code></td>
+      <td>Sets the running mode for the task. There are three
+      modes:<br>
+      <br>
+      IMAGE: The mode for single image inputs.<br>
+      <br>
+      VIDEO: The mode for decoded frames of a video.<br>
+      <br>
+      LIVE_STREAM: The mode for a livestream of input
+      data, such as from a camera. In this mode, resultListener must be
+      called to set up a listener to receive results
+      asynchronously.</td>
+      
+      <td>{<code translate="no" dir="ltr">IMAGE, VIDEO, LIVE_STREAM</code>}</td>
+      <td><code translate="no" dir="ltr">IMAGE</code></td>
+      
+      
+    </tr>
+
+
+    <tr>
+      <td><code translate="no" dir="ltr">display_names</code></td>
+      <td>Sets the language of labels to use for display names provided in the
+      metadata of the task's model, if available. Default is <code translate="no" dir="ltr">en</code> for
+      English. You can add localized labels to the metadata of a custom model
+      using the <a href="https://ai.google.dev/edge/lite/models/metadata_writer_tutorial">TensorFlow Lite Metadata Writer API</a>
+      </td>
+      <td>Locale code</td>
+      <td>en</td>
+    </tr>
+    <tr>
+      <td><code translate="no" dir="ltr">max_results</code></td>
+      <td>Sets the optional maximum number of top-scored detection results to
+return.</td>
+      <td>Any positive numbers</td>
+      <td>-1 (all results are returned)</td>
+    </tr>
+    <tr>
+      <td><code translate="no" dir="ltr">score_threshold</code></td>
+      <td>Sets the prediction score threshold that overrides the one provided in
+the model metadata (if any). Results below this value are rejected.</td>
+      <td>Any float</td>
+      <td>Not set</td>
+    </tr>
+    <tr>
+      <td><code translate="no" dir="ltr">category_allowlist</code></td>
+      <td>Sets the optional list of allowed category names. If non-empty,
+detection results whose category name is not in this set will be
+filtered out. Duplicate or unknown category names are ignored.
+This option is mutually exclusive with <code translate="no" dir="ltr">category_denylist</code> and using
+both results in an error.</td>
+      <td>Any strings</td>
+      <td>Not set</td>
+    </tr>
+    <tr>
+      <td><code translate="no" dir="ltr">category_denylist</code></td>
+      <td>Sets the optional list of category names that are not allowed. If
+non-empty, detection results whose category name is in this set will be filtered
+out. Duplicate or unknown category names are ignored. This option is mutually
+exclusive with <code translate="no" dir="ltr">category_allowlist</code> and using both results in an error.</td>
+      <td>Any strings</td>
+      <td>Not set</td>
+    </tr>
+
+  </tbody>
+</table>
+
+<h2 id="models" data-text="Models" tabindex="-1">Models</h2>
+
+<p>The Object Detector API requires an object detection model to be downloaded and
+stored in your project directory. If you do not already have a model, start with
+the default, recommended model. The other models presented in this section make
+trade-offs between latency and accuracy.</p>
+
+<h3 id="efficientdet-lite0_model_recommended" data-text="EfficientDet-Lite0 model (Recommended)" tabindex="-1">EfficientDet-Lite0 model (Recommended)</h3>
+
+<p>The EfficientDet-Lite0 model uses an EfficientNet-Lite0 backbone with a 320x320
+input size and BiFPN feature network. The model was trained with the <a href="https://cocodataset.org/">COCO
+dataset</a>, a large-scale object detection dataset that
+contains 1.5 million object instances and 80 object labels. See the <a href="https://storage.googleapis.com/mediapipe-tasks/object_detector/labelmap.txt">full
+list</a>
+of supported labels. EfficientDet-Lite0 is available as an int8, float16, or
+float32. This model is recommended because it strikes a balance between latency
+and accuracy. It is both accurate and lightweight enough for many use cases.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Model name</th>
+      <th>Input shape</th>
+      <th>Quantization type</th>
+      <th>Versions</th>
+    </tr>
+  </thead>
+  <tr>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/latest/efficientdet_lite0.tflite">
+     EfficientDet-Lite0 (int8)</a>
+    <td>320 x 320</td>
+    <td>int8</td>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/latest/efficientdet_lite0.tflite">
+     Latest</a>
+    </td>
+  <tr>
+  <tr>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/latest/efficientdet_lite0.tflite">
+     EfficientDet-Lite0 (float 16)</a>
+    <td>320 x 320</td>
+    <td>float 16</td>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/latest/efficientdet_lite0.tflite">
+     Latest</a>
+    </td>
+  <tr>
+  <tr>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/latest/efficientdet_lite0.tflite">
+     EfficientDet-Lite0 (float 32)</a>
+    </td>
+    <td>320 x 320</td>
+    <td>None (float32)</td>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float32/latest/efficientdet_lite0.tflite">
+     Latest</a>
+    </td>
+  <tr>
+</table>
+
+<h3 id="efficientdet-lite2_model" data-text="EfficientDet-Lite2 model" tabindex="-1">EfficientDet-Lite2 model</h3>
+
+<p>The EfficientDet-Lite2 model uses an EfficientNet-Lite2 backbone with a 448x448
+input size and BiFPN feature network. The model was trained with the <a href="https://cocodataset.org/">COCO
+dataset</a>, a large-scale object detection dataset that
+contains 1.5 million object instances and 80 object labels. See the <a href="https://storage.googleapis.com/mediapipe-tasks/object_detector/labelmap.txt">full
+list</a>
+of supported labels. EfficientDet-Lite2 is available as an int8, float16, or
+float32 model. This model is generally more accurate than EfficientDet-Lite0,
+but is also slower and more memory intensive. This model is appropriate for use
+cases where accuracy is a greater priority to speed and size.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Model name</th>
+      <th>Input shape</th>
+      <th>Quantization type</th>
+      <th>Versions</th>
+    </tr>
+  </thead>
+  <tr>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite2/int8/latest/efficientdet_lite2.tflite">
+     EfficientDet-Lite2 (int8)</a></td>
+    <td>448 x 448</td>
+    <td>int8</td>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite2/int8/latest/efficientdet_lite2.tflite">
+     Latest</a>
+    </td>
+  </tr>
+  <tr>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite2/float16/latest/efficientdet_lite2.tflite">
+     EfficientDet-Lite2 (float 16)</a></td>
+    <td>448 x 448</td>
+    <td>float 16</td>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite2/float16/latest/efficientdet_lite2.tflite">
+     Latest</a>
+    </td>
+  </tr>
+  <tr>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite2/float32/latest/efficientdet_lite2.tflite">
+     EfficientDet-Lite2 (float 32)</a>
+    </td>
+    <td>448 x 448</td>
+    <td>None (float32)</td>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite2/float32/latest/efficientdet_lite2.tflite">
+     Latest</a>
+    </td>
+  </tr>
+</table>
+
+<h3 id="ssd_mobilenetv2_model" data-text="SSD MobileNetV2 model" tabindex="-1">SSD MobileNetV2 model</h3>
+
+<p>The SSD MobileNetV2 model uses a MobileNetV2 backbone with a 256x256 input size
+and SSD feature network. The model was trained with the <a href="https://cocodataset.org/">COCO
+dataset</a>, a large-scale object detection dataset that
+contains 1.5 million object instances and 80 object labels. See the <a href="https://storage.googleapis.com/mediapipe-tasks/object_detector/labelmap.txt">full
+list</a>
+of supported labels. SSD MobileNetV2 is available as an int8 and float 32 model.
+This model is faster and lighter than EfficientDet-Lite0, but is also generally
+less accurate. This model is appropriate for use cases that require a fast,
+lightweight model that sacrifices some accuracy.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Model name</th>
+      <th>Input shape</th>
+      <th>Quantization type</th>
+      <th>Versions</th>
+    </tr>
+  </thead>
+  <tr>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/ssd_mobilenet_v2/float16/latest/ssd_mobilenet_v2.tflite">
+     SSDMobileNet-V2 (int8)</a></td>
+    <td>256 x 256</td>
+    <td>int8</td>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/ssd_mobilenet_v2/float16/latest/ssd_mobilenet_v2.tflite">
+     Latest</a>
+    </td>
+  </tr>
+  <tr>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/ssd_mobilenet_v2/float32/latest/ssd_mobilenet_v2.tflite">
+     SSDMobileNet-V2 (float 32)</a>
+    </td>
+    <td>256 x 256</td>
+    <td>None (float32)</td>
+    <td>
+     <a href="https://storage.googleapis.com/mediapipe-models/object_detector/ssd_mobilenet_v2/float32/latest/ssd_mobilenet_v2.tflite">
+     Latest</a>
+    </td>
+  </tr>
+</table>
+
+<h3 id="model_requirements_and_metadata" data-text="Model requirements and metadata" tabindex="-1">Model requirements and metadata</h3>
+
+<p>This section describes the requirements for custom models if you decide to build
+a model to use with this task. Custom models must be in <a href="https://developers.google.com/edge/lite/models/trained">TensorFlow
+Lite</a> format and must include
+<a href="https://developers.google.com/edge/lite/models/metadata_writer_tutorial#object_detectors">metadata</a>
+describing the operating parameters of the model.</p>
+
+<h4 id="design_requirements" data-text="Design requirements" tabindex="-1">Design requirements</h4>
+
+<table>
+<thead>
+  <tr>
+    <th>Input</th>
+    <th>Shape</th>
+    <th>Description</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>Input image</td>
+    <td>Float32 tensor of shape[1, height, width, 3]</td>
+    <td>The normalized input image.</td>
+  </tr>
+</tbody>
+</table>
+
+<table>
+<thead>
+  <tr>
+    <th>Output</th>
+    <th>Shape</th>
+    <th>Description</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td><code translate="no" dir="ltr">detection_boxes</code></td>
+    <td>Float32 tensor of shape [1, num_boxes, 4]</td>
+    <td>Box location of each detected object.</td>
+  </tr>
+  <tr>
+    <td><code translate="no" dir="ltr">detection_classes</code></td>
+    <td>Float32 tensor of shape [1, num_boxes]</td>
+    <td>Indices of the class names for each detected object.</td>
+  </tr>
+  <tr>
+    <td><code translate="no" dir="ltr">detection_scores</code></td>
+    <td>float32 tensor of shape [1, num_boxes]</td>
+    <td>Prediction scores for each detected object.</td>
+  </tr>
+  <tr>
+    <td><code translate="no" dir="ltr">num_boxes</code></td>
+    <td>Float32 tensor of size 1</td>
+    <td>The number of detected boxes.</td>
+  </tr>
+</tbody>
+</table>
+
+<h4 id="metadata_requirements" data-text="Metadata requirements" tabindex="-1">Metadata requirements</h4>
+
+<table>
+<thead>
+  <tr>
+    <th>Parameter</th>
+    <th>Description</th>
+    <th>Description</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td><code translate="no" dir="ltr">input_norm_mean</code></td>
+    <td>The mean value used in the input tensor normalization.</td>
+    <td>The normalized input image.</td>
+  </tr>
+  <tr>
+    <td><code translate="no" dir="ltr">input_norm_std</code></td>
+    <td>The field norm used in the input tensor normalization.</td>
+    <td>Box location of each detected object.</td>
+  </tr>
+  <tr>
+    <td><code translate="no" dir="ltr">label_file_paths</code></td>
+    <td>The paths to the category tensor label files. If the model does not have any label files, pass an empty list.</td>
+    <td>Indices of the class names for each detected object.</td>
+  </tr>
+  <tr>
+    <td><code translate="no" dir="ltr">score_calibration_md</code></td>
+    <td>Information on the score calibration operation in the classification tensor. This parameter is not required if the model does not use score<br>calibration.</td>
+    <td>Prediction scores for each detected object.</td>
+  </tr>
+  <tr>
+    <td><code translate="no" dir="ltr">num_boxes</code></td>
+    <td>Float32 tensor of size 1</td>
+    <td>The number of detected boxes.</td>
+  </tr>
+</tbody>
+</table>
+
+<h2 id="task_benchmarks" data-text="Task benchmarks" tabindex="-1">Task benchmarks</h2>
+
+<p>Here&#39;s the task benchmarks for the above pre-trained models. The latency result
+is the average latency on Pixel 6 using CPU / GPU.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Model Name</th>
+      <th>CPU Latency </th>
+      <th>GPU Latency </th>
+    </tr>
+  </thead>
+  <tr>
+    <td>EfficientDet-Lite0 float32 model </td>
+    <td>61.30ms</td>
+    <td>27.83ms</td>
+  </tr>
+  <tr>
+    <td>EfficientDet-Lite0 float16 model </td>
+    <td>53.97ms</td>
+    <td>27.97ms</td>
+  </tr>
+  <tr>
+    <td>EfficientDet-Lite0 int8 model </td>
+    <td>29.31ms</td>
+    <td> - </td>
+  </tr>
+  <tr>
+    <td>EfficientDet-Lite2 float32 model </td>
+    <td>197.98ms</td>
+    <td>41.15ms</td>
+  </tr>
+  <tr>
+    <td>EfficientDet-Lite2 float16 model </td>
+    <td>198.77ms</td>
+    <td>47.31ms</td>
+  </tr>
+  <tr>
+    <td>EfficientDet-Lite2 int8 model </td>
+    <td>70.91ms</td>
+    <td> - </td>
+  </tr>
+  <tr>
+    <td>SSD MobileNetV2 float32 model </td>
+    <td>36.30ms</td>
+    <td>24.01ms</td>
+  </tr>
+  <tr>
+    <td>SSD MobileNetV2 float16 model </td>
+    <td>37.35ms</td>
+    <td>28.16ms</td>
+  </tr>
+</table>
+
+  
+
+  
+</div>
+
+  
+    
+      <devsite-recommendations display="in-page" hidden yield>
+      </devsite-recommendations>
+    
+    
+      
+    <devsite-thumb-rating position="footer">
+    </devsite-thumb-rating>
+  
+       
+         <devsite-feedback
+  position="footer"
+  project-name="Google AI Edge"
+  product-id="5336252"
+  bucket="documentation"
+  context=""
+  version="t-devsite-webserver-20261014-r02-rc00.481037794032955999"
+  data-label="Send Feedback Button"
+  track-type="feedback"
+  track-name="sendFeedbackLink"
+  track-metadata-position="footer"
+  class="nocontent"
+  data-nosnippet
+  
+  
+  
+    project-icon="https://www.gstatic.com/devrel-devsite/prod/v9ce9cb5b22b62a465ff52c45061a0a6a2d86a80b685e9aa8a182b203fdfbf420/developers/images/touchicon-180-new.png"
+  
+  
+  
+  >
+
+  <button>
+  
+    
+    Send feedback
+  
+  </button>
+</devsite-feedback>
+       
+    
+    
+      <devsite-recommendations id="recommendations-link" yield></devsite-recommendations>
+    
+  
+
+  <div class="devsite-floating-action-buttons"></div></article>
+
+
+<devsite-content-footer class="nocontent" data-nosnippet>
+  <p>Except as otherwise noted, the content of this page is licensed under the <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 License</a>, and code samples are licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache 2.0 License</a>. For details, see the <a href="https://developers.google.com/site-policies">Google Developers Site Policies</a>. Java is a registered trademark of Oracle and/or its affiliates.</p>
+  <p>Last updated 2026-10-01 UTC.</p>
+</devsite-content-footer>
+
+
+<devsite-notification
+>
+</devsite-notification>
+
+
+  
+<div class="devsite-content-data">
+  
+    
+    
+    <template class="devsite-thumb-rating-feedback">
+      <devsite-feedback
+  position="thumb-rating"
+  project-name="Google AI Edge"
+  product-id="5336252"
+  bucket="documentation"
+  context=""
+  version="t-devsite-webserver-20261014-r02-rc00.481037794032955999"
+  data-label="Send Feedback Button"
+  track-type="feedback"
+  track-name="sendFeedbackLink"
+  track-metadata-position="thumb-rating"
+  class="nocontent"
+  data-nosnippet
+  
+  
+  
+    project-icon="https://www.gstatic.com/devrel-devsite/prod/v9ce9cb5b22b62a465ff52c45061a0a6a2d86a80b685e9aa8a182b203fdfbf420/developers/images/touchicon-180-new.png"
+  
+  
+  
+  >
+
+  <button>
+  
+    Need to tell us more?
+  
+  </button>
+</devsite-feedback>
+    </template>
+  
+  
+    <template class="devsite-content-data-template">
+      [[["Easy to understand","easyToUnderstand","thumb-up"],["Solved my problem","solvedMyProblem","thumb-up"],["Other","otherUp","thumb-up"]],[["Missing the information I need","missingTheInformationINeed","thumb-down"],["Too complicated / too many steps","tooComplicatedTooManySteps","thumb-down"],["Out of date","outOfDate","thumb-down"],["Samples / code issue","samplesCodeIssue","thumb-down"],["Other","otherDown","thumb-down"]],["Last updated 2026-10-01 UTC."],[],[]]
+    </template>
+  
+</div>
+            
+          </devsite-content>
+        </main>
+        <devsite-footer-promos class="devsite-footer">
+          
+            
+          
+        </devsite-footer-promos>
+        <devsite-footer-linkboxes class="devsite-footer">
+          
+            
+<nav class="devsite-footer-linkboxes nocontent"
+     aria-label="Footer links"
+     data-nosnippet>
+  
+  <ul class="devsite-footer-linkboxes-list">
+    
+    <li class="devsite-footer-linkbox ">
+    <h3 class="devsite-footer-linkbox-heading no-link">Engage</h3>
+      <ul class="devsite-footer-linkbox-list">
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://developers.google.com/program"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 1)"
+            >
+            
+          
+            Google Developer Program
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://developers.google.com/community"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 2)"
+            >
+            
+          
+            Google Developer Groups
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://developers.google.com/community/experts"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 3)"
+            >
+            
+          
+            Google Developer Experts
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://developers.google.com/community/accelerators"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 4)"
+            >
+            
+          
+            Accelerators
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://developers.google.com/community/nvidia"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 5)"
+            >
+            
+              
+              
+            
+          
+            Google Cloud & NVIDIA
+          
+          </a>
+          
+          
+        </li>
+        
+      </ul>
+    </li>
+    
+    <li class="devsite-footer-linkbox ">
+    <h3 class="devsite-footer-linkbox-heading no-link">Connect</h3>
+      <ul class="devsite-footer-linkbox-list">
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="//googledevelopers.blogspot.com"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 1)"
+            >
+            
+          
+            Blog
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://bsky.app/profile/developers.google.com"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 2)"
+            >
+            
+          
+            Bluesky
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://www.instagram.com/googlefordevs/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 3)"
+            >
+            
+          
+            Instagram
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://www.linkedin.com/showcase/googledevelopers/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 4)"
+            >
+            
+          
+            LinkedIn
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="//twitter.com/googledevs"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 5)"
+            >
+            
+          
+            X (Twitter)
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="//www.youtube.com/user/GoogleDevelopers"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 6)"
+            >
+            
+              
+              
+            
+          
+            YouTube
+          
+          </a>
+          
+          
+        </li>
+        
+      </ul>
+    </li>
+    
+    <li class="devsite-footer-linkbox ">
+    <h3 class="devsite-footer-linkbox-heading no-link">Build</h3>
+      <ul class="devsite-footer-linkbox-list">
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://developer.android.com/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 1)"
+            >
+            
+          
+            Android
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://developer.chrome.com/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 2)"
+            >
+            
+          
+            Chrome
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://firebase.google.com/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 3)"
+            >
+            
+          
+            Firebase
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://aistudio.google.com/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 4)"
+            >
+            
+          
+            Google AI Studio
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://antigravity.google/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 5)"
+            >
+            
+          
+            Google Antigravity
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://cloud.google.com/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 6)"
+            >
+            
+          
+            Google Cloud
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://play.google.com/console/about/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 7)"
+            >
+            
+          
+            Google Play
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://developers.google.com/products"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+             data-label="Footer Link (index 8)"
+            >
+            
+              
+              
+            
+          
+            View all
+          
+          </a>
+          
+          
+        </li>
+        
+      </ul>
+    </li>
+    
+  </ul>
+  
+</nav>
+          
+        </devsite-footer-linkboxes>
+        <devsite-footer-utility class="devsite-footer">
+          
+            
+
+<div class="devsite-footer-utility nocontent" data-nosnippet>
+  
+  
+  <nav class="devsite-footer-sites" aria-label="Other Google Developers websites">
+    <a href="https://developers.google.com/"
+       class="devsite-footer-sites-logo-link gc-analytics-event"
+       data-category="Site-Wide Custom Events"
+       data-label="Footer Google Developers Link">
+      <picture>
+        
+        <img class="devsite-footer-sites-logo"
+             src="https://www.gstatic.com/devrel-devsite/prod/v9ce9cb5b22b62a465ff52c45061a0a6a2d86a80b685e9aa8a182b203fdfbf420/developers/images/lockup-google-for-developers.svg"
+             loading="lazy"
+             alt="Google Developers">
+      </picture>
+    </a>
+    <ul class="devsite-footer-sites-list">
+      
+      <li class="devsite-footer-sites-item">
+        <a href="//developer.android.com"
+           class="devsite-footer-sites-link
+                  gc-analytics-event"
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Footer Android Link"
+         
+         >
+          Android
+        </a>
+      </li>
+      
+      <li class="devsite-footer-sites-item">
+        <a href="//developer.chrome.com/home"
+           class="devsite-footer-sites-link
+                  gc-analytics-event"
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Footer Chrome Link"
+         
+         >
+          Chrome
+        </a>
+      </li>
+      
+      <li class="devsite-footer-sites-item">
+        <a href="//firebase.google.com"
+           class="devsite-footer-sites-link
+                  gc-analytics-event"
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Footer Firebase Link"
+         
+         >
+          Firebase
+        </a>
+      </li>
+      
+      <li class="devsite-footer-sites-item">
+        <a href="//cloud.google.com"
+           class="devsite-footer-sites-link
+                  gc-analytics-event"
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Footer Google Cloud Platform Link"
+         
+         >
+          Google Cloud Platform
+        </a>
+      </li>
+      
+      <li class="devsite-footer-sites-item">
+        <a href="//ai.google.dev/"
+           class="devsite-footer-sites-link
+                  gc-analytics-event"
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Footer Google AI Link"
+         
+         >
+          Google AI
+        </a>
+      </li>
+      
+      <li class="devsite-footer-sites-item">
+        <a href="https://developers.google.com/products"
+           class="devsite-footer-sites-link
+                  gc-analytics-event"
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Footer All products Link"
+         
+         >
+          All products
+        </a>
+      </li>
+      
+    </ul>
+  </nav>
+  
+
+  
+  <nav class="devsite-footer-utility-links" aria-label="Utility links">
+    
+    <ul class="devsite-footer-utility-list">
+      
+      <li class="devsite-footer-utility-item
+                 ">
+        
+        
+        <a class="devsite-footer-utility-link gc-analytics-event"
+           href="https://developers.google.com/terms/site-terms"
+           data-category="Site-Wide Custom Events"
+           data-label="Footer Terms link"
+         >
+          Terms
+        </a>
+        
+      </li>
+      
+      <li class="devsite-footer-utility-item
+                 ">
+        
+        
+        <a class="devsite-footer-utility-link gc-analytics-event"
+           href="//policies.google.com/privacy"
+           data-category="Site-Wide Custom Events"
+           data-label="Footer Privacy link"
+         >
+          Privacy
+        </a>
+        
+      </li>
+      
+      <li class="devsite-footer-utility-item
+                 glue-cookie-notification-bar-control">
+        
+        
+        <a class="devsite-footer-utility-link gc-analytics-event"
+           href="#"
+           data-category="Site-Wide Custom Events"
+           data-label="Footer Manage cookies link"
+         
+           aria-hidden="true"
+         >
+          Manage cookies
+        </a>
+        
+      </li>
+      
+    </ul>
+    
+    
+<devsite-language-selector>
+  <ul role="presentation">
+    
+    
+    <li role="presentation">
+      <a role="menuitem" lang="en"
+        >English</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="de"
+        >Deutsch</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="es"
+        >Español</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="fr"
+        >Français</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="id"
+        >Indonesia</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="pt_br"
+        >Português – Brasil</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ru"
+        >Русский</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="zh_cn"
+        >中文 – 简体</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ja"
+        >日本語</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ko"
+        >한국어</a>
+    </li>
+    
+  </ul>
+</devsite-language-selector>
+
+  </nav>
+</div>
+          
+        </devsite-footer-utility>
+        <devsite-panel>
+          
+        </devsite-panel>
+        
+          <devsite-concierge
+  
+  
+    data-info-panel
+  
+  
+    data-ai-panel
+  
+  
+  
+  
+    data-api-explorer-panel
+  >
+</devsite-concierge>
+        
+      </section>
+      </section>
+    <devsite-sitemask></devsite-sitemask>
+    <devsite-snackbar></devsite-snackbar>
+    <devsite-tooltip ></devsite-tooltip>
+    <devsite-heading-link></devsite-heading-link>
+    <devsite-analytics>
+      
+        
+
+      
+    </devsite-analytics>
+    
+      <devsite-badger></devsite-badger>
+    
+    
+    
+    
+    
+
+
+    <devsite-a11y-announce></devsite-a11y-announce>
+  </body>
+</html>
