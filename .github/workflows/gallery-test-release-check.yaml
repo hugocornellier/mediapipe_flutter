@@ -1,0 +1,91 @@
+name: Gallery test release check
+
+permissions:
+  contents: read
+
+# Downloads the gallery-test-2026-10-28 pre-release from its public URLs,
+# as a tester would, checks each file against the release's SHA-256, and
+# launches it on clean machines. It runs only for a test-build/ commit
+# that asks for it with [release-check].
+on:
+  push:
+    branches: ['test-build/**']
+
+env:
+  RELEASE_URL: https://github.com/hugocornellier/mediapipe_flutter/releases/download/gallery-test-2026-10-28
+
+jobs:
+  linux:
+    name: Release launches / ${{ matrix.image }}
+    if: contains(github.event.head_commit.message, '[release-check]')
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['ubuntu:24.04', 'ubuntu:22.04']
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    timeout-minutes: 30
+    steps:
+      - name: The README's runtime line, on a clean image
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update -q
+          apt-get install -yq curl ca-certificates xvfb xauth
+          # Exactly the README line (without sudo, as root in the container).
+          apt-get install -yq libgtk-3-0 gstreamer1.0-plugins-good gstreamer1.0-libav
+      - name: Download and check
+        run: |
+          curl -fsSL -o mediapipe-gallery-linux-x64.tar.gz "$RELEASE_URL/mediapipe-gallery-linux-x64.tar.gz"
+          echo "3c3594d8b7d8b4d315cc077df64057b649ffce09fefc25b2cda55b3e6043287c  mediapipe-gallery-linux-x64.tar.gz" | sha256sum -c
+      - name: The README's open line, kept running for 90 seconds
+        run: |
+          tar -xzf mediapipe-gallery-linux-x64.tar.gz
+          ! ldd bundle/mediapipe_gallery bundle/lib/*.so | grep 'not found'
+          status=0; timeout 90 xvfb-run -a ./bundle/mediapipe_gallery > launch.log 2>&1 || status=$?
+          cat launch.log
+          [ "$status" = 124 ]
+
+  windows:
+    name: Release launches / ${{ matrix.os }}
+    if: contains(github.event.head_commit.message, '[release-check]')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Download and check
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest "$env:RELEASE_URL/mediapipe-gallery-windows-x64.zip" -OutFile mediapipe-gallery-windows-x64.zip
+          $hash = (Get-FileHash -Algorithm SHA256 mediapipe-gallery-windows-x64.zip).Hash.ToLower()
+          if ($hash -ne 'cdfd581dc94e12aa1d8839cd2d8795b5795102d5026abdbc0f2d043ddfc7ce99') { throw "sha256 $hash" }
+      - name: Unzip, run mediapipe_gallery.exe and keep it running for 90 seconds
+        run: |
+          Expand-Archive mediapipe-gallery-windows-x64.zip -DestinationPath "$env:RUNNER_TEMP\gallery"
+          $app = Start-Process "$env:RUNNER_TEMP\gallery\mediapipe_gallery.exe" -PassThru
+          Start-Sleep 90
+          if ($app.HasExited) { throw "exited with $($app.ExitCode)" }
+          Stop-Process $app.Id
+
+  android:
+    name: Release APK installs / signature and manifest
+    if: contains(github.event.head_commit.message, '[release-check]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Download and check
+        run: |
+          curl -fsSL -o mediapipe-gallery-android-arm64.apk "$RELEASE_URL/mediapipe-gallery-android-arm64.apk"
+          echo "9bc59c0644c56eb7da86c39761277093f82390cf3de75976d3c775764604c986  mediapipe-gallery-android-arm64.apk" | sha256sum -c
+      - name: Signature and manifest
+        run: |
+          bt="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$bt/apksigner" verify --verbose --print-certs mediapipe-gallery-android-arm64.apk
+          "$bt/aapt2" dump badging mediapipe-gallery-android-arm64.apk | grep -E "^(package|sdkVersion|targetSdkVersion|native-code|launchable-activity)"
+          "$bt/aapt2" dump badging mediapipe-gallery-android-arm64.apk | grep -q "native-code: 'arm64-v8a'"
