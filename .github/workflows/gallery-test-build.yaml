@@ -147,10 +147,13 @@ jobs:
           [ "$(find build/ios/iphoneos/Runner.app -type f -size +150M | wc -l)" -ge 3 ]
 
   # The released APK on a physical phone (Pixel 8a), explored by Test Lab's
-  # Robo crawler, which fails on a crash.
+  # Robo crawler, which fails on a crash. Test Lab allows five physical-device
+  # runs a day, so both phone jobs run only for a commit whose message says
+  # [testlab].
   android-phone:
     name: Released APK on a phone / Pixel 8a
     needs: android
+    if: contains(github.event.head_commit.message, '[testlab]')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -177,6 +180,7 @@ jobs:
   # page reads its standard model: the largest is 678 MB.
   android-phone-assets:
     name: Bundled models on a phone / Pixel 8a
+    if: contains(github.event.head_commit.message, '[testlab]')
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
