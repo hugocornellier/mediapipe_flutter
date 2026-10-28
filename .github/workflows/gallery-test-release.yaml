@@ -1,0 +1,39 @@
+name: Gallery test release
+
+permissions:
+  contents: read
+
+# Copies the tested gallery builds of run 40767977614 (the tagged commit)
+# onto the gallery-test-2026-10-28 pre-release. It runs only for a
+# test-build/ commit that asks for it with [release].
+on:
+  push:
+    branches: ['test-build/**']
+
+jobs:
+  upload:
+    name: Upload the tested builds to the release
+    if: contains(github.event.head_commit.message, '[release]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          run-id: 40767977614
+          github-token: ${{ github.token }}
+          pattern: gallery-test-*
+          merge-multiple: true
+          path: dist
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          gh release upload gallery-test-2026-10-28 --repo "$GITHUB_REPOSITORY" --clobber \
+            dist/mediapipe-gallery-android-arm64.apk \
+            dist/mediapipe-gallery-linux-x64.tar.gz \
+            dist/mediapipe-gallery-windows-x64.zip
+          gh release view gallery-test-2026-10-28 --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[] | "\(.name) \(.size)"'
