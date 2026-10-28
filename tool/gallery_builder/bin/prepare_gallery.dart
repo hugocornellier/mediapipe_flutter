@@ -267,7 +267,7 @@ String _pubspec(
     final names = {
       for (final task in tasks)
         if (models[task]!.family == family &&
-            !downloadedModelTasks.contains(task))
+            !(target == 'web' && downloadedModelTasks.contains(task)))
           models[task]!.name,
     }.toList()..sort();
     defines.writeln('    $family:');

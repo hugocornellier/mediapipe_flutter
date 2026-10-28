@@ -76,6 +76,37 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+  android:
+    name: Gallery release / android arm64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - uses: ./.github/actions/setup
+        with:
+          modern-model-cache: 'true'
+      - name: Prepare the gallery with every task
+        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target android/arm64
+      - name: Build
+        working-directory: gallery
+        run: |
+          flutter pub get
+          flutter build apk --release --target-platform android-arm64
+          mkdir -p ../dist && cp build/app/outputs/flutter-apk/app-release.apk ../dist/mediapipe-gallery-android-arm64.apk
+          ls -la ../dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gallery-test-android-arm64
+          path: dist/mediapipe-gallery-android-arm64.apk
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
   # The packaged builds on runners that did not build them, with only the
   # runtime libraries a desktop has.
   linux-launch:
@@ -96,6 +127,9 @@ jobs:
           tar -xzf mediapipe-gallery-linux-x64.tar.gz -C "$RUNNER_TEMP"
           cd "$RUNNER_TEMP/bundle"
           ! ldd mediapipe_gallery lib/*.so | grep 'not found'
+          # The two EmbeddingGemma 2 models are bundled: 165 MB and 388 MB.
+          find data -type f -size +150M -exec ls -la {} +
+          [ "$(find data -type f -size +150M | wc -l)" -ge 2 ]
           status=0; timeout 90 xvfb-run -a ./mediapipe_gallery > launch.log 2>&1 || status=$?
           cat launch.log
           [ "$status" = 124 ]
