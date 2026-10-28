@@ -62,6 +62,10 @@ jobs:
       - name: Package
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
+          # The Visual C++ runtime, app-local, for PCs without the redistributable.
+          foreach ($dll in 'msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
+            Copy-Item "$env:WINDIR\System32\$dll" gallery/build/windows/x64/runner/Release/
+          }
           Compress-Archive -Path gallery/build/windows/x64/runner/Release/* -DestinationPath dist/mediapipe-gallery-windows-x64.zip
           Get-ChildItem dist
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -71,3 +75,78 @@ jobs:
           compression-level: 0
           retention-days: 30
           if-no-files-found: error
+
+  # The packaged builds on runners that did not build them, with only the
+  # runtime libraries a desktop has.
+  linux-launch:
+    name: Packaged build launches / linux x64
+    needs: linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Runtime libraries only
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -yq xvfb libgtk-3-0t64 libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 gstreamer1.0-plugins-good gstreamer1.0-libav libegl1 libgles2
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: gallery-test-linux-x64
+      - name: Launch and keep running for 90 seconds
+        run: |
+          tar -xzf mediapipe-gallery-linux-x64.tar.gz -C "$RUNNER_TEMP"
+          cd "$RUNNER_TEMP/bundle"
+          ! ldd mediapipe_gallery lib/*.so | grep 'not found'
+          status=0; timeout 90 xvfb-run -a ./mediapipe_gallery > launch.log 2>&1 || status=$?
+          cat launch.log
+          [ "$status" = 124 ]
+
+  windows-launch:
+    name: Packaged build launches / windows x64
+    needs: windows
+    runs-on: windows-2025
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: gallery-test-windows-x64
+      - name: Launch and keep running for 90 seconds
+        run: |
+          Expand-Archive mediapipe-gallery-windows-x64.zip -DestinationPath "$env:RUNNER_TEMP\gallery"
+          foreach ($dll in 'msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
+            if (-not (Test-Path "$env:RUNNER_TEMP\gallery\$dll")) { throw "$dll is not bundled" }
+          }
+          $app = Start-Process "$env:RUNNER_TEMP\gallery\mediapipe_gallery.exe" -PassThru
+          Start-Sleep 90
+          if ($app.HasExited) { throw "exited with $($app.ExitCode)" }
+          Stop-Process $app.Id
+
+  # The build-from-source line testers run, with every task and no model
+  # cache, then the journey through every page in a release build.
+  journey:
+    name: From source, every page / ${{ matrix.device }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, device: linux, target: linux/x64 }
+          - { os: windows-2025, device: windows, target: windows/x64 }
+          - { os: macos-15, device: macos, target: macos/arm64 }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup
+        with:
+          linux-profile: gallery
+      - name: Prepare the gallery with every task
+        shell: bash
+        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target ${{ matrix.target }}
+      - name: The journey through every page in a release build
+        shell: bash
+        run: |
+          python=python3; if [ "$RUNNER_OS" = Windows ]; then python=python; fi
+          run() { if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a "$@"; else "$@"; fi; }
+          run "$python" -B tool/ci/run_release_suite.py --target ${{ matrix.device }} --suite integration_test/gallery_journey_test.dart --timeout 2400
