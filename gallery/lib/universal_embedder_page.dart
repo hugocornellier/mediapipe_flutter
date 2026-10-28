@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_retrieval/mediapipe_retrieval.dart';
@@ -122,14 +123,15 @@ class _UniversalEmbedderPageState extends State<UniversalEmbedderPage>
   @override
   Future<UniversalEmbedder> openEmbedder() async {
     setState(
-      () => _modelStatus =
-          'Loading ${widget.task.modelFile}; the first run downloads it '
-          '(388 MB).',
+      () => _modelStatus = kIsWeb
+          ? 'Loading ${widget.task.modelFile}; the first run downloads it '
+                '(388 MB).'
+          : 'Loading ${widget.task.modelFile}.',
     );
     try {
       return await UniversalEmbedder.create(
         UniversalEmbedderOptions(
-          modelPath: await GalleryAssets.downloadedModelPath(widget.task.model),
+          modelPath: await GalleryAssets.standardModelPath(widget.task.model),
           delegate: _delegate,
           l2Normalize: _values.on('l2Normalize'),
         ),

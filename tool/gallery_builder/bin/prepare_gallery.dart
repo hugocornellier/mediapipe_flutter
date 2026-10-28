@@ -266,9 +266,9 @@ String _pubspec(
   for (final family in {for (final model in models.values) model.family}) {
     final names = {
       for (final task in tasks)
-        if (models[task]!.family == family &&
-            !(target == 'web' && downloadedModelTasks.contains(task)))
-          models[task]!.name,
+        if (!(target == 'web' && downloadedModelTasks.contains(task)))
+          for (final model in [models[task]!, ...?companionModels[task]])
+            if (model.family == family) model.name,
     }.toList()..sort();
     defines.writeln('    $family:');
     if (family == 'mediapipe_vision') {

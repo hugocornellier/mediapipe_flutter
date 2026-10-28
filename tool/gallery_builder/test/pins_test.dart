@@ -31,8 +31,13 @@ void main() {
     expect(() => packageOf('mediapipe_core'), throwsArgumentError);
   });
 
-  for (final MapEntry(key: task, value: model) in models.entries) {
-    test('$task lists a model ${model.family} can bundle', () {
+  for (final (task, model) in [
+    for (final MapEntry(key: task, value: model) in models.entries)
+      (task, model),
+    for (final MapEntry(key: task, value: list) in companionModels.entries)
+      for (final model in list) (task, model),
+  ]) {
+    test('$task lists a model ${model.name} ${model.family} can bundle', () {
       expect(
         _byName(model.family),
         contains(model.name),

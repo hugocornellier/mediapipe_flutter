@@ -1,4 +1,5 @@
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -24,8 +25,9 @@ void main() {
     ).where((task) => task.hasOwnPage).toList();
     expect(tasks, isNotEmpty, reason: 'no tile is visible to check');
     for (final task in tasks) {
-      // Decision Maker's pages download their models on first use.
-      if (!task.downloadsModel) {
+      // In browsers Decision Maker's and the retrieval pages download their
+      // models on first use; native builds bundle them.
+      if (!(kIsWeb && task.downloadsModel)) {
         await expectLater(
           rootBundle.load(bundledModelAsset(task.model)),
           completes,

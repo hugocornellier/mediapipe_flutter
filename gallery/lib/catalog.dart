@@ -145,10 +145,10 @@ final class GalleryTask {
   /// The model's file name, as Google publishes it.
   String get modelFile => Uri.parse(model.url).pathSegments.last;
 
-  /// Whether the page downloads [model] on first use rather than the app
+  /// Whether the web gallery downloads [model] on first use rather than
   /// bundling it: Decision Maker's and the retrieval tasks' models are
   /// larger than every other model together (`downloadedModelTasks` in
-  /// tool/gallery_builder).
+  /// tool/gallery_builder). Native builds bundle them.
   final bool downloadsModel;
 
   /// Whether the model is one of Google's Gemma models, which come under the
@@ -490,8 +490,8 @@ final _catalog = <GalleryTask>[
     capabilities: textSummarizerCapabilitiesForPlatform,
   ),
   // The retrieval package's tasks, on Google's per-family retrieval library
-  // and, in browsers, its JavaScript runtime. Their 388 MB model downloads
-  // on first use.
+  // and, in browsers, its JavaScript runtime. Their 388 MB model is bundled
+  // natively and, in browsers, downloads on first use.
   GalleryTask(
     id: 'universal_embedder',
     category: GalleryCategory.retrieval,

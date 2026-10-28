@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_decision/mediapipe_decision.dart';
@@ -116,15 +117,19 @@ class _DecisionPageState extends State<DecisionPage> with RevisionedState {
   Future<DecisionMaker> _open() async {
     if (_task case final task?) return task;
     final pin = _pin;
+    final standard = _model == null;
     setState(
-      () => _modelStatus =
-          'Loading ${Uri.parse(pin.url).pathSegments.last}; the first run '
-          'downloads it.',
+      () => _modelStatus = standard && !kIsWeb
+          ? 'Loading ${Uri.parse(pin.url).pathSegments.last}.'
+          : 'Loading ${Uri.parse(pin.url).pathSegments.last}; the first run '
+                'downloads it.',
     );
     try {
       return _task = await DecisionMaker.create(
         DecisionMakerOptions(
-          modelPath: await GalleryAssets.downloadedModelPath(pin),
+          modelPath: await (standard
+              ? GalleryAssets.standardModelPath(pin)
+              : GalleryAssets.downloadedModelPath(pin)),
           delegate: _delegate,
         ),
       );

@@ -379,7 +379,7 @@ void main() {
             final ask = find.text('Ask');
             await tester.ensureVisible(ask);
             await tester.tap(ask);
-            // The first question downloads Google's 678 MB model.
+            // The first question loads Laya, 678 MB, which browsers download.
             await _until(
               tester,
               () =>
@@ -401,7 +401,8 @@ void main() {
           // The model steers the fish: Google's wording gets every sentence
           // the game writes right, so each decision matches the scene.
           await tester.tap(find.byKey(const ValueKey('fish-play')));
-          // The first game downloads Google's 165 MB EmbeddingGemma 2.
+          // The first game loads the 165 MB EmbeddingGemma 2, which browsers
+          // download.
           await _until(
             tester,
             () =>
@@ -430,7 +431,8 @@ void main() {
           // against 0.55 in its Python API).
           await tester.tap(find.byKey(const ValueKey('universal-compare')));
           await tester.pump();
-          // The first comparison downloads Google's 388 MB model.
+          // The first comparison loads the 388 MB model, which browsers
+          // download.
           await _until(
             tester,
             () =>
@@ -481,7 +483,8 @@ void main() {
           // API ranks the dog document first (0.82), the cat second.
           await tester.tap(find.byKey(const ValueKey('retrieval-search')));
           await tester.pump();
-          // The first search downloads Google's 388 MB model.
+          // The first search loads the 388 MB model, which browsers
+          // download.
           await _until(
             tester,
             () =>

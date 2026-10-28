@@ -29,6 +29,12 @@ final class GalleryAssets {
   static Future<String> downloadedModelPath(DownloadAsset model) async =>
       model.url;
 
+  /// A page's standard model: in browsers Decision Maker's and the retrieval
+  /// tasks' models are too large to bundle, so they come from Google's
+  /// bucket.
+  static Future<String> standardModelPath(DownloadAsset model) =>
+      downloadedModelPath(model);
+
   /// The bundled copy of [model], verified against its pin.
   static Future<Uint8List> modelBytes(DownloadAsset model) =>
       WebModelCache.load(model);

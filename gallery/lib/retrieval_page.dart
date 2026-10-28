@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mediapipe_retrieval/mediapipe_retrieval.dart';
@@ -100,14 +101,15 @@ class _RetrievalPageState extends State<RetrievalPage> with RevisionedState {
   Future<SemanticRetriever> _open() async {
     if (_retriever case final retriever?) return retriever;
     setState(
-      () => _modelStatus =
-          'Loading ${widget.task.modelFile}; the first run downloads it '
-          '(388 MB).',
+      () => _modelStatus = kIsWeb
+          ? 'Loading ${widget.task.modelFile}; the first run downloads it '
+                '(388 MB).'
+          : 'Loading ${widget.task.modelFile}.',
     );
     try {
       final embedder = _embedder ??= await UniversalEmbedder.create(
         UniversalEmbedderOptions(
-          modelPath: await GalleryAssets.downloadedModelPath(widget.task.model),
+          modelPath: await GalleryAssets.standardModelPath(widget.task.model),
           delegate: _delegate,
         ),
       );

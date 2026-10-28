@@ -15,10 +15,7 @@ typedef BundledModel = ({String family, String name});
 /// The model the gallery uses for every task some target bundles.
 const models = <String, BundledModel>{
   'audio_classifier': (family: 'mediapipe_audio', name: 'yamnet'),
-  'decision_maker': (
-    family: 'mediapipe_decision',
-    name: 'embedding_gemma_2_text',
-  ),
+  'decision_maker': (family: 'mediapipe_decision', name: 'laya_s256'),
   'embedding_gemma': (family: 'mediapipe_text', name: 'embedding_gemma'),
   'face_detector': (family: 'mediapipe_vision', name: 'face_detector'),
   'face_landmarker': (family: 'mediapipe_vision', name: 'face_landmarker'),
@@ -85,9 +82,18 @@ const modernTextReferences = {
   'text_summarizer': 'summarizer',
 };
 
-/// Tasks whose model the web gallery downloads on first use instead of
-/// bundling. Native test builds bundle these too (EmbeddingGemma 2 text,
-/// 165 MB, and text+vision, 388 MB), so every page works offline.
+/// The other models a task's pages open by default, bundled beside its own:
+/// Hungry Fish plays Decision Maker on the text-only EmbeddingGemma 2.
+const companionModels = <String, List<BundledModel>>{
+  'decision_maker': [
+    (family: 'mediapipe_decision', name: 'embedding_gemma_2_text'),
+  ],
+};
+
+/// Tasks whose models the web gallery downloads on first use instead of
+/// bundling. Native builds bundle them like every other task's (Laya, 678 MB;
+/// EmbeddingGemma 2 text, 165 MB, and text+vision, 388 MB), so every page
+/// works offline.
 const downloadedModelTasks = {
   'decision_maker',
   'semantic_retriever',

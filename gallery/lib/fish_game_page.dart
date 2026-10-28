@@ -152,16 +152,21 @@ class _FishGamePageState extends State<FishGamePage>
     });
     // Natively the model cache keeps the download; browsers fetch it again,
     // since the hosts give it no lasting cache lifetime.
+    final standard = _model == null;
     setState(
       () => _status = kIsWeb
           ? 'Loading $name. Your browser downloads it for each visit.'
+          : standard
+          ? 'Loading $name.'
           : 'Loading $name. The first game downloads it; after that it '
                 'loads from this device.',
     );
     try {
       return _task = await DecisionMaker.create(
         DecisionMakerOptions(
-          modelPath: await GalleryAssets.downloadedModelPath(pin),
+          modelPath: await (standard
+              ? GalleryAssets.standardModelPath(pin)
+              : GalleryAssets.downloadedModelPath(pin)),
           delegate: _delegate,
         ),
       );
