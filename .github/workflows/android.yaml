@@ -66,7 +66,7 @@ jobs:
           dart tool/download_models.dart embedding_gemma proofreader summarizer
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
-            --venv build/codex-tmp/official-python \
+            --venv build/ci-tmp/official-python \
             --output-dir build/modern-text-reference
       # The same two commands a clean checkout runs, so CI builds what a
       # contributor with only Dart, Flutter and the Android SDK builds; the
@@ -236,7 +236,7 @@ jobs:
           dart tool/download_models.dart embedding_gemma proofreader summarizer
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
-            --venv build/codex-tmp/official-python \
+            --venv build/ci-tmp/official-python \
             --output-dir build/modern-text-reference
       - name: Prepare the gallery with the phone suites' tasks
         run: |

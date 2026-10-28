@@ -97,9 +97,9 @@ test_audio:
 # The audio stream's callback-copy bridge, its slots and their threads,
 # under AddressSanitizer.
 test_audio_stream_bridge:
-	mkdir -p build/codex-tmp
-	clang -Wall -Wextra -Werror -g -fsanitize=address -pthread packages/mediapipe-task-audio/native/audio_stream_bridge.c packages/mediapipe-task-audio/native/audio_stream_bridge_test.c -o build/codex-tmp/audio_stream_bridge_test
-	build/codex-tmp/audio_stream_bridge_test
+	mkdir -p build/ci-tmp
+	clang -Wall -Wextra -Werror -g -fsanitize=address -pthread packages/mediapipe-task-audio/native/audio_stream_bridge.c packages/mediapipe-task-audio/native/audio_stream_bridge_test.c -o build/ci-tmp/audio_stream_bridge_test
+	build/ci-tmp/audio_stream_bridge_test
 
 # The emulated stream and the decoders in Chrome, compiled to JavaScript and
 # to WebAssembly. A contributor shortcut: CI runs these commands itself.
@@ -153,9 +153,9 @@ models_proofreader:
 
 test_text_stream_bridge:
 	clang++ -std=c++17 -fsyntax-only -Wall -Wextra -Werror -I packages/mediapipe-core/native/include packages/mediapipe-task-text/tool/abi_check.cc
-	mkdir -p build/codex-tmp
-	clang -Wall -Wextra -Werror -g -fsanitize=address -pthread packages/mediapipe-task-text/native/text_stream_bridge.c packages/mediapipe-task-text/native/text_stream_bridge_test.c -o build/codex-tmp/text_stream_bridge_test
-	build/codex-tmp/text_stream_bridge_test
+	mkdir -p build/ci-tmp
+	clang -Wall -Wextra -Werror -g -fsanitize=address -pthread packages/mediapipe-task-text/native/text_stream_bridge.c packages/mediapipe-task-text/native/text_stream_bridge_test.c -o build/ci-tmp/text_stream_bridge_test
+	build/ci-tmp/text_stream_bridge_test
 
 .PHONY: models_summarizer
 models_summarizer:

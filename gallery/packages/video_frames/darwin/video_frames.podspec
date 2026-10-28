@@ -4,9 +4,9 @@ Pod::Spec.new do |s|
   s.name             = 'video_frames'
   s.version          = '0.1.0'
   s.summary          = 'Decodes a video file frame by frame with AVFoundation.'
-  s.homepage         = 'https://github.com/hugocornellier/mediapipe_flutter'
+  s.homepage         = 'https://github.com/google/flutter-mediapipe'
   s.license          = { :type => 'Apache-2.0' }
-  s.author           = { 'mediapipe_flutter' => 'https://github.com/hugocornellier/mediapipe_flutter' }
+  s.author           = { 'mediapipe_flutter' => 'https://github.com/google/flutter-mediapipe' }
   s.source           = { :path => '.' }
   s.source_files     = 'video_frames/Sources/video_frames/**/*'
   s.ios.dependency 'Flutter'

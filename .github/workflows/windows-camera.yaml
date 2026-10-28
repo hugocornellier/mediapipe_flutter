@@ -30,8 +30,8 @@ jobs:
       run:
         shell: pwsh
     env:
-      EVIDENCE: ${{ github.workspace }}\build\codex-tmp\gallery-real-camera-windows
-      MEDIAPIPE_CAMERA_REPORT: ${{ github.workspace }}\build\codex-tmp\gallery-real-camera-windows\report.json
+      EVIDENCE: ${{ github.workspace }}\build\ci-tmp\gallery-real-camera-windows
+      MEDIAPIPE_CAMERA_REPORT: ${{ github.workspace }}\build\ci-tmp\gallery-real-camera-windows\report.json
       VCAM: C:\mediapipe-vcam
     steps:
       - uses: actions/checkout@v7
@@ -186,5 +186,5 @@ jobs:
         if: always()
         with:
           name: windows-real-camera-evidence
-          path: build/codex-tmp/gallery-real-camera-windows/
+          path: build/ci-tmp/gallery-real-camera-windows/
           if-no-files-found: warn

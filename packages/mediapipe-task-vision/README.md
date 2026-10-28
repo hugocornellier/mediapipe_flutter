@@ -5,9 +5,9 @@ and objects, track face/hand/pose landmarks, recognize gestures, classify or
 embed images, and segment images. The package uses Google's official
 MediaPipe task runtimes on supported platforms.
 
-**[Try the live gallery](https://hugocornellier.github.io/mediapipe_flutter/)** ·
-**[See every task and platform](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)** ·
-**[Browse the gallery's source](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery)**
+**[Try the live gallery](https://google.github.io/flutter-mediapipe/)** ·
+**[See every task and platform](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)** ·
+**[Browse the gallery's source](https://github.com/google/flutter-mediapipe/tree/main/gallery)**
 
 ## Tasks
 
@@ -19,7 +19,7 @@ MediaPipe task runtimes on supported platforms.
 | Segmentation | `ImageSegmenter`, `InteractiveSegmenter` |
 
 `InteractiveSegmenter` is Google's stateful stroke-based MagicTouch task. See
-the [Interactive Segmenter guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md).
+the [Interactive Segmenter guide](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-task-vision/tool/INTERACTIVE_SEGMENTER.md).
 
 ## Installation
 
@@ -57,13 +57,13 @@ One setting in `mediapipe_core` covers every task family. From the app
 root, `dart run mediapipe_core:web_runtime web/mediapipe` writes the
 verified runtimes; then set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';`
 before creating a task (`mediapipe_vision.dart` exports the class). See
-[core's README](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-core/README.md#web-runtime).
+[core's README](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-core/README.md#web-runtime).
 
 ### Native runtimes and the task list
 
 Every vision task runs on Google's MediaPipe vision library with no setting
 (Windows has no Interactive Segmenter), which this package's hook bundles
-(see [core's README](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-core/README.md)).
+(see [core's README](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-core/README.md)).
 
 The `tasks` list only checks the names against the tasks validated on the
 target: a Windows build fails if it names `interactive_segmenter`, which
@@ -78,7 +78,7 @@ hooks:
 
 The list is separate from `models` (below): every task needs its model listed
 there, on every platform. The
-[support matrix](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
+[support matrix](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
 shows which tasks and delegates each platform serves.
 
 ## Quick start: detect face landmarks
@@ -167,7 +167,7 @@ A model that is not bundled makes `create` throw a
 download models at run time instead, set `ModelStore.allowDownloads = true`
 from `mediapipe_core` before creating tasks; Android release builds and
 sandboxed macOS apps then need network permission, as
-[platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md)
+[platform setup](https://github.com/google/flutter-mediapipe/blob/main/doc/platform_setup.md)
 describes. `ModelStore().prefetch(VisionModels.faceLandmarker)` downloads
 ahead of time, on an onboarding screen say.
 
@@ -406,9 +406,9 @@ Future<void> detectObjects(VisionImage image) async {
 ```
 
 For a complete app with a live camera, photos and videos, see the
-[Object Detector guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/guides/vision/object_detector.md)
+[Object Detector guide](https://github.com/google/flutter-mediapipe/blob/main/doc/guides/vision/object_detector.md)
 and its
-[sample app](https://github.com/hugocornellier/mediapipe_flutter/tree/main/samples/object_detection).
+[sample app](https://github.com/google/flutter-mediapipe/tree/main/samples/object_detection).
 
 ### Image Classifier
 
@@ -566,14 +566,14 @@ image. Pass the file's rotation as `rotationDegrees` so results come out in
 display orientation, and since timestamps cannot go back, start a new task to
 play a file again.
 
-The [gallery](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery)'s
+The [gallery](https://github.com/google/flutter-mediapipe/tree/main/gallery)'s
 video file mode is a worked example for every camera task on all six
 platforms: its
-[`video_frames`](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery/packages/video_frames)
+[`video_frames`](https://github.com/google/flutter-mediapipe/tree/main/gallery/packages/video_frames)
 plugin decodes frame by frame with each platform's own decoder
 (AVFoundation, MediaCodec, Media Foundation, GStreamer and a browser's
 `<video>` element), and
-[`video_file_controller.dart`](https://github.com/hugocornellier/mediapipe_flutter/blob/main/gallery/lib/live/video_file_controller.dart)
+[`video_file_controller.dart`](https://github.com/google/flutter-mediapipe/blob/main/gallery/lib/live/video_file_controller.dart)
 runs the loop above.
 
 ## Live cameras
@@ -632,7 +632,7 @@ it after inference, or when it drops the frame.
 and boxes into a canvas. Both exist on every platform and throw
 `RuntimeUnavailableException` off the web, so one code path compiles
 everywhere. The package does not open a camera for your app. The
-[gallery](https://github.com/hugocornellier/mediapipe_flutter/tree/main/gallery)'s
+[gallery](https://github.com/google/flutter-mediapipe/tree/main/gallery)'s
 camera mode runs every camera-capable task in live stream mode, with
 rotation, mirroring, delegate switching and overlays.
 
@@ -655,7 +655,7 @@ new task to switch delegates. A GPU initialization error is reported to your
 app; it does not silently retry on CPU. GPU availability and numerical output
 depend on the platform, task and model. Use
 `queryFaceLandmarkerCapabilities()` or the
-[support matrix](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
+[support matrix](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
 before offering a GPU toggle.
 
 | Platform | CPU | GPU path |
@@ -669,7 +669,7 @@ before offering a GPU toggle.
 
 The Interactive Segmenter is unavailable on Windows (UP-048). Some GPU paths
 have upstream limits. Read the
-[per-task matrix](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
+[per-task matrix](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
 before depending on a particular combination.
 
 ## Runtimes, examples and troubleshooting
@@ -679,19 +679,17 @@ not need to build MediaPipe or copy native libraries into a normal consuming
 app. The first build needs network access for its selected runtime. Browser
 tasks load the pinned JavaScript/WASM distribution from jsDelivr by default.
 
-- [Live gallery](https://hugocornellier.github.io/mediapipe_flutter/): try
+- [Live gallery](https://google.github.io/flutter-mediapipe/): try
   vision, audio and text tasks in a browser.
-- [Gallery setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/gallery/README.md): run the full Flutter application on a target device.
-- [Platform status and known upstream limits](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md): exact task availability.
+- [Gallery setup](https://github.com/google/flutter-mediapipe/blob/main/gallery/README.md): run the full Flutter application on a target device.
+- [Platform status and known upstream limits](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md): exact task availability.
 
 If a Linux container cannot load EGL or OpenGL ES even for CPU inference,
 install `libegl1` and `libgles2`. Windows builds use CPU; Google's Windows
 runtime may wait for a usage-log upload during `dispose()` (see
-[UP-025](https://github.com/hugocornellier/mediapipe_flutter/blob/main/upstream-issues.md#up-025-windows-task-closes-wait-for-googles-usage-logging-upload)).
+[UP-025](https://github.com/google/flutter-mediapipe/blob/main/upstream-issues.md#up-025-windows-task-closes-wait-for-googles-usage-logging-upload)).
 If you remove a face task from the `tasks` list of an existing macOS app, run
 `flutter clean` once to clear its old bundled framework.
 
-This is an independent fork of
-[google/flutter-mediapipe](https://github.com/google/flutter-mediapipe), not
-an official Google package. Source is Apache-2.0 licensed; the repository
-retains upstream notices and runtime provenance.
+Source is Apache-2.0 licensed; the repository retains upstream notices and
+runtime provenance.

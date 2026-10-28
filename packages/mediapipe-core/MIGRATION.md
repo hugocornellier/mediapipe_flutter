@@ -17,4 +17,4 @@ which re-exports `mediapipe_core.dart`; plugins and family packages use
 | `TaskExecutor`, `TaskResult`, the FFI helpers, `io.dart` and `interface.dart` | Not public |
 
 Google's `mediapipe_text` 0.0.1 users: see
-[the text migration guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/packages/mediapipe-task-text/MIGRATION.md).
+[the text migration guide](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-task-text/MIGRATION.md).

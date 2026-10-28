@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.47.5-02569B?logo=flutter" alt="Tested with Flutter 3.47.5"></a>
-  <a href="https://github.com/hugocornellier/mediapipe_flutter/actions/workflows/web.yaml"><img src="https://github.com/hugocornellier/mediapipe_flutter/actions/workflows/web.yaml/badge.svg" alt="Web CI"></a>
+  <a href="https://github.com/google/flutter-mediapipe/actions/workflows/web.yaml"><img src="https://github.com/google/flutter-mediapipe/actions/workflows/web.yaml/badge.svg" alt="Web CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0 license"></a>
 </p>
 
@@ -12,7 +12,7 @@ landmarks, recognize gestures, classify and embed images, text and audio,
 segment images, and more. Every task runs Google's official MediaPipe
 runtime for its platform, with Google's pinned models bundled at build time.
 
-**[Try the live gallery](https://hugocornellier.github.io/mediapipe_flutter/)**
+**[Try the live gallery](https://google.github.io/flutter-mediapipe/)**
 
 ## Which package do I need?
 
@@ -161,14 +161,10 @@ supported delegates and why any other is unavailable.
 - [Migration](MIGRATION.md) from Google's `mediapipe_text` and
   `mediapipe_core` 0.0.1 previews.
 - [Gallery](gallery/README.md): the full demo app, also
-  [live on GitHub Pages](https://hugocornellier.github.io/mediapipe_flutter/).
+  [live on GitHub Pages](https://google.github.io/flutter-mediapipe/).
 - [Contributing](CONTRIBUTING.md), including how to add a task.
 
 ## Origin and license
 
-An independent continuation of
-[google/flutter-mediapipe](https://github.com/google/flutter-mediapipe),
-maintained by [Hugo Cornellier](https://github.com/hugocornellier); it is not
-an official Google package. Source is licensed under [Apache-2.0](LICENSE),
-with upstream notices retained; [UPSTREAM.md](UPSTREAM.md) records the
-provenance.
+Source is licensed under [Apache-2.0](LICENSE), with upstream notices
+retained.

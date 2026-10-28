@@ -196,4 +196,4 @@ jobs:
         if: always()
         with:
           name: ${{ inputs.family }}-web-journey-${{ matrix.os }}
-          path: build/codex-tmp/gallery-journey-${{ matrix.browser }}/
+          path: build/ci-tmp/gallery-journey-${{ matrix.browser }}/

@@ -73,9 +73,9 @@ fixtures unchanged. The segmentation input and mask come from the vision
 package's attributed official fixtures.
 
 ```sh
-build/codex-tmp/mediapipe-reference/bin/python -B \
+build/ci-tmp/mediapipe-reference/bin/python -B \
   tool/task_benchmarks/generate_reference.py \
-  --python-package-root build/codex-tmp/segmenter-wheel \
+  --python-package-root build/ci-tmp/segmenter-wheel \
   --output tool/task_benchmarks/fixtures/options-reference.json.gz
 ```
 

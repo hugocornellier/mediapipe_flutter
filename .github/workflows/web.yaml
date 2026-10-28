@@ -251,9 +251,9 @@ jobs:
         with:
           name: web-face-evidence
           path: |
-            build/codex-tmp/web-browser-*/
-            build/codex-tmp/worker-overlays/
-            build/codex-tmp/gallery-journey-*/
+            build/ci-tmp/web-browser-*/
+            build/ci-tmp/worker-overlays/
+            build/ci-tmp/gallery-journey-*/
       - uses: actions/upload-artifact@v4
         with:
           name: web-gallery-release
@@ -320,7 +320,7 @@ jobs:
       - name: WebKit logs after a failed journey
         if: ${{ failure() && steps.webkit_journey.outcome == 'failure' }}
         run: |
-          out=build/codex-tmp/gallery-journey-webkit
+          out=build/ci-tmp/gallery-journey-webkit
           mkdir -p "$out"
           /usr/bin/log show --last 15m --style compact \
             --predicate 'process == "Playwright" OR process BEGINSWITH "com.apple.WebKit"' \
@@ -343,8 +343,8 @@ jobs:
         with:
           name: web-webkit-evidence
           path: |
-            build/codex-tmp/web-browser-*/
-            build/codex-tmp/gallery-journey-*/
+            build/ci-tmp/web-browser-*/
+            build/ci-tmp/gallery-journey-*/
             web-server.log
 
   deploy:
@@ -415,7 +415,7 @@ jobs:
         if: always()
         with:
           name: web-pages-evidence
-          path: build/codex-tmp/web-browser-*/
+          path: build/ci-tmp/web-browser-*/
 
   deploy-only:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_only }}

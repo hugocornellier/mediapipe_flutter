@@ -1,7 +1,23 @@
-# Contributing to mediapipe_flutter
+# Contributing to MediaPipe Tasks for Flutter
 
-This is an independent development fork maintained at
-https://github.com/hugocornellier/mediapipe_flutter.
+## Contributor License Agreements
+
+We'd love to accept your patches! Before we can take them, we have to jump a couple of legal hurdles.
+
+Please fill out either the individual or corporate Contributor License Agreement (CLA).
+
+  * If you are an individual writing original source code and you're sure you own the intellectual property, then you'll need to sign an [individual CLA](https://code.google.com/legal/individual-cla-v1.0.html).
+  * If you work for a company that wants to allow you to contribute your work, then you'll need to sign a [corporate CLA](https://code.google.com/legal/corporate-cla-v1.0.html).
+
+Follow either of the two links above to access the appropriate CLA and instructions for how to sign and return it. Once we receive it, we'll be able to accept your pull requests.
+
+***NOTE***: Only original source code from you and other people that have signed the CLA can be accepted into the main repository.
+
+## Contributing code
+
+MediaPipe team members will be assigned to review your pull requests. Once the
+pull requests are approved and pass continuous integration checks, we will
+merge them.
 
 Open issues and pull requests in this repository. Describe the problem, the
 resulting behavior, and relevant validation. Keep runtime updates and new task
@@ -12,12 +28,7 @@ notice in new source files and follow the surrounding Dart or native code style.
 Run the checks relevant to the affected package and document any native SDK or
 device requirements that prevent validation.
 
-This fork does not use Google's contributor agreement or internal review process.
-Contributions sent separately to the original Google repository must follow that
-repository's own contribution requirements.
-
-See [README.md](README.md) for the current development scope and
-[UPSTREAM.md](UPSTREAM.md) for provenance.
+See [README.md](README.md) for the current development scope.
 
 ## Before opening a pull request
 

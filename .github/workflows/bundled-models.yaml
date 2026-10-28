@@ -47,6 +47,6 @@ jobs:
         with:
           name: bundled-models-${{ matrix.os }}
           path: |
-            build/codex-tmp/bundled-*/*.log
-            build/codex-tmp/bundled-*/report.json
+            build/ci-tmp/bundled-*/*.log
+            build/ci-tmp/bundled-*/report.json
           if-no-files-found: error

@@ -267,7 +267,7 @@ jobs:
         if: always()
         with:
           name: web-evidence-${{ matrix.side }}
-          path: build/codex-tmp/web-browser-*/
+          path: build/ci-tmp/web-browser-*/
           if-no-files-found: warn
 
   compare:

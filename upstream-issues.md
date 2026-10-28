@@ -1322,9 +1322,9 @@ The candidate is now the pinned macOS `vision-v1.0.0-1` runtime digest. That
 release is still unpublished, so the hook serves it only from a local build.
 
 Local candidate, manifest, smokes and archive:
-`build/codex-tmp/vision-no-vectorize/`.
+`build/ci-tmp/vision-no-vectorize/`.
 Original library and manifest backup:
-`build/codex-tmp/vision-before-sme-fix/`.
+`build/ci-tmp/vision-before-sme-fix/`.
 The candidate was copied into the package's ignored `build/native/tasks/` for
 Dart validation. The compiler flag and runtime pin are committed; the library
 itself is not published.
@@ -1332,7 +1332,7 @@ itself is not published.
 Inspect with:
 
 ```sh
-xcrun llvm-objdump --disassemble-symbols=_kai_run_lhs_pack_f32p2vlx1_f32_sme build/codex-tmp/vision-no-vectorize/libmediapipe.dylib
+xcrun llvm-objdump --disassemble-symbols=_kai_run_lhs_pack_f32p2vlx1_f32_sme build/ci-tmp/vision-no-vectorize/libmediapipe.dylib
 ```
 
 The upstream genrule retains install name `@rpath/libmediapipe_source.dylib`.
@@ -1359,7 +1359,7 @@ There is also an apparent `XNN_ENABLE_SRM_SME` typo in the false branch of
 `build_defs.bzl`. Do not assume that adding these defines fixes UP-001.
 
 The dependency was cached under
-`build/codex-tmp/bazel/d8fd7dbf830ea5ade71924b0dfe6131d/external/XNNPACK/`,
+`build/ci-tmp/bazel/d8fd7dbf830ea5ade71924b0dfe6131d/external/XNNPACK/`,
 deleted on October 14, 2026 with the source builds' Bazel cache; XNNPACK's
 public source holds the same files.
 See also the earlier investigation in
@@ -1401,7 +1401,7 @@ hosts compared every sampled mask value against the official output.
 Reproduce with the official 1.0.0 environment and:
 
 ```sh
-build/codex-tmp/mediapipe-reference/bin/python -u -B packages/mediapipe-task-vision/tool/generate_landmark_tasks_reference.py
+build/ci-tmp/mediapipe-reference/bin/python -u -B packages/mediapipe-task-vision/tool/generate_landmark_tasks_reference.py
 ```
 
 On 1.0.0, run the generator with `mask.numpy_view().copy()` (as it is now)
@@ -1495,7 +1495,7 @@ python3 -B tool/build_ios_simulator.py
 python3 -B tool/test_ios_consumer.py --experimental-all-tasks
 ```
 
-Local evidence: root `build/codex-tmp/ios-consumer-yb2gy4pg/`. The report marks
+Local evidence: root `build/ci-tmp/ios-consumer-yb2gy4pg/`. The report marks
 the capability overrides explicitly; they never modify the consumer package's
 real support declarations. Confidence-mask hash comparisons are intentionally
 stricter than numerical float comparisons; a failed hash alone does not establish

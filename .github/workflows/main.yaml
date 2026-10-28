@@ -133,8 +133,8 @@ jobs:
         with:
           name: embedding-gemma-validation${{ env.ARTIFACT_SUFFIX }}
           path: |
-            build/codex-tmp/embedding-consumer-*/report.json
-            build/codex-tmp/embedding-consumer-*/*.log
+            build/ci-tmp/embedding-consumer-*/report.json
+            build/ci-tmp/embedding-consumer-*/*.log
             build/classic-text-reference/*.json
             build/classic-text-reference/*.log
           if-no-files-found: error

@@ -6,7 +6,7 @@ bundled, its support is validated here, and it has a screen to show.
 
 ## Running it
 
-**Web:** [try the gallery](https://hugocornellier.github.io/mediapipe_flutter/),
+**Web:** [try the gallery](https://google.github.io/flutter-mediapipe/),
 or run `dart run tool/gallery_builder/bin/prepare_gallery.dart --target web`
 from the root, then `cd gallery && flutter run -d chrome --release`. Supported vision tasks use
 Google's pinned official JS/WASM runtime on a worker; GPU tasks use WebGL 2.

@@ -29,7 +29,7 @@ The sample lives in this repository and depends on the packages by path, so
 clone the whole repository:
 
 ```sh
-git clone https://github.com/hugocornellier/mediapipe_flutter.git
+git clone https://github.com/google/flutter-mediapipe.git
 cd mediapipe_flutter/samples/object_detection
 flutter pub get
 dart run mediapipe_core:bundle_models

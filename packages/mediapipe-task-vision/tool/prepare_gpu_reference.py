@@ -241,7 +241,7 @@ def main():
         provenance.unlink()
     python = args.python
     if python is None:
-        python = pinned_venv(REPO / "build/codex-tmp/gpu-reference-env", reference_wheel(target))
+        python = pinned_venv(REPO / "build/ci-tmp/gpu-reference-env", reference_wheel(target))
     python = python.absolute()
     env = {**os.environ, "MPLCONFIGDIR": str(output / "matplotlib")}
     summaries = {}

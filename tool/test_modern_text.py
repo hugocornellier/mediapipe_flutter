@@ -28,9 +28,9 @@ def main():
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
     runtime = host_runtime()
-    evidence = REPO / 'build/codex-tmp/modern-text'
+    evidence = REPO / 'build/ci-tmp/modern-text'
     evidence.mkdir(parents=True, exist_ok=True)
-    environment = REPO / f'build/codex-tmp/official-python-{runtime["version"]}'
+    environment = REPO / f'build/ci-tmp/official-python-{runtime["version"]}'
     python = pinned_venv(environment, runtime, log=evidence / 'pip.log')
 
     run(['dart', 'pub', 'get'], TEXT, evidence / 'text-pub.log')

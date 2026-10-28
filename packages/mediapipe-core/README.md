@@ -194,10 +194,10 @@ Serve the files with CORS and CSP rules appropriate to your origin.
 
 ## Issues and feedback
 
-Please file issues, bugs, or feature requests in our [issue tracker](https://github.com/hugocornellier/mediapipe_flutter/issues/new).
+Please file issues, bugs, or feature requests in our [issue tracker](https://github.com/google/flutter-mediapipe/issues/new).
 
 Issues that are specific to Flutter can be filed in the [Flutter issue tracker](https://github.com/flutter/flutter/issues/new).
 
 To contribute a change to this plugin,
-please review our [contribution guide](https://github.com/hugocornellier/mediapipe_flutter/blob/main/CONTRIBUTING.md)
-and open a [pull request](https://github.com/hugocornellier/mediapipe_flutter/pulls).
+please review our [contribution guide](https://github.com/google/flutter-mediapipe/blob/main/CONTRIBUTING.md)
+and open a [pull request](https://github.com/google/flutter-mediapipe/pulls).
