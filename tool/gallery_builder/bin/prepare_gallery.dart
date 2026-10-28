@@ -199,7 +199,7 @@ String _repositoryRoot() {
   for (final start in starts) {
     var directory = p.normalize(p.absolute(start));
     while (true) {
-      if (File(p.join(directory, '.mediapipe_flutter-root')).existsSync()) {
+      if (File(p.join(directory, '.flutter-mediapipe-root')).existsSync()) {
         return directory;
       }
       final parent = p.dirname(directory);
@@ -209,7 +209,7 @@ String _repositoryRoot() {
   }
   throw StateError(
     'Run this from a flutter-mediapipe checkout; '
-    'no .mediapipe_flutter-root above ${starts.join(' or ')}.',
+    'no .flutter-mediapipe-root above ${starts.join(' or ')}.',
   );
 }
 
