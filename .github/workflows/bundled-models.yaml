@@ -27,7 +27,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup
         with:
           linux-profile: gallery
@@ -42,7 +42,7 @@ jobs:
       - name: Bundle a fresh app's models and run them offline (Windows)
         if: runner.os == 'Windows'
         run: python -B packages/mediapipe-core/tool/test_bundled_models.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: bundled-models-${{ matrix.os }}

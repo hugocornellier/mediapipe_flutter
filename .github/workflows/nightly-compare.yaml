@@ -70,7 +70,7 @@ jobs:
       scope: ${{ steps.pin.outputs.scope }}
       web: ${{ steps.pin.outputs.web }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Test the pin and comparison tools
         run: |
           python3 -B -m unittest packages/mediapipe-core/tool/test_pin_nightly.py
@@ -94,7 +94,7 @@ jobs:
       - name: Look for an earlier comparison of this build
         id: compared
         if: ${{ github.event_name == 'schedule' }}
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: build/nightly-compared
           key: nightly-compared-v1-${{ steps.pin.outputs.nightly }}-${{ steps.pin.outputs.generation }}-${{ steps.pin.outputs.scope }}
@@ -128,7 +128,7 @@ jobs:
               echo "Nightly $NIGHTLY against the pinned $PREVIOUS, $SCOPE set. Browser: $WEB_NOTE." >> "$GITHUB_STEP_SUMMARY"
             fi
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ steps.decide.outputs.report == 'true' }}
         with:
           name: nightly-pin
@@ -213,19 +213,19 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: ${{ matrix.side == 'nightly' }}
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
         with:
           linux-profile: browser
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: gallery/tool/browser/package-lock.json
       # web.yaml's model cache; restored only, so this workflow never writes it.
-      - uses: actions/cache/restore@v6
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: gallery/assets/mediapipe
           key: gallery-web-models-${{ hashFiles('packages/mediapipe-task-*/lib/models.dart') }}
@@ -263,7 +263,7 @@ jobs:
       - name: Text and audio in WebKit
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: node gallery/tool/browser/test_browser.mjs --browser=webkit --suite=text-audio --official-runtime=/runtime/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: web-evidence-${{ matrix.side }}
@@ -284,8 +284,8 @@ jobs:
       escalate: ${{ steps.compare.outputs.escalate }}
       title: ${{ steps.compare.outputs.title }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: nightly-pin
           path: build/nightly-pin
@@ -298,7 +298,7 @@ jobs:
       - name: Say what a scheduled run would do next
         if: ${{ github.event_name == 'pull_request' && steps.compare.outputs.escalate == 'true' && needs.pin.outputs.scope == 'daily' }}
         run: echo 'A scheduled run would now dispatch the full matrix for this nightly; a pull request run does not.' >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: nightly-compare
@@ -307,7 +307,7 @@ jobs:
       # failures leaves none, so the next schedule tries the build again.
       - name: Mark this build compared
         if: ${{ github.event_name != 'pull_request' && steps.compare.outputs.infra_only == 'false' }}
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: build/nightly-compare/findings.json
           key: nightly-compared-v1-${{ needs.pin.outputs.nightly }}-${{ needs.pin.outputs.generation }}-${{ needs.pin.outputs.scope }}
@@ -321,7 +321,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: nightly-compare
           path: nightly-compare
