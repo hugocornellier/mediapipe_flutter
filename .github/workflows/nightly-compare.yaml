@@ -243,7 +243,7 @@ jobs:
         id: build
         working-directory: gallery
         run: |
-          flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+          flutter build web --release --base-href /flutter-mediapipe/ --no-web-resources-cdn
           flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
           flutter build web --release --base-href /text-audio-probe/ --no-web-resources-cdn --output build/web-text-audio -t tool/web_text_audio_probe.dart
           dart run mediapipe_core:web_runtime build/web-runtime

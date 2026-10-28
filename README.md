@@ -48,10 +48,10 @@ depend on the family by path, with `mediapipe_core` pointed at the clone too:
 ```yaml
 dependencies:
   mediapipe_vision:
-    path: ../mediapipe_flutter/packages/mediapipe-task-vision
+    path: ../flutter-mediapipe/packages/mediapipe-task-vision
 dependency_overrides:
   mediapipe_core:
-    path: ../mediapipe_flutter/packages/mediapipe-core
+    path: ../flutter-mediapipe/packages/mediapipe-core
 ```
 
 List the models your app uses in the same pubspec, and declare the folder

@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const base = process.env.GALLERY_WEB_URL || 'http://127.0.0.1:8866/mediapipe_flutter/';
+const base = process.env.GALLERY_WEB_URL || 'http://127.0.0.1:8866/flutter-mediapipe/';
 const portrait = path.join(repo, 'packages/mediapipe-task-vision/test/fixtures/face_detection/landmark-ex1.jpg');
 const evidence = path.join(repo, 'build/ci-tmp/face-still-image-web');
 fs.mkdirSync(evidence, {recursive: true});

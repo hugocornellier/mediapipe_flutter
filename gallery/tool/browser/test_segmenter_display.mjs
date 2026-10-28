@@ -8,7 +8,7 @@ import {chromium} from 'playwright';
 // legend's colors with the legend under the view, then Output Type set to
 // Confidence Mask, which replaces the legend with a class choice.
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const base = process.env.GALLERY_WEB_URL || 'http://127.0.0.1:8866/mediapipe_flutter/';
+const base = process.env.GALLERY_WEB_URL || 'http://127.0.0.1:8866/flutter-mediapipe/';
 const portrait = path.join(repo, 'gallery/assets/samples/portrait.jpg');
 const evidence = path.join(repo, 'build/ci-tmp/segmenter-display-web');
 fs.mkdirSync(evidence, {recursive: true});

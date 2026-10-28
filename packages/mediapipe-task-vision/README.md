@@ -40,10 +40,10 @@ depend on the package by path and point `mediapipe_core` at the clone too:
 ```yaml
 dependencies:
   mediapipe_vision:
-    path: ../mediapipe_flutter/packages/mediapipe-task-vision
+    path: ../flutter-mediapipe/packages/mediapipe-task-vision
 dependency_overrides:
   mediapipe_core:
-    path: ../mediapipe_flutter/packages/mediapipe-core
+    path: ../flutter-mediapipe/packages/mediapipe-core
 ```
 
 On Android, iOS, macOS, Linux and Windows the package's build hook bundles

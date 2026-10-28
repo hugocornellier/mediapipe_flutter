@@ -208,7 +208,7 @@ String _repositoryRoot() {
     }
   }
   throw StateError(
-    'Run this from a mediapipe_flutter checkout; '
+    'Run this from a flutter-mediapipe checkout; '
     'no .mediapipe_flutter-root above ${starts.join(' or ')}.',
   );
 }

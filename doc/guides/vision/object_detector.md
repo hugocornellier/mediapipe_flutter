@@ -30,7 +30,7 @@ clone the whole repository:
 
 ```sh
 git clone https://github.com/google/flutter-mediapipe.git
-cd mediapipe_flutter/samples/object_detection
+cd flutter-mediapipe/samples/object_detection
 flutter pub get
 dart run mediapipe_core:bundle_models
 flutter run -d <device>
