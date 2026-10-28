@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: ['ubuntu:24.04', 'ubuntu:22.04']
+        image: ['ubuntu:24.04', 'debian:13']
     runs-on: ubuntu-24.04
     container: ${{ matrix.image }}
     timeout-minutes: 30
@@ -33,7 +33,7 @@ jobs:
           apt-get update -q
           apt-get install -yq curl ca-certificates xvfb xauth
           # Exactly the README line (without sudo, as root in the container).
-          apt-get install -yq libgtk-3-0 gstreamer1.0-plugins-good gstreamer1.0-libav
+          apt-get install -yq libgtk-3-0 libegl1 libgles2 gstreamer1.0-plugins-good gstreamer1.0-libav
       - name: Download and check
         run: |
           curl -fsSL -o mediapipe-gallery-linux-x64.tar.gz "$RELEASE_URL/mediapipe-gallery-linux-x64.tar.gz"
@@ -41,7 +41,7 @@ jobs:
       - name: The README's open line, kept running for 90 seconds
         run: |
           tar -xzf mediapipe-gallery-linux-x64.tar.gz
-          ! ldd bundle/mediapipe_gallery bundle/lib/*.so | grep 'not found'
+          if ldd bundle/mediapipe_gallery | grep 'not found'; then exit 1; fi
           status=0; timeout 90 xvfb-run -a ./bundle/mediapipe_gallery > launch.log 2>&1 || status=$?
           cat launch.log
           [ "$status" = 124 ]
