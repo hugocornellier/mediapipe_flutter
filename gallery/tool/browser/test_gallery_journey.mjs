@@ -7,7 +7,7 @@ import {chromium, firefox, webkit} from 'playwright';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const args = Object.fromEntries(process.argv.slice(2).map(arg => arg.replace(/^--/, '').split('=')));
 const browserName = args.browser || 'chromium';
-const base = args['base-url'] || 'http://127.0.0.1:8866/mediapipe_flutter/';
+const base = args['base-url'] || 'http://127.0.0.1:8866/flutter-mediapipe/';
 const evidence = path.join(repo, 'build/ci-tmp/gallery-journey-' + browserName);
 fs.mkdirSync(evidence, {recursive: true});
 

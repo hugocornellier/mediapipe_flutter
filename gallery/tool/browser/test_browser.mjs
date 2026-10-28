@@ -26,7 +26,7 @@ const TASKS = {
 const taskName = argumentsMap.task || 'face';
 const subject = TASKS[taskName];
 assert.ok(subject, 'Unknown --task ' + taskName);
-const base = argumentsMap['base-url'] || 'http://localhost:8866/mediapipe_flutter/';
+const base = argumentsMap['base-url'] || 'http://localhost:8866/flutter-mediapipe/';
 // The gallery publishes its per-frame state for these checks only on request.
 const gallery = base + (base.includes('?') ? '&' : '?') + 'test-hooks';
 const apiBase = argumentsMap['api-url'] || 'http://localhost:8866/api-probe/';

@@ -31,7 +31,7 @@ npm ci
 npx playwright install chromium firefox
 cd ../..
 flutter pub get
-flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+flutter build web --release --base-href /flutter-mediapipe/ --no-web-resources-cdn
 flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
 python3.12 -B tool/write_web_build_info.py
 cd ..

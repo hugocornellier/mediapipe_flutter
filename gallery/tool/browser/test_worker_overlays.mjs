@@ -6,7 +6,7 @@ import {chromium} from 'playwright';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const base = process.argv.find(value => value.startsWith('--base-url='))?.split('=')[1]
-  ?? 'http://localhost:8866/mediapipe_flutter/';
+  ?? 'http://localhost:8866/flutter-mediapipe/';
 const evidence = path.join(repo, 'build/ci-tmp/worker-overlays');
 fs.mkdirSync(evidence, {recursive: true});
 
