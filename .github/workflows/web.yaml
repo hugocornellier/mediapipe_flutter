@@ -118,6 +118,7 @@ jobs:
         working-directory: gallery
         run: |
           flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+          python3 -B tool/trim_web_fonts.py
           flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
           flutter build web --release --base-href /text-audio-probe/ --no-web-resources-cdn --output build/web-text-audio -t tool/web_text_audio_probe.dart
           # Core's self-host tool, for the self-hosted text and audio run.
@@ -287,6 +288,7 @@ jobs:
         run: |
           flutter pub get
           flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+          python3 -B tool/trim_web_fonts.py
           flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
           # Google's runtimes for the browser tests' direct comparisons with its
           # own JavaScript, so they do not depend on the CDN (web_server.py
@@ -442,6 +444,7 @@ jobs:
           cd gallery
           flutter pub get
           flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+          python3 -B tool/trim_web_fonts.py
           env -u GITHUB_SHA python3 -B tool/write_web_build_info.py
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5

@@ -22,6 +22,7 @@ import 'ui/components.dart';
 import 'ui/design.dart';
 import 'ui/workspace.dart';
 import 'web/model_cache.dart';
+import 'web/splash_stub.dart' if (dart.library.js_interop) 'web/splash.dart';
 import 'web/test_hooks.dart';
 import 'gallery_assets_io.dart'
     if (dart.library.js_interop) 'web/gallery_assets.dart';
@@ -134,6 +135,11 @@ class _HomePageState extends State<HomePage> {
     body: FutureBuilder<(GalleryAssets, TaskPlatform)>(
       future: _ready,
       builder: (context, snapshot) {
+        // The web page's loading screen stays up until the home page (or
+        // its error) has drawn, so the page never shows blank or a spinner.
+        if (snapshot.connectionState == ConnectionState.done) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => hideSplash());
+        }
         if (snapshot.hasError) {
           return _Message(
             icon: Icons.error_outline,
