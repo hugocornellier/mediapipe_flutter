@@ -105,7 +105,9 @@ jobs:
         env:
           BROWSERS: ${{ matrix.browsers }}
         run: |
-          python3 -B gallery/tool/browser/prepare_camera.py
+          # Chromium's fake camera file; the macOS runner has no ffmpeg, and
+          # the journey uses the browser's own fake camera without one.
+          if [ "$RUNNER_OS" = Linux ]; then python3 -B gallery/tool/browser/prepare_camera.py; fi
           cd gallery/tool/browser
           npm ci
           npx playwright install $BROWSERS
@@ -141,7 +143,7 @@ jobs:
           done
           exit "$status"
       - if: always()
-        run: cat flutter-run.log
+        run: cat flutter-run.log || true
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
