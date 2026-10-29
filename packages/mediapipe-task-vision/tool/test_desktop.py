@@ -45,7 +45,7 @@ def main():
     target = {'Linux': 'linux', 'Windows': 'windows'}.get(system)
     if target is None or platform.machine().lower() not in ('amd64', 'x86_64'):
         raise SystemExit('This validation requires Linux x64 or Windows x64.')
-    build = REPO / 'build/codex-tmp'
+    build = REPO / 'build/ci-tmp'
     build.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix=f'desktop-{target}-', dir=build))
     print(f'Validation artifacts: {root}', flush=True)

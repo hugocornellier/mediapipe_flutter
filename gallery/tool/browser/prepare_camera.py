@@ -1,7 +1,7 @@
 """Generate subject/blank/subject browser-webcam input from existing licensed fixtures.
 
-With no argument, writes the face fixture (build/codex-tmp/web-camera.y4m) and
-the hand fixture (build/codex-tmp/web-camera-hand.y4m) that
+With no argument, writes the face fixture (build/ci-tmp/web-camera.y4m) and
+the hand fixture (build/ci-tmp/web-camera-hand.y4m) that
 test_browser.mjs --task=face|hand streams.
 """
 from pathlib import Path
@@ -22,7 +22,7 @@ filter_chain = (
     'pad=640:480:(ow-iw)/2:(oh-ih)/2,format=yuv420p,setsar=1[f2];'
     '[f0][1:v][f2]concat=n=3:v=1:a=0[out]'
 )
-directory = Path(sys.argv[1]) if len(sys.argv) > 1 else repo / 'build/codex-tmp'
+directory = Path(sys.argv[1]) if len(sys.argv) > 1 else repo / 'build/ci-tmp'
 directory.mkdir(parents=True, exist_ok=True)
 for name, subject in SUBJECTS.items():
     output = directory / name

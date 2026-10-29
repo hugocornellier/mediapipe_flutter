@@ -1,6 +1,6 @@
 # Web FaceLandmarker gallery
 
-[Try it now](https://hugocornellier.github.io/mediapipe_flutter/): open
+[Try it now](https://google.github.io/flutter-mediapipe/): open
 **Face Landmarker**, allow the camera, and put a face in view. Web currently
 supports CPU/WASM and GPU/WebGL 2. Select **GPU** while the camera is running
 to recreate the task with Google's GPU delegate. If browser hardware acceleration
@@ -31,7 +31,7 @@ npm ci
 npx playwright install chromium firefox
 cd ../..
 flutter pub get
-flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+flutter build web --release --base-href /flutter-mediapipe/ --no-web-resources-cdn
 flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
 python3.12 -B tool/write_web_build_info.py
 cd ..
@@ -61,7 +61,7 @@ track-ended events, and track/worker/callback cleanup. It also screenshots the
 preview with the overlay hidden and requires the overlay's landmarks within
 1.5% (median) of the face the official IMAGE task finds in those pixels, the
 native oracle's criterion. Evidence goes to the ignored
-`build/codex-tmp/web-browser-*` folders and Actions artifacts.
+`build/ci-tmp/web-browser-*` folders and Actions artifacts.
 
 A MacBook Pro physical webcam has separately returned one face with 478
 landmarks across two stop/start sessions. CI webcams are supplied browser

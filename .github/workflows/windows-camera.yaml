@@ -30,11 +30,11 @@ jobs:
       run:
         shell: pwsh
     env:
-      EVIDENCE: ${{ github.workspace }}\build\codex-tmp\gallery-real-camera-windows
-      MEDIAPIPE_CAMERA_REPORT: ${{ github.workspace }}\build\codex-tmp\gallery-real-camera-windows\report.json
+      EVIDENCE: ${{ github.workspace }}\build\ci-tmp\gallery-real-camera-windows
+      MEDIAPIPE_CAMERA_REPORT: ${{ github.workspace }}\build\ci-tmp\gallery-real-camera-windows\report.json
       VCAM: C:\mediapipe-vcam
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Media Foundation, Frame Server, camera consent and display
         run: |
           New-Item -ItemType Directory -Force $env:EVIDENCE | Out-Null
@@ -182,9 +182,9 @@ jobs:
           }
           "=== Application errors"
           Get-WinEvent -FilterHashtable @{LogName = 'Application'; Level = 1, 2} -MaxEvents 30 -ErrorAction SilentlyContinue | Format-List TimeCreated, ProviderName, Id, Message | Out-String -Width 220
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: windows-real-camera-evidence
-          path: build/codex-tmp/gallery-real-camera-windows/
+          path: build/ci-tmp/gallery-real-camera-windows/
           if-no-files-found: warn

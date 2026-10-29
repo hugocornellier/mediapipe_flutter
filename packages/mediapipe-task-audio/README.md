@@ -12,7 +12,7 @@ Windows x64, which this package's hook bundles, and
 `@mediapipe/tasks-audio` 1.2.0-rc.20261018 in browsers.
 
 No platform needs a setting. See
-[platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md)
+[platform setup](https://github.com/google/flutter-mediapipe/blob/main/doc/platform_setup.md)
 for permissions, Linux graphics libraries and self-hosting the browser
 runtime.
 
@@ -42,7 +42,7 @@ A model that is not bundled makes `create` throw a
 download it at run time instead, set `ModelStore.allowDownloads = true` before
 creating the task; Android release builds and sandboxed macOS apps then need
 network permission, as
-[platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md)
+[platform setup](https://github.com/google/flutter-mediapipe/blob/main/doc/platform_setup.md)
 describes.
 
 ```dart

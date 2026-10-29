@@ -20,6 +20,7 @@ PACKAGE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
 from official_wheels import host_runtime  # noqa: E402
 from model_pins import model_sha256  # noqa: E402
+from tool_helpers import reference_json  # noqa: E402
 MODEL_SHA256 = model_sha256('embedding_gemma.task')
 
 
@@ -99,7 +100,7 @@ def main():
         for cls in (MpBaseOptionsC, api._MpEmbedderOptionsC, api._MpTextEmbedderOptionsC,
                     api._MpTextFormatContextC, MpEmbeddingC, MpEmbeddingResultC)}
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=2) + '\n')
+    args.output.write_text(reference_json(report) + '\n')
     print(args.output, flush=True)
 
 

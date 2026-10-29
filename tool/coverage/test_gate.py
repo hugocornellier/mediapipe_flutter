@@ -72,6 +72,20 @@ class GateTest(unittest.TestCase):
         states, failures, _, _ = gate.evaluate(matrix, [cpu, dict(broken, passed=True)])
         self.assertEqual(failures, [])
 
+    def test_a_device_workflow_missing_from_main_has_no_runs(self):
+        # GitHub answers 404 for a workflow file the default branch lacks.
+        def missing(*args):
+            raise subprocess.CalledProcessError(1, ['gh', *args], stderr='gh: Not Found (HTTP 404)')
+        original, gate.gh = gate.gh, missing
+        try:
+            self.assertEqual(gate.device_runs('owner/repo', []), {})
+            gate.gh = lambda *args: (_ for _ in ()).throw(
+                subprocess.CalledProcessError(1, ['gh'], stderr='HTTP 502'))
+            with self.assertRaises(subprocess.CalledProcessError):
+                gate.device_runs('owner/repo', [])
+        finally:
+            gate.gh = original
+
     def test_record_refuses_unsupported_cells(self):
         with tempfile.TemporaryDirectory() as directory:
             command = [sys.executable, '-B', str(HERE / 'record.py'), '--suite', 'x',

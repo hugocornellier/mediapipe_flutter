@@ -7,8 +7,8 @@ import {chromium, firefox, webkit} from 'playwright';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const args = Object.fromEntries(process.argv.slice(2).map(arg => arg.replace(/^--/, '').split('=')));
 const browserName = args.browser || 'chromium';
-const base = args['base-url'] || 'http://127.0.0.1:8866/mediapipe_flutter/';
-const evidence = path.join(repo, 'build/codex-tmp/gallery-journey-' + browserName);
+const base = args['base-url'] || 'http://127.0.0.1:8866/flutter-mediapipe/';
+const evidence = path.join(repo, 'build/ci-tmp/gallery-journey-' + browserName);
 fs.mkdirSync(evidence, {recursive: true});
 
 // This table describes user-facing actions, not which tasks a build contains.
@@ -74,7 +74,7 @@ const lifecycle = event => {
 // also gets a fake camera: Chromium plays the face fixture when it has been
 // prepared, Firefox its synthetic stream, and WebKit its mock capture device.
 const linux = process.platform === 'linux';
-const fixture = path.join(repo, 'build/codex-tmp/web-camera.y4m');
+const fixture = path.join(repo, 'build/ci-tmp/web-camera.y4m');
 const browser = await ({chromium, firefox, webkit}[browserName]).launch({
   headless: args.headed !== 'true',
   ...(browserName === 'chromium' ? {

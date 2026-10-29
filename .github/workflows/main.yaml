@@ -34,7 +34,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
@@ -66,7 +66,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
@@ -86,7 +86,7 @@ jobs:
           dart tool/download_models.dart interactive_segmenter
       - name: Validate option combinations, caches, lifecycle and sustained use
         run: python3 -B tool/task_benchmarks/run_macos.py --output build/task-benchmarks/ci --iterations 25 --reloads 3
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: modern-task-matrix${{ env.ARTIFACT_SUFFIX }}
@@ -100,7 +100,7 @@ jobs:
     env:
       MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
@@ -128,13 +128,13 @@ jobs:
           delegate: cpu
           tasks: embedding_gemma,text_proofreader,text_summarizer
           outcome: ${{ steps.modern_text.outcome }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: embedding-gemma-validation${{ env.ARTIFACT_SUFFIX }}
           path: |
-            build/codex-tmp/embedding-consumer-*/report.json
-            build/codex-tmp/embedding-consumer-*/*.log
+            build/ci-tmp/embedding-consumer-*/report.json
+            build/ci-tmp/embedding-consumer-*/*.log
             build/classic-text-reference/*.json
             build/classic-text-reference/*.log
           if-no-files-found: error
@@ -146,7 +146,7 @@ jobs:
     env:
       MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
@@ -197,7 +197,7 @@ jobs:
           outcome: ${{ steps.packages.outcome }}
       - name: Test face tasks in a fresh Flutter app
         run: make test_vision_flutter
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: official-classic-text-reference${{ env.ARTIFACT_SUFFIX }}
@@ -217,7 +217,7 @@ jobs:
     env:
       MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR: ${{ github.workspace }}/build/classic-text-reference
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
@@ -237,7 +237,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
@@ -259,7 +259,7 @@ jobs:
           delegate: cpu
           tasks: face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,object_detector,pose_landmarker
           outcome: ${{ steps.official.outcome }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: official-macos-runtime-validation${{ env.ARTIFACT_SUFFIX }}

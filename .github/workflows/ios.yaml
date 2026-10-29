@@ -39,7 +39,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 110
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
@@ -61,7 +61,7 @@ jobs:
           dart tool/download_models.dart embedding_gemma proofreader summarizer
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
-            --venv build/codex-tmp/official-python \
+            --venv build/ci-tmp/official-python \
             --output-dir build/modern-text-reference
       - name: Prepare the gallery with the phone suites' tasks
         run: |
@@ -91,8 +91,10 @@ jobs:
         working-directory: gallery
         # bash runs with pipefail, so `| tee` keeps flutter test's exit status.
         shell: bash
+        env:
+          DEVICE: ${{ steps.simulator.outputs.device }}
         run: |
-          device=${{ steps.simulator.outputs.device }}
+          device="$DEVICE"
           for test in sdk_face_landmarker_test sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test decision_maker_test retrieval_test runtime_test face_landmarker_still_image_test gallery_journey_test; do
             for attempt in 1 2; do
               status=0
@@ -130,8 +132,10 @@ jobs:
         working-directory: gallery
         # bash runs with pipefail, so `| tee` keeps flutter test's exit status.
         shell: bash
+        env:
+          DEVICE: ${{ steps.simulator.outputs.device }}
         run: |
-          device=${{ steps.simulator.outputs.device }}
+          device="$DEVICE"
           for attempt in 1 2; do
             status=0
             perl -e 'alarm shift; exec @ARGV' 900 flutter test -d "$device" \
@@ -182,8 +186,10 @@ jobs:
         working-directory: gallery
         # bash runs with pipefail, so `| tee` keeps flutter test's exit status.
         shell: bash
+        env:
+          DEVICE: ${{ steps.simulator.outputs.device }}
         run: |
-          device=${{ steps.simulator.outputs.device }}
+          device="$DEVICE"
           for attempt in 1 2; do
             status=0
             perl -e 'alarm shift; exec @ARGV' 1800 flutter test -d "$device" \
@@ -208,7 +214,7 @@ jobs:
           delegate: cpu
           tasks: embedding_gemma,text_proofreader,text_summarizer
           outcome: ${{ steps.modern_text.outcome }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: ios-simulator-sdk-tasks${{ env.ARTIFACT_SUFFIX }}

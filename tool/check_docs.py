@@ -33,7 +33,7 @@ DOCS = [
 BLOCK = re.compile(r'^```dart\n(.*?)^```', re.S | re.M)
 LINK = re.compile(r'\]\(([^)\s]+)\)')
 REPOSITORY = re.compile(
-    r'https://github\.com/hugocornellier/mediapipe_flutter/(?:blob|tree)/main/'
+    r'https://github\.com/google/flutter-mediapipe/(?:blob|tree)/main/'
     r'([^?\s]+)')
 MODELS = re.compile(r'^\s*mediapipe_(\w+):\n\s*models: \[([^\]]*)\]', re.M)
 # The web build accepts these imports and fails only when the code runs.

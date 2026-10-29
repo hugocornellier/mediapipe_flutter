@@ -79,7 +79,7 @@ def main():
     receipt.unlink(missing_ok=True)
     python = args.python
     if python is None:
-        python = pinned_venv(REPO / f'build/codex-tmp/official-python-{runtime["version"]}', runtime)
+        python = pinned_venv(REPO / f'build/ci-tmp/official-python-{runtime["version"]}', runtime)
     reference = output / 'official_reference.json'
     stream_reference = output / 'official_stream_reference.json'
     log_file = output / 'official-python.log'

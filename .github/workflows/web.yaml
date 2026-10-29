@@ -32,11 +32,11 @@ jobs:
     # ran past 45 minutes once retrieval and decision joined the gallery.
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup
         with:
           linux-profile: browser
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: npm
@@ -45,12 +45,12 @@ jobs:
       # pinned SHA-256s, so a run reuses them; EmbeddingGemma alone is 184 MB.
       # Only main saves them, as in family.yaml: a pull request reads main's copy.
       - if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: gallery/assets/mediapipe
           key: gallery-web-models-${{ hashFiles('packages/mediapipe-task-*/lib/models.dart') }}
       - if: github.event_name != 'pull_request'
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: gallery/assets/mediapipe
           key: gallery-web-models-${{ hashFiles('packages/mediapipe-task-*/lib/models.dart') }}
@@ -117,7 +117,7 @@ jobs:
         id: build
         working-directory: gallery
         run: |
-          flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+          flutter build web --release --base-href /flutter-mediapipe/ --no-web-resources-cdn
           flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
           flutter build web --release --base-href /text-audio-probe/ --no-web-resources-cdn --output build/web-text-audio -t tool/web_text_audio_probe.dart
           # Core's self-host tool, for the self-hosted text and audio run.
@@ -246,30 +246,32 @@ jobs:
           delegate: cpu
           tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker
           outcome: ${{ steps.firefox_cpu.outcome }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: web-face-evidence
           path: |
-            build/codex-tmp/web-browser-*/
-            build/codex-tmp/worker-overlays/
-            build/codex-tmp/gallery-journey-*/
-      - uses: actions/upload-artifact@v4
+            build/ci-tmp/web-browser-*/
+            build/ci-tmp/worker-overlays/
+            build/ci-tmp/gallery-journey-*/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: web-gallery-release
           path: gallery/build/web/
 
   # Safari's engine, on macOS. Linux WebKit builds give a worker's
   # OffscreenCanvas no WebGL context, and Google's vision tasks need one even
-  # on CPU; its text and audio tasks run in Linux WebKit above.
+  # on CPU; its text and audio tasks run in Linux WebKit above. The gallery
+  # journey does not run here: WebKit's page process on these hosts sometimes
+  # ends mid-journey with no error, so CONTRIBUTING.md has it run by hand.
   webkit:
     if: ${{ !inputs.deploy_only }}
     runs-on: macos-15
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: npm
@@ -286,7 +288,7 @@ jobs:
         working-directory: gallery
         run: |
           flutter pub get
-          flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+          flutter build web --release --base-href /flutter-mediapipe/ --no-web-resources-cdn
           flutter build web --release --base-href /api-probe/ --no-web-resources-cdn --output build/web-api -t tool/web_api_probe.dart
           # Google's runtimes for the browser tests' direct comparisons with its
           # own JavaScript, so they do not depend on the CDN (web_server.py
@@ -307,28 +309,6 @@ jobs:
         id: webkit_cpu
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: node gallery/tool/browser/test_browser.mjs --browser=webkit --suite=api --official-runtime=/runtime/
-      - name: Every release gallery sidebar task in WebKit
-        id: webkit_journey
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        # The browser process's own output and exit status, if it goes.
-        env:
-          DEBUG: pw:browser
-        run: node gallery/tool/browser/test_gallery_journey.mjs --browser=webkit
-      # WebKit once closed the page mid-journey with no page error or crash
-      # event. Its unified log and crash reports name the process that went and
-      # why; the evidence upload below carries them.
-      - name: WebKit logs after a failed journey
-        if: ${{ failure() && steps.webkit_journey.outcome == 'failure' }}
-        run: |
-          out=build/codex-tmp/gallery-journey-webkit
-          mkdir -p "$out"
-          /usr/bin/log show --last 15m --style compact \
-            --predicate 'process == "Playwright" OR process BEGINSWITH "com.apple.WebKit"' \
-            > "$out/webkit-unified.log" 2>&1 || true
-          grep -iE 'terminat|crash|unresponsive|exceed|kill|memory limit|footprint' "$out/webkit-unified.log" \
-            | grep -v -e canTerminateAuxiliaryProcess -e AutomaticTermination | tail -100 || true
-          cp ~/Library/Logs/DiagnosticReports/*Playwright*.ips ~/Library/Logs/DiagnosticReports/*WebKit*.ips "$out/" 2>/dev/null || true
-          ls -la "$out"
       - name: Record web CPU task coverage (web-webkit-cpu)
         if: always()
         uses: ./.github/actions/record-coverage
@@ -338,13 +318,12 @@ jobs:
           delegate: cpu
           tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker
           outcome: ${{ steps.webkit_cpu.outcome }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: web-webkit-evidence
           path: |
-            build/codex-tmp/web-browser-*/
-            build/codex-tmp/gallery-journey-*/
+            build/ci-tmp/web-browser-*/
             web-server.log
 
   deploy:
@@ -365,23 +344,23 @@ jobs:
     outputs:
       page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: web-gallery-release
           path: public
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: public
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
 
   verify-deployment:
     needs: deploy
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # ffmpeg and the browser's packages through the browser profile, cached
       # and from another mirror when one is slow, as the browser job installs
       # them; a bare apt-get here had neither.
@@ -389,7 +368,7 @@ jobs:
         with:
           flutter: 'false'
           linux-profile: browser
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: npm
@@ -411,11 +390,11 @@ jobs:
         run: |
           node gallery/tool/browser/test_browser.mjs --suite=camera --base-url="$PAGE_URL"
           node gallery/tool/browser/test_browser.mjs --suite=camera --task=hand --base-url="$PAGE_URL"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: web-pages-evidence
-          path: build/codex-tmp/web-browser-*/
+          path: build/ci-tmp/web-browser-*/
 
   deploy-only:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_only }}
@@ -432,7 +411,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.source_ref }}
       - uses: ./.github/actions/setup
@@ -441,11 +420,11 @@ jobs:
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target web
           cd gallery
           flutter pub get
-          flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
+          flutter build web --release --base-href /flutter-mediapipe/ --no-web-resources-cdn
           env -u GITHUB_SHA python3 -B tool/write_web_build_info.py
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: gallery/build/web
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

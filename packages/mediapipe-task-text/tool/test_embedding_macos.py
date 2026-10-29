@@ -22,7 +22,7 @@ REPO = PACKAGE.parents[1]
 
 
 def main():
-    build = REPO / 'build/codex-tmp'
+    build = REPO / 'build/ci-tmp'
     build.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix='embedding-consumer-', dir=build))
     packages = root / 'packages'

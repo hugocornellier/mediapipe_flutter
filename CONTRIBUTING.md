@@ -1,7 +1,23 @@
-# Contributing to mediapipe_flutter
+# Contributing to MediaPipe Tasks for Flutter
 
-This is an independent development fork maintained at
-https://github.com/hugocornellier/mediapipe_flutter.
+## Contributor License Agreements
+
+We'd love to accept your patches! Before we can take them, we have to jump a couple of legal hurdles.
+
+Please fill out either the individual or corporate Contributor License Agreement (CLA).
+
+  * If you are an individual writing original source code and you're sure you own the intellectual property, then you'll need to sign an [individual CLA](https://code.google.com/legal/individual-cla-v1.0.html).
+  * If you work for a company that wants to allow you to contribute your work, then you'll need to sign a [corporate CLA](https://code.google.com/legal/corporate-cla-v1.0.html).
+
+Follow either of the two links above to access the appropriate CLA and instructions for how to sign and return it. Once we receive it, we'll be able to accept your pull requests.
+
+***NOTE***: Only original source code from you and other people that have signed the CLA can be accepted into the main repository.
+
+## Contributing code
+
+MediaPipe team members will be assigned to review your pull requests. Once the
+pull requests are approved and pass continuous integration checks, we will
+merge them.
 
 Open issues and pull requests in this repository. Describe the problem, the
 resulting behavior, and relevant validation. Keep runtime updates and new task
@@ -12,12 +28,7 @@ notice in new source files and follow the surrounding Dart or native code style.
 Run the checks relevant to the affected package and document any native SDK or
 device requirements that prevent validation.
 
-This fork does not use Google's contributor agreement or internal review process.
-Contributions sent separately to the original Google repository must follow that
-repository's own contribution requirements.
-
-See [README.md](README.md) for the current development scope and
-[UPSTREAM.md](UPSTREAM.md) for provenance.
+See [README.md](README.md) for the current development scope.
 
 ## Before opening a pull request
 
@@ -55,19 +66,22 @@ integration_test/gallery_journey_test.dart`. In a device suite, check a
 widget's own properties rather than the semantics tree: `find.bySemanticsLabel`
 reads `RenderObject.debugSemantics`, which release builds leave empty.
 
-One browser path CI does not reach: on GitHub's `macos-15` runners, which
-CI uses, WebKit has no WebGPU at all, so Decision Maker and the retrieval
-tasks never run in WebKit there (`macos-26` has it). After a change to either family or to Google's browser
-runtimes, and before a release, run the gallery journey in WebKit on a Mac
-with Apple silicon. Build the release gallery as `.github/workflows/web.yaml`
+One browser path CI does not reach: the gallery journey in WebKit. On
+GitHub's macOS runners WebKit's page process sometimes ends mid-journey with
+no error, and on `macos-15` it has no WebGPU at all, so CI runs only
+WebKit's API and text and audio checks. After a change to the gallery, to
+Decision Maker or the retrieval tasks, or to Google's browser runtimes, and
+before a release, run the gallery journey in WebKit on a Mac with Apple
+silicon. Build the release gallery as `.github/workflows/web.yaml`
 does, start `python3 -B gallery/tool/web_server.py`, then run:
 
 ```sh
+node gallery/tool/browser/test_gallery_journey.mjs --browser=webkit
 node gallery/tool/browser/test_gallery_journey.mjs --browser=webkit \
   --tasks=decision_maker,universal_embedder,semantic_retriever
 ```
 
-It expects Decision Maker to answer on Laya, and Hungry Fish and both
+The second run expects Decision Maker to answer on Laya, and Hungry Fish and both
 retrieval tasks to be cards with their reason
 ([UP-054](upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2)).
 

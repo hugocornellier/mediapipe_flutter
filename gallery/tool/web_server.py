@@ -32,10 +32,10 @@ def main():
     # the browser tests' direct comparisons (--official-runtime=/runtime/).
     parser.add_argument('--runtime', type=Path, default=Path('gallery/build/web-runtime'))
     args = parser.parse_args()
-    empty = Path('build/codex-tmp/web-server-empty')
+    empty = Path('build/ci-tmp/web-server-empty')
     empty.mkdir(parents=True, exist_ok=True)
     server = ThreadingHTTPServer(('127.0.0.1', args.port), partial(Handler, directory=str(empty.resolve())))
-    server.mounts = {'/mediapipe_flutter/': args.bundle.resolve(), '/api-probe/': args.api_bundle.resolve(),
+    server.mounts = {'/flutter-mediapipe/': args.bundle.resolve(), '/api-probe/': args.api_bundle.resolve(),
                      '/text-audio-probe/': args.text_audio_bundle.resolve(), '/runtime/': args.runtime.resolve()}
     server.serve_forever()
 
