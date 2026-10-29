@@ -261,7 +261,9 @@ jobs:
 
   # Safari's engine, on macOS. Linux WebKit builds give a worker's
   # OffscreenCanvas no WebGL context, and Google's vision tasks need one even
-  # on CPU; its text and audio tasks run in Linux WebKit above.
+  # on CPU; its text and audio tasks run in Linux WebKit above. The gallery
+  # journey does not run here: WebKit's page process on these hosts sometimes
+  # ends mid-journey with no error, so CONTRIBUTING.md has it run by hand.
   webkit:
     if: ${{ !inputs.deploy_only }}
     runs-on: macos-15
@@ -307,28 +309,6 @@ jobs:
         id: webkit_cpu
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: node gallery/tool/browser/test_browser.mjs --browser=webkit --suite=api --official-runtime=/runtime/
-      - name: Every release gallery sidebar task in WebKit
-        id: webkit_journey
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        # The browser process's own output and exit status, if it goes.
-        env:
-          DEBUG: pw:browser
-        run: node gallery/tool/browser/test_gallery_journey.mjs --browser=webkit
-      # WebKit once closed the page mid-journey with no page error or crash
-      # event. Its unified log and crash reports name the process that went and
-      # why; the evidence upload below carries them.
-      - name: WebKit logs after a failed journey
-        if: ${{ failure() && steps.webkit_journey.outcome == 'failure' }}
-        run: |
-          out=build/ci-tmp/gallery-journey-webkit
-          mkdir -p "$out"
-          /usr/bin/log show --last 15m --style compact \
-            --predicate 'process == "Playwright" OR process BEGINSWITH "com.apple.WebKit"' \
-            > "$out/webkit-unified.log" 2>&1 || true
-          grep -iE 'terminat|crash|unresponsive|exceed|kill|memory limit|footprint' "$out/webkit-unified.log" \
-            | grep -v -e canTerminateAuxiliaryProcess -e AutomaticTermination | tail -100 || true
-          cp ~/Library/Logs/DiagnosticReports/*Playwright*.ips ~/Library/Logs/DiagnosticReports/*WebKit*.ips "$out/" 2>/dev/null || true
-          ls -la "$out"
       - name: Record web CPU task coverage (web-webkit-cpu)
         if: always()
         uses: ./.github/actions/record-coverage
@@ -344,7 +324,6 @@ jobs:
           name: web-webkit-evidence
           path: |
             build/ci-tmp/web-browser-*/
-            build/ci-tmp/gallery-journey-*/
             web-server.log
 
   deploy:

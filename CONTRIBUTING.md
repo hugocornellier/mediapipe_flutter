@@ -66,19 +66,22 @@ integration_test/gallery_journey_test.dart`. In a device suite, check a
 widget's own properties rather than the semantics tree: `find.bySemanticsLabel`
 reads `RenderObject.debugSemantics`, which release builds leave empty.
 
-One browser path CI does not reach: on GitHub's `macos-15` runners, which
-CI uses, WebKit has no WebGPU at all, so Decision Maker and the retrieval
-tasks never run in WebKit there (`macos-26` has it). After a change to either family or to Google's browser
-runtimes, and before a release, run the gallery journey in WebKit on a Mac
-with Apple silicon. Build the release gallery as `.github/workflows/web.yaml`
+One browser path CI does not reach: the gallery journey in WebKit. On
+GitHub's macOS runners WebKit's page process sometimes ends mid-journey with
+no error, and on `macos-15` it has no WebGPU at all, so CI runs only
+WebKit's API and text and audio checks. After a change to the gallery, to
+Decision Maker or the retrieval tasks, or to Google's browser runtimes, and
+before a release, run the gallery journey in WebKit on a Mac with Apple
+silicon. Build the release gallery as `.github/workflows/web.yaml`
 does, start `python3 -B gallery/tool/web_server.py`, then run:
 
 ```sh
+node gallery/tool/browser/test_gallery_journey.mjs --browser=webkit
 node gallery/tool/browser/test_gallery_journey.mjs --browser=webkit \
   --tasks=decision_maker,universal_embedder,semantic_retriever
 ```
 
-It expects Decision Maker to answer on Laya, and Hungry Fish and both
+The second run expects Decision Maker to answer on Laya, and Hungry Fish and both
 retrieval tasks to be cards with their reason
 ([UP-054](upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2)).
 

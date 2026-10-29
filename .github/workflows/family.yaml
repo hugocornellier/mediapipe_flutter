@@ -142,10 +142,9 @@ jobs:
     if: ${{ inputs.jobs == 'all' || contains(inputs.jobs, 'web') }}
     # Google's browser Decision Maker and Universal Embedder run only on a
     # hardware WebGPU adapter (UP-049, UP-052): Chromium on the Mac runner's
-    # Metal one runs the tasks and records the web GPU row. WebKit has WebGPU
-    # on macos-26 alone, where the gallery shows the pages Google's runtime
-    # cannot serve as cards (UP-054, UP-055); the matrix has no row per browser
-    # engine, so it records none. Hosted Linux, with only SwiftShader, checks
+    # Metal one runs the tasks and records the web GPU row. WebKit, whose page
+    # process on these hosts sometimes ends mid-journey with no error, runs
+    # by hand (CONTRIBUTING.md). Hosted Linux, with only SwiftShader, checks
     # that the gallery refuses the tasks in web.yaml's Chromium journey.
     name: web ${{ matrix.engine }} ${{ matrix.os }}
     strategy:
@@ -153,7 +152,6 @@ jobs:
       matrix:
         include:
           - {os: macos-15, engine: Chromium, browser: chromium}
-          - {os: macos-26, engine: WebKit, browser: webkit}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
