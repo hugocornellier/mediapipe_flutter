@@ -11,7 +11,7 @@ from mediapipe.tasks.python.vision.core.image_processing_options import ImagePro
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
 from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
-from tool_helpers import digest  # noqa: E402
+from tool_helpers import digest, reference_json  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'test/fixtures/landmark_tasks'
@@ -175,7 +175,7 @@ def main():
     # Same names as the face suites: the Dart loader reads GPU references
     # from MEDIAPIPE_GPU_REFERENCE_DIR by the `_gpu_` in the file name.
     name = 'official_gpu_reference.json' if args.delegate == 'gpu' else 'official_reference.json'
-    (args.output_dir / name).write_text(json.dumps(output, indent=2) + '\n')
+    (args.output_dir / name).write_text(reference_json(output) + '\n')
 
 
 if __name__ == '__main__':

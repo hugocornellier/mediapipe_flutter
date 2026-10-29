@@ -20,6 +20,7 @@ import time
 
 from official_face_runtime import LIBRARY_NAME, LIBRARY_SHA256, RUNTIME, VERSION
 from model_pins import model_sha256  # core's tool/, which the import above adds
+from tool_helpers import reference_json  # noqa: E402
 
 PACKAGE = Path(__file__).resolve().parents[1]
 # The model pin the package itself uses (VisionModels.interactiveSegmenter).
@@ -199,7 +200,7 @@ def main():
                       'offsets': {f[0]: getattr(cls, f[0]).offset for f in cls._fields_}}
         for cls in (MpBaseOptionsC, api.InteractiveSegmenterOptionsC, api.MpStrokePointC,
                     api.MpStrokeC, api.MpStrokesC)}
-    (fixtures / 'official_reference.json').write_text(json.dumps(report, indent=2) + '\n')
+    (fixtures / 'official_reference.json').write_text(reference_json(report) + '\n')
 
 
 if __name__ == '__main__':
