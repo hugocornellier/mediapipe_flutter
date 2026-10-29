@@ -67,6 +67,11 @@ int compareTasks(
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // The Pages build serves Google's pinned runtime from its own origin
+  // (web.yaml copies it into the build), so no CDN is on its path. Other
+  // builds keep the packages' default.
+  const runtime = String.fromEnvironment('MEDIAPIPE_WEB_RUNTIME');
+  if (kIsWeb && runtime.isNotEmpty) MediaPipeWebRuntime.baseUrl = runtime;
   // Flutter keeps a DOM element per semantics node and moves them on every
   // scroll frame, which a phone's browser feels; a screen reader there can
   // still turn them on with Flutter's own accessibility button. Desktop
