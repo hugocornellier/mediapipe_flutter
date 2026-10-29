@@ -1,0 +1,150 @@
+name: Gallery test build, iOS and web from source
+
+permissions:
+  contents: read
+
+# The README's build-from-source lines for iOS and web, on a clean runner, then
+# the journey through every page. Runs only for a commit that asks for it.
+on:
+  push:
+    branches: ['test-build/**']
+
+jobs:
+  # Hosted runners have no iPhone, and a simulator runs only debug builds, so
+  # this is the README's prepare line for the simulator's slice, then the
+  # journey in a debug build.
+  ios-simulator:
+    if: contains(github.event.head_commit.message, '[ios-web]')
+    name: From source, every page / iOS simulator
+    runs-on: macos-15
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup
+      - name: Make flutter test wait for the simulator log reader
+        run: python3 -B tool/ci/patch_flutter_simulator_launch.py
+      - name: Prepare the gallery with every task
+        run: |
+          dart run tool/gallery_builder/bin/prepare_gallery.dart --target ios-simulator/arm64
+          cd gallery && flutter pub get
+      - name: Boot an installed iPhone simulator
+        id: simulator
+        run: |
+          device=$(python3 - <<'PY'
+          import json, subprocess
+          devices = json.loads(subprocess.check_output(
+              ['xcrun', 'simctl', 'list', 'devices', 'available', '--json'], text=True))['devices']
+          candidates = [d for runtime, entries in devices.items() if '.iOS-' in runtime
+                        for d in entries if d['name'].startswith('iPhone')]
+          if not candidates:
+              raise SystemExit('No installed iPhone simulator runtime')
+          print(candidates[0]['udid'])
+          PY
+          )
+          xcrun simctl boot "$device"
+          xcrun simctl bootstatus "$device" -b
+          echo "device=$device" >> "$GITHUB_OUTPUT"
+      - name: The journey through every page
+        working-directory: gallery
+        shell: bash
+        env:
+          DEVICE: ${{ steps.simulator.outputs.device }}
+        run: |
+          device="$DEVICE"
+          for attempt in 1 2; do
+            status=0
+            # A hosted simulator sometimes stalls while loading the app and
+            # never starts the tests; a stalled run goes once more on a
+            # rebooted simulator.
+            perl -e 'alarm shift; exec @ARGV' 3000 flutter test -d "$device" \
+              integration_test/gallery_journey_test.dart \
+              --dart-define=SDK_GPU=skip --reporter expanded 2>&1 | tee -a journey-ios-simulator.log || status=$?
+            [ "$status" = 0 ] && break
+            if [ "$status" = 142 ] && [ "$attempt" = 1 ]; then
+              echo "The journey stalled; rebooting the simulator and retrying"
+              xcrun simctl shutdown "$device" || true
+              xcrun simctl boot "$device"
+              xcrun simctl bootstatus "$device" -b
+              continue
+            fi
+            exit "$status"
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: gallery-test-journey-ios-simulator
+          path: gallery/journey-ios-simulator.log
+          retention-days: 30
+
+  # The README's web line, `flutter run --release`, with the web server device
+  # so the test browser opens it, then the journey in each browser.
+  web:
+    if: contains(github.event.head_commit.message, '[ios-web]')
+    name: From source, every page / web on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, profile: browser, browsers: 'chromium firefox' }
+          - { os: macos-15, profile: none, browsers: 'chromium webkit' }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup
+        with:
+          linux-profile: ${{ matrix.profile }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: gallery/tool/browser/package-lock.json
+      - name: Prepare the gallery with every task
+        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target web
+      - name: Install the test browsers and the camera fixture
+        env:
+          BROWSERS: ${{ matrix.browsers }}
+        run: |
+          python3 -B gallery/tool/browser/prepare_camera.py
+          cd gallery/tool/browser
+          npm ci
+          npx playwright install $BROWSERS
+      - name: flutter run --release
+        working-directory: gallery
+        run: |
+          nohup flutter run --release -d web-server --web-hostname 127.0.0.1 --web-port 8866 \
+            < /dev/null > ../flutter-run.log 2>&1 &
+          # The server answers while the app still compiles; this line comes
+          # once it serves the release build.
+          for attempt in $(seq 1 300); do
+            grep -q 'is being served at' ../flutter-run.log && exit 0
+            sleep 2
+          done
+          cat ../flutter-run.log
+          exit 1
+      - name: The journey through every page
+        shell: bash
+        env:
+          BROWSERS: ${{ matrix.browsers }}
+          LIBGL_ALWAYS_SOFTWARE: ${{ runner.os == 'Linux' && '1' || '' }}
+        run: |
+          status=0
+          for browser in $BROWSERS; do
+            echo "::group::$browser"
+            run=()
+            headed=false
+            # Firefox draws no WebGL headless on these hosts.
+            if [ "$browser" = firefox ]; then run=(xvfb-run -a); headed=true; fi
+            "${run[@]}" node gallery/tool/browser/test_gallery_journey.mjs --browser="$browser" \
+              --headed="$headed" --base-url=http://127.0.0.1:8866/ || status=$?
+            echo "::endgroup::"
+          done
+          exit "$status"
+      - if: always()
+        run: cat flutter-run.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: gallery-test-journey-web-${{ matrix.os }}
+          path: build/ci-tmp/gallery-journey-*/
+          retention-days: 30
