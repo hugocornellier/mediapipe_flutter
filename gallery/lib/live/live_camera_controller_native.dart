@@ -70,6 +70,9 @@ class LiveCameraController<T> extends ChangeNotifier {
   bool running = false;
   bool changing = false;
   bool get initializing => false;
+  String get startingStep => 'Model initializing';
+  String? get startingDetail => null;
+  double? get startingProgress => null;
   void setProcessingPaused(bool paused) {}
   String? error;
 

@@ -204,8 +204,8 @@ class _GalleryShellState extends State<_GalleryShell> {
   }
 
   /// Most visitors step through the sidebar in order, so once a camera task
-  /// has had time to load its own model, the web gallery fetches the models
-  /// of the camera tasks either side of it.
+  /// has started, the web gallery fetches the models of the camera tasks
+  /// either side of it (see [WebModelCache.prefetch]).
   void _prefetchNeighbours(GalleryTask task) {
     _prefetch?.cancel();
     final live =
