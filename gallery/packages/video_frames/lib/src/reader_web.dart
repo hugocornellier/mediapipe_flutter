@@ -65,7 +65,7 @@ Future<VideoFileReader> open(String url) async {
     if (seekable.length == 0 || seekable.end(seekable.length - 1) <= 0) {
       throw StateError('The browser cannot seek $url frame by frame.');
     }
-    final frameSeconds = await _frameSeconds(video);
+    final frameSeconds = await _probed(video, await _frameSeconds(video));
     return _WebReader(video, frameSeconds, ownUrl);
   } catch (_) {
     video
@@ -106,6 +106,51 @@ Future<double> _frameSeconds(web.HTMLVideoElement video) async {
     video.pause();
   }
   return frameSecondsFrom(times) ?? _fallbackFrameSeconds;
+}
+
+/// [frameSeconds], or the shorter length seeks into the first frame find;
+/// see [shorterFrameSecondsFrom].
+Future<double> _probed(web.HTMLVideoElement video, double frameSeconds) async {
+  if (!video.has('requestVideoFrameCallback')) return frameSeconds;
+  final first = await _presentedAt(video, 0);
+  if (first == null) return frameSeconds;
+  // Each probe divides the length by a whole number, so a few suffice.
+  for (var probes = 0; probes < 4; probes++) {
+    final probe = first + frameSeconds * 0.75;
+    if (!(probe < video.duration)) break;
+    final presented = await _presentedAt(video, probe);
+    if (presented == null) break;
+    final shorter = shorterFrameSecondsFrom(
+      first: first,
+      probe: probe,
+      presented: presented,
+    );
+    if (shorter == null) break;
+    frameSeconds = shorter;
+  }
+  return frameSeconds;
+}
+
+/// Seeks to [seconds] and returns the start of the frame shown there, from
+/// the browser's frame callback; null when none comes. A seek that shows the
+/// frame already on screen may present nothing.
+Future<double?> _presentedAt(web.HTMLVideoElement video, double seconds) async {
+  final presented = Completer<double>();
+  _VideoCallbacks(video).requestVideoFrameCallback(
+    ((JSNumber _, JSObject metadata) {
+      if (!presented.isCompleted) {
+        presented.complete(_FrameMetadata(metadata).mediaTime);
+      }
+    }).toJS,
+  );
+  try {
+    final seeked = video.onSeeked.first;
+    video.currentTime = seconds;
+    await seeked.timeout(const Duration(seconds: 10));
+    return await presented.future.timeout(const Duration(seconds: 2));
+  } on TimeoutException {
+    return null;
+  }
 }
 
 final class _WebReader implements VideoFileReader {

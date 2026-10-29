@@ -80,4 +80,52 @@ void main() {
     expect(frameSecondsFrom([(0, 1)]), isNull);
     expect(frameSecondsFrom([(0, 1), (0, 1), (0, 1)]), isNull);
   });
+
+  test('every other frame presented reads half the rate', () {
+    // What playback alone cannot tell, and the probe seek finds.
+    final seconds = frameSecondsFrom([
+      for (var i = 0; i < 12; i++) (2 * i / 30, i + 1),
+    ]);
+    expect(seconds, closeTo(1 / 15, 1e-9));
+  });
+
+  group('a probe seek', () {
+    test('into the first frame again keeps the measured length', () {
+      expect(
+        shorterFrameSecondsFrom(first: 0, probe: 0.75 / 30, presented: 0),
+        isNull,
+      );
+    });
+
+    test('onto a frame starting inside it gives the shorter length', () {
+      // The macOS runner: measured 15 fps, the probe at 0.05 s shows the
+      // frame starting at 1/30 s.
+      final seconds = shorterFrameSecondsFrom(
+        first: 0,
+        probe: 0.75 / 15,
+        presented: 1 / 30,
+      );
+      expect(seconds, 1 / 30);
+      expect(slots(seconds!, 3), 90);
+    });
+
+    test('counts from a first frame that starts late', () {
+      expect(
+        shorterFrameSecondsFrom(
+          first: 0.02,
+          probe: 0.02 + 0.75 / 15,
+          presented: 0.02 + 1 / 30,
+        ),
+        1 / 30,
+      );
+    });
+
+    test('that reports its own position tells nothing', () {
+      // Firefox.
+      expect(
+        shorterFrameSecondsFrom(first: 0, probe: 0.05, presented: 0.05),
+        isNull,
+      );
+    });
+  });
 }

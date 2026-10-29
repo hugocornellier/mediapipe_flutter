@@ -50,10 +50,36 @@ double? frameSecondsFrom(List<(double, int)> callbacks) {
     lastPresented - firstPresented,
     (span / step).round(),
   );
-  final rate = frames / span;
+  return _rounded(frames / span);
+}
+
+/// One frame's length at [rate], rounded to a common rate when it is one.
+double _rounded(double rate) {
   // The nearest, since 30000/1001 and 30 lie within 2% of each other.
   final standard = _standardRates.reduce(
     (a, b) => (rate / a - 1).abs() <= (rate / b - 1).abs() ? a : b,
   );
   return (rate / standard - 1).abs() < 0.02 ? 1 / standard : 1 / rate;
+}
+
+/// A shorter frame length than the one measured, from a seek to [probe],
+/// three quarters into the first frame as measured, which starts at [first]:
+/// [presented] is the start of the frame shown there. Null when the probe
+/// shows the first frame again, so the measured length stands, or when
+/// [presented] is the seek position itself, which Firefox reports and which
+/// says nothing about the frame.
+///
+/// Playback can present every other frame and drop none: a macOS CI runner's
+/// Chromium did, so [frameSecondsFrom] read the 30 fps sample as 15 and the
+/// reader stepped over every other frame. A frame starting between [first]
+/// and the probe gives a length of its start's distance from [first], or a
+/// multiple of it, which another probe then shortens.
+double? shorterFrameSecondsFrom({
+  required double first,
+  required double probe,
+  required double presented,
+}) {
+  const margin = 0.001;
+  if (presented <= first + margin || presented >= probe - margin) return null;
+  return _rounded(1 / (presented - first));
 }
