@@ -176,6 +176,21 @@ Future<void> _prepare(
     }
   }
 
+  // The web gallery's model progress needs each model's size: GitHub Pages
+  // serves them gzipped, so a response's Content-Length is not it.
+  final models = Directory(p.join(gallery, 'assets/mediapipe'));
+  manifest['modelBytes'] = {
+    if (await models.exists())
+      for (final file
+          in models.listSync().whereType<File>().toList()
+            ..sort((a, b) => a.path.compareTo(b.path)))
+        if (RegExp(r'^[0-9a-f]{64}$').hasMatch(p.basename(file.path)))
+          p.basename(file.path): file.lengthSync(),
+  };
+  await File(
+    p.join(gallery, 'assets/manifest.json'),
+  ).writeAsString('${const JsonEncoder.withIndent('  ').convert(manifest)}\n');
+
   stdout.writeln('$target: ${tasks.length} task(s) bundled');
   for (final task in tasks) {
     stdout.writeln('  + $task');
