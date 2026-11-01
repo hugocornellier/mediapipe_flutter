@@ -67,7 +67,7 @@ jobs:
         if: always()
         shell: bash
         run: python -B tool/ci/wininet_report.py "$RUNNER_TEMP/wininet.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: wininet-capture
@@ -130,7 +130,7 @@ jobs:
         if: always()
         shell: bash
         run: python -B tool/ci/telemetry_capture.py report "$RUNNER_TEMP/capture"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: usage-log-capture-linux

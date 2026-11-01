@@ -208,7 +208,7 @@ jobs:
           delegate: cpu
           tasks: embedding_gemma,text_proofreader,text_summarizer
           outcome: ${{ steps.modern_text.outcome }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ios-simulator-sdk-tasks${{ env.ARTIFACT_SUFFIX }}
