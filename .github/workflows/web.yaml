@@ -36,7 +36,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           linux-profile: browser
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -269,7 +269,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -389,7 +389,7 @@ jobs:
         with:
           flutter: 'false'
           linux-profile: browser
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
