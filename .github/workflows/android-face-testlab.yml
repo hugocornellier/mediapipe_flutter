@@ -103,7 +103,7 @@ jobs:
       RESULTS_DIR: mediapipe-sdk-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.model }}
       DEVICE: ${{ matrix.model }}-${{ matrix.version }}-en-portrait
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
