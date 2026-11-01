@@ -136,7 +136,7 @@ jobs:
       - name: Build and exercise the Windows CPU gallery
         if: runner.os == 'Windows'
         run: python -B gallery/tool/test_desktop.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: desktop-cpu-${{ matrix.os }}${{ env.ARTIFACT_SUFFIX }}
@@ -236,7 +236,7 @@ jobs:
               --dart-define=GALLERY_LIVE_TASK=$task \
               --dart-define=GALLERY_GPU_EXPECT=refused --reporter expanded
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: linux-gpu-reference${{ env.ARTIFACT_SUFFIX }}

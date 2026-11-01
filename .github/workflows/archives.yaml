@@ -64,7 +64,7 @@ jobs:
         uses: ./.github/actions/android-ndk
       - name: Build a fresh app from the archives
         run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} -B tool/check_archives.py ${{ matrix.target }} --scratch build/archives
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: archives-${{ matrix.target }}

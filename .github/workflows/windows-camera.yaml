@@ -182,7 +182,7 @@ jobs:
           }
           "=== Application errors"
           Get-WinEvent -FilterHashtable @{LogName = 'Application'; Level = 1, 2} -MaxEvents 30 -ErrorAction SilentlyContinue | Format-List TimeCreated, ProviderName, Id, Message | Out-String -Width 220
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: windows-real-camera-evidence

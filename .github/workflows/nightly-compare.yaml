@@ -128,7 +128,7 @@ jobs:
               echo "Nightly $NIGHTLY against the pinned $PREVIOUS, $SCOPE set. Browser: $WEB_NOTE." >> "$GITHUB_STEP_SUMMARY"
             fi
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ steps.decide.outputs.report == 'true' }}
         with:
           name: nightly-pin
@@ -263,7 +263,7 @@ jobs:
       - name: Text and audio in WebKit
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: node gallery/tool/browser/test_browser.mjs --browser=webkit --suite=text-audio --official-runtime=/runtime/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: web-evidence-${{ matrix.side }}
@@ -298,7 +298,7 @@ jobs:
       - name: Say what a scheduled run would do next
         if: ${{ github.event_name == 'pull_request' && steps.compare.outputs.escalate == 'true' && needs.pin.outputs.scope == 'daily' }}
         run: echo 'A scheduled run would now dispatch the full matrix for this nightly; a pull request run does not.' >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: nightly-compare

@@ -246,7 +246,7 @@ jobs:
           delegate: cpu
           tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker
           outcome: ${{ steps.firefox_cpu.outcome }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: web-face-evidence
@@ -254,7 +254,7 @@ jobs:
             build/codex-tmp/web-browser-*/
             build/codex-tmp/worker-overlays/
             build/codex-tmp/gallery-journey-*/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: web-gallery-release
           path: gallery/build/web/
@@ -338,7 +338,7 @@ jobs:
           delegate: cpu
           tasks: face_detector,face_landmarker,gesture_recognizer,hand_landmarker,holistic_landmarker,image_classifier,image_embedder,image_segmenter,interactive_segmenter,object_detector,pose_landmarker
           outcome: ${{ steps.webkit_cpu.outcome }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: web-webkit-evidence
@@ -411,7 +411,7 @@ jobs:
         run: |
           node gallery/tool/browser/test_browser.mjs --suite=camera --base-url="$PAGE_URL"
           node gallery/tool/browser/test_browser.mjs --suite=camera --task=hand --base-url="$PAGE_URL"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: web-pages-evidence

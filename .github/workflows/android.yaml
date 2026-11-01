@@ -175,7 +175,7 @@ jobs:
           cd gallery
           flutter build apk --release --target-platform android-arm64
           python3 -B ../tool/ci/check_r8_usage.py build/app/outputs/mapping/release/usage.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: gallery-release-android-arm64${{ env.ARTIFACT_SUFFIX }}
           path: gallery/build/app/outputs/flutter-apk/app-release.apk
