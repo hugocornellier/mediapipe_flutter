@@ -96,7 +96,7 @@ Future<void> _prepare(
   await _replaceDirectory(samplesDirectory);
   final sampleNames = <String>[];
   for (final entry in samples.entries) {
-    if (!tasks.contains('audio_classifier') && entry.value.endsWith('.wav')) {
+    if (!tasks.any(audioSampleTasks.contains) && entry.value.endsWith('.wav')) {
       continue;
     }
     if (!tasks.any(embedderSampleTasks.contains) &&

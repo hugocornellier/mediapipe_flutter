@@ -4,12 +4,17 @@ Google's MediaPipe **Audio Classifier** for Dart and Flutter, for example
 YAMNet's 521 sound categories, on Android, iOS, macOS, Linux, Windows and the
 web. Google's pinned YAMNet model is bundled with your app at build time.
 
+Google's **Audio Transcriber** (speech to text, with Parakeet TDT 0.6B v3) and
+**Text to Speech** (Phonon's five voices, whole or streamed, with word
+timings) run on 64-bit Android, iOS, macOS, Linux and Windows; see
+[Speech](#speech).
+
 ## Platforms
 
 The task runs Google's runtime on each platform, on the CPU: its MediaPipe
-1.2.0 audio library on Android 9+, iOS 15+, macOS 14+ arm64, Linux x64 and
+1.2.2 audio library on Android 9+, iOS 15+, macOS 14+ arm64, Linux x64 and
 Windows x64, which this package's hook bundles, and
-`@mediapipe/tasks-audio` 1.2.0-rc.20261018 in browsers.
+`@mediapipe/tasks-audio` 1.2.2-rc.20261103 in browsers.
 
 No platform needs a setting. See
 [platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md)
@@ -178,6 +183,65 @@ Future<void> listen(Stream<Float32List> blocks) async {
   signal. Record at the model's rate (16 kHz for YAMNet) to avoid the
   difference.
 
+## Speech
+
+`AudioTranscriber` turns speech into text and `TextToSpeech` turns text into
+speech, on Google's 1.2.2 native library, on the CPU. Google's browser runtime
+has neither task, and 32-bit Android cannot hold their models: there, and for
+the GPU delegate, `create` throws a `RuntimeUnavailableException`, and
+`queryAudioTranscriberCapabilities()` and `queryTextToSpeechCapabilities()`
+say why. Their models are large (Parakeet 615 MB, CC BY 4.0; Phonon 87 MB),
+so an app usually downloads them on first use
+(`ModelStore.allowDownloads = true`) rather than bundling them; listing
+`parakeet_tdt_v3` or `phonon` under the hook's `models` bundles them instead.
+
+```dart
+import 'dart:typed_data';
+
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+
+Future<String> transcribeClip(Uint8List wavBytes) async {
+  final clip = decodeWav(wavBytes);
+  final transcriber = await AudioTranscriber.create(
+    AudioTranscriberOptions(
+      model: AudioModels.parakeetTdtV3,
+      sampleRateHz: clip.sampleRate.round(),
+    ),
+  );
+  try {
+    return (await transcriber.transcribe(clip)).text;
+  } finally {
+    await transcriber.dispose();
+  }
+}
+
+Future<Float32List> speak(String text) async {
+  final tts = await TextToSpeech.create(
+    TextToSpeechOptions(model: AudioModels.phonon),
+  );
+  try {
+    final speech = await tts.synthesize(text, voiceId: 'freya');
+    for (final word in speech.wordTimestamps) {
+      print('${word.word} at ${word.startSeconds} s');
+    }
+    return speech.samples; // mono, at speech.sampleRateHz (24 kHz)
+  } finally {
+    await tts.dispose();
+  }
+}
+```
+
+- To transcribe live audio, pass blocks with `endOfStream: false`, which keep
+  what is short of a segment for the next call, then call `finishStream()`.
+  `enableInterimResults: true` also returns the segment in progress.
+- `listVoices()` names the model's voices: Phonon has `freya` (en-US),
+  `claire` (fr-FR), `lukas` (de-DE), `sofia` (es-ES) and `lucas` (pt-BR).
+- `synthesizeStream(text)` yields a chunk per clause as soon as it is ready,
+  so playback can start early; cancelling the subscription stops Google's
+  stream after the chunk in progress. `WordTimestamp.start` and `end` are
+  UTF-8 byte offsets into the text, as Google reports them.
+- Calls on one task run one at a time, in call order, on a worker isolate.
+
 ## Validation
 
 The tests compare every chunk of three official MediaPipe sample clips (speech
@@ -205,3 +269,16 @@ score of every window). Browser CI compares the emulated stream with Google's
 JavaScript on the same page; the iOS simulator, the Android emulator and
 Firebase Test Lab's phones run the stream on Google's mobile libraries against
 the same device's clips results.
+
+The speech tests compare both tasks with Google's own Python
+(`test/fixtures/official_speech_reference.json`, from the macOS
+1.2.2rc20261103 wheel, Google's first with these tasks in Python; the package
+loads the 1.2.2 release library): the transcript and segment timestamps of
+both speech clips, whole and in one-second blocks with and without interim
+results; and for Text to Speech the voices, four utterances in three
+languages (Unicode text included), a faster speaking rate and a streamed
+paragraph, each with the same sample count, rate and word timings, and the
+peak and 100 ms RMS envelope within 0.002. `tool/prepare_speech_reference.py`
+regenerates the reference with the pinned wheel on each desktop CI runner
+(speech.yaml). They also check stream cancellation, disposal, option checks,
+capabilities and the C struct layouts against Google's headers.

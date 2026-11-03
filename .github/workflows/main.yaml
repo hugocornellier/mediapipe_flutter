@@ -208,8 +208,9 @@ jobs:
 
   # The same package suites and fresh app on macOS 14, the oldest macOS the
   # packages and Google's libraries support (MACOSX_DEPLOYMENT_TARGET 14.0);
-  # every other macOS job runs 15 or 26. decision.yaml and retrieval.yaml run
-  # their packages there too. No coverage rows: the job above records macOS.
+  # every other macOS job runs 15 or 26. decision.yaml, retrieval.yaml and
+  # speech.yaml run their packages there too. No coverage rows: the job above
+  # records macOS.
   macos-14:
     name: Every package / macOS 14 arm64
     runs-on: macos-14

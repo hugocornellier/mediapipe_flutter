@@ -1,3 +1,13 @@
+## 0.2.0 (unreleased)
+
+- Google's MediaPipe 1.2.2 native release (build of November 2, 2026)
+  replaces 1.2.0 on Android, iOS, macOS, Linux and Windows. Browsers stay on
+  `@mediapipe/tasks-*` 1.2.0-rc.20261018 until npm has 1.2.2.
+- Sends Google's renumbered `MpDelegate` values (0 is now the default, 1 the
+  CPU, 2 the GPU), which 1.2.1 changed in the C API.
+- `pin_nightly.py --release X.Y.Z` pins Google's release builds as well as
+  nightlies.
+
 ## 0.1.0
 
 The first release of this rewrite, replacing Google's
