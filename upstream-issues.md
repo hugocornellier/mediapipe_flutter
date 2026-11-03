@@ -72,8 +72,8 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-060](#up-060-decision-maker-and-universal-embedder-reserve-memory-for-their-whole-token-budget) | Decision Maker and Universal Embedder reserve memory for their whole token budget | Found on the 1.1.1 build of October 9; worked around |
 | [UP-061](#up-061-image-segmenters-gpu-mask-aborts-the-app-when-it-is-read-on-a-pixel-3) | Image Segmenter's GPU mask aborts the app when it is read, on a Pixel 3 | Found on the 1.1.1 build of October 9; worked around |
 | [UP-062](#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest) | The iOS libraries call required-reason APIs and ship no privacy manifest | Found on the 1.1.1 build of October 9; worked around in the gallery |
-| [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | Present on the 1.2.0 nightly of October 18 and in Google's Python; raised October 20, Google is looking into it |
-| [UP-064](#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it) | The umbrella headers have no license text, and the Audio Classifier header misstates it | Present on the 1.2.0 nightly of October 18; raised October 20, Google will fix it |
+| [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | The 1.2.2 release of November 2 gives the retriever base options, which the packages fill; uploads not yet re-captured |
+| [UP-064](#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it) | The umbrella headers have no license text, and the Audio Classifier header misstates it | Fixed in the 1.2.2 release of November 2 |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -1223,6 +1223,12 @@ document.
 
 ### UP-063: Semantic Retriever's usage uploads carry no OS, host environment or host version
 
+**Update, November 3, 2026:** Google's 1.2.1 headers, and the 1.2.2 release
+of November 2 the packages pin, lead `MpSemanticRetrieverOptions` with a
+`struct MpBaseOptions base_options`, which the retrieval package now fills
+with the host fields as the other tasks do. Whether the retriever's uploads
+carry them has not been captured yet.
+
 **Status:** observed October 20, 2026 with Google's 1.2.0 nightly of
 October 18 by capturing each usage upload: on an Apple M4 Max (macOS 27),
 on GitHub's Linux and Windows runners (CI run 39398538766) and on the iOS
@@ -1253,6 +1259,10 @@ For Google: let the retriever take base options, or copy its embedder's host
 fields into its own usage logger.
 
 ### UP-064: The umbrella headers have no license text, and the Audio Classifier header misstates it
+
+**Fixed** in Google's 1.2.2 release of November 2, 2026: all five umbrella
+headers open with the Apache 2.0 comment, and every header, the Audio
+Classifier's included, says "You may obtain a copy of the License at".
 
 **Status:** read October 20, 2026 from Google's
 `mediapipe_tasks_c_20261018.zip` (the 1.2.0 nightly of October 18), whose
