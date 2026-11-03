@@ -100,7 +100,7 @@ What already helps in browsers:
 
 - `dart run mediapipe_core:web_runtime web/mediapipe` and
   `MediaPipeWebRuntime.baseUrl = 'mediapipe/'` self-host the browser runtime.
-  It is opt-in, takes a step after every runtime bump, and copies all seven
+  It is opt-in, takes a step after every runtime bump, and copies all five
   files `runtime.json` lists, though a browser loads three of them (below).
 - `DownloadAsset.mirrors` are tried in order. The `asset_source` user define,
   `ModelStore(source: ...)` and `MEDIAPIPE_ASSET_SOURCE` replace every host
@@ -127,6 +127,10 @@ since 1.0.1:
 async function Wo(t){if(t)return!0; /* ...SIMD probe... */}
 async function Ho(t,e,r){return{wasmLoaderPath:`${e}/${t}_${r=`wasm${r?"_module":""}${await Wo(r)?"":"_nosimd"}_internal`}.js`,wasmBinaryPath:`${e}/${t}_${r}.wasm`}}
 ```
+
+1.2.2-rc.20261103 drops the no-SIMD builds and the probe (`isSimdSupported`
+is gone): the resolver returns `wasm${r?"_module":""}_internal`, so the same
+three files load and `runtime.json` lists five.
 
 So the files are `<family>_bundle.mjs` and
 `wasm/<family>_wasm_module_internal.{js,wasm}`. The SIMD and no-SIMD builds
