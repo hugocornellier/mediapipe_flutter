@@ -8,7 +8,6 @@ expected values from the Dart implementation.
 """
 import argparse
 import hashlib
-import json
 import os
 from pathlib import Path
 import platform
@@ -19,6 +18,7 @@ from generate_audio_reference import FIXTURES, HOST_NAMES, PACKAGE, read_clip
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
 from official_wheels import host_runtime  # noqa: E402
 from model_pins import model_sha256  # noqa: E402
+from tool_helpers import reference_json  # noqa: E402
 
 TRANSCRIBER_MODEL = 'parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm'
 TTS_MODEL = 'phonon_int8.litertlm'
@@ -163,8 +163,7 @@ def main():
                   'text_to_speech': tts_reference(PACKAGE / 'models' / TTS_MODEL)},
     }
     args.output.resolve().parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=1, ensure_ascii=False) + '\n',
-                           encoding='utf-8')
+    args.output.write_text(reference_json(report, ensure_ascii=False) + '\n', encoding='utf-8')
 
 
 if __name__ == '__main__':
