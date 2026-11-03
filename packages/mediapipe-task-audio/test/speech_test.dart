@@ -11,7 +11,7 @@ import 'package:mediapipe_audio/src/third_party/mediapipe/audio_transcriber_bind
 import 'package:mediapipe_audio/src/third_party/mediapipe/text_to_speech_bindings.dart'
     as tts;
 import 'package:mediapipe_core/src/native_assets/reference_wheels.dart'
-    show speechReferenceWheel;
+    show releaseReferenceWheel;
 import 'package:test/test.dart';
 import 'support/same_host_reference.dart';
 
@@ -35,7 +35,7 @@ void main() {
     prefix: '',
     cases: 'cases',
     environment: 'MEDIAPIPE_SPEECH_REFERENCE_DIR',
-    wheel: speechReferenceWheel,
+    wheel: releaseReferenceWheel,
   );
   final cases = reference['cases'] as Map<String, dynamic>;
   final transcriberCases = cases['transcriber'] as Map<String, dynamic>;

@@ -58,12 +58,14 @@ const referenceWheels = <String, ReferenceWheel>{
   ),
 };
 
-/// Google's wheel for the tasks [referenceWheels]' 1.1.0 has not got: the
-/// Audio Transcriber and Text to Speech, new in Google's 1.2.2 C API. It is
-/// Google's `mediapipe-nightly` 1.2.2 release candidate of November 3, a
-/// day newer than the family libraries' 1.2.2 release build of November 2,
-/// with the same C headers; Google publishes no 1.2.2 wheel of its own.
-const speechReferenceWheels = <String, ReferenceWheel>{
+/// Google's wheel for the tasks whose 1.2.2 answers [referenceWheels]' 1.1.0
+/// cannot give: the Audio Transcriber and Text to Speech, new in Google's
+/// 1.2.2 C API, and the classic text tasks, whose Language Detector drops
+/// low-probability languages since (UP-065). It is Google's
+/// `mediapipe-nightly` 1.2.2 release candidate of November 3, a day newer
+/// than the family libraries' 1.2.2 release build of November 2, with the
+/// same C headers; Google publishes no 1.2.2 wheel of its own.
+const releaseReferenceWheels = <String, ReferenceWheel>{
   'macos/arm64': (
     version: '1.2.2rc20261103',
     url:
@@ -106,7 +108,7 @@ const speechReferenceWheels = <String, ReferenceWheel>{
 /// where no host generates references.
 ReferenceWheel? referenceWheel(String target) => referenceWheels[target];
 
-/// The [speechReferenceWheels] row for [target], or null where no host
-/// generates speech references.
-ReferenceWheel? speechReferenceWheel(String target) =>
-    speechReferenceWheels[target];
+/// The [releaseReferenceWheels] row for [target], or null where no host
+/// generates references with it.
+ReferenceWheel? releaseReferenceWheel(String target) =>
+    releaseReferenceWheels[target];
