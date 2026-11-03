@@ -37,7 +37,9 @@ final class MpBaseOptions extends Struct {
   @Int32()
   external int fileDescriptor;
 
-  /// The `MpDelegate` the graph runs on: 0 is the CPU, 1 the GPU.
+  /// The `MpDelegate` the graph runs on: 1 is the CPU, 2 the GPU, and 0
+  /// the task's default. Google renumbered them in 1.2.1, when 0 stopped
+  /// being the CPU.
   @Int32()
   external int delegate;
 
@@ -201,7 +203,8 @@ void fillBaseOptions(
 }) {
   target
     ..fileDescriptor = -1
-    ..delegate = 0
+    // MP_DELEGATE_CPU.
+    ..delegate = 1
     // MP_HOST_ENVIRONMENT_FLUTTER.
     ..hostEnvironment = 5
     ..hostSystem = mpHostSystem
