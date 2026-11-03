@@ -1,8 +1,12 @@
 # Official MediaPipe text references
 
 `official_reference.json` records the unmodified macOS arm64 CPU outputs of
-Google's 1.1.0 release candidate wheel (`mediapipe-nightly` 1.1.0rc20260925 for macOS arm64, core's `referenceWheels`) for the version-1 BERT
-classifier, Universal Sentence Encoder and language detector. Model SHA-256 pins also appear in `lib/models.dart`; the reference
+Google's 1.2.2 release candidate wheel (`mediapipe-nightly` 1.2.2rc20261103
+for macOS arm64, core's `releaseReferenceWheels`) for the version-1 BERT
+classifier, Universal Sentence Encoder and language detector. Moving from
+Google's 1.1.0 wheel changed only the language detections: 1.2.2 drops every
+language below about 0.3 (upstream-issues.md UP-065), and the classifier,
+embedder and remaining language values are bit-identical. Model SHA-256 pins also appear in `lib/models.dart`; the reference
 generator checks both those models and the original Google library digest.
 
 There are 26 model/option cases, four rejected option configurations, four
@@ -15,7 +19,7 @@ Hosted macOS 15 runners differ from the macOS 26 physical-Mac baseline: both
 the package and fresh Flutter consumer first differed in USE greeting vector
 element 4 by `1.2814998626708984e-6`. CI therefore generates an independent
 reference using the checksum-pinned official wheel for each test runner
-(core's `referenceWheels`).
+(core's `releaseReferenceWheels`).
 The `1e-6` tolerance and exact quantized-byte comparisons remain unchanged.
 
 Run `tool/prepare_classic_text_reference.py` after downloading the three models,

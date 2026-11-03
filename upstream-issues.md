@@ -74,6 +74,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-062](#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest) | The iOS libraries call required-reason APIs and ship no privacy manifest | Found on the 1.1.1 build of October 9; worked around in the gallery |
 | [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | The 1.2.2 release of November 2 gives the retriever base options, which the packages fill; uploads not yet re-captured |
 | [UP-064](#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it) | The umbrella headers have no license text, and the Audio Classifier header misstates it | Fixed in the 1.2.2 release of November 2 |
+| [UP-065](#up-065-the-122-language-detector-drops-every-language-below-about-03) | The 1.2.2 Language Detector drops every language below about 0.3 | Found on the 1.2.2 release of November 2 and Google's 1.2.2rc20261103 wheel; to ask Google |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -1276,6 +1277,28 @@ task headers carry the Apache 2.0 one. Of those, only
 `audio/audio_classifier/audio_classifier.h` says "You may not obtain a copy
 of the License at" on its fifth line; the other 44 say "You may obtain a
 copy of the License at", as the Apache text does.
+
+### UP-065: The 1.2.2 Language Detector drops every language below about 0.3
+
+**Status:** found November 3, 2026 on Google's 1.2.2 release of November 2
+and, with the same answers, on Google's own Python in `mediapipe-nightly`
+1.2.2rc20261103 (macOS arm64). Not yet raised with Google. The packages follow
+Google's 1.2.2 answers; the classic text reference was regenerated from the
+1.2.2 wheel (core's `releaseReferenceWheels`).
+
+With `language_detector.tflite`, Google's 1.1.0 wheel returned all 111
+languages for every input, most with probabilities near zero. The 1.2.2
+library returns only those above a floor somewhere between 0.25 and 0.34,
+whatever `score_threshold` says (0 and -1 change nothing). "Hello, world!"
+gives `en` 0.9948 alone; with `en` on the denylist it gives nothing, where
+1.1.0 gave `de` 0.0011 first; the empty string gives `zh` 0.7523 and drops
+`ko` 0.24. Short inputs such as "a", "taxi", "si" and "pizza" now give no
+language at all. The probabilities that remain are bit-identical to 1.1.0's,
+the classifier and embedder outputs are unchanged, and the C headers are
+the same between the two pins, so nothing tells a caller about the floor.
+
+To ask Google: is the floor intended, what is its value, and should
+`score_threshold` (or another option) lower it?
 
 ## History
 
