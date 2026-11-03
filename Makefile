@@ -5,6 +5,8 @@ TASK_FAMILIES := $(sort $(patsubst packages/mediapipe-task-%,%,$(wildcard packag
 # Families whose models download only with `make models_all`: Decision's Laya
 # (678 MB) and Retrieval's EmbeddingGemma 2 (388 MB). Their reference tests
 # skip without them; CI caches and runs them (decision.yaml, retrieval.yaml).
+# Audio's speech models, Parakeet (615 MB) and Phonon (87 MB), join them as
+# models_speech; speech.yaml runs their tests.
 LARGE_MODEL_FAMILIES := decision retrieval
 DART_PACKAGES := packages/mediapipe-core tool/task_benchmarks
 FLUTTER_PACKAGES := $(addprefix packages/mediapipe-task-,$(TASK_FAMILIES))
@@ -33,7 +35,7 @@ models:
 	done
 
 models_all: models
-	@for family in $(LARGE_MODEL_FAMILIES); do $(MAKE) models_$$family || exit $$?; done
+	@for family in $(LARGE_MODEL_FAMILIES) speech; do $(MAKE) models_$$family || exit $$?; done
 
 .PHONY: models_vision
 models_vision:
@@ -73,10 +75,11 @@ test:
 	$(MAKE) models
 	$(MAKE) test_only
 
-# Every package's suite. Decision's and Retrieval's reference tests skip
-# unless `make models_all` downloaded their models. Each suite gets 180 s a
-# test, as in CI: a task's close waits for Google's usage-logging upload, and
-# a slow reply holds a test past the default 30 s (upstream-issues.md UP-025).
+# Every package's suite. Decision's, Retrieval's and the speech tasks'
+# reference tests skip unless `make models_all` downloaded their models. Each
+# suite gets 180 s a test, as in CI: a task's close waits for Google's
+# usage-logging upload, and a slow reply holds a test past the default 30 s
+# (upstream-issues.md UP-025).
 test_only:
 	@for package in core $(TASK_FAMILIES); do $(MAKE) test_$$package || exit $$?; done
 
@@ -86,9 +89,12 @@ test_core:
 test_text:
 	cd packages/mediapipe-task-text && dart test --timeout 180s --reporter expanded
 
-.PHONY: test_audio models_audio test_audio_stream_bridge test_audio_web
+.PHONY: test_audio models_audio models_speech test_audio_stream_bridge test_audio_web
 models_audio:
-	cd packages/mediapipe-task-audio && dart tool/download_models.dart
+	cd packages/mediapipe-task-audio && dart tool/download_models.dart yamnet
+
+models_speech:
+	cd packages/mediapipe-task-audio && dart tool/download_models.dart parakeet_tdt_v3 phonon
 
 test_audio:
 	$(MAKE) test_audio_stream_bridge
