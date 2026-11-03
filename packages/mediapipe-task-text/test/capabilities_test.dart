@@ -123,7 +123,7 @@ void main() {
     ]) {
       final result = every[name]!(_web);
       expect(result.supportedDelegates, {Delegate.cpu}, reason: name);
-      expect(result.runtimeVersion, '1.2.0-rc.20261018');
+      expect(result.runtimeVersion, '1.2.2-rc.20261103');
     }
     for (final name in ['proofreader', 'summarizer']) {
       final result = every[name]!(_web);
