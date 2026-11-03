@@ -83,7 +83,8 @@ def main():
             name: receipt['checked_in_reference_differences']
             for name, receipt in receipts.items()},
     }, indent=2) + '\n', encoding='utf-8')
-    print(f'Text and audio passed against Google\'s {runtime["version"]} library: {evidence}',
+    versions = ', '.join(f'{name} {runtime["version"]}' for name, runtime in runtimes.items())
+    print(f'Text and audio passed against Google\'s libraries ({versions}): {evidence}',
           flush=True)
 
 
