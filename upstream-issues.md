@@ -72,8 +72,9 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-060](#up-060-decision-maker-and-universal-embedder-reserve-memory-for-their-whole-token-budget) | Decision Maker and Universal Embedder reserve memory for their whole token budget | Found on the 1.1.1 build of October 9; worked around |
 | [UP-061](#up-061-image-segmenters-gpu-mask-aborts-the-app-when-it-is-read-on-a-pixel-3) | Image Segmenter's GPU mask aborts the app when it is read, on a Pixel 3 | Found on the 1.1.1 build of October 9; worked around |
 | [UP-062](#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest) | The iOS libraries call required-reason APIs and ship no privacy manifest | Found on the 1.1.1 build of October 9; worked around in the gallery |
-| [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | Present on the 1.2.0 nightly of October 18 and in Google's Python; raised October 20, Google is looking into it |
-| [UP-064](#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it) | The umbrella headers have no license text, and the Audio Classifier header misstates it | Present on the 1.2.0 nightly of October 18; raised October 20, Google will fix it |
+| [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | The 1.2.2 release of November 2 gives the retriever base options, which the packages fill; uploads not yet re-captured |
+| [UP-064](#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it) | The umbrella headers have no license text, and the Audio Classifier header misstates it | Fixed in the 1.2.2 release of November 2 |
+| [UP-065](#up-065-the-122-language-detector-drops-every-language-below-about-03) | The 1.2.2 Language Detector drops every language below about 0.3 | Found on the 1.2.2 release of November 2 and Google's 1.2.2rc20261103 wheel; to ask Google |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -1223,6 +1224,12 @@ document.
 
 ### UP-063: Semantic Retriever's usage uploads carry no OS, host environment or host version
 
+**Update, November 3, 2026:** Google's 1.2.1 headers, and the 1.2.2 release
+of November 2 the packages pin, lead `MpSemanticRetrieverOptions` with a
+`struct MpBaseOptions base_options`, which the retrieval package now fills
+with the host fields as the other tasks do. Whether the retriever's uploads
+carry them has not been captured yet.
+
 **Status:** observed October 20, 2026 with Google's 1.2.0 nightly of
 October 18 by capturing each usage upload: on an Apple M4 Max (macOS 27),
 on GitHub's Linux and Windows runners (CI run 39398538766) and on the iOS
@@ -1254,6 +1261,10 @@ fields into its own usage logger.
 
 ### UP-064: The umbrella headers have no license text, and the Audio Classifier header misstates it
 
+**Fixed** in Google's 1.2.2 release of November 2, 2026: all five umbrella
+headers open with the Apache 2.0 comment, and every header, the Audio
+Classifier's included, says "You may obtain a copy of the License at".
+
 **Status:** read October 20, 2026 from Google's
 `mediapipe_tasks_c_20261018.zip` (the 1.2.0 nightly of October 18), whose
 headers are byte-identical to `packages/mediapipe-core/native/include`.
@@ -1266,6 +1277,28 @@ task headers carry the Apache 2.0 one. Of those, only
 `audio/audio_classifier/audio_classifier.h` says "You may not obtain a copy
 of the License at" on its fifth line; the other 44 say "You may obtain a
 copy of the License at", as the Apache text does.
+
+### UP-065: The 1.2.2 Language Detector drops every language below about 0.3
+
+**Status:** found November 3, 2026 on Google's 1.2.2 release of November 2
+and, with the same answers, on Google's own Python in `mediapipe-nightly`
+1.2.2rc20261103 (macOS arm64). Not yet raised with Google. The packages follow
+Google's 1.2.2 answers; the classic text reference was regenerated from the
+1.2.2 wheel (core's `releaseReferenceWheels`).
+
+With `language_detector.tflite`, Google's 1.1.0 wheel returned all 111
+languages for every input, most with probabilities near zero. The 1.2.2
+library returns only those above a floor somewhere between 0.25 and 0.34,
+whatever `score_threshold` says (0 and -1 change nothing). "Hello, world!"
+gives `en` 0.9948 alone; with `en` on the denylist it gives nothing, where
+1.1.0 gave `de` 0.0011 first; the empty string gives `zh` 0.7523 and drops
+`ko` 0.24. Short inputs such as "a", "taxi", "si" and "pizza" now give no
+language at all. The probabilities that remain are bit-identical to 1.1.0's,
+the classifier and embedder outputs are unchanged, and the C headers are
+the same between the two pins, so nothing tells a caller about the floor.
+
+To ask Google: is the floor intended, what is its value, and should
+`score_threshold` (or another option) lower it?
 
 ## History
 
@@ -1322,9 +1355,9 @@ The candidate is now the pinned macOS `vision-v1.0.0-1` runtime digest. That
 release is still unpublished, so the hook serves it only from a local build.
 
 Local candidate, manifest, smokes and archive:
-`build/codex-tmp/vision-no-vectorize/`.
+`build/ci-tmp/vision-no-vectorize/`.
 Original library and manifest backup:
-`build/codex-tmp/vision-before-sme-fix/`.
+`build/ci-tmp/vision-before-sme-fix/`.
 The candidate was copied into the package's ignored `build/native/tasks/` for
 Dart validation. The compiler flag and runtime pin are committed; the library
 itself is not published.
@@ -1332,7 +1365,7 @@ itself is not published.
 Inspect with:
 
 ```sh
-xcrun llvm-objdump --disassemble-symbols=_kai_run_lhs_pack_f32p2vlx1_f32_sme build/codex-tmp/vision-no-vectorize/libmediapipe.dylib
+xcrun llvm-objdump --disassemble-symbols=_kai_run_lhs_pack_f32p2vlx1_f32_sme build/ci-tmp/vision-no-vectorize/libmediapipe.dylib
 ```
 
 The upstream genrule retains install name `@rpath/libmediapipe_source.dylib`.
@@ -1359,7 +1392,7 @@ There is also an apparent `XNN_ENABLE_SRM_SME` typo in the false branch of
 `build_defs.bzl`. Do not assume that adding these defines fixes UP-001.
 
 The dependency was cached under
-`build/codex-tmp/bazel/d8fd7dbf830ea5ade71924b0dfe6131d/external/XNNPACK/`,
+`build/ci-tmp/bazel/d8fd7dbf830ea5ade71924b0dfe6131d/external/XNNPACK/`,
 deleted on October 14, 2026 with the source builds' Bazel cache; XNNPACK's
 public source holds the same files.
 See also the earlier investigation in
@@ -1401,7 +1434,7 @@ hosts compared every sampled mask value against the official output.
 Reproduce with the official 1.0.0 environment and:
 
 ```sh
-build/codex-tmp/mediapipe-reference/bin/python -u -B packages/mediapipe-task-vision/tool/generate_landmark_tasks_reference.py
+build/ci-tmp/mediapipe-reference/bin/python -u -B packages/mediapipe-task-vision/tool/generate_landmark_tasks_reference.py
 ```
 
 On 1.0.0, run the generator with `mask.numpy_view().copy()` (as it is now)
@@ -1495,7 +1528,7 @@ python3 -B tool/build_ios_simulator.py
 python3 -B tool/test_ios_consumer.py --experimental-all-tasks
 ```
 
-Local evidence: root `build/codex-tmp/ios-consumer-yb2gy4pg/`. The report marks
+Local evidence: root `build/ci-tmp/ios-consumer-yb2gy4pg/`. The report marks
 the capability overrides explicitly; they never modify the consumer package's
 real support declarations. Confidence-mask hash comparisons are intentionally
 stricter than numerical float comparisons; a failed hash alone does not establish

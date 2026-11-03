@@ -1,3 +1,12 @@
+## 0.2.0 (unreleased)
+
+- Google's MediaPipe 1.2.2 native release (build of November 2, 2026)
+  replaces 1.2.0 on Android, iOS, macOS, Linux and Windows. Browsers stay on
+  `@mediapipe/tasks-*` 1.2.0-rc.20261018 until npm has 1.2.2.
+- Google's 1.2.2 Language Detector returns only languages above about 0.3,
+  where 1.1.0 returned all 111, whatever `scoreThreshold` says
+  (upstream-issues.md UP-065). The tests compare with Google's 1.2.2 wheel.
+
 ## 0.1.0
 
 The first release of this rewrite, replacing Google's

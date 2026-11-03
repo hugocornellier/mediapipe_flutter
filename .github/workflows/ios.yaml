@@ -30,8 +30,9 @@ env:
 
 jobs:
   # Every family through Google's iOS libraries in one app: the vision tasks,
-  # text and audio, EmbeddingGemma, Proofreader and Summarizer, Decision Maker
-  # and the retrieval tasks, so this job needs no source build. The simulator
+  # text and audio, EmbeddingGemma, Proofreader and Summarizer, Decision
+  # Maker, the retrieval tasks and the speech tasks, so this job needs no
+  # source build. The simulator
   # runs them on the CPU only: Google's MediaPipe aborts in its Metal
   # preprocessing there. Metal is a phone check.
   sdk-tasks:
@@ -39,7 +40,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 110
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
@@ -61,12 +62,12 @@ jobs:
           dart tool/download_models.dart embedding_gemma proofreader summarizer
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
-            --venv build/codex-tmp/official-python \
+            --venv build/ci-tmp/official-python \
             --output-dir build/modern-text-reference
       - name: Prepare the gallery with the phone suites' tasks
         run: |
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target ios-simulator/arm64 \
-            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever,decision_maker \
+            --tasks face_landmarker,hand_landmarker,pose_landmarker,gesture_recognizer,holistic_landmarker,face_detector,object_detector,image_classifier,image_embedder,image_segmenter,interactive_segmenter,audio_classifier,language_detector,text_classifier,text_embedder,embedding_gemma,text_proofreader,text_summarizer,universal_embedder,semantic_retriever,decision_maker,audio_transcriber,text_to_speech \
             --modern-text-reference build/modern-text-reference
           cd gallery && flutter pub get
       - name: Boot an installed iPhone simulator
@@ -91,9 +92,11 @@ jobs:
         working-directory: gallery
         # bash runs with pipefail, so `| tee` keeps flutter test's exit status.
         shell: bash
+        env:
+          DEVICE: ${{ steps.simulator.outputs.device }}
         run: |
-          device=${{ steps.simulator.outputs.device }}
-          for test in sdk_face_landmarker_test sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test decision_maker_test retrieval_test runtime_test face_landmarker_still_image_test gallery_journey_test; do
+          device="$DEVICE"
+          for test in sdk_face_landmarker_test sdk_hand_landmarker_test sdk_landmark_tasks_test sdk_detection_tasks_test sdk_embedder_test sdk_segmenter_test sdk_interactive_segmenter_test decision_maker_test retrieval_test speech_test runtime_test face_landmarker_still_image_test gallery_journey_test; do
             for attempt in 1 2; do
               status=0
               # A hosted simulator sometimes stalls while loading the app and
@@ -130,8 +133,10 @@ jobs:
         working-directory: gallery
         # bash runs with pipefail, so `| tee` keeps flutter test's exit status.
         shell: bash
+        env:
+          DEVICE: ${{ steps.simulator.outputs.device }}
         run: |
-          device=${{ steps.simulator.outputs.device }}
+          device="$DEVICE"
           for attempt in 1 2; do
             status=0
             perl -e 'alarm shift; exec @ARGV' 900 flutter test -d "$device" \
@@ -165,6 +170,15 @@ jobs:
           delegate: cpu
           tasks: decision_maker
           outcome: ${{ steps.sdk.outcome }}
+      - name: Record ios CPU speech coverage (ios-sdk-simulator-speech)
+        if: always()
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: ios-sdk-simulator-speech
+          platform: ios
+          delegate: cpu
+          tasks: audio_transcriber,text_to_speech
+          outcome: ${{ steps.sdk.outcome }}
       - name: Record ios CPU text and audio coverage (ios-sdk-simulator-text-audio)
         if: always()
         uses: ./.github/actions/record-coverage
@@ -182,8 +196,10 @@ jobs:
         working-directory: gallery
         # bash runs with pipefail, so `| tee` keeps flutter test's exit status.
         shell: bash
+        env:
+          DEVICE: ${{ steps.simulator.outputs.device }}
         run: |
-          device=${{ steps.simulator.outputs.device }}
+          device="$DEVICE"
           for attempt in 1 2; do
             status=0
             perl -e 'alarm shift; exec @ARGV' 1800 flutter test -d "$device" \
@@ -208,7 +224,7 @@ jobs:
           delegate: cpu
           tasks: embedding_gemma,text_proofreader,text_summarizer
           outcome: ${{ steps.modern_text.outcome }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: ios-simulator-sdk-tasks${{ env.ARTIFACT_SUFFIX }}

@@ -28,7 +28,7 @@ PLATFORMS = ['web', 'android', 'ios', 'macos', 'linux', 'windows']
 RECORDING_WORKFLOWS = ['.github/workflows/android.yaml', '.github/workflows/ios.yaml',
                        '.github/workflows/web.yaml', '.github/workflows/desktop.yaml',
                        '.github/workflows/main.yaml', '.github/workflows/retrieval.yaml',
-                       '.github/workflows/decision.yaml']
+                       '.github/workflows/decision.yaml', '.github/workflows/speech.yaml']
 # Physical-device workflows, dispatched by hand for a branch or main. Their
 # rows carry tier 'device'; the gate does not wait for them.
 DEVICE_WORKFLOWS = ['.github/workflows/android-face-testlab.yml']
@@ -159,8 +159,15 @@ def device_runs(repository, commit_runs):
         if path in found:
             continue
         name = Path(path).name
-        recent = json.loads(gh('api', f'repos/{repository}/actions/workflows/{name}/runs'
-                               '?branch=main&status=completed&per_page=5'))['workflow_runs']
+        try:
+            recent = json.loads(gh('api', f'repos/{repository}/actions/workflows/{name}/runs'
+                                   '?branch=main&status=completed&per_page=5'))['workflow_runs']
+        except subprocess.CalledProcessError as error:
+            # GitHub knows a workflow only once the default branch holds its
+            # file, so a repository whose main has none answers 404: no runs.
+            if 'HTTP 404' not in error.stderr:
+                raise
+            recent = []
         for run in recent:
             started = calendar.timegm(time.strptime(run['created_at'], '%Y-%m-%dT%H:%M:%SZ'))
             if run['conclusion'] != 'cancelled' and started >= cutoff:

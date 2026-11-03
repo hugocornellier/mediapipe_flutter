@@ -118,14 +118,14 @@ def main():
                         help=f'{", ".join(BUILDS)}; default: this desktop and web')
     parser.add_argument('--scratch', type=Path,
                         help='Folder for the copies, the app and the logs '
-                             '(default: a new folder under build/codex-tmp)')
+                             '(default: a new folder under build/ci-tmp)')
     args = parser.parse_args()
     targets = args.targets or [HOST[platform.system()], 'web']
     if args.scratch:
         root = args.scratch.resolve()
         root.mkdir(parents=True, exist_ok=True)
     else:
-        build = REPO / 'build/codex-tmp'
+        build = REPO / 'build/ci-tmp'
         build.mkdir(parents=True, exist_ok=True)
         root = Path(tempfile.mkdtemp(prefix='archives-', dir=build))
     print(f'Artifacts: {root}', flush=True)

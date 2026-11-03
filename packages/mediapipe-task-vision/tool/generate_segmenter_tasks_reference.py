@@ -12,7 +12,7 @@ from mediapipe.tasks.python.vision.core.image_processing_options import ImagePro
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
 from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
-from tool_helpers import digest  # noqa: E402
+from tool_helpers import digest, reference_json  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'test/fixtures/face_detection'
@@ -161,12 +161,12 @@ def main():
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     suffix = '_gpu' if args.delegate == 'gpu' else ''
-    (args.output_dir / f'official{suffix}_reference.json').write_text(json.dumps(dict(
+    (args.output_dir / f'official{suffix}_reference.json').write_text(reference_json(dict(
         runtime=RUNTIME, source_revision=SOURCE_REVISION,
         library_sha256=LIBRARY_SHA256, delegate=args.delegate.upper(),
         platform=f'{platform.system()} {platform.machine()}',
         models={key: sha for key, (_, sha) in MODELS.items()}, cases=cases),
-        indent=2, allow_nan=False) + '\n')
+        allow_nan=False) + '\n')
 
 
 if __name__ == '__main__':

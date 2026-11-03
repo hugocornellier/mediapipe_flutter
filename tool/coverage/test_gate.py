@@ -46,7 +46,7 @@ class GateTest(unittest.TestCase):
 
     def test_matrix_covers_every_task_platform_and_delegate(self):
         matrix = gate.load_matrix()
-        self.assertEqual(len(matrix), 21)
+        self.assertEqual(len(matrix), 23)
         for task, platforms in matrix.items():
             self.assertEqual(sorted(platforms), sorted(gate.PLATFORMS), task)
             for platform, delegates in platforms.items():
@@ -71,6 +71,20 @@ class GateTest(unittest.TestCase):
         self.assertEqual(failures, ['hand_landmarker / android / gpu: failed in akita'])
         states, failures, _, _ = gate.evaluate(matrix, [cpu, dict(broken, passed=True)])
         self.assertEqual(failures, [])
+
+    def test_a_device_workflow_missing_from_main_has_no_runs(self):
+        # GitHub answers 404 for a workflow file the default branch lacks.
+        def missing(*args):
+            raise subprocess.CalledProcessError(1, ['gh', *args], stderr='gh: Not Found (HTTP 404)')
+        original, gate.gh = gate.gh, missing
+        try:
+            self.assertEqual(gate.device_runs('owner/repo', []), {})
+            gate.gh = lambda *args: (_ for _ in ()).throw(
+                subprocess.CalledProcessError(1, ['gh'], stderr='HTTP 502'))
+            with self.assertRaises(subprocess.CalledProcessError):
+                gate.device_runs('owner/repo', [])
+        finally:
+            gate.gh = original
 
     def test_record_refuses_unsupported_cells(self):
         with tempfile.TemporaryDirectory() as directory:

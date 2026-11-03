@@ -21,7 +21,7 @@ def main():
     target = {'Linux': 'linux', 'Windows': 'windows'}.get(platform.system())
     if target is None or platform.machine().lower() not in ('amd64', 'x86_64'):
         raise SystemExit('Run this validation on Windows x64 or Linux x64.')
-    evidence = REPO / f'build/codex-tmp/gallery-desktop-{target}'
+    evidence = REPO / f'build/ci-tmp/gallery-desktop-{target}'
     evidence.mkdir(parents=True, exist_ok=True)
 
     def run(args, name, timeout=1200):

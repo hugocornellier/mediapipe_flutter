@@ -1,6 +1,6 @@
 name: Family checks
 
-# One family's checks, called by decision.yaml and retrieval.yaml: the package
+# One family's checks, called by decision.yaml, retrieval.yaml and speech.yaml: the package
 # against Google's Python answers on each desktop, the gallery's test and
 # journey on the desktops, and the browser journey, recording task coverage
 # rows for the gate. The phones run the test and the journey in android.yaml
@@ -29,6 +29,20 @@ on:
         description: The models tool/download_models.dart downloads by name, space-separated, or its default set
         type: string
         default: ''
+      test-paths:
+        description: The package tests to run, space-separated, or every test
+        type: string
+        default: ''
+      prepare-reference:
+        description: >-
+          A script in the package's tool/ that regenerates Google's Python
+          answers on the runner into build/<family>-reference, or none
+        type: string
+        default: ''
+      reference-env:
+        description: The variable that points the package tests at that reference
+        type: string
+        default: ''
       jobs:
         description: Jobs to run (package, gallery, web), comma-separated, or all
         type: string
@@ -46,10 +60,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup
         with:
-          python: 'false'
+          python: ${{ inputs.prepare-reference != '' }}
           linux-profile: ffi
       # Only main saves the models: a pull request that saved its own copy added
       # up to 1.9 GB to the repository's 10 GB of cache, and the eviction that
@@ -57,25 +71,51 @@ jobs:
       # request reads main's copy, and downloads the models when main has none
       # for its models.dart.
       - if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ inputs.model-path }}
           key: ${{ inputs.family }}-models-${{ hashFiles(format('packages/mediapipe-task-{0}/lib/models.dart', inputs.family)) }}
       - if: github.event_name != 'pull_request'
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ inputs.model-path }}
           key: ${{ inputs.family }}-models-${{ hashFiles(format('packages/mediapipe-task-{0}/lib/models.dart', inputs.family)) }}
       - name: Download Google's models
         working-directory: packages/mediapipe-task-${{ inputs.family }}
+        shell: bash
+        env:
+          DOWNLOAD_MODELS: ${{ inputs.download-models }}
         run: |
           flutter pub get
-          dart tool/download_models.dart ${{ inputs.download-models }}
+          dart tool/download_models.dart $DOWNLOAD_MODELS
+      # Google's own Python on this runner, from the pinned wheel, where the
+      # checked-in macOS answers would not hold elsewhere.
+      - name: Google's Python answers on this runner
+        if: inputs.prepare-reference != ''
+        working-directory: packages/mediapipe-task-${{ inputs.family }}
+        shell: bash
+        env:
+          FAMILY: ${{ inputs.family }}
+          PREPARE_REFERENCE: ${{ inputs.prepare-reference }}
+          REFERENCE_ENV: ${{ inputs.reference-env }}
+        run: |
+          python=python3; if [ "$RUNNER_OS" = Windows ]; then python=python; fi
+          "$python" -B "tool/$PREPARE_REFERENCE" --output-dir "$GITHUB_WORKSPACE/build/$FAMILY-reference"
+          echo "$REFERENCE_ENV=$GITHUB_WORKSPACE/build/$FAMILY-reference" >> "$GITHUB_ENV"
       # A task's close waits for Google's usage-logging upload, so a slow
       # reply holds a test past the default 30 s (upstream-issues.md UP-025).
       - name: The ${{ inputs.family }} package against Google's Python answers
         working-directory: packages/mediapipe-task-${{ inputs.family }}
-        run: dart test --timeout 180s --reporter expanded
+        shell: bash
+        env:
+          TEST_PATHS: ${{ inputs.test-paths }}
+        # TEST_PATHS is unquoted on purpose: it holds several paths.
+        run: dart test --timeout 180s --reporter expanded $TEST_PATHS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always() && inputs.prepare-reference != ''
+        with:
+          name: ${{ inputs.family }}-reference-${{ matrix.os }}
+          path: build/${{ inputs.family }}-reference/
 
   gallery:
     if: ${{ inputs.jobs == 'all' || contains(inputs.jobs, 'gallery') }}
@@ -90,21 +130,26 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup
         with:
           python: 'false'
           linux-profile: gallery
       # The family's tasks, and the one vision task the vision hook needs.
       - name: Prepare the gallery
-        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target ${{ matrix.target }} --tasks ${{ inputs.tasks }},image_embedder
+        shell: bash
+        env:
+          TASKS: ${{ inputs.tasks }}
+        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target ${{ matrix.target }} --tasks "$TASKS,image_embedder"
       - name: The ${{ inputs.family }} tasks in the app against Google's answers
         id: app
         working-directory: gallery
         shell: bash
+        env:
+          INTEGRATION_TEST: ${{ inputs.integration-test }}
         run: |
           run() { if [ "$RUNNER_OS" = Linux ]; then xvfb-run -a "$@"; else "$@"; fi; }
-          run flutter test -d ${{ matrix.device }} integration_test/${{ inputs.integration-test }}.dart --reporter expanded
+          run flutter test -d ${{ matrix.device }} "integration_test/$INTEGRATION_TEST.dart" --reporter expanded
       - name: The journey through the ${{ inputs.family }} pages
         id: journey
         working-directory: gallery
@@ -134,10 +179,9 @@ jobs:
     if: ${{ inputs.jobs == 'all' || contains(inputs.jobs, 'web') }}
     # Google's browser Decision Maker and Universal Embedder run only on a
     # hardware WebGPU adapter (UP-049, UP-052): Chromium on the Mac runner's
-    # Metal one runs the tasks and records the web GPU row. WebKit has WebGPU
-    # on macos-26 alone, where the gallery shows the pages Google's runtime
-    # cannot serve as cards (UP-054, UP-055); the matrix has no row per browser
-    # engine, so it records none. Hosted Linux, with only SwiftShader, checks
+    # Metal one runs the tasks and records the web GPU row. WebKit, whose page
+    # process on these hosts sometimes ends mid-journey with no error, runs
+    # by hand (CONTRIBUTING.md). Hosted Linux, with only SwiftShader, checks
     # that the gallery refuses the tasks in web.yaml's Chromium journey.
     name: web ${{ matrix.engine }} ${{ matrix.os }}
     strategy:
@@ -145,20 +189,21 @@ jobs:
       matrix:
         include:
           - {os: macos-15, engine: Chromium, browser: chromium}
-          - {os: macos-26, engine: WebKit, browser: webkit}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: gallery/tool/browser/package-lock.json
       # The family's tasks, and the vision task a web build lists for the hook.
       - name: Prepare the web gallery
-        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target web --tasks ${{ inputs.tasks }},face_detector
+        env:
+          TASKS: ${{ inputs.tasks }}
+        run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target web --tasks "$TASKS,face_detector"
       # No --with-deps: these are macOS runners, where Playwright installs no
       # system packages, and on Linux its own apt-get has no time limit.
       - name: Install Playwright's ${{ matrix.engine }}
@@ -182,7 +227,9 @@ jobs:
       # vision hook needs a task, and web.yaml covers it.
       - name: The journey through the ${{ inputs.family }} pages in ${{ matrix.engine }}
         id: web_journey
-        run: node gallery/tool/browser/test_gallery_journey.mjs --browser=${{ matrix.browser }} --tasks=${{ inputs.tasks }}
+        env:
+          TASKS: ${{ inputs.tasks }}
+        run: node gallery/tool/browser/test_gallery_journey.mjs --browser=${{ matrix.browser }} --tasks="$TASKS"
       - name: Record web GPU ${{ inputs.family }} coverage
         if: always() && matrix.browser == 'chromium'
         uses: ./.github/actions/record-coverage
@@ -192,8 +239,8 @@ jobs:
           delegate: gpu
           tasks: ${{ inputs.tasks }}
           outcome: ${{ steps.web_journey.outcome }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: ${{ inputs.family }}-web-journey-${{ matrix.os }}
-          path: build/codex-tmp/gallery-journey-${{ matrix.browser }}/
+          path: build/ci-tmp/gallery-journey-${{ matrix.browser }}/

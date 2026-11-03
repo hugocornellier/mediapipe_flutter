@@ -39,7 +39,7 @@ runs:
         if [ "$RUNNER_OS" = Windows ]; then python=python; fi
         "$python" -B tool/coverage/record.py --tier "$TIER" --suite "$SUITE" --platform "$PLATFORM" \
           --delegate "$DELEGATE" --tasks "$TASKS" --outcome "$OUTCOME"
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: coverage-${{ inputs.suite }}${{ env.ARTIFACT_SUFFIX }}
         path: build/coverage/${{ inputs.suite }}.json

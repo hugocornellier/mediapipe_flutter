@@ -35,7 +35,7 @@ const textAudioBase = argumentsMap['text-audio-url'] || 'http://localhost:8866/t
 // --official-runtime=<url> a copy `dart run mediapipe_core:web_runtime` wrote,
 // so the comparisons do not depend on the CDN.
 const officialRuntime = new URL(argumentsMap['official-runtime'] || 'https://cdn.jsdelivr.net/npm/', base).href;
-const evidence = path.join(repo, 'build/codex-tmp/web-browser-' + browserName +
+const evidence = path.join(repo, 'build/ci-tmp/web-browser-' + browserName +
   (delegate === 'GPU' ? '-gpu' : '') + (taskName === 'face' ? '' : '-' + taskName) +
   (argumentsMap.runtime ? '-self-hosted' : ''));
 fs.mkdirSync(evidence, {recursive: true});
@@ -76,7 +76,7 @@ async function launch(deviceCount = 2, useFile = true) {
     channel: 'chromium',
     args: ['--use-fake-device-for-media-stream=device-count=' + deviceCount,
       ...(process.platform === 'linux' ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
-      ...(useFile ? ['--use-file-for-fake-video-capture=' + path.join(repo, 'build/codex-tmp', subject.fixture)] : [])],
+      ...(useFile ? ['--use-file-for-fake-video-capture=' + path.join(repo, 'build/ci-tmp', subject.fixture)] : [])],
   } : {
     // Hosted Linux has no GPU. Permit Mesa's software WebGL context for the
     // official CPU task's image upload/preprocessing (not GPU inference).

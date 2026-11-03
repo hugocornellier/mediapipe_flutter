@@ -26,9 +26,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      MEDIAPIPE_CAMERA_REPORT: ${{ github.workspace }}/build/codex-tmp/gallery-real-camera-linux/report.json
+      MEDIAPIPE_CAMERA_REPORT: ${{ github.workspace }}/build/ci-tmp/gallery-real-camera-linux/report.json
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup
         with:
           linux-profile: gallery
@@ -37,12 +37,20 @@ jobs:
       # is slow. The kernel headers must match the running kernel, and so must
       # linux-modules-extra, where the hosted Azure kernel ships videodev, which
       # v4l2loopback needs. That one installed with `|| true` before, and its
-      # 51 MB took 5 minutes from the runner's mirror (2026-10-22).
+      # 51 MB took 5 minutes from the runner's mirror (2026-10-22). Image
+      # ubuntu24/20261025 boots 7.0.0-1017-azure from Ubuntu 26.04, which has no
+      # linux-modules-extra package and ships videodev in linux-modules instead,
+      # so the extra package is only asked for when videodev is missing.
       - name: Name the kernel packages
         id: kernel
         run: |
           echo "headers=linux-headers-$(uname -r)" >> "$GITHUB_OUTPUT"
-          echo "modules=linux-modules-extra-$(uname -r)" >> "$GITHUB_OUTPUT"
+          if modinfo videodev > /dev/null 2>&1; then
+            echo "videodev is already installed for $(uname -r)"
+            echo "modules=" >> "$GITHUB_OUTPUT"
+          else
+            echo "modules=linux-modules-extra-$(uname -r)" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install the camera, virtual device and screenshot dependencies
         uses: ./.github/actions/apt-install
         with:
@@ -107,11 +115,11 @@ jobs:
         run: |
           cat "$MEDIAPIPE_CAMERA_REPORT" || true
           tail -20 build-ffmpeg.log || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: linux-real-camera-evidence
           path: |
-            build/codex-tmp/gallery-real-camera-linux/
+            build/ci-tmp/gallery-real-camera-linux/
             build-ffmpeg.log
           if-no-files-found: warn
