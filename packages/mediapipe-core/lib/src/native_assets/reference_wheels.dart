@@ -58,6 +58,55 @@ const referenceWheels = <String, ReferenceWheel>{
   ),
 };
 
+/// Google's wheel for the tasks [referenceWheels]' 1.1.0 has not got: the
+/// Audio Transcriber and Text to Speech, new in Google's 1.2.2 C API. It is
+/// Google's `mediapipe-nightly` 1.2.2 release candidate of November 3, a
+/// day newer than the family libraries' 1.2.2 release build of November 2,
+/// with the same C headers; Google publishes no 1.2.2 wheel of its own.
+const speechReferenceWheels = <String, ReferenceWheel>{
+  'macos/arm64': (
+    version: '1.2.2rc20261103',
+    url:
+        'https://files.pythonhosted.org/packages/03/c1/'
+        'd23e279d1703f76980061c12e0760282d41d6b7dc30c918f8112cdbc36a2/'
+        'mediapipe_nightly-1.2.2rc20261103-py3-none-macosx_11_0_arm64.whl',
+    wheelSha256:
+        '0faed967eb0c18f68d1935607de5736170cac933c0f5fb7cb36a743ce3beb533',
+    libraryName: 'libmediapipe.dylib',
+    librarySha256:
+        '10b6bdaa7efc9e74b352de88d7ae8e8fb1f12d3d2f869e4533c68d6019a3bba1',
+  ),
+  'linux/x64': (
+    version: '1.2.2rc20261103',
+    url:
+        'https://files.pythonhosted.org/packages/c6/b2/'
+        '96ec0c347c327e3f93db7883b09c2cdfaa2f8c3e30686a33fa9bb934498d/'
+        'mediapipe_nightly-1.2.2rc20261103-py3-none-manylinux_2_28_x86_64.whl',
+    wheelSha256:
+        'b7256eca2d521e7cb4c6d4a9e03357632df00692e37beb31a7d0aec8dc0c57bf',
+    libraryName: 'libmediapipe.so',
+    librarySha256:
+        '78c8d7bcb6d26c3eaca80fb039413cd78a21cf7c7d86bf89d923ab6b0b6ff538',
+  ),
+  'windows/x64': (
+    version: '1.2.2rc20261103',
+    url:
+        'https://files.pythonhosted.org/packages/11/4c/'
+        '64444faaf03d135d285b9fc32fc13427843b7aed02fd746b81cd935cea8d/'
+        'mediapipe_nightly-1.2.2rc20261103-py3-none-win_amd64.whl',
+    wheelSha256:
+        'e7179e2e85bd575b41497527590c9ccf391ad2b4349bde81c4245c88e03f5db7',
+    libraryName: 'libmediapipe.dll',
+    librarySha256:
+        '31e12af83fd79c6c214a649586805e09cd00f373ed510c27fc1c48dbe004443e',
+  ),
+};
+
 /// The [referenceWheels] row for [target] (such as `macos/arm64`), or null
 /// where no host generates references.
 ReferenceWheel? referenceWheel(String target) => referenceWheels[target];
+
+/// The [speechReferenceWheels] row for [target], or null where no host
+/// generates speech references.
+ReferenceWheel? speechReferenceWheel(String target) =>
+    speechReferenceWheels[target];
