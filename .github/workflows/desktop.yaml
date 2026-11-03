@@ -43,7 +43,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
@@ -136,20 +136,20 @@ jobs:
       - name: Build and exercise the Windows CPU gallery
         if: runner.os == 'Windows'
         run: python -B gallery/tool/test_desktop.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: desktop-cpu-${{ matrix.os }}${{ env.ARTIFACT_SUFFIX }}
           path: |
-            build/codex-tmp/desktop-*/*.log
-            build/codex-tmp/desktop-*/report.json
-            build/codex-tmp/desktop-*/reference/**/*.json
-            build/codex-tmp/gallery-desktop-*/*.log
-            build/codex-tmp/gallery-desktop-*/report.json
-            build/codex-tmp/text-audio/*.log
-            build/codex-tmp/text-audio/report.json
-            build/codex-tmp/modern-text/*.log
-            build/codex-tmp/modern-text/report.json
+            build/ci-tmp/desktop-*/*.log
+            build/ci-tmp/desktop-*/report.json
+            build/ci-tmp/desktop-*/reference/**/*.json
+            build/ci-tmp/gallery-desktop-*/*.log
+            build/ci-tmp/gallery-desktop-*/report.json
+            build/ci-tmp/text-audio/*.log
+            build/ci-tmp/text-audio/report.json
+            build/ci-tmp/modern-text/*.log
+            build/ci-tmp/modern-text/report.json
             build/classic-text-reference/*.json
             build/classic-text-reference/*.log
             build/modern-text-reference/*.json
@@ -165,7 +165,7 @@ jobs:
     env:
       MEDIAPIPE_GPU_REFERENCE_DIR: ${{ github.workspace }}/build/gpu-reference
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
@@ -236,7 +236,7 @@ jobs:
               --dart-define=GALLERY_LIVE_TASK=$task \
               --dart-define=GALLERY_GPU_EXPECT=refused --reporter expanded
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: linux-gpu-reference${{ env.ARTIFACT_SUFFIX }}

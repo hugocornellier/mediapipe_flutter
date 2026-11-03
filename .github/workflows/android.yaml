@@ -42,18 +42,18 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
         with:
           linux-profile: ffi
           modern-model-cache: 'true'
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
@@ -66,7 +66,7 @@ jobs:
           dart tool/download_models.dart embedding_gemma proofreader summarizer
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
-            --venv build/codex-tmp/official-python \
+            --venv build/ci-tmp/official-python \
             --output-dir build/modern-text-reference
       # The same two commands a clean checkout runs, so CI builds what a
       # contributor with only Dart, Flutter and the Android SDK builds; the
@@ -100,7 +100,7 @@ jobs:
       - uses: ./.github/actions/android-ndk
       - name: Official references, pixel formats, rotation, VIDEO, camera and every live tile
         id: sdk
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: 35
           target: google_apis
@@ -175,7 +175,7 @@ jobs:
           cd gallery
           flutter build apk --release --target-platform android-arm64
           python3 -B ../tool/ci/check_r8_usage.py build/app/outputs/mapping/release/usage.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: gallery-release-android-arm64${{ env.ARTIFACT_SUFFIX }}
           path: gallery/build/app/outputs/flutter-apk/app-release.apk
@@ -214,18 +214,18 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: inputs.side == 'nightly'
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
         with:
           linux-profile: ffi
           modern-model-cache: 'true'
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
@@ -236,7 +236,7 @@ jobs:
           dart tool/download_models.dart embedding_gemma proofreader summarizer
           cd ../..
           python3 -B packages/mediapipe-task-text/tool/prepare_modern_text_reference.py \
-            --venv build/codex-tmp/official-python \
+            --venv build/ci-tmp/official-python \
             --output-dir build/modern-text-reference
       - name: Prepare the gallery with the phone suites' tasks
         run: |
@@ -265,7 +265,7 @@ jobs:
       # one corrupt archive.
       - uses: ./.github/actions/android-ndk
       - name: Every phone suite and the gallery journey in a release build
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: ${{ matrix.api-level }}
           target: google_apis

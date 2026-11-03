@@ -165,7 +165,7 @@ def main():
     folders = sorted(folder for folder, _ in FAMILIES.values())
     require(folders == sorted(task_families().values()),
             f'FAMILIES covers {folders}; add a model for every task family.')
-    build = REPO / 'build/codex-tmp'
+    build = REPO / 'build/ci-tmp'
     build.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix=f'bundled-{target}-', dir=build))
     print(f'Artifacts: {root}', flush=True)

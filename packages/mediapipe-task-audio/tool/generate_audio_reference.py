@@ -23,6 +23,7 @@ CLIPS = ['speech_16000_hz_mono.wav', 'speech_48000_hz_mono.wav', 'two_heads_1600
 sys.path.insert(0, str(PACKAGE.parent / 'mediapipe-core/tool'))
 from official_wheels import host_runtime  # noqa: E402
 from model_pins import model_sha256  # noqa: E402
+from tool_helpers import reference_json  # noqa: E402
 MODEL_SHA256 = model_sha256('yamnet.tflite')
 HOST_NAMES = {'Darwin': 'macOS arm64', 'Linux': 'Linux x64', 'Windows': 'Windows x64'}
 
@@ -156,7 +157,7 @@ def main():
                 for result in results]
             print(clip, len(results), flush=True)
     args.output.resolve().parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=1) + '\n', encoding='utf-8')
+    args.output.write_text(reference_json(report) + '\n', encoding='utf-8')
 
     stream = {
         'runtime': f'mediapipe=={version}',
@@ -174,7 +175,7 @@ def main():
         print(case, len(results), 'results,',
               sum(result['during_close'] for result in results), 'during the close', flush=True)
     args.stream_output.resolve().parent.mkdir(parents=True, exist_ok=True)
-    args.stream_output.write_text(json.dumps(stream, indent=1) + '\n', encoding='utf-8')
+    args.stream_output.write_text(reference_json(stream) + '\n', encoding='utf-8')
 
 
 if __name__ == '__main__':

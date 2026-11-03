@@ -24,13 +24,13 @@ runs:
   using: composite
   steps:
     - if: ${{ inputs.flutter == 'true' }}
-      uses: subosito/flutter-action@v2
+      uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
       with:
         flutter-version: '3.47.5'
         channel: stable
         cache: true
     - if: ${{ inputs.python == 'true' }}
-      uses: actions/setup-python@v7
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
       with:
         python-version: '3.12'
     # An apt mirror that serves 3 to 5 minutes a package, or hangs after the
@@ -84,14 +84,14 @@ runs:
     - name: Restore the Linux packages
       id: apt-cache-pr
       if: ${{ steps.apt.outcome == 'success' && github.event_name == 'pull_request' }}
-      uses: actions/cache/restore@v6
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: ~/.cache/apt-debs
         key: ${{ steps.apt.outputs.key }}
     - name: Restore the Linux packages
       id: apt-cache
       if: ${{ steps.apt.outcome == 'success' && github.event_name != 'pull_request' }}
-      uses: actions/cache@v6
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: ~/.cache/apt-debs
         key: ${{ steps.apt.outputs.key }}
@@ -136,7 +136,7 @@ runs:
     # Only main saves the models, as in family.yaml: a pull request reads
     # main's copy.
     - if: ${{ inputs.modern-model-cache == 'true' && github.event_name == 'pull_request' }}
-      uses: actions/cache/restore@v6
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: |
           packages/mediapipe-task-text/models/embedding_gemma.task
@@ -144,7 +144,7 @@ runs:
           packages/mediapipe-task-text/models/summarization_quant_200m_2modes.litertlm
         key: modern-text-models-${{ hashFiles('packages/mediapipe-task-text/lib/models.dart') }}
     - if: ${{ inputs.modern-model-cache == 'true' && github.event_name != 'pull_request' }}
-      uses: actions/cache@v6
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: |
           packages/mediapipe-task-text/models/embedding_gemma.task

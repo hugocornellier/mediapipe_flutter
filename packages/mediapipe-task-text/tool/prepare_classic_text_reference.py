@@ -90,7 +90,7 @@ def main():
     python = args.python
     if python is None:
         python = pinned_venv(
-            REPO / f'build/codex-tmp/classic-text-reference-env-{runtime["version"]}', runtime)
+            REPO / f'build/ci-tmp/classic-text-reference-env-{runtime["version"]}', runtime)
     reference = output / 'official_reference.json'
     command = [str(python.absolute()), '-B', str(PACKAGE / 'tool/generate_classic_text_reference.py'),
                '--output', str(reference)]

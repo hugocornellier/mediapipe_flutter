@@ -61,7 +61,7 @@ track-ended events, and track/worker/callback cleanup. It also screenshots the
 preview with the overlay hidden and requires the overlay's landmarks within
 1.5% (median) of the face the official IMAGE task finds in those pixels, the
 native oracle's criterion. Evidence goes to the ignored
-`build/codex-tmp/web-browser-*` folders and Actions artifacts.
+`build/ci-tmp/web-browser-*` folders and Actions artifacts.
 
 A MacBook Pro physical webcam has separately returned one face with 478
 landmarks across two stop/start sessions. CI webcams are supplied browser

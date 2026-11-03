@@ -12,6 +12,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'mediapipe-core/tool'))
 from official_embedding_layout import use_header_embedding_layout  # noqa: E402
 from official_wheels import MACOS, host_runtime  # noqa: E402
+from tool_helpers import reference_json  # noqa: E402
 from model_pins import model_sha256  # noqa: E402
 
 PACKAGE = Path(__file__).resolve().parents[1]
@@ -134,7 +135,7 @@ def main():
                     language.MpLanguageDetectorResultC)}
     target = args.output.resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    target.write_text(reference_json(report, ensure_ascii=False) + '\n', encoding='utf-8')
 
 
 if __name__ == '__main__':

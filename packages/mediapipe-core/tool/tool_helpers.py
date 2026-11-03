@@ -52,6 +52,25 @@ def compact_json(value, indent=1, level=0):
     return json.dumps(value)
 
 
+def reference_json(value, depth=3, level=0, **options):
+    """`json.dumps(value, **options)` with only the first `depth` levels on
+    lines of their own, so a reference fixture keeps one case's result per
+    line instead of one number per line."""
+    compact = json.dumps(value, separators=(', ', ': '), **options)
+    items = value.values() if isinstance(value, dict) else value
+    if (not isinstance(value, (dict, list)) or not value or level >= depth
+            or not any(isinstance(item, (dict, list)) for item in items)):
+        return compact
+    pad, inner = '  ' * level, '  ' * (level + 1)
+    if isinstance(value, dict):
+        lines = (f'{inner}{json.dumps(key, **options)}: '
+                 f'{reference_json(item, depth, level + 1, **options)}'
+                 for key, item in value.items())
+        return '{\n' + ',\n'.join(lines) + '\n' + pad + '}'
+    lines = (inner + reference_json(item, depth, level + 1, **options) for item in value)
+    return '[\n' + ',\n'.join(lines) + '\n' + pad + ']'
+
+
 def dart_rows(items, indent, width=80):
     """The Dart elements `items`, each followed by a comma, packed into lines
     of at most `width` columns at `indent`, for a `// dart format off` list."""

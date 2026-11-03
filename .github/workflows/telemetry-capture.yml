@@ -21,7 +21,7 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup
       - name: Language Detector models
         working-directory: packages/mediapipe-task-text
@@ -67,7 +67,7 @@ jobs:
         if: always()
         shell: bash
         run: python -B tool/ci/wininet_report.py "$RUNNER_TEMP/wininet.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: wininet-capture
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup
         with:
           linux-profile: ffi
@@ -130,7 +130,7 @@ jobs:
         if: always()
         shell: bash
         run: python -B tool/ci/telemetry_capture.py report "$RUNNER_TEMP/capture"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: usage-log-capture-linux

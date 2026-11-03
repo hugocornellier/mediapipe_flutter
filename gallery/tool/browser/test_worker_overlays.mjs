@@ -7,12 +7,12 @@ import {chromium} from 'playwright';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const base = process.argv.find(value => value.startsWith('--base-url='))?.split('=')[1]
   ?? 'http://localhost:8866/mediapipe_flutter/';
-const evidence = path.join(repo, 'build/codex-tmp/worker-overlays');
+const evidence = path.join(repo, 'build/ci-tmp/worker-overlays');
 fs.mkdirSync(evidence, {recursive: true});
 
 const browser = await chromium.launch({channel: 'chromium', args: [
   '--use-fake-device-for-media-stream',
-  '--use-file-for-fake-video-capture=' + path.join(repo, 'build/codex-tmp/web-camera-hand.y4m'),
+  '--use-file-for-fake-video-capture=' + path.join(repo, 'build/ci-tmp/web-camera-hand.y4m'),
   ...(process.platform === 'linux' ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
 ]});
 try {
@@ -51,7 +51,7 @@ try {
 
 const detectorBrowser = await chromium.launch({channel: 'chromium', args: [
   '--use-fake-device-for-media-stream',
-  '--use-file-for-fake-video-capture=' + path.join(repo, 'build/codex-tmp/web-camera.y4m'),
+  '--use-file-for-fake-video-capture=' + path.join(repo, 'build/ci-tmp/web-camera.y4m'),
   ...(process.platform === 'linux' ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
 ]});
 try {

@@ -12,7 +12,7 @@ import platform
 from official_face_runtime import (LIBRARY_NAME, LIBRARY_SHA256, RUNTIME,
                                    SOURCE_REVISION, VERSION)
 from model_pins import model_sha256  # noqa: E402  (core/tool, via official_face_runtime)
-from tool_helpers import digest  # noqa: E402
+from tool_helpers import digest, reference_json  # noqa: E402
 
 import mediapipe as mp
 import numpy as np
@@ -130,7 +130,7 @@ def main():
         cases=cases,
     )
     (output / f"official{suffix}_reference.json").write_text(
-        json.dumps(reference, indent=2, allow_nan=False) + "\n"
+        reference_json(reference, allow_nan=False) + "\n"
     )
 
     video_cases = []
@@ -157,9 +157,9 @@ def main():
                 case.update(raw=raw.name, sha256=digest(raw))
             video_cases.append(case)
             print("video", timestamp, name, len(result.detections), "face(s)")
-    (output / f"official{suffix}_video_reference.json").write_text(json.dumps(
+    (output / f"official{suffix}_video_reference.json").write_text(reference_json(
         {**reference, "running_mode": "VIDEO", "cases": video_cases},
-        indent=2, allow_nan=False) + "\n")
+        allow_nan=False) + "\n")
 
 
 if __name__ == "__main__":

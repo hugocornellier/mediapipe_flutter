@@ -10,7 +10,7 @@ import {chromium} from 'playwright';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const base = process.env.GALLERY_WEB_URL || 'http://127.0.0.1:8866/mediapipe_flutter/';
 const portrait = path.join(repo, 'gallery/assets/samples/portrait.jpg');
-const evidence = path.join(repo, 'build/codex-tmp/segmenter-display-web');
+const evidence = path.join(repo, 'build/ci-tmp/segmenter-display-web');
 fs.mkdirSync(evidence, {recursive: true});
 
 const browser = await chromium.launch({channel: 'chromium', headless: true});

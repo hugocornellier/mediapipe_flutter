@@ -4,7 +4,7 @@ Overlays never hand-copy an edge list: this writes the three tables from the
 official Python API, eight or so pairs per line. Run it in the pinned official
 environment:
 
-    build/codex-tmp/gpu-reference-env/bin/python \\
+    build/ci-tmp/gpu-reference-env/bin/python \\
         packages/mediapipe-task-vision/tool/generate_landmark_connections.py
 """
 from pathlib import Path

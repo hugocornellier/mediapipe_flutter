@@ -27,9 +27,9 @@ def main():
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
     runtime = host_runtime()
-    evidence = REPO / 'build/codex-tmp/text-audio'
+    evidence = REPO / 'build/ci-tmp/text-audio'
     evidence.mkdir(parents=True, exist_ok=True)
-    environment = REPO / f'build/codex-tmp/official-python-{runtime["version"]}'
+    environment = REPO / f'build/ci-tmp/official-python-{runtime["version"]}'
     python = pinned_venv(environment, runtime, log=evidence / 'pip.log')
 
     for package in (TEXT, AUDIO):

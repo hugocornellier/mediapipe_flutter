@@ -29,7 +29,7 @@ jobs:
     # runner before its hour of tests.
     timeout-minutes: 200
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Gate tests
         run: python3 -B -m unittest tool/coverage/test_gate.py
       # Device runs are manual, so a device cell without one is reported as
@@ -42,7 +42,7 @@ jobs:
           --sha ${{ github.event.pull_request.head.sha || github.sha }}
           --rows build/coverage-rows --timeout-minutes 190
           --lenient-devices
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: task-coverage-rows
