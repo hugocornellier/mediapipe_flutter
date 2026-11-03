@@ -1,7 +1,8 @@
 """Test the text and audio packages against Google's library on this host.
 
-Installs Google's pinned official wheel for this host once, generates the text
-and audio references with it, downloads the pinned models, and runs both
+Installs Google's pinned official wheels for this host (1.2.2 for the text
+tasks, upstream-issues.md UP-065; 1.1.0 for audio), generates the text and
+audio references with them, downloads the pinned models, and runs both
 packages' Dart suites against those same-host references, after the audio
 stream bridge's AddressSanitizer test outside Windows. CI runs it on the
 Linux x64 and Windows x64 desktop runners; it runs on macOS arm64 as well.
@@ -20,17 +21,20 @@ AUDIO = REPO / 'packages/mediapipe-task-audio'
 sys.path.insert(0, str(REPO / 'packages/mediapipe-core/tool'))
 from official_wheels import host_runtime, pinned_venv  # noqa: E402
 from tool_helpers import run  # noqa: E402
+sys.path.insert(0, str(TEXT / 'tool'))
+from generate_classic_text_reference import WHEELS  # noqa: E402
 
 
 def main():
     # Test names and Google's logs are UTF-8; Windows CI defaults to cp1252.
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
-    runtime = host_runtime()
     evidence = REPO / 'build/ci-tmp/text-audio'
     evidence.mkdir(parents=True, exist_ok=True)
-    environment = REPO / f'build/ci-tmp/official-python-{runtime["version"]}'
-    python = pinned_venv(environment, runtime, log=evidence / 'pip.log')
+    runtimes = {'text': host_runtime(WHEELS), 'audio': host_runtime()}
+    pythons = {name: pinned_venv(REPO / f'build/ci-tmp/official-python-{runtime["version"]}',
+                                 runtime, log=evidence / f'{name}-pip.log')
+               for name, runtime in runtimes.items()}
 
     for package in (TEXT, AUDIO):
         run(['dart', 'pub', 'get'], package, evidence / f'{package.name}-pub.log')
@@ -40,10 +44,10 @@ def main():
     text_reference = REPO / 'build/classic-text-reference'
     audio_reference = REPO / 'build/audio-reference'
     run([sys.executable, '-B', TEXT / 'tool/prepare_classic_text_reference.py',
-         '--python', python, '--output-dir', text_reference], REPO,
+         '--python', pythons['text'], '--output-dir', text_reference], REPO,
         evidence / 'text-reference.log')
     run([sys.executable, '-B', AUDIO / 'tool/prepare_audio_reference.py',
-         '--python', python, '--output-dir', audio_reference], REPO,
+         '--python', pythons['audio'], '--output-dir', audio_reference], REPO,
         evidence / 'audio-reference.log')
 
     if platform.system() != 'Windows':
@@ -70,8 +74,9 @@ def main():
     receipts = {name: json.loads((folder / 'provenance.json').read_text(encoding='utf-8'))
                 for name, folder in [('text', text_reference), ('audio', audio_reference)]}
     (evidence / 'report.json').write_text(json.dumps({
-        'runtime': 'mediapipe==' + runtime['version'],
-        'library_sha256': runtime['library_sha256'],
+        'runtimes': {name: {'runtime': 'mediapipe==' + runtime['version'],
+                            'library_sha256': runtime['library_sha256']}
+                     for name, runtime in runtimes.items()},
         'os': platform.platform(),
         'tasks': ['audio_classifier', 'language_detector', 'text_classifier', 'text_embedder'],
         'checked_in_reference_differences': {
