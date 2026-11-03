@@ -11,7 +11,7 @@ Every target uses Google's official runtime, with no rebuild of MediaPipe:
 
 | Target | Runtime |
 | --- | --- |
-| Web | `@mediapipe/tasks-vision` 1.2.0-rc.20261018 JavaScript/WASM through `mediapipe_vision` |
+| Web | `@mediapipe/tasks-vision` 1.2.2-rc.20261103 JavaScript/WASM through `mediapipe_vision` |
 | iOS arm64 and simulator | Google's 1.2.2 vision library (`MediaPipeTasksVisionC`), which this package's hook bundles |
 | Android arm64, x86_64 and 32-bit armeabi-v7a (CPU) | Google's 1.2.2 vision library (`libmediapipe_tasks_vision.so`), which this package's hook bundles |
 | macOS arm64 | Google's 1.2.2 vision library (`libmediapipe_tasks_vision`) |

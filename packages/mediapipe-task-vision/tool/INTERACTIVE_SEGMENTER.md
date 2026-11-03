@@ -7,7 +7,7 @@ runs through Google's own runtime on each platform:
 
 - **Android, iOS, macOS arm64 (14+), Linux x64:** Google's 1.2.2 vision
   library, which the vision package's hook bundles.
-- **Web:** `@mediapipe/tasks-vision` 1.2.0-rc.20261018.
+- **Web:** `@mediapipe/tasks-vision` 1.2.2-rc.20261103.
 
 Browsers run it on CPU or WebGL 2, every other platform on the CPU. Google's
 Windows library exports the stateful API as well and its masks agree with the

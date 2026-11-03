@@ -14,7 +14,7 @@ timings) run on 64-bit Android, iOS, macOS, Linux and Windows; see
 The task runs Google's runtime on each platform, on the CPU: its MediaPipe
 1.2.2 audio library on Android 9+, iOS 15+, macOS 14+ arm64, Linux x64 and
 Windows x64, which this package's hook bundles, and
-`@mediapipe/tasks-audio` 1.2.0-rc.20261018 in browsers.
+`@mediapipe/tasks-audio` 1.2.2-rc.20261103 in browsers.
 
 No platform needs a setting. See
 [platform setup](https://github.com/hugocornellier/mediapipe_flutter/blob/main/doc/platform_setup.md)
