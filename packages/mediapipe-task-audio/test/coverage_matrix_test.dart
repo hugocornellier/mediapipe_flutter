@@ -8,6 +8,8 @@ import '../../mediapipe-core/test/support/coverage_matrix.dart';
 // plugin registered, as in an app.
 final _claims = <String, TaskCapabilities Function(TaskPlatform)>{
   'audio_classifier': audioClassifierCapabilitiesForPlatform,
+  'audio_transcriber': audioTranscriberCapabilitiesForPlatform,
+  'text_to_speech': textToSpeechCapabilitiesForPlatform,
 };
 
 Never _unused(Map<String, Object?> options) => throw UnimplementedError();

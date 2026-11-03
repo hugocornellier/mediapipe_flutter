@@ -28,6 +28,11 @@ GEMMA_MODELS = {
     'summarization_quant_200m_2modes.litertlm',
 }
 
+# Models from other publishers, as their model cards license them.
+THIRD_PARTY_MODELS = {
+    'parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm': 'CC-BY-4.0',
+}
+
 
 def add(items, kind, target, url, digest, label, name=None):
     """Adds a pin. Only an unpublished runtime may have no URL."""
@@ -64,11 +69,12 @@ def model_assets(items):
     # Runtimes are MediaPipe builds (Apache-2.0, with upstream NOTICE files).
     # Google publishes its MediaPipe task models under Apache-2.0, except the
     # Gemma-based text models, whose Gemma Terms and use-restriction notice
-    # must travel with every copy.
+    # must travel with every copy, and NVIDIA's Parakeet (CC BY 4.0, which
+    # needs attribution with every copy).
     for item in items.values():
         filename = item['release_asset'].split('-', 1)[1]
-        item['license'] = ('Gemma Terms' if filename in GEMMA_MODELS
-                           else 'Apache-2.0')
+        item['license'] = THIRD_PARTY_MODELS.get(filename, (
+            'Gemma Terms' if filename in GEMMA_MODELS else 'Apache-2.0'))
 
 
 def main():
