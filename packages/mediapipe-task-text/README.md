@@ -290,7 +290,8 @@ version and inputs: 26 cases for the classic tasks, 17 for EmbeddingGemma, 9
 for Proofreader and 10 for Summarizer. Generated text must match byte for
 byte, and Google's releases generate different text, so each platform is
 compared with Google's wheel of its own version: the checked-in macOS
-references (Google's 1.1.0 wheel), references generated on the Linux and
+references (Google's 1.2.2 wheel for the classic tasks, its 1.1.0 wheel for
+the others), references generated on the Linux and
 Windows runners (`tool/test_modern_text.py`) and for the gallery's emulator
 and simulator builds (`tool/prepare_modern_text_reference.py`), and Google's
 JavaScript on the same page for EmbeddingGemma in browsers. Fresh Flutter apps built from the packages as pub.dev ships them run
