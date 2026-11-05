@@ -115,6 +115,25 @@ class GateTest(unittest.TestCase):
             _, failures, _, _ = gate.evaluate(self.matrix, rows)
             self.assertEqual(failures, [f'face_landmarker / windows / cpu: {outcome} in d'])
 
+    def test_a_test_lab_quota_miss_is_never_a_pass(self):
+        # android-face-testlab.yml records outcome quota-exceeded when no test ran.
+        matrix = {'hand_landmarker': {'android': {'gpu': 'device'}, 'macos': {'cpu': 'required'}}}
+        with tempfile.TemporaryDirectory() as directory:
+            for platform, delegate in (('android', 'gpu'), ('macos', 'cpu')):
+                subprocess.run([sys.executable, '-B', str(HERE / 'record.py'), '--tier', 'device',
+                                '--suite', platform, '--platform', platform, '--delegate', delegate,
+                                '--tasks', 'hand_landmarker', '--outcome', 'quota-exceeded',
+                                '--output-dir', directory], check=True, capture_output=True)
+            rows = gate.load_rows(directory)
+        self.assertFalse(any(r['passed'] for r in rows))
+        for strict in (True, False):
+            states, failures, _, awaiting = gate.evaluate(matrix, rows, strict_devices=strict)
+            self.assertEqual(states[('hand_landmarker', 'android', 'gpu')], 'fail')
+            self.assertEqual(states[('hand_landmarker', 'macos', 'cpu')], 'fail')
+            self.assertEqual(awaiting, [])
+            self.assertEqual(failures, ['hand_landmarker / android / gpu: quota-exceeded in android',
+                                        'hand_landmarker / macos / cpu: quota-exceeded in macos'])
+
     def test_gh_tells_transient_failures_from_lasting_ones(self):
         for stderr in ('gh: Server Error (HTTP 502)', 'HTTP 503: Service Unavailable',
                        'gh: API rate limit exceeded (HTTP 403)',
