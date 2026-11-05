@@ -11,11 +11,9 @@ build of November 2, 2026 (core's `family_runtimes.dart`), on Android, iOS,
 macOS, Linux and Windows, and Google's JavaScript runtime 1.2.2 in browsers.
 Their outputs are compared with Google's 1.1.0 release candidate
 wheel, `mediapipe-nightly` 1.1.0rc20260925 (core's `reference_wheels.dart`).
-With Google's agreement they are posted unmodified, for testing, as the
-pre-release `per-family-v1.1.1-dev.20261009` on
-`hugocornellier/mediapipe_flutter_native`, which the hooks download. CI runs
-them on Linux x64, Windows x64, macOS arm64, the arm64 iOS Simulator and the
-x86_64 Android emulator, and Firebase Test Lab on a Pixel 8a (Mali), a Galaxy
+The hooks read the libraries from Google's archive. CI runs them on Linux
+x64, Windows x64, macOS arm64, the arm64 iOS Simulator and the x86_64 Android
+emulator, and Firebase Test Lab on a Pixel 8a (Mali), a Galaxy
 S24 (Adreno) and a Galaxy A12 (PowerVR); they also ran on an iPhone 15 Pro and
 an arm64 Android emulator. An entry observed only on an earlier release says
 so, and may no longer apply.

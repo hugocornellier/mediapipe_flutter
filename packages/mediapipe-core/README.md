@@ -14,10 +14,9 @@ hook uses to bundle its own:
 | Web | Google's JavaScript runtime, through each family's web plugin |
 
 An app ships only the libraries of the families it depends on, and needs no
-setting to get them. The hooks download them from a pre-release of
-`hugocornellier/mediapipe_flutter_native`, where Google's development builds
-are posted unmodified until Google publishes them, and check every file's
-SHA-256 and size (`lib/src/native_assets/family_runtimes.dart`).
+setting to get them. The hooks read them from Google's release archive on
+`storage.googleapis.com` and check every file's SHA-256 and size
+(`lib/src/native_assets/family_runtimes.dart`).
 `hooks.user_defines.mediapipe_core.asset_source` can point at a directory
 holding them, named by SHA-256, instead.
 
