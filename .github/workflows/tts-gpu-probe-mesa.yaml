@@ -1,0 +1,50 @@
+name: Text to Speech GPU probe on Mesa
+
+permissions:
+  contents: read
+
+# A one-off diagnostic on its own branch: both speech tasks on each delegate on
+# Linux's software GPU, with Audio Transcriber as the control. Google's native
+# GPU path here is WebGPU through Dawn, so it needs Mesa's Vulkan driver.
+on:
+  push:
+    branches: [ci/tts-gpu-probe-mesa]
+
+jobs:
+  probe:
+    name: probe / ubuntu-24.04 Mesa
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      force_gl_renderer: Mesa software rasterizer, renamed for a MediaPipe CI test
+      EGL_PLATFORM: surfaceless
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup
+        with:
+          linux-profile: ffi
+      - name: Install Mesa's EGL, OpenGL ES and Vulkan
+        uses: ./.github/actions/apt-install
+        with:
+          packages: libegl-mesa0 libgl1-mesa-dri mesa-vulkan-drivers vulkan-tools
+      - name: Show the Vulkan adapters
+        run: vulkaninfo --summary 2>&1 | grep -iE 'deviceName|deviceType|driverName' || true
+      - name: Download Google's models
+        working-directory: packages/mediapipe-task-audio
+        run: |
+          flutter pub get
+          dart tool/download_models.dart parakeet_tdt_v3 phonon
+      - name: Run each task on each delegate
+        working-directory: packages/mediapipe-task-audio
+        run: |
+          for probe in tts-cpu tts-gpu asr-cpu asr-gpu; do
+            echo "=== $probe"
+            PROBE=$probe dart test --reporter expanded test/gpu_probe_test.dart 2>&1 |
+              tee "probe-$probe.log" | grep -iE 'PROBE|opengl|gl version|vulkan|adapter|webgpu|gpu|delegate|egl|fail|abort' | head -40 || true
+            echo "=== $probe exit ${PIPESTATUS[0]}"
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: tts-gpu-probe-mesa
+          path: packages/mediapipe-task-audio/probe-*.log
