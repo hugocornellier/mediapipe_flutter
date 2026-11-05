@@ -26,6 +26,10 @@ extension type _WebGpuWork._(JSObject _) implements JSObject {
 @JS('webGpuWork')
 external _WebGpuWork get _webGpuWork;
 
+/// The chunks test_browser.mjs's counter saw the audio worker send.
+@JS('workerChunks')
+external int get _workerChunks;
+
 /// The counters at this point, once what the worker posted has arrived.
 Future<Map<String, int>> _work() async {
   await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -40,7 +44,8 @@ const streamText =
 const nonAsciiText = 'Café über naïve 😀 done.';
 const cancelledText =
     'This stream stops at its first chunk. The second sentence never comes. '
-    'Neither does the third.';
+    'Neither does the third. The fourth stays silent too. So does the fifth. '
+    'The sixth has nothing to say. The seventh is the same. The eighth as well.';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,6 +86,15 @@ Future<void> main() async {
       ..['error'] = '$error\n$stack';
   }
   _report = report.jsify();
+}
+
+/// The chunks the worker sends during [run], once they have all arrived.
+Future<int> _chunksDuring(Future<void> Function() run) async {
+  await Future<void>.delayed(const Duration(milliseconds: 500));
+  final before = _workerChunks;
+  await run();
+  await Future<void>.delayed(const Duration(milliseconds: 500));
+  return _workerChunks - before;
 }
 
 Future<AudioData> _clip(String name) async =>
@@ -222,15 +236,23 @@ Future<Map<String, Object?>> _speech(String model) async {
       await for (final chunk in task.synthesizeStream(streamText))
         _audio(chunk),
     ];
-    // Leaving at the first chunk ends Google's stream, and the task still
-    // answers the next call as before.
+    // Leaving at the first chunk stops the worker's stream, and the task still
+    // answers the next call as before. The chunks are counted where the worker
+    // sends them, as the Dart side stops listening whether or not the worker
+    // stops. The next call queues behind the stream, so the count is whole once
+    // it answers.
+    report['uncancelled_chunks'] = await _chunksDuring(
+      () => task.synthesizeStream(cancelledText).drain<void>(),
+    );
     var chunks = 0;
-    await for (final _ in task.synthesizeStream(cancelledText)) {
-      chunks++;
-      break;
-    }
+    report['cancelled_worker_chunks'] = await _chunksDuring(() async {
+      await for (final _ in task.synthesizeStream(cancelledText)) {
+        chunks++;
+        break;
+      }
+      report['after_cancel'] = _audio(await task.synthesize(foxText));
+    });
     report['cancelled_chunks'] = chunks;
-    report['after_cancel'] = _audio(await task.synthesize(foxText));
     // In order, with a stream's chunks ahead of the call made after it.
     final order = <String>[];
     final stream = task.synthesizeStream(frenchText).forEach((_) {
