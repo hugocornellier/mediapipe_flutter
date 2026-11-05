@@ -72,7 +72,7 @@ def main():
     receipt.unlink(missing_ok=True)
     python = args.python
     if python is None:
-        python = pinned_venv(REPO / f'build/codex-tmp/official-python-{runtime["version"]}', runtime)
+        python = pinned_venv(REPO / f'build/ci-tmp/official-python-{runtime["version"]}', runtime)
     reference = output / 'official_speech_reference.json'
     log_file = output / 'official-python.log'
     with log_file.open('w', encoding='utf-8') as log:

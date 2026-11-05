@@ -105,8 +105,12 @@ jobs:
       # reply holds a test past the default 30 s.
       - name: The ${{ inputs.family }} package against Google's Python answers
         working-directory: packages/mediapipe-task-${{ inputs.family }}
-        run: dart test --timeout 180s --reporter expanded ${{ inputs.test-paths }}
-      - uses: actions/upload-artifact@v4
+        shell: bash
+        env:
+          TEST_PATHS: ${{ inputs.test-paths }}
+        # TEST_PATHS is unquoted on purpose: it holds several paths.
+        run: dart test --timeout 180s --reporter expanded $TEST_PATHS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always() && inputs.prepare-reference != ''
         with:
           name: ${{ inputs.family }}-reference-${{ matrix.os }}
