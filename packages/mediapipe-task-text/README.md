@@ -18,7 +18,7 @@ models are bundled with your app at build time.
 | Summarizer 200M | `TextSummarizer` | ✓ | ✓ | ✓ | ✓ | ✓ | |
 
 All text tasks run on the CPU. The runtimes are Google's: its MediaPipe
-1.2.0 text library on Android 9+, iOS 15+ (devices and the arm64 simulator),
+1.2.2 text library on Android 9+, iOS 15+ (devices and the arm64 simulator),
 macOS 14+, Linux and Windows, which this package's hook bundles, and
 `@mediapipe/tasks-text` 1.2.0-rc.20261018 in browsers.
 
