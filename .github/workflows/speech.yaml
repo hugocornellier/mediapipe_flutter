@@ -1,0 +1,45 @@
+name: Speech
+
+permissions:
+  contents: read
+
+# The Audio Transcriber and Text to Speech checks, as family.yaml runs them:
+# the package against Google's Python answers, regenerated on each desktop from
+# Google's pinned speech wheel, and the gallery's test and journey on the
+# desktops. Google's browser runtime has neither task, so no browser job runs;
+# web.yaml's journey checks that the gallery shows them as unavailable. The
+# phones run the test and the journey in android.yaml and ios.yaml. Dispatch by
+# hand to run a subset of the jobs.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: Jobs to run (package, gallery), comma-separated
+        required: false
+        default: package,gallery
+
+# Keyed by commit on main: GitHub marks a commit failed when a run is cancelled.
+concurrency:
+  group: speech-${{ github.event_name == 'push' && github.sha || github.ref }}-${{ inputs.jobs || 'all' }}
+  cancel-in-progress: true
+
+jobs:
+  speech:
+    name: Speech
+    uses: ./.github/workflows/family.yaml
+    with:
+      family: audio
+      tasks: audio_transcriber,text_to_speech
+      integration-test: speech_test
+      # Parakeet TDT 0.6B v3 (615 MB) and Phonon (87 MB).
+      model-path: |
+        packages/mediapipe-task-audio/models/parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm
+        packages/mediapipe-task-audio/models/phonon_int8.litertlm
+      download-models: parakeet_tdt_v3 phonon
+      test-paths: test/speech_test.dart
+      prepare-reference: prepare_speech_reference.py
+      reference-env: MEDIAPIPE_SPEECH_REFERENCE_DIR
+      jobs: ${{ inputs.jobs || 'package,gallery' }}
