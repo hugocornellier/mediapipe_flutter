@@ -1,3 +1,16 @@
+## 0.2.0 (unreleased)
+
+- Audio Transcriber: speech to text on Google's 1.2.2 native library, with
+  `AudioModels.parakeetTdtV3` (Parakeet TDT 0.6B v3), whole clips or blocks
+  ending in `finishStream()`, optional interim results, and segment
+  timestamps.
+- Text to Speech: `synthesize` and `synthesizeStream` with
+  `AudioModels.phonon` (five voices in five locales), speaking rate, voice
+  and locale per call, and word timestamps.
+- Both run on the CPU on 64-bit Android, iOS, macOS, Linux and Windows;
+  browsers and 32-bit Android report them unavailable.
+- Google's 1.2.2 native library replaces 1.2.0.
+
 ## 0.1.0
 
 The first release.
