@@ -74,8 +74,10 @@ GitHub pre-release. Model pins name no mirrors.
 Each request gets three attempts on a connection error, a timeout or HTTP
 408, 429, 500, 502, 503 or 504, waiting a random backoff or the host's
 `Retry-After` (at most 30 seconds), and a dropped download resumes where it
-stopped. Any other failure, including a digest mismatch, moves to the next
-URL at once.
+stopped. At the last URL, a failed lookup or a lost connection keeps being
+retried for 75 seconds from the first failure, so a short network outage
+passes and a device with no network sees the error after that long. Any other
+failure, including a digest mismatch, moves to the next URL at once.
 
 For offline or mirrored builds, point every download at a local directory or
 an internal HTTP(S) root holding files named by their full SHA-256. That
