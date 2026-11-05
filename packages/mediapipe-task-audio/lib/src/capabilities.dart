@@ -5,7 +5,7 @@ import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/platform_interface.dart';
 
 import 'audio_task_backend.dart'
-    show audioTaskBackendFactory, audioTranscriberOpener;
+    show audioTaskBackendFactory, audioTranscriberOpener, browserOnMac;
 
 /// Where Audio Classifier runs: CPU on Google's audio library on Android,
 /// iOS 15+, macOS 14+ arm64, Linux x64 and Windows x64, and through Google's
@@ -55,8 +55,30 @@ String _transcriberNoWebGpu(TaskPlatform platform) =>
     'Firefox fails to create the task. This browser has '
     '${platform.gpu ?? 'no WebGPU adapter'}.';
 
-/// Where Audio Transcriber's native GPU delegate is proved to do the work:
-/// Metal on macOS arm64 and on iPhones (not the simulator).
+const _transcriberWebGpuUnproved =
+    "This package offers Audio Transcriber's browser GPU delegate only where "
+    "a test proved the GPU does the work: Chromium and WebKit on a Mac's Apple "
+    'adapter.';
+
+/// The adapter vendor [_webGpuProved] takes, as `readWebGpuAdapter` names it.
+final _appleWebGpu = RegExp(r'^WebGPU apple\b');
+
+/// Whether the browser suite saw the GPU do the transcriber's work in this
+/// browser: Chromium and WebKit on a developer's Mac's Apple adapter, where CI's
+/// browser job is set to repeat Chromium's. Firefox has no adapter where it was
+/// tried, and no test has run on any other adapter or on an iPhone or iPad.
+bool _webGpuProved(TaskPlatform platform) =>
+    browserOnMac &&
+    hasHardwareWebGpu(platform) &&
+    _appleWebGpu.hasMatch(platform.gpu!) &&
+    switch (platform.browserEngine) {
+      BrowserEngine.blink || BrowserEngine.webkit => true,
+      _ => false,
+    };
+
+/// Where Audio Transcriber's native GPU delegate is offered: Metal on macOS
+/// arm64, which the package's tests prove on each macOS version CI runs, and on
+/// iPhones (not the simulator), whose device test is still to run.
 const transcriberGpuTargets = <String, String?>{
   'macos/arm64': '14.0',
   'ios/arm64': '15.0',
@@ -65,8 +87,8 @@ const transcriberGpuTargets = <String, String?>{
 /// Where Audio Transcriber runs: Google's audio library on 64-bit Android,
 /// iOS 15+, macOS 14+ arm64, Linux x64 and Windows x64, and through Google's
 /// browser runtime where the web plugin installs it, on the CPU everywhere and
-/// on the GPU on [transcriberGpuTargets] and in a browser with a hardware
-/// WebGPU adapter.
+/// on the GPU on [transcriberGpuTargets] and in Chromium and WebKit on a Mac's
+/// Apple WebGPU adapter.
 Future<TaskCapabilities> queryAudioTranscriberCapabilities() async =>
     audioTranscriberCapabilitiesForPlatform(await currentTaskPlatform());
 
@@ -79,7 +101,11 @@ TaskCapabilities audioTranscriberCapabilitiesForPlatform(
   if (!targets.containsKey(platform.target)) {
     gpuReason = _speechUnavailable(platform);
   } else if (platform.operatingSystem == 'web') {
-    gpuReason = _transcriberNoWebGpu(platform);
+    gpuReason = hasHardwareWebGpu(platform)
+        ? '$_transcriberWebGpuUnproved This browser has ${platform.gpu} on '
+              '${platform.browserEngine?.name ?? 'an unknown engine'}'
+              '${browserOnMac ? ' on a Mac' : ''}.'
+        : _transcriberNoWebGpu(platform);
   } else {
     gpuReason = _transcriberGpuUnproved;
   }
@@ -89,7 +115,7 @@ TaskCapabilities audioTranscriberCapabilitiesForPlatform(
       Delegate.cpu: targets,
       Delegate.gpu: {
         if (!platform.simulator) ...transcriberGpuTargets,
-        if (audioTranscriberOpener != null && hasHardwareWebGpu(platform))
+        if (audioTranscriberOpener != null && _webGpuProved(platform))
           'web/unknown': null,
       },
     },

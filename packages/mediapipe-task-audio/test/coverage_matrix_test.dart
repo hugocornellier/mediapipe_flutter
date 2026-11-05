@@ -26,10 +26,12 @@ void main() {
   setUpAll(() {
     audioTaskBackendFactory = _unused;
     audioTranscriberOpener = (_) => throw UnimplementedError();
+    browserOnMac = true;
   });
   tearDownAll(() {
     audioTaskBackendFactory = null;
     audioTranscriberOpener = null;
+    browserOnMac = false;
   });
 
   test('coverage matrix agrees with the audio capability claims', () {

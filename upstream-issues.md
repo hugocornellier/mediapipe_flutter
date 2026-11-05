@@ -1319,7 +1319,8 @@ Google's browser Audio Transcriber has the same silence without a hardware
 adapter: its request for an adapter failing is only a `console.warn`, so in
 Chromium the task stays on the CPU, and in headless Firefox creating it fails
 inside `importJsDevice`. The package therefore offers the browser GPU delegate
-only on a hardware adapter.
+only on a hardware adapter, and of those only where a test saw the work: Chromium
+and WebKit on a Mac's Apple adapter.
 
 To ask Google: is Phonon meant to run on the GPU, and should a task that cannot
 honor the delegate refuse it rather than run on the CPU?

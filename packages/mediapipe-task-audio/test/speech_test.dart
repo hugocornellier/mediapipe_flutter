@@ -7,7 +7,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 import 'package:mediapipe_audio/src/audio_task_backend.dart'
-    show audioTranscriberOpener;
+    show audioTranscriberOpener, browserOnMac;
 import 'package:mediapipe_audio/src/utf16_indices.dart';
 import 'package:mediapipe_audio/src/third_party/mediapipe/audio_transcriber_bindings.dart'
     as asr;
@@ -16,6 +16,8 @@ import 'package:mediapipe_audio/src/third_party/mediapipe/text_to_speech_binding
 import 'package:mediapipe_core/src/native_assets/reference_wheels.dart'
     show releaseReferenceWheel;
 import 'package:test/test.dart';
+
+import 'support/metal_memory.dart';
 import 'support/same_host_reference.dart';
 
 const _fixtures = 'test/fixtures';
@@ -26,6 +28,10 @@ final _ttsModel =
 
 /// Google's word times, rounded to four places in the reference.
 const _secondsDelta = 1e-3;
+
+/// More than Metal's own bookkeeping: the transcriber on the GPU holds hundreds
+/// of megabytes there.
+const _metalProof = 32 * 1024 * 1024;
 
 /// The family library and the reference wheel's single library are separate
 /// builds of Google's 1.2.2 release, so the audio gets a small bound: each
@@ -141,6 +147,51 @@ void main() {
         await task.dispose();
         await task.dispose();
         expect(() => task.transcribe(mono), throwsStateError);
+      },
+    );
+
+    // Google's library accepts the GPU delegate and can stay on the CPU, as
+    // its Text to Speech does (UP-066), and the answer reads the same: so the
+    // proof is the memory the task holds on Metal. The package job runs it on
+    // each macOS version the capabilities claim.
+    test(
+      'runs on the GPU on this Mac',
+      skip: Abi.current() != Abi.macosArm64
+          ? 'Only on a Mac.'
+          : missingTranscriber,
+      timeout: const Timeout(Duration(minutes: 10)),
+      () async {
+        expect(
+          (await queryAudioTranscriberCapabilities()).supportedDelegates,
+          contains(Delegate.gpu),
+        );
+        final audio = decodeWav(
+          File('$_fixtures/speech_16000_hz_mono.wav').readAsBytesSync(),
+        );
+        final expected =
+            (transcriberCases['speech-16k']['calls'] as List).single as List;
+        Future<int> grown(Delegate delegate) async {
+          final before = metalAllocatedBytes();
+          final task = await AudioTranscriber.create(
+            AudioTranscriberOptions(
+              modelPath: _transcriberModel,
+              delegate: delegate,
+            ),
+          );
+          try {
+            final result = await task.transcribe(audio);
+            expect(result.text, (expected.single as Map)['transcript']);
+            return metalAllocatedBytes() - before;
+          } finally {
+            await task.dispose();
+          }
+        }
+
+        final onCpu = await grown(Delegate.cpu);
+        final onGpu = await grown(Delegate.gpu);
+        // ignore: avoid_print
+        print('Metal bytes the transcriber added: CPU $onCpu, GPU $onGpu');
+        expect(onGpu, greaterThan(onCpu + _metalProof));
       },
     );
   });
@@ -341,7 +392,7 @@ void main() {
       ).unavailableReasons[Delegate.gpu],
       contains('no WebGPU adapter'),
     );
-    // A software adapter gets the same answer, and a hardware one the GPU.
+    // A software adapter gets the same answer.
     const software = TaskPlatform(
       operatingSystem: 'web',
       architecture: 'unknown',
@@ -355,13 +406,91 @@ void main() {
       operatingSystem: 'web',
       architecture: 'unknown',
       gpu: 'WebGPU apple metal-3',
-    );
-    expect(
-      audioTranscriberCapabilitiesForPlatform(hardware).supportedDelegates,
-      {Delegate.cpu, Delegate.gpu},
+      browserEngine: BrowserEngine.blink,
     );
     expect(textToSpeechCapabilitiesForPlatform(hardware).supportedDelegates, {
       Delegate.cpu,
+    });
+  });
+
+  group('the browser GPU delegate, offered only where a test proved it', () {
+    setUp(() {
+      audioTranscriberOpener = (_) => throw UnimplementedError();
+      browserOnMac = true;
+      addTearDown(() {
+        audioTranscriberOpener = null;
+        browserOnMac = false;
+      });
+    });
+
+    TaskCapabilities on(String? gpu, BrowserEngine? engine) =>
+        audioTranscriberCapabilitiesForPlatform(
+          TaskPlatform(
+            operatingSystem: 'web',
+            architecture: 'unknown',
+            gpu: gpu,
+            browserEngine: engine,
+          ),
+        );
+
+    test("Chromium and WebKit on a Mac's Apple adapter", () {
+      for (final (gpu, engine) in const [
+        ('WebGPU apple metal-3', BrowserEngine.blink),
+        ('WebGPU apple apple apple', BrowserEngine.webkit),
+      ]) {
+        expect(on(gpu, engine).supportedDelegates, {
+          Delegate.cpu,
+          Delegate.gpu,
+        }, reason: gpu);
+      }
+    });
+
+    test('no other browser or adapter, and the refusal says why', () {
+      for (final (gpu, engine) in const [
+        ('WebGPU apple metal-3', BrowserEngine.gecko),
+        ('WebGPU apple metal-3', null),
+        ('WebGPU intel gen-9', BrowserEngine.blink),
+        ('WebGPU amd gcn-5', BrowserEngine.webkit),
+        ('WebGPU nvidia ga100', BrowserEngine.blink),
+        ('WebGPU applesauce metal-3', BrowserEngine.blink),
+      ]) {
+        final capabilities = on(gpu, engine);
+        expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: gpu);
+        final why = capabilities.unavailableReasons[Delegate.gpu];
+        expect(why, contains('a test proved'), reason: gpu);
+        expect(why, contains("a Mac's Apple adapter"), reason: gpu);
+        expect(why, contains(gpu), reason: gpu);
+      }
+    });
+
+    test("a phone or tablet naming a Mac's adapter", () {
+      browserOnMac = false;
+      for (final (gpu, engine) in const [
+        ('WebGPU apple metal-3', BrowserEngine.blink),
+        ('WebGPU apple apple apple', BrowserEngine.webkit),
+        ('WebGPU nvidia ga100', BrowserEngine.blink),
+        ('WebGPU qualcomm adreno-7xx', BrowserEngine.blink),
+      ]) {
+        final capabilities = on(gpu, engine);
+        expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: gpu);
+        expect(
+          capabilities.unavailableReasons[Delegate.gpu],
+          contains('a test proved'),
+          reason: gpu,
+        );
+      }
+    });
+
+    test('a Mac without a hardware adapter', () {
+      for (final gpu in const [null, 'WebGPU apple swiftshader']) {
+        final capabilities = on(gpu, BrowserEngine.blink);
+        expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: gpu);
+        expect(
+          capabilities.unavailableReasons[Delegate.gpu],
+          contains('needs a hardware WebGPU adapter'),
+          reason: gpu,
+        );
+      }
     });
   });
 
