@@ -20,7 +20,7 @@ runtime for its platform, with Google's pinned models bundled at build time.
 | --- | --- | --- |
 | `mediapipe_vision` | Face and object detection; face, hand, pose and holistic landmarks; gestures; image classification, embeddings and segmentation | [Vision](packages/mediapipe-task-vision/README.md) |
 | `mediapipe_text` | Text classification, embeddings (EmbeddingGemma included) and language detection; proofreading and summarization everywhere but browsers | [Text](packages/mediapipe-task-text/README.md) |
-| `mediapipe_audio` | Audio classification; speech to text and text to speech everywhere but browsers | [Audio](packages/mediapipe-task-audio/README.md) |
+| `mediapipe_audio` | Audio classification, speech to text and text to speech, on every platform | [Audio](packages/mediapipe-task-audio/README.md) |
 | `mediapipe_decision` | Yes-or-no, choice and score questions about a text (Decision Maker), on every platform | [Decision](packages/mediapipe-task-decision/README.md) |
 | `mediapipe_retrieval` | Text, images and audio in one embedding space (Universal Embedder) and an on-device vector index over them (Semantic Retriever), on every platform | [Retrieval](packages/mediapipe-task-retrieval/README.md) |
 
@@ -129,14 +129,14 @@ On macOS, build the app for Apple Silicon only (two lines in its
 | Text (EmbeddingGemma) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Text (proofread, summarize) | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | Audio | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Audio (transcribe, speak) | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| Audio (transcribe, speak) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Decision | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Retrieval | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 CPU works everywhere a family is listed, except that browsers run Decision
 and Retrieval on WebGPU alone, which needs a hardware adapter. GPU (Metal,
-OpenGL ES, WebGL or Android GPU) depends on the task; Macs run the vision
-tasks on the CPU for now, until Google confirms its Metal results since 1.1.1
+OpenGL ES, WebGL, WebGPU or Android GPU) depends on the task; Macs run the
+vision tasks on the CPU for now, until Google confirms its Metal results since 1.1.1
 ([UP-057](upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)). Every cell is tested in CI on hosted
 runners, the Android emulator, the iOS Simulator and Chromium, Firefox and
 WebKit. The [vision status table](packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)

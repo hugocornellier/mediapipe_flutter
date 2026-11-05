@@ -23,10 +23,16 @@ void main() {
     });
   });
 
-  setUpAll(() => audioTaskBackendFactory = _unused);
-  tearDownAll(() => audioTaskBackendFactory = null);
+  setUpAll(() {
+    audioTaskBackendFactory = _unused;
+    audioTranscriberOpener = (_) => throw UnimplementedError();
+  });
+  tearDownAll(() {
+    audioTaskBackendFactory = null;
+    audioTranscriberOpener = null;
+  });
 
   test('coverage matrix agrees with the audio capability claims', () {
-    expect(coverageMatrixProblems(_claims), isEmpty);
+    expect(coverageMatrixProblems(_claims, webGpu: hardwareWebGpu), isEmpty);
   });
 }

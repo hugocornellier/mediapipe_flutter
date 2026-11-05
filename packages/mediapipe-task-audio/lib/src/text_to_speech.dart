@@ -10,8 +10,8 @@ import 'speech_types.dart';
 /// utterance or chunk by chunk, with when each word is spoken.
 ///
 /// Google's native runtime serves it on 64-bit Android, iOS, macOS, Linux
-/// and Windows, loading the model and synthesizing on a worker isolate.
-/// Google's browser runtime has no such task.
+/// and Windows, loading the model and synthesizing on a worker isolate, and
+/// its browser runtime on a web worker.
 ///
 /// ```dart
 /// final task = await TextToSpeech.create(

@@ -186,14 +186,32 @@ Future<void> listen(Stream<Float32List> blocks) async {
 ## Speech
 
 `AudioTranscriber` turns speech into text and `TextToSpeech` turns text into
-speech, on Google's 1.2.2 native library, on the CPU. Google's browser runtime
-has neither task, and 32-bit Android cannot hold their models: there, and for
-the GPU delegate, `create` throws a `RuntimeUnavailableException`, and
-`queryAudioTranscriberCapabilities()` and `queryTextToSpeechCapabilities()`
-say why. Their models are large (Parakeet 615 MB, CC BY 4.0; Phonon 87 MB),
-so an app usually downloads them on first use
-(`ModelStore.allowDownloads = true`) rather than bundling them; listing
+speech, on Google's 1.2.2 native library and, in browsers, on its 1.2.2
+JavaScript runtime in a web worker. 32-bit Android cannot hold their models:
+there `create` throws a `RuntimeUnavailableException`, and
+`queryAudioTranscriberCapabilities()` and `queryTextToSpeechCapabilities()` say
+why.
+
+Both run on the CPU. Google's library can accept the GPU delegate and stay on
+the CPU with the same answer, so this package offers it only where a test saw
+the GPU do the work. That is `AudioTranscriber` on macOS and iPhones (Metal) and
+in Chromium, Firefox and WebKit with a hardware WebGPU adapter. Text to Speech
+ignores the delegate everywhere it was tried (UP-066 in `upstream-issues.md`),
+so it stays on the CPU. Elsewhere, including Android, Linux, Windows and the iOS
+simulator, the GPU delegate throws a `RuntimeUnavailableException` that says
+why.
+
+Their models are large (Parakeet
+615 MB, CC BY 4.0; Phonon 87 MB), so an app usually downloads them on first
+use (`ModelStore.allowDownloads = true`) rather than bundling them; listing
 `parakeet_tdt_v3` or `phonon` under the hook's `models` bundles them instead.
+
+In a browser, a pinned `model:` is verified and kept in Cache Storage, then
+passes through the page's memory as bytes. For Parakeet, a `modelPath` URL
+avoids that copy: Google's runtime reads the file itself, so the URL's server
+must allow the page's origin. Both models ran in desktop Chromium, Firefox and
+WebKit on a 48 GB Mac; phones' browsers are untested, and may not have the
+memory for Parakeet.
 
 ```dart
 import 'dart:typed_data';

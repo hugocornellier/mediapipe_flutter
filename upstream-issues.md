@@ -6,10 +6,9 @@ exported symbol alone does not establish a working task or platform.
 
 ## Runtimes
 
-The packages run Google's per-family MediaPipe libraries, a pre-release 1.1.1
-development build of October 9, 2026 (core's `family_runtimes.dart`; the
-1.1.0 development builds of October 5 and 8 before it), on Android, iOS,
-macOS, Linux and Windows, and Google's JavaScript runtime 1.0.1 in browsers.
+The packages run Google's per-family MediaPipe libraries, the 1.2.2 release
+build of November 2, 2026 (core's `family_runtimes.dart`), on Android, iOS,
+macOS, Linux and Windows, and Google's JavaScript runtime 1.2.2 in browsers.
 Their outputs are compared with Google's 1.1.0 release candidate
 wheel, `mediapipe-nightly` 1.1.0rc20260925 (core's `reference_wheels.dart`).
 With Google's agreement they are posted unmodified, for testing, as the
@@ -75,6 +74,7 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | The 1.2.2 release of November 2 gives the retriever base options, which the packages fill; uploads not yet re-captured |
 | [UP-064](#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it) | The umbrella headers have no license text, and the Audio Classifier header misstates it | Fixed in the 1.2.2 release of November 2 |
 | [UP-065](#up-065-the-122-language-detector-drops-every-language-below-about-03) | The 1.2.2 Language Detector drops every language below about 0.3 | Found on the 1.2.2 release of November 2 and Google's 1.2.2rc20261103 wheel; to ask Google |
+| [UP-066](#up-066-googles-text-to-speech-ignores-the-gpu-delegate) | Google's Text to Speech ignores the GPU delegate | Found on 1.2.2; not yet raised |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -1299,6 +1299,31 @@ the same between the two pins, so nothing tells a caller about the floor.
 
 To ask Google: is the floor intended, what is its value, and should
 `score_threshold` (or another option) lower it?
+
+### UP-066: Google's Text to Speech ignores the GPU delegate
+
+**Status:** found November 4, 2026 on Google's 1.2.2 release, native library and
+npm runtime, with the Phonon model. Not yet raised with Google. The package
+offers Text to Speech on the CPU only.
+
+Asked for the GPU delegate, Text to Speech accepts it, returns success and runs
+on the CPU, with no error or log line that says so. On macOS arm64 the native
+task reports no GPU time to the kernel (`accumulatedGPUTime` stays 0) and takes
+as long as on the CPU (172 ms against 170 ms), where Audio Transcriber on the
+same delegate reports 55 ms of GPU time and logs its Metal device. In Chromium
+on a Metal adapter, Google's JavaScript creates a WebGPU device for the task and
+then builds no compute pipeline and submits nothing, again at the CPU's speed
+(about 1930 ms), where Audio Transcriber builds 41 pipelines and submits 18
+times.
+
+Google's browser Audio Transcriber has the same silence without a hardware
+adapter: its request for an adapter failing is only a `console.warn`, so in
+Chromium the task stays on the CPU, and in headless Firefox creating it fails
+inside `importJsDevice`. The package therefore offers the browser GPU delegate
+only on a hardware adapter.
+
+To ask Google: is Phonon meant to run on the GPU, and should a task that cannot
+honor the delegate refuse it rather than run on the CPU?
 
 ## History
 

@@ -6,6 +6,9 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
+import 'package:mediapipe_audio/src/audio_task_backend.dart'
+    show audioTranscriberOpener;
+import 'package:mediapipe_audio/src/utf16_indices.dart';
 import 'package:mediapipe_audio/src/third_party/mediapipe/audio_transcriber_bindings.dart'
     as asr;
 import 'package:mediapipe_audio/src/third_party/mediapipe/text_to_speech_bindings.dart'
@@ -258,12 +261,34 @@ void main() {
     expect(() => TextToSpeechOptions(targetBucket: -1), throwsArgumentError);
   });
 
-  test('the speech tasks run on the CPU only', () async {
-    for (final capabilities in [
-      await queryAudioTranscriberCapabilities(),
-      await queryTextToSpeechCapabilities(),
+  test('only the Audio Transcriber offers the GPU, where it is proved', () async {
+    expect((await queryTextToSpeechCapabilities()).supportedDelegates, {
+      Delegate.cpu,
+    });
+    const mac = TaskPlatform(
+      operatingSystem: 'macos',
+      architecture: 'arm64',
+      version: '15.0',
+    );
+    expect(audioTranscriberCapabilitiesForPlatform(mac).supportedDelegates, {
+      Delegate.cpu,
+      Delegate.gpu,
+    });
+    final macSpeech = textToSpeechCapabilitiesForPlatform(mac);
+    expect(macSpeech.supportedDelegates, {Delegate.cpu});
+    expect(macSpeech.unavailableReasons[Delegate.gpu], contains('UP-066'));
+    for (final platform in const [
+      TaskPlatform(operatingSystem: 'linux', architecture: 'x64'),
+      TaskPlatform(operatingSystem: 'windows', architecture: 'x64'),
+      TaskPlatform(operatingSystem: 'android', architecture: 'arm64'),
     ]) {
-      expect(capabilities.supportedDelegates, {Delegate.cpu});
+      final capabilities = audioTranscriberCapabilitiesForPlatform(platform);
+      expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: '$platform');
+      expect(
+        capabilities.unavailableReasons[Delegate.gpu],
+        contains('proved'),
+        reason: '$platform',
+      );
     }
     await expectLater(
       TextToSpeech.create(
@@ -276,6 +301,65 @@ void main() {
     expect(textToSpeechCapabilitiesForPlatform(browser).isSupported, false);
     const arm32 = TaskPlatform(operatingSystem: 'android', architecture: 'arm');
     expect(textToSpeechCapabilitiesForPlatform(arm32).isSupported, false);
+  });
+
+  test('a browser serves the speech tasks once the web plugin registers', () {
+    // TaskPlatform.current on the web.
+    const browser = TaskPlatform(
+      operatingSystem: 'web',
+      architecture: 'unknown',
+    );
+    expect(audioTranscriberCapabilitiesForPlatform(browser).isSupported, false);
+    expect(textToSpeechCapabilitiesForPlatform(browser).isSupported, false);
+    audioTranscriberOpener = (_) => throw UnimplementedError();
+    addTearDown(() => audioTranscriberOpener = null);
+    expect(audioTranscriberCapabilitiesForPlatform(browser).isSupported, true);
+    expect(textToSpeechCapabilitiesForPlatform(browser).isSupported, true);
+    for (final capabilities in [
+      audioTranscriberCapabilitiesForPlatform(browser),
+      textToSpeechCapabilitiesForPlatform(browser),
+    ]) {
+      expect(capabilities.supportedDelegates, {Delegate.cpu});
+    }
+    expect(
+      audioTranscriberCapabilitiesForPlatform(
+        browser,
+      ).unavailableReasons[Delegate.gpu],
+      contains('no WebGPU adapter'),
+    );
+    // A software adapter gets the same answer, and a hardware one the GPU.
+    const software = TaskPlatform(
+      operatingSystem: 'web',
+      architecture: 'unknown',
+      gpu: 'WebGPU google swiftshader',
+    );
+    expect(
+      audioTranscriberCapabilitiesForPlatform(software).supportedDelegates,
+      {Delegate.cpu},
+    );
+    const hardware = TaskPlatform(
+      operatingSystem: 'web',
+      architecture: 'unknown',
+      gpu: 'WebGPU apple metal-3',
+    );
+    expect(
+      audioTranscriberCapabilitiesForPlatform(hardware).supportedDelegates,
+      {Delegate.cpu, Delegate.gpu},
+    );
+    expect(textToSpeechCapabilitiesForPlatform(hardware).supportedDelegates, {
+      Delegate.cpu,
+    });
+  });
+
+  test('UTF-8 offsets become UTF-16 indices', () {
+    const text = 'Café 😀 done';
+    final indices = utf16Indices(text);
+    expect(indices, hasLength(utf8.encode(text).length + 1));
+    int at(String prefix) => indices[utf8.encode(prefix).length];
+    expect(at('Caf'), 3);
+    expect(at('Café'), 4);
+    expect(at('Café 😀'), 'Café 😀'.length);
+    expect(at(text), text.length);
   });
 
   test('struct layouts match the 1.2.2 C headers', () {

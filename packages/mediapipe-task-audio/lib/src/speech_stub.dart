@@ -1,24 +1,31 @@
-/// Browsers have no native runtime, and Google's browser runtime has no
-/// Audio Transcriber or Text to Speech.
+/// Browsers have no native runtime: this package's web plugin installs Google's
+/// browser runtime in its place.
 library;
 
 import 'package:mediapipe_core/mediapipe_core.dart';
 
+import 'audio_task_backend.dart';
 import 'speech_runners.dart';
 import 'speech_types.dart';
 
-/// The native Audio Transcriber; browsers have none.
+/// Google's Audio Transcriber through the web plugin.
 Future<AudioTranscriberRunner> openNativeAudioTranscriber(
   AudioTranscriberOptions options,
-) async => throw _noBrowserTask('Audio Transcriber');
+) async => switch (audioTranscriberOpener) {
+  final open? => await open(options),
+  null => throw _noPlugin('Audio Transcriber'),
+};
 
-/// The native Text to Speech; browsers have none.
+/// Google's Text to Speech through the web plugin.
 Future<TextToSpeechRunner> openNativeTextToSpeech(
   TextToSpeechOptions options,
-) async => throw _noBrowserTask('Text to Speech');
+) async => switch (textToSpeechOpener) {
+  final open? => await open(options),
+  null => throw _noPlugin('Text to Speech'),
+};
 
-RuntimeUnavailableException _noBrowserTask(String task) =>
+RuntimeUnavailableException _noPlugin(String task) =>
     RuntimeUnavailableException(
-      "Google's browser runtime has no $task.",
-      fix: 'Run $task on Android, iOS, macOS, Linux or Windows.',
+      "$task's browser runtime is not registered.",
+      fix: 'Run it in a Flutter web build, which registers the audio plugin.',
     );
