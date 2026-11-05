@@ -1,9 +1,9 @@
 # mediapipe_core
 
 The shared layer of the MediaPipe task packages (`mediapipe_vision`,
-`mediapipe_text`, `mediapipe_audio`); apps normally get it through them rather
-than depending on it directly. It owns everything the
-task families share, so each of vision, text and audio works alone and an app
+`mediapipe_text`, `mediapipe_audio`, `mediapipe_decision` and
+`mediapipe_retrieval`); apps normally get it through them rather than depending
+on it directly. It owns everything the task families share, so each of vision, text and audio works alone and an app
 using several loads one copy of each shared piece. That includes the code that
 downloads and verifies Google's MediaPipe libraries, which each family's build
 hook uses to bundle its own:
@@ -21,10 +21,27 @@ SHA-256 and size (`lib/src/native_assets/family_runtimes.dart`).
 `hooks.user_defines.mediapipe_core.asset_source` can point at a directory
 holding them, named by SHA-256, instead.
 
+## Installation
+
+An app using a family does not need to add this package: it comes with
+`flutter pub add mediapipe_vision` or any other family. That covers its types
+and its commands, `dart run mediapipe_core:bundle_models` and
+`dart run mediapipe_core:web_runtime`; use `dart run`, since the older
+`flutter pub run` refuses a package your app does not list itself.
+
+Add it from pub.dev only if your own code imports `package:mediapipe_core/...`,
+because the `depend_on_referenced_packages` lint in Flutter's default rules
+expects an imported package to be listed:
+
+```sh
+flutter pub add mediapipe_core
+```
+
 ## What every family shares
 
 Each family's library (`package:mediapipe_vision/mediapipe_vision.dart`,
-`mediapipe_text` and `mediapipe_audio`) re-exports
+`mediapipe_text`, `mediapipe_audio`, `mediapipe_decision` and
+`mediapipe_retrieval`) re-exports
 `package:mediapipe_core/mediapipe_core.dart`, so these types are the same
 on every platform and in every family:
 
@@ -180,7 +197,7 @@ loading the bundle and WASM through Blob URLs. Then, before creating the
 first task:
 
 ```dart
-import 'package:mediapipe_core/mediapipe_core.dart';
+import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 void useSelfHostedRuntime() {
   MediaPipeWebRuntime.baseUrl = 'mediapipe/';
