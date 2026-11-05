@@ -16,7 +16,7 @@ pipeline.
 The runtimes are Google's MediaPipe 1.2.0: its per-family retrieval C
 library, which this package's build hook downloads and checks against its
 SHA-256 on Android 9+, iOS 15+, macOS 14+, Linux and Windows, on the CPU; and
-`@mediapipe/tasks-retrieval` 1.2.0-rc.20261018 in browsers, on the GPU delegate. Google's
+`@mediapipe/tasks-retrieval` 1.2.2 in browsers, on the GPU delegate. Google's
 browser Universal Embedder creates a WebGPU device for itself and has no CPU
 path
 ([UP-052](https://github.com/google/flutter-mediapipe/blob/main/upstream-issues.md#up-052-the-browser-universal-embedder-runs-only-on-a-hardware-webgpu-adapter)),
