@@ -8,5 +8,8 @@ void hideSplash() {
   final splash = web.document.getElementById('splash');
   if (splash == null || splash.classList.contains('done')) return;
   splash.classList.add('done');
-  splash.addEventListener('transitionend', ((web.Event _) => splash.remove()).toJS);
+  splash.addEventListener(
+    'transitionend',
+    ((web.Event _) => splash.remove()).toJS,
+  );
 }
