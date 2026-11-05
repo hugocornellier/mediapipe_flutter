@@ -1,5 +1,5 @@
 // Copyright 2026 The MediaPipe Authors. Licensed under Apache 2.0.
-// Adapted from mediapipe-nightly==1.2.2rc20261103 Python ctypes
+// Adapted from mediapipe==1.2.2 Python ctypes
 // audio/audio_transcriber.py and the 1.2.2 header
 // audio/audio_transcriber/audio_transcriber.h; the structs every family
 // shares are core's native_structs.dart. Every status-returning function

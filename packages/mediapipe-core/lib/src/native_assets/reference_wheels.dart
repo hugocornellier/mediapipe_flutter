@@ -60,46 +60,45 @@ const referenceWheels = <String, ReferenceWheel>{
 /// Google's wheel for the tasks whose 1.2.2 answers [referenceWheels]' 1.1.0
 /// cannot give: the Audio Transcriber and Text to Speech, new in Google's
 /// 1.2.2 C API, and the classic text tasks, whose Language Detector drops
-/// low-probability languages since (UP-065). It is Google's
-/// `mediapipe-nightly` 1.2.2 release candidate of November 3, a day newer
-/// than the family libraries' 1.2.2 release build of November 2, with the
-/// same C headers; Google publishes no 1.2.2 wheel of its own.
+/// low-probability languages since 1.1.0. It is Google's `mediapipe` 1.2.2
+/// release, the release build of November 2 that the family libraries also
+/// come from.
 const releaseReferenceWheels = <String, ReferenceWheel>{
   'macos/arm64': (
-    version: '1.2.2rc20261103',
+    version: '1.2.2',
     url:
-        'https://files.pythonhosted.org/packages/03/c1/'
-        'd23e279d1703f76980061c12e0760282d41d6b7dc30c918f8112cdbc36a2/'
-        'mediapipe_nightly-1.2.2rc20261103-py3-none-macosx_11_0_arm64.whl',
+        'https://files.pythonhosted.org/packages/a3/5c/'
+        'ce8750cfe2de42ab2433b2d6445f4a16225a63412d991b2970204b047d73/'
+        'mediapipe-1.2.2-py3-none-macosx_11_0_arm64.whl',
     wheelSha256:
-        '0faed967eb0c18f68d1935607de5736170cac933c0f5fb7cb36a743ce3beb533',
+        'd3bb50923652182344ad31cfd2a09697e52952bd4bca2384ecabc90e21db9a5f',
     libraryName: 'libmediapipe.dylib',
     librarySha256:
-        '10b6bdaa7efc9e74b352de88d7ae8e8fb1f12d3d2f869e4533c68d6019a3bba1',
+        '6cb3aa2e19bce289939b617fb96c306db0449f757569ea22df7a4a9c14ac7c60',
   ),
   'linux/x64': (
-    version: '1.2.2rc20261103',
+    version: '1.2.2',
     url:
-        'https://files.pythonhosted.org/packages/c6/b2/'
-        '96ec0c347c327e3f93db7883b09c2cdfaa2f8c3e30686a33fa9bb934498d/'
-        'mediapipe_nightly-1.2.2rc20261103-py3-none-manylinux_2_28_x86_64.whl',
+        'https://files.pythonhosted.org/packages/86/67/'
+        '717b257855c5550a3449907e110954506a306bf3e127717f7ab45450f0da/'
+        'mediapipe-1.2.2-py3-none-manylinux_2_28_x86_64.whl',
     wheelSha256:
-        'b7256eca2d521e7cb4c6d4a9e03357632df00692e37beb31a7d0aec8dc0c57bf',
+        'c0b641bf1515dd186036da711df597a514466c0ba97a138f35b698ecc0411a61',
     libraryName: 'libmediapipe.so',
     librarySha256:
-        '78c8d7bcb6d26c3eaca80fb039413cd78a21cf7c7d86bf89d923ab6b0b6ff538',
+        '022f20f556e1148d6be05672475a483ba6358347fee8236e70ce8ef6a48aff72',
   ),
   'windows/x64': (
-    version: '1.2.2rc20261103',
+    version: '1.2.2',
     url:
-        'https://files.pythonhosted.org/packages/11/4c/'
-        '64444faaf03d135d285b9fc32fc13427843b7aed02fd746b81cd935cea8d/'
-        'mediapipe_nightly-1.2.2rc20261103-py3-none-win_amd64.whl',
+        'https://files.pythonhosted.org/packages/6a/b0/'
+        '6d1cb31a04f1726cdcd86cf0ea3eb1e9304e59de03bb083571dcab4ac227/'
+        'mediapipe-1.2.2-py3-none-win_amd64.whl',
     wheelSha256:
-        'e7179e2e85bd575b41497527590c9ccf391ad2b4349bde81c4245c88e03f5db7',
+        '71f44832fdd32b6270bc4379bcdd934287fb9eab974c3e74ef3fa76c7e79b54a',
     libraryName: 'libmediapipe.dll',
     librarySha256:
-        '31e12af83fd79c6c214a649586805e09cd00f373ed510c27fc1c48dbe004443e',
+        '5def5b273a5acf0a90cdbf45cc12888dbddcf3323a1b0353331e40383db310d1',
   ),
 };
 

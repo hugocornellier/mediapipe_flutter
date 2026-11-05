@@ -303,9 +303,9 @@ Firebase Test Lab's phones run the stream on Google's mobile libraries against
 the same device's clips results.
 
 The speech tests compare both tasks with Google's own Python
-(`test/fixtures/official_speech_reference.json`, from the macOS
-1.2.2rc20261103 wheel, Google's first with these tasks in Python; the package
-loads the 1.2.2 release library): the transcript and segment timestamps of
+(`test/fixtures/official_speech_reference.json`, from the macOS 1.2.2 wheel,
+Google's first release with these tasks in Python; the package loads the same
+release's audio library): the transcript and segment timestamps of
 both speech clips, whole and in one-second blocks with and without interim
 results; and for Text to Speech the voices, four utterances in three
 languages (Unicode text included), a faster speaking rate and a streamed
