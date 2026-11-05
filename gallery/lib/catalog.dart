@@ -412,7 +412,7 @@ final _catalog = <GalleryTask>[
     capabilities: _audio,
   ),
   // The audio package's speech tasks, on Google's per-family audio library.
-  // Their models are downloaded on first use; the web runtime has neither.
+  // Their models are downloaded on first use.
   GalleryTask(
     id: 'audio_transcriber',
     category: GalleryCategory.audio,

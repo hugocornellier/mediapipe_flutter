@@ -339,6 +339,7 @@ dependency_overrides:
 
 dev_dependencies:
   camera_platform_interface: ^2.13.1
+  ffi: ^2.1.4
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter

@@ -127,6 +127,7 @@ const nativeTargets = [
 /// EmbeddingGemma alone of the generative text tasks.
 const webTasks = {
   'audio_classifier',
+  'audio_transcriber',
   'decision_maker',
   'embedding_gemma',
   'face_detector',
@@ -144,6 +145,7 @@ const webTasks = {
   'semantic_retriever',
   'text_classifier',
   'text_embedder',
+  'text_to_speech',
   'universal_embedder',
 };
 

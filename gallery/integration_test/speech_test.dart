@@ -8,13 +8,15 @@ import 'package:mediapipe_gallery/bundled_model_assets.dart';
 import 'package:mediapipe_gallery/main.dart' show GalleryAssets;
 import 'package:mediapipe_gallery/speech_page.dart' show speechSampleText;
 
+import 'support/metal_memory.dart';
+
 // The speech tasks inside the gallery app, beside the other runtimes:
 // Google's per-family audio library must transcribe and speak as Google's
 // Python API does on every platform. The package's native test covers every
 // reference case (test/fixtures/official_speech_reference.json); this checks
 // the app build, its model downloads and the runtime together. 32-bit
-// Android refuses both tasks (largeModelNeeds64Bit), and browsers have
-// neither.
+// Android refuses both tasks (largeModelNeeds64Bit). Browsers run
+// tool/web_speech_probe.dart instead.
 const _transcript = "Send a text to Mike, I'll be home late tomorrow.";
 
 /// The fox utterance in Google's default voice: 74880 samples at 24 kHz and
@@ -56,6 +58,10 @@ const _streamWords = [
 /// 24 kHz) either way in length, and word times within a frame.
 const _sampleSlack = 2 * 1920;
 const _secondsSlack = 0.08;
+
+/// What the GPU run must hold on Metal beyond the CPU run: far below the
+/// model's weights, and far above what the app draws between two runs.
+const _metalProof = 32 * 1024 * 1024;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -129,6 +135,62 @@ void main() {
       } finally {
         await task.dispose();
       }
+    });
+  });
+
+  // Google's library accepts the GPU delegate and can stay on the CPU, as its
+  // Text to Speech does, and the answer reads the same: so the proof
+  // is the memory the task holds on Metal.
+  testWidgets('Audio Transcriber runs on the GPU only where it does the work', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final assets = await GalleryAssets.unpack();
+      if (!assets.bundledTasks.contains('audio_transcriber')) {
+        markTestSkipped('This build bundles no Audio Transcriber.');
+        return;
+      }
+      final capabilities = await queryAudioTranscriberCapabilities();
+      if (!capabilities.supportedDelegates.contains(Delegate.gpu)) {
+        await expectLater(
+          AudioTranscriber.create(
+            AudioTranscriberOptions(
+              model: AudioModels.parakeetTdtV3,
+              delegate: Delegate.gpu,
+            ),
+          ),
+          throwsA(isA<RuntimeUnavailableException>()),
+        );
+        markTestSkipped(
+          'Audio Transcriber GPU: '
+          '${capabilities.unavailableReasons[Delegate.gpu]}',
+        );
+        return;
+      }
+      final modelPath = await GalleryAssets.downloadedModelPath(
+        AudioModels.parakeetTdtV3,
+      );
+      final audio = decodeWav(
+        await loadAssetBytes('assets/samples/speech_16000_hz_mono.wav'),
+      );
+      Future<int> grown(Delegate delegate) async {
+        final before = metalAllocatedBytes();
+        final task = await AudioTranscriber.create(
+          AudioTranscriberOptions(modelPath: modelPath, delegate: delegate),
+        );
+        try {
+          expect((await task.transcribe(audio)).text, _transcript);
+          return metalAllocatedBytes() - before;
+        } finally {
+          await task.dispose();
+        }
+      }
+
+      final onCpu = await grown(Delegate.cpu);
+      final onGpu = await grown(Delegate.gpu);
+      // ignore: avoid_print
+      print('Metal bytes the transcriber added: CPU $onCpu, GPU $onGpu');
+      expect(onGpu, greaterThan(onCpu + _metalProof));
     });
   });
 
