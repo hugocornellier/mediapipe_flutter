@@ -43,6 +43,14 @@ on:
         description: The variable that points the package tests at that reference
         type: string
         default: ''
+      macos-gpu-tasks:
+        description: The family's tasks whose integration test proves the GPU on the Mac runner; its coverage cells
+        type: string
+        default: ''
+      web-delegate:
+        description: The delegate the browser journey runs the family's tasks on
+        type: string
+        default: gpu
       jobs:
         description: Jobs to run (package, gallery, web), comma-separated, or all
         type: string
@@ -174,6 +182,15 @@ jobs:
           delegate: cpu
           tasks: ${{ inputs.tasks }}
           outcome: ${{ steps.app.outcome == 'success' && steps.journey.outcome || steps.app.outcome }}
+      - name: Record macos GPU ${{ inputs.family }} coverage
+        if: always() && matrix.device == 'macos' && inputs.macos-gpu-tasks != ''
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: macos-${{ inputs.family }}-gpu
+          platform: macos
+          delegate: gpu
+          tasks: ${{ inputs.macos-gpu-tasks }}
+          outcome: ${{ steps.app.outcome == 'success' && steps.journey.outcome || steps.app.outcome }}
 
   web:
     if: ${{ inputs.jobs == 'all' || contains(inputs.jobs, 'web') }}
@@ -230,13 +247,13 @@ jobs:
         env:
           TASKS: ${{ inputs.tasks }}
         run: node gallery/tool/browser/test_gallery_journey.mjs --browser=${{ matrix.browser }} --tasks="$TASKS"
-      - name: Record web GPU ${{ inputs.family }} coverage
+      - name: Record web ${{ inputs.web-delegate }} ${{ inputs.family }} coverage
         if: always() && matrix.browser == 'chromium'
         uses: ./.github/actions/record-coverage
         with:
           suite: web-${{ inputs.family }}-chromium-${{ matrix.os }}
           platform: web
-          delegate: gpu
+          delegate: ${{ inputs.web-delegate }}
           tasks: ${{ inputs.tasks }}
           outcome: ${{ steps.web_journey.outcome }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
