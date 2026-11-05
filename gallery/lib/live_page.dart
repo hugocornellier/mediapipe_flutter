@@ -985,43 +985,13 @@ class _LivePageState extends State<LivePage>
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Color(0xFFF0F3F2)),
                 ),
+                // The starting card below shows progress instead.
+                null when controller.initializing => const SizedBox.shrink(),
                 null => const CircularProgressIndicator(),
               },
             ),
-            if (controller.initializing &&
-                controller.frameSize != null &&
-                error == null)
-              Center(
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: const Color(0xDD101715),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            'Model initializing...',
-                            style: TextStyle(color: Color(0xFFF0F3F2)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            if (controller.initializing && error == null)
+              Center(child: IgnorePointer(child: _StartingCard(controller))),
             if (controller.canSwitchCamera)
               Positioned(
                 left: 14,
@@ -1043,7 +1013,15 @@ class _LivePageState extends State<LivePage>
                 '${controller.recentFramesPerSecond.toStringAsFixed(1)} fps',
                 '${controller.recentInferenceMilliseconds.toStringAsFixed(0)} ms',
               ]
-            : [controller.initializing ? 'Model initializing...' : 'Stopped'],
+            : [
+                controller.initializing
+                    ? [
+                        controller.startingStep,
+                        if (controller.startingProgress case final progress?)
+                          '${(progress * 100).round()}%',
+                      ].join(' ')
+                    : 'Stopped',
+              ],
         delegate: controller.delegate == Delegate.gpu ? 'GPU' : 'CPU',
         trailing: phone
             ? Row(
@@ -1081,3 +1059,69 @@ class _LivePageState extends State<LivePage>
 }
 
 enum _VisionInputMode { camera, image, video }
+
+/// What a camera demo's start is waiting on, and how far along it is: the
+/// model's download, then the runtime, the camera and the warm-up.
+class _StartingCard extends StatelessWidget {
+  const _StartingCard(this.controller);
+  final LiveCameraController<Object?> controller;
+
+  @override
+  Widget build(BuildContext context) {
+    const text = Color(0xFFF0F3F2);
+    final detail = controller.startingDetail;
+    final progress = controller.startingProgress;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xDD101715),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: SizedBox(
+          width: 220,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${controller.startingStep}...',
+                      style: const TextStyle(color: text),
+                    ),
+                  ),
+                  if (progress != null)
+                    Text(
+                      '${(progress * 100).round()}%',
+                      style: const TextStyle(color: text),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 4,
+                  backgroundColor: text.withValues(alpha: .2),
+                ),
+              ),
+              if (detail != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  detail,
+                  style: TextStyle(
+                    color: text.withValues(alpha: .7),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
