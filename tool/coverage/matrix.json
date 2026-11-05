@@ -553,6 +553,58 @@
         "cpu": "required",
         "gpu": "unsupported: Google runs Decision Maker on the CPU only on this platform"
       }
+    },
+    "audio_transcriber": {
+      "web": {
+        "cpu": "unsupported: Google's browser runtime has no Audio Transcriber",
+        "gpu": "unsupported: Google's browser runtime has no Audio Transcriber"
+      },
+      "android": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Audio Transcriber on the CPU only on this platform"
+      },
+      "ios": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Audio Transcriber on the CPU only on this platform"
+      },
+      "macos": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Audio Transcriber on the CPU only on this platform"
+      },
+      "linux": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Audio Transcriber on the CPU only on this platform"
+      },
+      "windows": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Audio Transcriber on the CPU only on this platform"
+      }
+    },
+    "text_to_speech": {
+      "web": {
+        "cpu": "unsupported: Google's browser runtime has no Text to Speech",
+        "gpu": "unsupported: Google's browser runtime has no Text to Speech"
+      },
+      "android": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Text to Speech on the CPU only on this platform"
+      },
+      "ios": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Text to Speech on the CPU only on this platform"
+      },
+      "macos": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Text to Speech on the CPU only on this platform"
+      },
+      "linux": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Text to Speech on the CPU only on this platform"
+      },
+      "windows": {
+        "cpu": "required",
+        "gpu": "unsupported: Google runs Text to Speech on the CPU only on this platform"
+      }
     }
   }
 }
