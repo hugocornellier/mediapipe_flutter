@@ -27,6 +27,7 @@ List<String> coverageMatrixProblems(
       operatingSystem: 'web',
       architecture: 'unknown',
       gpu: webGpu,
+      browserEngine: BrowserEngine.blink,
     ),
     'android': const TaskPlatform(
       operatingSystem: 'android',

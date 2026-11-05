@@ -208,12 +208,20 @@ why.
 
 Both run on the CPU. Google's library can accept the GPU delegate and stay on
 the CPU with the same answer, so this package offers it only where a test saw
-the GPU do the work. That is `AudioTranscriber` on macOS and iPhones (Metal) and
-in Chromium, Firefox and WebKit with a hardware WebGPU adapter. Text to Speech
-ignores the delegate everywhere it was tried (UP-066 in `upstream-issues.md`),
-so it stays on the CPU. Elsewhere, including Android, Linux, Windows and the iOS
-simulator, the GPU delegate throws a `RuntimeUnavailableException` that says
-why.
+the GPU do the work. That is `AudioTranscriber` on:
+
+- macOS arm64 (Metal). CI's package tests check it on each macOS version they
+  run on.
+- Chromium and WebKit on a Mac's Apple adapter (WebGPU), each checked on a
+  developer's Mac. CI's browser job is set to repeat Chromium's check on a hosted
+  Mac; it has no such job for WebKit.
+
+iPhones (Metal) are offered too, but the device test is still to run. Text to
+Speech ignores the delegate everywhere it was tried, so it stays on the CPU.
+Elsewhere, including Android, Linux, Windows, the iOS simulator, Firefox,
+browsers on other adapters and browsers on iPhones and iPads, the GPU delegate
+throws a `RuntimeUnavailableException` that says why. Firefox had no adapter
+where it was tried, so it has no proof either way.
 
 Their models are large (Parakeet
 615 MB, CC BY 4.0; Phonon 87 MB), so an app usually downloads them on first

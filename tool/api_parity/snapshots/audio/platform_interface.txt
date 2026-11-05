@@ -18,6 +18,8 @@ getter Future<AudioTaskBackend> Function(Map<String, Object?>)? get audioTaskBac
 setter set audioTaskBackendFactory(Future<AudioTaskBackend> Function(Map<String, Object?>)? value)
 getter Future<AudioTranscriberRunner> Function(AudioTranscriberOptions)? get audioTranscriberOpener
 setter set audioTranscriberOpener(Future<AudioTranscriberRunner> Function(AudioTranscriberOptions)? value)
+getter bool get browserOnMac
+setter set browserOnMac(bool value)
 getter void Function(int)? get debugGoogleStreamTimestamp
 setter set debugGoogleStreamTimestamp(void Function(int)? value)
 getter Future<TextToSpeechRunner> Function(TextToSpeechOptions)? get textToSpeechOpener

@@ -1220,12 +1220,17 @@ async function speechChecks() {
   const work = await page.evaluate(() => window.webGpuWork);
   report.speech_gpu = {offered: gpu.offered, adapter: gpu.adapter ?? null, ...work, reason: gpu.reason ?? null};
   if (argumentsMap['require-speech-gpu'] === 'true') assert.equal(gpu.offered, true, 'no GPU offered: ' + gpu.reason);
+  // The package offers it only where this suite saw the work: Chromium and
+  // WebKit on a Mac's Apple adapter.
+  const proved = process.platform === 'darwin' && browserName !== 'firefox' && /^WebGPU apple\b/.test(gpu.adapter ?? '');
+  assert.equal(gpu.offered, proved, `offered on ${gpu.adapter}: ${gpu.reason}`);
   if (gpu.offered) {
     assert.ok(work.pipeline > 0 && work.submit > 0, 'the GPU delegate did no WebGPU work: ' + JSON.stringify(work));
     assert.equal(gpu.text, transcript);
     assert.ok(Math.abs(gpu.whole[0].to - 4272) <= 100, 'the GPU segment ends at ' + gpu.whole[0].to);
   } else {
     assert.equal(gpu.refused, 'RuntimeUnavailableException');
+    assert.match(gpu.reason, /hardware WebGPU adapter|a test proved/, 'the refusal says why');
     assert.deepEqual(work, {submit: 0, pipeline: 0}, 'WebGPU work with no GPU offered');
   }
   report.checks.push('audio-transcriber-gpu-does-the-work');

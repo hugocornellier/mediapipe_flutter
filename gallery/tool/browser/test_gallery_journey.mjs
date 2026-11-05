@@ -103,6 +103,7 @@ browser.on('disconnected', () => lifecycle('browser disconnected'));
 let page;
 let hardwareWebGpu = false;
 let retry = false;
+let transcriberWebGpu = false;
 try {
   const context = await browser.newContext({viewport: {width: 1280, height: 900}});
   context.on('close', () => lifecycle('context closed'));
@@ -177,6 +178,8 @@ try {
     return !!adapter && !adapter.isFallbackAdapter &&
       !/fallback|swiftshader|llvmpipe|software|lavapipe/i.test(`${info.vendor} ${info.architecture} ${info.description}`);
   });
+  transcriberWebGpu = hardwareWebGpu && process.platform === 'darwin' && browserName !== 'firefox' &&
+    await page.evaluate(async () => (await navigator.gpu.requestAdapter({powerPreference: 'high-performance'})).info.vendor === 'apple');
   // On a hardware adapter WebKit still runs no EmbeddingGemma 2 model, as
   // Google's runtime embeds every input there as zeros: the retrieval tasks and
   // Hungry Fish are cards, and Decision Maker runs Laya.
@@ -342,8 +345,9 @@ try {
         ? page.locator('[flt-semantics-identifier="transcriber-text"]') : page.getByText(answer);
       const result = spec.transcribe ? output.filter({hasText: answer}) : output;
       const error = page.getByText('Error', {exact: true});
-      // The GPU delegate takes a hardware adapter; the page offers none without.
-      const delegates = delegatesFor(id).filter(delegate => delegate === 'cpu' || hardwareWebGpu);
+      // The page offers the GPU delegate only where a test saw the work: Chromium
+      // and WebKit on a Mac's Apple adapter.
+      const delegates = delegatesFor(id).filter(delegate => delegate === 'cpu' || transcriberWebGpu);
       for (const delegate of delegates) {
         enter(`${id}:${delegate}:${check}`);
         if (delegates.length > 1) {

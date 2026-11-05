@@ -35,3 +35,9 @@ audioTranscriberOpener;
 /// package opens Google's native task itself.
 Future<TextToSpeechRunner> Function(TextToSpeechOptions options)?
 textToSpeechOpener;
+
+/// Whether the browser runs on a Mac, which its WebGPU adapter does not say:
+/// Safari names the same adapter on iPhones and iPads.
+///
+/// Set by this package's web code; false elsewhere.
+bool browserOnMac = false;
