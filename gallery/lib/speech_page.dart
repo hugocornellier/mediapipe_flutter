@@ -104,9 +104,16 @@ class _SpeechPageState extends State<SpeechPage> with RevisionedState {
           speakingRate: rate,
         ),
       );
+      // The page closed during the load, so its dispose found no task.
+      if (!mounted) {
+        await task.dispose();
+        throw StateError('The page closed.');
+      }
+      // Set first, so that a dispose or failure during the listing closes it.
+      _task = task;
       _taskRate = rate;
       _voices = await task.listVoices();
-      return _task = task;
+      return task;
     } finally {
       if (mounted) setState(() => _modelStatus = null);
     }
