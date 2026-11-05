@@ -59,7 +59,9 @@ but the gallery's own tasks load from jsDelivr, as any app's do by default.
   read with range requests, then the same file in this project's
   pre-release `per-family-v1.2.0-nightly.20261018` of
   `hugocornellier/mediapipe_flutter_native` (`familyRuntimeBaseUrl`, posted
-  2026-10-19), named `<sha256>-<file>`.
+  2026-10-19), named `<sha256>-<file>`. Since 0.2.0 both name Google's 1.2.2
+  release; its mirror release is not posted, so the hooks have only Google's
+  archive.
 - **Retries, backoff and resume for every native download** (#89).
   `packages/mediapipe-core/lib/src/verified_download.dart`: each request gets
   up to 3 attempts on a connection error, a timeout or HTTP 408, 429, 500,
