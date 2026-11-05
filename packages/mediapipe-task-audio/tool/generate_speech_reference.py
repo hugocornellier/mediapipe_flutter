@@ -1,7 +1,7 @@
 """Capture Google's Audio Transcriber and Text to Speech outputs for the tests.
 
 Runs the official Python API from the checksum-pinned speech wheel for this
-host (core's `speechReferenceWheels`: Google's 1.1.0 wheel, which the other
+host (core's `releaseReferenceWheels`: Google's 1.1.0 wheel, which the other
 audio references use, has neither task), so the Dart suite on each desktop CI
 runner compares against Google's own library on that runner. Never derive
 expected values from the Dart implementation.
@@ -137,7 +137,7 @@ def main():
     os.environ.setdefault('MPLCONFIGDIR', str(PACKAGE / 'build/matplotlib'))
     import mediapipe as mp
 
-    runtime = host_runtime('speechReferenceWheels')
+    runtime = host_runtime('releaseReferenceWheels')
     name, version = HOST_NAMES[platform.system()], runtime['version']
     assert mp.__version__ == version, mp.__version__
     library = Path(mp.__file__).parent / 'tasks/c' / runtime['library']

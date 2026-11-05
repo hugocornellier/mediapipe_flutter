@@ -1,7 +1,7 @@
 """Generate independent speech references on the host running the tests.
 
 Uses Google's checksum-pinned speech wheel for this host (core's
-`speechReferenceWheels`) and never rewrites the checked-in reference or
+`releaseReferenceWheels`) and never rewrites the checked-in reference or
 changes test tolerances. Set MEDIAPIPE_SPEECH_REFERENCE_DIR to the output
 directory to test against it.
 """
@@ -65,7 +65,7 @@ def main():
     parser.add_argument('--python', type=Path, help='Existing environment with the pinned wheel')
     parser.add_argument('--output-dir', type=Path, default=REPO / 'build/speech-reference')
     args = parser.parse_args()
-    runtime = host_runtime('speechReferenceWheels')
+    runtime = host_runtime('releaseReferenceWheels')
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
     receipt = output / 'provenance.json'
