@@ -2,7 +2,7 @@
 
 Runs `packages/mediapipe-core/tool/pin_nightly.py --generation`, which hashes
 Google's archive once and pins its generation, then moves the browser
-runtimes to the npm prerelease of the same night (`1.2.0-rc.<YYYYMMDD>`) when
+runtimes to the npm prerelease of the same night (`1.2.2-rc.<YYYYMMDD>`) when
 npm has it for every family. The changed files go to `<out>/files/` for the
 comparison jobs to copy over their checkout (.github/actions/nightly-pin),
 next to the change as a patch, pin_nightly's report and its log:
@@ -73,11 +73,9 @@ def runtime_pins():
 
 
 def web_version(current, stamp):
-    """The npm prerelease of night `stamp`, in the form the pins use now."""
-    prefix, separator, _ = current.rpartition('-rc.')
-    if not separator:
-        raise SystemExit(f'The browser runtime {current} is not an npm nightly (-rc.).')
-    return f'{prefix}-rc.{stamp}'
+    """The npm prerelease of night `stamp`, for a pin on a release of that
+    version or on another of its prereleases."""
+    return f"{current.partition('-rc.')[0]}-rc.{stamp}"
 
 
 def passing(error):
@@ -137,7 +135,7 @@ def pin_web(stamp):
     named = {relative: (REPO / relative).read_text(encoding='utf-8')
              for relative in WEB_VERSION_NAMED}
     for relative, text in named.items():
-        if f"'{old}'" not in text:
+        if f"_webRuntimeVersion = '{old}'" not in text:
             raise SystemExit(f"{relative} does not name '{old}'")
     try:
         entries = {path: registry_entry(pin['package'], version) for path, pin in pins.items()}
@@ -156,7 +154,8 @@ def pin_web(stamp):
     for path, pin in pins.items():
         path.write_text(json.dumps(pin, indent=2) + '\n', encoding='utf-8')
     for relative, text in named.items():
-        (REPO / relative).write_text(text.replace(f"'{old}'", f"'{version}'"),
+        (REPO / relative).write_text(text.replace(f"_webRuntimeVersion = '{old}'",
+                                                  f"_webRuntimeVersion = '{version}'"),
                                      encoding='utf-8')
     return f'browser runtimes moved from {old} to {version}', True
 

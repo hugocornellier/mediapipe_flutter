@@ -102,7 +102,7 @@ What already helps in browsers:
 
 - `dart run mediapipe_core:web_runtime web/mediapipe` and
   `MediaPipeWebRuntime.baseUrl = 'mediapipe/'` self-host the browser runtime.
-  It is opt-in, takes a step after every runtime bump, and copies all seven
+  It is opt-in, takes a step after every runtime bump, and copies all five
   files `runtime.json` lists, though a browser loads three of them (below).
 - `DownloadAsset.mirrors` are tried in order. The `asset_source` user define,
   `ModelStore(source: ...)` and `MEDIAPIPE_ASSET_SOURCE` replace every host
@@ -121,31 +121,30 @@ per file and location, with no retry and no timeout of its own.
 
 **A browser loads three files per family.** The loader calls
 `FilesetResolver.for<Family>Tasks('wasm', true)`. With `true` (use a module),
-Google's resolver skips its SIMD check and always returns the module build.
-From `text_bundle.mjs` 1.2.0-rc.20261018, read on 2026-10-22, unchanged
-since 1.0.1:
+Google's resolver always returns the module build.
+From `text_bundle.mjs` 1.2.2, read on 2026-11-04:
 
 ```js
-async function Wo(t){if(t)return!0; /* ...SIMD probe... */}
-async function Ho(t,e,r){return{wasmLoaderPath:`${e}/${t}_${r=`wasm${r?"_module":""}${await Wo(r)?"":"_nosimd"}_internal`}.js`,wasmBinaryPath:`${e}/${t}_${r}.wasm`}}
+function $o(t,e,r){return r=`wasm${r?"_module":""}_internal`,Promise.resolve({wasmLoaderPath:`${e}/${t}_${r}.js`,wasmBinaryPath:`${e}/${t}_${r}.wasm`})}
 ```
 
 So the files are `<family>_bundle.mjs` and
-`wasm/<family>_wasm_module_internal.{js,wasm}`. The SIMD and no-SIMD builds
-in `runtime.json` are never loaded, and `verified_runtime.js`'s comment that
-the resolver "only picks the variant this browser supports (SIMD or not)" is
-wrong for this call.
+`wasm/<family>_wasm_module_internal.{js,wasm}`. The other build in
+`runtime.json` is never loaded. 1.2.2-rc.20261103 dropped the no-SIMD builds
+and the SIMD probe, so `runtime.json` lists five files, where 1.2.0-rc listed
+seven.
 
-**Sizes.** The three files of the pinned 1.2.0-rc.20261018 runtimes,
-measured on 2026-10-22: vision 15.0 MB, text 7.4, audio 7.0, retrieval 23.7,
-decision 26.1, so 79 MB for all five. `gzip -9` takes retrieval's 23.4 MB
-WASM to 6.7 MB (29%), and all fifteen files to 23 MB. All seven files are
-about three times that (npm unpacked: vision 46 MB, text 24, audio 23,
-retrieval 73, decision 81). pub.dev refuses a package over 100 MB. The
-repository's pack is 73 MB. The browser pins have moved once since they were
-added: #89 (2026-10-19) took all five to 1.2.0-rc.20261018, from 1.0.1 for
-vision, text and audio and 1.1.0 for decision and retrieval. Committed files
-would grow the history by about 23 MB compressed at each bump of all five.
+**Sizes.** The three files of the pinned 1.2.2 runtimes, measured on
+2026-11-04: vision 15.1 MB, text 7.4, audio 22.1, retrieval 24.2, decision
+26.6, so 95 MB for all five. Audio tripled from 7.0 MB in 1.2.0-rc.20261018
+when it gained the speech tasks. `gzip -9` takes retrieval's 23.8 MB WASM to
+6.9 MB (29%), and all fifteen files to 28 MB. All five files of each family
+are twice that (vision 30 MB, text 15, audio 44, retrieval 48, decision 53).
+pub.dev refuses a package over 100 MB. The repository's pack is 73 MB. The
+browser pins have moved twice since they were added: #89 (2026-10-19) took
+all five to 1.2.0-rc.20261018, from 1.0.1 for vision, text and audio and 1.1.0
+for decision and retrieval, and 0.2.0 took them to 1.2.2. Committed files
+would grow the history by about 28 MB compressed at each bump of all five.
 
 **Cross-origin rules decide which hosts a browser can use.** A worker
 fetching from another origin needs `Access-Control-Allow-Origin` on the
@@ -171,10 +170,11 @@ that changed between attempts is caught by the final SHA-256 check, not by
 the host.
 
 **Licenses allow it.** Google's npm runtimes are Apache-2.0 (`package.json`'s
-`license`), and since 1.2.0-rc.20261018 each tarball carries `LICENSE` and
-`NOTICE` files, so the packages may ship the runtimes with those files, as
-core already does for the native libraries in
-`packages/mediapipe-core/third_party/`. Models need a check per model before
+`license`). The nightlies (1.2.0-rc.20261018, 1.2.2-rc.20261104) carry `LICENSE`
+and `NOTICE` files, but the 1.2.2 release tarballs do not (checked 2026-11-04),
+so packages shipping the runtimes would bring those files from
+`packages/mediapipe-core/third_party/`, as core already does for the native
+libraries. Models need a check per model before
 anyone mirrors them: `mirror_runtime_assets.py` marks the Gemma-based ones
 `Gemma Terms`, whose notice must travel with every copy.
 

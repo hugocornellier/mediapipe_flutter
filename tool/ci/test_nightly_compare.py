@@ -216,14 +216,17 @@ class Pin(unittest.TestCase):
         versions = {value['version'] for value in pins.values()}
         self.assertEqual(len(versions), 1)
         version = versions.pop()
-        self.assertEqual(pin.web_version(version, '20261021'),
-                         version.rpartition('-rc.')[0] + '-rc.20261021')
         for relative in pin.WEB_VERSION_NAMED:
-            self.assertIn(f"'{version}'", (REPO / relative).read_text(encoding='utf-8'))
+            self.assertIn(f"_webRuntimeVersion = '{version}'",
+                          (REPO / relative).read_text(encoding='utf-8'))
         for path, value in pins.items():
             # nightly_pin.py rewrites runtime.json with json.dumps(indent=2).
             self.assertEqual(path.read_text(encoding='utf-8'),
                              json.dumps(value, indent=2) + '\n', path)
+
+    def test_web_version_from_a_release_or_a_prerelease(self):
+        self.assertEqual(pin.web_version('1.2.2', '20261105'), '1.2.2-rc.20261105')
+        self.assertEqual(pin.web_version('1.2.2-rc.20261103', '20261105'), '1.2.2-rc.20261105')
 
     def test_npm_down_leaves_the_browser_pins(self):
         """npm failing after its retries costs the browser comparison, not
