@@ -1,4 +1,4 @@
-## 0.2.0 (unreleased)
+## 0.2.0
 
 - Audio Transcriber: speech to text on Google's 1.2.2 native library, with
   `AudioModels.parakeetTdtV3` (Parakeet TDT 0.6B v3), whole clips or blocks
