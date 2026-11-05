@@ -45,8 +45,9 @@ python3 -B tool/check_archives.py    # an app builds from the archives' files
 python3 -B packages/mediapipe-core/tool/test_bundled_models.py
 ```
 
-`make test` leaves out Decision's and Retrieval's models (678 MB and 388 MB),
-so their reference tests skip; run `make models_all` first to include them.
+`make test` leaves out Decision's and Retrieval's models (678 MB and 388 MB)
+and the speech models (Parakeet 615 MB, Phonon 87 MB), so their reference
+tests skip; run `make models_all` first to include them.
 CI runs them with cached models.
 
 The last two build fresh apps from the packages as pub.dev would ship them.
@@ -87,31 +88,35 @@ retrieval tasks to be cards with their reason
 
 ## Versions and the first release
 
-The first release is 0.1.0 of `mediapipe_core`, `mediapipe_vision`,
-`mediapipe_text`, `mediapipe_audio`, `mediapipe_decision` and
-`mediapipe_retrieval`, published together.
+`mediapipe_core`, `mediapipe_vision`, `mediapipe_text`, `mediapipe_audio`,
+`mediapipe_decision` and `mediapipe_retrieval` share one version and publish
+together. The version is 0.2.0. 0.1.0 is tagged `v0.1.0`, but pub.dev refused
+its upload on November 4, 2026, so none of it is on pub.dev.
 
 On pub.dev, `mediapipe_core` and `mediapipe_text` are Google's 0.0.1 previews
 from May 2024, published from
 [google/flutter-mediapipe](https://github.com/google/flutter-mediapipe).
 Only their uploaders can publish new versions of these names, and the next
 version must be above 0.0.1. Under Dart's rules for versions before 1.0, the minor version
-marks a breaking change, so 0.1.0 is the version that follows Google's
-previews. `mediapipe_vision`, `mediapipe_audio`, `mediapipe_decision` and
-`mediapipe_retrieval` were free names on October 9, 2026, kept at 0.1.0 so
-all six release together.
+marks a breaking change, so the versions that follow Google's previews start
+at 0.1.0. `mediapipe_vision`, `mediapipe_audio`, `mediapipe_decision` and
+`mediapipe_retrieval` were still free names on November 5, 2026, and take the
+same version so all six release together. pub.dev's automated publishing covers
+only packages that already exist, so each of those four needs its first
+version uploaded by hand with `flutter pub publish`, then automated publishing
+turned on for it, before `.github/workflows/release.yaml` can publish it.
 
-Until 0.1.0 is on pub.dev:
+Until 0.2.0 is on pub.dev:
 
-- Every package stays at `version: 0.1.0`, however much changes.
-- Each CHANGELOG has one section, `## 0.1.0`, describing the package as it
-  ships. Edit that section; do not add version sections, and do not call a
-  change breaking or list what it renamed, since no release came before it.
+- Every package stays at `version: 0.2.0`, however much changes.
+- Each CHANGELOG's `## 0.2.0` section describes what changed since 0.1.0. Edit
+  that section; do not add version sections, and do not call a change breaking
+  or list what it renamed, since no release after 0.0.1 reached pub.dev.
 - `MIGRATION.md` covers only Google's published 0.0.1 API. Changes between
   unpublished states never need a migration note.
 
 The pubspecs are publishable as checked in: no `publish_to: none`, and each
-family depends on `mediapipe_core: ^0.1.0`, as its published copy must. A
+family depends on `mediapipe_core: ^0.2.0`, as its published copy must. A
 checked-in `pubspec_overrides.yaml` beside each family pubspec (and in the
 sample, the benchmarks and every generated consumer app) points
 `mediapipe_core` at the sibling package instead, so a checkout builds against

@@ -10,14 +10,13 @@ hook uses to bundle its own:
 
 | Platform | Runtime |
 | --- | --- |
-| Android 9+ (arm64-v8a, x86_64; armeabi-v7a on the CPU, without the large models), iOS 15+ (device, arm64 simulator), macOS 14+ arm64, Linux x64, Windows x64 | Google's MediaPipe 1.2.0 C library for each family (`MediaPipeTasksVisionC`, `libmediapipe_tasks_text`, and so on), bundled by that family's hook |
+| Android 9+ (arm64-v8a, x86_64; armeabi-v7a on the CPU, without the large models), iOS 15+ (device, arm64 simulator), macOS 14+ arm64, Linux x64, Windows x64 | Google's MediaPipe 1.2.2 C library for each family (`MediaPipeTasksVisionC`, `libmediapipe_tasks_text`, and so on), bundled by that family's hook |
 | Web | Google's JavaScript runtime, through each family's web plugin |
 
 An app ships only the libraries of the families it depends on, and needs no
-setting to get them. The hooks download them from a pre-release of
-`hugocornellier/mediapipe_flutter_native`, where Google's development builds
-are posted unmodified until Google publishes them, and check every file's
-SHA-256 and size (`lib/src/native_assets/family_runtimes.dart`).
+setting to get them. The hooks read them from Google's release archive on
+`storage.googleapis.com` and check every file's SHA-256 and size
+(`lib/src/native_assets/family_runtimes.dart`).
 `hooks.user_defines.mediapipe_core.asset_source` can point at a directory
 holding them, named by SHA-256, instead.
 
@@ -50,9 +49,8 @@ and platform plugins need and apps do not.
 Every native runtime and model pin names a primary URL, optional published
 mirrors, and one SHA-256. Core tries URLs in order and checks the digest before
 publishing a file. It reports every failed location when none matches. Each
-native library's primary URL names its file inside Google's nightly archive,
-which core reads with HTTP range requests, and its mirror is a copy in a
-GitHub pre-release. Model pins name no mirrors.
+native library's URL names its file inside Google's release archive, which
+core reads with HTTP range requests. No library or model pin names a mirror.
 
 Each request gets three attempts on a connection error, a timeout or HTTP
 408, 429, 500, 502, 503 or 504, waiting a random backoff or the host's

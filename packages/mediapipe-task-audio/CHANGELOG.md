@@ -1,3 +1,24 @@
+## 0.2.0
+
+- Audio Transcriber: speech to text on Google's 1.2.2 native library, with
+  `AudioModels.parakeetTdtV3` (Parakeet TDT 0.6B v3), whole clips or blocks
+  ending in `finishStream()`, optional interim results, and segment
+  timestamps.
+- Text to Speech: `synthesize` and `synthesizeStream` with
+  `AudioModels.phonon` (five voices in five locales), speaking rate, voice
+  and locale per call, and word timestamps.
+- Both run on the CPU on 64-bit Android, iOS, macOS, Linux and Windows, and
+  in browsers on `@mediapipe/tasks-audio` 1.2.2, each on a web worker; 32-bit
+  Android reports them unavailable.
+- Audio Transcriber also offers the GPU delegate where a test saw the GPU do
+  the work: macOS, and Chromium and WebKit on a Mac's Apple WebGPU adapter, each
+  checked on a developer's Mac. iPhones are offered too, with their device
+  test still to run. Other browsers and adapters get the CPU, and a reason.
+  Text to Speech stays on the CPU, as Google's ignores the delegate (UP-066).
+- Google's 1.2.2 native library replaces 1.2.0, and `@mediapipe/tasks-audio`
+  1.2.2 replaces 1.2.0-rc.20261018 in browsers.
+- Ships Google's `NOTICE` at the package root, beside `LICENSE`.
+
 ## 0.1.0
 
 The first release.

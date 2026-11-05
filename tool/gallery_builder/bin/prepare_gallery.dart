@@ -96,7 +96,7 @@ Future<void> _prepare(
   await _replaceDirectory(samplesDirectory);
   final sampleNames = <String>[];
   for (final entry in samples.entries) {
-    if (!tasks.contains('audio_classifier') && entry.value.endsWith('.wav')) {
+    if (!tasks.any(audioSampleTasks.contains) && entry.value.endsWith('.wav')) {
       continue;
     }
     if (!tasks.any(embedderSampleTasks.contains) &&
@@ -175,6 +175,21 @@ Future<void> _prepare(
       await Future<void>.delayed(Duration(seconds: 2 * attempt));
     }
   }
+
+  // The web gallery's model progress needs each model's size: GitHub Pages
+  // serves them gzipped, so a response's Content-Length is not it.
+  final models = Directory(p.join(gallery, 'assets/mediapipe'));
+  manifest['modelBytes'] = {
+    if (await models.exists())
+      for (final file
+          in models.listSync().whereType<File>().toList()
+            ..sort((a, b) => a.path.compareTo(b.path)))
+        if (RegExp(r'^[0-9a-f]{64}$').hasMatch(p.basename(file.path)))
+          p.basename(file.path): file.lengthSync(),
+  };
+  await File(
+    p.join(gallery, 'assets/manifest.json'),
+  ).writeAsString('${const JsonEncoder.withIndent('  ').convert(manifest)}\n');
 
   stdout.writeln('$target: ${tasks.length} task(s) bundled');
   for (final task in tasks) {
@@ -281,7 +296,7 @@ String _pubspec(
 name: mediapipe_gallery
 description: A portal to every MediaPipe task this repository supports.
 publish_to: none
-version: 0.1.0+1
+version: 0.2.0+1
 
 environment:
   sdk: ^3.12.0
@@ -318,6 +333,7 @@ dependency_overrides:
 
 dev_dependencies:
   camera_platform_interface: ^2.13.1
+  ffi: ^2.1.4
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter

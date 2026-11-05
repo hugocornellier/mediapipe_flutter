@@ -1,14 +1,14 @@
 # Migrating from Google's mediapipe_core 0.0.1
 
 Google published `mediapipe_core` 0.0.1 in May 2024 as the shared containers
-and FFI plumbing of its `mediapipe_text` 0.0.1. This package's first release,
-0.1.0, replaces it. Apps now get core through a family's library
+and FFI plumbing of its `mediapipe_text` 0.0.1. This package's 0.2.0
+replaces it. Apps now get core through a family's library
 (`mediapipe_vision.dart`, `mediapipe_text.dart`, `mediapipe_audio.dart`,
 `mediapipe_decision.dart` or `mediapipe_retrieval.dart`),
 which re-exports `mediapipe_core.dart`; plugins and family packages use
 `platform_interface.dart`.
 
-| Google's 0.0.1 | 0.1.0 |
+| Google's 0.0.1 | 0.2.0 |
 | --- | --- |
 | `BaseOptions.path(p)`, `BaseOptions.memory(bytes)` | `modelPath: p` or `modelBytes: bytes` on the task's options (core's `TaskOptions`), or a pinned official model with `model:` |
 | `ClassifierOptions(...)`, `EmbedderOptions(...)` | Their settings sit directly on the classifier's or embedder's options |

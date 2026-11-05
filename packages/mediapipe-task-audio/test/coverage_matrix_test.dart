@@ -8,6 +8,8 @@ import '../../mediapipe-core/test/support/coverage_matrix.dart';
 // plugin registered, as in an app.
 final _claims = <String, TaskCapabilities Function(TaskPlatform)>{
   'audio_classifier': audioClassifierCapabilitiesForPlatform,
+  'audio_transcriber': audioTranscriberCapabilitiesForPlatform,
+  'text_to_speech': textToSpeechCapabilitiesForPlatform,
 };
 
 Never _unused(Map<String, Object?> options) => throw UnimplementedError();
@@ -21,10 +23,18 @@ void main() {
     });
   });
 
-  setUpAll(() => audioTaskBackendFactory = _unused);
-  tearDownAll(() => audioTaskBackendFactory = null);
+  setUpAll(() {
+    audioTaskBackendFactory = _unused;
+    audioTranscriberOpener = (_) => throw UnimplementedError();
+    browserOnMac = true;
+  });
+  tearDownAll(() {
+    audioTaskBackendFactory = null;
+    audioTranscriberOpener = null;
+    browserOnMac = false;
+  });
 
   test('coverage matrix agrees with the audio capability claims', () {
-    expect(coverageMatrixProblems(_claims), isEmpty);
+    expect(coverageMatrixProblems(_claims, webGpu: hardwareWebGpu), isEmpty);
   });
 }

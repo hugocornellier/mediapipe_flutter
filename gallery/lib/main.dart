@@ -10,6 +10,8 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 import 'catalog.dart';
 import 'decision_page.dart';
 import 'retrieval_page.dart';
+import 'speech_page.dart';
+import 'transcriber_page.dart';
 import 'universal_embedder_page.dart';
 import 'fish_game_page.dart';
 import 'embed_page.dart';
@@ -22,6 +24,7 @@ import 'ui/components.dart';
 import 'ui/design.dart';
 import 'ui/workspace.dart';
 import 'web/model_cache.dart';
+import 'web/splash_stub.dart' if (dart.library.js_interop) 'web/splash.dart';
 import 'web/test_hooks.dart';
 import 'gallery_assets_io.dart'
     if (dart.library.js_interop) 'web/gallery_assets.dart';
@@ -44,6 +47,8 @@ const _taskOrder = [
   'image_segmenter',
   'interactive_segmenter',
   'audio_classifier',
+  'audio_transcriber',
+  'text_to_speech',
   'language_detector',
   'text_classifier',
   'text_embedder',
@@ -134,6 +139,11 @@ class _HomePageState extends State<HomePage> {
     body: FutureBuilder<(GalleryAssets, TaskPlatform)>(
       future: _ready,
       builder: (context, snapshot) {
+        // The web page's loading screen stays up until the home page (or
+        // its error) has drawn, so the page never shows blank or a spinner.
+        if (snapshot.connectionState == ConnectionState.done) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => hideSplash());
+        }
         if (snapshot.hasError) {
           return _Message(
             icon: Icons.error_outline,
@@ -204,8 +214,8 @@ class _GalleryShellState extends State<_GalleryShell> {
   }
 
   /// Most visitors step through the sidebar in order, so once a camera task
-  /// has had time to load its own model, the web gallery fetches the models
-  /// of the camera tasks either side of it.
+  /// has started, the web gallery fetches the models of the camera tasks
+  /// either side of it (see [WebModelCache.prefetch]).
   void _prefetchNeighbours(GalleryTask task) {
     _prefetch?.cancel();
     final live =
@@ -291,6 +301,16 @@ class _GalleryShellState extends State<_GalleryShell> {
         task: task,
         onOpenMenu: openMenu,
         microphone: widget.microphone,
+      ),
+      GalleryDemo.transcribe => TranscriberPage(
+        task: task,
+        platform: widget.platform,
+        onOpenMenu: openMenu,
+      ),
+      GalleryDemo.speak => SpeechPage(
+        task: task,
+        platform: widget.platform,
+        onOpenMenu: openMenu,
       ),
       GalleryDemo.none => throw StateError('${task.id} has no demo'),
     };

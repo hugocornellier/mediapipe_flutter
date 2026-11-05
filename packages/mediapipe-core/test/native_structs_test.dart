@@ -125,7 +125,8 @@ void main() {
       ]);
       expect(fromBytes.modelAssetPath, nullptr);
       expect(fromBytes.fileDescriptor, -1);
-      expect(fromBytes.delegate, 0);
+      // MP_DELEGATE_CPU since 1.2.1.
+      expect(fromBytes.delegate, 1);
       expect(fromBytes.hostEnvironment, 5);
       expect(fromBytes.hostSystem, mpHostSystem);
       expect(nativeString(fromBytes.hostVersion), mpHostVersion);
@@ -135,6 +136,11 @@ void main() {
       expect(nativeString(fromPath.modelAssetPath), 'models/x.task');
       expect(fromPath.modelAssetBuffer, nullptr);
       expect(fromPath.modelAssetBufferCount, 0);
+
+      final onGpu = arena<MpBaseOptions>().ref;
+      fillBaseOptions(onGpu, arena, delegate: Delegate.gpu);
+      // MP_DELEGATE_GPU since 1.2.1.
+      expect(onGpu.delegate, 2);
     });
   });
 

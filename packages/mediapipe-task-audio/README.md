@@ -4,12 +4,17 @@ Google's MediaPipe **Audio Classifier** for Dart and Flutter, for example
 YAMNet's 521 sound categories, on Android, iOS, macOS, Linux, Windows and the
 web. Google's pinned YAMNet model is bundled with your app at build time.
 
+Google's **Audio Transcriber** (speech to text, with Parakeet TDT 0.6B v3) and
+**Text to Speech** (Phonon's five voices, whole or streamed, with word
+timings) run on 64-bit Android, iOS, macOS, Linux and Windows; see
+[Speech](#speech).
+
 ## Platforms
 
 The task runs Google's runtime on each platform, on the CPU: its MediaPipe
-1.2.0 audio library on Android 9+, iOS 15+, macOS 14+ arm64, Linux x64 and
+1.2.2 audio library on Android 9+, iOS 15+, macOS 14+ arm64, Linux x64 and
 Windows x64, which this package's hook bundles, and
-`@mediapipe/tasks-audio` 1.2.0-rc.20261018 in browsers.
+`@mediapipe/tasks-audio` 1.2.2 in browsers.
 
 No platform needs a setting. See
 [platform setup](https://github.com/google/flutter-mediapipe/blob/main/doc/platform_setup.md)
@@ -18,7 +23,7 @@ runtime.
 
 ## Use
 
-Add `mediapipe_audio: ^0.1.0` to your app's dependencies. Bundle the model
+Add `mediapipe_audio: ^0.2.0` to your app's dependencies. Bundle the model
 with your app: list it in the app's pubspec and declare the folder it goes in.
 
 ```yaml
@@ -178,6 +183,92 @@ Future<void> listen(Stream<Float32List> blocks) async {
   signal. Record at the model's rate (16 kHz for YAMNet) to avoid the
   difference.
 
+## Speech
+
+`AudioTranscriber` turns speech into text and `TextToSpeech` turns text into
+speech, on Google's 1.2.2 native library and, in browsers, on its 1.2.2
+JavaScript runtime in a web worker. 32-bit Android cannot hold their models:
+there `create` throws a `RuntimeUnavailableException`, and
+`queryAudioTranscriberCapabilities()` and `queryTextToSpeechCapabilities()` say
+why.
+
+Both run on the CPU. Google's library can accept the GPU delegate and stay on
+the CPU with the same answer, so this package offers it only where a test saw
+the GPU do the work. That is `AudioTranscriber` on:
+
+- macOS arm64 (Metal). CI's package tests check it on each macOS version they
+  run on.
+- Chromium and WebKit on a Mac's Apple adapter (WebGPU), each checked on a
+  developer's Mac. CI's browser job is set to repeat Chromium's check on a hosted
+  Mac; it has no such job for WebKit.
+
+iPhones (Metal) are offered too, but the device test is still to run. Text to
+Speech ignores the delegate everywhere it was tried (UP-066 in
+`upstream-issues.md`), so it stays on the CPU. Elsewhere, including Android,
+Linux, Windows, the iOS simulator, Firefox, browsers on other adapters and
+browsers on iPhones and iPads, the GPU delegate throws a
+`RuntimeUnavailableException` that says why. Firefox had no adapter where it was
+tried, so it has no proof either way.
+
+Their models are large (Parakeet
+615 MB, CC BY 4.0; Phonon 87 MB), so an app usually downloads them on first
+use (`ModelStore.allowDownloads = true`) rather than bundling them; listing
+`parakeet_tdt_v3` or `phonon` under the hook's `models` bundles them instead.
+
+In a browser, a pinned `model:` is verified and kept in Cache Storage, then
+passes through the page's memory as bytes. For Parakeet, a `modelPath` URL
+avoids that copy: Google's runtime reads the file itself, so the URL's server
+must allow the page's origin. Both models ran in desktop Chromium, Firefox and
+WebKit on a 48 GB Mac; phones' browsers are untested, and may not have the
+memory for Parakeet.
+
+```dart
+import 'dart:typed_data';
+
+import 'package:mediapipe_audio/mediapipe_audio.dart';
+
+Future<String> transcribeClip(Uint8List wavBytes) async {
+  final clip = decodeWav(wavBytes);
+  final transcriber = await AudioTranscriber.create(
+    AudioTranscriberOptions(
+      model: AudioModels.parakeetTdtV3,
+      sampleRateHz: clip.sampleRate.round(),
+    ),
+  );
+  try {
+    return (await transcriber.transcribe(clip)).text;
+  } finally {
+    await transcriber.dispose();
+  }
+}
+
+Future<Float32List> speak(String text) async {
+  final tts = await TextToSpeech.create(
+    TextToSpeechOptions(model: AudioModels.phonon),
+  );
+  try {
+    final speech = await tts.synthesize(text, voiceId: 'freya');
+    for (final word in speech.wordTimestamps) {
+      print('${word.word} at ${word.startSeconds} s');
+    }
+    return speech.samples; // mono, at speech.sampleRateHz (24 kHz)
+  } finally {
+    await tts.dispose();
+  }
+}
+```
+
+- To transcribe live audio, pass blocks with `endOfStream: false`, which keep
+  what is short of a segment for the next call, then call `finishStream()`.
+  `enableInterimResults: true` also returns the segment in progress.
+- `listVoices()` names the model's voices: Phonon has `freya` (en-US),
+  `claire` (fr-FR), `lukas` (de-DE), `sofia` (es-ES) and `lucas` (pt-BR).
+- `synthesizeStream(text)` yields a chunk per clause as soon as it is ready,
+  so playback can start early; cancelling the subscription stops Google's
+  stream after the chunk in progress. `WordTimestamp.start` and `end` are
+  UTF-8 byte offsets into the text, as Google reports them.
+- Calls on one task run one at a time, in call order, on a worker isolate.
+
 ## Validation
 
 The tests compare every chunk of three official MediaPipe sample clips (speech
@@ -205,3 +296,16 @@ score of every window). Browser CI compares the emulated stream with Google's
 JavaScript on the same page; the iOS simulator, the Android emulator and
 Firebase Test Lab's phones run the stream on Google's mobile libraries against
 the same device's clips results.
+
+The speech tests compare both tasks with Google's own Python
+(`test/fixtures/official_speech_reference.json`, from the macOS 1.2.2 wheel,
+Google's first release with these tasks in Python; the package loads the same
+release's audio library): the transcript and segment timestamps of
+both speech clips, whole and in one-second blocks with and without interim
+results; and for Text to Speech the voices, four utterances in three
+languages (Unicode text included), a faster speaking rate and a streamed
+paragraph, each with the same sample count, rate and word timings, and the
+peak and 100 ms RMS envelope within 0.002. `tool/prepare_speech_reference.py`
+regenerates the reference with the pinned wheel on each desktop CI runner
+(speech.yaml). They also check stream cancellation, disposal, option checks,
+capabilities and the C struct layouts against Google's headers.

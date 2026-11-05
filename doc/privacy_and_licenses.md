@@ -11,8 +11,7 @@ At build time, the build hooks fetch the native runtime for the target:
 
 | What | Host |
 | --- | --- |
-| Google's per-family MediaPipe libraries (Android, iOS, macOS, Linux, Windows), read from Google's nightly archive | `storage.googleapis.com` |
-| The same files, only when Google's archive fails: a mirror posted unmodified as a pre-release of `hugocornellier/mediapipe_flutter_native` | `github.com`, which redirects to `release-assets.githubusercontent.com` |
+| Google's per-family MediaPipe libraries (Android, iOS, macOS, Linux, Windows), read from Google's release archive | `storage.googleapis.com` |
 
 At run time:
 
@@ -86,8 +85,8 @@ answers in App Store Connect must describe.
 - Google's MediaPipe runtimes: Apache-2.0. `mediapipe_core` carries the
   `LICENSE` and `NOTICE` Google ships with the libraries it pins
   (`third_party/`, identical for every family), which apps redistribute with
-  the runtime. The vision package also keeps OpenCV's
-  carotene notices (`third_party/OPENCV_CAROTENE_NOTICES`) until Google
+  the runtime, and every package keeps a copy of that `NOTICE` at its root.
+  The vision package also keeps OpenCV's carotene notices (`third_party/OPENCV_CAROTENE_NOTICES`) until Google
   confirms whether its libraries need them.
 - Google's MediaPipe task models (the pins in each family's `models.dart`):
   Apache-2.0, per Google's model cards, except the Gemma-based text models.
