@@ -47,6 +47,7 @@ jobs:
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
         with:
+          official-wheel-cache: 'true'
           linux-profile: ffi
           modern-model-cache: 'true'
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
@@ -219,6 +220,7 @@ jobs:
         uses: ./.github/actions/nightly-pin
       - uses: ./.github/actions/setup
         with:
+          official-wheel-cache: 'true'
           linux-profile: ffi
           modern-model-cache: 'true'
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
