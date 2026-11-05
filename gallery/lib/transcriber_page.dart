@@ -99,6 +99,11 @@ class _TranscriberPageState extends State<TranscriberPage>
           enableInterimResults: interim,
         ),
       );
+      // The page closed during the load, so its dispose found no task.
+      if (!mounted) {
+        await task.dispose();
+        throw StateError('The page closed.');
+      }
       _taskKey = (rate, interim);
       return _task = task;
     } finally {
