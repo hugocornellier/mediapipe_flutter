@@ -1,12 +1,13 @@
 # Official MediaPipe text references
 
 `official_reference.json` records the unmodified macOS arm64 CPU outputs of
-Google's 1.2.2 release candidate wheel (`mediapipe-nightly` 1.2.2rc20261103
-for macOS arm64, core's `releaseReferenceWheels`) for the version-1 BERT
-classifier, Universal Sentence Encoder and language detector. Moving from
-Google's 1.1.0 wheel changed only the language detections: 1.2.2 drops every
-language below about 0.3 (upstream-issues.md UP-065), and the classifier,
-embedder and remaining language values are bit-identical. Model SHA-256 pins also appear in `lib/models.dart`; the reference
+Google's 1.2.2 wheel (`mediapipe` 1.2.2 for macOS arm64, core's
+`releaseReferenceWheels`) for the version-1 BERT classifier, Universal Sentence
+Encoder and language detector. Moving from Google's 1.1.0 wheel changed only
+the language detections: 1.2.2 drops every language below about 0.3
+(upstream-issues.md UP-065), and the classifier and remaining language values
+are bit-identical. The embedder's agree within 2.4e-7, as separate generating
+runs of one 1.2.2 build do, inside the tests' 1e-6. Model SHA-256 pins also appear in `lib/models.dart`; the reference
 generator checks both those models and the original Google library digest.
 
 There are 26 model/option cases, four rejected option configurations, four

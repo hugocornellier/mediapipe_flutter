@@ -27,9 +27,9 @@ final _ttsModel =
 /// Google's word times, rounded to four places in the reference.
 const _secondsDelta = 1e-3;
 
-/// The family library is Google's 1.2.2 release build and the reference
-/// wheel its next day's nightly, so the audio gets a small bound: each 100 ms
-/// window's RMS and the peak may move by this much.
+/// The family library and the reference wheel's single library are separate
+/// builds of Google's 1.2.2 release, so the audio gets a small bound: each
+/// 100 ms window's RMS and the peak may move by this much.
 const _levelDelta = 2e-3;
 
 void main() {

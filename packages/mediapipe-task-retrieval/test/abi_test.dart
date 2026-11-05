@@ -23,8 +23,8 @@ final _sizes =
         as Map<String, Object?>;
 
 /// The structs Google changed after that wheel: their sizes in Google's
-/// 1.2.2 headers, as its `mediapipe-nightly` 1.2.2rc20261103 ctypes declare
-/// them (clang agrees). `MpUniversalEmbedderPart` has no ctypes; clang's.
+/// 1.2.2 headers, as its `mediapipe` 1.2.2 ctypes declare them (clang
+/// agrees). `MpUniversalEmbedderPart` has no ctypes; clang's.
 const _since122 = {
   'MpUniversalEmbedderOptions': 112,
   'MpSemanticRetrieverOptions': 128,

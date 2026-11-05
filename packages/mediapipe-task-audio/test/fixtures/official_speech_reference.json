@@ -1,5 +1,5 @@
 {
-  "runtime": "mediapipe==1.2.2rc20261103",
+  "runtime": "mediapipe==1.2.2",
   "source": "official Python AudioTranscriber and TextToSpeech, macOS arm64 wheel, CPU",
   "models": {"parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm": "66c5a74cf6c2c1d2b990901f6cece5bb53e3214dbceafa0989900a6f0eeb3504", "phonon_int8.litertlm": "b33a9a0d65acec36762db38a2bff6d899f4aab34b196bb56d89fab5665eabebe"},
   "decode": "16-bit PCM WAV, samples / 32768",
