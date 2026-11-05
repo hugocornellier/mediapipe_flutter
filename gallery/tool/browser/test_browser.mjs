@@ -39,6 +39,13 @@ const evidence = path.join(repo, 'build/ci-tmp/web-browser-' + browserName +
   (delegate === 'GPU' ? '-gpu' : '') + (taskName === 'face' ? '' : '-' + taskName) +
   (argumentsMap.runtime ? '-self-hosted' : ''));
 fs.mkdirSync(evidence, {recursive: true});
+// --first-load-timeout=<ms>, which only the check of the public site passes: how
+// long the camera suite waits for the gallery's first tile. Flutter draws no
+// frame until its fonts have answered, and a page just deployed may answer them
+// slowly (run 41884070320 logged a font's 503 and drew the tile as 30 s ran out).
+// A first load that still runs out gets the suite's one retry; nothing later does.
+const firstLoadTimeout = Number(argumentsMap['first-load-timeout']) || undefined;
+class SlowFirstLoad extends Error {}
 const report = {browser: browserName, delegate, suite, task: taskName, checks: [], retries: [],
   physical_webcam_tested: false, software_webgl: browserName === 'chromium' && process.platform === 'linux'};
 const logs = [];
@@ -665,8 +672,15 @@ async function cameraChecks() {
   await page.addInitScript(bundledModelsScript, officialRuntime);
   observe(page);
   await installCaptureObservations(page);
-  await page.goto(gallery);
-  await page.getByRole('button', {name: subject.tile}).click();
+  const loading = Date.now();
+  try {
+    await page.goto(gallery, {timeout: firstLoadTimeout});
+    await page.getByRole('button', {name: subject.tile}).click({timeout: firstLoadTimeout});
+  } catch (error) {
+    if (!firstLoadTimeout || error.name !== 'TimeoutError') throw error;
+    throw new SlowFirstLoad(`The gallery showed no ${taskName} tile within ${firstLoadTimeout} ms`);
+  }
+  report.first_load_ms = Date.now() - loading;
   // The gallery opens on GPU where offered; the expected points are the
   // chosen delegate's, so select it rather than rely on the default.
   await page.getByRole('button', {name: delegate, exact: true}).click({timeout: 120000});
@@ -1128,16 +1142,18 @@ async function textAudioChecks() {
 // WebKit on hosted macOS has closed the page mid-suite with no page error or
 // failed check (run 38261996089). A suite that loses its page or browser, and
 // only that, runs once more on a fresh browser; a failed check still fails at
-// once. Each retry is kept in the report and shown as a workflow warning.
+// once. A first load that ran out also runs once more, where a suite asks for
+// that. Each retry is kept in the report and shown as a workflow warning.
 async function retryingLostPage(name, checks) {
   const passed = report.checks.length;
   try {
     await checks();
   } catch (error) {
-    if (!isLostPage(error)) throw error;
+    const slow = error instanceof SlowFirstLoad;
+    if (!slow && !isLostPage(error)) throw error;
     const reason = error.message.split('\n')[0];
     report.retries.push({suite: name, error: reason, crashed: logs.some(entry => entry.type === 'crash')});
-    console.log(`::warning title=${browserName} lost the page::${name} checks: ${reason}. ` +
+    console.log(`::warning title=${browserName} ${slow ? 'loaded slowly' : 'lost the page'}::${name} checks: ${reason}. ` +
       'Running them once more on a fresh browser.');
     saveSystemLog(evidence, name);
     report.checks.length = passed;
