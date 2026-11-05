@@ -1215,17 +1215,23 @@ async function speechChecks() {
   assert.ok(Math.abs(api.speech.fox.samples - 74880) <= 2 * 1920, 'the fox has ' + api.speech.fox.samples + ' samples');
   report.checks.push('speech-api-expected-answers');
 
-  // The CPU runs and Text to Speech add nothing here: the work is the GPU run's.
+  // The counters around each phase: the CPU run and Text to Speech must do no
+  // WebGPU work, so what the GPU run adds is its own.
   const gpu = api.transcriber_gpu;
-  const work = await page.evaluate(() => window.webGpuWork);
+  const {after_cpu: afterCpu, after_gpu: afterGpu, after_speech: afterSpeech} = api.work;
+  const work = {submit: afterGpu.submit - afterCpu.submit, pipeline: afterGpu.pipeline - afterCpu.pipeline};
   report.speech_gpu = {offered: gpu.offered, adapter: gpu.adapter ?? null, ...work, reason: gpu.reason ?? null};
+  assert.deepEqual(afterCpu, {submit: 0, pipeline: 0}, 'WebGPU work in the CPU transcriber run');
+  assert.deepEqual(afterSpeech, afterGpu, 'WebGPU work in Text to Speech on the CPU');
   if (argumentsMap['require-speech-gpu'] === 'true') assert.equal(gpu.offered, true, 'no GPU offered: ' + gpu.reason);
   // The package offers it only where this suite saw the work: Chromium and
   // WebKit on a Mac's Apple adapter.
   const proved = process.platform === 'darwin' && browserName !== 'firefox' && /^WebGPU apple\b/.test(gpu.adapter ?? '');
   assert.equal(gpu.offered, proved, `offered on ${gpu.adapter}: ${gpu.reason}`);
   if (gpu.offered) {
-    assert.ok(work.pipeline > 0 && work.submit > 0, 'the GPU delegate did no WebGPU work: ' + JSON.stringify(work));
+    // The model's graph on the GPU, not a stray call: one clip took 41 pipelines
+    // and 9 submits in Chromium on Metal, and 40 and 9 in WebKit.
+    assert.ok(work.pipeline >= 30 && work.submit >= 5, 'the GPU delegate did too little WebGPU work: ' + JSON.stringify(work));
     assert.equal(gpu.text, transcript);
     assert.ok(Math.abs(gpu.whole[0].to - 4272) <= 100, 'the GPU segment ends at ' + gpu.whole[0].to);
   } else {
