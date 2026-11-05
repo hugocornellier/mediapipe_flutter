@@ -11,6 +11,7 @@
   browsers and 32-bit Android report them unavailable.
 - Google's 1.2.2 native library replaces 1.2.0, and `@mediapipe/tasks-audio`
   1.2.2 replaces 1.2.0-rc.20261018 in browsers.
+- Ships Google's `NOTICE` at the package root, beside `LICENSE`.
 
 ## 0.1.0
 

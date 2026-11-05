@@ -7,6 +7,7 @@
   CPU, 2 the GPU), which 1.2.1 changed in the C API.
 - `pin_nightly.py --release X.Y.Z` pins Google's release builds as well as
   nightlies.
+- Ships Google's `NOTICE` at the package root, beside `LICENSE`.
 
 ## 0.1.0
 

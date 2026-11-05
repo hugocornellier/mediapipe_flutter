@@ -8,6 +8,7 @@
   Google's usage log records the host for it too (UP-063). Universal
   Embedder takes Google's per-modality delegate fields, left at their
   default.
+- Ships Google's `NOTICE` at the package root, beside `LICENSE`.
 
 ## 0.1.0
 
