@@ -1,4 +1,6 @@
 abstract final class AudioModels
   new AudioModels()
+  static DownloadAsset parakeetTdtV3
+  static DownloadAsset phonon
   static DownloadAsset yamnet
   static Map<String, DownloadAsset> byName
