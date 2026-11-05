@@ -327,7 +327,11 @@ try {
       // The first run fetches the task's model from Hugging Face.
       const [check, button, answer] = spec.transcribe
         ? ['transcribe', 'Transcribe', spec.transcribe] : ['speak', 'Speak', spec.speak];
-      const result = page.getByText(answer);
+      // The transcript's own element: the page's description of the clip holds
+      // the same sentence, before any transcription and on either delegate.
+      const output = spec.transcribe
+        ? page.locator('[flt-semantics-identifier="transcriber-text"]') : page.getByText(answer);
+      const result = spec.transcribe ? output.filter({hasText: answer}) : output;
       const error = page.getByText('Error', {exact: true});
       // The GPU delegate takes a hardware adapter; the page offers none without.
       const delegates = delegatesFor(id).filter(delegate => delegate === 'cpu' || hardwareWebGpu);
@@ -336,7 +340,7 @@ try {
         if (delegates.length > 1) {
           await delegateButton(delegate).click();
           // Choosing a delegate clears the other one's answer.
-          await result.waitFor({state: 'hidden', timeout: 30000});
+          await output.waitFor({state: 'hidden', timeout: 30000});
         }
         await page.getByRole('button', {name: button, exact: true}).click();
         await result.or(error).first().waitFor({timeout: 600000});
