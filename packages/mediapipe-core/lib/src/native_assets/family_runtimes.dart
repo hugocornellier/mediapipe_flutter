@@ -23,20 +23,13 @@ const familyRuntimeVersion = '1.2.2';
 /// Google's archive of the November 2, 2026 build, where the hooks download
 /// Google's libraries: each one is read from it with HTTP range requests,
 /// without the rest of the archive.
+///
+/// `hooks.user_defines.mediapipe_core.asset_source` replaces it for offline
+/// and mirrored builds: a directory or URL holding each file under its
+/// SHA-256.
 const familyRuntimeArchiveUrl =
     'https://storage.googleapis.com/mediapipe-assets/prebuilts/'
     'mediapipe_tasks_c/1.2.2/mediapipe_tasks_c_1.2.2.zip';
-
-/// The hooks' mirror of [familyRuntimeArchiveUrl]: a pre-release of this
-/// project's native downloads, holding Google's files unmodified, posted with
-/// Google's permission.
-///
-/// `hooks.user_defines.mediapipe_core.asset_source` replaces both for offline
-/// and mirrored builds: a directory or URL holding each file under its
-/// SHA-256.
-const familyRuntimeBaseUrl =
-    'https://github.com/hugocornellier/mediapipe_flutter_native/releases/'
-    'download/per-family-v$familyRuntimeVersion';
 
 /// One of Google's files, exactly as Google ships it.
 final class FamilyRuntime {
@@ -56,15 +49,10 @@ final class FamilyRuntime {
   /// Exact size in bytes.
   final int bytes;
 
-  /// The download: the file in Google's archive, then the copy at
-  /// [familyRuntimeBaseUrl]. Google gives several targets' libraries the
-  /// same file name, so the mirror names each by its digest first; the hook
-  /// still saves it as [fileName].
-  DownloadAsset get asset => DownloadAsset(
-    url: '$familyRuntimeArchiveUrl#$path',
-    sha256: sha256,
-    mirrors: ['$familyRuntimeBaseUrl/$sha256-$fileName'],
-  );
+  /// The download: the file in Google's archive. The hook saves it as
+  /// [fileName].
+  DownloadAsset get asset =>
+      DownloadAsset(url: '$familyRuntimeArchiveUrl#$path', sha256: sha256);
 }
 
 /// Google's per-family libraries, by family and build target.

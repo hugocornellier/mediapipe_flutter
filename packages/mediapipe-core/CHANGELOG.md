@@ -7,6 +7,8 @@
   CPU, 2 the GPU), which 1.2.1 changed in the C API.
 - `pin_nightly.py --release X.Y.Z` pins Google's release builds as well as
   nightlies.
+- Removes `familyRuntimeBaseUrl` and the native libraries' unused mirror URL:
+  Google's archive is now their only source.
 
 ## 0.1.4
 

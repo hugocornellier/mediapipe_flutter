@@ -1,8 +1,8 @@
 # Asset hosting
 
 Native downloads are done; browsers are not started. Build hooks now read
-Google's per-family libraries from Google's own bucket, fall back to this
-project's mirror release, and retry and resume every download. A browser
+Google's per-family libraries from Google's own bucket, and retry and resume
+every download. A browser
 still loads Google's runtime from one CDN with one `fetch` per file, and
 models still have one host each. Found on 2026-10-15, on `main` at
 `ed23dcb`, after a jsDelivr outage failed three CI jobs on PR #88; refreshed
@@ -18,15 +18,15 @@ No single host's outage breaks an app, a build or a CI run:
    fallbacks. Not started.
 2. **Every pin can have fallback hosts.** Each host must serve the pinned
    bytes, which are checked before use, so adding a host never weakens
-   anything. Done for the native libraries; models and browser runtimes
-   still have one host.
+   anything. The mechanism is done; native libraries, models and browser
+   runtimes each have one host today.
 3. **Every download retries.** A few attempts per host, only for transient
    failures, with exponential backoff and jitter, resuming partial native
    downloads, then the next host. Done for native downloads; browsers still
    make one attempt.
 4. **Google's official hosting fits in when it exists.** Done for the native
-   libraries: Google's bucket is their primary host and this project's
-   release their fallback. Google's bucket holds no browser runtimes.
+   libraries: Google's bucket is their only host. Google's bucket holds no
+   browser runtimes.
 
 ## What happened
 
@@ -51,17 +51,13 @@ but the gallery's own tasks load from jsDelivr, as any app's do by default.
 
 ## Done since 2026-10-15
 
-- **Google's bucket, then a mirror, for the native libraries** (#89,
-  2026-10-19). `packages/mediapipe-core/lib/src/native_assets/family_runtimes.dart`:
+- **Google's bucket for the native libraries** (#89, 2026-10-19). `packages/mediapipe-core/lib/src/native_assets/family_runtimes.dart`:
   each `FamilyRuntime.asset` is the member of Google's archive
   (`familyRuntimeArchiveUrl`,
   `storage.googleapis.com/mediapipe-assets/prebuilts/mediapipe_tasks_c/20261018/mediapipe_tasks_c_20261018.zip`),
-  read with range requests, then the same file in this project's
-  pre-release `per-family-v1.2.0-nightly.20261018` of
-  `hugocornellier/mediapipe_flutter_native` (`familyRuntimeBaseUrl`, posted
-  2026-10-19), named `<sha256>-<file>`. Since 0.2.0 both name Google's 1.2.2
-  release; its mirror release is not posted, so the hooks have only Google's
-  archive.
+  read with range requests. Since 0.2.0 it names Google's 1.2.2 release, the
+  hooks' only source: the project's own copy of the libraries, a fallback for
+  the nightlies, is gone.
 - **Retries, backoff and resume for every native download** (#89).
   `packages/mediapipe-core/lib/src/verified_download.dart`: each request gets
   up to 3 attempts on a connection error, a timeout or HTTP 408, 429, 500,
@@ -78,8 +74,7 @@ but the gallery's own tasks load from jsDelivr, as any app's do by default.
 - **Generation pins for comparison runs** (#100).
   `packages/mediapipe-core/tool/pin_nightly.py --generation` pins the archive
   URL to `...zip?generation=<x-goog-generation>`, which Google's bucket keeps
-  when the name is uploaded again, so a nightly under comparison needs no
-  mirror. An adopted build keeps the plain URL and gets a mirror release.
+  when the name is uploaded again. An adopted build keeps the plain URL.
 - **CI's own downloads** (#98). `.github/actions/setup` and
   `.github/actions/apt-install` cache the Linux packages, fail fast on a slow
   apt mirror and switch mirrors; `.github/actions/android-ndk` installs the
@@ -91,7 +86,7 @@ but the gallery's own tasks load from jsDelivr, as any app's do by default.
 | Asset | Fetched by | From | Fallback today |
 | --- | --- | --- | --- |
 | Browser runtime: bundle and WASM | each family's `assets/worker.js`, through core's `assets/verified_runtime.js` | `cdn.jsdelivr.net` (`MediaPipeWebRuntime.defaultBaseUrl`) | none: one `baseUrl`, one `fetch` per file |
-| Native per-family libraries | build hooks, through `downloadVerified` | Google's archive on `storage.googleapis.com` (`familyRuntimeArchiveUrl`) | this project's release (`familyRuntimeBaseUrl`), with retries on both |
+| Native per-family libraries | build hooks, through `downloadVerified` | Google's archive on `storage.googleapis.com` (`familyRuntimeArchiveUrl`) | none; retried |
 | Reference wheels, for generating test references | reference tools, pinned in `reference_wheels.dart` | `files.pythonhosted.org` | none |
 | Models, native | `ModelStore`, `bundle_models`, through `downloadVerified` | `storage.googleapis.com`, `huggingface.co` | `DownloadAsset.mirrors`, but no pin names one; retried |
 | Models, web | `ModelStore` (`model_store_web.dart`), workers given a `modelPath` | the same | the same mirrors, one `fetch` each |
@@ -164,10 +159,9 @@ The host's `Content-Type` does not matter: the loader wraps the checked bytes
 in blob URLs with the right MIME type itself.
 
 **Range requests work on every native host.** `curl -r 0-99` got HTTP 206
-from Google's archive, the mirror release (through
-`release-assets.githubusercontent.com`) and `huggingface.co` on 2026-10-22.
-Neither Google's bucket nor the mirror release honors `If-Range`: given an
-`ETag` that does not match, both still answered 206 rather than 200. A file
+from Google's archive and `huggingface.co` on 2026-10-22. Google's bucket does
+not honor `If-Range`: given an `ETag` that does not match, it still answered
+206 rather than 200. A file
 that changed between attempts is caught by the final SHA-256 check, not by
 the host.
 
