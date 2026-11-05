@@ -18,6 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Live face landmarks in Flutter with Google's official MediaPipe browser runtime.">
 
   <!-- iOS meta tags & icons -->
@@ -31,8 +32,51 @@
 
   <title>MediaPipe Flutter Gallery</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    The loading screen shows while Flutter's engine and the app download.
+    Colors are the gallery's light theme (lib/ui/design.dart); the app
+    removes it once the home page has drawn (lib/web/splash.dart).
+  -->
+  <style>
+    html, body { margin: 0; background: #F6F8F8; }
+    #splash {
+      position: fixed; inset: 0; z-index: 2147483647;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 14px; background: #F6F8F8;
+      font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: #101314; transition: opacity 200ms ease-out;
+    }
+    #splash.done { opacity: 0; pointer-events: none; }
+    #splash .mark {
+      width: 44px; height: 44px; border-radius: 10px; background: #007F8B;
+      color: #FFFFFF; font-weight: 700; font-size: 22px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #splash .title { font-size: 18px; font-weight: 600; }
+    #splash .bar {
+      position: relative; overflow: hidden; width: 180px; height: 4px;
+      border-radius: 2px; background: #D5ECEE; margin-top: 4px;
+    }
+    #splash .bar::after {
+      content: ""; position: absolute; top: 0; bottom: 0; left: -40%;
+      width: 40%; border-radius: 2px; background: #007F8B;
+      animation: splash-slide 1.1s ease-in-out infinite;
+    }
+    #splash .note { color: #5E6A69; font-size: 13px; }
+    @keyframes splash-slide { to { left: 100%; } }
+    @media (prefers-reduced-motion: reduce) {
+      #splash .bar::after { animation: none; left: 0; width: 100%; opacity: 0.5; }
+    }
+  </style>
 </head>
 <body>
+  <div id="splash" role="progressbar" aria-label="Loading MediaPipe Flutter Gallery">
+    <div class="mark">M</div>
+    <div class="title">MediaPipe Flutter Gallery</div>
+    <div class="bar"></div>
+    <div class="note">Loading…</div>
+  </div>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
