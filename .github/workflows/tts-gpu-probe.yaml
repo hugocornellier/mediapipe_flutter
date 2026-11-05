@@ -1,0 +1,46 @@
+name: Text to Speech GPU probe
+
+permissions:
+  contents: read
+
+# A one-off diagnostic on its own branch: both speech tasks on each delegate,
+# with Audio Transcriber as the control for whether this runner does GPU work.
+on:
+  push:
+    branches: [ci/tts-gpu-probe]
+
+jobs:
+  probe:
+    name: probe / ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15, ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup
+        with:
+          linux-profile: ffi
+      - name: Download Google's models
+        working-directory: packages/mediapipe-task-audio
+        shell: bash
+        run: |
+          flutter pub get
+          dart tool/download_models.dart parakeet_tdt_v3 phonon
+      - name: Run each task on each delegate
+        working-directory: packages/mediapipe-task-audio
+        shell: bash
+        run: |
+          for probe in tts-cpu tts-gpu asr-cpu asr-gpu; do
+            echo "=== $probe"
+            PROBE=$probe dart test --reporter expanded test/gpu_probe_test.dart 2>&1 |
+              tee "probe-$probe.log" | grep -iE 'PROBE|metal|opengl|gl version|vulkan|gpu|delegate|egl|fail|abort' | head -40 || true
+            echo "=== $probe exit ${PIPESTATUS[0]}"
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: tts-gpu-probe-${{ matrix.os }}
+          path: packages/mediapipe-task-audio/probe-*.log
