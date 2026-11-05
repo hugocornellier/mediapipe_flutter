@@ -1142,9 +1142,15 @@ async function textAudioChecks() {
   report.checks.push('gallery-text-embedder-compare');
 }
 
-// Prefixed to the audio worker by speechChecks, and reports to its page.
+// Prefixed to the audio worker by speechChecks, and reports to its page: the
+// WebGPU work it does and the stream chunks it sends.
 const webGpuCounters = `{
   const work = new BroadcastChannel('webgpu-work');
+  const post = self.postMessage;
+  self.postMessage = function (message, ...rest) {
+    if (message?.chunk) work.postMessage('chunk');
+    return post.call(this, message, ...rest);
+  };
   if (self.GPUQueue) {
     const submit = GPUQueue.prototype.submit;
     GPUQueue.prototype.submit = function (buffers) {
@@ -1183,7 +1189,11 @@ async function speechChecks() {
   await page.addInitScript(bundledModelsScript, officialRuntime);
   await page.addInitScript(() => {
     window.webGpuWork = {submit: 0, pipeline: 0};
-    new BroadcastChannel('webgpu-work').onmessage = ({data}) => window.webGpuWork[data]++;
+    window.workerChunks = 0;
+    new BroadcastChannel('webgpu-work').onmessage = ({data}) => {
+      if (data === 'chunk') window.workerChunks++;
+      else window.webGpuWork[data]++;
+    };
   });
   observe(page);
   const models = new URL('/speech-models/', speechBase).href;
@@ -1329,6 +1339,11 @@ async function speechChecks() {
   report.checks.push('text-to-speech-match-official-javascript');
 
   assert.equal(api.speech.cancelled_chunks, 1);
+  // The worker sent 2 of 72 chunks in each browser, and sends them all if the
+  // cancel does nothing; half leaves room for a slow page on a busy machine.
+  assert.ok(api.speech.uncancelled_chunks > 8, 'the whole text is ' + api.speech.uncancelled_chunks + ' chunks');
+  assert.ok(api.speech.cancelled_worker_chunks < api.speech.uncancelled_chunks / 2,
+    'the worker sent ' + api.speech.cancelled_worker_chunks + ' of ' + api.speech.uncancelled_chunks + ' chunks after a cancel');
   assert.deepEqual(api.speech.after_cancel, official.speech.fox, 'a call after a cancelled stream');
   assert.ok(api.speech.order.length >= 2 && api.speech.order.at(-1) === 'call',
     'a stream\'s chunks ahead of the call after it: ' + api.speech.order);
