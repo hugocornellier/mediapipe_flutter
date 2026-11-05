@@ -17,6 +17,21 @@ import 'package:mediapipe_gallery/bundled_model_assets.dart';
 @JS('mediapipeSpeechReport')
 external set _report(JSAny? value);
 
+/// What test_browser.mjs's counters saw the audio worker do on WebGPU.
+extension type _WebGpuWork._(JSObject _) implements JSObject {
+  external int get submit;
+  external int get pipeline;
+}
+
+@JS('webGpuWork')
+external _WebGpuWork get _webGpuWork;
+
+/// The counters at this point, once what the worker posted has arrived.
+Future<Map<String, int>> _work() async {
+  await Future<void>.delayed(const Duration(milliseconds: 500));
+  return {'submit': _webGpuWork.submit, 'pipeline': _webGpuWork.pipeline};
+}
+
 /// Texts and settings, shared with the JavaScript side of the test.
 const foxText = 'The quick brown fox jumps over the lazy dog.';
 const frenchText = "Bonjour, comment allez-vous aujourd'hui ?";
@@ -47,11 +62,18 @@ Future<void> main() async {
     report['transcriber'] = await _transcriber(
       query['parakeet'] ?? AudioModels.parakeetTdtV3.url,
     );
+    final afterCpu = await _work();
     report['transcriber_gpu'] = await _transcriberGpu(
       query['parakeet'] ?? AudioModels.parakeetTdtV3.url,
     );
+    final afterGpu = await _work();
     report['speech'] = await _speech(query['phonon'] ?? AudioModels.phonon.url);
     report['pinned'] = await _pinned();
+    report['work'] = {
+      'after_cpu': afterCpu,
+      'after_gpu': afterGpu,
+      'after_speech': await _work(),
+    };
     report['status'] = 'passed';
   } catch (error, stack) {
     report

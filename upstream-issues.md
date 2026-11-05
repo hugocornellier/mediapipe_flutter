@@ -1312,8 +1312,8 @@ as long as on the CPU (172 ms against 170 ms), where Audio Transcriber on the
 same delegate reports 55 ms of GPU time and logs its Metal device. In Chromium
 on a Metal adapter, Google's JavaScript creates a WebGPU device for the task and
 then builds no compute pipeline and submits nothing, again at the CPU's speed
-(about 1930 ms), where Audio Transcriber builds 41 pipelines and submits 18
-times.
+(about 1930 ms), where Audio Transcriber builds 41 pipelines and submits 9 times
+on one clip.
 
 Google's browser Audio Transcriber has the same silence without a hardware
 adapter: its request for an adapter failing is only a `console.warn`, so in
