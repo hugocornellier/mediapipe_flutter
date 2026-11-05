@@ -261,47 +261,64 @@ void main() {
     expect(() => TextToSpeechOptions(targetBucket: -1), throwsArgumentError);
   });
 
-  test('only the Audio Transcriber offers the GPU, where it is proved', () async {
-    expect((await queryTextToSpeechCapabilities()).supportedDelegates, {
-      Delegate.cpu,
-    });
-    const mac = TaskPlatform(
-      operatingSystem: 'macos',
-      architecture: 'arm64',
-      version: '15.0',
-    );
-    expect(audioTranscriberCapabilitiesForPlatform(mac).supportedDelegates, {
-      Delegate.cpu,
-      Delegate.gpu,
-    });
-    final macSpeech = textToSpeechCapabilitiesForPlatform(mac);
-    expect(macSpeech.supportedDelegates, {Delegate.cpu});
-    expect(macSpeech.unavailableReasons[Delegate.gpu], contains('UP-066'));
-    for (final platform in const [
-      TaskPlatform(operatingSystem: 'linux', architecture: 'x64'),
-      TaskPlatform(operatingSystem: 'windows', architecture: 'x64'),
-      TaskPlatform(operatingSystem: 'android', architecture: 'arm64'),
-    ]) {
-      final capabilities = audioTranscriberCapabilitiesForPlatform(platform);
-      expect(capabilities.supportedDelegates, {Delegate.cpu}, reason: '$platform');
-      expect(
-        capabilities.unavailableReasons[Delegate.gpu],
-        contains('proved'),
-        reason: '$platform',
+  test(
+    'only the Audio Transcriber offers the GPU, where it is proved',
+    () async {
+      expect((await queryTextToSpeechCapabilities()).supportedDelegates, {
+        Delegate.cpu,
+      });
+      const mac = TaskPlatform(
+        operatingSystem: 'macos',
+        architecture: 'arm64',
+        version: '15.0',
       );
-    }
-    await expectLater(
-      TextToSpeech.create(
-        TextToSpeechOptions(modelPath: _ttsModel, delegate: Delegate.gpu),
-      ),
-      throwsA(isA<RuntimeUnavailableException>()),
-    );
-    const browser = TaskPlatform(operatingSystem: 'web', architecture: 'wasm');
-    expect(audioTranscriberCapabilitiesForPlatform(browser).isSupported, false);
-    expect(textToSpeechCapabilitiesForPlatform(browser).isSupported, false);
-    const arm32 = TaskPlatform(operatingSystem: 'android', architecture: 'arm');
-    expect(textToSpeechCapabilitiesForPlatform(arm32).isSupported, false);
-  });
+      expect(audioTranscriberCapabilitiesForPlatform(mac).supportedDelegates, {
+        Delegate.cpu,
+        Delegate.gpu,
+      });
+      final macSpeech = textToSpeechCapabilitiesForPlatform(mac);
+      expect(macSpeech.supportedDelegates, {Delegate.cpu});
+      expect(
+        macSpeech.unavailableReasons[Delegate.gpu],
+        contains('ignores the GPU delegate'),
+      );
+      for (final platform in const [
+        TaskPlatform(operatingSystem: 'linux', architecture: 'x64'),
+        TaskPlatform(operatingSystem: 'windows', architecture: 'x64'),
+        TaskPlatform(operatingSystem: 'android', architecture: 'arm64'),
+      ]) {
+        final capabilities = audioTranscriberCapabilitiesForPlatform(platform);
+        expect(capabilities.supportedDelegates, {
+          Delegate.cpu,
+        }, reason: '$platform');
+        expect(
+          capabilities.unavailableReasons[Delegate.gpu],
+          contains('proved'),
+          reason: '$platform',
+        );
+      }
+      await expectLater(
+        TextToSpeech.create(
+          TextToSpeechOptions(modelPath: _ttsModel, delegate: Delegate.gpu),
+        ),
+        throwsA(isA<RuntimeUnavailableException>()),
+      );
+      const browser = TaskPlatform(
+        operatingSystem: 'web',
+        architecture: 'wasm',
+      );
+      expect(
+        audioTranscriberCapabilitiesForPlatform(browser).isSupported,
+        false,
+      );
+      expect(textToSpeechCapabilitiesForPlatform(browser).isSupported, false);
+      const arm32 = TaskPlatform(
+        operatingSystem: 'android',
+        architecture: 'arm',
+      );
+      expect(textToSpeechCapabilitiesForPlatform(arm32).isSupported, false);
+    },
+  );
 
   test('a browser serves the speech tasks once the web plugin registers', () {
     // TaskPlatform.current on the web.

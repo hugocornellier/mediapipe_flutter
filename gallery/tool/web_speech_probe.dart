@@ -179,9 +179,7 @@ List<Object?> _segments(AudioTranscriberResult result) => [
 
 Future<Map<String, Object?>> _speech(String model) async {
   final report = <String, Object?>{};
-  final task = await TextToSpeech.create(
-    TextToSpeechOptions(modelPath: model),
-  );
+  final task = await TextToSpeech.create(TextToSpeechOptions(modelPath: model));
   try {
     report['voices'] = [
       for (final voice in await task.listVoices())
@@ -301,10 +299,12 @@ Future<String> _failure(FutureOr<Object?> Function() call) async {
 
 Map<String, Object?> _audio(TextToSpeechResult result) => {
   'sha256': sha256
-      .convert(result.samples.buffer.asUint8List(
-        result.samples.offsetInBytes,
-        result.samples.lengthInBytes,
-      ))
+      .convert(
+        result.samples.buffer.asUint8List(
+          result.samples.offsetInBytes,
+          result.samples.lengthInBytes,
+        ),
+      )
       .toString(),
   'samples': result.samples.length,
   'sampleRateHz': result.sampleRateHz,
