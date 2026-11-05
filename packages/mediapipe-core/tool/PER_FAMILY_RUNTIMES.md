@@ -220,9 +220,9 @@ the history (`git show 4b4ab7a:debloat-plan.md`). Still open:
   emulator" and "... official iOS SDK on an arm64 simulator", and the rule
   requires them by those names. The macOS 14 and Android 9 jobs can join it
   once they have passed on `main`.
-- **Publish.** 0.1.0 of the six packages, as `CONTRIBUTING.md` ("Versions
+- **Publish.** 0.2.0 of the six packages, as `CONTRIBUTING.md` ("Versions
   and the first release") describes. The pubspecs are publishable as checked
-  in (no `publish_to: none`, families on `mediapipe_core: ^0.1.0` with a
+  in (no `publish_to: none`, families on `mediapipe_core: ^0.2.0` with a
   checked-in `pubspec_overrides.yaml` for the checkout); `publish_check.py`
   and `test_bundled_models.py` run first, then `mediapipe_core` publishes and
   the five families after it. Dry runs only until then, and never `--force`.

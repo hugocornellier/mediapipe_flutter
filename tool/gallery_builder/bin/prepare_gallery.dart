@@ -296,7 +296,7 @@ String _pubspec(
 name: mediapipe_gallery
 description: A portal to every MediaPipe task this repository supports.
 publish_to: none
-version: 0.1.0+1
+version: 0.2.0+1
 
 environment:
   sdk: ^3.12.0

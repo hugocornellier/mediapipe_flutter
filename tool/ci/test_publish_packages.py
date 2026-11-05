@@ -40,13 +40,13 @@ class PublishPackagesTest(unittest.TestCase):
 
     def test_verify_versions_and_tag_accepts_matching_tag(self):
         version = publish_packages.verify_versions_and_tag(
-            'refs/tags/v0.1.0', dry_run=False)
-        self.assertEqual(version, '0.1.0')
+            'refs/tags/v0.2.0', dry_run=False)
+        self.assertEqual(version, '0.2.0')
 
     def test_verify_versions_and_tag_rejects_mismatched_tag_even_in_dry_run(self):
         with self.assertRaises(SystemExit):
             publish_packages.verify_versions_and_tag(
-                'refs/tags/v0.2.0', dry_run=True)
+                'refs/tags/v0.1.0', dry_run=True)
 
     def test_verify_versions_and_tag_rejects_branch_ref_when_publishing(self):
         with self.assertRaises(SystemExit):
@@ -55,7 +55,7 @@ class PublishPackagesTest(unittest.TestCase):
         # Dry run on a branch ref is allowed.
         self.assertEqual(
             publish_packages.verify_versions_and_tag('refs/heads/main', dry_run=True),
-            '0.1.0')
+            '0.2.0')
 
     def test_fetch_oidc_token_requests_pub_dev_audience(self):
         response_bytes = json.dumps({'value': 'oidc-jwt-token'}).encode('utf-8')
@@ -123,7 +123,7 @@ class PublishPackagesTest(unittest.TestCase):
                 mock.patch.object(publish_packages, 'fetch_oidc_token', return_value='jwt'), \
                 mock.patch.object(publish_packages.subprocess, 'run', side_effect=fake_run), \
                 mock.patch.object(publish_packages, 'publish_package', side_effect=fake_publish):
-            publish_packages.run_publish(selected, 'refs/tags/v0.1.0', dry_run=False)
+            publish_packages.run_publish(selected, 'refs/tags/v0.2.0', dry_run=False)
 
         self.assertEqual(events, [
             ('validate', ['mediapipe-core', 'mediapipe-task-audio', 'mediapipe-task-vision']),

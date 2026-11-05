@@ -1,9 +1,9 @@
 # Migration
 
-This repository's first release, 0.1.0 of `mediapipe_core`,
-`mediapipe_vision`, `mediapipe_text`, `mediapipe_audio`, `mediapipe_decision`
-and `mediapipe_retrieval`, is the first under these names since Google's
-0.0.1 previews of May 2024. This guide is for apps on those previews:
+This repository's packages, `mediapipe_core`, `mediapipe_vision`,
+`mediapipe_text`, `mediapipe_audio`, `mediapipe_decision` and
+`mediapipe_retrieval`, now at 0.2.0, replace Google's 0.0.1 previews of May
+2024. This guide is for apps on those previews:
 
 - **`mediapipe_text` 0.0.1:** below, and the complete old-to-new table in
   [the text migration guide](packages/mediapipe-task-text/MIGRATION.md).
