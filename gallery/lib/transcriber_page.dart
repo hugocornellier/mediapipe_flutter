@@ -53,7 +53,7 @@ class _TranscriberPageState extends State<TranscriberPage>
       .capabilities(widget.platform)
       .supportedDelegates
       .toList();
-  late final Delegate _delegate = preferredDelegate(_delegates);
+  late Delegate _delegate = preferredDelegate(_delegates);
 
   String _clip = _clips.keys.first;
   AudioTranscriber? _task;
@@ -154,6 +154,19 @@ class _TranscriberPageState extends State<TranscriberPage>
     if (_segments != null && !_busy) unawaited(_run());
   }
 
+  /// The next run creates the task on [delegate]; the last answer goes, as it
+  /// came from the other one.
+  void _setDelegate(Delegate delegate) {
+    if (delegate == _delegate) return;
+    setState(() {
+      _delegate = delegate;
+      _segments = null;
+      _interim = const [];
+      _milliseconds = null;
+    });
+    unawaited(_close());
+  }
+
   Widget _panel() => ListenableBuilder(
     listenable: revision,
     builder: (context, _) => TaskSettingsPanel(
@@ -163,7 +176,7 @@ class _TranscriberPageState extends State<TranscriberPage>
       delegate: _delegate,
       enabled: !_busy,
       onChanged: _setSetting,
-      onDelegate: (_) {},
+      onDelegate: _setDelegate,
       models: const [],
       model: null,
       uploaded: null,

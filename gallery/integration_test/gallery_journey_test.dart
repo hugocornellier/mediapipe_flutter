@@ -509,28 +509,33 @@ void main() {
           checks.add('${task.id}:cpu:search');
           break;
         case GalleryDemo.transcribe:
-          // The 16 kHz clip, as Google's Python API writes it out.
-          await tester.tap(find.byKey(const ValueKey('transcriber-run')));
-          await tester.pump();
-          // The first run downloads Google's 615 MB model.
-          await _until(
-            tester,
-            () =>
-                find.byKey(transcriptKey).evaluate().isNotEmpty ||
-                find.text('Error').evaluate().isNotEmpty,
-            attempts: 2400,
-          );
-          expect(
-            find.text('Error'),
-            findsNothing,
-            reason: '${task.id}: ${screenText(tester)}',
-          );
-          expect(
-            tester.widget<Text>(find.byKey(transcriptKey)).data,
-            "Send a text to Mike, I'll be home late tomorrow.",
-            reason: '${task.id}: ${screenText(tester)}',
-          );
-          checks.add('${task.id}:cpu:transcribe');
+          // The 16 kHz clip, as Google's Python API writes it out, on each
+          // delegate.
+          final choices = offered(task).length > 1;
+          for (final delegate in delegatesFor(task)) {
+            if (choices) await tapDelegate(tester, delegate);
+            await tester.tap(find.byKey(const ValueKey('transcriber-run')));
+            await tester.pump();
+            // The first run downloads Google's 615 MB model.
+            await _until(
+              tester,
+              () =>
+                  find.byKey(transcriptKey).evaluate().isNotEmpty ||
+                  find.text('Error').evaluate().isNotEmpty,
+              attempts: 2400,
+            );
+            expect(
+              find.text('Error'),
+              findsNothing,
+              reason: '${task.id}: ${screenText(tester)}',
+            );
+            expect(
+              tester.widget<Text>(find.byKey(transcriptKey)).data,
+              "Send a text to Mike, I'll be home late tomorrow.",
+              reason: '${task.id}: ${screenText(tester)}',
+            );
+            checks.add('${task.id}:${delegate.name}:transcribe');
+          }
           break;
         case GalleryDemo.speak:
           // The fox sentence in the default voice: nine timed words.
