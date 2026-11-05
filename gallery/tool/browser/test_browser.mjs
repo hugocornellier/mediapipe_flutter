@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium, firefox, webkit} from 'playwright';
+import {isLostPage, saveSystemLog} from './lost_page.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const argumentsMap = Object.fromEntries(process.argv.slice(2).map(arg => arg.replace(/^--/, '').split('=')));
@@ -1125,25 +1125,6 @@ async function textAudioChecks() {
   report.checks.push('gallery-text-embedder-compare');
 }
 
-// What macOS logged about the browser's processes, for a run that lost its
-// page: the unified log names a WebKit process that went and why.
-function saveSystemLog(name) {
-  if (process.platform !== 'darwin') return;
-  try {
-    const log = execFileSync('/usr/bin/log', ['show', '--last', '15m', '--style', 'compact', '--predicate',
-      'process == "Playwright" OR process BEGINSWITH "com.apple.WebKit" OR ' +
-      '(process == "kernel" AND eventMessage CONTAINS "memorystatus")'],
-    {encoding: 'utf8', maxBuffer: 1024 * 1024 * 1024});
-    fs.writeFileSync(path.join(evidence, name + '-lost-page-unified.log'), log);
-    console.log(log.split('\n')
-      .filter(line => /terminat|crash|unresponsive|exceed|kill|memory limit|footprint/i.test(line))
-      .filter(line => !/canTerminateAuxiliaryProcess|AutomaticTermination/.test(line))
-      .slice(-30).join('\n'));
-  } catch (error) {
-    console.log('No unified log: ' + error.message);
-  }
-}
-
 // WebKit on hosted macOS has closed the page mid-suite with no page error or
 // failed check (run 38261996089). A suite that loses its page or browser, and
 // only that, runs once more on a fresh browser; a failed check still fails at
@@ -1153,12 +1134,12 @@ async function retryingLostPage(name, checks) {
   try {
     await checks();
   } catch (error) {
-    if (!/Target page, context or browser has been closed|Target crashed/.test(error?.message ?? '')) throw error;
+    if (!isLostPage(error)) throw error;
     const reason = error.message.split('\n')[0];
     report.retries.push({suite: name, error: reason, crashed: logs.some(entry => entry.type === 'crash')});
     console.log(`::warning title=${browserName} lost the page::${name} checks: ${reason}. ` +
       'Running them once more on a fresh browser.');
-    saveSystemLog(name);
+    saveSystemLog(evidence, name);
     report.checks.length = passed;
     for (const browser of browsers.splice(0)) await browser.close().catch(() => {});
     await checks();
