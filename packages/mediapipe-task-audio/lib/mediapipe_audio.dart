@@ -1,6 +1,6 @@
 /// Google's MediaPipe audio tasks: Audio Classifier, with one API on Android,
 /// iOS, macOS, Linux, Windows and the web, and Audio Transcriber and Text to
-/// Speech on Android, iOS, macOS, Linux and Windows.
+/// Speech on 64-bit Android, iOS, macOS, Linux, Windows and the web.
 ///
 /// Each task has `static create(options)`, Google's verbs (`classify`,
 /// `transcribe`, `synthesize`), a `delegate` getter and `dispose()`. What a

@@ -23,7 +23,9 @@ enum TranscriberModelArchitecture {
 /// Options for Google's Audio Transcriber.
 ///
 /// Google's task reads its model from a file, so it takes a pinned [model]
-/// or a [modelPath], not bytes.
+/// or a [modelPath], not bytes. In a browser, a [modelPath] URL keeps a model
+/// as large as Parakeet out of the page's memory: a pinned [model] passes
+/// through it as bytes.
 final class AudioTranscriberOptions extends TaskOptions {
   /// Defaults match Google's: 16 kHz input, final results only, the model's
   /// own architecture and prompt, no compile cache.
@@ -56,7 +58,8 @@ final class AudioTranscriberOptions extends TaskOptions {
   final String? prompt;
 
   /// A directory where Google caches compiled weights between runs; null
-  /// disables the cache.
+  /// disables the cache. In a browser it is a path in the runtime's virtual
+  /// file system, which goes with the page.
   final String? cacheDirectory;
 }
 
@@ -156,7 +159,8 @@ final class TextToSpeechOptions extends TaskOptions {
   final int targetBucket;
 
   /// A directory where Google caches unpacked model files and compiled
-  /// weights between runs; null disables the cache.
+  /// weights between runs; null disables the cache. In a browser it is a path
+  /// in the runtime's virtual file system, which goes with the page.
   final String? cacheDirectory;
 }
 

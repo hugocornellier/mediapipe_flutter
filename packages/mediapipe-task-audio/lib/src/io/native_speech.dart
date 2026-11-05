@@ -19,6 +19,7 @@ import '../speech_runners.dart';
 import '../speech_types.dart';
 import '../third_party/mediapipe/audio_transcriber_bindings.dart' as asr;
 import '../third_party/mediapipe/text_to_speech_bindings.dart' as tts;
+import '../utf16_indices.dart';
 import 'native_audio_classifier.dart' show checkedNativeCall;
 
 /// Opens Google's Audio Transcriber on a worker.
@@ -78,6 +79,7 @@ String _modelFile(TaskOptions options) =>
 
 typedef _TranscriberSettings = ({
   String modelPath,
+  Delegate delegate,
   int sampleRateHz,
   bool enableInterimResults,
   int modelArchitecture,
@@ -87,6 +89,7 @@ typedef _TranscriberSettings = ({
 
 _TranscriberSettings _transcriberSettings(AudioTranscriberOptions options) => (
   modelPath: _modelFile(options),
+  delegate: options.delegate,
   sampleRateHz: options.sampleRateHz,
   enableInterimResults: options.enableInterimResults,
   modelArchitecture: options.modelArchitecture.index,
@@ -168,6 +171,7 @@ final class _NativeTranscriber
         native.ref.baseOptions,
         arena,
         modelPath: settings.modelPath,
+        delegate: settings.delegate,
       );
       native.ref
         ..sampleRateHz = settings.sampleRateHz
@@ -512,36 +516,6 @@ final class _NativeTextToSpeech
   @override
   void close() => tts.close(_handle);
 }
-
-/// For each UTF-8 byte offset of [text], as Google's word timestamps give
-/// them, the UTF-16 index of the character it falls in; the last entry is
-/// the text's length.
-Int32List utf16Indices(String text) {
-  final runes = text.runes;
-  var length = 0;
-  for (final rune in runes) {
-    length += _utf8Length(rune);
-  }
-  final indices = Int32List(length + 1);
-  var byte = 0, index = 0;
-  for (final rune in runes) {
-    final size = _utf8Length(rune);
-    indices.fillRange(byte, byte + size, index);
-    byte += size;
-    index += rune > 0xffff ? 2 : 1;
-  }
-  indices[byte] = index;
-  return indices;
-}
-
-/// A lone surrogate is encoded as U+FFFD, three bytes, as toNativeUtf8 does.
-int _utf8Length(int rune) => rune < 0x80
-    ? 1
-    : rune < 0x800
-    ? 2
-    : rune < 0x10000
-    ? 3
-    : 4;
 
 /// Runs one of Google's Text to Speech calls, whose messages it frees with
 /// its own function.

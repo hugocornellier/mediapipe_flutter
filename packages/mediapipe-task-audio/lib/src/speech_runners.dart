@@ -1,5 +1,6 @@
 /// The speech tasks' requests on whichever runtime serves them: Google's
-/// native library, each task on a worker isolate of its own.
+/// native library, each task on a worker isolate of its own, or Google's
+/// browser runtime, each on a web worker of its own.
 library;
 
 import 'dart:typed_data';

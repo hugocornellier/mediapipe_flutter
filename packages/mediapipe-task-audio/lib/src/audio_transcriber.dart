@@ -12,8 +12,8 @@ import 'types.dart';
 /// text, from whole utterances or a stream fed in blocks.
 ///
 /// Google's native runtime serves it on 64-bit Android, iOS, macOS, Linux
-/// and Windows, loading the model and transcribing on a worker isolate.
-/// Google's browser runtime has no such task.
+/// and Windows, loading the model and transcribing on a worker isolate, and
+/// its browser runtime on a web worker.
 ///
 /// ```dart
 /// final task = await AudioTranscriber.create(
