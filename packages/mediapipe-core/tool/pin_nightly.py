@@ -28,7 +28,7 @@ family's headers and notices. It prints why it skipped any newer folder.
 `--generation` pins the archive URL to the generation it hashed
 (`...zip?generation=<x-goog-generation>`), which the bucket keeps when the
 name is uploaded again; comparison runs of a nightly use it. A build this
-project adopts keeps the plain URL, and its files get a mirror release.
+project adopts keeps the plain URL.
 `--report` writes what it found as JSON, the C API changes included, even
 when it stops.
 
@@ -38,9 +38,7 @@ version changed (tests and docs name it), or when a sentence to update is
 missing. `--adopt` writes anyway, for a build this project moves to with its
 bindings and the tests that name the version in the same change; it prints
 the API changes, and removes the headers the build no longer ships. Only the archive's directory, the headers and notices and the pinned
-members are downloaded (about 300 MB). The mirror release the version names
-(`familyRuntimeBaseUrl`) is not posted: until it is, the hooks have only
-Google's archive.
+members are downloaded (about 300 MB).
 """
 import argparse
 import datetime
@@ -107,7 +105,6 @@ SENTENCES = {
         "pins Google's MediaPipe {version} {kind} build of {long}",
         '`https://storage.googleapis.com/mediapipe-assets/prebuilts/'
         'mediapipe_tasks_c/{folder}/mediapipe_tasks_c_{folder}.zip`.',
-        '`per-family-v{tag}`',
     ],
     'packages/mediapipe-task-decision/README.md': [
         'library (its {kind} build of {long})',

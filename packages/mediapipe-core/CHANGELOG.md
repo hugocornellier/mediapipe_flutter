@@ -8,6 +8,8 @@
 - `pin_nightly.py --release X.Y.Z` pins Google's release builds as well as
   nightlies.
 - Ships Google's `NOTICE` at the package root, beside `LICENSE`.
+- Removes `familyRuntimeBaseUrl` and the native libraries' unused mirror URL:
+  Google's archive is now their only source.
 
 ## 0.1.0
 

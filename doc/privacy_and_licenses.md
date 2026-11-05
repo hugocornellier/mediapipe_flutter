@@ -12,7 +12,6 @@ At build time, the build hooks fetch the native runtime for the target:
 | What | Host |
 | --- | --- |
 | Google's per-family MediaPipe libraries (Android, iOS, macOS, Linux, Windows), read from Google's release archive | `storage.googleapis.com` |
-| The same files, only when Google's archive fails: the mirror `per-family-v1.2.2` of `hugocornellier/mediapipe_flutter_native`, which is not posted, so this request fails too | `github.com`, which redirects to `release-assets.githubusercontent.com` |
 
 At run time:
 
