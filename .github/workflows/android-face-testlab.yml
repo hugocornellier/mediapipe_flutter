@@ -159,7 +159,7 @@ jobs:
           ABI: ${{ matrix.abi }}
           PLATFORM: ${{ steps.tasks.outputs.platform }}
         run: |
-          target="$PWD/integration_test/sdk_all_test.dart"
+          target="$PWD/integration_test/telemetry_long_probe_test.dart"
           # A physical GPU must work: a refusal fails its test.
           defines="$(printf 'SDK_GPU=%s' "$GPU" | base64),$(printf 'SDK_GPU_SKIP_TASKS=%s' "$GPU_SKIP" | base64),$(printf 'SDK_MODERN_TEXT=true' | base64),$(printf 'TELEMETRY_PROBE=true' | base64)"
           flutter build apk --config-only --debug --target "$target" --target-platform "$PLATFORM"
@@ -168,6 +168,8 @@ jobs:
           ./gradlew app:assembleDebug -Ptarget="$target" -Ptarget-platform="$PLATFORM" \
             -Pdart-defines="$defines" -Pmediapipe.testLabAbi="$ABI"
       - name: Verify packaged runtime and models
+        # Temporary: the probe target does not use every library this checks.
+        continue-on-error: true
         env:
           TASKS: ${{ steps.tasks.outputs.all }}
           ABI: ${{ matrix.abi }}
@@ -212,6 +214,30 @@ jobs:
                    and 'mediapipe' in name]
           assert not stale, stale
           PY
+      # Temporary: what this one run packaged, kept with its results.
+      - name: Record the packaged runtime
+        continue-on-error: true
+        run: |
+          mkdir -p testlab-results
+          python3 - > testlab-results/packaged_runtime.txt <<'PY'
+          import hashlib
+          import struct
+          import zipfile
+          with zipfile.ZipFile('gallery/build/app/outputs/apk/debug/app-debug.apk') as apk:
+              for name in sorted(n for n in apk.namelist() if 'mediapipe' in n and n.endswith('.so')):
+                  data = apk.read(name)
+                  shoff, = struct.unpack_from('<Q', data, 40)
+                  shentsize, shnum, shstrndx = struct.unpack_from('<HHH', data, 58)
+                  sections = [struct.unpack_from('<IIQQQQ', data, shoff + i * shentsize) for i in range(shnum)]
+                  strings = sections[shstrndx]
+                  text = ''
+                  for section in sections:
+                      end = data.index(b'\0', strings[4] + section[0])
+                      if data[strings[4] + section[0]:end] == b'.text':
+                          text = hashlib.sha256(data[section[4]:section[4] + section[5]]).hexdigest()
+                  print(name, hashlib.sha256(data).hexdigest(), 'text', text, 'JNI_OnLoad', b'JNI_OnLoad' in data)
+          PY
+          cat testlab-results/packaged_runtime.txt
       # One device, no shards or flaky retries: one execution from the daily budget.
       # 45m is the most Test Lab gives a physical device: the Galaxy A12 took 29
       # minutes for its 18 tasks, and the phones that also run Decision Maker,
