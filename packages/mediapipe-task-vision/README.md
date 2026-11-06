@@ -56,7 +56,7 @@ Every vision task runs on Google's MediaPipe vision library with no setting
 
 The `tasks` list only checks the names against the tasks validated on the
 target: a Windows build fails if it names `interactive_segmenter`, which
-Google's Windows library runs too slowly to offer (UP-048).
+Google's Windows library runs too slowly to offer.
 
 ```yaml
 hooks:
@@ -488,7 +488,7 @@ inside the box around the stroke's points (Google's graph reads the box, not
 the outline, so two opposite corners are enough). A one-point Include or
 Exclude stroke draws nothing on a browser's GPU; send a short scribble
 there. Not available on Windows, where Google's library takes about 25
-seconds a stroke (UP-048).
+seconds a stroke.
 
 ```dart
 import 'package:mediapipe_vision/mediapipe_vision.dart';
@@ -652,12 +652,12 @@ before offering a GPU toggle.
 | Web | WASM | WebGL 2 in a worker, when supported |
 | iOS | Official library | Metal for supported tasks |
 | Android | Official library | Supported GPUs on arm64 devices; CPU only on emulators |
-| macOS Apple Silicon | Official library | Not available for now: Google's Metal results since 1.1.1 are unconfirmed (UP-057) |
+| macOS Apple Silicon | Official library | Not available for now: Google's Metal results since 1.1.1 are unconfirmed |
 | Linux x64 | Official library | OpenGL ES for supported tasks; EGL and a GPU driver required |
 | Windows x64 | Official library | Not available |
 
-The Interactive Segmenter is unavailable on Windows (UP-048). Some GPU paths
-have upstream limits. Read the
+The Interactive Segmenter is unavailable on Windows. Some GPU paths have
+upstream limits. Read the
 [per-task matrix](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
 before depending on a particular combination.
 
@@ -675,8 +675,7 @@ tasks load the pinned JavaScript/WASM distribution from jsDelivr by default.
 
 If a Linux container cannot load EGL or OpenGL ES even for CPU inference,
 install `libegl1` and `libgles2`. Windows builds use CPU; Google's Windows
-runtime may wait for a usage-log upload during `dispose()` (see
-[UP-025](https://github.com/google/flutter-mediapipe/blob/main/upstream-issues.md#up-025-windows-task-closes-wait-for-googles-usage-logging-upload)).
+runtime may wait for a usage-log upload during `dispose()`.
 If you remove a face task from the `tasks` list of an existing macOS app, run
 `flutter clean` once to clear its old bundled framework.
 

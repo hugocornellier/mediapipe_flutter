@@ -1,7 +1,7 @@
 ## 0.1.4
 
-- No changes to this package. It is released with `mediapipe_core` 0.1.4 so that
-  all the packages keep one version.
+- Error messages and the README no longer cite the repository's internal notes
+  file.
 
 ## 0.1.3
 
@@ -35,8 +35,7 @@ The first release of this rewrite, replacing Google's
   `TextFormatContext`.
 - Proofreader and Summarizer on Android, iOS, macOS, Linux and Windows, with
   streamed updates (`proofreadStream`, `summarizeStream`). Browsers have
-  neither task (upstream-issues.md UP-034), which the capability queries
-  report.
+  neither task, which the capability queries report.
 - Every task is one class with the same API on every platform, created with
   `await Xxx.create(options)` and released with an idempotent `dispose()`.
   `mediapipe_text.dart` is the only app library.

@@ -1,7 +1,7 @@
 ## 0.1.4
 
-- No changes to this package. It is released with `mediapipe_core` 0.1.4 so that
-  all the packages keep one version.
+- Error messages and the README no longer cite the repository's internal notes
+  file.
 
 ## 0.1.3
 
@@ -31,11 +31,12 @@ The first release.
   forms, with the same results on every platform.
 - `DecisionModels` pins Google's Laya, GLiNER2.5-Decide and EmbeddingGemma 2
   models; `queryDecisionMakerCapabilities(model)` says where a model runs,
-  since Google's browser runtime embeds every text as zeros with either EmbeddingGemma 2 model in WebKit (UP-054) and
-  aborts with GLiNER2.5-Decide in every browser (UP-055).
+  since Google's browser runtime embeds every text as zeros with either
+  EmbeddingGemma 2 model in WebKit and aborts with GLiNER2.5-Decide in every
+  browser.
 - `maxNumTokens` defaults to 0, the model's own token budget, rather than
   the 4096 of Google's Python API: Google's engine reserves memory for the
   whole budget, 6.7 GB with EmbeddingGemma 2 at 4096, beyond what iOS gives
-  an iPhone app (UP-060).
-- In browsers Google's runtime ignores `normalizePrior` and `scoringMode`
-  (UP-056), as the questions' documentation says.
+  an iPhone app.
+- In browsers Google's runtime ignores `normalizePrior` and `scoringMode`,
+  as the questions' documentation says.

@@ -101,8 +101,7 @@ instead.
 ## Windows x64
 
 - CPU inference. Google's Windows library may wait for a usage-log upload when
-  a task is disposed
-  ([UP-025](../upstream-issues.md#up-025-windows-task-closes-wait-for-googles-usage-logging-upload)).
+  a task is disposed.
 
 ## Web
 

@@ -1,7 +1,7 @@
 ## 0.1.4
 
-- No changes to this package. It is released with `mediapipe_core` 0.1.4 so that
-  all the packages keep one version.
+- Error messages and the README no longer cite the repository's internal notes
+  file.
 
 ## 0.1.3
 
@@ -34,4 +34,4 @@ The first release.
   records, with the same results on every platform.
 - `RetrievalModels` pins Google's EmbeddingGemma 2 models.
 - Neither task is offered in WebKit, where Google's browser runtime returns
-  zeros for every input with both models (UP-054).
+  zeros for every input with both models.

@@ -123,8 +123,8 @@ On macOS, build the app for Apple Silicon only (two lines in its
 CPU works everywhere a family is listed, except that browsers run Decision
 and Retrieval on WebGPU alone, which needs a hardware adapter. GPU (Metal,
 OpenGL ES, WebGL or Android GPU) depends on the task; Macs run the vision
-tasks on the CPU for now, until Google confirms its Metal results since 1.1.1
-([UP-057](https://github.com/google/flutter-mediapipe/blob/main/upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)). Every cell is tested in CI on hosted
+tasks on the CPU for now, until Google confirms its Metal results since 1.1.1.
+Every cell is tested in CI on hosted
 runners, the Android emulator, the iOS Simulator and Chromium, Firefox and
 WebKit. The [vision status table](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
 lists each task, delegate, known upstream limit and physical-device result.

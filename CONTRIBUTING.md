@@ -82,8 +82,8 @@ node gallery/tool/browser/test_gallery_journey.mjs --browser=webkit \
 ```
 
 The second run expects Decision Maker to answer on Laya, and Hungry Fish and both
-retrieval tasks to be cards with their reason
-([UP-054](upstream-issues.md#up-054-in-webkit-the-browser-runtime-embeds-every-input-as-zeros-with-embeddinggemma-2)).
+retrieval tasks to be cards with their reason: in WebKit, Google's browser
+runtime embeds every input as zeros with EmbeddingGemma 2.
 
 A journey that loses its page runs once more and prints a `::warning::`, so
 read the output even when it passes: a crash can be a real memory bug, and
@@ -173,4 +173,4 @@ platform it claims, and a test proves the output matches Google's.
    compared with the wheel of each platform's own version, generated on the
    runner (`packages/mediapipe-task-text/tool/prepare_modern_text_reference.py`).
 7. **Docs.** The family README's task table, the CHANGELOG, and any platform
-   limit with its upstream issue in `upstream-issues.md`.
+   limit, with the reason for it.
