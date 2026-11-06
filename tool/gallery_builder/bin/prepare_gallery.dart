@@ -304,6 +304,7 @@ dependencies:
     path: ../packages/mediapipe-task-retrieval
   web: ^1.1.1
   crypto: ^3.0.6
+  http: ^1.6.0
   file_selector: ^1.0.3
   image_picker: ^1.2.2
   video_frames:

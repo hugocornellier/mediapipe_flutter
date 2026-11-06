@@ -30,8 +30,8 @@ PACKAGE = 'com.example.mediapipe_gallery'
 # flutter_test's last report line; a run that never prints one has stalled.
 VERDICT = re.compile(r'(All tests passed!|Some tests failed\.)')
 # How often a silent Android run is checked, in seconds, and how long it may
-# stay silent. The longest silence in passing runs was 496 s, Decision Maker on
-# the Android 9 emulator (November 5, 2026), where a stalled run went on to sit
+# stay silent. The longest silence in passing runs was 764 s, Decision Maker on
+# the Android 9 emulator (November 6, 2026), where a stalled run went on to sit
 # silent for its last 37 minutes (October 22).
 POLL = 60
 SILENCE = 1200
@@ -45,6 +45,10 @@ NETWORK_ERROR = re.compile(
     r'|An error occurred while preparing SDK package .*Error on ZipFile')
 # Seconds before the one more build.
 BUILD_RETRY_DELAY = 30
+# The start of gallery/lib/model_download_log.dart's lines. They are echoed but
+# do not count as heard: a slow download keeps printing them, and SILENCE must
+# still end that run.
+PROGRESS = 'MODEL_DOWNLOAD '
 EXECUTABLES = {
     'linux': f'build/linux/x64/release/bundle/{NAME}',
     'windows': f'build/windows/x64/runner/Release/{NAME}.exe',
@@ -154,6 +158,7 @@ def verdict(process, timeout, dead=None):
     threading.Thread(target=read, daemon=True).start()
     deadline = time.monotonic() + timeout
     heard = time.monotonic()
+    progress = None
     while (left := deadline - time.monotonic()) > 0:
         try:
             line = lines.get(timeout=min(left, POLL))
@@ -161,16 +166,21 @@ def verdict(process, timeout, dead=None):
             if dead and dead():
                 print('The app or its device has gone.', flush=True)
                 return None
-            if dead and time.monotonic() - heard > SILENCE:
-                print(f'The app has been silent for over {SILENCE} s.', flush=True)
+        else:
+            if line is None:
                 return None
-            continue
-        heard = time.monotonic()
-        if line is None:
+            print(line, flush=True)
+            if match := VERDICT.search(line):
+                return match.group(1)
+            if line.startswith(PROGRESS):
+                progress = line
+            else:
+                heard = time.monotonic()
+        if dead and time.monotonic() - heard > SILENCE:
+            print(f'The app has been silent for over {SILENCE} s.', flush=True)
+            if progress:
+                print(f'Its last download line: {progress}', flush=True)
             return None
-        print(line, flush=True)
-        if match := VERDICT.search(line):
-            return match.group(1)
     return None
 
 

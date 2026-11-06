@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import threading
 import time
 import types
 import unittest
@@ -23,6 +24,17 @@ def silent_process(test):
 
 def printing(*lines):
     return types.SimpleNamespace(stdout=io.BytesIO(''.join(f'{line}\n' for line in lines).encode()))
+
+
+def repeating(test, line):
+    """A process that prints [line] every 10 ms until the test ends."""
+    def lines():
+        while not ended.is_set():
+            time.sleep(0.01)
+            yield f'{line}\n'.encode()
+    ended = threading.Event()
+    test.addCleanup(ended.set)
+    return types.SimpleNamespace(stdout=lines())
 
 
 class VerdictTest(unittest.TestCase):
@@ -51,6 +63,31 @@ class VerdictTest(unittest.TestCase):
         started = time.monotonic()
         self.assertIsNone(run_release_suite.verdict(silent_process(self), 60, lambda: False))
         self.assertLess(time.monotonic() - started, 5)
+
+    def test_download_lines_do_not_hold_off_silence_and_it_names_the_last(self):
+        line = 'MODEL_DOWNLOAD laya_s256.task: 300 of 678 MB in 968 s'
+        started = time.monotonic()
+        # With lines this frequent, no wait for a line ever runs out.
+        with mock.patch.object(run_release_suite, 'POLL', 60):
+            self.assertIsNone(run_release_suite.verdict(repeating(self, line), 10, lambda: False))
+        self.assertLess(time.monotonic() - started, 5)
+        out = sys.stdout.getvalue()
+        self.assertIn(line, out)
+        self.assertIn(f'Its last download line: {line}', out)
+
+    def test_other_lines_still_hold_off_silence(self):
+        with mock.patch.object(run_release_suite, 'SILENCE', 1):
+            self.assertIsNone(run_release_suite.verdict(repeating(self, '00:01 +1: a'), 2, lambda: False))
+        self.assertNotIn('silent', sys.stdout.getvalue())
+
+    def test_a_download_line_is_no_verdict_and_leaves_one_readable(self):
+        process = printing('MODEL_DOWNLOAD a.task: HTTP 200, of 1 MB', 'All tests passed!')
+        self.assertEqual(run_release_suite.verdict(process, 60, lambda: False), 'All tests passed!')
+
+    def test_silence_without_a_download_names_none(self):
+        self.assertIsNone(run_release_suite.verdict(silent_process(self), 60, lambda: False))
+        self.assertIn('silent for over', sys.stdout.getvalue())
+        self.assertNotIn('download', sys.stdout.getvalue())
 
     def test_a_desktop_run_waits_out_its_timeout(self):
         started = time.monotonic()
