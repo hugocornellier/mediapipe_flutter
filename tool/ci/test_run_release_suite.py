@@ -14,10 +14,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run_release_suite  # noqa: E402
 
 
-def silent_process(test):
-    """A process that stays running and prints nothing."""
+def silent_process(test, *lines):
+    """A process that prints [lines], then stays running and prints nothing."""
     read, write = os.pipe()
     test.addCleanup(os.close, write)
+    os.write(write, ''.join(f'{line}\n' for line in lines).encode())
     stdout = os.fdopen(read, 'rb')
     return types.SimpleNamespace(stdout=stdout)
 
@@ -27,11 +28,14 @@ def printing(*lines):
 
 
 def repeating(test, line):
-    """A process that prints [line] every 10 ms until the test ends."""
+    """A process that prints [line] every 10 ms until the test ends, with its
+    count in place of any {}."""
     def lines():
+        count = 0
         while not ended.is_set():
             time.sleep(0.01)
-            yield f'{line}\n'.encode()
+            count += 1
+            yield f'{line.format(count)}\n'.encode()
     ended = threading.Event()
     test.addCleanup(ended.set)
     return types.SimpleNamespace(stdout=lines())
@@ -64,16 +68,73 @@ class VerdictTest(unittest.TestCase):
         self.assertIsNone(run_release_suite.verdict(silent_process(self), 60, lambda: False))
         self.assertLess(time.monotonic() - started, 5)
 
-    def test_download_lines_do_not_hold_off_silence_and_it_names_the_last(self):
-        line = 'MODEL_DOWNLOAD laya_s256.task: 300 of 678 MB in 968 s'
+    def assert_silence_ends(self, process, last):
         started = time.monotonic()
-        # With lines this frequent, no wait for a line ever runs out.
-        with mock.patch.object(run_release_suite, 'POLL', 60):
-            self.assertIsNone(run_release_suite.verdict(repeating(self, line), 10, lambda: False))
+        self.assertIsNone(run_release_suite.verdict(process, 10, lambda: False))
         self.assertLess(time.monotonic() - started, 5)
         out = sys.stdout.getvalue()
-        self.assertIn(line, out)
-        self.assertIn(f'Its last download line: {line}', out)
+        self.assertIn('silent for over', out)
+        self.assertRegex(out, f'Its last download line: {last}')
+
+    # With lines this frequent, no wait for a line ever runs out.
+    @mock.patch.object(run_release_suite, 'POLL', 60)
+    def test_a_repeated_download_line_does_not_hold_off_silence_and_it_names_the_last(self):
+        line = 'MODEL_DOWNLOAD laya_s256.task: 300 of 678 MB in 968 s'
+        self.assert_silence_ends(repeating(self, line), line)
+
+    @mock.patch.object(run_release_suite, 'POLL', 60)
+    def test_an_answer_with_no_bytes_does_not_hold_off_silence(self):
+        line = 'MODEL_DOWNLOAD laya_s256.task: HTTP 200, 678 MB'
+        self.assert_silence_ends(repeating(self, line), line)
+
+    @mock.patch.object(run_release_suite, 'POLL', 60)
+    def test_an_unreadable_download_line_does_not_hold_off_silence(self):
+        line = 'MODEL_DOWNLOAD laya_s256.task: {} MB left'
+        self.assert_silence_ends(repeating(self, line), 'MODEL_DOWNLOAD laya_s256.task: [0-9]+ MB left')
+
+    def test_a_stall_after_a_download_ended_is_silence_and_it_names_the_end(self):
+        ended = 'MODEL_DOWNLOAD laya_s256.task: 678 of 678 MB in 2180 s, ended'
+        process = silent_process(self, 'MODEL_DOWNLOAD laya_s256.task: HTTP 200, 678 MB', ended)
+        self.assert_silence_ends(process, ended)
+
+    def test_download_progress_holds_off_silence(self):
+        line = 'MODEL_DOWNLOAD laya_s256.task: {} of 678 MB in 9 s'
+        with mock.patch.object(run_release_suite, 'SILENCE', 1):
+            self.assertIsNone(run_release_suite.verdict(repeating(self, line), 2, lambda: False))
+        self.assertNotIn('silent', sys.stdout.getvalue())
+
+    def test_the_timeout_ends_a_download_that_keeps_progressing_and_names_it(self):
+        line = 'MODEL_DOWNLOAD laya_s256.task: {} of 678 MB in 9 s'
+        started = time.monotonic()
+        self.assertIsNone(run_release_suite.verdict(repeating(self, line), 0.3))
+        self.assertGreaterEqual(time.monotonic() - started, 0.3)
+        self.assertLess(time.monotonic() - started, 30)
+        self.assertRegex(sys.stdout.getvalue(), 'Its last download line: MODEL_DOWNLOAD laya_s256.task: [0-9]+ of 678')
+
+    def test_only_more_megabytes_for_that_file_are_progress(self):
+        received = {}
+        for line, expected in (
+            ('00:01 +1: a', True),
+            ('MODEL_DOWNLOAD a.task: HTTP 200, 678 MB', False),
+            ('MODEL_DOWNLOAD a.task: 100 of 678 MB in 322 s', True),
+            ('MODEL_DOWNLOAD a.task: 100 of 678 MB in 322 s', False),
+            ('MODEL_DOWNLOAD a.task: 99 of 678 MB in 322 s', False),
+            ('MODEL_DOWNLOAD a.task: 200 of 678 MB in 644 s', True),
+            ('MODEL_DOWNLOAD b.task: 100 MB in 9 s', True),
+            ('MODEL_DOWNLOAD a.task: 200 of 678 MB in 700 s, ended', False),
+            # A resumed download's answer counts from zero again.
+            ('MODEL_DOWNLOAD a.task: HTTP 206, 478 MB', False),
+            ('MODEL_DOWNLOAD a.task: 0 of 478 MB in 60 s, ended', False),
+            ('MODEL_DOWNLOAD a.task: 100 of 478 MB in 322 s', True),
+            ('MODEL_DOWNLOAD a.task: 478 of 478 MB in 999 s, ended', True),
+            ('MODEL_DOWNLOAD a.task: 9000 of everything', False),
+        ):
+            self.assertEqual(run_release_suite.heard_from(line, received), expected, line)
+
+    def test_a_dead_app_ends_the_wait_during_a_download(self):
+        process = silent_process(self, 'MODEL_DOWNLOAD laya_s256.task: 300 of 678 MB in 968 s')
+        self.assertIsNone(run_release_suite.verdict(process, 60, lambda: True))
+        self.assertIn('The app or its device has gone.', sys.stdout.getvalue())
 
     def test_other_lines_still_hold_off_silence(self):
         with mock.patch.object(run_release_suite, 'SILENCE', 1):
@@ -206,17 +267,35 @@ class BuildTest(unittest.TestCase):
 class ExitCodeTest(unittest.TestCase):
     def run_main(self, process, dead=None, target=('--target', 'linux')):
         args = ['run_release_suite.py', *target, '--suite', 'a.dart', '--timeout', '1']
+        raw = io.BytesIO()
+        out = io.TextIOWrapper(raw, write_through=True)
         with mock.patch.object(sys, 'argv', args), \
                 mock.patch.object(run_release_suite, 'build'), \
                 mock.patch.object(run_release_suite, 'launch', return_value=(process, lambda: None, dead)), \
-                mock.patch('sys.stdout', io.TextIOWrapper(io.BytesIO())), \
+                mock.patch('sys.stdout', out), \
                 self.assertRaises(SystemExit) as caught:
             run_release_suite.main()
+        self.out = raw.getvalue().decode()
         return caught.exception.code
 
     def test_only_a_passing_report_exits_zero(self):
         self.assertEqual(self.run_main(printing('All tests passed!')), 0)
         self.assertEqual(self.run_main(printing('Some tests failed.')), 1)
+
+    def test_a_failed_test_after_a_download_exits_nonzero(self):
+        report = printing('MODEL_DOWNLOAD laya_s256.task: 678 of 678 MB in 2180 s, ended',
+                          'Bad state: SHA-256 mismatch for laya_s256.task',
+                          '00:01 +0 -1: Decision Maker answers [E]',
+                          'Some tests failed.')
+        self.assertEqual(self.run_main(report, lambda: False), 1)
+        self.assertIn('SHA-256 mismatch for laya_s256.task', self.out)
+        self.assertIn('in release on linux: Some tests failed.', self.out)
+
+    def test_a_run_past_its_timeout_exits_nonzero_and_says_why(self):
+        process = silent_process(self, 'MODEL_DOWNLOAD laya_s256.task: 300 of 678 MB in 968 s')
+        self.assertEqual(self.run_main(process), 1)
+        self.assertIn('Its last download line: MODEL_DOWNLOAD laya_s256.task: 300 of 678 MB in 968 s', self.out)
+        self.assertIn('a.dart reported no verdict in release within 1 s.', self.out)
 
     def test_no_report_exits_nonzero(self):
         self.assertEqual(self.run_main(printing('00:01 +1: a')), 1)

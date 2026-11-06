@@ -6,8 +6,8 @@ import 'package:http/http.dart' as http;
 /// take minutes, and the test suites print nothing meanwhile.
 ///
 /// It logs only when an answer or bytes arrive, never on a timer, so a stopped
-/// download goes quiet. tool/ci/run_release_suite.py knows these lines by
-/// their `MODEL_DOWNLOAD ` start.
+/// download goes quiet. tool/ci/run_release_suite.py reads these lines: only
+/// one with more megabytes than the last counts as a sign of life.
 final class ModelDownloadLog extends http.BaseClient {
   ModelDownloadLog(this._inner, this._log);
 

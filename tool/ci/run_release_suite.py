@@ -45,10 +45,14 @@ NETWORK_ERROR = re.compile(
     r'|An error occurred while preparing SDK package .*Error on ZipFile')
 # Seconds before the one more build.
 BUILD_RETRY_DELAY = 30
-# The start of gallery/lib/model_download_log.dart's lines. They are echoed but
-# do not count as heard: a slow download keeps printing them, and SILENCE must
-# still end that run.
+# gallery/lib/model_download_log.dart's lines. One counts as heard only if it
+# reports more megabytes than the last for its file, which start again at each
+# HTTP answer: a slow download finishes, while an answer with no bytes or a
+# repeated line cannot hold off SILENCE. A line every 100 MB means a download
+# slower than about 0.08 MB/s still ends at SILENCE, and a faster one that never
+# finishes at the run's timeout.
 PROGRESS = 'MODEL_DOWNLOAD '
+DOWNLOAD = re.compile(r'^MODEL_DOWNLOAD (.+): (?:HTTP .*|(\d+)(?: of \d+)? MB in \d+ s(?:, ended)?)$')
 EXECUTABLES = {
     'linux': f'build/linux/x64/release/bundle/{NAME}',
     'windows': f'build/windows/x64/runner/Release/{NAME}.exe',
@@ -145,6 +149,24 @@ def dump_log(device):
         print('The device did not answer logcat.', flush=True)
 
 
+def heard_from(line, received):
+    """Whether [line] shows the app moving: any line but a download's, or a
+    download's with more megabytes than [received], the counts so far by file."""
+    if not line.startswith(PROGRESS):
+        return True
+    match = DOWNLOAD.match(line)
+    if not match:
+        return False
+    name, megabytes = match.groups()
+    if megabytes is None:
+        received[name] = 0
+        return False
+    if int(megabytes) <= received.get(name, 0):
+        return False
+    received[name] = int(megabytes)
+    return True
+
+
 def verdict(process, timeout, dead=None):
     """flutter_test's last report line, echoing the app's output, or None if
     none arrives within [timeout] seconds or, given a death_check, if the app
@@ -159,6 +181,7 @@ def verdict(process, timeout, dead=None):
     deadline = time.monotonic() + timeout
     heard = time.monotonic()
     progress = None
+    received = {}
     while (left := deadline - time.monotonic()) > 0:
         try:
             line = lines.get(timeout=min(left, POLL))
@@ -174,13 +197,13 @@ def verdict(process, timeout, dead=None):
                 return match.group(1)
             if line.startswith(PROGRESS):
                 progress = line
-            else:
+            if heard_from(line, received):
                 heard = time.monotonic()
         if dead and time.monotonic() - heard > SILENCE:
             print(f'The app has been silent for over {SILENCE} s.', flush=True)
-            if progress:
-                print(f'Its last download line: {progress}', flush=True)
-            return None
+            break
+    if progress:
+        print(f'Its last download line: {progress}', flush=True)
     return None
 
 

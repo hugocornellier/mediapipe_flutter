@@ -218,7 +218,9 @@ jobs:
             camera: -camera-back none -camera-front none
             defines: --define SDK_GPU=skip --define SDK_CAMERA=none
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    # The suite's 90 minutes below, up to 17 of setup, build and emulator start
+    # (November 6, 2026), and room for the runner to report why it stopped.
+    timeout-minutes: 115
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/free-runner-disk
@@ -274,6 +276,9 @@ jobs:
       - uses: ./.github/actions/android-ndk
       - name: Free disk before the emulator
         run: df -h /
+      # 90 minutes lets a slow runner finish: the suite takes about 74 at
+      # 0.31 MB/s, the slowest speed seen, against 19 at 1.8 MB/s (November 6,
+      # 2026). A hung test still ends at the runner's silence limit.
       - name: Every phone suite and the gallery journey in a release build
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
@@ -284,4 +289,4 @@ jobs:
           ram-size: 4096M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim ${{ matrix.camera }}
-          script: python3 -B tool/ci/run_release_suite.py --target android --device emulator-5554 --suite integration_test/sdk_all_test.dart ${{ matrix.defines }} --timeout 2400
+          script: python3 -B tool/ci/run_release_suite.py --target android --device emulator-5554 --suite integration_test/sdk_all_test.dart ${{ matrix.defines }} --timeout 5400
