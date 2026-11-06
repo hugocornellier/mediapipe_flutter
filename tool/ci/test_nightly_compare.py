@@ -349,7 +349,7 @@ class PinStop(unittest.TestCase):
     def test_no_report_stays_a_failure_on_every_event(self):
         for event in 'schedule', 'workflow_dispatch', 'pull_request':
             lines, _, _, failure = self.run_pin((2026, 11, 6), event=event, no_report=True)
-            self.assertIn('exited 1 before choosing a build', failure)
+            self.assertIn('exited 1 and wrote no report', failure)
             self.assertEqual(lines, {})
 
     NETWORK_NOTE = ('The comparison did not run: the network failed while choosing Google\'s '

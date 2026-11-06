@@ -207,7 +207,7 @@ def main():
             cwd=REPO, stdout=log, stderr=subprocess.STDOUT).returncode
     print(log_path.read_text(encoding='utf-8'), end='', flush=True)
     if not report_path.exists():
-        raise SystemExit(f'pin_nightly.py exited {status} before choosing a build.')
+        raise SystemExit(f'pin_nightly.py exited {status} and wrote no report.')
     report = json.loads(report_path.read_text(encoding='utf-8'))
     if report.get('network_failure'):
         network_failed(report['network_failure'])

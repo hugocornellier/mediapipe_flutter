@@ -386,7 +386,9 @@ def version_stop_since(fetcher, stamp, version, pinned_stamp):
     a MediaPipe version other than `version`. Google's folders date a stop with
     no state of ours. With every build of `version` pruned, it is the pinned
     build's own night, the earliest the run can have begun, so that pruning
-    cannot keep a stop from ever growing old."""
+    cannot keep a stop from ever growing old. A night whose BUILD_INFO answers
+    404 has none and is passed over, as `pick_build` passes over it; a 404 on
+    the folder listing raises, like any other error."""
     since = stamp
     for night in nightly_stamps(fetcher):
         if night > stamp:
@@ -539,7 +541,9 @@ def main():
     if info['mediapipe_version'] != old['version']:
         try:
             since = version_stop_since(fetcher, stamp, old['version'], old['stamp'])
-        except (OSError, http.client.HTTPException, ValueError) as error:
+        except (OSError, http.client.HTTPException) as error:
+            if not network_failure(error):
+                raise
             print(f'Could not date the stop: {error}')
             since = None
         report['version_stop'] = {

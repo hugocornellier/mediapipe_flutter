@@ -92,9 +92,10 @@ class VersionStopTest(unittest.TestCase):
         self.assertIn('move it by hand', failure)
 
     def test_a_network_failure_leaves_the_date_unknown(self):
-        for error in (urllib.error.URLError('no route'), TimeoutError(), ConnectionResetError(),
+        for error in (urllib.error.URLError(socket.gaierror(-2, 'x')), TimeoutError(),
+                      ConnectionResetError(),
                       urllib.error.HTTPError('u', 503, 'down', None, None),
-                      http.client.IncompleteRead(b''), json.JSONDecodeError('bad', '', 0)):
+                      http.client.IncompleteRead(b'')):
             since, failure = self.stop_in_report(side_effect=error)
             self.assertIsNone(since, error)
             self.assertIn('move it by hand', failure)
@@ -106,7 +107,8 @@ class ChoosingABuildTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.domains = ' '.join(pin_nightly.families(pin_nightly.current_pins()['paths']))
+        cls.pins = pin_nightly.current_pins()
+        cls.domains = ' '.join(pin_nightly.families(cls.pins['paths']))
 
     def answer(self, request, timeout):
         """Google's bucket, or what `self.broken` gives for a URL with its key in."""
@@ -126,7 +128,7 @@ class ChoosingABuildTest(unittest.TestCase):
                 {'name': f'{pin_nightly.PREFIX}{stamp}/BUILD_INFO'},
                 {'name': f'{pin_nightly.PREFIX}{stamp}/mediapipe_tasks_c_{stamp}.zip'}]}).encode())
         stamp = url.split('/')[-2]
-        return Body(f'build_date={stamp}\nmediapipe_version=1.2.0\n'
+        return Body(f"build_date={stamp}\nmediapipe_version={self.pins['version']}\n"
                     f'domains={self.domains}\n'.encode())
 
     def run_main(self, **broken):
@@ -253,6 +255,85 @@ class ChoosingABuildTest(unittest.TestCase):
             failure, report = self.run_main()
         self.assertIn('CRC', str(failure))
         self.assertIsNone(report)
+
+    def run_walk(self, **broken):
+        """run_main with the newest build on a new version, so that main dates
+        the stop, and `broken` only reached by that walk."""
+        info = f"build_date=20261106\nmediapipe_version={self.pins['version']}.new\n"
+        archive = types.SimpleNamespace(url='u', generation='1', size=1)
+        with mock.patch.object(pin_nightly, 'pick_build',
+                               return_value=('20261106', info, archive)):
+            return self.run_main(**broken)
+
+    def assert_dated(self, walked, since):
+        failure, report = walked
+        self.assertIsInstance(failure, SystemExit)
+        self.assertIn('move it by hand', str(failure))
+        self.assertEqual(report['version_stop']['since'], since)
+
+    def test_the_walk_dates_the_stop_when_nothing_fails(self):
+        self.assert_dated(self.run_walk(), '20261106')
+
+    def test_a_network_failure_in_the_walk_leaves_the_date_unknown(self):
+        for stage in self.FOLDERS, self.BUILD_INFO:
+            for make in self.NETWORK:
+                error = make()
+                self.assert_dated(self.run_walk(**{stage: error}), None)
+                self.assertEqual(sum(stage in url for url in self.urls), 3, (stage, error))
+
+    def test_a_connection_lost_in_a_body_in_the_walk_leaves_the_date_unknown(self):
+        for stage in self.FOLDERS, self.BUILD_INFO:
+            for lost in http.client.IncompleteRead(b''), ConnectionResetError(), TimeoutError(), \
+                    ssl.SSLEOFError():
+                self.assert_dated(self.run_walk(**{stage: Body(lost)}), None)
+
+    def test_a_definite_answer_in_the_walk_stays_a_failure(self):
+        for stage, codes in (self.FOLDERS, (400, 401, 403, 404, 410)), \
+                (self.BUILD_INFO, (400, 401, 403, 410)):
+            for code in codes:
+                error = urllib.error.HTTPError('u', code, 'no', None, None)
+                failure, report = self.run_walk(**{stage: error})
+                self.assertIs(failure, error)
+                self.assertIsNone(report)
+                self.assertEqual(sum(stage in url for url in self.urls), 1)
+
+    def test_an_unparseable_answer_in_the_walk_stays_a_failure(self):
+        for stage, bodies in (self.FOLDERS, (b'<html>captive</html>', b'{"prefixes": [', b'\xff')), \
+                (self.BUILD_INFO, (b'\xff\xfe',)):
+            for body in bodies:
+                failure, report = self.run_walk(**{stage: body})
+                self.assertIsInstance(failure, ValueError, body)
+                self.assertIsNone(report)
+
+    def test_an_error_that_is_not_the_network_in_the_walk_stays_a_failure(self):
+        for stage in self.FOLDERS, self.BUILD_INFO:
+            for error in (urllib.error.URLError(ssl.SSLCertVerificationError(1, 'bad certificate')),
+                          urllib.error.URLError(ssl.SSLError(1, 'wrong version')),
+                          ssl.SSLError(1, 'wrong version'),
+                          urllib.error.URLError('unknown url type'),
+                          http.client.BadStatusLine('junk'),
+                          PermissionError(13, 'no'), OSError(errno.ENOSPC, 'full'),
+                          KeyError('x'), TypeError('x')):
+                failure, report = self.run_walk(**{stage: error})
+                self.assertIs(failure, error)
+                self.assertIsNone(report)
+
+    def test_a_code_error_in_the_walk_stays_a_failure(self):
+        with mock.patch.object(pin_nightly, 'parse_build_info', side_effect=AttributeError('x')):
+            failure, report = self.run_walk()
+        self.assertIsInstance(failure, AttributeError)
+        self.assertIsNone(report)
+
+    def test_a_404_on_one_build_info_in_the_walk_passes_over_that_night(self):
+        missing = urllib.error.HTTPError('u', 404, 'no', None, None)
+        self.assert_dated(self.run_walk(**{self.BUILD_INFO: missing}), '20261106')
+        self.assertEqual(sum(self.BUILD_INFO in url for url in self.urls), 1)
+        self.assertTrue([url for url in self.urls if '20261105/BUILD_INFO' in url])
+
+    def test_with_no_build_of_the_pinned_version_left_the_stop_dates_from_the_pin(self):
+        missing = urllib.error.HTTPError('u', 404, 'no', None, None)
+        for broken in {'/BUILD_INFO': missing}, {'/BUILD_INFO': b'<html>'}, {self.FOLDERS: b'{}'}:
+            self.assert_dated(self.run_walk(**broken), self.pins['stamp'])
 
 
 class Body(io.BytesIO):
