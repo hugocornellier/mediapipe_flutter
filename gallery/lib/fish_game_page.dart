@@ -290,7 +290,7 @@ class _FishGamePageState extends State<FishGamePage>
                   style: TextStyle(
                     color: last.matched ? c.accent : Colors.redAccent,
                     fontSize: 22,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 10),

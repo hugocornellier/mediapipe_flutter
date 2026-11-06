@@ -330,7 +330,7 @@ class _TextPageState extends State<TextPage>
                 ProofreadingCorrectionType.same => TextStyle(color: c.muted),
                 ProofreadingCorrectionType.insertion => TextStyle(
                   color: c.accentText,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
                 ProofreadingCorrectionType.deletion => TextStyle(
                   color: error,
