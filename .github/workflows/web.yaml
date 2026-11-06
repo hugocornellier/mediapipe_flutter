@@ -77,15 +77,7 @@ jobs:
         run: |
           flutter pub get
           flutter analyze lib test
-          for attempt in 1 2; do
-            status=0
-            timeout 300 flutter test --platform chrome test/web || status=$?
-            if [ "$status" = 124 ] && [ "$attempt" = 1 ]; then
-              echo "flutter test --platform chrome hung; retrying"
-              continue
-            fi
-            exit "$status"
-          done
+          bash ../../gallery/tool/test_chrome_suite.sh 'vision browser tests' test/web
       - name: Analyze text and audio browser code
         run: |
           for family in text audio; do
@@ -100,16 +92,7 @@ jobs:
           for compiler in javascript wasm; do
             flags=""
             if [ "$compiler" = wasm ]; then flags="--wasm"; fi
-            for attempt in 1 2; do
-              status=0
-              timeout 300 flutter test --platform chrome $flags test/web || status=$?
-              if [ "$status" = 124 ] && [ "$attempt" = 1 ]; then
-                echo "flutter test --platform chrome ($compiler) hung; retrying"
-                continue
-              fi
-              [ "$status" = 0 ] || exit "$status"
-              break
-            done
+            bash ../../gallery/tool/test_chrome_suite.sh "audio browser tests ($compiler)" $flags test/web
           done
       - name: Analyze and test gallery geometry and the video file reader
         working-directory: gallery
