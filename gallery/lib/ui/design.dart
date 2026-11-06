@@ -135,6 +135,28 @@ TextStyle eyebrowStyle(BuildContext context) => TextStyle(
   fontWeight: FontWeight.w700,
 );
 
+/// [theme] without Material's letter spacing, which the design does not use.
+TextTheme _untracked(TextTheme theme) {
+  TextStyle? untracked(TextStyle? style) => style?.copyWith(letterSpacing: 0);
+  return theme.copyWith(
+    displayLarge: untracked(theme.displayLarge),
+    displayMedium: untracked(theme.displayMedium),
+    displaySmall: untracked(theme.displaySmall),
+    headlineLarge: untracked(theme.headlineLarge),
+    headlineMedium: untracked(theme.headlineMedium),
+    headlineSmall: untracked(theme.headlineSmall),
+    titleLarge: untracked(theme.titleLarge),
+    titleMedium: untracked(theme.titleMedium),
+    titleSmall: untracked(theme.titleSmall),
+    bodyLarge: untracked(theme.bodyLarge),
+    bodyMedium: untracked(theme.bodyMedium),
+    bodySmall: untracked(theme.bodySmall),
+    labelLarge: untracked(theme.labelLarge),
+    labelMedium: untracked(theme.labelMedium),
+    labelSmall: untracked(theme.labelSmall),
+  );
+}
+
 ThemeData galleryTheme(Brightness brightness) {
   final c = brightness == Brightness.dark
       ? GalleryColors.dark
@@ -164,14 +186,16 @@ ThemeData galleryTheme(Brightness brightness) {
     brightness: brightness,
     colorScheme: scheme,
     useMaterial3: true,
-    fontFamily: 'Arimo',
+    fontFamily: 'Roboto',
   );
   return base.copyWith(
     scaffoldBackgroundColor: c.bg,
     canvasColor: c.bg,
     dividerColor: c.line,
     extensions: [c],
-    textTheme: base.textTheme.apply(bodyColor: c.text, displayColor: c.text),
+    textTheme: _untracked(
+      base.textTheme.apply(bodyColor: c.text, displayColor: c.text),
+    ),
     iconTheme: IconThemeData(color: c.muted, size: 15),
     progressIndicatorTheme: ProgressIndicatorThemeData(
       color: c.teal,

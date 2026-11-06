@@ -334,12 +334,12 @@ $core$defines
 flutter:
   uses-material-design: true
   fonts:
-    - family: Arimo
+    - family: Roboto
       fonts:
-        - asset: fonts/Arimo-400.ttf
-        - asset: fonts/Arimo-600.ttf
-          weight: 600
-        - asset: fonts/Arimo-700.ttf
+        - asset: fonts/Roboto-400.ttf
+        - asset: fonts/Roboto-500.ttf
+          weight: 500
+        - asset: fonts/Roboto-700.ttf
           weight: 700
   assets:
     - assets/manifest.json
