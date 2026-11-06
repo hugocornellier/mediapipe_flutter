@@ -161,6 +161,14 @@ class _HomePageState extends State<HomePage> {
   );
 }
 
+/// What [HomePage] shows once its assets have unpacked.
+@visibleForTesting
+Widget galleryShell(
+  GalleryAssets assets,
+  TaskPlatform platform,
+  List<GalleryTask> tasks,
+) => _GalleryShell(assets: assets, platform: platform, tasks: tasks);
+
 /// The sidebar stays in view on wide windows and opens as a drawer below
 /// the design's 1200 px breakpoint.
 class _GalleryShell extends StatefulWidget {
