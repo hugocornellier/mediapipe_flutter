@@ -11,6 +11,14 @@ int get mpHostSystem =>
 String get mpHostVersion =>
     throw UnsupportedError('Google\'s C API runs on native platforms only.');
 
+/// Browsers run no C API, so no app ID goes through it.
+String? get mpAppId =>
+    throw UnsupportedError('Google\'s C API runs on native platforms only.');
+
+/// Browsers run no C API, so no app version goes through it.
+String? get mpAppVersion =>
+    throw UnsupportedError('Google\'s C API runs on native platforms only.');
+
 /// Browsers load no native library, so no loader error names one.
 StateError? missingLinuxGraphicsLibraries(String loaderError) => null;
 
