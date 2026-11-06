@@ -8,6 +8,12 @@
 - `pin_nightly.py --release X.Y.Z` pins Google's release builds as well as
   nightlies.
 - Ships Google's `NOTICE` at the package root, beside `LICENSE`.
+- `fillBaseOptions` gives Google's libraries the app's ID and version, as
+  Google's native SDKs do: the package name and `versionCode` on Android, the
+  bundle ID and `CFBundleShortVersionString` on iOS. Google's usage uploads can
+  then name the app; `doc/privacy_and_licenses.md` says which tasks do, and why
+  Android apps upload nothing with 1.2.2. Core now depends on `jni` and
+  `jni_flutter`, which `path_provider_android` already brings into Android apps.
 - Removes `familyRuntimeBaseUrl` and the native libraries' unused mirror URL:
   Google's archive is now their only source.
 

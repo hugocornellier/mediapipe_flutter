@@ -348,7 +348,9 @@ Google's URL above; the October 18 `BUILD_INFO` is in
   `MP_HOST_ENVIRONMENT_FLUTTER_WEB` (6), the value for Google's JavaScript
   runtime.
 - **Android uploader.** The `Failed to get JNIEnv` message is gone from the
-  Android libraries; an upload from an app has not been captured yet.
+  Android libraries; an upload from an app has not been captured yet. It came
+  back with the nightly of October 21 and is in 1.2.2
+  ([UP-067](../../../upstream-issues.md#up-067-googles-android-libraries-cannot-upload-from-an-app-that-loads-them-through-ffi)).
 - **Text-only EmbeddingGemma 2.** The decision library runs it (UP-053
   fixed, checked on macOS arm64).
 - iOS framework zips still hold only the binary and `Info.plist` (UP-062).
@@ -371,8 +373,19 @@ log, from `MpBaseOptions.host_environment` and `host_system`. Core's
   (`macOS 27.0 / Dart 3.13.4 / Flutter 3.47.5`), as Google asked on
   2026-10-13; the upload carries it as given (checked on macOS). Flutter's
   version comes from the define the Flutter tool sets for `FlutterVersion`.
-- `app_id` and `app_version` stay empty: set or not, they appear nowhere in
-  the upload.
+- `app_id` and `app_version` are `mpAppId` and `mpAppVersion`, as Google's
+  native SDKs report them: the bundle ID and `CFBundleShortVersionString` on
+  iOS, the package name and `versionCode` on Android, unset elsewhere. Android
+  reads them through `package:jni`, which `path_provider_android` already brings
+  in, and iOS through CoreFoundation, so both work on any isolate. Checked on
+  2026-11-05 with 1.2.2 by capturing the uploads of a Flutter app on the iOS
+  Simulator and, with `JNI_OnLoad` run by hand, the Android emulator: the tasks
+  that forward them carry them, and the classic tasks stay empty
+  ([UP-068](../../../upstream-issues.md#up-068-the-classic-tasks-usage-uploads-leave-out-the-app-id-and-version)).
+  Without that `JNI_OnLoad`, an Android app uploads nothing
+  ([UP-067](../../../upstream-issues.md#up-067-googles-android-libraries-cannot-upload-from-an-app-that-loads-them-through-ffi)).
+- With 1.2.2 native uploads carry the library version (`mediapipe_version`
+  `1.2.2`, captured on macOS, the iOS Simulator and the Android emulator).
 - In browsers core's worker loader (`assets/verified_runtime.js`) sets
   `globalThis.__HOST_ENVIRONMENT__ = 'FLUTTER_WEB'` before Google's bundle
   loads; Google's JavaScript runtime reads it from 1.2.0-rc.20261017 on, and
@@ -419,9 +432,13 @@ part of official releases.
   ([UP-062](../../../upstream-issues.md#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest)).
 - Whether 1.1.1's Metal output is intended
   ([UP-057](../../../upstream-issues.md#up-057-the-111-macos-library-gives-different-metal-results-from-googles-110-wheel)).
-- Let the Semantic Retriever take base options, or copy its embedder's
-  host fields into its own usage uploads; Google is looking into it
-  ([UP-063](../../../upstream-issues.md#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version)).
+- The Android uploader needs a JVM again from the nightly of October 21 on, so
+  an app that loads the library through FFI uploads nothing. Is that intended,
+  and how should Flutter give it the JVM
+  ([UP-067](../../../upstream-issues.md#up-067-googles-android-libraries-cannot-upload-from-an-app-that-loads-them-through-ffi))?
+- The classic tasks build their `TaskRunnerOptions` without `app_id` and
+  `app_version`, so their uploads leave them empty
+  ([UP-068](../../../upstream-issues.md#up-068-the-classic-tasks-usage-uploads-leave-out-the-app-id-and-version)).
 - A license comment on the five umbrella headers, and the Apache text
   corrected in `audio_classifier.h`; Google will fix it
   ([UP-064](../../../upstream-issues.md#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it)).

@@ -4,6 +4,9 @@
   replaces 1.2.0 on Android, iOS, macOS, Linux and Windows, and
   `@mediapipe/tasks-*` 1.2.2 replaces 1.2.0-rc.20261018 in browsers.
 - The regenerated bindings carry Google's renumbered delegates.
+- Gives Google's library the app's ID and version on Android and iOS, as core's
+  `fillBaseOptions` does. With 1.2.2 only Interactive Segmenter's usage uploads
+  carry them.
 - Ships Google's `NOTICE` at the package root, beside `LICENSE`.
 
 ## 0.1.0

@@ -69,10 +69,12 @@ kept, with their workarounds, until someone checks them on 1.1.0.
 | [UP-060](#up-060-decision-maker-and-universal-embedder-reserve-memory-for-their-whole-token-budget) | Decision Maker and Universal Embedder reserve memory for their whole token budget | Found on the 1.1.1 build of October 9; worked around |
 | [UP-061](#up-061-image-segmenters-gpu-mask-aborts-the-app-when-it-is-read-on-a-pixel-3) | Image Segmenter's GPU mask aborts the app when it is read, on a Pixel 3 | Found on the 1.1.1 build of October 9; worked around |
 | [UP-062](#up-062-the-ios-libraries-call-required-reason-apis-and-ship-no-privacy-manifest) | The iOS libraries call required-reason APIs and ship no privacy manifest | Found on the 1.1.1 build of October 9; worked around in the gallery |
-| [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | The 1.2.2 release of November 2 gives the retriever base options, which the packages fill; uploads not yet re-captured |
+| [UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version) | Semantic Retriever's usage uploads carry no OS, host environment or host version | Fixed in the 1.2.2 release of November 2 |
 | [UP-064](#up-064-the-umbrella-headers-have-no-license-text-and-the-audio-classifier-header-misstates-it) | The umbrella headers have no license text, and the Audio Classifier header misstates it | Fixed in the 1.2.2 release of November 2 |
 | [UP-065](#up-065-the-122-language-detector-drops-every-language-below-about-03) | The 1.2.2 Language Detector drops every language below about 0.3 | Found on the 1.2.2 release of November 2 and Google's 1.2.2 wheel; to ask Google |
 | [UP-066](#up-066-googles-text-to-speech-ignores-the-gpu-delegate) | Google's Text to Speech ignores the GPU delegate | Found on 1.2.2; not yet raised |
+| [UP-067](#up-067-googles-android-libraries-cannot-upload-from-an-app-that-loads-them-through-ffi) | Google's Android libraries cannot upload from an app that loads them through FFI | Found on 1.2.2; not yet raised |
+| [UP-068](#up-068-the-classic-tasks-usage-uploads-leave-out-the-app-id-and-version) | The classic tasks' usage uploads leave out the app ID and version | Found on 1.2.2; not yet raised |
 
 ### UP-005: Google's Python writes Holistic thresholds in the wrong order
 
@@ -1096,8 +1098,8 @@ as Mac, Linux as Linux, Windows as Windows, the iOS Simulator and an iPhone
 Flutter environment and the host_version as given; browsers record the OS
 with the Flutter Web environment, from a worker too. Found October 13, 2026
 with the October 9 build on macOS, Linux, Windows and the iOS Simulator, and
-raised with Google that day. One task still records nothing: the Semantic
-Retriever's uploads carry no OS, environment or host_version
+raised with Google that day. One task recorded nothing until 1.2.2: the
+Semantic Retriever's uploads carried no OS, environment or host_version
 ([UP-063](#up-063-semantic-retrievers-usage-uploads-carry-no-os-host-environment-or-host-version)).
 
 Google's libraries record the host environment and OS from
@@ -1108,7 +1110,9 @@ Detector's upload recorded the OS as Mac when the environment was
 `MP_HOST_ENVIRONMENT_FLUTTER`, with or without `host_version`, `app_id` and
 `app_version`; on the iOS Simulator, Python's value recorded iOS, and
 Flutter's unknown. The environment arrived as Flutter, and `host_version` as
-given.
+given. Language Detector is one of the tasks that drop `app_id` and
+`app_version` whatever is set
+([UP-068](#up-068-the-classic-tasks-usage-uploads-leave-out-the-app-id-and-version)).
 
 ### UP-060: Decision Maker and Universal Embedder reserve memory for their whole token budget
 
@@ -1222,11 +1226,15 @@ document.
 
 ### UP-063: Semantic Retriever's usage uploads carry no OS, host environment or host version
 
-**Update, November 3, 2026:** Google's 1.2.1 headers, and the 1.2.2 release
-of November 2 the packages pin, lead `MpSemanticRetrieverOptions` with a
-`struct MpBaseOptions base_options`, which the retrieval package now fills
-with the host fields as the other tasks do. Whether the retriever's uploads
-carry them has not been captured yet.
+**Fixed** in Google's 1.2.2 release of November 2, 2026, whose
+`MpSemanticRetrieverOptions` leads with a `struct MpBaseOptions base_options`,
+which the retrieval package fills with the host fields as the other tasks do.
+Observed November 5, 2026 by capturing the retriever's uploads (task 29): on
+macOS and the iOS Simulator, and on the Android emulator with `JNI_OnLoad` run by
+hand
+([UP-067](#up-067-googles-android-libraries-cannot-upload-from-an-app-that-loads-them-through-ffi)),
+each names the OS, the Flutter environment and the host version. The rest of this
+entry is the finding as it stood.
 
 **Status:** observed October 20, 2026 with Google's 1.2.0 nightly of
 October 18 by capturing each usage upload: on an Apple M4 Max (macOS 27),
@@ -1324,6 +1332,69 @@ and WebKit on a Mac's Apple adapter.
 
 To ask Google: is Phonon meant to run on the GPU, and should a task that cannot
 honor the delegate refuse it rather than run on the CPU?
+
+### UP-067: Google's Android libraries cannot upload from an app that loads them through FFI
+
+**Status:** found November 5, 2026 on Google's 1.2.2 release, on an API 31 arm64
+emulator. Not checked on a phone. Not yet raised with Google.
+
+Google's Android uploader came back to Java in the nightly of October 21, 2026,
+undoing what the October 16 to 18 nightlies changed. By their strings and exports,
+the text libraries of October 18 and 20 open their own connection (libcurl and
+BoringSSL) and export no JNI symbols; those of October 21, 24 and 28, the 1.2.2
+release and November 5 export `JNI_OnLoad`, call `java/net/HttpURLConnection`
+through Ion's `AndroidNetworkManager` and hold no curl.
+
+`JNI_OnLoad` runs under `System.loadLibrary`. Flutter loads the libraries through
+FFI, whose `dlopen` does not run it, so the uploader has no JVM. In a Flutter app
+every task ran and no upload left the app, while a request from Dart to the same
+host reached the capture. Logcat repeats:
+
+```
+E Ion: [geo/render/ion/net/android/jniwrappers/jniwrapper.cc:25] Failed to get JNIEnv in AndroidNetworkManager::OnAttachedToJvm()
+```
+
+Running `JNI_OnLoad` first ended that, either with `System.loadLibrary` in the
+app's Activity before the engine starts or with Dart calling the exported symbol
+through FFI, with the VM from `JNIEnv`'s `GetJavaVM`. Each task close then sent
+one `POST /log` with the User-Agent `IonNet (gzip)`, which names no app. The
+captures kept those uploads from Google. The packages do neither, since that
+would start uploads from apps that send none today and Google has not said it is
+a supported way to start the uploader.
+
+To ask Google: is the return to Java intended, given the October fix? How should
+an FFI app give the library its JVM: a native connection again, a setter in the C
+API, or the library finding the VM itself?
+
+### UP-068: The classic tasks' usage uploads leave out the app ID and version
+
+**Status:** found November 5, 2026 on Google's 1.2.2 release, by setting
+`MpBaseOptions.app_id` and `app_version` and capturing each upload with the
+fields set and unset, on macOS arm64 (every task below). A Flutter app on the
+iOS Simulator and the Android emulator showed the same for the tasks it ran. Not
+yet raised with Google.
+
+These upload the values: Text Proofreader, Text Summarizer, Universal Embedder, Semantic Retriever,
+Interactive Segmenter, Audio Transcriber, Text to Speech and Decision Maker.
+
+These upload them empty whatever is set, with bodies byte-identical to those
+with the fields unset: Language Detector, Text Classifier, Text Embedder, Audio
+Classifier, Face Detector, Face Landmarker, Gesture Recognizer, Hand Landmarker,
+Holistic Landmarker, Image Classifier, Image Embedder, Image Segmenter, Object
+Detector and Pose Landmarker.
+
+`base_options_converter.cc` copies both fields into the C++ `BaseOptions`, and
+`task_runner.cc` passes `TaskRunnerOptions.app_id` and `app_version` to the
+logger, but the classic tasks build their `TaskRunnerOptions` without them (for
+example `language_detector.cc`). Google's iOS SDK fills `TaskRunnerOptions`
+itself, so it does not meet this. The 26 commits on Google's master after 1.2.2,
+as of November 5, touch none of these files.
+
+On iOS every upload carries the bundle ID and version in its User-Agent all the
+same. On Android the User-Agent carries neither.
+
+To ask Google: have each classic task forward `app_id` and `app_version` from its
+options to `TaskRunnerOptions`, as the newer tasks do.
 
 ## History
 
