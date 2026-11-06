@@ -1,3 +1,9 @@
+## 0.1.4
+
+- The README's links to `mediapipe_core`'s reference sections point to
+  [the core guide](https://github.com/google/flutter-mediapipe/blob/main/doc/mediapipe_core.md),
+  where those sections moved.
+
 ## 0.1.3
 
 - The README installs the package with `flutter pub add`, drops the steps for
