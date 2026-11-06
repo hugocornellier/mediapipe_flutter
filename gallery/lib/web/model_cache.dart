@@ -33,9 +33,9 @@ abstract final class WebModelCache {
   /// serves them gzipped, so a response's Content-Length is not the size.
   static final Future<Map<String, int>> _sizes = () async {
     try {
-      final manifest = jsonDecode(
-        await rootBundle.loadString('assets/manifest.json'),
-      ) as Map<String, dynamic>;
+      final manifest =
+          jsonDecode(await rootBundle.loadString('assets/manifest.json'))
+              as Map<String, dynamic>;
       return (manifest['modelBytes'] as Map<String, dynamic>? ?? const {}).map(
         (sha, size) => MapEntry(sha, size as int),
       );
