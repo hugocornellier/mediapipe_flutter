@@ -373,7 +373,7 @@ class _NavigationSidebar extends StatelessWidget {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 22, 14, 10),
+            padding: const EdgeInsets.fromLTRB(0, 22, 10, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -384,7 +384,7 @@ class _NavigationSidebar extends StatelessWidget {
                   child: OverflowBox(
                     maxHeight: 36,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      padding: const EdgeInsets.only(left: 24, right: 4),
                       child: Row(
                         children: [
                           Container(
@@ -399,22 +399,24 @@ class _NavigationSidebar extends StatelessWidget {
                               'M',
                               style: TextStyle(
                                 color: c.onAccent,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
+                                fontSize: Sizes.sm,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: Text(
-                              'MediaPipe Flutter Gallery',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: c.text,
-                                fontWeight: FontWeight.w600,
-                                fontSize: Sizes.md,
-                                letterSpacing: Sizes.md * -0.02,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'MediaPipe Flutter Gallery',
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: c.text,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: Sizes.md,
+                                ),
                               ),
                             ),
                           ),
@@ -446,11 +448,16 @@ class _NavigationSidebar extends StatelessWidget {
                         if (sorted.any(
                           (task) => task.category == category,
                         )) ...[
+                          Divider(height: 25, thickness: 1, color: c.line),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 22, 12, 6),
+                            padding: const EdgeInsets.fromLTRB(24, 0, 12, 6),
                             child: Text(
                               category.title,
-                              style: eyebrowStyle(context),
+                              style: TextStyle(
+                                color: c.soft,
+                                fontSize: Sizes.sm,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                           for (final task in sorted)
@@ -493,22 +500,22 @@ class _NavigationSidebar extends StatelessWidget {
             onTap: onTap,
             builder: (hovered) => Container(
               height: 34,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.only(left: 24, right: 12),
               alignment: AlignmentDirectional.centerStart,
               decoration: BoxDecoration(
-                color: selected || hovered ? c.surface2 : null,
-                borderRadius: BorderRadius.circular(Sizes.radiusSmall),
-                border: selected
-                    ? Border(left: BorderSide(color: c.accent, width: 2))
-                    : null,
+                color: selected ? c.accentDim : (hovered ? c.surface2 : null),
+                borderRadius: const BorderRadius.horizontal(
+                  right: Radius.circular(12),
+                ),
               ),
               child: Text(
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: selected || hovered ? c.text : c.muted,
+                  color: selected ? c.accentText : c.text,
                   fontSize: Sizes.sm,
+                  fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
                 ),
               ),
             ),
@@ -673,7 +680,12 @@ class _SectionHeading extends StatelessWidget {
       ),
       child: Text(
         title,
-        style: TextStyle(color: c.text, fontSize: Sizes.lg),
+        style: TextStyle(
+          color: c.accent,
+          fontSize: Sizes.lg,
+          fontWeight: FontWeight.w500,
+          height: 1.3,
+        ),
       ),
     );
   }
@@ -753,6 +765,13 @@ class _TaskCard extends StatelessWidget {
           color: c.surface,
           border: Border.all(color: hovered ? c.hoverLine : c.line),
           borderRadius: BorderRadius.circular(Sizes.radius),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0D3C4043),
+              offset: Offset(0, 1),
+              blurRadius: 3,
+            ),
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -765,8 +784,8 @@ class _TaskCard extends StatelessWidget {
                     title,
                     style: TextStyle(
                       color: c.text,
-                      fontSize: Sizes.md,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 6),

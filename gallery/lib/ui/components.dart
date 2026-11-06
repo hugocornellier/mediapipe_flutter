@@ -30,10 +30,9 @@ class PageHeading extends StatelessWidget {
       title,
       style: TextStyle(
         color: c.text,
-        fontSize: phone ? 25 : Sizes.xl,
-        letterSpacing: (phone ? 25 : Sizes.xl) * -0.04,
+        fontSize: phone ? 26 : Sizes.xl,
         fontWeight: FontWeight.w400,
-        height: 1.15,
+        height: 1.25,
       ),
     );
   }
@@ -61,6 +60,7 @@ class OutlineButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = GalleryColors.of(context);
+    final foreground = bordered ? c.accentText : c.muted;
     return Tooltip(
       message: tooltip,
       child: Semantics(
@@ -75,7 +75,7 @@ class OutlineButton extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Sizes.radiusSmall),
+              borderRadius: BorderRadius.circular(99),
               side: bordered ? BorderSide(color: c.line) : BorderSide.none,
             ),
             clipBehavior: Clip.antiAlias,
@@ -89,12 +89,16 @@ class OutlineButton extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon, size: 15, color: c.muted),
+                    Icon(icon, size: 15, color: foreground),
                     if (label case final label?) ...[
                       const SizedBox(width: 7),
                       Text(
                         label,
-                        style: TextStyle(color: c.muted, fontSize: fontSize),
+                        style: TextStyle(
+                          color: foreground,
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ],
@@ -146,11 +150,8 @@ class Segmented<T> extends StatelessWidget {
         onTap: enabled ? () => onChanged!(segment.value) : null,
         excludeSemantics: true,
         child: Material(
-          color: on ? c.surface2 : Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-            side: on ? BorderSide(color: c.line) : BorderSide.none,
-          ),
+          color: on ? c.accentDim : Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: enabled ? () => onChanged!(segment.value) : null,
@@ -161,7 +162,7 @@ class Segmented<T> extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (segment.icon case final icon? when !expand) ...[
-                    Icon(icon, size: 14, color: on ? c.text : c.muted),
+                    Icon(icon, size: 14, color: on ? c.accentText : c.muted),
                     const SizedBox(width: 7),
                   ],
                   Flexible(
@@ -170,14 +171,15 @@ class Segmented<T> extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: on ? c.text : c.muted,
+                        color: on ? c.accentText : c.muted,
                         fontSize: Sizes.sm,
+                        fontWeight: on ? FontWeight.w500 : FontWeight.w400,
                       ),
                     ),
                   ),
                   if (segment.icon case final icon? when expand) ...[
                     const SizedBox(width: 7),
-                    Icon(icon, size: 13, color: on ? c.text : c.muted),
+                    Icon(icon, size: 13, color: on ? c.accentText : c.muted),
                   ],
                 ],
               ),
@@ -193,7 +195,7 @@ class Segmented<T> extends StatelessWidget {
       decoration: BoxDecoration(
         color: expand ? c.bg : c.surface,
         border: Border.all(color: c.line),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(Sizes.radiusSmall),
       ),
       child: Row(
         mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
@@ -229,7 +231,7 @@ class StatusDot extends StatelessWidget {
   );
 }
 
-/// CPU, GPU or Experimental, as a card's small outlined tag.
+/// CPU, GPU or Experimental, as a card's small tag.
 class Tag extends StatelessWidget {
   const Tag(this.label, {super.key, this.accent = false});
 
@@ -242,14 +244,15 @@ class Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        border: Border.all(color: accent ? c.accentLine : c.line),
-        borderRadius: BorderRadius.circular(4),
+        color: accent ? c.accentDim : c.surface2,
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: accent ? c.accent : c.muted,
-          fontSize: 10,
+          color: accent ? c.accentText : c.soft,
+          fontSize: Sizes.xs,
+          fontWeight: FontWeight.w500,
           height: 1.2,
         ),
       ),
@@ -451,7 +454,14 @@ class OutputCard extends StatelessWidget {
                   children: [
                     const Eyebrow('Output'),
                     const SizedBox(height: 7),
-                    Text(title, style: TextStyle(color: c.text, fontSize: 16)),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: c.text,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -656,7 +666,7 @@ class StillCard extends StatelessWidget {
                     style: TextStyle(
                       color: c.text,
                       fontSize: Sizes.md,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -713,7 +723,7 @@ class _DashedBorder extends CustomPainter {
   bool shouldRepaint(_DashedBorder oldDelegate) => oldDelegate.color != color;
 }
 
-/// The design's teal button.
+/// The design's blue button.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -739,12 +749,13 @@ class PrimaryButton extends StatelessWidget {
       excludeSemantics: true,
       child: Material(
         color: enabled ? c.accent : c.accent.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(Sizes.radiusSmall),
+        borderRadius: BorderRadius.circular(99),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onPressed,
+          hoverColor: c.accentHover,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -756,7 +767,7 @@ class PrimaryButton extends StatelessWidget {
                   label,
                   style: TextStyle(
                     color: c.onAccent,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     fontSize: Sizes.md,
                   ),
                 ),
@@ -800,7 +811,7 @@ class DesignSwitch extends StatelessWidget {
           height: 18,
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
-            color: value ? c.accentDim : c.switchOff,
+            color: value ? c.accentLine : c.switchOff,
             borderRadius: BorderRadius.circular(99),
           ),
           child: AnimatedAlign(
@@ -870,7 +881,7 @@ class CountStepper extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: c.line),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(Sizes.radiusSmall),
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -916,8 +927,8 @@ class SelectField<T> extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: c.bg,
-        border: Border.all(color: c.line),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: c.fieldLine),
+        borderRadius: BorderRadius.circular(Sizes.radiusSmall),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Semantics(
@@ -929,8 +940,8 @@ class SelectField<T> extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 9),
             value: value,
             icon: Icon(LucideIcons.chevronDown, size: 15, color: c.muted),
-            dropdownColor: c.surface2,
-            borderRadius: BorderRadius.circular(8),
+            dropdownColor: c.surface,
+            borderRadius: BorderRadius.circular(Sizes.radiusSmall),
             style: TextStyle(color: c.text, fontSize: Sizes.sm),
             items: [
               for (final (option, text) in options)

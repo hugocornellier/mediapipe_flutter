@@ -186,8 +186,11 @@ ThemeData galleryTheme(Brightness brightness) {
   final c = brightness == Brightness.dark
       ? GalleryColors.dark
       : GalleryColors.light;
-  final scheme = ColorScheme.fromSeed(seedColor: c.accent, brightness: brightness)
-      .copyWith(
+  final scheme =
+      ColorScheme.fromSeed(
+        seedColor: c.accent,
+        brightness: brightness,
+      ).copyWith(
         primary: c.accent,
         onPrimary: c.onAccent,
         secondary: c.accent,
@@ -228,7 +231,7 @@ ThemeData galleryTheme(Brightness brightness) {
     ),
     sliderTheme: SliderThemeData(
       activeTrackColor: c.accent,
-      inactiveTrackColor: c.accentDim,
+      inactiveTrackColor: c.accentLine,
       thumbColor: c.accent,
       overlayColor: c.accent.withValues(alpha: 0.12),
       trackHeight: 4,
@@ -251,7 +254,7 @@ ThemeData galleryTheme(Brightness brightness) {
       ),
     ),
     popupMenuTheme: PopupMenuThemeData(
-      color: c.surface2,
+      color: c.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(Sizes.radiusSmall),
         side: BorderSide(color: c.line),

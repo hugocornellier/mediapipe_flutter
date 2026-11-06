@@ -77,8 +77,8 @@ class TopBar extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: c.text,
-                    fontWeight: FontWeight.w600,
-                    fontSize: Sizes.md,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
                   ),
                 ),
               ),
