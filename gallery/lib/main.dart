@@ -392,13 +392,13 @@ class _NavigationSidebar extends StatelessWidget {
                             height: 23,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: c.teal,
+                              color: c.accent,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               'M',
                               style: TextStyle(
-                                color: c.onTeal,
+                                color: c.onAccent,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -499,7 +499,7 @@ class _NavigationSidebar extends StatelessWidget {
                 color: selected || hovered ? c.surface2 : null,
                 borderRadius: BorderRadius.circular(Sizes.radiusSmall),
                 border: selected
-                    ? Border(left: BorderSide(color: c.teal, width: 2))
+                    ? Border(left: BorderSide(color: c.accent, width: 2))
                     : null,
               ),
               child: Text(

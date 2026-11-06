@@ -223,7 +223,7 @@ class StatusDot extends StatelessWidget {
     width: 7,
     height: 7,
     decoration: BoxDecoration(
-      color: color ?? GalleryColors.of(context).teal,
+      color: color ?? GalleryColors.of(context).accent,
       shape: BoxShape.circle,
     ),
   );
@@ -242,13 +242,13 @@ class Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        border: Border.all(color: accent ? c.tealLine : c.line),
+        border: Border.all(color: accent ? c.accentLine : c.line),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: accent ? c.teal : c.muted,
+          color: accent ? c.accent : c.muted,
           fontSize: 10,
           height: 1.2,
         ),
@@ -293,7 +293,7 @@ class ScoreBars extends StatelessWidget {
                     Text(
                       item.value.toStringAsFixed(digits),
                       style: TextStyle(
-                        color: c.teal,
+                        color: c.accentText,
                         fontSize: Sizes.sm,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
@@ -308,13 +308,13 @@ class ScoreBars extends StatelessWidget {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        ColoredBox(color: c.tealDim),
+                        ColoredBox(color: c.accentDim),
                         FractionallySizedBox(
                           alignment: Alignment.centerLeft,
                           widthFactor: item.value.clamp(0.0, 1.0),
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: c.teal,
+                              color: c.accent,
                               borderRadius: BorderRadius.circular(99),
                             ),
                           ),
@@ -606,7 +606,7 @@ class FeedStatus extends StatelessWidget {
                 children: [
                   for (final part in parts) Text(part, style: style),
                   if (delegate case final delegate?) ...[
-                    Text(delegate, style: style.copyWith(color: c.teal)),
+                    Text(delegate, style: style.copyWith(color: c.accentText)),
                     const StatusDot(),
                   ],
                 ],
@@ -649,7 +649,7 @@ class StillCard extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.upload, size: 28, color: c.teal),
+                  Icon(LucideIcons.upload, size: 28, color: c.accent),
                   const SizedBox(height: 14),
                   Text(
                     'Choose an image to analyze.',
@@ -738,7 +738,7 @@ class PrimaryButton extends StatelessWidget {
       onTap: onPressed,
       excludeSemantics: true,
       child: Material(
-        color: enabled ? c.teal : c.teal.withValues(alpha: 0.4),
+        color: enabled ? c.accent : c.accent.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(Sizes.radiusSmall),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -749,13 +749,13 @@ class PrimaryButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon case final icon?) ...[
-                  Icon(icon, size: 15, color: c.onTeal),
+                  Icon(icon, size: 15, color: c.onAccent),
                   const SizedBox(width: 7),
                 ],
                 Text(
                   label,
                   style: TextStyle(
-                    color: c.onTeal,
+                    color: c.onAccent,
                     fontWeight: FontWeight.w700,
                     fontSize: Sizes.md,
                   ),
@@ -800,7 +800,7 @@ class DesignSwitch extends StatelessWidget {
           height: 18,
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
-            color: value ? c.tealDim : c.switchOff,
+            color: value ? c.accentDim : c.switchOff,
             borderRadius: BorderRadius.circular(99),
           ),
           child: AnimatedAlign(
@@ -810,7 +810,7 @@ class DesignSwitch extends StatelessWidget {
               width: 14,
               height: 14,
               decoration: BoxDecoration(
-                color: value ? c.teal : c.knobOff,
+                color: value ? c.accent : c.knobOff,
                 shape: BoxShape.circle,
               ),
             ),
