@@ -26,11 +26,10 @@ TaskCapabilities _onEveryRuntime(
 const _classicGpu = 'The official classic text tasks run on CPU only.';
 
 /// Google's browser text runtime (`@mediapipe/tasks-text`) has no
-/// Proofreader or Summarizer; see upstream-issues.md UP-034.
+/// Proofreader or Summarizer.
 const _noBrowserGenerativeTasks =
-    "Google's browser text runtime has no Proofreader or Summarizer "
-    '(upstream-issues.md UP-034). Run the task on Android, iOS, macOS, '
-    'Linux or Windows.';
+    "Google's browser text runtime has no Proofreader or Summarizer. Run the "
+    'task on Android, iOS, macOS, Linux or Windows.';
 
 /// The Proofreader and Summarizer: CPU wherever Google's text library serves
 /// them (Android, iOS, macOS, Linux and Windows); browsers have neither
