@@ -446,7 +446,7 @@ jobs:
           dart run tool/gallery_builder/bin/prepare_gallery.dart --target web
           cd gallery
           flutter pub get
-          flutter build web --release --base-href /flutter-mediapipe/ --no-web-resources-cdn
+          flutter build web --release --base-href /mediapipe_flutter/ --no-web-resources-cdn
           env -u GITHUB_SHA python3 -B tool/write_web_build_info.py
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
