@@ -30,6 +30,8 @@ getter String get largeModelNeeds64Bit
 getter Map<String, String?> get largeModelRuntimeTargets
 getter int get maxStreamTimestampMilliseconds
 function StateError? missingLinuxGraphicsLibraries(String loaderError)
+getter String? get mpAppId
+getter String? get mpAppVersion
 getter int get mpHostSystem
 getter String get mpHostVersion
 function String nativeModelPath(String path)
