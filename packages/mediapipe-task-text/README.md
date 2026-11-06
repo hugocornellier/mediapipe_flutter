@@ -24,9 +24,9 @@ All text tasks run on the CPU. The runtimes are Google's: its MediaPipe
 macOS 14+, Linux and Windows, which this package's hook bundles, and
 `@mediapipe/tasks-text` 1.2.0-rc.20261018 in browsers.
 
-Google's browser runtime has no Proofreader or Summarizer
-([UP-034](https://github.com/google/flutter-mediapipe/blob/main/upstream-issues.md#up-034-browser-text-runtime-omits-proofreader-and-summarizer)),
-which their capability queries report there.
+Proofreader and Summarizer run on every platform except the web. That matches
+the MediaPipe web SDK at the moment: Google's published browser runtime has no
+Proofreader or Summarizer, which their capability queries report there.
 
 No platform needs a setting. See
 [platform setup](https://github.com/google/flutter-mediapipe/blob/main/doc/platform_setup.md)
