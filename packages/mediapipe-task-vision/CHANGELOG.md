@@ -3,8 +3,7 @@
 - The README's links to `mediapipe_core`'s reference sections point to
   [the core guide](https://github.com/google/flutter-mediapipe/blob/main/doc/mediapipe_core.md),
   where those sections moved.
-- Error messages and the README no longer cite the repository's internal notes
-  file.
+- Error messages and the README no longer refer to removed notes.
 
 ## 0.1.3
 

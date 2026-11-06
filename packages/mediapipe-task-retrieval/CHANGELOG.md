@@ -1,7 +1,6 @@
 ## 0.1.4
 
-- Error messages and the README no longer cite the repository's internal notes
-  file.
+- Error messages and the README no longer refer to removed notes.
 
 ## 0.1.3
 

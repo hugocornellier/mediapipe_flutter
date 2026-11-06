@@ -4,7 +4,7 @@
   so it works on GitHub and on pub.dev. Its reference sections (shared types,
   verified downloads and offline builds, bundled and on-demand models, the web
   runtime) moved to [the core guide](https://github.com/google/flutter-mediapipe/blob/main/doc/mediapipe_core.md).
-- The README and code comments no longer cite the repository's internal notes file.
+- The README and code comments no longer refer to removed notes.
 
 ## 0.1.3
 
