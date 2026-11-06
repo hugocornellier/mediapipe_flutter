@@ -230,7 +230,7 @@ class PinStop(unittest.TestCase):
     STOP = {'version': '1.2.2', 'pinned': '1.2.0', 'since': '20261030'}
 
     def run_pin(self, day, status=1, stop=STOP, api_changes=None, event='schedule',
-                nightly='newest'):
+                nightly='newest', network_failure=None, no_report=False):
         """The outputs, the step summary, what was printed and the failure, if any."""
         with tempfile.TemporaryDirectory() as temp:
             folder = Path(temp)
@@ -238,10 +238,13 @@ class PinStop(unittest.TestCase):
                       'api_changes': api_changes, 'written': False}
             if stop:
                 report['version_stop'] = stop
+            if network_failure:
+                report = {'network_failure': network_failure}
             fake = folder / 'pin_nightly.py'
+            write = '' if no_report else f"open(out, 'w').write({json.dumps(json.dumps(report))})\n"
             fake.write_text(f'import json, sys\n'
                             f"out = sys.argv[sys.argv.index('--report') + 1]\n"
-                            f"open(out, 'w').write({json.dumps(json.dumps(report))})\n"
+                            f'{write}'
                             f'sys.exit({status})\n', encoding='utf-8')
             output, summary = folder / 'output', folder / 'summary'
             output.touch()
@@ -328,11 +331,91 @@ class PinStop(unittest.TestCase):
         self.assertIsNone(failure)
         self.assertEqual((lines['api_changed'], lines['held'], summary), ('true', 'false', ''))
 
-    def test_the_workflow_runs_no_comparison_while_held(self):
-        workflow = (REPO / '.github/workflows/nightly-compare.yaml').read_text(encoding='utf-8')
-        self.assertIn('HELD: ${{ steps.pin.outputs.held }}', workflow)
-        decide = workflow[workflow.index('          if [ "$HELD" = true ]; then'):]
-        self.assertLess(decide.index("echo 'report=false'"), decide.index('elif'))
+    def test_a_network_failure_warns_on_every_event_and_compares_nothing(self):
+        for event, nightly in (('schedule', 'newest'), ('workflow_dispatch', 'newest'),
+                               ('workflow_dispatch', '20261106'), ('pull_request', 'newest')):
+            lines, summary, printed, failure = self.run_pin(
+                (2027, 6, 1), event=event, nightly=nightly,
+                network_failure='URLError: <urlopen error no route>')
+            self.assertIsNone(failure)
+            self.assertEqual(lines, {'network_failed': 'true'})
+            self.assertNotIn('::error::', printed)
+            self.assertIn(f'::warning::{self.NETWORK_NOTE}', printed)
+            self.assertIn(self.NETWORK_NOTE, summary)
+
+    def test_a_run_that_chose_a_build_says_the_network_did_not_fail(self):
+        self.assertEqual(self.run_pin((2026, 11, 6))[0]['network_failed'], 'false')
+
+    def test_no_report_stays_a_failure_on_every_event(self):
+        for event in 'schedule', 'workflow_dispatch', 'pull_request':
+            lines, _, _, failure = self.run_pin((2026, 11, 6), event=event, no_report=True)
+            self.assertIn('exited 1 before choosing a build', failure)
+            self.assertEqual(lines, {})
+
+    NETWORK_NOTE = ('The comparison did not run: the network failed while choosing Google\'s '
+                    'build (URLError: <urlopen error no route>). The next run tries again.')
+
+
+class WorkflowWithNoBuild(unittest.TestCase):
+    """nightly-compare.yaml when the pin step set only network_failed, or held."""
+    WORKFLOW = (REPO / '.github/workflows/nightly-compare.yaml').read_text(encoding='utf-8')
+
+    def decide(self, **env):
+        """The decide step's outputs and summary, run from the workflow's own script."""
+        start = self.WORKFLOW.index('id: decide')
+        block = self.WORKFLOW[self.WORKFLOW.index('run: |\n', start) + len('run: |\n'):]
+        script = []
+        for line in block.splitlines():
+            if line.strip() and not line.startswith(' ' * 10):
+                break
+            script.append(line[10:])
+        with tempfile.TemporaryDirectory() as temp:
+            output, summary = Path(temp, 'output'), Path(temp, 'summary')
+            output.touch()
+            summary.touch()
+            subprocess.run(['bash', '-e', '-c', '\n'.join(script)], check=True, env={
+                'PATH': os.environ['PATH'], 'GITHUB_OUTPUT': str(output),
+                'GITHUB_STEP_SUMMARY': str(summary), **env})
+            return output.read_text(), summary.read_text()
+
+    def test_it_reports_nothing_and_adds_nothing_to_the_summary(self):
+        for env in {'NETWORK_FAILED': 'true'}, {'HELD': 'true', 'NETWORK_FAILED': 'false'}:
+            self.assertEqual(self.decide(EVENT='pull_request', **env), ('report=false\n', ''))
+
+    def test_with_a_build_it_still_reports(self):
+        output, _ = self.decide(EVENT='pull_request', NETWORK_FAILED='false', HELD='false',
+                                NIGHTLY='20261106', PREVIOUS='20261018', PATCHED='true')
+        self.assertEqual(output, 'report=true\ncompare=true\n')
+
+    def test_the_workflow_passes_the_outcome_to_the_decision(self):
+        self.assertIn('NETWORK_FAILED: ${{ steps.pin.outputs.network_failed }}', self.WORKFLOW)
+        self.assertIn('HELD: ${{ steps.pin.outputs.held }}', self.WORKFLOW)
+
+    def jobs(self):
+        """`{job: its if}`, read from the jobs section's own indentation."""
+        body = self.WORKFLOW[self.WORKFLOW.index('\njobs:\n'):]
+        found = {}
+        for match in re.finditer(r'^  (\w+):\n(.*?)(?=^  \w+:\n|\Z)', body, re.M | re.S):
+            condition = re.search(r'^    if: (.*)$', match.group(2), re.M)
+            found[match.group(1)] = condition and condition.group(1)
+        return found
+
+    def test_every_later_job_needs_an_output_the_outcome_leaves_unset(self):
+        jobs = self.jobs()
+        self.assertEqual(set(jobs), {'pin', 'desktop', 'android', 'ios', 'macos', 'web',
+                                     'compare', 'escalate'})
+        self.assertIsNone(jobs.pop('pin'))
+        for name in 'desktop', 'android', 'ios', 'macos', 'web':
+            self.assertIn("needs.pin.outputs.compare == 'true'", jobs[name])
+        self.assertIn("needs.pin.outputs.report == 'true'", jobs['compare'])
+        self.assertIn("needs.compare.outputs.escalate == 'true'", jobs['escalate'])
+
+    def test_the_pin_jobs_later_steps_skip_too(self):
+        self.assertIn("if: ${{ github.event_name == 'schedule' && "
+                      "steps.pin.outputs.network_failed != 'true' }}", self.WORKFLOW)
+        upload = self.WORKFLOW[:self.WORKFLOW.index('name: nightly-pin\n')]
+        self.assertIn("if: ${{ steps.decide.outputs.report == 'true' }}",
+                      upload[upload.rindex('actions/upload-artifact') - 90:])
 
 
 if __name__ == '__main__':

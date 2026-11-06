@@ -11,10 +11,12 @@ next to the change as a patch, pin_nightly's report and its log:
 
 With GITHUB_OUTPUT set it writes the step outputs: nightly, generation,
 previous, scope, patched (true when the patch exists), api_changed, held (true
-when the newest build names a new MediaPipe version), web (true when the
-browser runtimes moved too) and web_note. It fails when pin_nightly stopped for
-another reason than a C API change or that new version, which is moved by hand,
-and when that version has stopped the comparison for over FAIL_AFTER_DAYS.
+when the newest build names a new MediaPipe version), network_failed (true when
+the network kept pin_nightly from choosing a build, which only warns, and the
+only output that is set then), web (true when the browser runtimes moved too)
+and web_note. It fails when pin_nightly stopped for another reason than the
+network, a C API change or that new version, which is moved by hand, and when
+that version has stopped the comparison for over FAIL_AFTER_DAYS.
 
 The browser pins are each family's `assets/runtime.json` (version, the
 tarball's npm integrity, every loaded file's SHA-384) and the version core's
@@ -136,6 +138,21 @@ def today():
     return datetime.datetime.now(datetime.timezone.utc).date()
 
 
+def add_to_summary(note):
+    if os.environ.get('GITHUB_STEP_SUMMARY'):
+        with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as step:
+            step.write(note + '\n')
+
+
+def network_failed(failure):
+    """Reports a run the network kept from choosing a build: a warning on every
+    event, since nothing was compared and the next run tries again."""
+    note = (f"The comparison did not run: the network failed while choosing Google's build "
+            f'({failure}). The next run tries again.')
+    add_to_summary(note)
+    print(f'::warning::{note}', flush=True)
+
+
 def hold(stop, event):
     """Reports a comparison that a new MediaPipe version has stopped: a log line,
     a warning past WARN_AFTER_DAYS, a failure past FAIL_AFTER_DAYS. A pull request
@@ -158,9 +175,7 @@ def hold(stop, event):
             note = f'Nightly comparison stopped for over {FAIL_AFTER_DAYS} days. {note}'
         elif days <= WARN_AFTER_DAYS:
             level = None
-    if os.environ.get('GITHUB_STEP_SUMMARY'):
-        with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as step:
-            step.write(note + '\n')
+    add_to_summary(note)
     print(f'::{level}::{note}' if level else note, flush=True)
     if level == 'error':
         raise SystemExit(note)
@@ -194,6 +209,10 @@ def main():
     if not report_path.exists():
         raise SystemExit(f'pin_nightly.py exited {status} before choosing a build.')
     report = json.loads(report_path.read_text(encoding='utf-8'))
+    if report.get('network_failure'):
+        network_failed(report['network_failure'])
+        outputs({'network_failed': 'true'})
+        return
     api_changed = bool(report['api_changes'])
     # Only the newest build: a night asked for by name was asked for to be pinned.
     stop = report.get('version_stop') if args.nightly == 'newest' else None
@@ -223,7 +242,7 @@ def main():
              'previous': report['previous'],
              'scope': scope_of(args.event, args.schedule, args.full),
              'patched': str(patched).lower(), 'api_changed': str(api_changed).lower(),
-             'held': str(bool(stop)).lower(),
+             'held': str(bool(stop)).lower(), 'network_failed': 'false',
              'web': str(web).lower(), 'web_note': web_note})
 
 
