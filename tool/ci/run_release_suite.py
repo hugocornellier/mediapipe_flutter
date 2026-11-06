@@ -35,11 +35,35 @@ VERDICT = re.compile(r'(All tests passed!|Some tests failed\.)')
 # silent for its last 37 minutes (October 22).
 POLL = 60
 SILENCE = 1200
+# What a failed build prints when the network failed it and a second build can
+# pass: core's download of the native libraries (verified_download.dart: a
+# host's passing error or a lost connection, not a SHA-256 mismatch or an HTTP
+# 404), and Gradle's download of an Android SDK package.
+NETWORK_ERROR = re.compile(
+    r'Verified download failed: .*(?:HTTP (?:408|429|50[0234])\b|ClientException(?!: Redirect)'
+    r'|SocketException|TimeoutException)'
+    r'|An error occurred while preparing SDK package .*Error on ZipFile')
+# Seconds before the one more build.
+BUILD_RETRY_DELAY = 30
 EXECUTABLES = {
     'linux': f'build/linux/x64/release/bundle/{NAME}',
     'windows': f'build/windows/x64/runner/Release/{NAME}.exe',
     'macos': f'build/macos/Build/Products/Release/{NAME}.app/Contents/MacOS/{NAME}',
 }
+
+
+def run_build(command):
+    """Runs the build, echoing its output; returns its exit status and whether
+    the output names a network failure."""
+    # Windows resolves flutter.bat only through the shell.
+    process = subprocess.Popen(command, cwd=GALLERY, stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, shell=sys.platform == 'win32')
+    network = False
+    for raw in process.stdout:
+        line = raw.decode('utf-8', 'replace').rstrip()
+        print(line, flush=True)
+        network = network or NETWORK_ERROR.search(line) is not None
+    return process.wait(), network
 
 
 def build(args):
@@ -50,8 +74,14 @@ def build(args):
     else:
         command = ['flutter', 'build', args.target, '--release', '-t', args.suite, *defines]
     print('+ ' + ' '.join(command), flush=True)
-    # Windows resolves flutter.bat only through the shell.
-    subprocess.run(command, cwd=GALLERY, check=True, shell=sys.platform == 'win32')
+    status, network = run_build(command)
+    if status != 0 and network:
+        print(f'::warning::The {args.target} release build failed on the network; '
+              f'building once more in {BUILD_RETRY_DELAY} s.', flush=True)
+        time.sleep(BUILD_RETRY_DELAY)
+        status, _ = run_build(command)
+    if status != 0:
+        raise subprocess.CalledProcessError(status, command)
 
 
 def death_check(adb):

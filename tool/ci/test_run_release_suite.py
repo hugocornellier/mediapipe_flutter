@@ -85,6 +85,87 @@ class DeathCheckTest(unittest.TestCase):
         self.assertEqual([dead() for _ in range(3)], [False, False, True])
 
 
+# From the build logs of jobs 115996940001 and 116031028600.
+HTTP_500 = ('Verified download failed: https://github.com/a/b/releases/download/c/d.so: '
+            'HttpException: HTTP 500, uri = https://github.com/a/b/releases/download/c/d.so')
+ZIP = ('Warning: An error occurred while preparing SDK package NDK (Side by side) '
+       '28.2.13676358: Error on ZipFile unknown archive.')
+# The same client's words in job 116023056045's test phase.
+LOOKUP = ("Verified download failed: https://storage.googleapis.com/a/b.so: ClientException "
+          "with SocketException: Failed host lookup: 'storage.googleapis.com' (OS Error: "
+          "No address associated with hostname, errno = 7), uri=https://storage.googleapis.com/")
+
+
+class BuildTest(unittest.TestCase):
+    def build(self, *runs):
+        """build() over (status, lines) per run; returns the commands run, what
+        was printed, and the failure's exit status, if any."""
+        answers = iter(runs)
+        commands = []
+
+        def popen(command, **_):
+            commands.append(command)
+            status, lines = next(answers)
+            return types.SimpleNamespace(stdout=printing(*lines).stdout, wait=lambda: status)
+        args = types.SimpleNamespace(define=[], target='android', suite='a.dart',
+                                     android_platform='android-x64')
+        printed = io.StringIO()
+        status = None
+        with mock.patch.object(run_release_suite.subprocess, 'Popen', popen), \
+                mock.patch.object(run_release_suite.time, 'sleep') as sleep, \
+                mock.patch('sys.stdout', printed):
+            try:
+                run_release_suite.build(args)
+            except subprocess.CalledProcessError as error:
+                status = error.returncode
+        self.assertEqual(sleep.call_count, max(len(commands) - 1, 0))
+        return commands, printed.getvalue(), status
+
+    def test_a_clean_build_runs_once(self):
+        commands, printed, status = self.build((0, ['Built app-release.apk']))
+        self.assertEqual((len(commands), status), (1, None))
+        self.assertIn('Built app-release.apk', printed)
+        self.assertNotIn('::warning::', printed)
+
+    def test_a_network_error_builds_once_more_and_warns(self):
+        for line in (HTTP_500, ZIP, LOOKUP,
+                     'Verified download failed: https://a/b.so: SocketException: Connection reset',
+                     'Verified download failed: https://a/b.so: TimeoutException after 0:01:00.000000'):
+            commands, printed, status = self.build((1, [line, 'BUILD FAILED in 4m 3s']),
+                                                   (0, ['Built']))
+            self.assertEqual((len(commands), status), (2, None), line)
+            self.assertEqual(commands[0], commands[1])
+            self.assertIn('::warning::', printed)
+            self.assertIn(line, printed)
+
+    def test_a_second_network_error_is_red(self):
+        commands, _, status = self.build((1, [HTTP_500]), (7, [HTTP_500]), (0, []))
+        self.assertEqual((len(commands), status), (2, 7))
+
+    def test_a_second_failure_of_another_kind_is_red(self):
+        commands, _, status = self.build((1, [HTTP_500]), (1, ['Error: boom']), (0, []))
+        self.assertEqual((len(commands), status), (2, 1))
+
+    def test_any_other_build_error_is_red_at_once(self):
+        for line in ("lib/main.dart:3:1: Error: Expected ';' after this.",
+                     'Verified download failed: https://a/b.so: SHA-256 mismatch',
+                     'Verified download failed: https://a/b.so: HttpException: HTTP 404, uri = https://a/b.so',
+                     'Verified download failed: https://a/b.so: HttpException: HTTP 403, uri = https://a/b.so',
+                     'Verified download failed: https://a/b.so: ClientException: Redirect limit exceeded',
+                     "lib/main.dart:3:1: Error: Undefined name 'SocketException'.",
+                     'lib/main.dart:4:1: Error: HTTP 500 is not a type.',
+                     'Verified download failed: https://a/b.so: HandshakeException: certificate',
+                     'FAILURE: Build failed with an exception.'):
+            commands, printed, status = self.build((1, [line]), (0, []))
+            self.assertEqual((len(commands), status), (1, 1), line)
+            self.assertNotIn('::warning::', printed)
+
+    def test_network_words_in_a_build_that_passed_do_not_rebuild(self):
+        commands, printed, status = self.build((0, [HTTP_500]))
+        self.assertEqual((len(commands), status), (1, None))
+        self.assertNotIn('::warning::', printed)
+
+
 class ExitCodeTest(unittest.TestCase):
     def run_main(self, process, dead=None, target=('--target', 'linux')):
         args = ['run_release_suite.py', *target, '--suite', 'a.dart', '--timeout', '1']
