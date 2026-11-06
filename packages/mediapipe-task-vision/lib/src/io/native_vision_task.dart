@@ -7,7 +7,12 @@ import 'package:mediapipe_core/mediapipe_core.dart';
 import 'package:mediapipe_core/native_structs.dart'
     show checkNativeStatus, nativeString, nativeStrings;
 import 'package:mediapipe_core/platform_interface.dart'
-    show ClassifierSettings, mpHostVersion, nativeModelPath;
+    show
+        ClassifierSettings,
+        mpAppId,
+        mpAppVersion,
+        mpHostVersion,
+        nativeModelPath;
 
 import '../runner/native_interface.dart' show VisionTaskInput;
 import '../third_party/mediapipe/vision_bindings.dart' as mp;
@@ -52,6 +57,12 @@ void setVisionBaseOptions(
       ? mp.MpHostSystem.MP_HOST_SYSTEM_ANDROID
       : mp.MpHostSystem.MP_HOST_SYSTEM_MAC;
   base.host_version = mpHostVersion.toNativeUtf8(allocator: arena).cast();
+  final appId = mpAppId;
+  if (appId != null) base.app_id = appId.toNativeUtf8(allocator: arena).cast();
+  final appVersion = mpAppVersion;
+  if (appVersion != null) {
+    base.app_version = appVersion.toNativeUtf8(allocator: arena).cast();
+  }
   if (options.modelPath case final path?) {
     base.model_asset_path = nativeModelPath(
       path,

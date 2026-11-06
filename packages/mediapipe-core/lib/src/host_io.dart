@@ -3,6 +3,8 @@ library;
 
 import 'dart:io';
 
+import 'app_identity.dart';
+
 /// Google's `MpHostSystem` value for this process, the way its Python API
 /// fills `BaseOptions.host_system` from `platform.system()`.
 int get mpHostSystem => Platform.isLinux
@@ -27,6 +29,17 @@ final String mpHostVersion = [
   'Dart ${Platform.version.split(' ').first}',
   if (_flutterVersion != null) 'Flutter $_flutterVersion',
 ].join(' / ');
+
+/// Google's `BaseOptions.app_id` for this process: the iOS bundle ID, as
+/// Google's native SDK reports it. Null where there is none to report.
+String? get mpAppId => _appIdentity.id;
+
+/// Google's `BaseOptions.app_version` for this process: the iOS
+/// `CFBundleShortVersionString`, as Google's native SDK reports it. Null where
+/// there is none to report.
+String? get mpAppVersion => _appIdentity.version;
+
+final _appIdentity = readAppIdentity();
 
 /// The version `FlutterVersion.version` reads, from the same define.
 const _flutterVersion = bool.hasEnvironment('FLUTTER_VERSION')
