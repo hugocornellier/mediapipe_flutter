@@ -2,6 +2,9 @@
 
     python3 -B -m unittest tool/ci/test_nightly_compare.py
 """
+import contextlib
+import datetime
+import io
 import json
 import os
 from pathlib import Path
@@ -220,6 +223,116 @@ class Pin(unittest.TestCase):
             # nightly_pin.py rewrites runtime.json with json.dumps(indent=2).
             self.assertEqual(path.read_text(encoding='utf-8'),
                              json.dumps(value, indent=2) + '\n', path)
+
+
+class PinStop(unittest.TestCase):
+    """nightly_pin.py's main, with a stand-in for pin_nightly.py."""
+    STOP = {'version': '1.2.2', 'pinned': '1.2.0', 'since': '20261030'}
+
+    def run_pin(self, day, status=1, stop=STOP, api_changes=None, event='schedule',
+                nightly='newest'):
+        """The outputs, the step summary, what was printed and the failure, if any."""
+        with tempfile.TemporaryDirectory() as temp:
+            folder = Path(temp)
+            report = {'nightly': '20261106', 'previous': '20261018', 'generation': '1',
+                      'api_changes': api_changes, 'written': False}
+            if stop:
+                report['version_stop'] = stop
+            fake = folder / 'pin_nightly.py'
+            fake.write_text(f'import json, sys\n'
+                            f"out = sys.argv[sys.argv.index('--report') + 1]\n"
+                            f"open(out, 'w').write({json.dumps(json.dumps(report))})\n"
+                            f'sys.exit({status})\n', encoding='utf-8')
+            output, summary = folder / 'output', folder / 'summary'
+            output.touch()
+            summary.touch()
+            argv = ['nightly_pin.py', '--nightly', nightly, '--event', event,
+                    '--out', str(folder / 'out')]
+            printed = io.StringIO()
+            failure = None
+            with unittest.mock.patch.object(pin, 'PIN_NIGHTLY', fake), \
+                    unittest.mock.patch.object(pin, 'today', lambda: datetime.date(*day)), \
+                    unittest.mock.patch.object(sys, 'argv', argv), \
+                    unittest.mock.patch.dict(os.environ, {'GITHUB_OUTPUT': str(output),
+                                                          'GITHUB_STEP_SUMMARY': str(summary)}), \
+                    contextlib.redirect_stdout(printed):
+                try:
+                    pin.main()
+                except SystemExit as error:
+                    failure = str(error)
+            lines = dict(line.split('=', 1) for line in output.read_text().splitlines())
+            return lines, summary.read_text(), printed.getvalue(), failure
+
+    def test_up_to_day_14_it_passes_with_no_annotation(self):
+        for day, count in ((2026, 11, 6), 7), ((2026, 11, 13), 14):
+            lines, summary, printed, failure = self.run_pin(day)
+            self.assertIsNone(failure)
+            self.assertEqual((lines['held'], lines['patched']), ('true', 'false'))
+            self.assertNotIn('::warning::', printed)
+            self.assertNotIn('::error::', printed)
+            self.assertIn(f'{count} days behind, since 20261030', printed)
+            self.assertIn(f'{count} days behind, since 20261030', summary)
+
+    def test_from_day_15_to_day_90_it_warns_with_the_days_and_the_red_date(self):
+        for day, count in ((2026, 11, 14), 15), ((2027, 1, 28), 90):
+            lines, summary, printed, failure = self.run_pin(day)
+            self.assertIsNone(failure)
+            self.assertEqual(lines['held'], 'true')
+            self.assertIn('::warning::The comparison is stopped', printed)
+            self.assertIn(f'{count} days behind, since 20261030. Scheduled runs fail from '
+                          '2027-01-29.', printed)
+            self.assertIn(f'{count} days behind', summary)
+            self.assertNotIn('::error::', printed)
+
+    def test_from_day_91_a_scheduled_run_fails_by_name(self):
+        lines, summary, printed, failure = self.run_pin((2027, 1, 29))
+        self.assertIn('Nightly comparison stopped for over 90 days', failure)
+        self.assertIn('91 days behind', failure)
+        self.assertIn('::error::Nightly comparison stopped for over 90 days', printed)
+        self.assertIn('Nightly comparison stopped for over 90 days', summary)
+        self.assertEqual(lines, {})
+
+    def test_a_dispatch_from_day_91_fails_too(self):
+        self.assertIsNotNone(self.run_pin((2027, 1, 29), event='workflow_dispatch')[3])
+
+    def test_a_pull_request_only_warns(self):
+        for day, count in ((2026, 11, 13), 14), ((2027, 1, 29), 91), ((2027, 6, 1), 214):
+            lines, _, printed, failure = self.run_pin(day, event='pull_request')
+            self.assertIsNone(failure)
+            self.assertEqual(lines['held'], 'true')
+            self.assertNotIn('::error::', printed)
+            self.assertEqual('::warning::' in printed, count > 14)
+
+    def test_days_not_counted_warn_and_pass_on_any_date(self):
+        unknown = dict(self.STOP, since=None)
+        for day in (2026, 11, 6), (2027, 1, 29), (2030, 1, 1):
+            lines, summary, printed, failure = self.run_pin(day, stop=unknown)
+            self.assertIsNone(failure)
+            self.assertEqual(lines['held'], 'true')
+            self.assertIn('::warning::', printed)
+            self.assertIn('could not be counted', printed)
+            self.assertIn('could not be counted', summary)
+
+    def test_a_night_asked_for_by_name_stays_a_failure(self):
+        lines, summary, _, failure = self.run_pin((2026, 11, 6), nightly='20261103')
+        self.assertEqual(failure, 'pin_nightly.py exited 1.')
+        self.assertEqual((lines, summary), ({}, ''))
+
+    def test_any_other_stop_stays_a_failure(self):
+        lines, summary, _, failure = self.run_pin((2026, 11, 6), stop=None)
+        self.assertEqual(failure, 'pin_nightly.py exited 1.')
+        self.assertEqual((lines, summary), ({}, ''))
+
+    def test_a_c_api_change_is_still_reported_and_not_held(self):
+        lines, summary, _, failure = self.run_pin((2026, 11, 6), stop=None, api_changes=['x.h'])
+        self.assertIsNone(failure)
+        self.assertEqual((lines['api_changed'], lines['held'], summary), ('true', 'false', ''))
+
+    def test_the_workflow_runs_no_comparison_while_held(self):
+        workflow = (REPO / '.github/workflows/nightly-compare.yaml').read_text(encoding='utf-8')
+        self.assertIn('HELD: ${{ steps.pin.outputs.held }}', workflow)
+        decide = workflow[workflow.index('          if [ "$HELD" = true ]; then'):]
+        self.assertLess(decide.index("echo 'report=false'"), decide.index('elif'))
 
 
 if __name__ == '__main__':

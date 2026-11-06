@@ -42,6 +42,7 @@ import argparse
 import datetime
 import difflib
 import hashlib
+import http.client
 import json
 from pathlib import Path
 import re
@@ -351,11 +352,34 @@ def check_build(fetcher, stamp, paths):
     return text, archive
 
 
+def nightly_stamps(fetcher):
+    """Google's nightly folders, newest first."""
+    _, folders = listing(fetcher, PREFIX, '/')
+    return sorted((folder[len(PREFIX):].rstrip('/') for folder in folders
+                   if re.fullmatch(r'\d{8}/', folder[len(PREFIX):])), reverse=True)
+
+
+def version_stop_since(fetcher, stamp, version, pinned_stamp):
+    """The first night of the unbroken run of builds, up to `stamp`, that name
+    a MediaPipe version other than `version`. Google's folders date a stop with
+    no state of ours. With every build of `version` pruned, it is the pinned
+    build's own night, the earliest the run can have begun, so that pruning
+    cannot keep a stop from ever growing old."""
+    since = stamp
+    for night in nightly_stamps(fetcher):
+        if night > stamp:
+            continue
+        named = parse_build_info(fetcher.text(f'{OBJECTS}{night}/BUILD_INFO') or '')
+        if named.get('mediapipe_version') == version:
+            return since
+        if named.get('mediapipe_version'):
+            since = night
+    return pinned_stamp
+
+
 def pick_build(fetcher, requested, paths):
     """The `(stamp, build_info_text, archive)` to pin."""
-    _, folders = listing(fetcher, PREFIX, '/')
-    stamps = sorted((folder[len(PREFIX):].rstrip('/') for folder in folders
-                     if re.fullmatch(r'\d{8}/', folder[len(PREFIX):])), reverse=True)
+    stamps = nightly_stamps(fetcher)
     print(f"Google's nightly folders: {', '.join(reversed(stamps))}")
     candidates = stamps if requested == 'newest' else [requested]
     if requested != 'newest' and requested not in stamps:
@@ -483,6 +507,13 @@ def main():
           f"{info.get('kokoro_build_number')}, changelist {info.get('piper_changelist')}; "
           f'archive {archive.size} bytes, generation {archive.generation}.')
     if info['mediapipe_version'] != old['version']:
+        try:
+            since = version_stop_since(fetcher, stamp, old['version'], old['stamp'])
+        except (OSError, http.client.HTTPException, ValueError) as error:
+            print(f'Could not date the stop: {error}')
+            since = None
+        report['version_stop'] = {
+            'version': info['mediapipe_version'], 'pinned': old['version'], 'since': since}
         write_report()
         raise SystemExit(f"MediaPipe {info['mediapipe_version']} replaces "
                          f"{old['version']}: the tests and docs name the version, so "
