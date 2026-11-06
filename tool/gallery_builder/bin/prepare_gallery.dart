@@ -171,7 +171,10 @@ Future<void> _prepare(
       // A phone build should not fail on one dropped connection; a rerun
       // keeps the models already verified.
       if (attempt == 3) rethrow;
-      stderr.writeln('  attempt $attempt failed ($error); retrying');
+      stderr.writeln(
+        '::warning::Bundling the gallery models failed on attempt $attempt of '
+        '3 ($error); retrying',
+      );
       await Future<void>.delayed(Duration(seconds: 2 * attempt));
     }
   }

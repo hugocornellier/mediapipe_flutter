@@ -94,7 +94,7 @@ jobs:
           image='system-images;android-35;google_apis;x86_64'
           for attempt in 1 2 3 4; do
             sdkmanager --install "$image" && exit 0
-            echo "Attempt $attempt of installing $image failed." >&2
+            echo "::warning::Installing $image failed on attempt $attempt of 4."
             sleep 20
           done
           exit 1
@@ -265,7 +265,7 @@ jobs:
           image='system-images;android-${{ matrix.api-level }};google_apis;x86_64'
           for attempt in 1 2 3 4; do
             sdkmanager --install "$image" && exit 0
-            echo "Attempt $attempt of installing $image failed." >&2
+            echo "::warning::Installing $image failed on attempt $attempt of 4."
             sleep 20
           done
           exit 1
