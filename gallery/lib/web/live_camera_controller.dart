@@ -18,6 +18,7 @@ import '../live/live_subjects.dart';
 import '../live/live_task.dart';
 import '../live/operation_queue.dart';
 import 'model_cache.dart';
+import 'runtime_warm_up.dart';
 import 'test_hooks.dart';
 
 extension type _VideoCallbacks(JSObject object) implements JSObject {
@@ -439,6 +440,12 @@ class LiveCameraController<T> extends ChangeNotifier {
           throw StateError('Camera access requires HTTPS or localhost.');
         }
         this.delegate = chosen;
+        // Google's runtime and the warm-up sample download with the model
+        // rather than after it.
+        unawaited(WebRuntimeWarmUp.vision());
+        final warmUpImage = sample == null || task is FixedFrameSizeLiveTask
+            ? null
+            : (rootBundle.load(sample)..ignore());
         // Load the model and open the task while the camera starts: on a phone
         // each takes seconds and neither needs the other. Every path below
         // awaits it, so a task that opens late is still released.
@@ -467,9 +474,9 @@ class LiveCameraController<T> extends ChangeNotifier {
           await _release();
           return;
         }
-        final warmedUpTo = task is FixedFrameSizeLiveTask
+        final warmedUpTo = warmUpImage == null
             ? -1
-            : await _warmUp(sample);
+            : await _warmUp(warmUpImage);
         taskReady = true;
         if (_closed || generation != _generation) {
           await _release();
@@ -557,6 +564,14 @@ class LiveCameraController<T> extends ChangeNotifier {
       startProgress.modelLoaded();
       _changed();
     }
+    // A model that arrives first would have the worker fetch the runtime a
+    // second time beside the warm-up; it reads the warm-up's copy instead. A
+    // stalled warm-up only costs this wait: the worker then fetches for itself
+    // and reports its own failure.
+    await WebRuntimeWarmUp.vision().timeout(
+      const Duration(seconds: 15),
+      onTimeout: () {},
+    );
     await task.open(chosen, bytes);
     if (generation == _generation) {
       startProgress.taskOpen();
@@ -847,9 +862,8 @@ class LiveCameraController<T> extends ChangeNotifier {
   /// detector run only once it finds something, hence a sample with a
   /// subject; the blank frame then clears the tracking the sample left.
   /// Returns the last timestamp used, which camera frames continue after.
-  Future<int> _warmUp(String? sample) async {
-    if (sample == null) return -1;
-    final data = await rootBundle.load(sample);
+  Future<int> _warmUp(Future<ByteData> sample) async {
+    final data = await sample;
     final bytes = data.buffer.asUint8List(
       data.offsetInBytes,
       data.lengthInBytes,
