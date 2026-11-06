@@ -30,8 +30,10 @@ jobs:
     if: ${{ !inputs.deploy_only }}
     runs-on: ubuntu-24.04
     # Setup, the API suites and both gallery tours (Chromium, then Firefox)
-    # ran past 45 minutes once retrieval and decision joined the gallery.
-    timeout-minutes: 60
+    # ran past 45 minutes once retrieval and decision joined the gallery; the
+    # slowest pass took 60, and slow setup mirrors have added 40. The tours have
+    # their own step limits, so a hang there fails by name before this one.
+    timeout-minutes: 90
     outputs:
       stale: ${{ steps.newer_commit.outputs.stale }}
     steps:
@@ -185,13 +187,17 @@ jobs:
         id: text_audio_webkit
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: node gallery/tool/browser/test_browser.mjs --browser=webkit --suite=text-audio --official-runtime=/runtime/
+      # Each tour's slowest pass is under half its limit (13.4 and 7.3 minutes),
+      # and the limit leaves room for the tour's own longest wait, 10 minutes.
       - name: Every release gallery sidebar task in Chromium
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 30
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: node gallery/tool/browser/test_gallery_journey.mjs
       - name: Every release gallery sidebar task in Firefox
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 20
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: xvfb-run -a node gallery/tool/browser/test_gallery_journey.mjs --browser=firefox --headed=true
