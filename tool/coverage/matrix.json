@@ -426,8 +426,8 @@
     },
     "text_proofreader": {
       "web": {
-        "cpu": "unsupported: Google's browser text runtime does not serve TextProofreader",
-        "gpu": "unsupported: Google's browser text runtime does not serve TextProofreader"
+        "cpu": "unsupported: TextProofreader is not yet available on the web, matching the MediaPipe Tasks Web SDK",
+        "gpu": "unsupported: TextProofreader is not yet available on the web, matching the MediaPipe Tasks Web SDK"
       },
       "android": {
         "cpu": "required",
@@ -452,8 +452,8 @@
     },
     "text_summarizer": {
       "web": {
-        "cpu": "unsupported: Google's browser text runtime does not serve TextSummarizer",
-        "gpu": "unsupported: Google's browser text runtime does not serve TextSummarizer"
+        "cpu": "unsupported: TextSummarizer is not yet available on the web, matching the MediaPipe Tasks Web SDK",
+        "gpu": "unsupported: TextSummarizer is not yet available on the web, matching the MediaPipe Tasks Web SDK"
       },
       "android": {
         "cpu": "required",

@@ -131,7 +131,7 @@ void main() {
       for (final delegate in Delegate.values) {
         expect(
           result.unavailableReasons[delegate],
-          contains('has no Proofreader or Summarizer'),
+          contains('not yet available on the web'),
           reason: '$name ${delegate.name}',
         );
       }

@@ -124,7 +124,7 @@ try {
   const manifestResponse = await page.request.get(new URL('assets/assets/manifest.json', base).href);
   assert.ok(manifestResponse.ok(), 'release manifest unavailable');
   const manifest = await manifestResponse.json();
-  // Google's browser runtime has no Proofreader or Summarizer, so a web build
+  // Proofreader and Summarizer are not yet available on the web, so a web build
   // bundles them for the text probe's comparison only; the gallery shows their
   // cards, not tiles. EmbeddingGemma is a tile.
   const probeOnly = new Set(['text_proofreader', 'text_summarizer']);
