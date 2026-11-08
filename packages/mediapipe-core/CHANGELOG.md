@@ -7,6 +7,10 @@
   CPU, 2 the GPU), which 1.2.1 changed in the C API.
 - `pin_nightly.py --release X.Y.Z` pins Google's release builds as well as
   nightlies.
+- `fillBaseOptions` gives Google's libraries the app's ID and version on iOS,
+  as Google's iOS SDK does: the bundle ID and `CFBundleShortVersionString`.
+  Every task accepts them, but with 1.2.2 only eight tasks' usage uploads carry
+  them; `doc/privacy_and_licenses.md` names them.
 - Removes `familyRuntimeBaseUrl` and the native libraries' unused mirror URL:
   Google's archive is now their only source.
 

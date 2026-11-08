@@ -32,23 +32,32 @@ processes. On native platforms the packages also name Flutter as the host
 environment, with the versions of the OS, Dart and Flutter (for example
 `iOS 26.4 / Dart 3.13.4 / Flutter 3.47.5`), which the uploads record. In
 browsers they name Flutter Web as the host environment.
+
+On iOS the packages also give Google's libraries the app's ID and version, as
+Google's iOS SDK does: the bundle ID and `CFBundleShortVersionString`. Every
+task accepts these fields, but with the pinned 1.2.2 libraries only eight tasks
+include them in their uploads: Audio Transcriber, Decision Maker, Interactive
+Segmenter, Semantic Retriever, Text Proofreader, Text Summarizer, Text to
+Speech and Universal Embedder. The other tasks' uploads leave both fields
+empty. The packages set neither on Android, macOS, Linux, Windows or in
+browsers.
+
 Google's NOTICE opens with its MediaPipe Tasks privacy notice, which makes
 the app's developer responsible for getting users' informed consent where the
 law requires it. The packages cannot turn the logging off.
 
 | Where | What the packages bundle | Usage logging |
 | --- | --- | --- |
-| macOS, Linux, Windows | Google's per-family 1.2.0 libraries | An uploader to `https://play.googleapis.com/log` in every library. Observed with Google's October 18 build on all three, every family: one request per task close, which Google accepts (HTTP 200). On macOS the User-Agent carries the process name. On Windows a close waits for its upload |
-| iOS | Google's per-family 1.2.0 libraries | The same uploader. Observed with the October 18 build on the iOS Simulator (every family) and on an iPhone: one request per task close, which Google accepts, with the app's bundle ID and version, the iOS version and the device model in the User-Agent |
-| Android | Google's per-family 1.2.0 libraries | The same uploader, which since the 1.2.0 nightlies opens its own connection rather than going through Java. Observed with the October 18 build on an emulator, where Google accepts one request per task close, and on physical phones from Android 9 to 15, 64-bit and 32-bit, where each task close opens one connection to Google of the same size and waits for it, up to about 2.5 s on the oldest phone |
+| macOS, Linux, Windows | Google's per-family 1.2.2 libraries | An uploader to `https://play.googleapis.com/log` in every library. Observed with Google's October 18 build on all three, every family: one request per task close, which Google accepts (HTTP 200). Captured again with 1.2.2 on macOS only, every task, with the uploads kept from Google. On macOS the User-Agent carries the process name. On Windows a close waits for its upload |
+| iOS | Google's per-family 1.2.2 libraries | The same uploader. Observed with the October 18 build on the iOS Simulator (every family) and on an iPhone: one request per task close, which Google accepts, with the app's bundle ID and version, the iOS version and the device model in the User-Agent. Captured again with 1.2.2 on the Simulator only, with the same User-Agent on every upload, whichever task sent it |
+| Android | Google's per-family 1.2.2 libraries | The same uploader, which since Google's nightly of October 21 goes through Java and needs a `JNI_OnLoad` that Flutter's loading of the library does not run. Observed with 1.2.2 and later nightlies on API 28, 31 and 34 emulators: no upload leaves the app, and four phones in Firebase Test Lab showed no upload traffic either. Do not rely on this as an opt-out: a later build can end it. The October 18 build did upload, opening its own connection: on an emulator, where Google accepts one request per task close, and on physical phones from Android 9 to 15, 64-bit and 32-bit, where each task close opens one connection to Google of the same size and waits for it, up to about 2.5 s on the oldest phone |
 | Browsers | Google's JavaScript runtimes | Requests from the page to `https://odml.pa.googleapis.com/v1/log` when a task closes and every 60 seconds while one is open. Observed with the October 18 build in Chromium and WebKit, every family, which Google accepts |
 
-Every family uploads, Decision Maker included: each was observed with the
-October 18 build on macOS, Linux, Windows, the iOS Simulator and in browsers,
+With the October 18 build every family uploaded, Decision Maker included:
+each was observed on macOS, Linux, Windows, the iOS Simulator and in browsers,
 and on Android phones for the vision, text, audio, Universal Embedder and
-Decision Maker closes. One task's uploads are incomplete: the Semantic
-Retriever's name no OS, host environment or host version, on every native
-platform and under Google's own Python, because its options take none.
+Decision Maker closes. With that build the Semantic Retriever's uploads named
+no OS, host environment or host version; with 1.2.2 they name all three.
 
 Block those endpoints if your policy requires it: inference is unaffected. A
 task's close waits for its upload, so refuse the connection (for example
