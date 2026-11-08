@@ -14,7 +14,7 @@
   the work: macOS, and Chromium and WebKit on a Mac's Apple WebGPU adapter, each
   checked on a developer's Mac. iPhones are offered too, with their device
   test still to run. Other browsers and adapters get the CPU, and a reason.
-  Text to Speech offers the GPU on macOS for Kokoro, whose bundle marks it.
+  Text to Speech offers the GPU on macOS for Kokoro (`AudioModels.kokoro`).
 - Google's 1.2.2 native library replaces 1.2.0, and `@mediapipe/tasks-audio`
   1.2.2 replaces 1.2.0-rc.20261018 in browsers.
 

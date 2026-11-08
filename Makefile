@@ -5,8 +5,9 @@ TASK_FAMILIES := $(sort $(patsubst packages/mediapipe-task-%,%,$(wildcard packag
 # Families whose models download only with `make models_all`: Decision's Laya
 # (678 MB) and Retrieval's EmbeddingGemma 2 (388 MB). Their reference tests
 # skip without them; CI caches and runs them (decision.yaml, retrieval.yaml).
-# Audio's speech models, Parakeet (615 MB) and Phonon (87 MB), join them as
-# models_speech; speech.yaml runs their tests.
+# Audio's speech models, Parakeet (615 MB), Phonon (87 MB) and Kokoro (295 MB,
+# for the GPU test on a Mac), join them as models_speech; speech.yaml runs their
+# tests.
 LARGE_MODEL_FAMILIES := decision retrieval
 DART_PACKAGES := packages/mediapipe-core tool/task_benchmarks
 FLUTTER_PACKAGES := $(addprefix packages/mediapipe-task-,$(TASK_FAMILIES))
@@ -93,7 +94,7 @@ models_audio:
 	cd packages/mediapipe-task-audio && dart tool/download_models.dart yamnet
 
 models_speech:
-	cd packages/mediapipe-task-audio && dart tool/download_models.dart parakeet_tdt_v3 phonon
+	cd packages/mediapipe-task-audio && dart tool/download_models.dart parakeet_tdt_v3 phonon kokoro
 
 test_audio:
 	$(MAKE) test_audio_stream_bridge

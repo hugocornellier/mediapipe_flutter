@@ -47,6 +47,18 @@ on:
         description: The family's tasks whose integration test proves the GPU on the Mac runner; its coverage cells
         type: string
         default: ''
+      macos-model-path:
+        description: Model files only the Mac package job downloads, one per line, for its own cache
+        type: string
+        default: ''
+      macos-download-models:
+        description: The models only the Mac package job downloads by name, space-separated; its tests fail without them
+        type: string
+        default: ''
+      macos-package-gpu-tasks:
+        description: The family's tasks whose package test proves the GPU on the Mac runner; its coverage cells
+        type: string
+        default: ''
       web-delegate:
         description: The delegate the browser journey runs the family's tasks on
         type: string
@@ -87,14 +99,31 @@ jobs:
         with:
           path: ${{ inputs.model-path }}
           key: ${{ inputs.family }}-models-${{ hashFiles(format('packages/mediapipe-task-{0}/lib/models.dart', inputs.family)) }}
+      # The Mac's own models, under their own key, so the other runners
+      # neither download nor cache them.
+      - if: runner.os == 'macOS' && inputs.macos-model-path != '' && github.event_name == 'pull_request'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ inputs.macos-model-path }}
+          key: ${{ inputs.family }}-macos-models-${{ hashFiles(format('packages/mediapipe-task-{0}/lib/models.dart', inputs.family)) }}
+      - if: runner.os == 'macOS' && inputs.macos-model-path != '' && github.event_name != 'pull_request'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ inputs.macos-model-path }}
+          key: ${{ inputs.family }}-macos-models-${{ hashFiles(format('packages/mediapipe-task-{0}/lib/models.dart', inputs.family)) }}
       - name: Download Google's models
         working-directory: packages/mediapipe-task-${{ inputs.family }}
         shell: bash
         env:
           DOWNLOAD_MODELS: ${{ inputs.download-models }}
+          MACOS_DOWNLOAD_MODELS: ${{ inputs.macos-download-models }}
         run: |
           flutter pub get
           dart tool/download_models.dart $DOWNLOAD_MODELS
+          if [ "$RUNNER_OS" = macOS ] && [ -n "$MACOS_DOWNLOAD_MODELS" ]; then
+            dart tool/download_models.dart $MACOS_DOWNLOAD_MODELS
+            echo "MEDIAPIPE_REQUIRED_MODELS=$MACOS_DOWNLOAD_MODELS" >> "$GITHUB_ENV"
+          fi
       # Google's own Python on this runner, from the pinned wheel, where the
       # checked-in macOS answers would not hold elsewhere.
       - name: Google's Python answers on this runner
@@ -112,12 +141,22 @@ jobs:
       # A task's close waits for Google's usage-logging upload, so a slow
       # reply holds a test past the default 30 s.
       - name: The ${{ inputs.family }} package against Google's Python answers
+        id: package
         working-directory: packages/mediapipe-task-${{ inputs.family }}
         shell: bash
         env:
           TEST_PATHS: ${{ inputs.test-paths }}
         # TEST_PATHS is unquoted on purpose: it holds several paths.
         run: dart test --timeout 180s --reporter expanded $TEST_PATHS
+      - name: Record macos GPU ${{ inputs.family }} package coverage
+        if: always() && runner.os == 'macOS' && inputs.macos-package-gpu-tasks != ''
+        uses: ./.github/actions/record-coverage
+        with:
+          suite: macos-${{ inputs.family }}-package-gpu
+          platform: macos
+          delegate: gpu
+          tasks: ${{ inputs.macos-package-gpu-tasks }}
+          outcome: ${{ steps.package.outcome }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always() && inputs.prepare-reference != ''
         with:
