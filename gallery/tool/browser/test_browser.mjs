@@ -264,8 +264,15 @@ async function apiChecks() {
   observe(page);
   await page.goto(apiBase + (delegate === 'GPU' ? '?delegate=gpu' : ''));
   // The probe runs every browser task. Hosted runners emulate WebGL in
-  // software, so the GPU pass can take minutes there.
-  await wait(page, () => window.mediapipeApiTestReport, null, 300000);
+  // software, so the GPU pass can take minutes there. Its time is logged and
+  // kept in the report, to compare with the iOS user agent run's probe_ms.
+  const started = Date.now();
+  try {
+    await wait(page, () => window.mediapipeApiTestReport, null, 300000);
+  } finally {
+    report.api_probe_ms = Date.now() - started;
+    console.log(`API probe (${delegate}): ${report.api_probe_ms} ms`);
+  }
   assert.equal(await page.locator('#splash').count(), 0, 'The loading screen outlived the page it covers.');
   const api = await page.evaluate(() => window.mediapipeApiTestReport);
   fs.writeFileSync(path.join(evidence, 'api-report.json'), JSON.stringify(api, null, 2));
@@ -579,7 +586,14 @@ async function iosUserAgentCpuCheck() {
     assert.equal(result.worker.document_type, 'undefined');
     assert.equal(result.worker.offscreen_canvas_type, 'function');
     await page.evaluate(() => window.testResumeTaskCreation());
-    await wait(page, () => window.mediapipeApiTestReport);
+    // The whole API probe, as in apiChecks, so it gets apiChecks' limit.
+    const started = Date.now();
+    try {
+      await wait(page, () => window.mediapipeApiTestReport, null, 300000);
+    } finally {
+      result.probe_ms = Date.now() - started;
+      console.log(`iOS user agent API probe: ${result.probe_ms} ms`);
+    }
     result.api = await page.evaluate(() => window.mediapipeApiTestReport);
     assert.equal(result.api.status, 'passed',
       'iOS Firefox UA CPU task must construct and run: ' + (result.api.error || JSON.stringify(result.api)));
