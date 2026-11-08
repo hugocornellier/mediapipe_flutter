@@ -133,4 +133,5 @@ function Future<TaskCapabilities> queryAudioTranscriberCapabilities()
 function Future<TaskCapabilities> queryTextToSpeechCapabilities()
 getter Map<String, String?> get speechRuntimeTargets
 function TaskCapabilities textToSpeechCapabilitiesForPlatform(TaskPlatform platform)
+getter Map<String, String?> get textToSpeechGpuTargets
 getter Map<String, String?> get transcriberGpuTargets
