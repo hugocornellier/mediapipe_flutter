@@ -1157,6 +1157,9 @@ const webGpuCounters = `{
       work.postMessage('submit');
       return submit.call(this, buffers);
     };
+  }
+  // WebKit on Linux exposes GPUQueue to workers without GPUDevice.
+  if (self.GPUDevice) {
     for (const name of ['createComputePipeline', 'createComputePipelineAsync']) {
       const create = GPUDevice.prototype[name];
       GPUDevice.prototype[name] = function (...options) {
