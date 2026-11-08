@@ -262,7 +262,8 @@ class PinStop(unittest.TestCase):
     STOP = {'version': '1.2.2', 'pinned': '1.2.0', 'since': '20261030'}
 
     def run_pin(self, day, status=1, stop=STOP, api_changes=None, event='schedule',
-                nightly='newest', network_failure=None, no_report=False):
+                nightly='newest', network_failure=None, network_failed_while=None,
+                no_report=False):
         """The outputs, the step summary, what was printed and the failure, if any."""
         with tempfile.TemporaryDirectory() as temp:
             folder = Path(temp)
@@ -272,6 +273,9 @@ class PinStop(unittest.TestCase):
                 report['version_stop'] = stop
             if network_failure:
                 report = {'network_failure': network_failure}
+            if network_failed_while:
+                report.update(network_failure=network_failure,
+                              network_failed_while=network_failed_while)
             fake = folder / 'pin_nightly.py'
             write = '' if no_report else f"open(out, 'w').write({json.dumps(json.dumps(report))})\n"
             fake.write_text(f'import json, sys\n'
@@ -374,6 +378,22 @@ class PinStop(unittest.TestCase):
             self.assertNotIn('::error::', printed)
             self.assertIn(f'::warning::{self.NETWORK_NOTE}', printed)
             self.assertIn(self.NETWORK_NOTE, summary)
+
+    def test_a_network_failure_reading_the_chosen_build_warns_naming_the_read(self):
+        # pin_nightly keeps the rest of its report then; the network failure wins.
+        for event in 'schedule', 'workflow_dispatch', 'pull_request':
+            lines, summary, printed, failure = self.run_pin(
+                (2027, 6, 1), event=event, stop=None, api_changes=[],
+                network_failure='IncompleteRead: IncompleteRead(0 bytes read)',
+                network_failed_while="hashing 20261106's vision/lib.so from its archive")
+            self.assertIsNone(failure)
+            self.assertEqual(lines, {'network_failed': 'true'})
+            note = ("The comparison did not run: the network failed while hashing "
+                    "20261106's vision/lib.so from its archive (IncompleteRead: "
+                    'IncompleteRead(0 bytes read)). The next run tries again.')
+            self.assertIn(f'::warning::{note}', printed)
+            self.assertIn(note, summary)
+            self.assertNotIn('::error::', printed)
 
     def test_a_run_that_chose_a_build_says_the_network_did_not_fail(self):
         self.assertEqual(self.run_pin((2026, 11, 6))[0]['network_failed'], 'false')

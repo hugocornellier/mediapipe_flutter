@@ -12,8 +12,9 @@ next to the change as a patch, pin_nightly's report and its log:
 With GITHUB_OUTPUT set it writes the step outputs: nightly, generation,
 previous, scope, patched (true when the patch exists), api_changed, held (true
 when the newest build names a new MediaPipe version), network_failed (true when
-the network kept pin_nightly from choosing a build, which only warns, and the
-only output that is set then), web (true when the browser runtimes moved too)
+the network kept pin_nightly from choosing a build or reading its archive, which
+only warns, and the only output that is set then), web (true when the browser
+runtimes moved too)
 and web_note. It fails when pin_nightly stopped for another reason than the
 network, a C API change or that new version, which is moved by hand, and when
 that version has stopped the comparison for over FAIL_AFTER_DAYS. npm failing,
@@ -170,10 +171,12 @@ def add_to_summary(note):
             step.write(note + '\n')
 
 
-def network_failed(failure):
-    """Reports a run the network kept from choosing a build: a warning on every
-    event, since nothing was compared and the next run tries again."""
-    note = (f"The comparison did not run: the network failed while choosing Google's build "
+def network_failed(failure, step=None):
+    """Reports a run the network kept from choosing a build, or from reading
+    the chosen build's archive (`step`, as pin_nightly names it): a warning on
+    every event, since nothing was compared and the next run tries again."""
+    step = step or "choosing Google's build"
+    note = (f'The comparison did not run: the network failed while {step} '
             f'({failure}). The next run tries again.')
     add_to_summary(note)
     print(f'::warning::{note}', flush=True)
@@ -236,7 +239,7 @@ def main():
         raise SystemExit(f'pin_nightly.py exited {status} and wrote no report.')
     report = json.loads(report_path.read_text(encoding='utf-8'))
     if report.get('network_failure'):
-        network_failed(report['network_failure'])
+        network_failed(report['network_failure'], report.get('network_failed_while'))
         outputs({'network_failed': 'true'})
         return
     api_changed = bool(report['api_changes'])
