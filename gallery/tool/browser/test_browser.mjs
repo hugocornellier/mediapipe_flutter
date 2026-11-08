@@ -1414,12 +1414,14 @@ try {
   console.error(error);
   process.exitCode = 1;
 } finally {
+  // Steps that share a browser's folder, such as the default suite and
+  // text-audio in Chromium, each keep their own failure files and report.
   for (const browser of browsers) {
     for (const context of browser.contexts()) {
       for (const page of context.pages()) {
         try {
-          fs.writeFileSync(path.join(evidence, 'failure-page.html'), await page.content());
-          fs.writeFileSync(path.join(evidence, 'capture-diagnostics.json'), JSON.stringify(await page.evaluate(() => ({
+          fs.writeFileSync(path.join(evidence, `failure-page-${suite}.html`), await page.content());
+          fs.writeFileSync(path.join(evidence, `capture-diagnostics-${suite}.json`), JSON.stringify(await page.evaluate(() => ({
             capture:window.testCaptureDiagnostics,
             video: (() => {const v=document.querySelector('video'); return v ? {
               width:v.videoWidth,height:v.videoHeight,readyState:v.readyState,frames:v.getAttribute('data-processed-frames'),
@@ -1430,12 +1432,12 @@ try {
               stats:globalThis.mediapipeVision?.stats(),
             }: null;})(),
           })),null,2));
-          await page.screenshot({path: path.join(evidence, 'failure.png')});
+          await page.screenshot({path: path.join(evidence, `failure-${suite}.png`)});
         } catch (_) {}
       }
     }
     await browser.close();
   }
-  fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify(report, null, 2));
-  fs.writeFileSync(path.join(evidence, 'browser-log.json'), JSON.stringify(logs, null, 2));
+  fs.writeFileSync(path.join(evidence, `report-${suite}.json`), JSON.stringify(report, null, 2));
+  fs.writeFileSync(path.join(evidence, `browser-log-${suite}.json`), JSON.stringify(logs, null, 2));
 }
