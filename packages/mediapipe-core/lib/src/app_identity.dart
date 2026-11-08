@@ -2,6 +2,8 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
+import 'package:jni/jni.dart';
+import 'package:jni_flutter/jni_flutter.dart';
 
 /// The app's ID and version as Google's native SDKs report them. Null off the
 /// platforms below, or where the platform does not give them: reading them must
@@ -9,12 +11,38 @@ import 'package:ffi/ffi.dart';
 ///
 /// Tasks start on worker isolates, so this runs synchronously on any isolate.
 /// On iOS: the bundle ID and `CFBundleShortVersionString`, through
-/// CoreFoundation, which every iOS process loads.
+/// CoreFoundation, which every iOS process loads. On Android: the package name
+/// and `versionCode`, through JNI, from the application context Flutter gives
+/// `package:jni_flutter`.
 ({String? id, String? version}) readAppIdentity() {
   try {
     if (Platform.isIOS) return _readBundle();
+    if (Platform.isAndroid) return _readPackage();
   } catch (_) {}
   return (id: null, version: null);
+}
+
+({String? id, String? version}) _readPackage() {
+  final context = androidApplicationContext;
+  final contextClass = JClass.forName('android/content/Context');
+  final name = contextClass.instanceMethodId(
+    'getPackageName',
+    '()Ljava/lang/String;',
+  )(context, JString.type, const []);
+  final manager = contextClass.instanceMethodId(
+    'getPackageManager',
+    '()Landroid/content/pm/PackageManager;',
+  )(context, JObject.type, const []);
+  final info = JClass.forName('android/content/pm/PackageManager')
+      .instanceMethodId(
+        'getPackageInfo',
+        '(Ljava/lang/String;I)Landroid/content/pm/PackageInfo;',
+      )(manager, JObject.type, [name, JValueInt(0)]);
+  // Google's SDK reports versionCode, which every API level still fills.
+  final versionCode = JClass.forName(
+    'android/content/pm/PackageInfo',
+  ).instanceFieldId('versionCode', 'I').get(info, jint.type);
+  return (id: name.toDartString(), version: '$versionCode');
 }
 
 typedef _CFBundleGetMainBundleNative = Pointer<Void> Function();

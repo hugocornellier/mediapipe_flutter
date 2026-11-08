@@ -4,8 +4,8 @@
   replaces 1.2.0 on Android, iOS, macOS, Linux and Windows, and
   `@mediapipe/tasks-*` 1.2.2 replaces 1.2.0-rc.20261018 in browsers.
 - The regenerated bindings carry Google's renumbered delegates.
-- Gives Google's library the app's ID and version on iOS, as core's
-  `fillBaseOptions` does. Every vision task accepts them, but with 1.2.2 only
+- Gives Google's library the app's ID and version on Android and iOS, as
+  core's `fillBaseOptions` does. Every vision task accepts them, but with 1.2.2 only
   Interactive Segmenter's usage uploads carry them; the other vision tasks
   upload both fields empty.
 - The README and the support matrix say that GPU on iPhone is offered but not

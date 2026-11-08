@@ -7,10 +7,13 @@
   CPU, 2 the GPU), which 1.2.1 changed in the C API.
 - `pin_nightly.py --release X.Y.Z` pins Google's release builds as well as
   nightlies.
-- `fillBaseOptions` gives Google's libraries the app's ID and version on iOS,
-  as Google's iOS SDK does: the bundle ID and `CFBundleShortVersionString`.
-  Every task accepts them, but with 1.2.2 only eight tasks' usage uploads carry
-  them; `doc/privacy_and_licenses.md` names them.
+- `fillBaseOptions` gives Google's libraries the app's ID and version on
+  Android and iOS, as Google's native SDKs do: the package name and
+  `versionCode` on Android, the bundle ID and `CFBundleShortVersionString` on
+  iOS. Every task accepts them, but with 1.2.2 only eight tasks' usage uploads
+  carry them; `doc/privacy_and_licenses.md` names them, and says why Android
+  apps upload nothing with 1.2.2. Core now depends on `jni` and `jni_flutter`,
+  which `path_provider_android` already brings into Android apps.
 - Removes `familyRuntimeBaseUrl` and the native libraries' unused mirror URL:
   Google's archive is now their only source.
 

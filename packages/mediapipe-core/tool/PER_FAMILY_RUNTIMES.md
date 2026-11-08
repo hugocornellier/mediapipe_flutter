@@ -358,15 +358,18 @@ log, from `MpBaseOptions.host_environment` and `host_system`. Core's
   2026-10-13; the upload carries it as given (checked on macOS). Flutter's
   version comes from the define the Flutter tool sets for `FlutterVersion`.
 - `app_id` and `app_version` are `mpAppId` and `mpAppVersion`, as Google's
-  iOS SDK reports them: the bundle ID and `CFBundleShortVersionString` on iOS,
-  read through CoreFoundation so it works on any isolate, and unset elsewhere.
+  native SDKs report them: the bundle ID and `CFBundleShortVersionString` on
+  iOS, the package name and `versionCode` on Android, unset elsewhere. Android
+  reads them through `package:jni`, which `path_provider_android` already brings
+  in, and iOS through CoreFoundation, so both work on any isolate.
   Every task's options take them, but only eight tasks copy them into their
   uploads: Audio Transcriber, Decision Maker, Interactive Segmenter, Semantic
   Retriever, Text Proofreader, Text Summarizer, Text to Speech and Universal
   Embedder. The other fourteen upload them empty: most drop them when their
   C++ `Create` copies the base options. Checked with 1.2.2 by capturing every
   task's uploads on macOS with the fields set, and a Flutter app's on the iOS
-  Simulator.
+  Simulator and, with `JNI_OnLoad` run by hand, the Android emulator. Without
+  that `JNI_OnLoad`, an Android app uploads nothing.
 - With 1.2.2 native uploads carry the library version (`mediapipe_version`
   `1.2.2`, captured on macOS, the iOS Simulator and the Android emulator).
 - In browsers core's worker loader (`assets/verified_runtime.js`) sets

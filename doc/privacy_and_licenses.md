@@ -33,14 +33,16 @@ environment, with the versions of the OS, Dart and Flutter (for example
 `iOS 26.4 / Dart 3.13.4 / Flutter 3.47.5`), which the uploads record. In
 browsers they name Flutter Web as the host environment.
 
-On iOS the packages also give Google's libraries the app's ID and version, as
-Google's iOS SDK does: the bundle ID and `CFBundleShortVersionString`. Every
-task accepts these fields, but with the pinned 1.2.2 libraries only eight tasks
+On Android and iOS the packages also give Google's libraries the app's ID and
+version, as Google's native SDKs do: the package name and `versionCode` on
+Android, the bundle ID and `CFBundleShortVersionString` on iOS. Every task
+accepts these fields, but with the pinned 1.2.2 libraries only eight tasks
 include them in their uploads: Audio Transcriber, Decision Maker, Interactive
 Segmenter, Semantic Retriever, Text Proofreader, Text Summarizer, Text to
 Speech and Universal Embedder. The other tasks' uploads leave both fields
-empty. The packages set neither on Android, macOS, Linux, Windows or in
-browsers.
+empty. On Android no upload leaves the app with 1.2.2 (see the table below),
+so the values reach Google only if a later build uploads again. The packages
+set neither on macOS, Linux, Windows or in browsers.
 
 Google's NOTICE opens with its MediaPipe Tasks privacy notice, which makes
 the app's developer responsible for getting users' informed consent where the
