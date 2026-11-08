@@ -39,10 +39,21 @@ const _speechNoBrowserPlugin =
     "The speech tasks' browser runtime needs this package's web plugin, which "
     'a Flutter web build registers.';
 
-const _textToSpeechGpu =
-    "Google's Text to Speech ignores the GPU delegate: asked for it, it still "
-    'runs on the CPU, so this package offers the '
-    'CPU only.';
+// Which models Text to Speech runs on the GPU, as Google's guide lists them.
+const _textToSpeechGpuModels =
+    "Google's Text to Speech uses the GPU delegate only for Kokoro "
+    '(kokoro_int8_gpu_fp16.litertlm), whose vocoder runs there: Phonon and '
+    'PocketTTS run on the CPU.';
+
+const _textToSpeechGpuUnproved =
+    "This package offers Text to Speech's GPU delegate only where a test "
+    'proved the GPU does the work: Kokoro on macOS arm64. No such test has run '
+    'on this platform yet. $_textToSpeechGpuModels';
+
+const _textToSpeechWebGpuUnproved =
+    "This package offers Text to Speech's GPU delegate only where a test "
+    'proved the GPU does the work: Kokoro on macOS arm64. No such test has run '
+    'in a browser yet. $_textToSpeechGpuModels';
 
 const _transcriberGpuUnproved =
     "This package offers Audio Transcriber's GPU delegate only where a test "
@@ -127,9 +138,16 @@ TaskCapabilities audioTranscriberCapabilitiesForPlatform(
   );
 }
 
-/// Where Text to Speech runs: CPU on Google's audio library on 64-bit
-/// Android, iOS 15+, macOS 14+ arm64, Linux x64 and Windows x64, and through
-/// Google's browser runtime where the web plugin installs it.
+/// Where Text to Speech's native GPU delegate is offered: Metal on macOS
+/// arm64, where the package's tests saw Kokoro's vocoder hold memory on Metal
+/// and run about five times faster. A model with no GPU section, such as
+/// Phonon, is refused the GPU when the task is created.
+const textToSpeechGpuTargets = <String, String?>{'macos/arm64': '14.0'};
+
+/// Where Text to Speech runs: Google's audio library on 64-bit Android, iOS
+/// 15+, macOS 14+ arm64, Linux x64 and Windows x64, and through Google's
+/// browser runtime where the web plugin installs it, on the CPU everywhere and
+/// on the GPU on [textToSpeechGpuTargets] for a model with a GPU section.
 Future<TaskCapabilities> queryTextToSpeechCapabilities() async =>
     textToSpeechCapabilitiesForPlatform(await currentTaskPlatform());
 
@@ -138,12 +156,14 @@ TaskCapabilities textToSpeechCapabilitiesForPlatform(TaskPlatform platform) {
   final targets = _speechTargets();
   return TaskCapabilities.onTargets(
     platform: platform,
-    delegates: {Delegate.cpu: targets, Delegate.gpu: const {}},
+    delegates: {Delegate.cpu: targets, Delegate.gpu: textToSpeechGpuTargets},
     unavailableReasons: {
       Delegate.cpu: _speechUnavailable(platform),
-      Delegate.gpu: targets.containsKey(platform.target)
-          ? _textToSpeechGpu
-          : _speechUnavailable(platform),
+      Delegate.gpu: !targets.containsKey(platform.target)
+          ? _speechUnavailable(platform)
+          : platform.operatingSystem == 'web'
+          ? _textToSpeechWebGpuUnproved
+          : _textToSpeechGpuUnproved,
     },
     runtimeVersion: tasksRuntimeVersionOn(platform),
   );

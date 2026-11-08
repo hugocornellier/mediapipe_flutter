@@ -583,27 +583,27 @@
     "text_to_speech": {
       "web": {
         "cpu": "required",
-        "gpu": "unsupported: Google's Text to Speech ignores the GPU delegate and stays on the CPU"
+        "gpu": "unsupported: no test has proved the GPU does Text to Speech's work in a browser"
       },
       "android": {
         "cpu": "required",
-        "gpu": "unsupported: Google's Text to Speech ignores the GPU delegate and stays on the CPU"
+        "gpu": "unsupported: no test has proved the GPU does Text to Speech's work here, and hosted runners have no Android GPU"
       },
       "ios": {
         "cpu": "required",
-        "gpu": "unsupported: Google's Text to Speech ignores the GPU delegate and stays on the CPU"
+        "gpu": "unsupported: no test on an iPhone has proved the GPU does Text to Speech's work"
       },
       "macos": {
         "cpu": "required",
-        "gpu": "unsupported: Google's Text to Speech ignores the GPU delegate and stays on the CPU"
+        "gpu": "pending: a CI run with Kokoro, which CI does not download yet"
       },
       "linux": {
         "cpu": "required",
-        "gpu": "unsupported: Google's Text to Speech ignores the GPU delegate and stays on the CPU"
+        "gpu": "unsupported: no test has proved the GPU does Text to Speech's work here, and hosted runners have no GPU"
       },
       "windows": {
         "cpu": "required",
-        "gpu": "unsupported: Google's Text to Speech ignores the GPU delegate and stays on the CPU"
+        "gpu": "unsupported: no test has proved the GPU does Text to Speech's work here, and hosted runners have no GPU"
       }
     }
   }

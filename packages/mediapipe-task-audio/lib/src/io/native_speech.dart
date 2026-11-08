@@ -15,6 +15,7 @@ import 'package:mediapipe_core/native_structs.dart'
 import 'package:mediapipe_core/platform_interface.dart';
 import 'package:mediapipe_core/task_worker.dart';
 
+import '../litertlm_header.dart';
 import '../speech_runners.dart';
 import '../speech_types.dart';
 import '../third_party/mediapipe/audio_transcriber_bindings.dart' as asr;
@@ -37,6 +38,9 @@ Future<TextToSpeechRunner> openNativeTextToSpeech(
   TextToSpeechOptions options,
 ) async {
   _requireSpeechRuntime('Text to Speech');
+  if (options.delegate == Delegate.gpu) {
+    await _requireGpuSection(_modelFile(options));
+  }
   final worker = _TextToSpeechWorker();
   await worker.start(_textToSpeechSettings(options), _NativeTextToSpeech.new);
   return worker;
@@ -64,6 +68,34 @@ void _requireSpeechRuntime(String task) {
       fix: tasksRuntimeUnavailable(task, Platform.operatingSystem),
     );
   }
+}
+
+/// Refuses the GPU for a model whose bundle puts no section there: Google's
+/// task accepts the delegate for Phonon and runs it on the CPU, with no error
+/// or log line that says so.
+Future<void> _requireGpuSection(String modelPath) async {
+  final file = await File(modelPath).open();
+  bool? gpu;
+  try {
+    final preamble = await file.read(litertlmPreambleBytes);
+    final end = litertlmHeaderEnd(preamble);
+    // Kokoro's header takes 7 KB.
+    if (end != null && end <= 1 << 20) {
+      await file.setPosition(0);
+      gpu = litertlmHasGpuSection(await file.read(end));
+    }
+  } finally {
+    await file.close();
+  }
+  if (gpu ?? false) return;
+  throw RuntimeUnavailableException(
+    'The GPU delegate is unavailable for this model.',
+    fix:
+        "Google's Text to Speech runs a model on the GPU only where its "
+        'bundle marks a section for it, as Kokoro '
+        '(kokoro_int8_gpu_fp16.litertlm) does for its vocoder. This model '
+        'marks none, so it runs on the CPU either way: choose Delegate.cpu.',
+  );
 }
 
 /// Google's tasks read the model from a file: a pinned model resolves to
@@ -99,6 +131,7 @@ _TranscriberSettings _transcriberSettings(AudioTranscriberOptions options) => (
 
 typedef _TextToSpeechSettings = ({
   String modelPath,
+  Delegate delegate,
   String? defaultVoiceId,
   String? defaultLocale,
   double speakingRate,
@@ -108,6 +141,7 @@ typedef _TextToSpeechSettings = ({
 
 _TextToSpeechSettings _textToSpeechSettings(TextToSpeechOptions options) => (
   modelPath: _modelFile(options),
+  delegate: options.delegate,
   defaultVoiceId: options.defaultVoiceId,
   defaultLocale: options.defaultLocale,
   speakingRate: options.speakingRate,
@@ -360,6 +394,7 @@ final class _NativeTextToSpeech
         native.ref.baseOptions,
         arena,
         modelPath: settings.modelPath,
+        delegate: settings.delegate,
       );
       native.ref
         ..defaultVoiceId = _optional(settings.defaultVoiceId, arena)
