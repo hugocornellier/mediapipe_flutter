@@ -290,7 +290,8 @@ Future<Float32List> speak(String text) async {
 - `synthesizeStream(text)` yields a chunk per clause as soon as it is ready,
   so playback can start early; cancelling the subscription stops Google's
   stream after the chunk in progress. `WordTimestamp.start` and `end` are
-  UTF-8 byte offsets into the text, as Google reports them.
+  UTF-16 indices into the text, so `text.substring(start, end)` is the word;
+  Google reports UTF-8 byte offsets, which the package converts.
 - Calls on one task run one at a time, in call order, on a worker isolate.
 
 ## Validation
