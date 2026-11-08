@@ -30,13 +30,14 @@ final String mpHostVersion = [
   if (_flutterVersion != null) 'Flutter $_flutterVersion',
 ].join(' / ');
 
-/// Google's `BaseOptions.app_id` for this process: the iOS bundle ID, as
-/// Google's native SDK reports it. Null where there is none to report.
+/// Google's `BaseOptions.app_id` for this process: the iOS bundle ID or the
+/// Android package name, as Google's native SDKs report them. Null where there
+/// is none to report.
 String? get mpAppId => _appIdentity.id;
 
 /// Google's `BaseOptions.app_version` for this process: the iOS
-/// `CFBundleShortVersionString`, as Google's native SDK reports it. Null where
-/// there is none to report.
+/// `CFBundleShortVersionString` or the Android `versionCode`, as Google's native
+/// SDKs report them. Null where there is none to report.
 String? get mpAppVersion => _appIdentity.version;
 
 final _appIdentity = readAppIdentity();
