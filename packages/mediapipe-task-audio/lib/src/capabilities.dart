@@ -139,9 +139,9 @@ TaskCapabilities audioTranscriberCapabilitiesForPlatform(
 }
 
 /// Where Text to Speech's native GPU delegate is offered: Metal on macOS
-/// arm64, where the package's tests saw Kokoro's vocoder hold memory on Metal
-/// and run about five times faster. A model with no GPU section, such as
-/// Phonon, is refused the GPU when the task is created.
+/// arm64, which the package's tests prove with Kokoro on each macOS version CI
+/// runs. A model with no GPU section, such as Phonon, is refused the GPU when
+/// the task is created.
 const textToSpeechGpuTargets = <String, String?>{'macos/arm64': '14.0'};
 
 /// Where Text to Speech runs: Google's audio library on 64-bit Android, iOS

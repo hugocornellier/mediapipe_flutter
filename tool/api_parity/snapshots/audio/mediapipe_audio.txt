@@ -31,6 +31,7 @@ final class AudioData
   new AudioData({required Float32List samples, required double sampleRate, int channels = 1})
 abstract final class AudioModels
   new AudioModels()
+  static DownloadAsset kokoro
   static DownloadAsset parakeetTdtV3
   static DownloadAsset phonon
   static DownloadAsset yamnet

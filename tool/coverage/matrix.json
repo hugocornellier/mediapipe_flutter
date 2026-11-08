@@ -595,7 +595,7 @@
       },
       "macos": {
         "cpu": "required",
-        "gpu": "pending: a CI run with Kokoro, which CI does not download yet"
+        "gpu": "required"
       },
       "linux": {
         "cpu": "required",

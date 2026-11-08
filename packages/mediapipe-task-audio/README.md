@@ -218,14 +218,15 @@ the GPU do the work. That is `AudioTranscriber` on:
 
 iPhones (Metal) are offered too, but the device test is still to run.
 
-`TextToSpeech` is offered the GPU on macOS arm64 (Metal), where a test saw
-Kokoro (`kokoro_int8_gpu_fp16.litertlm`) hold memory on Metal and speak about
-five times faster. Google runs only Kokoro's vocoder there; its acoustic model,
-Phonon and PocketTTS run on the CPU. So `create` takes the GPU delegate only
-for a model whose bundle marks a section for the GPU, and throws a
-`RuntimeUnavailableException` for any other, such as Phonon. Kokoro is not one
-of `AudioModels` yet, so an app fetches it itself: keep Google's filename, which
-the task reads to tell the models apart.
+`TextToSpeech` is offered the GPU only on macOS arm64 (Metal), for Kokoro
+(`AudioModels.kokoro`, 295 MB, Apache 2.0). CI's package tests check it on each
+macOS version they run on: Kokoro holds memory on Metal and speaks as it does
+on the CPU, about five times faster. Google runs only Kokoro's vocoder there;
+its acoustic model, Phonon and PocketTTS run on the CPU. So `create` takes the
+GPU delegate only for a model whose bundle marks a section for the GPU, and
+throws a `RuntimeUnavailableException` for any other, such as Phonon. A Kokoro
+file from elsewhere keeps Google's filename, which the task reads to tell the
+models apart.
 
 Elsewhere, including Android, Linux, Windows, the iOS simulator, Firefox,
 browsers on other adapters and browsers on iPhones and iPads, the GPU delegate
@@ -233,9 +234,10 @@ throws a `RuntimeUnavailableException` that says why. Firefox had no adapter
 where it was tried, so it has no proof either way.
 
 Their models are large (Parakeet
-615 MB, CC BY 4.0; Phonon 87 MB), so an app usually downloads them on first
-use (`ModelStore.allowDownloads = true`) rather than bundling them; listing
-`parakeet_tdt_v3` or `phonon` under the hook's `models` bundles them instead.
+615 MB, CC BY 4.0; Phonon 87 MB; Kokoro 295 MB), so an app usually downloads
+them on first use (`ModelStore.allowDownloads = true`) rather than bundling
+them; listing `parakeet_tdt_v3`, `phonon` or `kokoro` under the hook's `models`
+bundles them instead.
 
 In a browser, a pinned `model:` is verified and kept in Cache Storage, then
 passes through the page's memory as bytes. For Parakeet, a `modelPath` URL

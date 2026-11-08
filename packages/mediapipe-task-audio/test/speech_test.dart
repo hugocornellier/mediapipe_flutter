@@ -26,8 +26,13 @@ final _transcriberModel =
 final _ttsModel =
     'models/${Uri.parse(AudioModels.phonon.url).pathSegments.last}';
 
-/// Google's Kokoro 82M, which this package does not pin yet.
-const _kokoroModel = 'models/kokoro_int8_gpu_fp16.litertlm';
+final _kokoroModel =
+    'models/${Uri.parse(AudioModels.kokoro.url).pathSegments.last}';
+
+/// The models CI downloads for this runner, which their tests must not skip
+/// without: family.yaml names them.
+final _requiredModels =
+    (Platform.environment['MEDIAPIPE_REQUIRED_MODELS'] ?? '').split(' ');
 
 /// Google's word times, rounded to four places in the reference.
 const _secondsDelta = 1e-3;
@@ -56,11 +61,11 @@ void main() {
       ? null
       : 'No Parakeet model at $_transcriberModel; run '
             'dart tool/download_models.dart parakeet_tdt_v3.';
-  final missingKokoro = File(_kokoroModel).existsSync()
+  final missingKokoro =
+      File(_kokoroModel).existsSync() || _requiredModels.contains('kokoro')
       ? null
-      : 'No Kokoro model at $_kokoroModel; download '
-            'kokoro_int8_gpu_fp16.litertlm from '
-            'huggingface.co/litert-community/Kokoro-82M.';
+      : 'No Kokoro model at $_kokoroModel; run '
+            'dart tool/download_models.dart kokoro.';
   final missingTts = File(_ttsModel).existsSync()
       ? null
       : 'No Phonon model at $_ttsModel; run '
@@ -329,6 +334,10 @@ void main() {
       skip: Abi.current() != Abi.macosArm64 ? 'Only on a Mac.' : missingKokoro,
       timeout: const Timeout(Duration(minutes: 10)),
       () async {
+        expect(
+          sha256.convert(File(_kokoroModel).readAsBytesSync()).toString(),
+          AudioModels.kokoro.sha256,
+        );
         expect(
           (await queryTextToSpeechCapabilities()).supportedDelegates,
           contains(Delegate.gpu),

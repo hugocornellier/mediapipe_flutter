@@ -36,11 +36,23 @@ abstract final class AudioModels {
     sha256: 'b33a9a0d65acec36762db38a2bff6d899f4aab34b196bb56d89fab5665eabebe',
   );
 
+  /// Google's Kokoro 82M voices for Text to Speech (int8, with an FP16
+  /// vocoder for the GPU delegate; English, Spanish, French, Italian,
+  /// Portuguese, Hindi, Chinese and Japanese at 24 kHz): 295 MB, Apache 2.0.
+  static const kokoro = DownloadAsset(
+    url:
+        'https://huggingface.co/litert-community/Kokoro-82M/resolve/'
+        '33ad69fec6c4d9eb10a547aaf9a8c63e7c446a56/'
+        'kokoro_int8_gpu_fp16.litertlm',
+    sha256: '1ef178b127ec48c737daf17eabb4cea5f6b3ffbc510aced270fe5c267bbeac52',
+  );
+
   /// Every model above by the name an app lists to bundle it, under
   /// `hooks.user_defines.mediapipe_audio.models` in pubspec.yaml.
   static const byName = <String, DownloadAsset>{
     'yamnet': yamnet,
     'parakeet_tdt_v3': parakeetTdtV3,
     'phonon': phonon,
+    'kokoro': kokoro,
   };
 }

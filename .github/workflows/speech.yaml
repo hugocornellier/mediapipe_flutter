@@ -43,6 +43,10 @@ jobs:
       reference-env: MEDIAPIPE_SPEECH_REFERENCE_DIR
       web-delegate: cpu
       macos-gpu-tasks: audio_transcriber
+      # Kokoro (295 MB), for Text to Speech's GPU test, on the Mac alone.
+      macos-model-path: packages/mediapipe-task-audio/models/kokoro_int8_gpu_fp16.litertlm
+      macos-download-models: kokoro
+      macos-package-gpu-tasks: text_to_speech
       jobs: ${{ inputs.jobs || 'package,gallery,web' }}
 
   browser:
