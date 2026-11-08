@@ -331,7 +331,11 @@ Google's URL above; the October 18 `BUILD_INFO` is in
   `MP_HOST_ENVIRONMENT_FLUTTER_WEB` (6), the value for Google's JavaScript
   runtime.
 - **Android uploader.** The `Failed to get JNIEnv` message is gone from the
-  Android libraries; an upload from an app has not been captured yet.
+  Android libraries; an upload from an app has not been captured yet. From the
+  nightly of October 21, and in 1.2.2, the uploader sends through Java again
+  and needs the `JavaVM` that the library's `JNI_OnLoad` stores, which
+  `dlopen` does not run, so an app that loads the library through FFI uploads
+  nothing.
 - **Text-only EmbeddingGemma 2.** The decision library runs it (checked on
   macOS arm64).
 - iOS framework zips still hold only the binary and `Info.plist`.
@@ -353,8 +357,18 @@ log, from `MpBaseOptions.host_environment` and `host_system`. Core's
   (`macOS 27.0 / Dart 3.13.4 / Flutter 3.47.5`), as Google asked on
   2026-10-13; the upload carries it as given (checked on macOS). Flutter's
   version comes from the define the Flutter tool sets for `FlutterVersion`.
-- `app_id` and `app_version` stay empty: set or not, they appear nowhere in
-  the upload.
+- `app_id` and `app_version` are `mpAppId` and `mpAppVersion`, as Google's
+  iOS SDK reports them: the bundle ID and `CFBundleShortVersionString` on iOS,
+  read through CoreFoundation so it works on any isolate, and unset elsewhere.
+  Every task's options take them, but only eight tasks copy them into their
+  uploads: Audio Transcriber, Decision Maker, Interactive Segmenter, Semantic
+  Retriever, Text Proofreader, Text Summarizer, Text to Speech and Universal
+  Embedder. The other fourteen upload them empty: most drop them when their
+  C++ `Create` copies the base options. Checked with 1.2.2 by capturing every
+  task's uploads on macOS with the fields set, and a Flutter app's on the iOS
+  Simulator.
+- With 1.2.2 native uploads carry the library version (`mediapipe_version`
+  `1.2.2`, captured on macOS, the iOS Simulator and the Android emulator).
 - In browsers core's worker loader (`assets/verified_runtime.js`) sets
   `globalThis.__HOST_ENVIRONMENT__ = 'FLUTTER_WEB'` before Google's bundle
   loads; Google's JavaScript runtime reads it from 1.2.0-rc.20261017 on, and
@@ -395,8 +409,12 @@ part of official releases.
   required-reason APIs they call (`stat`, `fstat`, `NSUserDefaults`, and
   `statfs` in retrieval), for apps to declare.
 - Whether 1.1.1's Metal output is intended.
-- Let the Semantic Retriever take base options, or copy its embedder's
-  host fields into its own usage uploads; Google is looking into it.
+- The Android uploader needs a JVM again from the nightly of October 21 on, so
+  an app that loads the library through FFI uploads nothing. Is that intended,
+  and how should Flutter give it the JVM?
+- The classic tasks build their `TaskRunnerOptions` without `app_id` and
+  `app_version`, so their uploads leave them empty; after 1.2.2 Google's
+  source added them to Face Detector only (`b8a1bad05e`).
 - A license comment on the five umbrella headers, and the Apache text
   corrected in `audio_classifier.h`; Google will fix it.
 - WebKit still embeds every text as zeros with EmbeddingGemma 2 in the
