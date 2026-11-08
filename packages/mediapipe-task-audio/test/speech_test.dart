@@ -26,6 +26,9 @@ final _transcriberModel =
 final _ttsModel =
     'models/${Uri.parse(AudioModels.phonon.url).pathSegments.last}';
 
+/// Google's Kokoro 82M, which this package does not pin yet.
+const _kokoroModel = 'models/kokoro_int8_gpu_fp16.litertlm';
+
 /// Google's word times, rounded to four places in the reference.
 const _secondsDelta = 1e-3;
 
@@ -53,6 +56,11 @@ void main() {
       ? null
       : 'No Parakeet model at $_transcriberModel; run '
             'dart tool/download_models.dart parakeet_tdt_v3.';
+  final missingKokoro = File(_kokoroModel).existsSync()
+      ? null
+      : 'No Kokoro model at $_kokoroModel; download '
+            'kokoro_int8_gpu_fp16.litertlm from '
+            'huggingface.co/litert-community/Kokoro-82M.';
   final missingTts = File(_ttsModel).existsSync()
       ? null
       : 'No Phonon model at $_ttsModel; run '
@@ -151,9 +159,9 @@ void main() {
     );
 
     // Google's library accepts the GPU delegate and can stay on the CPU, as
-    // its Text to Speech does, and the answer reads the same: so the
-    // proof is the memory the task holds on Metal. The package job runs it on
-    // each macOS version the capabilities claim.
+    // its Text to Speech does with Phonon, and the answer reads the same: so
+    // the proof is the memory the task holds on Metal. The package job runs it
+    // on each macOS version the capabilities claim.
     test(
       'runs on the GPU on this Mac',
       skip: Abi.current() != Abi.macosArm64
@@ -294,6 +302,82 @@ void main() {
       _expectAudio(await quick.synthesize(text), text, fast);
     });
 
+    // Google's task accepts the GPU delegate for Phonon and runs it on the
+    // CPU, holding nothing on Metal: its bundle marks no section for the GPU.
+    test('refuses the GPU for Phonon', skip: missingTts, () async {
+      await expectLater(
+        TextToSpeech.create(
+          TextToSpeechOptions(modelPath: _ttsModel, delegate: Delegate.gpu),
+        ),
+        throwsA(
+          isA<RuntimeUnavailableException>().having(
+            (error) => error.fix,
+            'fix',
+            Abi.current() == Abi.macosArm64
+                ? contains('marks none')
+                : contains('proved'),
+          ),
+        ),
+      );
+    });
+
+    // Kokoro's vocoder runs on Metal, which the answer alone cannot show
+    // (the GPU's audio differs from the CPU's in its phase, not its words):
+    // so the proof is the memory the task holds there.
+    test(
+      'runs Kokoro on the GPU on this Mac',
+      skip: Abi.current() != Abi.macosArm64 ? 'Only on a Mac.' : missingKokoro,
+      timeout: const Timeout(Duration(minutes: 10)),
+      () async {
+        expect(
+          (await queryTextToSpeechCapabilities()).supportedDelegates,
+          contains(Delegate.gpu),
+        );
+        const text = 'The quick brown fox jumps over the lazy dog.';
+        Future<(int, TextToSpeechResult)> run(Delegate delegate) async {
+          final before = metalAllocatedBytes();
+          final kokoro = await TextToSpeech.create(
+            TextToSpeechOptions(modelPath: _kokoroModel, delegate: delegate),
+          );
+          try {
+            final speech = await kokoro.synthesize(text);
+            return (metalAllocatedBytes() - before, speech);
+          } finally {
+            await kokoro.dispose();
+          }
+        }
+
+        final (onCpu, cpu) = await run(Delegate.cpu);
+        final (onGpu, gpu) = await run(Delegate.gpu);
+        // ignore: avoid_print
+        print('Metal bytes Kokoro added: CPU $onCpu, GPU $onGpu');
+        expect(onCpu, lessThan(_metalProof));
+        expect(onGpu, greaterThan(onCpu + _metalProof));
+        // The acoustic model runs on the CPU either way, so the words take
+        // the same time; the GPU's FP16 vocoder gives each 100 ms window
+        // nearly the same level.
+        expect(gpu.sampleRateHz, cpu.sampleRateHz);
+        expect(gpu.samples.length, cpu.samples.length);
+        expect(cpu.samples.length, greaterThan(cpu.sampleRateHz));
+        final window = cpu.sampleRateHz ~/ 10;
+        for (
+          var start = 0;
+          start + window <= cpu.samples.length;
+          start += window
+        ) {
+          expect(
+            _windowRms(gpu.samples, start, window),
+            closeTo(_windowRms(cpu.samples, start, window), 0.02),
+            reason: 'window at $start',
+          );
+        }
+        expect(
+          _windowRms(gpu.samples, 0, gpu.samples.length),
+          greaterThan(0.01),
+        );
+      },
+    );
+
     test('a disposed task refuses calls', skip: missingTts, () async {
       final other = await TextToSpeech.create(
         TextToSpeechOptions(modelPath: _ttsModel),
@@ -312,64 +396,58 @@ void main() {
     expect(() => TextToSpeechOptions(targetBucket: -1), throwsArgumentError);
   });
 
-  test(
-    'only the Audio Transcriber offers the GPU, where it is proved',
-    () async {
-      expect((await queryTextToSpeechCapabilities()).supportedDelegates, {
-        Delegate.cpu,
-      });
-      const mac = TaskPlatform(
-        operatingSystem: 'macos',
+  test('each speech task offers the GPU only where it is proved', () async {
+    expect((await queryTextToSpeechCapabilities()).supportedDelegates, {
+      Delegate.cpu,
+      if (Abi.current() == Abi.macosArm64) Delegate.gpu,
+    });
+    const mac = TaskPlatform(
+      operatingSystem: 'macos',
+      architecture: 'arm64',
+      version: '15.0',
+    );
+    expect(audioTranscriberCapabilitiesForPlatform(mac).supportedDelegates, {
+      Delegate.cpu,
+      Delegate.gpu,
+    });
+    expect(textToSpeechCapabilitiesForPlatform(mac).supportedDelegates, {
+      Delegate.cpu,
+      Delegate.gpu,
+    });
+    for (final platform in const [
+      TaskPlatform(operatingSystem: 'linux', architecture: 'x64'),
+      TaskPlatform(operatingSystem: 'windows', architecture: 'x64'),
+      TaskPlatform(operatingSystem: 'android', architecture: 'arm64'),
+      TaskPlatform(
+        operatingSystem: 'ios',
         architecture: 'arm64',
-        version: '15.0',
+        version: '17.0',
+      ),
+    ]) {
+      final speech = textToSpeechCapabilitiesForPlatform(platform);
+      expect(speech.supportedDelegates, {Delegate.cpu}, reason: '$platform');
+      expect(
+        speech.unavailableReasons[Delegate.gpu],
+        allOf(contains('proved'), contains('Kokoro')),
+        reason: '$platform',
       );
-      expect(audioTranscriberCapabilitiesForPlatform(mac).supportedDelegates, {
+      if (platform.operatingSystem == 'ios') continue;
+      final capabilities = audioTranscriberCapabilitiesForPlatform(platform);
+      expect(capabilities.supportedDelegates, {
         Delegate.cpu,
-        Delegate.gpu,
-      });
-      final macSpeech = textToSpeechCapabilitiesForPlatform(mac);
-      expect(macSpeech.supportedDelegates, {Delegate.cpu});
+      }, reason: '$platform');
       expect(
-        macSpeech.unavailableReasons[Delegate.gpu],
-        contains('ignores the GPU delegate'),
+        capabilities.unavailableReasons[Delegate.gpu],
+        contains('proved'),
+        reason: '$platform',
       );
-      for (final platform in const [
-        TaskPlatform(operatingSystem: 'linux', architecture: 'x64'),
-        TaskPlatform(operatingSystem: 'windows', architecture: 'x64'),
-        TaskPlatform(operatingSystem: 'android', architecture: 'arm64'),
-      ]) {
-        final capabilities = audioTranscriberCapabilitiesForPlatform(platform);
-        expect(capabilities.supportedDelegates, {
-          Delegate.cpu,
-        }, reason: '$platform');
-        expect(
-          capabilities.unavailableReasons[Delegate.gpu],
-          contains('proved'),
-          reason: '$platform',
-        );
-      }
-      await expectLater(
-        TextToSpeech.create(
-          TextToSpeechOptions(modelPath: _ttsModel, delegate: Delegate.gpu),
-        ),
-        throwsA(isA<RuntimeUnavailableException>()),
-      );
-      const browser = TaskPlatform(
-        operatingSystem: 'web',
-        architecture: 'wasm',
-      );
-      expect(
-        audioTranscriberCapabilitiesForPlatform(browser).isSupported,
-        false,
-      );
-      expect(textToSpeechCapabilitiesForPlatform(browser).isSupported, false);
-      const arm32 = TaskPlatform(
-        operatingSystem: 'android',
-        architecture: 'arm',
-      );
-      expect(textToSpeechCapabilitiesForPlatform(arm32).isSupported, false);
-    },
-  );
+    }
+    const browser = TaskPlatform(operatingSystem: 'web', architecture: 'wasm');
+    expect(audioTranscriberCapabilitiesForPlatform(browser).isSupported, false);
+    expect(textToSpeechCapabilitiesForPlatform(browser).isSupported, false);
+    const arm32 = TaskPlatform(operatingSystem: 'android', architecture: 'arm');
+    expect(textToSpeechCapabilitiesForPlatform(arm32).isSupported, false);
+  });
 
   test('a browser serves the speech tasks once the web plugin registers', () {
     // TaskPlatform.current on the web.
@@ -414,6 +492,12 @@ void main() {
     expect(textToSpeechCapabilitiesForPlatform(hardware).supportedDelegates, {
       Delegate.cpu,
     });
+    expect(
+      textToSpeechCapabilitiesForPlatform(
+        hardware,
+      ).unavailableReasons[Delegate.gpu],
+      contains('in a browser yet'),
+    );
   });
 
   group('the browser GPU delegate, offered only where a test proved it', () {
@@ -573,4 +657,13 @@ void _expectAudio(
     );
     expect(rms, closeTo(level, _levelDelta), reason: 'window $i');
   }
+}
+
+/// The RMS of [length] samples from [start].
+double _windowRms(Float32List samples, int start, int length) {
+  var sum = 0.0;
+  for (var i = start; i < start + length; i++) {
+    sum += samples[i] * samples[i];
+  }
+  return math.sqrt(sum / length);
 }

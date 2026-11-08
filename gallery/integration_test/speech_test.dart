@@ -139,8 +139,8 @@ void main() {
   });
 
   // Google's library accepts the GPU delegate and can stay on the CPU, as its
-  // Text to Speech does, and the answer reads the same: so the proof
-  // is the memory the task holds on Metal.
+  // Text to Speech does with Phonon, and the answer reads the same: so the
+  // proof is the memory the task holds on Metal.
   testWidgets('Audio Transcriber runs on the GPU only where it does the work', (
     tester,
   ) async {

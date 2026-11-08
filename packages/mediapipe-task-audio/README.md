@@ -216,8 +216,17 @@ the GPU do the work. That is `AudioTranscriber` on:
   developer's Mac. CI's browser job is set to repeat Chromium's check on a hosted
   Mac; it has no such job for WebKit.
 
-iPhones (Metal) are offered too, but the device test is still to run. Text to
-Speech ignores the delegate everywhere it was tried, so it stays on the CPU.
+iPhones (Metal) are offered too, but the device test is still to run.
+
+`TextToSpeech` is offered the GPU on macOS arm64 (Metal), where a test saw
+Kokoro (`kokoro_int8_gpu_fp16.litertlm`) hold memory on Metal and speak about
+five times faster. Google runs only Kokoro's vocoder there; its acoustic model,
+Phonon and PocketTTS run on the CPU. So `create` takes the GPU delegate only
+for a model whose bundle marks a section for the GPU, and throws a
+`RuntimeUnavailableException` for any other, such as Phonon. Kokoro is not one
+of `AudioModels` yet, so an app fetches it itself: keep Google's filename, which
+the task reads to tell the models apart.
+
 Elsewhere, including Android, Linux, Windows, the iOS simulator, Firefox,
 browsers on other adapters and browsers on iPhones and iPads, the GPU delegate
 throws a `RuntimeUnavailableException` that says why. Firefox had no adapter
