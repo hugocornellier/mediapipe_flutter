@@ -384,9 +384,11 @@ The speech tests compare both tasks with Google's own Python
 Google's first release with these tasks in Python; the package loads the same
 release's audio library): the transcript and segment timestamps of
 both speech clips, whole and in one-second blocks with and without interim
-results; and for Text to Speech the voices, four utterances (Unicode text
-included, and French and German text in the voices Google's runtime labels
-fr-FR and de-DE), a faster speaking rate and a streamed
+results, and of three copies of a clip with a second of silence between them,
+past the transcriber's 5 s window, twice on one task; and for Text to Speech
+the voices, four utterances (Unicode text included, and French and German
+text in the voices Google's runtime labels fr-FR and de-DE), a faster speaking
+rate and a streamed
 paragraph, each with the same sample count, rate and word timings, and the
 peak and 100 ms RMS envelope within 0.002. On the Mac, where the Kokoro model
 is downloaded, they compare Kokoro on the CPU the same way with

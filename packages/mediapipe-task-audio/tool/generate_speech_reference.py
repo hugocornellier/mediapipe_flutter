@@ -30,15 +30,27 @@ TTS_MODEL = 'phonon_int8.litertlm'
 # On the Mac alone, where CI downloads it (speech.yaml's macos-download-models).
 KOKORO_MODEL = 'kokoro_int8_gpu_fp16.litertlm'
 
-# Each transcriber case: the clip, the frames per block (None for one call)
-# and whether interim results are on. A stream sends every block with
-# end_of_stream False, then finishes the stream.
+# Each transcriber case: the clip, how many copies of it the input joins,
+# the frames per block (None for one call), whether interim results are on
+# and how many streams one task runs, each of which must answer the same. A
+# stream sends every block with end_of_stream False, then finishes the
+# stream.
 TRANSCRIBER_CASES = {
-    'speech-16k': ('speech_16000_hz_mono.wav', None, False),
-    'speech-48k': ('speech_48000_hz_mono.wav', None, False),
-    'speech-1s-blocks': ('speech_16000_hz_mono.wav', 16000, False),
-    'speech-1s-blocks-interim': ('speech_16000_hz_mono.wav', 16000, True),
+    'speech-16k': ('speech_16000_hz_mono.wav', 1, None, False, 1),
+    'speech-48k': ('speech_48000_hz_mono.wav', 1, None, False, 1),
+    'speech-1s-blocks': ('speech_16000_hz_mono.wav', 1, 16000, False, 1),
+    'speech-1s-blocks-interim': ('speech_16000_hz_mono.wav', 1, 16000, True, 1),
+    # Past the model's 5 s window (about 14.8 s), so its streaming windows
+    # finalize segments before the stream ends.
+    'long-16k': ('speech_16000_hz_mono.wav', 3, None, False, 1),
+    'long-48k': ('speech_48000_hz_mono.wav', 3, None, False, 1),
+    'long-1s-blocks': ('speech_16000_hz_mono.wav', 3, 16000, False, 2),
+    'long-1s-blocks-interim': ('speech_16000_hz_mono.wav', 3, 16000, True, 2),
 }
+# The silence between two copies of a clip: a second at its rate. The tests
+# build the same input from the checked-in clip, so no longer recording is
+# checked in.
+GAP_SECONDS = 1
 
 # Each utterance: the text, the voice id and the locale (None for the
 # options' defaults).
@@ -72,24 +84,36 @@ def segments(result):
 
 
 def transcriber_case(model, case):
+    import numpy as np
     import mediapipe as mp
     from mediapipe.tasks.python.audio import audio_transcriber
 
-    clip, block, interim = case
+    clip, copies, block, interim, streams = case
     samples, rate = read_clip(clip)
+    gap = rate * GAP_SECONDS
+    parts = [samples]
+    for _ in range(copies - 1):
+        parts += [np.zeros(gap, dtype=np.float32), samples]
+    samples = np.concatenate(parts)
     options = audio_transcriber.AudioTranscriberOptions(
         base_options=mp.tasks.BaseOptions(model_asset_path=str(model)),
         sample_rate_hz=rate, enable_interim_results=interim)
+    answers = []
     with audio_transcriber.AudioTranscriber.create_from_options(options) as task:
-        if block is None:
-            calls = [segments(task.transcribe(samples))]
-        else:
-            calls = [segments(task.transcribe(samples[start:start + block],
-                                              end_of_stream=False))
-                     for start in range(0, len(samples), block)]
-        finish = segments(task.finish_stream())
-    return {'clip': clip, 'rate': rate, 'block_frames': block,
-            'interim_results': interim, 'calls': calls, 'finish': finish}
+        for _ in range(streams):
+            if block is None:
+                calls = [segments(task.transcribe(samples))]
+            else:
+                calls = [segments(task.transcribe(samples[start:start + block],
+                                                  end_of_stream=False))
+                         for start in range(0, len(samples), block)]
+            answers.append((calls, segments(task.finish_stream())))
+    assert all(answer == answers[0] for answer in answers), clip
+    calls, finish = answers[0]
+    return {'clip': clip, 'copies': copies, 'gap_frames': gap, 'rate': rate,
+            'frames': len(samples), 'block_frames': block,
+            'interim_results': interim, 'streams': streams, 'calls': calls,
+            'finish': finish}
 
 
 def audio(result, text):
