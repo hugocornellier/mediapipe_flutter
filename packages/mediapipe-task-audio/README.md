@@ -291,6 +291,8 @@ Future<Float32List> speak(String text) async {
   `enableInterimResults: true` also returns the segment in progress.
 - `listVoices()` names the model's voices: Phonon has `freya` (en-US),
   `claire` (fr-FR), `lukas` (de-DE), `sofia` (es-ES) and `lucas` (pt-BR).
+- `defaultLocale` is null by default: Google infers the locale from the voice,
+  as on its Web, Android and iOS tasks (its Python defaults to en-US).
 - `synthesizeStream(text)` yields a chunk per clause as soon as it is ready,
   so playback can start early; cancelling the subscription stops Google's
   stream after the chunk in progress. `WordTimestamp.start` and `end` are

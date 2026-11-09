@@ -84,7 +84,7 @@ final class TextToSpeechOptions extends TaskOptions
   Uint8List? get modelBytes
   double get speakingRate
   int get targetBucket
-  new TextToSpeechOptions({DownloadAsset? model, String? modelPath, Delegate delegate = Delegate.cpu, String? defaultVoiceId, String? defaultLocale = 'en-US', double speakingRate = 1, int targetBucket = 0, String? cacheDirectory})
+  new TextToSpeechOptions({DownloadAsset? model, String? modelPath, Delegate delegate = Delegate.cpu, String? defaultVoiceId, String? defaultLocale, double speakingRate = 1, int targetBucket = 0, String? cacheDirectory})
 final class TextToSpeechResult
   AudioData toAudioData()
   Duration get duration
