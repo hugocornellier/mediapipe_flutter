@@ -11,8 +11,9 @@
   in browsers on `@mediapipe/tasks-audio` 1.2.2, each on a web worker; 32-bit
   Android reports them unavailable.
 - Audio Transcriber also offers the GPU delegate where a test saw the GPU do
-  the work: macOS, which CI checks on macOS 15, and Chromium and WebKit on a
-  Mac's Apple WebGPU adapter, each checked on a developer's Mac. iPhones are
+  the work: macOS, which CI checks on macOS 15, Chromium on a Mac's Apple
+  WebGPU adapter, which CI checks on macOS 15, and WebKit on that adapter,
+  checked on a developer's Mac. iPhones are
   offered too, with their device test still to run. Other browsers and
   adapters get the CPU, and a reason. Text to Speech offers the GPU on macOS
   15 and later for Kokoro (`AudioModels.kokoro`).

@@ -214,22 +214,22 @@ the GPU do the work. That is `AudioTranscriber` on:
 - macOS arm64 (Metal). CI's package and gallery tests check it on macOS 15,
   the only version CI runs. It passed once on macOS 14 before GitHub retired
   those runners, and no test runs on macOS 14 now.
-- Chromium and WebKit on a Mac's Apple adapter (WebGPU), each checked on a
-  developer's Mac. CI's browser job is set to repeat Chromium's check on a hosted
-  Mac; it has no such job for WebKit.
+- Chromium on a Mac's Apple adapter (WebGPU), which CI's browser job checks
+  on macOS 15, and WebKit on that adapter, checked only on a developer's Mac.
+  CI has no WebKit job on a Mac.
 
 iPhones (Metal) are offered too, but the device test is still to run.
 
-`TextToSpeech` is offered the GPU only on macOS 15 and later on arm64 (Metal),
-for Kokoro (`AudioModels.kokoro`, 295 MB, Apache 2.0). CI's package tests check
-it on macOS 15: Kokoro holds memory on Metal and speaks as it does on the CPU,
-about five times faster. Kokoro has never run on macOS 14, so there it gets the CPU,
-and a reason. Google runs only Kokoro's vocoder there;
-its acoustic model, Phonon and PocketTTS run on the CPU. So `create` takes the
-GPU delegate only for a model whose bundle marks a section for the GPU, and
-throws a `RuntimeUnavailableException` for any other, such as Phonon. A Kokoro
-file from elsewhere keeps Google's filename, which the task reads to tell the
-models apart.
+`TextToSpeech` is offered the GPU only on macOS 15 and later on arm64 (Metal) for
+Kokoro (`AudioModels.kokoro`, 295 MB, Apache 2.0). CI's package tests check it
+on macOS 15: Kokoro holds memory on Metal, and its speech is as long as on the
+CPU, with each 100 ms window at nearly the same level. Kokoro has never run on
+macOS 14, so there it gets the CPU, and a reason. Google runs only Kokoro's
+vocoder on the GPU; its acoustic model, Phonon and PocketTTS run on the CPU. So
+`create` takes the GPU delegate only for a model whose bundle marks a section
+for the GPU, and throws a `RuntimeUnavailableException` for any other, such as
+Phonon. A Kokoro file from elsewhere keeps Google's filename, which the task
+reads to tell the models apart.
 
 Elsewhere, including Android, Linux, Windows, the iOS simulator, Firefox,
 browsers on other adapters and browsers on iPhones and iPads, the GPU delegate
@@ -245,8 +245,10 @@ bundles them instead.
 In a browser, a pinned `model:` is verified and kept in Cache Storage, then
 passes through the page's memory as bytes. For Parakeet, a `modelPath` URL
 avoids that copy: Google's runtime reads the file itself, so the URL's server
-must allow the page's origin. Both models ran in desktop Chromium, Firefox and
-WebKit on a 48 GB Mac; phones' browsers are untested, and may not have the
+must allow the page's origin. CI's browser job runs both models in Chromium
+and Firefox on Linux, on the CPU, and in Chromium on macOS 15, on the GPU; it is
+set to run them in WebKit on Linux too. On a developer's 48 GB Mac they also ran
+in Firefox and WebKit. Phones' browsers are untested, and may not have the
 memory for Parakeet.
 
 ```dart
@@ -333,7 +335,14 @@ both speech clips, whole and in one-second blocks with and without interim
 results; and for Text to Speech the voices, four utterances in three
 languages (Unicode text included), a faster speaking rate and a streamed
 paragraph, each with the same sample count, rate and word timings, and the
-peak and 100 ms RMS envelope within 0.002. `tool/prepare_speech_reference.py`
-regenerates the reference with the pinned wheel on each desktop CI runner
-(speech.yaml). They also check stream cancellation, disposal, option checks,
-capabilities and the C struct layouts against Google's headers.
+peak and 100 ms RMS envelope within 0.002. On the Mac, where the Kokoro model
+is downloaded, they compare Kokoro on the CPU the same way with
+`test/fixtures/official_kokoro_reference.json`, made by
+`tool/generate_speech_reference.py --kokoro-output` with the pinned 1.2.2
+macOS arm64 wheel: Google's voice list, an English sentence in the default
+voice and a French one in `ff_siwis`, and a task whose default voice is
+`ff_siwis` speaking its own locale unless the options give another (Google
+refuses `en-US` for it). `tool/prepare_speech_reference.py` regenerates the
+references with the pinned wheel on each desktop CI runner (speech.yaml),
+Kokoro's on the Mac alone. They also check stream cancellation, disposal,
+option checks, capabilities and the C struct layouts against Google's headers.
