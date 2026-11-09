@@ -44,10 +44,13 @@ class _SpeechPageState extends State<SpeechPage> with RevisionedState {
   late final String _id = widget.task.runtimeId;
   late final TaskSettingValues _values = TaskSettingValues(_id);
   late final List<TaskSetting> _settings = taskSettings[_id] ?? const [];
-  late final List<Delegate> _delegates = widget.task
-      .capabilities(widget.platform)
-      .supportedDelegates
-      .toList();
+  // The page speaks with Phonon, whose bundle marks no GPU section, so
+  // create refuses the GPU for it where the platform offers it for Kokoro.
+  late final List<Delegate> _delegates = [
+    for (final delegate
+        in widget.task.capabilities(widget.platform).supportedDelegates)
+      if (delegate != Delegate.gpu) delegate,
+  ];
   late final Delegate _delegate = preferredDelegate(_delegates);
 
   final _text = TextEditingController(text: speechSampleText);
