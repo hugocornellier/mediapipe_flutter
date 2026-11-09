@@ -1022,7 +1022,11 @@ void main() {
             text,
             voiceId: expected['voice_id'] as String?,
           );
-          _expectAudio(speech, text, expected);
+          _expectOneOfGoogles<Map<String, dynamic>>(
+            expected,
+            expected['alternatives'] as List?,
+            (answer) => _expectAudio(speech, text, answer),
+          );
           // PocketTTS times every word, which _expectAudio compares.
           expect(speech.wordTimestamps, isNotEmpty);
         },
@@ -1036,14 +1040,19 @@ void main() {
         final stream = pocketTts['stream'] as Map<String, dynamic>;
         final text = stream['text'] as String;
         final chunks = await task.synthesizeStream(text).toList();
-        final expected = (stream['chunks'] as List)
-            .cast<Map<String, dynamic>>();
-        expect(chunks, hasLength(expected.length));
-        for (final (i, chunk) in chunks.indexed) {
-          expect(chunk.chunkIndex, expected[i]['chunk_index']);
-          expect(chunk.isFinal, expected[i]['is_final']);
-          _expectAudio(chunk, text, expected[i]);
-        }
+        _expectOneOfGoogles<List>(
+          stream['chunks'] as List,
+          stream['alternatives'] as List?,
+          (answer) {
+            final expected = answer.cast<Map<String, dynamic>>();
+            expect(chunks, hasLength(expected.length));
+            for (final (i, chunk) in chunks.indexed) {
+              expect(chunk.chunkIndex, expected[i]['chunk_index']);
+              expect(chunk.isFinal, expected[i]['is_final']);
+              _expectAudio(chunk, text, expected[i]);
+            }
+          },
+        );
         // One call returns the chunks joined.
         final whole = await task.synthesize(text);
         final joined = Float32List.fromList([
@@ -1072,7 +1081,11 @@ void main() {
       addTearDown(quick.dispose);
       final text = fast['text'] as String;
       final speech = await quick.synthesize(text);
-      _expectAudio(speech, text, fast);
+      _expectOneOfGoogles<Map<String, dynamic>>(
+        fast,
+        fast['alternatives'] as List?,
+        (answer) => _expectAudio(speech, text, answer),
+      );
       final normal = utterances['fox'] as Map<String, dynamic>;
       expect(normal['text'], text);
       expect(speech.samples.length, lessThan(0.8 * (normal['samples'] as int)));
@@ -1558,6 +1571,30 @@ void _expectAudio(
     );
     expect(rms, closeTo(level, _levelDelta), reason: 'window $i');
   }
+}
+
+/// [check] against Google's [first] answer, else against its [alternatives]:
+/// where Google's own tasks answer the same input differently, as PocketTTS's
+/// do on some Linux runners, tool/generate_pocket_tts_reference.py keeps each
+/// distinct answer, and the package's must match one of them in full.
+void _expectOneOfGoogles<T>(
+  T first,
+  List? alternatives,
+  void Function(T answer) check,
+) {
+  if (alternatives == null) return check(first);
+  final failures = <String>[];
+  for (final answer in [first, ...alternatives.cast<T>()]) {
+    try {
+      return check(answer);
+    } on TestFailure catch (failure) {
+      failures.add(failure.message ?? '$failure');
+    }
+  }
+  fail(
+    'Matches none of Google\'s ${failures.length} answers:\n'
+    '${failures.join('\n')}',
+  );
 }
 
 /// The RMS of [length] samples from [start].

@@ -158,10 +158,15 @@ def main():
         # Its cases in differences()' shape, which has no transcriber.
         old, new = ({'cases': {'transcriber': {}, **json.loads(
             file.read_text(encoding='utf-8'))['cases']}} for file in (POCKET_TTS_BASELINE, pocket_tts))
+        tts = new['cases']['text_to_speech']
         pocket_tts_receipt = {
             'pocket_tts_reference_sha256': digest(pocket_tts),
             'pocket_tts_baseline_sha256': digest(POCKET_TTS_BASELINE),
-            'pocket_tts_checked_in_reference_differences': differences(old, new)}
+            'pocket_tts_checked_in_reference_differences': differences(old, new),
+            # How many distinct answers Google's tasks gave each case here.
+            'pocket_tts_answers': {
+                name: 1 + len(case.get('alternatives', [])) for name, case in
+                [*tts['utterances'].items(), ('fast', tts['fast']), ('stream', tts['stream'])]}}
     report.update({'delegate': 'CPU',
                    'reference_sha256': digest(reference), 'baseline_sha256': digest(BASELINE),
                    'checked_in_reference_differences': summary, **pocket_tts_receipt})
