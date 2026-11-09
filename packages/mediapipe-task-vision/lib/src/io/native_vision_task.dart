@@ -12,7 +12,8 @@ import 'package:mediapipe_core/platform_interface.dart'
         mpAppId,
         mpAppVersion,
         mpHostVersion,
-        nativeModelPath;
+        nativeModelPath,
+        runJniOnLoad;
 
 import '../runner/native_interface.dart' show VisionTaskInput;
 import '../third_party/mediapipe/vision_bindings.dart' as mp;
@@ -42,6 +43,13 @@ void setVisionBaseOptions(
     );
   }
   loadOfficialDesktopRuntime();
+  if (Platform.isAndroid) {
+    runJniOnLoad(
+      Native.addressOf<NativeFunction<Void Function(Pointer<Char>)>>(
+        mp.MpErrorFree,
+      ),
+    );
+  }
   base.file_descriptor = -1;
   base.delegate = options.delegate == Delegate.gpu
       ? mp.MpDelegate.MP_DELEGATE_GPU

@@ -24,3 +24,6 @@ StateError? missingLinuxGraphicsLibraries(String loaderError) => null;
 
 /// Model paths pass through unchanged off `dart:io` platforms.
 String nativeModelPath(String path) => path;
+
+/// Browsers load no Android library, so there is no `JNI_OnLoad` to run.
+void runJniOnLoad(Object symbol) {}
