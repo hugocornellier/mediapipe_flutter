@@ -30,6 +30,8 @@
   15 and later for Kokoro (`AudioModels.kokoro`).
 - On Linux, Text to Speech throws a `TaskException` (NOT_FOUND) for a model
   path that is missing or not a file, where Google's library ends the process.
+- `AudioTranscriberOptions.sampleRateHz` of 0 means 16000, as in Google's
+  API, and a negative rate throws an `ArgumentError`.
 - Google's 1.2.2 native library replaces 1.2.0, and `@mediapipe/tasks-audio`
   1.2.2 replaces 1.2.0-rc.20261018 in browsers.
 
