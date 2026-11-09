@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import platform
 import subprocess
+import sys
 
 from generate_audio_reference import FIXTURES, PACKAGE
 from official_wheels import host_runtime, pinned_venv
@@ -99,6 +100,9 @@ def main():
     parser.add_argument('--errors-only', action='store_true',
                         help='Only the model-free error reference, for a runner without the models')
     args = parser.parse_args()
+    # The log's end holds Google's box-drawing characters; Windows defaults to
+    # cp1252.
+    sys.stdout.reconfigure(encoding='utf-8')
     runtime = host_runtime('releaseReferenceWheels')
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
