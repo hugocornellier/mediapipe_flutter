@@ -36,9 +36,10 @@ abstract final class AudioModels {
     sha256: 'b33a9a0d65acec36762db38a2bff6d899f4aab34b196bb56d89fab5665eabebe',
   );
 
-  /// Google's Kokoro 82M voices for Text to Speech (int8, with an FP16
-  /// vocoder for the GPU delegate; English, Spanish, French, Italian,
-  /// Portuguese, Hindi, Chinese and Japanese at 24 kHz): 295 MB, Apache 2.0.
+  /// hexgrad's Kokoro 82M voices for Text to Speech, as Google's LiteRT
+  /// community converted them (int8, with an FP16 vocoder for the GPU
+  /// delegate; English, Spanish, French, Italian, Portuguese, Hindi, Chinese
+  /// and Japanese at 24 kHz): 295 MB, Apache 2.0.
   static const kokoro = DownloadAsset(
     url:
         'https://huggingface.co/litert-community/Kokoro-82M/resolve/'

@@ -99,8 +99,15 @@ answers in App Store Connect must describe.
   the runtime, and every package keeps a copy of that `NOTICE` at its root.
   The vision package also keeps OpenCV's carotene notices (`third_party/OPENCV_CAROTENE_NOTICES`) until Google
   confirms whether its libraries need them.
-- Google's MediaPipe task models (the pins in each family's `models.dart`):
-  Apache-2.0, per Google's model cards, except the Gemma-based text models.
+- The task models (the pins in each family's `models.dart`): Apache-2.0, per
+  their model cards, except the Gemma-based text models and two speech models
+  under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): NVIDIA's
+  Parakeet TDT 0.6B v3 (`AudioModels.parakeetTdtV3`) and Kyutai's PocketTTS
+  (`AudioModels.pocketTtsEn`). An app that ships or downloads either credits
+  its author (NVIDIA or Kyutai), for example in its open source notices, as
+  Google's
+  [Text to Speech guide](https://developers.google.com/edge/mediapipe/solutions/audio/text_to_speech)
+  asks for PocketTTS.
 - EmbeddingGemma, Proofreader and Summarizer are Gemma models, under the
   [Gemma Terms of Use](https://ai.google.dev/gemma/terms) and its
   [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy).
