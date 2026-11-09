@@ -47,13 +47,13 @@ const _textToSpeechGpuModels =
 
 const _textToSpeechGpuUnproved =
     "This package offers Text to Speech's GPU delegate only where a test "
-    'proved the GPU does the work: Kokoro on macOS arm64. No such test has run '
-    'on this platform yet. $_textToSpeechGpuModels';
+    'proved the GPU does the work: Kokoro on macOS 15 or later on arm64. No '
+    'such test has run on this platform yet. $_textToSpeechGpuModels';
 
 const _textToSpeechWebGpuUnproved =
     "This package offers Text to Speech's GPU delegate only where a test "
-    'proved the GPU does the work: Kokoro on macOS arm64. No such test has run '
-    'in a browser yet. $_textToSpeechGpuModels';
+    'proved the GPU does the work: Kokoro on macOS 15 or later on arm64. No '
+    'such test has run in a browser yet. $_textToSpeechGpuModels';
 
 const _transcriberGpuUnproved =
     "This package offers Audio Transcriber's GPU delegate only where a test "
@@ -88,8 +88,9 @@ bool _webGpuProved(TaskPlatform platform) =>
     };
 
 /// Where Audio Transcriber's native GPU delegate is offered: Metal on macOS
-/// arm64, which the package's tests prove on each macOS version CI runs, and on
-/// iPhones (not the simulator), whose device test is still to run.
+/// arm64, which the package's tests prove on macOS 15, the only version CI
+/// runs (they passed once on macOS 14, before GitHub retired those runners),
+/// and on iPhones (not the simulator), whose device test is still to run.
 const transcriberGpuTargets = <String, String?>{
   'macos/arm64': '14.0',
   'ios/arm64': '15.0',
@@ -138,11 +139,12 @@ TaskCapabilities audioTranscriberCapabilitiesForPlatform(
   );
 }
 
-/// Where Text to Speech's native GPU delegate is offered: Metal on macOS
-/// arm64, which the package's tests prove with Kokoro on each macOS version CI
-/// runs. A model with no GPU section, such as Phonon, is refused the GPU when
-/// the task is created.
-const textToSpeechGpuTargets = <String, String?>{'macos/arm64': '14.0'};
+/// Where Text to Speech's native GPU delegate is offered: Metal on macOS 15
+/// and later on arm64, which the package's tests prove with Kokoro on macOS
+/// 15, the only version CI runs. Kokoro has never run on macOS 14, so it
+/// gets the CPU there. A model with no GPU section, such as Phonon, is
+/// refused the GPU when the task is created.
+const textToSpeechGpuTargets = <String, String?>{'macos/arm64': '15.0'};
 
 /// Where Text to Speech runs: Google's audio library on 64-bit Android, iOS
 /// 15+, macOS 14+ arm64, Linux x64 and Windows x64, and through Google's
