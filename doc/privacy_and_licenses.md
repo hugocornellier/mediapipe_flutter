@@ -108,10 +108,14 @@ answers in App Store Connect must describe.
   Google's
   [Text to Speech guide](https://developers.google.com/edge/mediapipe/solutions/audio/text_to_speech)
   asks for PocketTTS.
-- EmbeddingGemma, Proofreader and Summarizer are Gemma models, under the
-  [Gemma Terms of Use](https://ai.google.dev/gemma/terms) and its
+- The Text Embedder's EmbeddingGemma 300M (`TextModels.embeddingGemma`,
+  `embedding_gemma.task`), the Proofreader and the Summarizer are Gemma
+  models, under the [Gemma Terms of Use](https://ai.google.dev/gemma/terms)
+  and its
   [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy).
   An app that ships or downloads them must pass those terms on to its users.
+  The EmbeddingGemma 2 models of Decision Maker and Retrieval are not: their
+  model cards say Apache-2.0.
 
 `python3 -B packages/mediapipe-core/tool/mirror_runtime_assets.py` lists every
 pinned runtime and model with its license.
