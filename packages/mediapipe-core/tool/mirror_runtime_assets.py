@@ -31,6 +31,7 @@ GEMMA_MODELS = {
 # Models from other publishers, as their model cards license them.
 THIRD_PARTY_MODELS = {
     'parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm': 'CC-BY-4.0',
+    'pocket_tts_en_int8.litertlm': 'CC-BY-4.0',
 }
 
 
@@ -69,8 +70,8 @@ def model_assets(items):
     # Runtimes are MediaPipe builds (Apache-2.0, with upstream NOTICE files).
     # Google publishes its MediaPipe task models under Apache-2.0, except the
     # Gemma-based text models, whose Gemma Terms and use-restriction notice
-    # must travel with every copy, and NVIDIA's Parakeet (CC BY 4.0, which
-    # needs attribution with every copy).
+    # must travel with every copy. Two speech models are CC BY 4.0, NVIDIA's
+    # Parakeet and Kyutai's PocketTTS, which need attribution with every copy.
     for item in items.values():
         filename = item['release_asset'].split('-', 1)[1]
         item['license'] = THIRD_PARTY_MODELS.get(filename, (
