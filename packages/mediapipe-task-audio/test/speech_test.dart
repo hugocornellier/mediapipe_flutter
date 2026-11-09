@@ -8,6 +8,7 @@ import 'package:crypto/crypto.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
 import 'package:mediapipe_audio/src/audio_task_backend.dart'
     show audioTranscriberOpener, browserOnMac;
+import 'package:mediapipe_audio/src/litertlm_header.dart';
 import 'package:mediapipe_audio/src/utf16_indices.dart';
 import 'package:mediapipe_audio/src/third_party/mediapipe/audio_transcriber_bindings.dart'
     as asr;
@@ -28,6 +29,9 @@ final _ttsModel =
 
 final _kokoroModel =
     'models/${Uri.parse(AudioModels.kokoro.url).pathSegments.last}';
+
+final _pocketTtsModel =
+    'models/${Uri.parse(AudioModels.pocketTtsEn.url).pathSegments.last}';
 
 /// The models CI downloads for this runner, which their tests must not skip
 /// without: family.yaml names them.
@@ -82,12 +86,30 @@ void main() {
                 )['cases']
                 as Map<String, dynamic>)['text_to_speech']
             as Map<String, dynamic>;
+  final missingPocketTts = _missing(
+    'PocketTTS',
+    _pocketTtsModel,
+    'pocket_tts_en',
+  );
+  final pocketTtsReference = loadSameHostReference(
+    'official_pocket_tts_reference.json',
+    prefix: 'pocket_tts_',
+    cases: 'cases',
+    environment: 'MEDIAPIPE_SPEECH_REFERENCE_DIR',
+    wheel: releaseReferenceWheel,
+  );
+  final pocketTts =
+      (pocketTtsReference['cases'] as Map<String, dynamic>)['text_to_speech']
+          as Map<String, dynamic>;
 
   test('the reference names the pinned models', () {
     expect(reference['models'], {
       'parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm':
           AudioModels.parakeetTdtV3.sha256,
       'phonon_int8.litertlm': AudioModels.phonon.sha256,
+    });
+    expect(pocketTtsReference['models'], {
+      'pocket_tts_en_int8.litertlm': AudioModels.pocketTtsEn.sha256,
     });
   });
 
@@ -688,6 +710,175 @@ void main() {
     );
   });
 
+  // Kyutai's PocketTTS English (AudioModels.pocketTtsEn), against Google's
+  // Python on the same model, as Phonon is above.
+  group('TextToSpeech with PocketTTS English', () {
+    late TextToSpeech task;
+    setUpAll(() async {
+      if (missingPocketTts != null) return;
+      expect(
+        sha256.convert(File(_pocketTtsModel).readAsBytesSync()).toString(),
+        AudioModels.pocketTtsEn.sha256,
+      );
+      task = await TextToSpeech.create(
+        TextToSpeechOptions(modelPath: _pocketTtsModel),
+      );
+    });
+    tearDownAll(() async {
+      if (missingPocketTts == null) await task.dispose();
+    });
+
+    // Google's page says the English bundle "includes only English voices",
+    // these eight with alba the default, but its 1.2.2 runtime, Python's too,
+    // also lists the multilingual bundle's six others for it.
+    test('lists Google\'s voices', skip: missingPocketTts, () async {
+      final voices = await task.listVoices();
+      expect([
+        for (final voice in voices)
+          {
+            'voice_id': voice.voiceId,
+            'display_name': voice.displayName,
+            'locale': voice.locale,
+            'sample_rate_hz': voice.sampleRateHz,
+            'is_downloaded': voice.isDownloaded,
+          },
+      ], pocketTts['voices']);
+      expect(voices.first.voiceId, 'alba');
+      expect(
+        voices
+            .where((voice) => voice.locale == 'en-US')
+            .map((voice) => voice.voiceId)
+            .toSet(),
+        {
+          'alba',
+          'azelma',
+          'cosette',
+          'eponine',
+          'fantine',
+          'javert',
+          'jean',
+          'marius',
+        },
+      );
+    });
+
+    final utterances = pocketTts['utterances'] as Map<String, dynamic>;
+    for (final MapEntry(key: name, value: expected as Map<String, dynamic>)
+        in utterances.entries) {
+      test(
+        '$name matches Google\'s Python API',
+        skip: missingPocketTts,
+        () async {
+          final text = expected['text'] as String;
+          final speech = await task.synthesize(
+            text,
+            voiceId: expected['voice_id'] as String?,
+          );
+          _expectOneOfGoogles<Map<String, dynamic>>(
+            expected,
+            expected['alternatives'] as List?,
+            (answer) => _expectAudio(speech, text, answer),
+          );
+          // PocketTTS times every word, which _expectAudio compares.
+          expect(speech.wordTimestamps, isNotEmpty);
+        },
+      );
+    }
+
+    test(
+      'a stream\'s chunks match Google\'s Python API and the whole text',
+      skip: missingPocketTts,
+      () async {
+        final stream = pocketTts['stream'] as Map<String, dynamic>;
+        final text = stream['text'] as String;
+        final chunks = await task.synthesizeStream(text).toList();
+        _expectOneOfGoogles<List>(
+          stream['chunks'] as List,
+          stream['alternatives'] as List?,
+          (answer) {
+            final expected = answer.cast<Map<String, dynamic>>();
+            expect(chunks, hasLength(expected.length));
+            for (final (i, chunk) in chunks.indexed) {
+              expect(chunk.chunkIndex, expected[i]['chunk_index']);
+              expect(chunk.isFinal, expected[i]['is_final']);
+              _expectAudio(chunk, text, expected[i]);
+            }
+          },
+        );
+        // One call returns the chunks joined.
+        final whole = await task.synthesize(text);
+        final joined = Float32List.fromList([
+          for (final chunk in chunks) ...chunk.samples,
+        ]);
+        expect(whole.samples, hasLength(joined.length));
+        final window = whole.sampleRateHz ~/ 10;
+        for (var start = 0; start + window <= joined.length; start += window) {
+          expect(
+            _windowRms(whole.samples, start, window),
+            closeTo(_windowRms(joined, start, window), _levelDelta),
+            reason: 'window at $start',
+          );
+        }
+      },
+    );
+
+    test('speaks at the options\' rate', skip: missingPocketTts, () async {
+      final fast = pocketTts['fast'] as Map<String, dynamic>;
+      final quick = await TextToSpeech.create(
+        TextToSpeechOptions(
+          modelPath: _pocketTtsModel,
+          speakingRate: (fast['speaking_rate'] as num).toDouble(),
+        ),
+      );
+      addTearDown(quick.dispose);
+      final text = fast['text'] as String;
+      final speech = await quick.synthesize(text);
+      _expectOneOfGoogles<Map<String, dynamic>>(
+        fast,
+        fast['alternatives'] as List?,
+        (answer) => _expectAudio(speech, text, answer),
+      );
+      final normal = utterances['fox'] as Map<String, dynamic>;
+      expect(normal['text'], text);
+      expect(speech.samples.length, lessThan(0.8 * (normal['samples'] as int)));
+    });
+
+    // Google's page runs PocketTTS on the CPU, and its bundle's header marks
+    // no section for the GPU, so the package refuses the GPU delegate.
+    test(
+      'refuses the GPU, as its header marks none',
+      skip: missingPocketTts,
+      () async {
+        final file = File(_pocketTtsModel).openSync();
+        try {
+          final end = litertlmHeaderEnd(file.readSync(litertlmPreambleBytes));
+          expect(end, isNotNull);
+          file.setPositionSync(0);
+          expect(litertlmHasGpuSection(file.readSync(end!)), isFalse);
+        } finally {
+          file.closeSync();
+        }
+        await expectLater(
+          TextToSpeech.create(
+            TextToSpeechOptions(
+              modelPath: _pocketTtsModel,
+              delegate: Delegate.gpu,
+            ),
+          ),
+          throwsA(
+            isA<RuntimeUnavailableException>().having(
+              (error) => error.fix,
+              'fix',
+              Abi.current() == Abi.macosArm64
+                  ? contains('marks none')
+                  : contains('proved'),
+            ),
+          ),
+        );
+      },
+    );
+  });
+
   test('options refuse values Google rejects', () {
     expect(() => AudioTranscriberOptions(sampleRateHz: 0), throwsArgumentError);
     expect(() => TextToSpeechOptions(speakingRate: 0), throwsArgumentError);
@@ -1046,6 +1237,30 @@ void _expectAudio(
     );
     expect(rms, closeTo(level, _levelDelta), reason: 'window $i');
   }
+}
+
+/// [check] against Google's [first] answer, else against its [alternatives]:
+/// where Google's own tasks answer the same input differently, as PocketTTS's
+/// do on some Linux runners, tool/generate_pocket_tts_reference.py keeps each
+/// distinct answer, and the package's must match one of them in full.
+void _expectOneOfGoogles<T>(
+  T first,
+  List? alternatives,
+  void Function(T answer) check,
+) {
+  if (alternatives == null) return check(first);
+  final failures = <String>[];
+  for (final answer in [first, ...alternatives.cast<T>()]) {
+    try {
+      return check(answer);
+    } on TestFailure catch (failure) {
+      failures.add(failure.message ?? '$failure');
+    }
+  }
+  fail(
+    'Matches none of Google\'s ${failures.length} answers:\n'
+    '${failures.join('\n')}',
+  );
 }
 
 /// The RMS of [length] samples from [start].
