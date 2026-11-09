@@ -14,6 +14,7 @@ abstract interface class TextToSpeechRunner
   Future<void> dispose()
   Stream<TextToSpeechResult> synthesizeStream(String text, String? voiceId, String? locale)
   new TextToSpeechRunner()
+  void cancel()
 getter Future<AudioTaskBackend> Function(Map<String, Object?>)? get audioTaskBackendFactory
 setter set audioTaskBackendFactory(Future<AudioTaskBackend> Function(Map<String, Object?>)? value)
 getter Future<AudioTranscriberRunner> Function(AudioTranscriberOptions)? get audioTranscriberOpener

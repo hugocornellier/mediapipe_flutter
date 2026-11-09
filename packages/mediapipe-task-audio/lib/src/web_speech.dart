@@ -124,15 +124,22 @@ final class _WebTextToSpeech implements TextToSpeechRunner {
     ];
   }
 
+  /// A cancelled synthesis answers `{cancelled: true}`, and fails as
+  /// Google's native one does.
   @override
   Future<TextToSpeechResult> synthesize(
     String text,
     String? voiceId,
     String? locale,
-  ) async => _audio(
-    (await _worker.runObject(_input('synthesize', text, voiceId, locale)))!,
-    utf16Indices(text),
-  );
+  ) async {
+    final reply = (await _worker.runObject(
+      _input('synthesize', text, voiceId, locale),
+    ))!;
+    if (reply.has('cancelled')) {
+      throw const TaskException('Synthesis cancelled.', statusCode: 1);
+    }
+    return _audio(reply, utf16Indices(text));
+  }
 
   @override
   Stream<TextToSpeechResult> synthesizeStream(
@@ -145,6 +152,12 @@ final class _WebTextToSpeech implements TextToSpeechRunner {
         .stream(_input('synthesizeStream', text, voiceId, locale))
         .map((chunk) => _audio(chunk, indices));
   }
+
+  /// The worker cancels Google's task or stream from its message handler,
+  /// which runs while Google's runtime waits; a request still queued is
+  /// marked, and stops before it starts.
+  @override
+  void cancel() => _worker.cancelAll();
 
   @override
   Future<void> dispose() => _worker.close();

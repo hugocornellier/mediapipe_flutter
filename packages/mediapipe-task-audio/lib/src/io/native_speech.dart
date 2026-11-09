@@ -20,6 +20,7 @@ import '../speech_runners.dart';
 import '../speech_types.dart';
 import '../third_party/mediapipe/audio_transcriber_bindings.dart' as asr;
 import '../third_party/mediapipe/text_to_speech_bindings.dart' as tts;
+import '../third_party/mediapipe/text_to_speech_guard_bindings.dart' as guard;
 import '../utf16_indices.dart';
 import 'native_audio_classifier.dart' show checkedNativeCall;
 
@@ -42,8 +43,26 @@ Future<TextToSpeechRunner> openNativeTextToSpeech(
   if (options.delegate == Delegate.gpu) {
     await _requireGpuSection(_modelFile(options));
   }
-  final worker = _TextToSpeechWorker();
-  await worker.start(_textToSpeechSettings(options), _NativeTextToSpeech.new);
+  final cancels = guard.guardNew(
+    Native.addressOf<NativeFunction<Void Function(Pointer<Void>)>>(
+      tts.cancel,
+    ).cast(),
+    Native.addressOf<NativeFunction<Void Function(Pointer<Void>)>>(
+      tts.streamCancel,
+    ).cast(),
+  );
+  if (cancels == nullptr) throw const TaskException('Out of memory.');
+  final worker = _TextToSpeechWorker(cancels);
+  try {
+    await worker.start(
+      _textToSpeechSettings(options, cancels),
+      _NativeTextToSpeech.new,
+    );
+  } catch (_) {
+    // The worker has exited, or never started.
+    guard.guardFree(cancels);
+    rethrow;
+  }
   return worker;
 }
 
@@ -154,9 +173,13 @@ typedef _TextToSpeechSettings = ({
   double speakingRate,
   int targetBucket,
   String? cacheDirectory,
+  int cancelGuard,
 });
 
-_TextToSpeechSettings _textToSpeechSettings(TextToSpeechOptions options) => (
+_TextToSpeechSettings _textToSpeechSettings(
+  TextToSpeechOptions options,
+  Pointer<Void> cancelGuard,
+) => (
   modelPath: _modelFile(options),
   delegate: options.delegate,
   defaultVoiceId: options.defaultVoiceId,
@@ -164,6 +187,7 @@ _TextToSpeechSettings _textToSpeechSettings(TextToSpeechOptions options) => (
   speakingRate: options.speakingRate,
   targetBucket: options.targetBucket,
   cacheDirectory: options.cacheDirectory,
+  cancelGuard: cancelGuard.address,
 );
 
 /// [value] in [arena], or null when it is null or empty, as Google's Python
@@ -305,12 +329,14 @@ final class _TextToSpeechRequest {
     : text = null,
       voiceId = null,
       locale = null,
+      number = 0,
       cancelFlag = 0;
 
   const _TextToSpeechRequest.synthesize(
     String this.text,
     this.voiceId,
-    this.locale, {
+    this.locale,
+    this.number, {
     this.cancelFlag = 0,
   });
 
@@ -318,15 +344,32 @@ final class _TextToSpeechRequest {
   final String? voiceId;
   final String? locale;
 
+  /// A synthesis's place in call order, from 1, which cancels name.
+  final int number;
+
   /// A stream's cancel flag: the address of a byte the calling isolate sets
   /// to 1 to stop it.
   final int cancelFlag;
 }
 
+/// A synthesis cancelled before Google ran it, or after Google finished it
+/// but before the worker returned it, which fails as Google's would.
+TaskException _cancelled() =>
+    const TaskException('Synthesis cancelled.', statusCode: tts.mpCancelled);
+
+/// Cancels reach Google from the calling isolate through [_cancels], the
+/// native guard (native/text_to_speech_guard.c) that the worker publishes
+/// its handles to, and that this isolate frees only once the worker has
+/// exited.
 final class _TextToSpeechWorker
     extends TaskWorker<_TextToSpeechRequest, Object?, TextToSpeechResult>
     implements TextToSpeechRunner {
-  _TextToSpeechWorker() : super('TextToSpeech');
+  _TextToSpeechWorker(this._cancels) : super('TextToSpeech');
+
+  /// Null once freed.
+  Pointer<Void>? _cancels;
+  var _numbered = 0;
+  Future<void>? _disposal;
 
   @override
   Future<List<TextToSpeechVoice>> listVoices() async =>
@@ -339,60 +382,69 @@ final class _TextToSpeechWorker
     String? voiceId,
     String? locale,
   ) async =>
-      (await run(_TextToSpeechRequest.synthesize(text, voiceId, locale)))!
+      (await run(
+            _TextToSpeechRequest.synthesize(text, voiceId, locale, ++_numbered),
+          ))!
           as TextToSpeechResult;
 
-  /// The worker reads Google's stream chunk by chunk and checks a flag in
-  /// native memory before each read, which a cancel sets: the worker owns
-  /// Google's stream handle, so no other thread touches it after it closes.
+  /// The worker checks a flag in native memory before each read, which a
+  /// cancel sets before cancelling Google's stream through the guard, if it
+  /// is open: so a read in progress returns, and one not begun never starts.
+  /// A request is numbered when listened to, as it is sent then.
   @override
   Stream<TextToSpeechResult> synthesizeStream(
     String text,
     String? voiceId,
     String? locale,
   ) {
-    final flag = calloc<Uint8>();
-    final Stream<TextToSpeechResult> chunks;
-    try {
-      chunks = stream(
-        _TextToSpeechRequest.synthesize(
-          text,
-          voiceId,
-          locale,
-          cancelFlag: flag.address,
-        ),
-      );
-    } catch (_) {
-      calloc.free(flag);
-      rethrow;
-    }
+    Pointer<Uint8>? flag;
+    var number = 0;
     StreamSubscription<TextToSpeechResult>? subscription;
-    var freed = false;
     void free() {
-      if (freed) return;
-      freed = true;
-      calloc.free(flag);
+      if (flag case final allocated?) calloc.free(allocated);
+      flag = null;
     }
 
     late final StreamController<TextToSpeechResult> controller;
     controller = StreamController(
       onListen: () {
-        subscription = chunks.listen(
-          controller.add,
-          onError: controller.addError,
-          onDone: () {
-            free();
-            unawaited(controller.close());
-          },
-        );
+        final allocated = flag = calloc<Uint8>();
+        number = ++_numbered;
+        try {
+          subscription =
+              stream(
+                _TextToSpeechRequest.synthesize(
+                  text,
+                  voiceId,
+                  locale,
+                  number,
+                  cancelFlag: allocated.address,
+                ),
+              ).listen(
+                controller.add,
+                onError: controller.addError,
+                onDone: () {
+                  free();
+                  unawaited(controller.close());
+                },
+              );
+        } catch (error, stack) {
+          free();
+          controller.addError(error, stack);
+          unawaited(controller.close());
+        }
       },
       onPause: () => subscription?.pause(),
       onResume: () => subscription?.resume(),
       onCancel: () async {
         // Closing the controller after onDone also lands here, with the
         // flag already freed.
-        if (freed) return;
-        flag.value = 1;
+        final allocated = flag;
+        if (allocated == null) return;
+        allocated.value = 1;
+        if (_cancels case final cancels?) {
+          guard.guardCancelStream(cancels, number);
+        }
         // Waits for the worker to finish the request.
         await subscription?.cancel();
         free();
@@ -400,11 +452,29 @@ final class _TextToSpeechWorker
     );
     return controller.stream;
   }
+
+  @override
+  void cancel() {
+    if (_cancels case final cancels?) guard.guardCancel(cancels, _numbered);
+  }
+
+  /// Frees the guard once the worker has exited, whether or not the close
+  /// succeeded.
+  @override
+  Future<void> dispose() => _disposal ??= () async {
+    try {
+      await super.dispose();
+    } finally {
+      guard.guardFree(_cancels!);
+      _cancels = null;
+    }
+  }();
 }
 
 final class _NativeTextToSpeech
     extends WorkerTask<_TextToSpeechRequest, Object?, TextToSpeechResult> {
-  _NativeTextToSpeech(_TextToSpeechSettings settings) {
+  _NativeTextToSpeech(_TextToSpeechSettings settings)
+    : _cancels = Pointer.fromAddress(settings.cancelGuard) {
     using((arena) {
       final native = arena<tts.MpTextToSpeechOptions>();
       fillBaseOptions(
@@ -427,23 +497,36 @@ final class _NativeTextToSpeech
 
   late Pointer<Void> _handle;
 
+  /// Holds the handles a synthesis uses while it runs, for the calling
+  /// isolate's cancels.
+  final Pointer<Void> _cancels;
+
   @override
   Object? run(_TextToSpeechRequest input) => using((arena) {
     final text = input.text;
     if (text == null) return _voices(arena);
-    final result = arena<tts.MpTextToSpeechAudioResult>();
-    _checked(
-      (error) => tts.synthesize(
-        _handle,
-        text.toNativeUtf8(allocator: arena).cast(),
-        _synthesisOptions(input, arena),
-        result,
-        error,
-      ),
-    );
-    return _audio(result, text);
+    if (!guard.guardBegin(_cancels, input.number, _handle)) throw _cancelled();
+    final TextToSpeechResult audio;
+    try {
+      final result = arena<tts.MpTextToSpeechAudioResult>();
+      _checked(
+        (error) => tts.synthesize(
+          _handle,
+          text.toNativeUtf8(allocator: arena).cast(),
+          _synthesisOptions(input, arena),
+          result,
+          error,
+        ),
+      );
+      audio = _audio(result, text);
+    } finally {
+      if (guard.guardEnd(_cancels)) throw _cancelled();
+    }
+    return audio;
   });
 
+  /// A cancel, of this stream or of the task, ends it without an error:
+  /// Google's read then reports kMpCancelled, which only a cancel causes.
   @override
   Future<void> stream(
     _TextToSpeechRequest input,
@@ -451,49 +534,66 @@ final class _NativeTextToSpeech
   ) async {
     final text = input.text!;
     final cancelled = Pointer<Uint8>.fromAddress(input.cancelFlag);
-    final stream = using((arena) {
-      final output = arena<Pointer<Void>>();
-      _checked(
-        (error) => tts.startStream(
-          _handle,
-          text.toNativeUtf8(allocator: arena).cast(),
-          _synthesisOptions(input, arena),
-          true,
-          output,
-          error,
-        ),
-      );
-      return output.value;
-    });
+    if (cancelled.value != 0 ||
+        !guard.guardBegin(_cancels, input.number, _handle)) {
+      return;
+    }
     try {
-      while (cancelled.value == 0) {
-        final chunk = using((arena) {
-          final result = arena<tts.MpTextToSpeechAudioResult>();
-          final index = arena<Int32>();
-          final last = arena<Bool>();
-          final error = arena<Pointer<Char>>();
-          final status = tts.streamReadNext(stream, result, index, last, error);
-          if (status == tts.mpOutOfRange) {
-            if (error.value != nullptr) tts.freeError(error.value);
-            return null;
-          }
-          _checked((out) {
-            out.value = error.value;
-            return status;
+      final stream = using((arena) {
+        final output = arena<Pointer<Void>>();
+        _checked(
+          (error) => tts.startStream(
+            _handle,
+            text.toNativeUtf8(allocator: arena).cast(),
+            _synthesisOptions(input, arena),
+            true,
+            output,
+            error,
+          ),
+        );
+        return output.value;
+      });
+      guard.guardSetStream(_cancels, stream);
+      try {
+        // The flag is read after the stream is published: a cancel that
+        // found no stream to cancel set it before then.
+        while (cancelled.value == 0) {
+          final chunk = using((arena) {
+            final result = arena<tts.MpTextToSpeechAudioResult>();
+            final index = arena<Int32>();
+            final last = arena<Bool>();
+            final error = arena<Pointer<Char>>();
+            final status = tts.streamReadNext(
+              stream,
+              result,
+              index,
+              last,
+              error,
+            );
+            if (status == tts.mpOutOfRange || status == tts.mpCancelled) {
+              if (error.value != nullptr) tts.freeError(error.value);
+              return null;
+            }
+            _checked((out) {
+              out.value = error.value;
+              return status;
+            });
+            return _audio(
+              result,
+              text,
+              chunkIndex: index.value,
+              isFinal: last.value,
+            );
           });
-          return _audio(
-            result,
-            text,
-            chunkIndex: index.value,
-            isFinal: last.value,
-          );
-        });
-        if (chunk == null) break;
-        emit(chunk);
+          if (chunk == null) break;
+          emit(chunk);
+        }
+      } finally {
+        guard.guardSetStream(_cancels, nullptr);
+        tts.streamClose(stream);
       }
     } finally {
-      if (cancelled.value != 0) tts.streamCancel(stream);
-      tts.streamClose(stream);
+      guard.guardEnd(_cancels);
     }
   }
 

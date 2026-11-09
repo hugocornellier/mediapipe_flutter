@@ -286,10 +286,26 @@ Future<Map<String, Object?>> _speech(String model) async {
     final next = task.synthesize(foxText).then((_) => order.add('call'));
     await Future.wait([stream, next]);
     report['order'] = order;
+    // The task's cancel fails the call it runs and the one queued behind it
+    // as Google's native one does, ends a stream without an error, and
+    // leaves the task answering; with nothing in flight it does nothing.
+    final running = _failure(() => task.synthesize(cancelledText));
+    final queued = _failure(() => task.synthesize(foxText));
+    final cancelledStream = task.synthesizeStream(cancelledText).length;
+    task.cancel();
+    report['task_cancel'] = {
+      'running': await running,
+      'queued': await queued,
+      'stream_chunks': await cancelledStream,
+    };
+    report['after_task_cancel'] = _audio(await task.synthesize(foxText));
+    task.cancel();
+    report['after_idle_cancel'] = _audio(await task.synthesize(foxText));
   } finally {
     await task.dispose();
   }
   report['after_dispose'] = await _failure(() => task.synthesize(foxText));
+  report['cancel_after_dispose'] = await _failure(task.cancel);
 
   final faster = await TextToSpeech.create(
     TextToSpeechOptions(modelPath: model, speakingRate: 1.5),

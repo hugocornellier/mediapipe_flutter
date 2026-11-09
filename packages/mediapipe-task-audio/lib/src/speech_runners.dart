@@ -39,12 +39,17 @@ abstract interface class TextToSpeechRunner {
   );
 
   /// [text] chunk by chunk, each as its clause is synthesized. Cancelling
-  /// the subscription stops Google's stream after the chunk in progress.
+  /// the subscription cancels Google's stream at once, a read in progress
+  /// included.
   Stream<TextToSpeechResult> synthesizeStream(
     String text,
     String? voiceId,
     String? locale,
   );
+
+  /// Cancels every accepted synthesis not yet finished; a no-op with none,
+  /// and once disposed.
+  void cancel();
 
   /// Waits for accepted requests, then closes Google's task once.
   Future<void> dispose();

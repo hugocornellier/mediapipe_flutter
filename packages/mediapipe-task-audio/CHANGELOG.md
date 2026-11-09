@@ -7,6 +7,9 @@
 - Text to Speech: `synthesize` and `synthesizeStream` with
   `AudioModels.phonon` (five US English voices), speaking rate, voice
   and locale per call, and word timestamps.
+- Text to Speech `cancel()`, like Google's: a cancelled `synthesize` call
+  fails with status 1, a cancelled stream closes cleanly, and cancelling a
+  `synthesizeStream` subscription stops Google's stream at once.
 - `TextToSpeechOptions.defaultLocale` is null by default, so Google infers the
   locale from the voice, as its Web, Android and iOS tasks do, and a Kokoro
   voice in another language needs no locale (Google refuses it in `en-US`).

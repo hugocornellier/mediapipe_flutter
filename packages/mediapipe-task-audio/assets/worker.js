@@ -34,10 +34,27 @@ async function run(type, input, request) {
       return null;
     case 'listVoices':
       return JSON.stringify(await task.listVoices());
-    case 'synthesize':
-      return speech(await task.synthesize(text, withoutNulls({voiceId, locale})));
+    case 'synthesize': {
+      // A cancel comes from the message handler, while Google's call waits.
+      if (request.cancelled) return {cancelled: true};
+      request.onCancel = () => task.cancel();
+      try {
+        const result = await task.synthesize(text, withoutNulls({voiceId, locale}));
+        // Google may have finished as the cancel came.
+        return request.cancelled ? {cancelled: true} : speech(result);
+      } catch (error) {
+        if (request.cancelled) return {cancelled: true};
+        throw error;
+      } finally {
+        request.onCancel = undefined;
+      }
+    }
     case 'synthesizeStream': {
+      if (request.cancelled) return null;
       const stream = await task.synthesizeStream(text, withoutNulls({voiceId, locale}), true);
+      // Cancels Google's stream at once, from the message handler, and so a
+      // read in progress too.
+      request.onCancel = () => stream.cancel();
       try {
         for (;;) {
           // Lets a cancel in, whether or not reading the next chunk has to wait.
@@ -46,12 +63,19 @@ async function run(type, input, request) {
             stream.cancel();
             return null;
           }
-          const chunk = await stream.readNext();
-          if (!chunk) return null;
+          let chunk;
+          try {
+            chunk = await stream.readNext();
+          } catch (error) {
+            if (request.cancelled) return null;
+            throw error;
+          }
+          if (!chunk || request.cancelled) return null;
           const result = speech(chunk);
           request.emit(result, [result.samples.buffer]);
         }
       } finally {
+        request.onCancel = undefined;
         stream.close();
       }
     }

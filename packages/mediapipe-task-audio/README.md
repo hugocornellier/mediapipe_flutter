@@ -320,10 +320,16 @@ Future<Float32List> speak(String text) async {
 - `defaultLocale` is null by default: Google infers the locale from the voice,
   as on its Web, Android and iOS tasks (its Python defaults to en-US).
 - `synthesizeStream(text)` yields a chunk per clause as soon as it is ready,
-  so playback can start early; cancelling the subscription stops Google's
-  stream after the chunk in progress. `WordTimestamp.start` and `end` are
-  UTF-16 indices into the text, so `text.substring(start, end)` is the word;
-  Google reports UTF-8 byte offsets, which the package converts.
+  so playback can start early; cancelling the subscription cancels Google's
+  stream at once, abandoning the chunk in progress. `WordTimestamp.start` and
+  `end` are UTF-16 indices into the text, so `text.substring(start, end)` is
+  the word; Google reports UTF-8 byte offsets, which the package converts.
+- `cancel()` cancels every synthesis accepted and not yet finished, like
+  Google's `cancel`: a cancelled `synthesize` call fails with a
+  `TaskException` of status 1 (`Synthesis cancelled.`), and a cancelled
+  stream closes without an error after the chunks it already yielded. Calls
+  made after it run as usual; with nothing in flight, or once disposed, it
+  does nothing.
 - Calls on one task run one at a time, in call order, on a worker isolate.
 
 ### Limitations
@@ -336,8 +342,13 @@ Future<Float32List> speak(String text) async {
   isn't supported.
 - The `TINY_GEMMA` model architecture is not yet available: Google's 1.2.2 C
   library has only `auto` and `omni`, so the package offers those two.
-- Cancelling a single `synthesize` call isn't supported. Cancelling a
-  `synthesizeStream` subscription works, between chunks.
+- Google cannot interrupt its text analysis of a clause, which comes before
+  that clause's audio, so a cancel during one very long clause lands only
+  when the analysis ends: on a Mac, about half a second into a clause of
+  5,000 characters, and more than proportionally later for longer ones.
+  Everywhere else a cancel lands within a few milliseconds.
+- In browsers a cancel lands only when Google's runtime yields, between its
+  steps; this path isn't tested in a browser yet.
 - `transcribe` needs `AudioData.sampleRate` to equal the options'
   `sampleRateHz`, and throws an `ArgumentError` otherwise: create the task at
   the audio's rate, or resample the audio first.

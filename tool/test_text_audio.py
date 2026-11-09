@@ -57,15 +57,20 @@ def main():
         evidence / 'speech-error-reference.log')
 
     if platform.system() != 'Windows':
-        # The audio stream's callback-copy bridge, under AddressSanitizer, as
-        # make test_audio_stream_bridge runs it on macOS; MSVC compiles it on
-        # Windows inside the package's build hook, which the suite below
-        # exercises.
+        # The audio stream's callback-copy bridge and the Text to Speech
+        # cancel guard, under AddressSanitizer, as make test_audio_stream_bridge
+        # runs them on macOS; MSVC compiles them on Windows inside the
+        # package's build hook, which the suite below exercises.
         binary = evidence / 'audio_stream_bridge_test'
         run(['clang', '-Wall', '-Wextra', '-Werror', '-g', '-fsanitize=address', '-pthread',
              AUDIO / 'native/audio_stream_bridge.c', AUDIO / 'native/audio_stream_bridge_test.c',
              '-o', binary], REPO, evidence / 'audio-bridge-build.log')
         run([binary], REPO, evidence / 'audio-bridge-test.log')
+        binary = evidence / 'text_to_speech_guard_test'
+        run(['clang', '-Wall', '-Wextra', '-Werror', '-g', '-fsanitize=address', '-pthread',
+             AUDIO / 'native/text_to_speech_guard.c', AUDIO / 'native/text_to_speech_guard_test.c',
+             '-o', binary], REPO, evidence / 'tts-guard-build.log')
+        run([binary], REPO, evidence / 'tts-guard-test.log')
 
     env = {**os.environ,
            'MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR': str(text_reference),
