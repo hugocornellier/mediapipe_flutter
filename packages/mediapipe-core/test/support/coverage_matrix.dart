@@ -4,7 +4,9 @@
 // The CI coverage gate (tool/coverage/gate.py) requires a passing row for
 // every 'required' and 'device' cell of tool/coverage/matrix.json. This keeps
 // that matrix and a family's capability claims from drifting: a required cell
-// must be a claimed capability, and an 'unsupported' cell must not be.
+// must be a claimed capability, and an 'unsupported' cell must not be. A
+// claimed GPU delegate must be a 'required' or 'device' cell, one the gate
+// proves, since Google's library can accept the GPU and stay on the CPU.
 // tool/check_repository.py checks that one family claims each task.
 import 'dart:convert';
 import 'dart:io';
@@ -17,10 +19,13 @@ const hardwareWebGpu = 'WebGPU apple metal-3';
 
 /// The cells of `tool/coverage/matrix.json` for the tasks in [claims] that
 /// disagree with what each task claims on the matrix's platforms. Browsers
-/// report [webGpu] as their adapter. Run from a package folder.
+/// report [webGpu] as their adapter. Each cell of [unprovedGpu], such as
+/// `'pose_landmarker / ios'`, may claim the GPU while its cell waits for a
+/// test. Run from a package folder.
 List<String> coverageMatrixProblems(
   Map<String, TaskCapabilities Function(TaskPlatform)> claims, {
   String? webGpu,
+  Set<String> unprovedGpu = const {},
 }) {
   final platforms = {
     'web': TaskPlatform(
@@ -74,8 +79,23 @@ List<String> coverageMatrixProblems(
         }
         if (status.startsWith('unsupported') && claimed.contains(delegate)) {
           problems.add('$cell is claimed but marked "$status"');
+        } else if (delegate == Delegate.gpu &&
+            claimed.contains(delegate) &&
+            status != 'required' &&
+            status != 'device' &&
+            !unprovedGpu.contains('$task / $name')) {
+          problems.add('$cell is claimed but marked "$status"');
         }
       }
+    }
+  }
+  for (final cell in unprovedGpu) {
+    final [task, name] = cell.split(' / ');
+    final statuses =
+        (matrix[task] as Map<String, Object?>?)?[name] as Map<String, Object?>?;
+    final status = statuses?['gpu'] as String?;
+    if (status == null || !status.startsWith('pending')) {
+      problems.add('$cell / gpu is listed as unproved but marked "$status"');
     }
   }
   return problems;
