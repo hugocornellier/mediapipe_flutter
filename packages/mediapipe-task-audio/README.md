@@ -241,6 +241,19 @@ them on first use (`ModelStore.allowDownloads = true`) rather than bundling
 them; listing `parakeet_tdt_v3`, `phonon` or `kokoro` under the hook's `models`
 bundles them instead.
 
+`AudioModels.pocketTtsEn` is Kyutai's PocketTTS English (163 MB, CC BY 4.0,
+so an app that ships it credits Kyutai), as Google's LiteRT community
+converted it. It speaks US English at 24 kHz in `alba` by default, with word
+timestamps, on the CPU only. The speech tests compare its voices, two voices'
+utterances, a faster rate and a streamed paragraph with Google's Python
+(`test/fixtures/official_pocket_tts_reference.json`, from the macOS 1.2.2 wheel
+and regenerated on each desktop CI runner), within Phonon's tolerances.
+Browsers are not tested with it. Google's page says it has only the eight
+`en-US` voices, but Google's 1.2.2 runtime also lists the multilingual bundle's
+six others (`estelle`, `juergen`, `lola`, `rafael`, `giovanni`, `daan`) for
+it, and speaks something for them, so choose an `en-US` one. Listing
+`pocket_tts_en` under the hook's `models` bundles it.
+
 In a browser, a pinned `model:` is verified and kept in Cache Storage, then
 passes through the page's memory as bytes. For Parakeet, a `modelPath` URL
 avoids that copy: Google's runtime reads the file itself, so the URL's server
