@@ -402,7 +402,20 @@ void main() {
     expect(() => AudioTranscriberOptions(sampleRateHz: 0), throwsArgumentError);
     expect(() => TextToSpeechOptions(speakingRate: 0), throwsArgumentError);
     expect(() => TextToSpeechOptions(speakingRate: 4.5), throwsArgumentError);
-    expect(() => TextToSpeechOptions(targetBucket: -1), throwsArgumentError);
+    // Google's guide lists Kokoro's buckets as 0, 64, 128 and 256.
+    TextToSpeechOptions kokoro(int bucket) =>
+        TextToSpeechOptions(modelPath: 'kokoro.litertlm', targetBucket: bucket);
+    for (final bucket in [-1, 32, 512]) {
+      expect(
+        () => kokoro(bucket),
+        throwsA(
+          isA<ArgumentError>().having((e) => e.name, 'name', 'targetBucket'),
+        ),
+      );
+    }
+    for (final bucket in [0, 64, 128, 256]) {
+      expect(kokoro(bucket).targetBucket, bucket);
+    }
   });
 
   test('each speech task offers the GPU only where it is proved', () async {

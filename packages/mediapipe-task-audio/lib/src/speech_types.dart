@@ -57,8 +57,12 @@ final class AudioTranscriberOptions extends TaskOptions {
   /// A decoding prompt for generative models; null keeps the model's.
   final String? prompt;
 
-  /// A directory where Google caches compiled weights between runs; null
-  /// disables the cache. In a browser it is a path in the runtime's virtual
+  /// A directory where Google's runtime caches compiled model artifacts
+  /// between runs. Null, the default, passes no directory, which Google's
+  /// Python documents as turning the disk cache off; Parakeet wrote no cache
+  /// with it on a Mac, on the CPU or the GPU, but Google's Text to Speech
+  /// does with Kokoro, so pass `':nocache'`, as Google's guides say, to be
+  /// sure caching is off. In a browser it is a path in the runtime's virtual
   /// file system, which goes with the page.
   final String? cacheDirectory;
 }
@@ -138,8 +142,12 @@ final class TextToSpeechOptions extends TaskOptions {
         'Must be in (0, 4]',
       );
     }
-    if (targetBucket < 0) {
-      throw ArgumentError.value(targetBucket, 'targetBucket', 'Must be >= 0');
+    if (!const {0, 64, 128, 256}.contains(targetBucket)) {
+      throw ArgumentError.value(
+        targetBucket,
+        'targetBucket',
+        'Must be 0, 64, 128 or 256',
+      );
     }
   }
 
@@ -154,13 +162,20 @@ final class TextToSpeechOptions extends TaskOptions {
   /// Speed: 1 is normal, 2 twice as fast; in (0, 4].
   final double speakingRate;
 
-  /// A fixed phoneme sequence length for models with static shapes (Kokoro);
-  /// 0 picks one per input.
+  /// The sequence-length bucket for Kokoro's static-shape graph: 64, 128 or
+  /// 256 tokens, the values Google's guide lists, or 0 for the model's default
+  /// capacity. Phonon and PocketTTS ignore it.
   final int targetBucket;
 
-  /// A directory where Google caches unpacked model files and compiled
-  /// weights between runs; null disables the cache. In a browser it is a path
-  /// in the runtime's virtual file system, which goes with the page.
+  /// A directory where Google's runtime caches unpacked model files and
+  /// compiled weights between runs. Null, the default, passes no directory,
+  /// and Google's runtime then caches Kokoro's compiled weights next to the
+  /// model file: on a Mac, about 73 MB of XNNPACK caches on the CPU, and
+  /// about 34 MB of XNNPACK and GPU program and weight caches on the GPU.
+  /// Phonon wrote none. Google's Python documents null as turning the disk
+  /// cache off, which it does not do for Kokoro; pass `':nocache'` to turn
+  /// caching off, as Google's guide says. In a browser it is a path in the
+  /// runtime's virtual file system, which goes with the page.
   final String? cacheDirectory;
 }
 
