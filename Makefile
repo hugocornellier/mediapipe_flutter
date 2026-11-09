@@ -100,12 +100,14 @@ test_audio:
 	$(MAKE) test_audio_stream_bridge
 	cd packages/mediapipe-task-audio && dart test --timeout 180s --reporter expanded
 
-# The audio stream's callback-copy bridge, its slots and their threads,
-# under AddressSanitizer.
+# The audio stream's callback-copy bridge, its slots and their threads, and
+# the Text to Speech cancel guard, under AddressSanitizer.
 test_audio_stream_bridge:
 	mkdir -p build/ci-tmp
 	clang -Wall -Wextra -Werror -g -fsanitize=address -pthread packages/mediapipe-task-audio/native/audio_stream_bridge.c packages/mediapipe-task-audio/native/audio_stream_bridge_test.c -o build/ci-tmp/audio_stream_bridge_test
 	build/ci-tmp/audio_stream_bridge_test
+	clang -Wall -Wextra -Werror -g -fsanitize=address -pthread packages/mediapipe-task-audio/native/text_to_speech_guard.c packages/mediapipe-task-audio/native/text_to_speech_guard_test.c -o build/ci-tmp/text_to_speech_guard_test
+	build/ci-tmp/text_to_speech_guard_test
 
 # The emulated stream and the decoders in Chrome, compiled to JavaScript and
 # to WebAssembly. A contributor shortcut: CI runs these commands itself.
