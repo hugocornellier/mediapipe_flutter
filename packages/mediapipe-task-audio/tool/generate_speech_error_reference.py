@@ -102,6 +102,8 @@ def main():
     parser.add_argument('--output', type=Path,
                         default=FIXTURES / 'official_speech_error_reference.json')
     args = parser.parse_args()
+    # Google's messages hold box-drawing characters; Windows defaults to cp1252.
+    sys.stdout.reconfigure(encoding='utf-8')
     os.environ.setdefault('MPLCONFIGDIR', str(PACKAGE / 'build/matplotlib'))
     if args.create:
         create(*args.create)
