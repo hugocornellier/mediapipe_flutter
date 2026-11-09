@@ -37,4 +37,44 @@ void main() {
   test('coverage matrix agrees with the audio capability claims', () {
     expect(coverageMatrixProblems(_claims, webGpu: hardwareWebGpu), isEmpty);
   });
+
+  test('the check refuses a GPU claim the matrix does not prove', () {
+    // The transcriber's claims as they were when iPhones were offered the
+    // GPU, whose matrix cell is still pending.
+    TaskCapabilities withIphoneGpu(TaskPlatform platform) {
+      final claimed = audioTranscriberCapabilitiesForPlatform(platform);
+      return TaskCapabilities.onTargets(
+        platform: platform,
+        delegates: {
+          Delegate.cpu: claimed.supportedTargets,
+          Delegate.gpu: {...transcriberGpuTargets, 'ios/arm64': '15.0'},
+        },
+        unavailableReasons: claimed.unavailableReasons,
+        runtimeVersion: claimed.runtimeVersion,
+      );
+    }
+
+    expect(
+      coverageMatrixProblems({'audio_transcriber': withIphoneGpu}),
+      contains(startsWith('audio_transcriber / ios / gpu is claimed but')),
+    );
+    expect(
+      coverageMatrixProblems(
+        {'audio_transcriber': withIphoneGpu},
+        unprovedGpu: {'audio_transcriber / ios'},
+      ),
+      isNot(contains(startsWith('audio_transcriber / ios / gpu'))),
+    );
+    expect(
+      coverageMatrixProblems(
+        _claims,
+        webGpu: hardwareWebGpu,
+        unprovedGpu: {'text_to_speech / macos'},
+      ),
+      [
+        'text_to_speech / macos / gpu is listed as unproved but marked '
+            '"required"',
+      ],
+    );
+  });
 }
