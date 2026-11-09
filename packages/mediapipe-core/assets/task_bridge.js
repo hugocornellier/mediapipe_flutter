@@ -77,7 +77,7 @@
       return request(state, 'run', input);
     },
     // Like run, with each of the request's chunks passed to onChunk until
-    // done settles; cancel asks the worker to stop after the chunk in progress.
+    // done settles; cancel asks the worker to stop the request.
     stream(id, input, onChunk) {
       const state = workers.get(id);
       if (!state) return {done: Promise.reject(new Error('MediaPipe task is closed')), cancel() {}};
@@ -88,6 +88,11 @@
           if (state.pending.has(requestId)) state.worker.postMessage({id: requestId, type: 'cancel'});
         },
       };
+    },
+    // Cancels every request the worker has received, as its family's worker
+    // script defines a cancel for each; nothing once the worker has closed.
+    cancelAll(id) {
+      workers.get(id)?.worker.postMessage({type: 'cancelAll'});
     },
     async close(id) {
       const state = workers.get(id);
