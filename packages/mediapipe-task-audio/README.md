@@ -266,10 +266,11 @@ it, and speaks something for them, so choose an `en-US` one. Listing
 In a browser, a pinned `model:` is verified and kept in Cache Storage, then
 passes through the page's memory as bytes. For Parakeet, a `modelPath` URL
 avoids that copy: Google's runtime reads the file itself, so the URL's server
-must allow the page's origin. CI's browser job runs both models in Chromium
-and Firefox on Linux, on the CPU, and in Chromium on macOS 15, on the GPU; it is
-set to run them in WebKit on Linux too. On a developer's 48 GB Mac they also ran
-in Firefox and WebKit. Phones' browsers are untested, and may not have the
+must allow the page's origin. CI's browser job runs both models on the CPU in
+Chromium and Firefox on Linux and in Chromium on macOS 15, where Parakeet also
+runs on the GPU (WebGPU); every browser job checks that Phonon refuses the GPU
+delegate. It is set to run them in WebKit on Linux too. On a developer's 48 GB
+Mac they also ran in Firefox and WebKit. Phones' browsers are untested, and may not have the
 memory for Parakeet.
 
 ```dart
