@@ -27,7 +27,8 @@ const _clips = <String, String>{
 
 /// Audio Transcriber on a bundled clip: the whole clip at once, or a second
 /// at a time with Google's interim hypotheses, then the final segments.
-/// Google's 615 MB Parakeet model downloads on first use.
+/// NVIDIA's 615 MB Parakeet model, as Google's LiteRT community converted
+/// it, downloads on first use.
 class TranscriberPage extends StatefulWidget {
   const TranscriberPage({
     super.key,

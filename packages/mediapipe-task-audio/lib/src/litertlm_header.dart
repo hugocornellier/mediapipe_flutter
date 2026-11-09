@@ -21,9 +21,9 @@ int? litertlmHeaderEnd(Uint8List preamble) {
 }
 
 /// Whether [header], a bundle's bytes up to its header's end, marks a section
-/// `backend_constraint: gpu`. Google's Kokoro bundle
+/// `backend_constraint: gpu`. The LiteRT community's Kokoro bundle
 /// (`kokoro_int8_gpu_fp16.litertlm`) marks its vocoder `gpu` and its acoustic
-/// model `cpu`, which is where its Text to Speech runs them on the GPU
+/// model `cpu`, which is where Google's Text to Speech runs them on the GPU
 /// delegate; Phonon marks none. Null when [header] is not a LiteRT-LM header.
 bool? litertlmHasGpuSection(Uint8List header) {
   try {
