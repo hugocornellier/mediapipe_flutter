@@ -33,11 +33,13 @@ jobs:
       family: audio
       tasks: audio_transcriber,text_to_speech
       integration-test: speech_test
-      # Parakeet TDT 0.6B v3 (615 MB) and Phonon (87 MB).
+      # Parakeet TDT 0.6B v3 (615 MB), Phonon (87 MB) and PocketTTS English
+      # (163 MB).
       model-path: |
         packages/mediapipe-task-audio/models/parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm
         packages/mediapipe-task-audio/models/phonon_int8.litertlm
-      download-models: parakeet_tdt_v3 phonon
+        packages/mediapipe-task-audio/models/pocket_tts_en_int8.litertlm
+      download-models: parakeet_tdt_v3 phonon pocket_tts_en
       test-paths: test/speech_test.dart
       prepare-reference: prepare_speech_reference.py
       reference-env: MEDIAPIPE_SPEECH_REFERENCE_DIR
@@ -82,6 +84,7 @@ jobs:
           path: |
             packages/mediapipe-task-audio/models/parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm
             packages/mediapipe-task-audio/models/phonon_int8.litertlm
+            packages/mediapipe-task-audio/models/pocket_tts_en_int8.litertlm
           key: audio-models-${{ hashFiles('packages/mediapipe-task-audio/lib/models.dart') }}
       - if: github.event_name != 'pull_request'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -89,12 +92,15 @@ jobs:
           path: |
             packages/mediapipe-task-audio/models/parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm
             packages/mediapipe-task-audio/models/phonon_int8.litertlm
+            packages/mediapipe-task-audio/models/pocket_tts_en_int8.litertlm
           key: audio-models-${{ hashFiles('packages/mediapipe-task-audio/lib/models.dart') }}
+      # PocketTTS too, which the browsers do not use, so this job saves the
+      # same cache entry as family.yaml's package job.
       - name: Download Google's models
         working-directory: packages/mediapipe-task-audio
         run: |
           flutter pub get
-          dart tool/download_models.dart parakeet_tdt_v3 phonon
+          dart tool/download_models.dart parakeet_tdt_v3 phonon pocket_tts_en
       - name: Prepare the web gallery
         run: dart run tool/gallery_builder/bin/prepare_gallery.dart --target web --tasks audio_transcriber,text_to_speech,face_detector
       - name: Install Playwright's browser
