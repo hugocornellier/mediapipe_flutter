@@ -34,6 +34,12 @@ final _kokoroModel =
 final _requiredModels =
     (Platform.environment['MEDIAPIPE_REQUIRED_MODELS'] ?? '').split(' ');
 
+/// Many sentences, so many chunks: the web probe's cancelled text.
+const _cancelledText =
+    'This stream stops at its first chunk. The second sentence never comes. '
+    'Neither does the third. The fourth stays silent too. So does the fifth. '
+    'The sixth has nothing to say. The seventh is the same. The eighth as well.';
+
 /// Google's word times, rounded to four places in the reference.
 const _secondsDelta = 1e-3;
 
@@ -213,6 +219,49 @@ void main() {
         expect(onGpu, greaterThan(onCpu + _metalProof));
       },
     );
+
+    // Google's answer to no audio is no segments, in a whole clip and in a
+    // stream's block alike.
+    test('empty audio gives no segments', skip: missingTranscriber, () async {
+      final task = await AudioTranscriber.create(
+        AudioTranscriberOptions(modelPath: _transcriberModel),
+      );
+      addTearDown(task.dispose);
+      final empty = AudioData(samples: Float32List(0), sampleRate: 16000);
+      expect((await task.transcribe(empty)).segments, isEmpty);
+      expect(
+        (await task.transcribe(empty, endOfStream: false)).segments,
+        isEmpty,
+      );
+      expect((await task.finishStream()).segments, isEmpty);
+      final audio = decodeWav(
+        File('$_fixtures/speech_16000_hz_mono.wav').readAsBytesSync(),
+      );
+      final expected =
+          (transcriberCases['speech-16k']['calls'] as List).single as List;
+      expect(_segments(await task.transcribe(audio)), expected);
+    });
+
+    test(
+      'dispose waits for a call in flight, then refuses calls',
+      skip: missingTranscriber,
+      () async {
+        final task = await AudioTranscriber.create(
+          AudioTranscriberOptions(modelPath: _transcriberModel),
+        );
+        final audio = decodeWav(
+          File('$_fixtures/speech_16000_hz_mono.wav').readAsBytesSync(),
+        );
+        final pending = task.transcribe(audio);
+        final disposed = task.dispose();
+        final expected =
+            (transcriberCases['speech-16k']['calls'] as List).single as List;
+        expect(_segments(await pending), expected);
+        await disposed;
+        expect(() => task.transcribe(audio), throwsStateError);
+        expect(task.finishStream, throwsStateError);
+      },
+    );
   });
 
   group('TextToSpeech', () {
@@ -279,18 +328,35 @@ void main() {
       },
     );
 
+    // One chunk reaches the listener whether or not the cancel reaches
+    // Google: so the proof is time. Leaving the loop waits for the worker to
+    // end the request, which on a text of many chunks comes long before the
+    // whole stream would.
     test(
-      'cancelling a stream stops it, and the task still answers',
+      'cancelling a stream stops Google\'s, and the task still answers',
       skip: missingTts,
       () async {
-        final text = (speech['stream'] as Map)['text'] as String;
+        final whole = Stopwatch()..start();
+        final chunks = await task.synthesizeStream(_cancelledText).length;
+        whole.stop();
+        expect(chunks, greaterThan(8));
+        final cancelled = Stopwatch()..start();
         var received = 0;
-        await for (final chunk in task.synthesizeStream(text)) {
+        await for (final chunk in task.synthesizeStream(_cancelledText)) {
           expect(chunk.chunkIndex, 0);
           received++;
           break;
         }
+        cancelled.stop();
         expect(received, 1);
+        // ignore: avoid_print
+        print(
+          'The whole stream: $chunks chunks in ${whole.elapsedMilliseconds} '
+          'ms; cancelled at its first: ${cancelled.elapsedMilliseconds} ms',
+        );
+        // A quarter leaves room for a busy machine: on a developer's Mac the
+        // cancelled stream ends in about a hundredth of the whole one's time.
+        expect(cancelled.elapsed, lessThan(whole.elapsed ~/ 4));
         final fox = utterances['fox'] as Map<String, dynamic>;
         _expectAudio(
           await task.synthesize(fox['text'] as String),
@@ -402,6 +468,127 @@ void main() {
       expect(() => other.synthesize('Hello.'), throwsStateError);
       expect(() => other.synthesizeStream('Hello.'), throwsStateError);
     });
+
+    // Google speaks no text as no audio, as its Python does: no error.
+    test('empty text gives no audio', skip: missingTts, () async {
+      for (final text in ['', '   ']) {
+        final result = await task.synthesize(text);
+        expect(result.samples, isEmpty, reason: '"$text"');
+        expect(result.sampleRateHz, 24000);
+        expect(result.wordTimestamps, isEmpty);
+      }
+      expect(await task.synthesizeStream('').toList(), isEmpty);
+    });
+
+    test(
+      'a long text completes, its length in step with the text',
+      skip: missingTts,
+      timeout: const Timeout(Duration(minutes: 5)),
+      () async {
+        const sentence = 'The quick brown fox jumps over the lazy dog. ';
+        final one = await task.synthesize(sentence);
+        final text = sentence * 70;
+        expect(text.length, greaterThan(3000));
+        final long = await task.synthesize(text);
+        expect(long.wordTimestamps, hasLength(70 * one.wordTimestamps.length));
+        expect(
+          text.substring(
+            long.wordTimestamps.last.start,
+            long.wordTimestamps.last.end,
+          ),
+          'dog.',
+        );
+        expect(
+          long.samples.length / one.samples.length,
+          inInclusiveRange(63, 77),
+        );
+        expect(
+          long.wordTimestamps.last.endSeconds,
+          lessThanOrEqualTo(long.samples.length / long.sampleRateHz),
+        );
+      },
+    );
+
+    test(
+      'dispose waits for a call in flight, then refuses calls',
+      skip: missingTts,
+      () async {
+        final other = await TextToSpeech.create(
+          TextToSpeechOptions(modelPath: _ttsModel),
+        );
+        final fox = utterances['fox'] as Map<String, dynamic>;
+        final text = fox['text'] as String;
+        final pending = other.synthesize(text);
+        final voices = other.listVoices();
+        final disposed = other.dispose();
+        _expectAudio(await pending, text, fox);
+        expect(await voices, hasLength((speech['voices'] as List).length));
+        await disposed;
+        expect(() => other.synthesize(text), throwsStateError);
+        expect(other.listVoices, throwsStateError);
+      },
+    );
+  });
+
+  group('a model path that is no model', () {
+    final errors = _errorReference();
+    final outcomes = {
+      for (final MapEntry(key: task, value: table)
+          in (errors?['cases'] as Map<String, dynamic>? ?? {}).entries)
+        for (final MapEntry(key: name, value: outcome)
+            in (table as Map<String, dynamic>).entries)
+          '$task $name': outcome as Map<String, dynamic>,
+    };
+    Directory? root;
+    setUpAll(() async {
+      root = await Directory.systemTemp.createTemp('speech_errors');
+    });
+    tearDownAll(() async => root?.delete(recursive: true));
+
+    for (final MapEntry(key: name, value: outcome) in outcomes.entries) {
+      final task = name.split(' ').first;
+      // Where the package checks the path before Google's library sees it.
+      final checked =
+          task == 'text_to_speech' &&
+          Platform.isLinux &&
+          outcome['kind'] != 'file';
+      test(
+        checked
+            ? '$name fails with the package\'s NOT_FOUND, never an abort'
+            : '$name fails with Google\'s status and message',
+        () async {
+          if (outcome['aborted'] == true && !checked) {
+            fail('Google ends the process here: ${outcome['log']}');
+          }
+          final path = await _noModel(root!, outcome);
+          await expectLater(
+            task == 'transcriber'
+                ? AudioTranscriber.create(
+                    AudioTranscriberOptions(modelPath: path),
+                  )
+                : TextToSpeech.create(TextToSpeechOptions(modelPath: path)),
+            throwsA(checked ? _noModelFile(path) : _googleError(outcome, path)),
+          );
+        },
+      );
+    }
+
+    test(
+      'Google ends the process only on Linux, for Text to Speech',
+      () {
+        final aborted = [
+          for (final MapEntry(key: name, value: outcome) in outcomes.entries)
+            if (outcome['aborted'] == true) name,
+        ];
+        // When Google's Linux library stops aborting, the package's own
+        // check, _requireModelFile, can go.
+        expect(aborted, Platform.isLinux ? isNotEmpty : isEmpty);
+      },
+      skip: errors == null
+          ? 'No same-host speech error reference: run '
+                'tool/prepare_speech_reference.py --errors-only.'
+          : false,
+    );
   });
 
   group('Kokoro on the CPU', () {
@@ -748,6 +935,64 @@ String? _missing(String model, String path, String name) =>
     File(path).existsSync() || _requiredModels.contains(name)
     ? null
     : 'No $model model at $path; run dart tool/download_models.dart $name.';
+
+/// Google's outcomes on this host for a model path that is no model, from
+/// tool/generate_speech_error_reference.py, or null where none was made: the
+/// checked-in one is the Mac's, and Google's status differs by OS.
+Map<String, dynamic>? _errorReference() {
+  const own = 'MEDIAPIPE_SPEECH_ERROR_REFERENCE_DIR';
+  final environment = Platform.environment.containsKey(own)
+      ? own
+      : 'MEDIAPIPE_SPEECH_REFERENCE_DIR';
+  if (!Platform.isMacOS && !Platform.environment.containsKey(environment)) {
+    return null;
+  }
+  return loadSameHostReference(
+    'official_speech_error_reference.json',
+    prefix: 'error_',
+    cases: 'cases',
+    environment: environment,
+    wheel: releaseReferenceWheel,
+  );
+}
+
+/// The path [outcome] was captured with, made under [root] as the generator
+/// made it.
+Future<String> _noModel(Directory root, Map<String, dynamic> outcome) async {
+  final file = outcome['file'] as String;
+  final kind = outcome['kind'] as String;
+  if (kind == 'missing') return '/nonexistent/$file';
+  final separator = Platform.pathSeparator;
+  final path = '${root.path}$separator$kind$separator$file';
+  if (kind == 'directory') {
+    await Directory(path).create(recursive: true);
+  } else {
+    await File(path).create(recursive: true);
+    await File(path).writeAsString(_notAModel);
+  }
+  return path;
+}
+
+/// The bytes of the generator's file that is not a model.
+const _notAModel = 'not a model';
+
+/// Google's status and message, with the path in place of `{path}`.
+Matcher _googleError(Map<String, dynamic> outcome, String path) =>
+    isA<TaskException>()
+        .having((error) => error.statusCode, 'statusCode', outcome['status'])
+        .having(
+          (error) => error.message,
+          'message',
+          (outcome['message'] as String).replaceAll('{path}', path),
+        )
+        .having((error) => error.gpuUnavailable, 'gpuUnavailable', false);
+
+/// The package's NOT_FOUND on Linux for a Text to Speech model path that is
+/// no file.
+Matcher _noModelFile(String path) => isA<TaskException>()
+    .having((error) => error.statusCode, 'statusCode', 5)
+    .having((error) => error.message, 'message', contains(path))
+    .having((error) => error.gpuUnavailable, 'gpuUnavailable', false);
 
 List<Map<String, Object>> _segments(AudioTranscriberResult result) => [
   for (final segment in result.segments)

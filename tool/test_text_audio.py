@@ -3,7 +3,9 @@
 Installs Google's pinned official wheels for this host (1.2.2 for the text
 tasks, whose Language Detector changed in it; 1.1.0 for audio), generates the text and
 audio references with them, downloads the pinned models, and runs both
-packages' Dart suites against those same-host references, after the audio
+packages' Dart suites against those same-host references (with what Google's
+speech tasks do with a path that is no model, from the 1.2.2 wheel, for the
+audio suite's speech tests that need no model), after the audio
 stream bridge's AddressSanitizer test outside Windows. CI runs it on the
 Linux x64 and Windows x64 desktop runners; it runs on macOS arm64 as well.
 Python only prepares the expected outputs; the suites load Google's library
@@ -49,6 +51,10 @@ def main():
     run([sys.executable, '-B', AUDIO / 'tool/prepare_audio_reference.py',
          '--python', pythons['audio'], '--output-dir', audio_reference], REPO,
         evidence / 'audio-reference.log')
+    speech_error_reference = REPO / 'build/speech-error-reference'
+    run([sys.executable, '-B', AUDIO / 'tool/prepare_speech_reference.py', '--errors-only',
+         '--python', pythons['text'], '--output-dir', speech_error_reference], REPO,
+        evidence / 'speech-error-reference.log')
 
     if platform.system() != 'Windows':
         # The audio stream's callback-copy bridge, under AddressSanitizer, as
@@ -63,7 +69,8 @@ def main():
 
     env = {**os.environ,
            'MEDIAPIPE_CLASSIC_TEXT_REFERENCE_DIR': str(text_reference),
-           'MEDIAPIPE_AUDIO_REFERENCE_DIR': str(audio_reference)}
+           'MEDIAPIPE_AUDIO_REFERENCE_DIR': str(audio_reference),
+           'MEDIAPIPE_SPEECH_ERROR_REFERENCE_DIR': str(speech_error_reference)}
     # The text package's generative tasks run in tool/test_modern_text.py. A
     # task's close waits for Google's usage-logging upload, so a slow reply
     # holds a test past the default 30 s.
