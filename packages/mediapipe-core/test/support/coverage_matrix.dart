@@ -38,10 +38,11 @@ List<String> coverageMatrixProblems(
       architecture: 'arm64',
       version: '15.0',
     ),
+    // The only macOS CI runs, so a required cell is one CI can prove.
     'macos': const TaskPlatform(
       operatingSystem: 'macos',
       architecture: 'arm64',
-      version: '14.0',
+      version: '15.0',
     ),
     'linux': const TaskPlatform(operatingSystem: 'linux', architecture: 'x64'),
     'windows': const TaskPlatform(

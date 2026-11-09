@@ -16,7 +16,8 @@ timings) run on 64-bit Android, iOS, macOS, Linux, Windows and the web; see
 The task runs Google's runtime on each platform, on the CPU: its MediaPipe
 1.2.2 audio library on Android 9+, iOS 15+, macOS 14+ arm64, Linux x64 and
 Windows x64, which this package's hook bundles, and
-`@mediapipe/tasks-audio` 1.2.2 in browsers.
+`@mediapipe/tasks-audio` 1.2.2 in browsers. The library is built for macOS 14
+and tested on macOS 15.
 
 No platform needs a setting. See
 [platform setup](https://github.com/google/flutter-mediapipe/blob/main/doc/platform_setup.md)
@@ -210,18 +211,20 @@ Both run on the CPU. Google's library can accept the GPU delegate and stay on
 the CPU with the same answer, so this package offers it only where a test saw
 the GPU do the work. That is `AudioTranscriber` on:
 
-- macOS arm64 (Metal). CI's package tests check it on each macOS version they
-  run on.
+- macOS arm64 (Metal). CI's package and gallery tests check it on macOS 15,
+  the only version CI runs. It passed once on macOS 14 before GitHub retired
+  those runners, and no test runs on macOS 14 now.
 - Chromium and WebKit on a Mac's Apple adapter (WebGPU), each checked on a
   developer's Mac. CI's browser job is set to repeat Chromium's check on a hosted
   Mac; it has no such job for WebKit.
 
 iPhones (Metal) are offered too, but the device test is still to run.
 
-`TextToSpeech` is offered the GPU only on macOS arm64 (Metal), for Kokoro
-(`AudioModels.kokoro`, 295 MB, Apache 2.0). CI's package tests check it on each
-macOS version they run on: Kokoro holds memory on Metal and speaks as it does
-on the CPU, about five times faster. Google runs only Kokoro's vocoder there;
+`TextToSpeech` is offered the GPU only on macOS 15 and later on arm64 (Metal),
+for Kokoro (`AudioModels.kokoro`, 295 MB, Apache 2.0). CI's package tests check
+it on macOS 15: Kokoro holds memory on Metal and speaks as it does on the CPU,
+about five times faster. Kokoro has never run on macOS 14, so there it gets the CPU,
+and a reason. Google runs only Kokoro's vocoder there;
 its acoustic model, Phonon and PocketTTS run on the CPU. So `create` takes the
 GPU delegate only for a model whose bundle marks a section for the GPU, and
 throws a `RuntimeUnavailableException` for any other, such as Phonon. A Kokoro

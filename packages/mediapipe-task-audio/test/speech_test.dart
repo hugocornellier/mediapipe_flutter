@@ -423,6 +423,19 @@ void main() {
       Delegate.cpu,
       Delegate.gpu,
     });
+    // Kokoro has never run on macOS 14, which CI no longer runs.
+    const mac14 = TaskPlatform(
+      operatingSystem: 'macos',
+      architecture: 'arm64',
+      version: '14.0',
+    );
+    expect(textToSpeechCapabilitiesForPlatform(mac14).supportedDelegates, {
+      Delegate.cpu,
+    });
+    expect(audioTranscriberCapabilitiesForPlatform(mac14).supportedDelegates, {
+      Delegate.cpu,
+      Delegate.gpu,
+    });
     for (final platform in const [
       TaskPlatform(operatingSystem: 'linux', architecture: 'x64'),
       TaskPlatform(operatingSystem: 'windows', architecture: 'x64'),
