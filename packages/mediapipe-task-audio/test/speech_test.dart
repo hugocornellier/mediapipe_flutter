@@ -1114,20 +1114,29 @@ void main() {
     );
   });
 
-  test('options refuse values Google rejects', () {
-    expect(() => AudioTranscriberOptions(sampleRateHz: 0), throwsArgumentError);
-    expect(() => TextToSpeechOptions(speakingRate: 0), throwsArgumentError);
-    expect(() => TextToSpeechOptions(speakingRate: 4.5), throwsArgumentError);
+  test('options refuse the values Google rejects, and read 0 Hz as 16000', () {
+    // A model source, so that only the value under test can be refused.
+    Matcher refuses(String name) =>
+        throwsA(isA<ArgumentError>().having((e) => e.name, 'name', name));
+    AudioTranscriberOptions transcriber(int rate) => AudioTranscriberOptions(
+      modelPath: 'parakeet.litertlm',
+      sampleRateHz: rate,
+    );
+    // Google's C header: 0 means 16000 Hz, and negative rates are invalid.
+    expect(transcriber(0).sampleRateHz, 16000);
+    expect(transcriber(48000).sampleRateHz, 48000);
+    expect(() => transcriber(-1), refuses('sampleRateHz'));
+    TextToSpeechOptions speech(double rate) =>
+        TextToSpeechOptions(modelPath: 'phonon.litertlm', speakingRate: rate);
+    for (final rate in [0.0, -1.0, 4.5]) {
+      expect(() => speech(rate), refuses('speakingRate'));
+    }
+    expect(speech(4).speakingRate, 4);
     // Google's guide lists Kokoro's buckets as 0, 64, 128 and 256.
     TextToSpeechOptions kokoro(int bucket) =>
         TextToSpeechOptions(modelPath: 'kokoro.litertlm', targetBucket: bucket);
     for (final bucket in [-1, 32, 512]) {
-      expect(
-        () => kokoro(bucket),
-        throwsA(
-          isA<ArgumentError>().having((e) => e.name, 'name', 'targetBucket'),
-        ),
-      );
+      expect(() => kokoro(bucket), refuses('targetBucket'));
     }
     for (final bucket in [0, 64, 128, 256]) {
       expect(kokoro(bucket).targetBucket, bucket);

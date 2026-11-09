@@ -33,19 +33,20 @@ final class AudioTranscriberOptions extends TaskOptions {
     super.model,
     super.modelPath,
     super.delegate,
-    this.sampleRateHz = 16000,
+    int sampleRateHz = 16000,
     this.enableInterimResults = false,
     this.modelArchitecture = TranscriberModelArchitecture.auto,
     this.prompt,
     this.cacheDirectory,
-  }) : super(family: 'mediapipe_audio', registry: AudioModels.byName) {
-    if (sampleRateHz <= 0) {
-      throw ArgumentError.value(sampleRateHz, 'sampleRateHz', 'Must be > 0');
+  }) : sampleRateHz = sampleRateHz == 0 ? 16000 : sampleRateHz,
+       super(family: 'mediapipe_audio', registry: AudioModels.byName) {
+    if (sampleRateHz < 0) {
+      throw ArgumentError.value(sampleRateHz, 'sampleRateHz', 'Must be >= 0');
     }
   }
 
   /// The rate of the audio every [AudioData] passed to `transcribe` has.
-  /// Google resamples it to the model's.
+  /// Google resamples it to the model's. 0 means 16000, as in Google's API.
   final int sampleRateHz;
 
   /// Whether a stream also returns segments that later audio may revise.
