@@ -299,6 +299,25 @@ Future<Float32List> speak(String text) async {
   Google reports UTF-8 byte offsets, which the package converts.
 - Calls on one task run one at a time, in call order, on a worker isolate.
 
+### Limitations
+
+- The multilingual PocketTTS bundle (`pocket_tts_int8`, about 760 MB) isn't
+  tested yet. It can be loaded with `modelPath`; nothing checks that it works.
+- Sending text in pieces (Google's `pushText` and `finishInput`) isn't
+  supported: each call sends its whole text.
+- Google's `computeWordTimestamps`, which aligns words with audio you supply,
+  isn't supported.
+- The `TINY_GEMMA` model architecture is not yet available: Google's 1.2.2 C
+  library has only `auto` and `omni`, so the package offers those two.
+- Cancelling a single `synthesize` call isn't supported. Cancelling a
+  `synthesizeStream` subscription works, between chunks.
+- `transcribe` needs `AudioData.sampleRate` to equal the options'
+  `sampleRateHz`, and throws an `ArgumentError` otherwise: create the task at
+  the audio's rate, or resample the audio first.
+- Phones' browsers are untested.
+- The GPU delegate is offered only where listed above; everywhere else it
+  isn't supported.
+
 ## Validation
 
 The tests compare every chunk of three official MediaPipe sample clips (speech
