@@ -218,8 +218,6 @@ the GPU do the work. That is `AudioTranscriber` on:
   on macOS 15, and WebKit on that adapter, checked only on a developer's Mac.
   CI has no WebKit job on a Mac.
 
-iPhones (Metal) are offered too, but the device test is still to run.
-
 `TextToSpeech` is offered the GPU only on macOS 15 and later on arm64 (Metal) for
 Kokoro (`AudioModels.kokoro`, 295 MB, Apache 2.0). CI's package tests check it
 on macOS 15: Kokoro holds memory on Metal, and its speech is as long as on the
@@ -231,10 +229,11 @@ for the GPU, and throws a `RuntimeUnavailableException` for any other, such as
 Phonon. A Kokoro file from elsewhere keeps Google's filename, which the task
 reads to tell the models apart.
 
-Elsewhere, including Android, Linux, Windows, the iOS simulator, Firefox,
-browsers on other adapters and browsers on iPhones and iPads, the GPU delegate
-throws a `RuntimeUnavailableException` that says why. Firefox had no adapter
-where it was tried, so it has no proof either way.
+Elsewhere, including Android, Linux, Windows, iPhones and iPads (no device
+test has run yet), the iOS simulator, Firefox, browsers on other adapters and
+browsers on iPhones and iPads, the GPU delegate throws a
+`RuntimeUnavailableException` that says why. Firefox had no adapter where it
+was tried, so it has no proof either way.
 
 Their models are large (Parakeet
 615 MB, CC BY 4.0; Phonon 87 MB; Kokoro 295 MB), so an app usually downloads
