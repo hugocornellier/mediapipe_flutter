@@ -1185,26 +1185,32 @@ const webGpuCounters = `{
 }
 `;
 
-// The probe's long input, past Parakeet's 5 s window, against Google's Python
-// (the reference's long-16k case) as the short clip is: the same final
-// transcripts, each start and end within 100 ms, one starting where the last
-// ended. A stream finalizes segments before it finishes, each interim segment
-// is replaced by a final one from the same time, and a second stream on the
-// task answers as the first.
-function longAudioChecks(transcriber) {
-  const python = JSON.parse(fs.readFileSync(path.join(repo,
+// The probe's long input, past Parakeet's 5 s window, against Google's
+// JavaScript on the same page (`official`), as the short clip is: the same
+// final transcripts and times, one starting where the last ended, the last
+// ending with the input, and the three copies' words in full. Not against
+// Google's Python reference: its 1.2.2 runtime finalizes the same input at
+// other points (1.25 s apart on macOS, where 1.2.2's JavaScript finalizes
+// 2.5 s apart in every browser), so only Google's JavaScript answers for the
+// browser. A stream finalizes segments before it finishes, each interim
+// segment is replaced by a final one from the same time, and a second stream
+// on the task answers as the first.
+function longAudioChecks(transcriber, official, transcript) {
+  // The input's length, as the reference records it.
+  const {frames, rate} = JSON.parse(fs.readFileSync(path.join(repo,
     'packages/mediapipe-task-audio/test/fixtures/official_speech_reference.json'), 'utf8'))
     .cases.transcriber['long-16k'];
-  const expected = python.calls[0];
+  const expected = official.long_whole;
+  assert.ok(expected.every(s => s.isFinal), 'Google\'s JavaScript left a whole input interim');
+  assert.equal(expected.map(s => s.transcript).join(' '), [transcript, transcript, transcript].join(' '),
+    'Google\'s JavaScript on the long input');
   const finals = segments => {
     const kept = segments.filter(s => s.isFinal);
-    assert.deepEqual(kept.map(s => s.transcript), expected.map(s => s.transcript));
+    assert.deepEqual(kept, expected);
     kept.forEach((s, i) => {
-      assert.ok(Math.abs(s.from - expected[i].from_ms) <= 100 && Math.abs(s.to - expected[i].to_ms) <= 100,
-        `segment ${i} is ${s.from}-${s.to} ms, Google's Python ${expected[i].from_ms}-${expected[i].to_ms}`);
       assert.ok(s.to > s.from && s.from === (i ? kept[i - 1].to : 0), `segment ${i} is ${s.from}-${s.to} ms`);
     });
-    assert.ok(Math.abs(kept.at(-1).to - python.frames * 1000 / python.rate) <= 100, 'the last ends at ' + kept.at(-1).to);
+    assert.ok(Math.abs(kept.at(-1).to - frames * 1000 / rate) <= 100, 'the last ends at ' + kept.at(-1).to);
   };
   finals(transcriber.long_whole);
   const calls = transcriber.long_interim;
@@ -1393,7 +1399,7 @@ async function speechChecks() {
     assert.deepEqual(api.transcriber[name], official.transcriber[name], 'transcriber ' + name);
   }
   report.checks.push('audio-transcriber-match-official-javascript');
-  longAudioChecks(api.transcriber);
+  longAudioChecks(api.transcriber, official.transcriber, transcript);
   report.checks.push('audio-transcriber-past-its-window');
   for (const name of ['voices', 'fox', 'french', 'non_ascii', 'stream', 'faster']) {
     assert.deepEqual(api.speech[name], official.speech[name], 'speech ' + name);
