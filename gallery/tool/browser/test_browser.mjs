@@ -1185,6 +1185,42 @@ const webGpuCounters = `{
 }
 `;
 
+// The probe's long input, past Parakeet's 5 s window, against Google's Python
+// (the reference's long-16k case) as the short clip is: the same final
+// transcripts, each start and end within 100 ms, one starting where the last
+// ended. A stream finalizes segments before it finishes, each interim segment
+// is replaced by a final one from the same time, and a second stream on the
+// task answers as the first.
+function longAudioChecks(transcriber) {
+  const python = JSON.parse(fs.readFileSync(path.join(repo,
+    'packages/mediapipe-task-audio/test/fixtures/official_speech_reference.json'), 'utf8'))
+    .cases.transcriber['long-16k'];
+  const expected = python.calls[0];
+  const finals = segments => {
+    const kept = segments.filter(s => s.isFinal);
+    assert.deepEqual(kept.map(s => s.transcript), expected.map(s => s.transcript));
+    kept.forEach((s, i) => {
+      assert.ok(Math.abs(s.from - expected[i].from_ms) <= 100 && Math.abs(s.to - expected[i].to_ms) <= 100,
+        `segment ${i} is ${s.from}-${s.to} ms, Google's Python ${expected[i].from_ms}-${expected[i].to_ms}`);
+      assert.ok(s.to > s.from && s.from === (i ? kept[i - 1].to : 0), `segment ${i} is ${s.from}-${s.to} ms`);
+    });
+    assert.ok(Math.abs(kept.at(-1).to - python.frames * 1000 / python.rate) <= 100, 'the last ends at ' + kept.at(-1).to);
+  };
+  finals(transcriber.long_whole);
+  const calls = transcriber.long_interim;
+  const all = calls.flat();
+  finals(all);
+  assert.ok(calls.slice(0, -1).flat().some(s => s.isFinal), 'nothing final before the stream finished');
+  assert.ok(calls.at(-1).every(s => s.isFinal), 'the finish leaves something interim');
+  assert.ok(all.some(s => !s.isFinal), 'no interim segments');
+  all.forEach((s, i) => {
+    if (!s.isFinal) {
+      assert.equal(all.slice(i + 1).filter(l => l.isFinal && l.from === s.from).length, 1, `interim segment ${i} is replaced`);
+    }
+  });
+  assert.deepEqual(transcriber.long_interim_again, calls, 'a second stream on the task');
+}
+
 // Audio Transcriber and Text to Speech through the Dart API, against Google's
 // JavaScript on the same page, runtime, models and inputs, sample for sample.
 async function speechChecks() {
@@ -1299,9 +1335,16 @@ async function speechChecks() {
     await task.prewarm();
     transcriber.whole = segments(await task.transcribe(clip));
     transcriber.stream = await streamed(task, clip);
+    // The clip three times with a second of silence between copies, as the
+    // probe and generate_speech_reference.py build it.
+    const long = new Float32Array(3 * clip.length + 2 * 16000);
+    for (let copy = 0; copy < 3; copy++) long.set(clip, copy * (clip.length + 16000));
+    transcriber.long_whole = segments(await task.transcribe(long));
     task.close();
     task = await asr({sampleRateHz: 16000, enableInterimResults: true});
     transcriber.interim = await streamed(task, clip);
+    transcriber.long_interim = await streamed(task, long);
+    transcriber.long_interim_again = await streamed(task, long);
     task.close();
     task = await asr({sampleRateHz: 48000, enableInterimResults: false});
     transcriber.resampled = segments(await task.transcribe(await decode('speech_48000_hz_mono.wav')));
@@ -1346,10 +1389,12 @@ async function speechChecks() {
     return {transcriber, speech};
   }, {parakeet, phonon});
   fs.writeFileSync(path.join(evidence, 'speech-official.json'), JSON.stringify(official, null, 2));
-  for (const name of ['whole', 'stream', 'interim', 'resampled']) {
+  for (const name of ['whole', 'stream', 'interim', 'resampled', 'long_whole', 'long_interim', 'long_interim_again']) {
     assert.deepEqual(api.transcriber[name], official.transcriber[name], 'transcriber ' + name);
   }
   report.checks.push('audio-transcriber-match-official-javascript');
+  longAudioChecks(api.transcriber);
+  report.checks.push('audio-transcriber-past-its-window');
   for (const name of ['voices', 'fox', 'french', 'non_ascii', 'stream', 'faster']) {
     assert.deepEqual(api.speech[name], official.speech[name], 'speech ' + name);
   }

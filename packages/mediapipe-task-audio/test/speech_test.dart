@@ -136,30 +136,64 @@ void main() {
             ),
           );
           addTearDown(task.dispose);
-          final audio = decodeWav(
-            File('$_fixtures/${expected['clip']}').readAsBytesSync(),
+          final audio = _joined(
+            decodeWav(File('$_fixtures/${expected['clip']}').readAsBytesSync()),
+            copies: expected['copies'] as int,
+            gapFrames: expected['gap_frames'] as int,
           );
+          expect(audio.samples, hasLength(expected['frames']));
           final block = expected['block_frames'] as int?;
-          final calls = <List<Map<String, Object>>>[];
-          if (block == null) {
-            calls.add(_segments(await task.transcribe(audio)));
-          } else {
-            for (var start = 0; start < audio.samples.length; start += block) {
-              final part = AudioData(
-                samples: Float32List.sublistView(
-                  audio.samples,
-                  start,
-                  math.min(start + block, audio.samples.length),
-                ),
-                sampleRate: audio.sampleRate,
-              );
-              calls.add(
-                _segments(await task.transcribe(part, endOfStream: false)),
+          // Each stream on the one task answers as Google's first did.
+          for (
+            var stream = 0;
+            stream < (expected['streams'] as int);
+            stream++
+          ) {
+            final calls = <List<Map<String, Object>>>[];
+            if (block == null) {
+              calls.add(_segments(await task.transcribe(audio)));
+            } else {
+              for (
+                var start = 0;
+                start < audio.samples.length;
+                start += block
+              ) {
+                final part = AudioData(
+                  samples: Float32List.sublistView(
+                    audio.samples,
+                    start,
+                    math.min(start + block, audio.samples.length),
+                  ),
+                  sampleRate: audio.sampleRate,
+                );
+                calls.add(
+                  _segments(await task.transcribe(part, endOfStream: false)),
+                );
+              }
+            }
+            expect(calls, expected['calls'], reason: 'stream $stream');
+            final finish = _segments(await task.finishStream());
+            expect(finish, expected['finish'], reason: 'stream $stream');
+            if ((expected['copies'] as int) > 1) {
+              _expectWindowed(
+                calls,
+                finish,
+                // The same input in one call.
+                whole:
+                    (transcriberCases.values.firstWhere(
+                                  (other) =>
+                                      other['clip'] == expected['clip'] &&
+                                      other['copies'] == expected['copies'] &&
+                                      other['block_frames'] == null,
+                                )['calls']
+                                as List)
+                            .single
+                        as List,
+                streamed: block != null,
+                durationMs: audio.samples.length * 1000 / audio.sampleRate,
               );
             }
           }
-          expect(calls, expected['calls']);
-          expect(_segments(await task.finishStream()), expected['finish']);
         },
       );
     }
@@ -1171,6 +1205,83 @@ Matcher _noModelFile(String path) => isA<TaskException>()
     .having((error) => error.statusCode, 'statusCode', 5)
     .having((error) => error.message, 'message', contains(path))
     .having((error) => error.gpuUnavailable, 'gpuUnavailable', false);
+
+/// [clip] [copies] times, with [gapFrames] of silence between two copies: the
+/// reference's long input, built as tool/generate_speech_reference.py builds
+/// it.
+AudioData _joined(
+  AudioData clip, {
+  required int copies,
+  required int gapFrames,
+}) {
+  final length = clip.samples.length;
+  final samples = Float32List(copies * length + (copies - 1) * gapFrames);
+  for (var copy = 0; copy < copies; copy++) {
+    samples.setAll(copy * (length + gapFrames), clip.samples);
+  }
+  return AudioData(samples: samples, sampleRate: clip.sampleRate);
+}
+
+/// What a stream past the model's 5 s window must show, beyond matching
+/// Google's segments: its final segments tile the input from 0 to about its
+/// end ([durationMs]) in order, and are the [whole] input's segments; each
+/// interim segment is replaced by a final one from the same time; and in
+/// blocks ([streamed]) segments are finalized before the stream finishes.
+/// Google's segments repeat words at the window seams ("home late", then
+/// "home late tomorrow."), so the text is the reference's, word for word.
+void _expectWindowed(
+  List<List<Map<String, Object>>> calls,
+  List<Map<String, Object>> finish, {
+  required List whole,
+  required bool streamed,
+  required double durationMs,
+}) {
+  final segments = [...calls.expand((call) => call), ...finish];
+  final finals = [
+    for (final segment in segments)
+      if (segment['is_final'] == true) segment,
+  ];
+  expect(finals, whole, reason: 'the final segments are the whole input\'s');
+  expect(finals.length, greaterThan(1));
+  expect(finals.first['from_ms'], 0);
+  for (final (i, segment) in finals.indexed) {
+    expect(
+      segment['to_ms'] as int,
+      greaterThan(segment['from_ms'] as int),
+      reason: 'segment $i',
+    );
+    if (i > 0) {
+      expect(segment['from_ms'], finals[i - 1]['to_ms'], reason: 'segment $i');
+    }
+  }
+  expect(finals.last['to_ms'] as int, closeTo(durationMs, 100));
+  expect(
+    finish.where((segment) => segment['is_final'] != true),
+    isEmpty,
+    reason: 'the finish leaves nothing interim',
+  );
+  for (final (i, segment) in segments.indexed) {
+    if (segment['is_final'] == true) continue;
+    expect(
+      segments
+          .skip(i + 1)
+          .where(
+            (later) =>
+                later['is_final'] == true &&
+                later['from_ms'] == segment['from_ms'],
+          ),
+      hasLength(1),
+      reason: 'interim segment $i is replaced',
+    );
+  }
+  if (streamed) {
+    expect(
+      calls.expand((call) => call).where((s) => s['is_final'] == true),
+      isNotEmpty,
+      reason: 'segments are finalized before the stream finishes',
+    );
+  }
+}
 
 List<Map<String, Object>> _segments(AudioTranscriberResult result) => [
   for (final segment in result.segments)

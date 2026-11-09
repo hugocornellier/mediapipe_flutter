@@ -125,6 +125,9 @@ Future<Map<String, Object?>> _transcriber(String model) async {
     } on ArgumentError catch (error) {
       report['wrong_rate'] = '${error.name}: ${error.message}';
     }
+    // Past the model's 5 s window, whose streaming windows then finalize
+    // segments before the end.
+    report['long_whole'] = _segments(await task.transcribe(_joined(clip)));
   } finally {
     await task.dispose();
   }
@@ -139,6 +142,15 @@ Future<Map<String, Object?>> _transcriber(String model) async {
         _segments(await interim.transcribe(block, endOfStream: false)),
       _segments(await interim.finishStream()),
     ];
+    // The long input twice on the one task, which must answer the same.
+    final long = _joined(clip);
+    for (final name in ['long_interim', 'long_interim_again']) {
+      report[name] = [
+        for (final block in _blocks(long))
+          _segments(await interim.transcribe(block, endOfStream: false)),
+        _segments(await interim.finishStream()),
+      ];
+    }
   } finally {
     await interim.dispose();
   }
@@ -201,6 +213,19 @@ Iterable<AudioData> _blocks(AudioData clip) sync* {
       sampleRate: clip.sampleRate,
     );
   }
+}
+
+/// [clip] three times, with a second of silence between two copies, as
+/// packages/mediapipe-task-audio/tool/generate_speech_reference.py builds
+/// its long cases.
+AudioData _joined(AudioData clip) {
+  final length = clip.samples.length;
+  final gap = clip.sampleRate.toInt();
+  final samples = Float32List(3 * length + 2 * gap);
+  for (var copy = 0; copy < 3; copy++) {
+    samples.setAll(copy * (length + gap), clip.samples);
+  }
+  return AudioData(samples: samples, sampleRate: clip.sampleRate);
 }
 
 List<Object?> _segments(AudioTranscriberResult result) => [
