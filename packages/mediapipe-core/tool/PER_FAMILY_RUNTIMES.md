@@ -335,7 +335,11 @@ Google's URL above; the October 18 `BUILD_INFO` is in
   nightly of October 21, and in 1.2.2, the uploader sends through Java again
   and needs the `JavaVM` that the library's `JNI_OnLoad` stores, which
   `dlopen` does not run, so an app that loads the library through FFI uploads
-  nothing.
+  nothing unless it runs that `JNI_OnLoad` itself. Core's `runJniOnLoad`
+  (`lib/src/jni_on_load.dart`) does, once per library and process, before the
+  family's first task; each family calls it with a symbol it already resolves.
+  Checked with 1.2.2 in a debug build on an API 31 emulator, uploads
+  captured locally.
 - **Text-only EmbeddingGemma 2.** The decision library runs it (checked on
   macOS arm64).
 - iOS framework zips still hold only the binary and `Info.plist`.
@@ -368,8 +372,8 @@ log, from `MpBaseOptions.host_environment` and `host_system`. Core's
   Embedder. The other fourteen upload them empty: most drop them when their
   C++ `Create` copies the base options. Checked with 1.2.2 by capturing every
   task's uploads on macOS with the fields set, and a Flutter app's on the iOS
-  Simulator and, with `JNI_OnLoad` run by hand, the Android emulator. Without
-  that `JNI_OnLoad`, an Android app uploads nothing.
+  Simulator and the Android emulator, where an app uploads only because core
+  runs each library's `JNI_OnLoad` (see the Android uploader above).
 - With 1.2.2 native uploads carry the library version (`mediapipe_version`
   `1.2.2`, captured on macOS, the iOS Simulator and the Android emulator).
 - In browsers core's worker loader (`assets/verified_runtime.js`) sets
@@ -413,8 +417,9 @@ part of official releases.
   `statfs` in retrieval), for apps to declare.
 - Whether 1.1.1's Metal output is intended.
 - The Android uploader needs a JVM again from the nightly of October 21 on, so
-  an app that loads the library through FFI uploads nothing. Is that intended,
-  and how should Flutter give it the JVM?
+  an app that loads the library through FFI uploads nothing unless it runs the
+  library's `JNI_OnLoad`, which core now does. Is that intended, and would
+  Google rather the library find the JVM itself?
 - The classic tasks build their `TaskRunnerOptions` without `app_id` and
   `app_version`, so their uploads leave them empty; after 1.2.2 Google's
   source added them to Face Detector only (`b8a1bad05e`).
