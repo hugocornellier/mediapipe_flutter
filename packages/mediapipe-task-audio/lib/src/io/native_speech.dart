@@ -38,6 +38,7 @@ Future<TextToSpeechRunner> openNativeTextToSpeech(
   TextToSpeechOptions options,
 ) async {
   _requireSpeechRuntime('Text to Speech');
+  if (Platform.isLinux) await _requireModelFile(_modelFile(options));
   if (options.delegate == Delegate.gpu) {
     await _requireGpuSection(_modelFile(options));
   }
@@ -70,6 +71,20 @@ void _requireSpeechRuntime(String task) {
       fix: tasksRuntimeUnavailable(task, Platform.operatingSystem),
     );
   }
+}
+
+/// Refuses a model path that is no file, on Linux, where Google's Text to
+/// Speech ends the process for one (init_google.cc logs a fatal "InitGoogle()
+/// has not finished yet" for `<path>/tokenizer.model`) instead of returning
+/// an error as it does on macOS and Windows. The status is NOT_FOUND,
+/// Google's for a missing model there; the speech tests' error reference,
+/// regenerated on each runner, holds what Google does with each such path.
+Future<void> _requireModelFile(String modelPath) async {
+  if (await FileSystemEntity.isFile(modelPath)) return;
+  throw TaskException(
+    'No Text to Speech model file at $modelPath: it is missing or not a file.',
+    statusCode: 5,
+  );
 }
 
 /// Refuses the GPU for a model whose bundle puts no section there: Google's

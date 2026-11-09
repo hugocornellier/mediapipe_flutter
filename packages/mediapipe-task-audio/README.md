@@ -331,6 +331,12 @@ Future<Float32List> speak(String text) async {
 - Phones' browsers are untested.
 - The GPU delegate is offered only where listed above; everywhere else it
   isn't supported.
+- A model path that is missing, a directory or not a model makes `create`
+  throw a `TaskException` with Google's own status and message, which depend
+  on the platform and the file name: for the transcriber's missing file, `5`
+  (NOT_FOUND) on macOS and Linux and `2` on Windows. On Linux, Google's Text
+  to Speech ends the process for a path that is no file instead, so the
+  package checks the path first there and throws `5` for one.
 
 ## Validation
 
@@ -377,5 +383,12 @@ voice and a French one in `ff_siwis`, and a task whose default voice is
 `ff_siwis` speaking its own locale unless the options give another (Google
 refuses `en-US` for it). `tool/prepare_speech_reference.py` regenerates the
 references with the pinned wheel on each desktop CI runner (speech.yaml),
-Kokoro's on the Mac alone. They also check stream cancellation, disposal,
-option checks, capabilities and the C struct layouts against Google's headers.
+Kokoro's on the Mac alone. For a model path that is missing, a directory or a
+file that is not a model, the tests expect Google's status and message from
+`test/fixtures/official_speech_error_reference.json`, made by
+`tool/generate_speech_error_reference.py` with the macOS arm64 wheel and
+regenerated on each desktop runner with the references above, and by
+`tool/test_text_audio.py`; on Linux, where Google ends the process for a Text
+to Speech path that is no file, they expect the package's NOT_FOUND. They
+also check stream cancellation, disposal, option checks, capabilities and the
+C struct layouts against Google's headers.
