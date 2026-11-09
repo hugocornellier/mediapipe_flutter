@@ -89,12 +89,9 @@ bool _webGpuProved(TaskPlatform platform) =>
 
 /// Where Audio Transcriber's native GPU delegate is offered: Metal on macOS
 /// arm64, which the package's tests prove on macOS 15, the only version CI
-/// runs (they passed once on macOS 14, before GitHub retired those runners),
-/// and on iPhones (not the simulator), whose device test is still to run.
-const transcriberGpuTargets = <String, String?>{
-  'macos/arm64': '14.0',
-  'ios/arm64': '15.0',
-};
+/// runs (they passed once on macOS 14, before GitHub retired those runners).
+/// iPhones get the CPU until a device test proves the GPU does the work.
+const transcriberGpuTargets = <String, String?>{'macos/arm64': '14.0'};
 
 /// Where Audio Transcriber runs: Google's audio library on 64-bit Android,
 /// iOS 15+, macOS 14+ arm64, Linux x64 and Windows x64, and through Google's

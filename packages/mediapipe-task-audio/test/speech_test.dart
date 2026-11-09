@@ -466,7 +466,6 @@ void main() {
         allOf(contains('proved'), contains('Kokoro')),
         reason: '$platform',
       );
-      if (platform.operatingSystem == 'ios') continue;
       final capabilities = audioTranscriberCapabilitiesForPlatform(platform);
       expect(capabilities.supportedDelegates, {
         Delegate.cpu,
