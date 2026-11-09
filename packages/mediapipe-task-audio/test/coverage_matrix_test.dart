@@ -8,6 +8,8 @@ import '../../mediapipe-core/test/support/coverage_matrix.dart';
 // plugin registered, as in an app.
 final _claims = <String, TaskCapabilities Function(TaskPlatform)>{
   'audio_classifier': audioClassifierCapabilitiesForPlatform,
+  'audio_transcriber': audioTranscriberCapabilitiesForPlatform,
+  'text_to_speech': textToSpeechCapabilitiesForPlatform,
 };
 
 Never _unused(Map<String, Object?> options) => throw UnimplementedError();
@@ -21,10 +23,58 @@ void main() {
     });
   });
 
-  setUpAll(() => audioTaskBackendFactory = _unused);
-  tearDownAll(() => audioTaskBackendFactory = null);
+  setUpAll(() {
+    audioTaskBackendFactory = _unused;
+    audioTranscriberOpener = (_) => throw UnimplementedError();
+    browserOnMac = true;
+  });
+  tearDownAll(() {
+    audioTaskBackendFactory = null;
+    audioTranscriberOpener = null;
+    browserOnMac = false;
+  });
 
   test('coverage matrix agrees with the audio capability claims', () {
-    expect(coverageMatrixProblems(_claims), isEmpty);
+    expect(coverageMatrixProblems(_claims, webGpu: hardwareWebGpu), isEmpty);
+  });
+
+  test('the check refuses a GPU claim the matrix does not prove', () {
+    // The transcriber's claims as they were when iPhones were offered the
+    // GPU, whose matrix cell is still pending.
+    TaskCapabilities withIphoneGpu(TaskPlatform platform) {
+      final claimed = audioTranscriberCapabilitiesForPlatform(platform);
+      return TaskCapabilities.onTargets(
+        platform: platform,
+        delegates: {
+          Delegate.cpu: claimed.supportedTargets,
+          Delegate.gpu: {...transcriberGpuTargets, 'ios/arm64': '15.0'},
+        },
+        unavailableReasons: claimed.unavailableReasons,
+        runtimeVersion: claimed.runtimeVersion,
+      );
+    }
+
+    expect(
+      coverageMatrixProblems({'audio_transcriber': withIphoneGpu}),
+      contains(startsWith('audio_transcriber / ios / gpu is claimed but')),
+    );
+    expect(
+      coverageMatrixProblems(
+        {'audio_transcriber': withIphoneGpu},
+        unprovedGpu: {'audio_transcriber / ios'},
+      ),
+      isNot(contains(startsWith('audio_transcriber / ios / gpu'))),
+    );
+    expect(
+      coverageMatrixProblems(
+        _claims,
+        webGpu: hardwareWebGpu,
+        unprovedGpu: {'text_to_speech / macos'},
+      ),
+      [
+        'text_to_speech / macos / gpu is listed as unproved but marked '
+            '"required"',
+      ],
+    );
   });
 }
