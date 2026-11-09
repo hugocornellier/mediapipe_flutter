@@ -64,6 +64,18 @@ void main() {
   );
   final missingKokoro = _missing('Kokoro', _kokoroModel, 'kokoro');
   final missingTts = _missing('Phonon', _ttsModel, 'phonon');
+  // Kokoro's own reference, from the same wheel, where its model is: the Mac.
+  final kokoroSpeech = missingKokoro != null
+      ? null
+      : (loadSameHostReference(
+                  'official_kokoro_reference.json',
+                  prefix: 'kokoro_',
+                  cases: 'cases',
+                  environment: 'MEDIAPIPE_SPEECH_REFERENCE_DIR',
+                  wheel: releaseReferenceWheel,
+                )['cases']
+                as Map<String, dynamic>)['text_to_speech']
+            as Map<String, dynamic>;
 
   test('the reference names the pinned models', () {
     expect(reference['models'], {
@@ -390,6 +402,103 @@ void main() {
       expect(() => other.synthesize('Hello.'), throwsStateError);
       expect(() => other.synthesizeStream('Hello.'), throwsStateError);
     });
+  });
+
+  group('Kokoro on the CPU', () {
+    late TextToSpeech kokoro;
+    setUpAll(() async {
+      if (missingKokoro != null) return;
+      expect(
+        sha256.convert(File(_kokoroModel).readAsBytesSync()).toString(),
+        AudioModels.kokoro.sha256,
+      );
+      kokoro = await TextToSpeech.create(
+        TextToSpeechOptions(modelPath: _kokoroModel),
+      );
+    });
+    tearDownAll(() async {
+      if (missingKokoro == null) await kokoro.dispose();
+    });
+
+    test('lists Google\'s voices', skip: missingKokoro, () async {
+      expect([
+        for (final voice in await kokoro.listVoices())
+          {
+            'voice_id': voice.voiceId,
+            'display_name': voice.displayName,
+            'locale': voice.locale,
+            'sample_rate_hz': voice.sampleRateHz,
+            'is_downloaded': voice.isDownloaded,
+          },
+      ], kokoroSpeech!['voices']);
+    });
+
+    for (final name in ['fox', 'siwis-fr']) {
+      test('$name matches Google\'s Python API', skip: missingKokoro, () async {
+        final expected =
+            (kokoroSpeech!['utterances'] as Map<String, dynamic>)[name]
+                as Map<String, dynamic>;
+        final text = expected['text'] as String;
+        _expectAudio(
+          await kokoro.synthesize(
+            text,
+            voiceId: expected['voice_id'] as String?,
+            locale: expected['locale'] as String?,
+          ),
+          text,
+          expected,
+        );
+      });
+    }
+
+    // A Kokoro voice speaks only its own locale, so a default voice that is
+    // not US English shows which locale the options' default gives. Google's
+    // C API, Web, Android and iOS leave it unset, inferred from the voice;
+    // its Python alone defaults to en-US, which refuses the voice.
+    test(
+      'a default voice speaks its own locale unless another is given',
+      skip: missingKokoro,
+      () async {
+        final defaults = kokoroSpeech!['default_voice'] as Map<String, dynamic>;
+        final text = defaults['text'] as String;
+        final voiceId = defaults['voice_id'] as String;
+        final locale = defaults['locale'] as String;
+        expect(defaults['inferred'], defaults['voice_locale']);
+        final task = await TextToSpeech.create(
+          TextToSpeechOptions(modelPath: _kokoroModel, defaultVoiceId: voiceId),
+        );
+        addTearDown(task.dispose);
+        _expectAudio(await task.synthesize(text), text, defaults['inferred']);
+        _expectAudio(
+          await task.synthesize(text, locale: locale),
+          text,
+          defaults['voice_locale'],
+        );
+        // Python's message is its C API's status and message.
+        final [
+          status,
+          message,
+        ] = RegExp(r'^TextToSpeech C API error \((\d+)\): (.*)$', dotAll: true)
+            .firstMatch((defaults['en-US'] as Map)['error'] as String)!
+            .groups([1, 2]);
+        final english = await TextToSpeech.create(
+          TextToSpeechOptions(
+            modelPath: _kokoroModel,
+            defaultVoiceId: voiceId,
+            defaultLocale: 'en-US',
+          ),
+        );
+        addTearDown(english.dispose);
+        await expectLater(
+          english.synthesize(text),
+          throwsA(
+            isA<TaskException>()
+                .having((e) => e.statusCode, 'statusCode', int.parse(status!))
+                .having((e) => e.message, 'message', contains(message!)),
+          ),
+        );
+      },
+    );
   });
 
   test('options refuse values Google rejects', () {
