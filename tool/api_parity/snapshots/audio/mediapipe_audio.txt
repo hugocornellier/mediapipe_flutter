@@ -34,6 +34,7 @@ abstract final class AudioModels
   static DownloadAsset kokoro
   static DownloadAsset parakeetTdtV3
   static DownloadAsset phonon
+  static DownloadAsset pocketTtsEn
   static DownloadAsset yamnet
   static Map<String, DownloadAsset> byName
 enum AudioRunningMode extends Enum

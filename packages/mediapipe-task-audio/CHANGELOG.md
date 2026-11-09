@@ -10,6 +10,8 @@
 - `TextToSpeechOptions.defaultLocale` is null by default, so Google infers the
   locale from the voice, as its Web, Android and iOS tasks do, and a Kokoro
   voice in another language needs no locale (Google refuses it in `en-US`).
+- Text to Speech also speaks US English with Kyutai's PocketTTS
+  (`AudioModels.pocketTtsEn`, CC BY 4.0) on the CPU.
 - Text to Speech also pins hexgrad's Kokoro 82M (`AudioModels.kokoro`,
   Apache 2.0) in eight languages: the file Google's guide uses with the GPU
   delegate, whose speech may be noisier on the CPU.

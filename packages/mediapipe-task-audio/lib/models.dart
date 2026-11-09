@@ -47,6 +47,18 @@ abstract final class AudioModels {
     sha256: '1ef178b127ec48c737daf17eabb4cea5f6b3ffbc510aced270fe5c267bbeac52',
   );
 
+  /// Kyutai's PocketTTS 100M English voices for Text to Speech, as Google's
+  /// LiteRT community converted them (int8, CPU only; eight US English
+  /// voices at 24 kHz, `alba` by default): 163 MB, CC BY 4.0, so an app
+  /// that ships it credits Kyutai, as in its open source notices.
+  static const pocketTtsEn = DownloadAsset(
+    url:
+        'https://huggingface.co/litert-community/pocket-tts/resolve/'
+        '03f949ec418ccd4d153008f7ef9c58c754cc0616/'
+        'pocket_tts_en_int8.litertlm',
+    sha256: '465e0083cd61188772aed76160b07af0dcf59057497d7659f43f3f2b13a174a1',
+  );
+
   /// Every model above by the name an app lists to bundle it, under
   /// `hooks.user_defines.mediapipe_audio.models` in pubspec.yaml.
   static const byName = <String, DownloadAsset>{
@@ -54,5 +66,6 @@ abstract final class AudioModels {
     'parakeet_tdt_v3': parakeetTdtV3,
     'phonon': phonon,
     'kokoro': kokoro,
+    'pocket_tts_en': pocketTtsEn,
   };
 }
