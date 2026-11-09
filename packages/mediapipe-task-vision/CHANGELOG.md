@@ -4,6 +4,8 @@
   replaces 1.2.0 on Android, iOS, macOS, Linux and Windows, and
   `@mediapipe/tasks-*` 1.2.2 replaces 1.2.0-rc.20261018 in browsers.
 - The regenerated bindings carry Google's renumbered delegates.
+- The README and the support matrix say that GPU on iPhone is offered but not
+  yet tested on a device with 1.2.2, for the nine tasks with an iOS GPU path.
 
 ## 0.1.4
 

@@ -160,7 +160,8 @@ TaskCapabilities holisticLandmarkerCapabilitiesForPlatform(
 /// Android GPU and is the reason an Android device reports, except on an
 /// emulator, which loses the GPU for every task ([_emulatorGpuGap]); an
 /// [iosGpuGap] withdraws an iPhone's GPU the same way, and the iOS Simulator
-/// always loses the GPU ([_simulatorGpuGap]).
+/// always loses the GPU ([_simulatorGpuGap]). An iPhone's GPU is offered but
+/// not yet tested on a device with Google's 1.2.2 library.
 TaskCapabilities _visionTaskCapabilities(
   TaskPlatform platform,
   String name, {

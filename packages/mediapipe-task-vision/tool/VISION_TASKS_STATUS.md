@@ -44,7 +44,9 @@ have no home in `tool/coverage/matrix.json` yet, so they are kept by hand.
 
 Pose and Holistic segmentation masks are returned on every target. Android
 GPU is declared for arm64 devices only, and withdrawn on any emulator, whose
-OpenGL ES is software (SwiftShader).
+OpenGL ES is software (SwiftShader). iOS's Metal cells are offered on
+iPhones and iPads but not yet tested on a device with Google's 1.2.2 library
+(see [Evidence](#evidence)).
 
 ## Evidence
 
@@ -58,6 +60,8 @@ OpenGL ES is software (SwiftShader).
   in CI (`gallery/integration_test/sdk_*_test.dart`). On an iPhone 15 Pro, Face,
   Hand, Pose, Gesture and Holistic Landmarker ran on CPU and Metal, within 0.014
   of each other; the other tasks' Metal paths have not run on a device yet.
+  That run predates Google's 1.2.2 library, on which no task's Metal path has
+  run on a device yet.
 - **Android:** on Google's vision library, every task matches Google's
   references on CI's x86_64 emulator and an arm64 emulator (API 31, CPU), from
   the same integration tests, rotation and the padded pose mask included, and
