@@ -658,6 +658,11 @@ before offering a GPU toggle.
 | Linux x64 | Official library | OpenGL ES for supported tasks; EGL and a GPU driver required |
 | Windows x64 | Official library | Not available |
 
+GPU on iPhone is offered but not yet tested on a device with Google's 1.2.2
+library. That holds for every task with an iOS GPU path: Face Detector, Face
+Landmarker, Hand Landmarker, Gesture Recognizer, Pose Landmarker, Object
+Detector, Image Classifier, Image Embedder and Image Segmenter.
+
 The Interactive Segmenter is unavailable on Windows. Some GPU paths have
 upstream limits. Read the
 [per-task matrix](https://github.com/google/flutter-mediapipe/blob/main/packages/mediapipe-task-vision/tool/VISION_TASKS_STATUS.md)
