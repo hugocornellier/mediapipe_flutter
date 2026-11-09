@@ -27,6 +27,8 @@ external JSPromise<JSString> _run(JSNumber id, JSObject input);
 external JSPromise<JSObject?> _runObject(JSNumber id, JSObject input);
 @JS('mediapipeTasks.stream')
 external _WorkerStream _stream(JSNumber id, JSObject input, JSFunction onChunk);
+@JS('mediapipeTasks.cancelAll')
+external void _cancelAll(JSNumber id);
 @JS('mediapipeTasks.close')
 external JSPromise<JSAny?> _close(JSNumber id);
 
@@ -83,8 +85,9 @@ final class WebTaskWorker {
 
   /// Sends one request once listened to, after every request submitted before
   /// it, and streams the chunks the worker emits for it. Cancelling asks the
-  /// worker to stop after the chunk in progress and waits for it. A failure
-  /// arrives as a [TaskException] and closes the stream.
+  /// worker to stop, at once where its script handles a cancel and otherwise
+  /// after the chunk in progress, and waits for it. A failure arrives as a
+  /// [TaskException] and closes the stream.
   Stream<JSObject> stream(JSObject input) {
     late StreamController<JSObject> chunks;
     _WorkerStream? request;
@@ -111,6 +114,11 @@ final class WebTaskWorker {
     );
     return chunks.stream;
   }
+
+  /// Cancels every request submitted so far, running or queued, as the
+  /// family's worker script defines a cancel for each, without waiting;
+  /// nothing once the worker has closed.
+  void cancelAll() => _cancelAll(_id);
 
   /// Waits for queued requests, then closes the task and its worker.
   Future<void> close() {
