@@ -93,7 +93,8 @@ void _requireSpeechRuntime(String task) {
 }
 
 /// Refuses a model path that is no file, on Linux, where Google's Text to
-/// Speech ends the process for one (init_google.cc logs a fatal "InitGoogle()
+/// Speech ends the process for a missing Phonon or PocketTTS file and for a
+/// directory with Phonon's file name (init_google.cc logs a fatal "InitGoogle()
 /// has not finished yet" for `<path>/tokenizer.model`) instead of returning
 /// an error as it does on macOS and Windows. The status is NOT_FOUND,
 /// Google's for a missing model there; the speech tests' error reference,

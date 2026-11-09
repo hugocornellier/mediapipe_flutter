@@ -24,8 +24,11 @@
   checked on a developer's Mac. iPhones, other browsers and other adapters get
   the CPU, and a reason. Text to Speech offers the GPU on macOS
   15 and later for Kokoro (`AudioModels.kokoro`).
-- On Linux, Text to Speech throws a `TaskException` (NOT_FOUND) for a model
-  path that is missing or not a file, where Google's library ends the process.
+- On Linux, Text to Speech checks first that the model path is a file and
+  throws a `TaskException` (NOT_FOUND, 5) for every path that is not: there
+  Google's library ends the process for a missing Phonon or PocketTTS file and
+  for a directory with Phonon's file name, and returns 2 for a directory with
+  Kokoro's file name.
 - Google's 1.2.2 native library replaces 1.2.0, and `@mediapipe/tasks-audio`
   1.2.2 replaces 1.2.0-rc.20261018 in browsers.
 
