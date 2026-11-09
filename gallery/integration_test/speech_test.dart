@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mediapipe_audio/mediapipe_audio.dart';
@@ -23,14 +24,29 @@ const _transcript = "Send a text to Mike, I'll be home late tomorrow.";
 /// between copies, past the model's 5 s window (the reference's long-16k
 /// case): each final, with its start and end in milliseconds. Google repeats
 /// words at its window seams, and stamps segments on its 1.25 s window hops.
-const _longSegments = [
-  ("Send a text to Mike, I'll be home late", 0, 1250),
-  ('home late tomorrow.', 1250, 2500),
-  ('Send a text to', 2500, 3750),
-  ("text Mike. I'll be home", 3750, 5000),
-  ('be home late tomorrow.', 5000, 6250),
-  ('Send a text', 6250, 7500),
-  ("to Mike, I'll be home late tomorrow.", 7500, 14817),
+/// Its Python gives the first answer on macOS and Windows and on some of
+/// GitHub's Linux runners, and on others the second, whose fourth segment
+/// alone differs, as the same-host reference of the package's Linux speech
+/// job records; the app must give one of them.
+const _longAnswers = [
+  [
+    ("Send a text to Mike, I'll be home late", 0, 1250),
+    ('home late tomorrow.', 1250, 2500),
+    ('Send a text to', 2500, 3750),
+    ("text Mike. I'll be home", 3750, 5000),
+    ('be home late tomorrow.', 5000, 6250),
+    ('Send a text', 6250, 7500),
+    ("to Mike, I'll be home late tomorrow.", 7500, 14817),
+  ],
+  [
+    ("Send a text to Mike, I'll be home late", 0, 1250),
+    ('home late tomorrow.', 1250, 2500),
+    ('Send a text to', 2500, 3750),
+    ("text to Mike. I'll be", 3750, 5000),
+    ('be home late tomorrow.', 5000, 6250),
+    ('Send a text', 6250, 7500),
+    ("to Mike, I'll be home late tomorrow.", 7500, 14817),
+  ],
 ];
 
 /// The fox utterance in Google's default voice: 74880 samples at 24 kHz and
@@ -403,18 +419,26 @@ _streamed(AudioTranscriber task, AudioData audio) async {
   return (calls, (await task.finishStream()).segments);
 }
 
-/// [segments] as Google's long-16k case: the same final transcripts in
-/// order, each start and end within 100 ms, one starting where the last
-/// ended, from 0 to about the input's end ([durationMs]).
+/// [segments] as one of Google's answers for its long-16k case
+/// ([_longAnswers]): the same final transcripts in order, each start and end
+/// within 100 ms, one starting where the last ended, from 0 to about the
+/// input's end ([durationMs]).
 void _expectLongSegments(
   List<TranscriptionSegment> segments,
   double durationMs,
 ) {
-  expect(segments.map((segment) => segment.transcript), [
-    for (final (transcript, _, _) in _longSegments) transcript,
-  ]);
+  final transcripts = [for (final segment in segments) segment.transcript];
+  final answer = _longAnswers.firstWhere(
+    (answer) => listEquals(transcripts, [
+      for (final (transcript, _, _) in answer) transcript,
+    ]),
+    orElse: () => _longAnswers.first,
+  );
+  expect(transcripts, [
+    for (final (transcript, _, _) in answer) transcript,
+  ], reason: 'none of Google\'s ${_longAnswers.length} answers');
   for (final (i, segment) in segments.indexed) {
-    final (_, from, to) = _longSegments[i];
+    final (_, from, to) = answer[i];
     expect(segment.isFinal, isTrue, reason: 'segment $i');
     expect(segment.fromTimestampMilliseconds, closeTo(from, 100));
     expect(segment.toTimestampMilliseconds, closeTo(to, 100));
