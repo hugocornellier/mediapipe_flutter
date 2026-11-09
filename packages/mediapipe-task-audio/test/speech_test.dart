@@ -57,19 +57,13 @@ void main() {
   final cases = reference['cases'] as Map<String, dynamic>;
   final transcriberCases = cases['transcriber'] as Map<String, dynamic>;
   final speech = cases['text_to_speech'] as Map<String, dynamic>;
-  final missingTranscriber = File(_transcriberModel).existsSync()
-      ? null
-      : 'No Parakeet model at $_transcriberModel; run '
-            'dart tool/download_models.dart parakeet_tdt_v3.';
-  final missingKokoro =
-      File(_kokoroModel).existsSync() || _requiredModels.contains('kokoro')
-      ? null
-      : 'No Kokoro model at $_kokoroModel; run '
-            'dart tool/download_models.dart kokoro.';
-  final missingTts = File(_ttsModel).existsSync()
-      ? null
-      : 'No Phonon model at $_ttsModel; run '
-            'dart tool/download_models.dart phonon.';
+  final missingTranscriber = _missing(
+    'Parakeet',
+    _transcriberModel,
+    'parakeet_tdt_v3',
+  );
+  final missingKokoro = _missing('Kokoro', _kokoroModel, 'kokoro');
+  final missingTts = _missing('Phonon', _ttsModel, 'phonon');
 
   test('the reference names the pinned models', () {
     expect(reference['models'], {
@@ -638,6 +632,13 @@ void main() {
     expect(sizeOf<tts.MpTextToSpeechAudioResult>(), 40);
   });
 }
+
+/// Why a test needing [path] skips, or null when it runs: always on a CI job
+/// that downloads [name], where a missing file fails the test instead.
+String? _missing(String model, String path, String name) =>
+    File(path).existsSync() || _requiredModels.contains(name)
+    ? null
+    : 'No $model model at $path; run dart tool/download_models.dart $name.';
 
 List<Map<String, Object>> _segments(AudioTranscriberResult result) => [
   for (final segment in result.segments)
