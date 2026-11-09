@@ -26,9 +26,12 @@ abstract final class AudioModels {
     sha256: '66c5a74cf6c2c1d2b990901f6cece5bb53e3214dbceafa0989900a6f0eeb3504',
   );
 
-  /// Google's Phonon 31M voices for Text to Speech (int8; US English,
-  /// French, German, Spanish and Brazilian Portuguese at 24 kHz): 87 MB,
-  /// Apache 2.0.
+  /// Gradium's Phonon 31M voices for Text to Speech, as Google's LiteRT
+  /// community converted them (int8; five voices at 24 kHz, `freya` by
+  /// default): 87 MB, Apache 2.0. Google's guide says Phonon speaks US
+  /// English only. Its 1.2.2 runtime labels four of the voices with other
+  /// locales (`claire` fr-FR, `lukas` de-DE, `sofia` es-ES, `lucas` pt-BR);
+  /// for other languages, use [kokoro].
   static const phonon = DownloadAsset(
     url:
         'https://huggingface.co/litert-community/phonon-31m-en/resolve/'

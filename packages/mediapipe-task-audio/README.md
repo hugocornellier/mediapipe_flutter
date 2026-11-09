@@ -302,8 +302,11 @@ Future<Float32List> speak(String text) async {
 - To transcribe live audio, pass blocks with `endOfStream: false`, which keep
   what is short of a segment for the next call, then call `finishStream()`.
   `enableInterimResults: true` also returns the segment in progress.
-- `listVoices()` names the model's voices: Phonon has `freya` (en-US),
-  `claire` (fr-FR), `lukas` (de-DE), `sofia` (es-ES) and `lucas` (pt-BR).
+- `listVoices()` names the model's voices: Phonon has `freya`, `claire`,
+  `lukas`, `sofia` and `lucas`. Google's guide says Phonon speaks US English
+  only, though Google's 1.2.2 runtime, and so `listVoices()`, labels `claire`
+  fr-FR, `lukas` de-DE, `sofia` es-ES and `lucas` pt-BR. For other languages,
+  use Kokoro (`AudioModels.kokoro`).
 - `defaultLocale` is null by default: Google infers the locale from the voice,
   as on its Web, Android and iOS tasks (its Python defaults to en-US).
 - `synthesizeStream(text)` yields a chunk per clause as soon as it is ready,
@@ -371,8 +374,9 @@ The speech tests compare both tasks with Google's own Python
 Google's first release with these tasks in Python; the package loads the same
 release's audio library): the transcript and segment timestamps of
 both speech clips, whole and in one-second blocks with and without interim
-results; and for Text to Speech the voices, four utterances in three
-languages (Unicode text included), a faster speaking rate and a streamed
+results; and for Text to Speech the voices, four utterances (Unicode text
+included, and French and German text in the voices Google's runtime labels
+fr-FR and de-DE), a faster speaking rate and a streamed
 paragraph, each with the same sample count, rate and word timings, and the
 peak and 100 ms RMS envelope within 0.002. On the Mac, where the Kokoro model
 is downloaded, they compare Kokoro on the CPU the same way with

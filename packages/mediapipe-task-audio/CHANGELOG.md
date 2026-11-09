@@ -5,7 +5,7 @@
   ending in `finishStream()`, optional interim results, and segment
   timestamps.
 - Text to Speech: `synthesize` and `synthesizeStream` with
-  `AudioModels.phonon` (five voices in five locales), speaking rate, voice
+  `AudioModels.phonon` (five US English voices), speaking rate, voice
   and locale per call, and word timestamps.
 - `TextToSpeechOptions.defaultLocale` is null by default, so Google infers the
   locale from the voice, as its Web, Android and iOS tasks do, and a Kokoro
