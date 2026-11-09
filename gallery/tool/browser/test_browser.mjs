@@ -1322,7 +1322,7 @@ async function speechChecks() {
         [w.word, index(text, w.startChar), index(text, w.endChar), w.startSec, w.endSec]),
     });
     const tts = options => bundle.TextToSpeech.createFromOptions(files,
-      {defaultLocale: 'en-US', speakingRate: 1, targetBucket: 0,
+      {speakingRate: 1, targetBucket: 0,
         baseOptions: {delegate: 'CPU', modelAssetPath: phonon}, ...options});
     const fox = 'The quick brown fox jumps over the lazy dog.';
     const french = "Bonjour, comment allez-vous aujourd'hui ?";

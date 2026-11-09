@@ -123,14 +123,16 @@ final class AudioTranscriberResult {
 /// Google's task reads its model from a file, so it takes a pinned [model]
 /// or a [modelPath], not bytes.
 final class TextToSpeechOptions extends TaskOptions {
-  /// Defaults match Google's Python: the engine's default voice, US English,
-  /// normal speed, the bucket picked per input, no compile cache.
+  /// Defaults match Google's Web, Android and iOS tasks: the engine's default
+  /// voice, the locale that voice speaks, normal speed, the model's default
+  /// bucket, and no cache directory (Kokoro then caches next to its model
+  /// file). (Google's Python alone defaults to US English.)
   TextToSpeechOptions({
     super.model,
     super.modelPath,
     super.delegate,
     this.defaultVoiceId,
-    this.defaultLocale = 'en-US',
+    this.defaultLocale,
     this.speakingRate = 1,
     this.targetBucket = 0,
     this.cacheDirectory,
