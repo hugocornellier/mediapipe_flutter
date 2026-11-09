@@ -20,6 +20,7 @@ BASELINE = FIXTURES / 'official_speech_reference.json'
 KOKORO_BASELINE = FIXTURES / 'official_kokoro_reference.json'
 POCKET_TTS_BASELINE = FIXTURES / 'official_pocket_tts_reference.json'
 POCKET_TTS_MODEL = PACKAGE / 'models/pocket_tts_en_int8.litertlm'
+ERROR_BASELINE = FIXTURES / 'official_speech_error_reference.json'
 
 
 def audio_difference(old, new):
@@ -83,10 +84,20 @@ def kokoro_differences(baseline, current):
     return compare(pairs, structural, levels)
 
 
+def error_differences(baseline, current):
+    """The cases whose outcome on this host differs from the macOS one."""
+    old, new = baseline['cases'], current['cases']
+    return sorted(f'{task} {case}' for task in old.keys() | new.keys()
+                  for case in old.get(task, {}).keys() | new.get(task, {}).keys()
+                  if old.get(task, {}).get(case) != new.get(task, {}).get(case))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--python', type=Path, help='Existing environment with the pinned wheel')
     parser.add_argument('--output-dir', type=Path, default=REPO / 'build/speech-reference')
+    parser.add_argument('--errors-only', action='store_true',
+                        help='Only the model-free error reference, for a runner without the models')
     args = parser.parse_args()
     runtime = host_runtime('releaseReferenceWheels')
     output = args.output_dir.resolve()
@@ -101,14 +112,21 @@ def main():
     reference = output / 'official_speech_reference.json'
     kokoro = output / KOKORO_BASELINE.name
     kokoro.unlink(missing_ok=True)
+    errors = output / ERROR_BASELINE.name
+    errors.unlink(missing_ok=True)
     log_file = output / 'official-python.log'
     with log_file.open('w', encoding='utf-8') as log:
         result = subprocess.run([str(python.absolute()), '-B',
-                                 str(PACKAGE / 'tool/generate_speech_reference.py'),
-                                 '--output', str(reference), '--kokoro-output', str(kokoro)],
+                                 str(PACKAGE / 'tool/generate_speech_error_reference.py'),
+                                 '--output', str(errors)],
                                 stdout=log, stderr=subprocess.STDOUT)
+        if result.returncode == 0 and not args.errors_only:
+            result = subprocess.run([str(python.absolute()), '-B',
+                                     str(PACKAGE / 'tool/generate_speech_reference.py'),
+                                     '--output', str(reference), '--kokoro-output', str(kokoro)],
+                                    stdout=log, stderr=subprocess.STDOUT)
         # PocketTTS English, where the runner downloaded it.
-        if result.returncode == 0 and POCKET_TTS_MODEL.exists():
+        if result.returncode == 0 and not args.errors_only and POCKET_TTS_MODEL.exists():
             result = subprocess.run([str(python.absolute()), '-B',
                                      str(PACKAGE / 'tool/generate_pocket_tts_reference.py'),
                                      '--output', str(pocket_tts)],
@@ -116,6 +134,19 @@ def main():
     print('\n'.join(log_file.read_text(encoding='utf-8', errors='replace').splitlines()[-10:]),
           flush=True)
     result.check_returncode()
+    report = {'source': 'official-python-api', 'runtime': 'mediapipe==' + runtime['version'],
+              'library_sha256': runtime['library_sha256'],
+              'wheel_url': runtime['wheel_url'], 'wheel_sha256': runtime['wheel_sha256'],
+              'os': platform.platform(), 'machine': platform.machine(),
+              'error_reference_sha256': digest(errors),
+              'error_baseline_sha256': digest(ERROR_BASELINE),
+              'error_differences_from_macos': error_differences(
+                  json.loads(ERROR_BASELINE.read_text(encoding='utf-8')),
+                  json.loads(errors.read_text(encoding='utf-8')))}
+    if args.errors_only:
+        receipt.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+        print(json.dumps(report, indent=2), flush=True)
+        return
     summary = differences(json.loads(BASELINE.read_text(encoding='utf-8')),
                           json.loads(reference.read_text(encoding='utf-8')))
     pocket_tts_receipt = {}
@@ -127,12 +158,9 @@ def main():
             'pocket_tts_reference_sha256': digest(pocket_tts),
             'pocket_tts_baseline_sha256': digest(POCKET_TTS_BASELINE),
             'pocket_tts_checked_in_reference_differences': differences(old, new)}
-    report = {'source': 'official-python-api', 'runtime': 'mediapipe==' + runtime['version'],
-              'delegate': 'CPU', 'library_sha256': runtime['library_sha256'],
-              'wheel_url': runtime['wheel_url'], 'wheel_sha256': runtime['wheel_sha256'],
-              'os': platform.platform(), 'machine': platform.machine(),
-              'reference_sha256': digest(reference), 'baseline_sha256': digest(BASELINE),
-              'checked_in_reference_differences': summary, **pocket_tts_receipt}
+    report.update({'delegate': 'CPU',
+                   'reference_sha256': digest(reference), 'baseline_sha256': digest(BASELINE),
+                   'checked_in_reference_differences': summary, **pocket_tts_receipt})
     # Only where the Kokoro model was downloaded: the Mac.
     if kokoro.exists():
         report.update({

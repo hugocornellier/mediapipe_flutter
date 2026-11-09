@@ -284,14 +284,6 @@ void main() {
         expect(task.finishStream, throwsStateError);
       },
     );
-
-    test('a missing model fails with Google\'s status and the path', () async {
-      const path = '/nonexistent/parakeet.litertlm';
-      await expectLater(
-        AudioTranscriber.create(AudioTranscriberOptions(modelPath: path)),
-        throwsA(_notFound(path)),
-      );
-    });
   });
 
   group('TextToSpeech', () {
@@ -558,14 +550,67 @@ void main() {
         expect(other.listVoices, throwsStateError);
       },
     );
+  });
 
-    test('a missing model fails with Google\'s status and the path', () async {
-      const path = '/nonexistent/phonon.litertlm';
-      await expectLater(
-        TextToSpeech.create(TextToSpeechOptions(modelPath: path)),
-        throwsA(_notFound(path)),
-      );
+  group('a model path that is no model', () {
+    final errors = _errorReference();
+    final outcomes = {
+      for (final MapEntry(key: task, value: table)
+          in (errors?['cases'] as Map<String, dynamic>? ?? {}).entries)
+        for (final MapEntry(key: name, value: outcome)
+            in (table as Map<String, dynamic>).entries)
+          '$task $name': outcome as Map<String, dynamic>,
+    };
+    Directory? root;
+    setUpAll(() async {
+      root = await Directory.systemTemp.createTemp('speech_errors');
     });
+    tearDownAll(() async => root?.delete(recursive: true));
+
+    for (final MapEntry(key: name, value: outcome) in outcomes.entries) {
+      final task = name.split(' ').first;
+      // Where the package checks the path before Google's library sees it.
+      final checked =
+          task == 'text_to_speech' &&
+          Platform.isLinux &&
+          outcome['kind'] != 'file';
+      test(
+        checked
+            ? '$name fails with the package\'s NOT_FOUND, never an abort'
+            : '$name fails with Google\'s status and message',
+        () async {
+          if (outcome['aborted'] == true && !checked) {
+            fail('Google ends the process here: ${outcome['log']}');
+          }
+          final path = await _noModel(root!, outcome);
+          await expectLater(
+            task == 'transcriber'
+                ? AudioTranscriber.create(
+                    AudioTranscriberOptions(modelPath: path),
+                  )
+                : TextToSpeech.create(TextToSpeechOptions(modelPath: path)),
+            throwsA(checked ? _noModelFile(path) : _googleError(outcome, path)),
+          );
+        },
+      );
+    }
+
+    test(
+      'Google ends the process only on Linux, for Text to Speech',
+      () {
+        final aborted = [
+          for (final MapEntry(key: name, value: outcome) in outcomes.entries)
+            if (outcome['aborted'] == true) name,
+        ];
+        // When Google's Linux library stops aborting, the package's own
+        // check, _requireModelFile, can go.
+        expect(aborted, Platform.isLinux ? isNotEmpty : isEmpty);
+      },
+      skip: errors == null
+          ? 'No same-host speech error reference: run '
+                'tool/prepare_speech_reference.py --errors-only.'
+          : false,
+    );
   });
 
   group('Kokoro on the CPU', () {
@@ -1069,8 +1114,60 @@ String? _missing(String model, String path, String name) =>
     ? null
     : 'No $model model at $path; run dart tool/download_models.dart $name.';
 
-/// Google's NOT_FOUND for a model file at [path] that is not there.
-Matcher _notFound(String path) => isA<TaskException>()
+/// Google's outcomes on this host for a model path that is no model, from
+/// tool/generate_speech_error_reference.py, or null where none was made: the
+/// checked-in one is the Mac's, and Google's status differs by OS.
+Map<String, dynamic>? _errorReference() {
+  const own = 'MEDIAPIPE_SPEECH_ERROR_REFERENCE_DIR';
+  final environment = Platform.environment.containsKey(own)
+      ? own
+      : 'MEDIAPIPE_SPEECH_REFERENCE_DIR';
+  if (!Platform.isMacOS && !Platform.environment.containsKey(environment)) {
+    return null;
+  }
+  return loadSameHostReference(
+    'official_speech_error_reference.json',
+    prefix: 'error_',
+    cases: 'cases',
+    environment: environment,
+    wheel: releaseReferenceWheel,
+  );
+}
+
+/// The path [outcome] was captured with, made under [root] as the generator
+/// made it.
+Future<String> _noModel(Directory root, Map<String, dynamic> outcome) async {
+  final file = outcome['file'] as String;
+  final kind = outcome['kind'] as String;
+  if (kind == 'missing') return '/nonexistent/$file';
+  final separator = Platform.pathSeparator;
+  final path = '${root.path}$separator$kind$separator$file';
+  if (kind == 'directory') {
+    await Directory(path).create(recursive: true);
+  } else {
+    await File(path).create(recursive: true);
+    await File(path).writeAsString(_notAModel);
+  }
+  return path;
+}
+
+/// The bytes of the generator's file that is not a model.
+const _notAModel = 'not a model';
+
+/// Google's status and message, with the path in place of `{path}`.
+Matcher _googleError(Map<String, dynamic> outcome, String path) =>
+    isA<TaskException>()
+        .having((error) => error.statusCode, 'statusCode', outcome['status'])
+        .having(
+          (error) => error.message,
+          'message',
+          (outcome['message'] as String).replaceAll('{path}', path),
+        )
+        .having((error) => error.gpuUnavailable, 'gpuUnavailable', false);
+
+/// The package's NOT_FOUND on Linux for a Text to Speech model path that is
+/// no file.
+Matcher _noModelFile(String path) => isA<TaskException>()
     .having((error) => error.statusCode, 'statusCode', 5)
     .having((error) => error.message, 'message', contains(path))
     .having((error) => error.gpuUnavailable, 'gpuUnavailable', false);
