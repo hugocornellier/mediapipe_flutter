@@ -229,6 +229,15 @@ for the GPU, and throws a `RuntimeUnavailableException` for any other, such as
 Phonon. A Kokoro file from elsewhere keeps Google's filename, which the task
 reads to tell the models apart.
 
+`AudioModels.kokoro` is `kokoro_int8_gpu_fp16.litertlm`, the file Google's
+guide uses with the GPU delegate. Its model card warns that on the CPU
+delegate, or with no GPU accelerator, its vocoder runs on the CPU and the
+speech, though intelligible, may be noisier, and names
+`kokoro_int8_fp16.litertlm` (the same voices, with more memory) for CPU-only
+devices. This package offers Kokoro the GPU delegate only on macOS 15 and
+later on arm64, so elsewhere it runs on the CPU. That file is not pinned: a
+`modelPath` to a copy of it loads it.
+
 Elsewhere, including Android, Linux, Windows, iPhones and iPads (no device
 test has run yet), the iOS simulator, Firefox, browsers on other adapters and
 browsers on iPhones and iPads, the GPU delegate throws a

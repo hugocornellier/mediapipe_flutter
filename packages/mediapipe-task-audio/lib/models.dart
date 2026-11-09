@@ -43,6 +43,14 @@ abstract final class AudioModels {
   /// community converted them (int8, with an FP16 vocoder for the GPU
   /// delegate; English, Spanish, French, Italian, Portuguese, Hindi, Chinese
   /// and Japanese at 24 kHz): 295 MB, Apache 2.0.
+  ///
+  /// This is the file Google's guide uses, with the GPU delegate. Its model
+  /// card warns that on the CPU delegate, or with no GPU accelerator, its
+  /// vocoder runs on the CPU and the speech, though intelligible, may be
+  /// noisier, and names `kokoro_int8_fp16.litertlm` for CPU-only devices.
+  /// This package offers Kokoro the GPU delegate only on macOS 15 and later
+  /// on arm64; elsewhere it runs on the CPU. That file is not pinned: pass a
+  /// `modelPath` to a copy of it to load it.
   static const kokoro = DownloadAsset(
     url:
         'https://huggingface.co/litert-community/Kokoro-82M/resolve/'
