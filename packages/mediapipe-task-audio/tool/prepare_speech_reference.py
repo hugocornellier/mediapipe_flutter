@@ -17,6 +17,7 @@ from tool_helpers import digest
 
 REPO = PACKAGE.parents[1]
 BASELINE = FIXTURES / 'official_speech_reference.json'
+KOKORO_BASELINE = FIXTURES / 'official_kokoro_reference.json'
 
 
 def audio_difference(old, new):
@@ -51,6 +52,10 @@ def differences(baseline, current):
     else:
         pairs += [(f'stream chunk {i}', a, b) for i, (a, b) in
                   enumerate(zip(left['stream']['chunks'], right['stream']['chunks']))]
+    return compare(pairs, structural, levels)
+
+
+def compare(pairs, structural, levels):
     for name, a, b in pairs:
         difference = 'missing' if b is None else audio_difference(a, b)
         if isinstance(difference, str):
@@ -58,6 +63,22 @@ def differences(baseline, current):
         else:
             levels[name] = difference
     return {'maximum_level_error': levels, 'structural_differences': structural}
+
+
+def kokoro_differences(baseline, current):
+    """As differences, for Kokoro's reference."""
+    structural, levels = [], {}
+    left, right = baseline['cases']['text_to_speech'], current['cases']['text_to_speech']
+    if left['voices'] != right['voices']:
+        structural.append('voices differ')
+    pairs = [(f'utterance {name}', left['utterances'][name], right['utterances'].get(name))
+             for name in left['utterances']]
+    pairs += [(f'default voice {name}', left['default_voice'][name],
+               right['default_voice'].get(name))
+              for name in ('inferred', 'voice_locale')]
+    if left['default_voice']['en-US'] != right['default_voice']['en-US']:
+        structural.append('default voice en-US: the error differs')
+    return compare(pairs, structural, levels)
 
 
 def main():
@@ -74,11 +95,13 @@ def main():
     if python is None:
         python = pinned_venv(REPO / f'build/ci-tmp/official-python-{runtime["version"]}', runtime)
     reference = output / 'official_speech_reference.json'
+    kokoro = output / KOKORO_BASELINE.name
+    kokoro.unlink(missing_ok=True)
     log_file = output / 'official-python.log'
     with log_file.open('w', encoding='utf-8') as log:
         result = subprocess.run([str(python.absolute()), '-B',
                                  str(PACKAGE / 'tool/generate_speech_reference.py'),
-                                 '--output', str(reference)],
+                                 '--output', str(reference), '--kokoro-output', str(kokoro)],
                                 stdout=log, stderr=subprocess.STDOUT)
     print('\n'.join(log_file.read_text(encoding='utf-8', errors='replace').splitlines()[-10:]),
           flush=True)
@@ -91,6 +114,14 @@ def main():
               'os': platform.platform(), 'machine': platform.machine(),
               'reference_sha256': digest(reference), 'baseline_sha256': digest(BASELINE),
               'checked_in_reference_differences': summary}
+    # Only where the Kokoro model was downloaded: the Mac.
+    if kokoro.exists():
+        report.update({
+            'kokoro_reference_sha256': digest(kokoro),
+            'kokoro_baseline_sha256': digest(KOKORO_BASELINE),
+            'checked_in_kokoro_reference_differences': kokoro_differences(
+                json.loads(KOKORO_BASELINE.read_text(encoding='utf-8')),
+                json.loads(kokoro.read_text(encoding='utf-8')))})
     receipt.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(report, indent=2), flush=True)
 
