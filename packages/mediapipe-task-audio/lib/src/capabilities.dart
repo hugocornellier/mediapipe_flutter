@@ -75,9 +75,10 @@ const _transcriberWebGpuUnproved =
 final _appleWebGpu = RegExp(r'^WebGPU apple\b');
 
 /// Whether the browser suite saw the GPU do the transcriber's work in this
-/// browser: Chromium and WebKit on a developer's Mac's Apple adapter, where CI's
-/// browser job is set to repeat Chromium's. Firefox has no adapter where it was
-/// tried, and no test has run on any other adapter or on an iPhone or iPad.
+/// browser: Chromium on a Mac's Apple adapter, which CI's browser job checks
+/// on macOS 15, and WebKit on that adapter, checked only on a developer's Mac.
+/// Firefox has no adapter where it was tried, and no test has run on any
+/// other adapter or on an iPhone or iPad.
 bool _webGpuProved(TaskPlatform platform) =>
     browserOnMac &&
     hasHardwareWebGpu(platform) &&
