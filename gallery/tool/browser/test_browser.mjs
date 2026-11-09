@@ -1416,6 +1416,13 @@ async function speechChecks() {
   assert.ok(api.speech.order.length >= 2 && api.speech.order.at(-1) === 'call',
     'a stream\'s chunks ahead of the call after it: ' + api.speech.order);
   report.checks.push('speech-stream-cancel-and-order');
+
+  const cancelled = 'TaskException(1): Synthesis cancelled.';
+  assert.deepEqual(api.speech.task_cancel, {running: cancelled, queued: cancelled, stream_chunks: 0});
+  assert.deepEqual(api.speech.after_task_cancel, official.speech.fox, 'a call after the task\'s cancel');
+  assert.deepEqual(api.speech.after_idle_cancel, official.speech.fox, 'a call after a cancel with nothing in flight');
+  assert.equal(api.speech.cancel_after_dispose, 'accepted');
+  report.checks.push('speech-task-cancel');
   assert.equal(api.pinned.without_download, 'RuntimeUnavailableException');
   assert.deepEqual(api.pinned.fox, official.speech.fox, 'the pinned model, as bytes');
   report.checks.push('speech-pinned-model-as-bytes');

@@ -107,6 +107,12 @@ final class _WebTextToSpeech implements TextToSpeechRunner {
 
   final WebTaskWorker _worker;
 
+  /// How many times [cancel] was called, so a synthesis sent before a cancel
+  /// fails even when the worker reads the cancel only after it: Google's
+  /// JavaScript synthesize runs to its end without yielding to the worker's
+  /// messages, so the call it runs and the one queued behind it both finish.
+  var _cancels = 0;
+
   @override
   Future<List<TextToSpeechVoice>> listVoices() async {
     final voices =
@@ -124,15 +130,24 @@ final class _WebTextToSpeech implements TextToSpeechRunner {
     ];
   }
 
+  /// A cancelled synthesis answers `{cancelled: true}`, and fails as
+  /// Google's native one does; so does one Google finished after a cancel,
+  /// whose result is discarded, as natively.
   @override
   Future<TextToSpeechResult> synthesize(
     String text,
     String? voiceId,
     String? locale,
-  ) async => _audio(
-    (await _worker.runObject(_input('synthesize', text, voiceId, locale)))!,
-    utf16Indices(text),
-  );
+  ) async {
+    final cancels = _cancels;
+    final reply = (await _worker.runObject(
+      _input('synthesize', text, voiceId, locale),
+    ))!;
+    if (reply.has('cancelled') || _cancels != cancels) {
+      throw const TaskException('Synthesis cancelled.', statusCode: 1);
+    }
+    return _audio(reply, utf16Indices(text));
+  }
 
   @override
   Stream<TextToSpeechResult> synthesizeStream(
@@ -144,6 +159,17 @@ final class _WebTextToSpeech implements TextToSpeechRunner {
     return _worker
         .stream(_input('synthesizeStream', text, voiceId, locale))
         .map((chunk) => _audio(chunk, indices));
+  }
+
+  /// The worker reads a cancel only when it yields: between a stream's
+  /// chunks, but not during Google's synthesize, which runs to its end.
+  /// There it cancels Google's stream, and a request still queued is marked
+  /// and stops before it starts. A synthesis the worker ran to its end
+  /// before reading the cancel fails here, by [_cancels].
+  @override
+  void cancel() {
+    _cancels++;
+    _worker.cancelAll();
   }
 
   @override

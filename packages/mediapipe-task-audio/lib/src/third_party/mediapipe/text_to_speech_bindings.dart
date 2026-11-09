@@ -12,6 +12,9 @@ import 'package:mediapipe_core/native_structs.dart';
 /// Google's audio library, which the audio hook bundles.
 const _asset = 'package:mediapipe_audio/mediapipe.dylib';
 
+/// kMpCancelled: a cancel stopped the synthesis or the read.
+const mpCancelled = 1;
+
 /// kMpOutOfRange: the stream has no more chunks.
 const mpOutOfRange = 11;
 
@@ -191,6 +194,14 @@ external void streamCancel(Pointer<Void> stream);
   assetId: _asset,
 )
 external void streamClose(Pointer<Void> stream);
+
+/// Lock-free; safe from any thread while a synthesis or a read blocks on
+/// another.
+@Native<Void Function(Pointer<Void>)>(
+  symbol: 'MpTextToSpeechCancel',
+  assetId: _asset,
+)
+external void cancel(Pointer<Void> tts);
 
 @Native<Void Function(Pointer<Void>)>(
   symbol: 'MpTextToSpeechClose',

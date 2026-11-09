@@ -23,8 +23,8 @@ import 'speech_types.dart';
 /// ```
 ///
 /// Calls run one at a time, in call order; a stream holds the task until
-/// it ends or its listener cancels. `dispose()` waits for work already
-/// accepted and is idempotent.
+/// it ends or its listener cancels. `cancel()` stops the work in flight.
+/// `dispose()` waits for work already accepted and is idempotent.
 final class TextToSpeech {
   TextToSpeech._(this._runner, this.delegate);
 
@@ -70,9 +70,10 @@ final class TextToSpeech {
   /// synthesized, so playback can start before the rest is ready. Word
   /// timestamps index into [text] and are timed from the stream's start.
   ///
-  /// One subscription. Cancelling it stops Google's stream once the chunk
-  /// in progress is done. A failure arrives as a [TaskException] and closes
-  /// the stream.
+  /// One subscription. Cancelling it cancels Google's stream at once, from
+  /// the calling isolate, so a chunk in progress is abandoned; in a browser
+  /// the cancel lands between chunks. A failure arrives as a
+  /// [TaskException] and closes the stream.
   Stream<TextToSpeechResult> synthesizeStream(
     String text, {
     String? voiceId,
@@ -81,6 +82,21 @@ final class TextToSpeech {
     _check();
     return _runner.synthesizeStream(text, voiceId, locale);
   }
+
+  /// Cancels every synthesis accepted and not yet finished, running or
+  /// waiting, unary or streamed, as Google's `TextToSpeech.cancel()` does.
+  /// A cancelled [synthesize] fails with a [TaskException] whose
+  /// `statusCode` is 1, Google's kMpCancelled, and a cancelled stream
+  /// closes without an error. A call already finished keeps its result,
+  /// and calls made afterwards run as usual. With nothing in flight, or
+  /// after [dispose] completes, it does nothing.
+  ///
+  /// Google stops at its next check, within milliseconds of audio; it does
+  /// not check while it analyses the text of a clause, which for one clause
+  /// of about a thousand words takes over a second. In a browser, Google's
+  /// synthesize does not let a cancel in until it ends, so a cancelled call
+  /// still runs to its end before it fails; a stream stops between chunks.
+  void cancel() => _runner.cancel();
 
   /// Finishes accepted work and releases Google's task. Repeated calls
   /// return the same completion; any other call afterwards fails with

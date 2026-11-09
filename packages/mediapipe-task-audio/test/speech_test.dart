@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
@@ -44,6 +45,15 @@ const _cancelledText =
     'Neither does the third. The fourth stays silent too. So does the fifth. '
     'The sixth has nothing to say. The seventh is the same. The eighth as well.';
 
+/// Seconds of speech, which Phonon takes seconds to synthesize.
+final _longText =
+    'Cancelling this long text should stop it well before its end. ' * 40;
+
+/// One clause of hundreds of words: Google analyses a clause's text before
+/// its first chunk, which for this one takes a fraction of a second.
+final _longClause =
+    '${'the quick brown fox jumps over the lazy dog and ' * 100}it ends.';
+
 /// Google's word times, rounded to four places in the reference.
 const _secondsDelta = 1e-3;
 
@@ -55,6 +65,11 @@ const _metalProof = 32 * 1024 * 1024;
 /// builds of Google's 1.2.2 release, so the audio gets a small bound: each
 /// 100 ms window's RMS and the peak may move by this much.
 const _levelDelta = 2e-3;
+
+/// Google's kMpCancelled, with its message.
+Matcher _cancelledSynthesis() => isA<TaskException>()
+    .having((error) => error.statusCode, 'statusCode', tts.mpCancelled)
+    .having((error) => error.message, 'message', 'Synthesis cancelled.');
 
 void main() {
   final reference = loadSameHostReference(
@@ -419,6 +434,205 @@ void main() {
           fox['text'] as String,
           fox,
         );
+      },
+    );
+
+    // Google cancels a synthesis it runs; a call still queued behind it, or
+    // one the worker has not started, fails before it starts.
+    test(
+      'cancel fails calls not yet started, and a stream before its first '
+      'chunk',
+      skip: missingTts,
+      () async {
+        final running = expectLater(
+          task.synthesize(_longText),
+          throwsA(_cancelledSynthesis()),
+        );
+        final queued = expectLater(
+          task.synthesize(_cancelledText),
+          throwsA(_cancelledSynthesis()),
+        );
+        final chunks = task.synthesizeStream(_cancelledText).toList();
+        final watch = Stopwatch()..start();
+        task.cancel();
+        await running;
+        await queued;
+        expect(await chunks, isEmpty);
+        // ignore: avoid_print
+        print('Three calls cancelled in ${watch.elapsedMilliseconds} ms');
+      },
+    );
+
+    // The cancel comes a tenth of the way in, so it finds Google
+    // synthesizing whatever the machine's speed: only its latency is timed.
+    test(
+      'cancel stops a long synthesis well before it would finish',
+      skip: missingTts,
+      () async {
+        final whole = Stopwatch()..start();
+        final audio = await task.synthesize(_longText);
+        whole.stop();
+        expect(audio.samples.length, greaterThan(audio.sampleRateHz * 60));
+        final pending = expectLater(
+          task.synthesize(_longText),
+          throwsA(_cancelledSynthesis()),
+        );
+        await Future<void>.delayed(whole.elapsed ~/ 10);
+        final cancelled = Stopwatch()..start();
+        task.cancel();
+        await pending;
+        cancelled.stop();
+        // ignore: avoid_print
+        print(
+          'The whole synthesis: ${whole.elapsedMilliseconds} ms; failed '
+          '${cancelled.elapsedMilliseconds} ms after its cancel',
+        );
+        // On a developer's Mac a cancel lands within a few milliseconds of
+        // a synthesis of seconds.
+        expect(cancelled.elapsed, lessThan(whole.elapsed ~/ 4));
+      },
+    );
+
+    // Google checks for a cancel only between the audio's frames, not while
+    // it analyses a clause's text: so a stream cancelled during the longest
+    // read Phonon has, its first, ends once that analysis does, with no
+    // chunk. The cancel comes a tenth of the way into the read.
+    test(
+      'cancelling a stream during its longest read ends it with no chunk',
+      skip: missingTts,
+      () async {
+        final first = Stopwatch()..start();
+        await task.synthesizeStream(_longClause).first;
+        first.stop();
+        var received = 0;
+        final ended = Completer<void>();
+        final subscription = task
+            .synthesizeStream(_longClause)
+            .listen(
+              (_) => received++,
+              onError: ended.completeError,
+              onDone: ended.complete,
+            );
+        await Future<void>.delayed(first.elapsed ~/ 10);
+        final cancelled = Stopwatch()..start();
+        await subscription.cancel();
+        cancelled.stop();
+        expect(received, 0);
+        expect(ended.isCompleted, isFalse);
+        // ignore: avoid_print
+        print(
+          'The first chunk: ${first.elapsedMilliseconds} ms; the cancel '
+          'returned in ${cancelled.elapsedMilliseconds} ms',
+        );
+        // The analysis in progress, with room for a busy machine.
+        expect(
+          cancelled.elapsed,
+          lessThan(first.elapsed * 2 + const Duration(seconds: 2)),
+        );
+      },
+    );
+
+    test(
+      'cancel ends a stream in progress without an error',
+      skip: missingTts,
+      () async {
+        final whole = Stopwatch()..start();
+        final all = await task.synthesizeStream(_longText).length;
+        whole.stop();
+        final cancelled = Stopwatch();
+        final chunks = await task.synthesizeStream(_longText).map((chunk) {
+          if (chunk.chunkIndex == 2) {
+            cancelled.start();
+            task.cancel();
+          }
+          return chunk;
+        }).length;
+        cancelled.stop();
+        // ignore: avoid_print
+        print(
+          'The whole stream: $all chunks in ${whole.elapsedMilliseconds} ms; '
+          'cancelled at its third: $chunks chunks, ended '
+          '${cancelled.elapsedMilliseconds} ms after its cancel',
+        );
+        expect(chunks, inInclusiveRange(3, all ~/ 4));
+        expect(cancelled.elapsed, lessThan(whole.elapsed ~/ 4));
+      },
+    );
+
+    test(
+      'after a cancel the task answers as before',
+      skip: missingTts,
+      () async {
+        final fox = utterances['fox'] as Map<String, dynamic>;
+        final text = fox['text'] as String;
+        final pending = task.synthesize(_longText);
+        task.cancel();
+        await expectLater(pending, throwsA(_cancelledSynthesis()));
+        _expectAudio(await task.synthesize(text), text, fox);
+        final stream = speech['stream'] as Map<String, dynamic>;
+        final chunks = await task
+            .synthesizeStream(stream['text'] as String)
+            .toList();
+        expect(chunks, hasLength((stream['chunks'] as List).length));
+        expect(
+          await task.listVoices(),
+          hasLength((speech['voices'] as List).length),
+        );
+      },
+    );
+
+    test(
+      'cancel does nothing with nothing in flight, or after dispose',
+      skip: missingTts,
+      () async {
+        final fox = utterances['fox'] as Map<String, dynamic>;
+        final text = fox['text'] as String;
+        task.cancel();
+        task.cancel();
+        _expectAudio(await task.synthesize(text), text, fox);
+        final other = await TextToSpeech.create(
+          TextToSpeechOptions(modelPath: _ttsModel),
+        );
+        await other.dispose();
+        other.cancel();
+        other.cancel();
+        expect(() => other.synthesize(text), throwsStateError);
+      },
+    );
+
+    // The cancels land before, during and after the worker closes Google's
+    // task and the guard is freed, which a cancel must then leave alone.
+    test(
+      'cancel racing dispose fails the call in flight, and dispose completes',
+      skip: missingTts,
+      () async {
+        final other = await TextToSpeech.create(
+          TextToSpeechOptions(modelPath: _ttsModel),
+        );
+        final pending = expectLater(
+          other.synthesize(_longText),
+          throwsA(_cancelledSynthesis()),
+        );
+        final stream = other.synthesizeStream(_longText).length;
+        final disposed = other.dispose();
+        var cancels = 0;
+        var done = false;
+        unawaited(disposed.whenComplete(() => done = true));
+        other.cancel();
+        while (!done) {
+          other.cancel();
+          cancels++;
+          await Future<void>.delayed(Duration.zero);
+        }
+        for (var i = 0; i < 100; i++) {
+          other.cancel();
+        }
+        await pending;
+        expect(await stream, 0);
+        await disposed;
+        // ignore: avoid_print
+        print('$cancels cancels while dispose ran');
+        expect(cancels, greaterThan(0));
       },
     );
 

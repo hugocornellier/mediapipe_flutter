@@ -75,6 +75,7 @@ final class TextToSpeech
   Future<void> dispose()
   Stream<TextToSpeechResult> synthesizeStream(String text, {String? voiceId, String? locale})
   static Future<TextToSpeech> create(TextToSpeechOptions options)
+  void cancel()
 final class TextToSpeechOptions extends TaskOptions
   Delegate get delegate
   DownloadAsset? get model
