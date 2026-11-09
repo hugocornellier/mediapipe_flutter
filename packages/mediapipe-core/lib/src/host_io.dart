@@ -5,6 +5,8 @@ import 'dart:io';
 
 import 'app_identity.dart';
 
+export 'jni_on_load.dart' show runJniOnLoad;
+
 /// Google's `MpHostSystem` value for this process, the way its Python API
 /// fills `BaseOptions.host_system` from `platform.system()`.
 int get mpHostSystem => Platform.isLinux

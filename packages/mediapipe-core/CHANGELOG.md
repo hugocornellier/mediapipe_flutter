@@ -11,9 +11,12 @@
   Android and iOS, as Google's native SDKs do: the package name and
   `versionCode` on Android, the bundle ID and `CFBundleShortVersionString` on
   iOS. Every task accepts them, but with 1.2.2 only eight tasks' usage uploads
-  carry them; `doc/privacy_and_licenses.md` names them, and says why Android
-  apps upload nothing with 1.2.2. Core now depends on `jni` and `jni_flutter`,
-  which `path_provider_android` already brings into Android apps.
+  carry them; `doc/privacy_and_licenses.md` names them. Core now depends on
+  `jni` and `jni_flutter`, which `path_provider_android` already brings into
+  Android apps.
+- On Android each family runs its Google library's `JNI_OnLoad` once, before
+  its first task, so usage uploads leave Android apps with 1.2.2 as on other
+  platforms; Flutter's `dlopen` of the library does not run it.
 - Removes `familyRuntimeBaseUrl` and the native libraries' unused mirror URL:
   Google's archive is now their only source.
 

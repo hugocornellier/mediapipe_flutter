@@ -40,9 +40,9 @@ accepts these fields, but with the pinned 1.2.2 libraries only eight tasks
 include them in their uploads: Audio Transcriber, Decision Maker, Interactive
 Segmenter, Semantic Retriever, Text Proofreader, Text Summarizer, Text to
 Speech and Universal Embedder. The other tasks' uploads leave both fields
-empty. On Android no upload leaves the app with 1.2.2 (see the table below),
-so the values reach Google only if a later build uploads again. The packages
-set neither on macOS, Linux, Windows or in browsers.
+empty. On Android the uploads leave the app only because the packages run
+each library's `JNI_OnLoad` (see the table below). The packages set neither
+on macOS, Linux, Windows or in browsers.
 
 Google's NOTICE opens with its MediaPipe Tasks privacy notice, which makes
 the app's developer responsible for getting users' informed consent where the
@@ -52,7 +52,7 @@ law requires it. The packages cannot turn the logging off.
 | --- | --- | --- |
 | macOS, Linux, Windows | Google's per-family 1.2.2 libraries | An uploader to `https://play.googleapis.com/log` in every library. Observed with Google's October 18 build on all three, every family: one request per task close, which Google accepts (HTTP 200). Captured again with 1.2.2 on macOS only, every task, with the uploads kept from Google. On macOS the User-Agent carries the process name. On Windows a close waits for its upload |
 | iOS | Google's per-family 1.2.2 libraries | The same uploader. Observed with the October 18 build on the iOS Simulator (every family) and on an iPhone: one request per task close, which Google accepts, with the app's bundle ID and version, the iOS version and the device model in the User-Agent. Captured again with 1.2.2 on the Simulator only, with the same User-Agent on every upload, whichever task sent it |
-| Android | Google's per-family 1.2.2 libraries | The same uploader, which since Google's nightly of October 21 goes through Java and needs a `JNI_OnLoad` that Flutter's loading of the library does not run. Observed with 1.2.2 and later nightlies on API 28, 31 and 34 emulators: no upload leaves the app, and four phones in Firebase Test Lab showed no upload traffic either. Do not rely on this as an opt-out: a later build can end it. The October 18 build did upload, opening its own connection: on an emulator, where Google accepts one request per task close, and on physical phones from Android 9 to 15, 64-bit and 32-bit, where each task close opens one connection to Google of the same size and waits for it, up to about 2.5 s on the oldest phone |
+| Android | Google's per-family 1.2.2 libraries | The same uploader, which since Google's nightly of October 21 goes through Java and needs the `JavaVM` that each library's `JNI_OnLoad` stores. Flutter loads the library with `dlopen`, which does not run it, so the packages run it themselves, once per library, before the family's first task. Observed with 1.2.2 in a debug build on an API 31 emulator: one request per task close leaves the app, Interactive Segmenter's with the app's ID and version, and none without that call. Not yet observed on a physical phone. The October 18 build did upload, opening its own connection: on an emulator, where Google accepts one request per task close, and on physical phones from Android 9 to 15, 64-bit and 32-bit, where each task close opens one connection to Google of the same size and waits for it, up to about 2.5 s on the oldest phone |
 | Browsers | Google's JavaScript runtimes | Requests from the page to `https://odml.pa.googleapis.com/v1/log` when a task closes and every 60 seconds while one is open. Observed with the October 18 build in Chromium and WebKit, every family, which Google accepts |
 
 With the October 18 build every family uploaded, Decision Maker included:
