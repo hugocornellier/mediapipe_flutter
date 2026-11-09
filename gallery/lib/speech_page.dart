@@ -22,8 +22,8 @@ const speechSampleText = 'The quick brown fox jumps over the lazy dog.';
 
 /// Text to Speech on typed input: the text spoken in a chosen voice, drawn
 /// as its waveform with when each word is spoken. The gallery has no audio
-/// player, so the speech is shown rather than played. Google's 87 MB Phonon
-/// model downloads on first use.
+/// player, so the speech is shown rather than played. Gradium's 87 MB Phonon
+/// model, as Google's LiteRT community converted it, downloads on first use.
 class SpeechPage extends StatefulWidget {
   const SpeechPage({
     super.key,
