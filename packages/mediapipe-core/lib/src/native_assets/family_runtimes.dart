@@ -27,9 +27,14 @@ const familyRuntimeVersion = '1.2.2';
 /// `hooks.user_defines.mediapipe_core.asset_source` replaces it for offline
 /// and mirrored builds: a directory or URL holding each file under its
 /// SHA-256.
+///
+/// SANDBOX ONLY: Google emptied the 1.2.2 folder on 2026-11-10, so this names
+/// the generation the pins were made from (as tool/pin_nightly.py
+/// --generation does). Drop this commit once Google restores the files.
 const familyRuntimeArchiveUrl =
     'https://storage.googleapis.com/mediapipe-assets/prebuilts/'
-    'mediapipe_tasks_c/1.2.2/mediapipe_tasks_c_1.2.2.zip';
+    'mediapipe_tasks_c/1.2.2/mediapipe_tasks_c_1.2.2.zip'
+    '?generation=1793657585173337';
 
 /// One of Google's files, exactly as Google ships it.
 final class FamilyRuntime {

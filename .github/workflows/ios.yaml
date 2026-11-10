@@ -38,6 +38,8 @@ jobs:
   # runs them on the CPU only: Google's MediaPipe aborts in its Metal
   # preprocessing there. Metal is a phone check.
   sdk-tasks:
+    # SANDBOX ONLY: skipped while the branch name contains -nomac.
+    if: ${{ !contains(github.head_ref || github.ref_name, '-nomac') }}
     name: Every phone suite / official iOS SDK on an arm64 simulator
     runs-on: macos-15
     timeout-minutes: 110
