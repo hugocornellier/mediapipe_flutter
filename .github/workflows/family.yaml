@@ -75,7 +75,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15, ubuntu-24.04, windows-2025]
+        # SANDBOX ONLY: macOS entries are skipped while the branch name contains
+        # -nomac (scarce hosted macOS runners).
+        os: ${{ fromJSON(contains(github.head_ref || github.ref_name, '-nomac') && '["ubuntu-24.04", "windows-2025"]'
+          || '["macos-15", "ubuntu-24.04", "windows-2025"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
@@ -172,10 +175,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - {os: macos-15, target: macos/arm64, device: macos}
-          - {os: ubuntu-24.04, target: linux/x64, device: linux}
-          - {os: windows-2025, target: windows/x64, device: windows}
+        # SANDBOX ONLY: macOS entries are skipped while the branch name contains
+        # -nomac (scarce hosted macOS runners).
+        include: >-
+          ${{ fromJSON(contains(github.head_ref || github.ref_name, '-nomac')
+          && '[{"os":"ubuntu-24.04","target":"linux/x64","device":"linux"},{"os":"windows-2025","target":"windows/x64","device":"windows"}]'
+          || '[{"os":"macos-15","target":"macos/arm64","device":"macos"},{"os":"ubuntu-24.04","target":"linux/x64","device":"linux"},{"os":"windows-2025","target":"windows/x64","device":"windows"}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
@@ -234,7 +239,8 @@ jobs:
           outcome: ${{ steps.app.outcome == 'success' && steps.journey.outcome || steps.app.outcome }}
 
   web:
-    if: ${{ inputs.jobs == 'all' || contains(inputs.jobs, 'web') }}
+    # SANDBOX ONLY: skipped while the branch name contains -nomac.
+    if: ${{ (inputs.jobs == 'all' || contains(inputs.jobs, 'web')) && !contains(github.head_ref || github.ref_name, '-nomac') }}
     # Google's browser Decision Maker and Universal Embedder run only on a
     # hardware WebGPU adapter: Chromium on the Mac runner's Metal one runs the
     # tasks and records the web GPU row. WebKit, whose page process on these

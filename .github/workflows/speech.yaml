@@ -60,11 +60,12 @@ jobs:
         # Hosted Linux has no hardware WebGPU adapter, so its browsers must
         # refuse the transcriber's GPU delegate. Chromium on the Mac runner's
         # Metal adapter must run it, and records the web GPU row.
-        include:
-          - {os: ubuntu-24.04, browser: chromium, gpu: false}
-          - {os: ubuntu-24.04, browser: firefox, gpu: false}
-          - {os: ubuntu-24.04, browser: webkit, gpu: false}
-          - {os: macos-15, browser: chromium, gpu: true}
+        # SANDBOX ONLY: macOS entries are skipped while the branch name contains
+        # -nomac (scarce hosted macOS runners).
+        include: >-
+          ${{ fromJSON(contains(github.head_ref || github.ref_name, '-nomac')
+          && '[{"os":"ubuntu-24.04","browser":"chromium","gpu":false},{"os":"ubuntu-24.04","browser":"firefox","gpu":false},{"os":"ubuntu-24.04","browser":"webkit","gpu":false}]'
+          || '[{"os":"ubuntu-24.04","browser":"chromium","gpu":false},{"os":"ubuntu-24.04","browser":"firefox","gpu":false},{"os":"ubuntu-24.04","browser":"webkit","gpu":false},{"os":"macos-15","browser":"chromium","gpu":true}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:

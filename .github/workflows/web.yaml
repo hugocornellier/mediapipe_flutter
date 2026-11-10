@@ -286,7 +286,8 @@ jobs:
   # journey does not run here: WebKit's page process on these hosts sometimes
   # ends mid-journey with no error, so CONTRIBUTING.md has it run by hand.
   webkit:
-    if: ${{ !inputs.deploy_only }}
+    # SANDBOX ONLY: skipped while the branch name contains -nomac.
+    if: ${{ (!inputs.deploy_only) && !contains(github.head_ref || github.ref_name, '-nomac') }}
     runs-on: macos-15
     timeout-minutes: 60
     steps:
