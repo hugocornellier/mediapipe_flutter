@@ -86,7 +86,9 @@ void main() {
     await tester.pumpWidget(
       GalleryApp(
         stillImagePicker: () async {
-          expect(imageBytes, isNotNull);
+          // The picker runs inside a tap the test is still awaiting, so a
+          // guarded expect() would conflict with it on Flutter 3.50.
+          expectSync(imageBytes, isNotNull);
           return XFile.fromData(
             imageBytes!,
             name: imageName!,
