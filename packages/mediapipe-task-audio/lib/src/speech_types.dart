@@ -230,8 +230,9 @@ final class WordTimestamp {
   final String word;
 
   /// Where the word starts in the input string, as a UTF-16 index, so
-  /// `text.substring(start, end)` is the word. Google reports UTF-8 byte
-  /// offsets; this package converts them.
+  /// `text.substring(start, end)` is the word. Google's native runtimes
+  /// report UTF-8 byte offsets, which this package converts; its browser
+  /// runtime reports UTF-16 indices.
   final int start;
 
   /// Where the word ends in the input string, exclusive.

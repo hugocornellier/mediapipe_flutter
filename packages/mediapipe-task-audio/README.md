@@ -436,8 +436,9 @@ Future<void> speakAsReady(
 - `defaultLocale` is null by default: Google infers the locale from the voice,
   as on its Web, Android and iOS tasks (its Python defaults to en-US).
 - `WordTimestamp.start` and `end` are UTF-16 indices into the text, so
-  `text.substring(start, end)` is the word, as above; Google reports UTF-8
-  byte offsets, which the package converts.
+  `text.substring(start, end)` is the word, as above; Google's native
+  runtimes report UTF-8 byte offsets, which the package converts, and its
+  browser runtime reports UTF-16 indices.
 - `cancel()` cancels every synthesis accepted and not yet finished, like
   Google's `cancel`: a cancelled `synthesize` call fails with a
   `TaskException` of status 1 (`Synthesis cancelled.`), and a cancelled
