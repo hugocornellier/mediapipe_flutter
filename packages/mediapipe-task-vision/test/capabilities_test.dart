@@ -29,12 +29,13 @@ void main() {
           version: version,
         );
     const both = {Delegate.cpu, Delegate.gpu};
-    // Google's Linux library runs the GPU; its Windows library has none.
+    // Google's Linux library since 1.2.3 needs a LiteRT GPU plugin it does
+    // not ship for the palm detector; its Windows library has no GPU.
     expect(
       handLandmarkerCapabilitiesForPlatform(
         platform('linux', 'x64'),
       ).supportedDelegates,
-      both,
+      {Delegate.cpu},
     );
     expect(
       handLandmarkerCapabilitiesForPlatform(
@@ -209,8 +210,11 @@ void main() {
     );
     // macOS offers no GPU for now.
     for (final (claim, onLinux) in [
-      (poseLandmarkerCapabilitiesForPlatform, true),
-      (gestureRecognizerCapabilitiesForPlatform, true),
+      // Google's 1.2.3 Linux library lacks the LiteRT GPU plugin their palm
+      // and pose detectors now need.
+      (handLandmarkerCapabilitiesForPlatform, false),
+      (poseLandmarkerCapabilitiesForPlatform, false),
+      (gestureRecognizerCapabilitiesForPlatform, false),
       (imageClassifierCapabilitiesForPlatform, true),
       (imageSegmenterCapabilitiesForPlatform, true),
       // Google's Linux runtime aborts the embedder on GPU.
@@ -237,6 +241,19 @@ void main() {
       ).unavailableReasons[Delegate.gpu],
       allOf(contains('LiteRT GPU plugin'), isNot(contains('Linux x64,'))),
     );
+    for (final claim in [
+      handLandmarkerCapabilitiesForPlatform,
+      poseLandmarkerCapabilitiesForPlatform,
+      gestureRecognizerCapabilitiesForPlatform,
+    ]) {
+      expect(
+        claim(linux).unavailableReasons[Delegate.gpu],
+        allOf(
+          contains('libLiteRtGpuAccelerator.so'),
+          isNot(contains('Linux x64,')),
+        ),
+      );
+    }
   });
 
   test('Image Segmenter offers only CPU on every Android GPU', () {
