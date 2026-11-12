@@ -67,7 +67,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "device"
+        "gpu": "unsupported: Google's Android library since 1.2.3 runs the task's detector on LiteRT and does not ship the LiteRT GPU plugin it needs"
       },
       "ios": {
         "cpu": "required",
@@ -93,7 +93,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "device"
+        "gpu": "unsupported: Google's Android library since 1.2.3 runs the task's detector on LiteRT and does not ship the LiteRT GPU plugin it needs"
       },
       "ios": {
         "cpu": "required",
@@ -275,7 +275,7 @@
       },
       "android": {
         "cpu": "required",
-        "gpu": "device"
+        "gpu": "unsupported: Google's Android library since 1.2.3 runs the task's detector on LiteRT and does not ship the LiteRT GPU plugin it needs"
       },
       "ios": {
         "cpu": "required",

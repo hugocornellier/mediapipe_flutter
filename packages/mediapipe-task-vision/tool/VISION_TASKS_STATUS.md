@@ -32,9 +32,9 @@ have no home in `tool/coverage/matrix.json` yet, so they are kept by hand.
 | --- | --- | --- | --- | --- | --- | --- |
 | Face Detector | WebGL | Metal | CPU [i] | CPU [h] | CPU [i] | CPU |
 | Face Landmarker | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
-| Hand Landmarker | WebGL | Metal | GPU | CPU [h] | CPU [k] | CPU |
-| Pose Landmarker | WebGL | Metal | GPU | CPU [h] | CPU [k] | CPU |
-| Gesture Recognizer | WebGL | Metal | GPU | CPU [h] | CPU [k] | CPU |
+| Hand Landmarker | WebGL | Metal | CPU [k] | CPU [h] | CPU [k] | CPU |
+| Pose Landmarker | WebGL | Metal | CPU [k] | CPU [h] | CPU [k] | CPU |
+| Gesture Recognizer | WebGL | Metal | CPU [k] | CPU [h] | CPU [k] | CPU |
 | Holistic Landmarker | WebGL | CPU [e] | CPU [e] | CPU [e] | CPU [e] | CPU |
 | Object Detector | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
 | Image Classifier | WebGL | Metal | GPU | CPU [h] | GL ES | CPU |
@@ -68,7 +68,9 @@ iPhones and iPads, and were tested on an iPhone 15 Pro (iOS 27) with Google's
   references on CI's x86_64 emulator and an arm64 emulator (API 31, CPU), from
   the same integration tests, rotation and the padded pose mask included, and
   on Firebase Test Lab's Pixel 8a, Galaxy S24 and Galaxy A12 with the GPU
-  required (`../../mediapipe-core/tool/PER_FAMILY_RUNTIMES.md`). Earlier,
+  required (`../../mediapipe-core/tool/PER_FAMILY_RUNTIMES.md`). With 1.2.3,
+  the Pixel 8a fails to open Hand, Gesture and Pose's GPU graphs, so those
+  three run on the CPU there [k]. Earlier,
   on Google's Java SDK (tasks-vision 1.0.0), every task matched on the CI
   emulator and in Firebase Test Lab (`integration_test/sdk_all_test.dart`, 27
   tests, CPU then GPU): Google's CPU references on a Pixel 8a (Mali), a Galaxy
@@ -114,11 +116,13 @@ iPhones and iPads, and were tested on an iPhone 15 Pro (iOS 27) with Google's
   CPU only on macOS until Google says whether it is intended.
 - [i] Google's Linux and Android libraries ship without the LiteRT
   plugin Face Detector's GPU graph needs, so the package offers the CPU there.
-- [k] Since 1.2.3, Google's Linux library runs the Hand, Gesture and Pose
-  detectors on LiteRT too, still without the plugin [i] names, so their GPU
-  graphs fail to open and the package offers the CPU on Linux. Google's own
-  1.2.3 Python wheel fails the same way on a Linux runner; its 1.1.0 wheel ran
-  all three on OpenGL ES.
+- [k] Since 1.2.3, Google's Linux and Android libraries run the Hand, Gesture
+  and Pose detectors on LiteRT too, still without the plugin [i] names, so
+  their GPU graphs fail to open ("No GPU accelerator is registered in the
+  LiteRT environment") and the package offers the CPU there. Google's own
+  1.2.3 Python wheel fails the same way on a Linux runner, and its 1.2.3
+  Android library on a Pixel 8a (Mali); its 1.1.0 wheel ran all three on
+  OpenGL ES, and its 1.2.2 Android library on that phone's GPU.
 - [j] Google's Android Image Segmenter aborts the app when
   it reads a GPU mask: its C library on a Pixel 3 (Adreno 630), and its Java
   SDK before it on PowerVR GPUs (Galaxy A12, Pixel 10, Pixel 11). No caller
