@@ -1490,8 +1490,9 @@ AudioData _joined(
 /// end ([durationMs]) in order, and are the [whole] input's segments; each
 /// interim segment is replaced by a final one from the same time; and in
 /// blocks ([streamed]) segments are finalized before the stream finishes.
-/// Google's segments repeat words at the window seams ("home late", then
-/// "home late tomorrow."), so the text is the reference's, word for word.
+/// Google's segments repeat words at the window seams ("Send a text to",
+/// then "text Mike. I'll be home"), so the text is the reference's, word for
+/// word.
 void _expectWindowed(
   List<List<Map<String, Object>>> calls,
   List<Map<String, Object>> finish, {
