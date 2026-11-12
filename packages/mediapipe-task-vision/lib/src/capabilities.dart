@@ -35,6 +35,16 @@ const _faceDetectorGpuGap =
     "that Face Detector's GPU needs (libLiteRtGpuAccelerator.so); use the "
     'CPU delegate. Face Landmarker runs on the GPU there.';
 
+/// Why Hand Landmarker, Gesture Recognizer and Pose Landmarker offer no GPU
+/// on Linux: since 1.2.3 their palm and pose detectors run on LiteRT too,
+/// which needs the GPU plugin Face Detector lacks ([_faceDetectorGpuGap]).
+/// Google's own 1.2.3 Python package fails the same way on Linux, where its
+/// 1.1.0 package ran them on the GPU.
+const _landmarkDetectorGpuGap =
+    "Since 1.2.3, Google's Linux library runs this task's detector on LiteRT, "
+    'whose GPU plugin (libLiteRtGpuAccelerator.so) it does not ship; use the '
+    'CPU delegate. Face Landmarker runs on the GPU there.';
+
 /// Why macOS offers the CPU only: on Metal, Google's library since 1.1.1
 /// differs from Google's own 1.1.0 wheel for every task, by up to a
 /// different top class, and its 1.1.1 nightly wheel matches the library
@@ -89,43 +99,46 @@ TaskCapabilities faceDetectorCapabilitiesForPlatform(TaskPlatform platform) =>
 Future<TaskCapabilities> queryHandLandmarkerCapabilities() async =>
     handLandmarkerCapabilitiesForPlatform(await currentTaskPlatform());
 
-/// Hand Landmarker runs where Face Landmarker does.
+/// Hand Landmarker runs where Face Landmarker does, except on the Linux GPU
+/// ([_landmarkDetectorGpuGap]).
 TaskCapabilities handLandmarkerCapabilitiesForPlatform(TaskPlatform platform) =>
     _visionTaskCapabilities(
       platform,
       'HandLandmarker',
       webAdapter: handLandmarkerBackendFactory != null,
-      linuxGpu: true,
       macosGpu: true,
+      desktopGpuGap: _landmarkDetectorGpuGap,
     );
 
 /// Query Pose Landmarker support on this process platform without a model.
 Future<TaskCapabilities> queryPoseLandmarkerCapabilities() async =>
     poseLandmarkerCapabilitiesForPlatform(await currentTaskPlatform());
 
-/// Pose Landmarker runs where Face Landmarker does.
+/// Pose Landmarker runs where Face Landmarker does, except on the Linux GPU
+/// ([_landmarkDetectorGpuGap]).
 TaskCapabilities poseLandmarkerCapabilitiesForPlatform(TaskPlatform platform) =>
     _visionTaskCapabilities(
       platform,
       'PoseLandmarker',
       webAdapter: poseLandmarkerBackendFactory != null,
-      linuxGpu: true,
       macosGpu: true,
+      desktopGpuGap: _landmarkDetectorGpuGap,
     );
 
 /// Query Gesture Recognizer support on this process platform without a model.
 Future<TaskCapabilities> queryGestureRecognizerCapabilities() async =>
     gestureRecognizerCapabilitiesForPlatform(await currentTaskPlatform());
 
-/// Gesture Recognizer runs where Face Landmarker does.
+/// Gesture Recognizer runs where Face Landmarker does, except on the Linux
+/// GPU ([_landmarkDetectorGpuGap]).
 TaskCapabilities gestureRecognizerCapabilitiesForPlatform(
   TaskPlatform platform,
 ) => _visionTaskCapabilities(
   platform,
   'GestureRecognizer',
   webAdapter: gestureRecognizerBackendFactory != null,
-  linuxGpu: true,
   macosGpu: true,
+  desktopGpuGap: _landmarkDetectorGpuGap,
 );
 
 /// Query Holistic Landmarker support on this process platform without a model.
