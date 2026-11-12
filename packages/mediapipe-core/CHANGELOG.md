@@ -7,6 +7,9 @@
   family package older than 0.3.0 is used with this release.
 - Runs Google's MediaPipe 1.2.3 instead of 1.2.2, with new SHA-256 pins
   for its native libraries.
+- With 1.2.3 every task's usage uploads carry the app's ID and version, not
+  only the eight that 1.2.2's did; `doc/privacy_and_licenses.md` describes
+  them.
 - Adds `MpBaseOptions.npuDispatchLibraryDir`, null by default, for the
   field MediaPipe 1.2.3 adds to its base options.
 - Accepts Flutter 3.44 and newer, down from 3.47. The package accepts the
