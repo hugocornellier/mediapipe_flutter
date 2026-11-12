@@ -14,7 +14,8 @@ import 'speech_runners.dart';
 import 'speech_types.dart';
 import 'utf16_indices.dart';
 
-/// Opens Google's Audio Transcriber on a worker.
+/// Opens Google's Audio Transcriber on a worker. Google's 1.2.3 browser
+/// runtime has no cache directory option, so `cacheDirectory` is not sent.
 Future<AudioTranscriberRunner> openWebAudioTranscriber(
   AudioTranscriberOptions options,
 ) async => _WebTranscriber(
@@ -23,11 +24,11 @@ Future<AudioTranscriberRunner> openWebAudioTranscriber(
     'enableInterimResults': options.enableInterimResults,
     'modelArchitecture': options.modelArchitecture.name.toUpperCase(),
     'prompt': _optional(options.prompt),
-    'cacheDir': _optional(options.cacheDirectory),
   }),
 );
 
-/// Opens Google's Text to Speech on a worker.
+/// Opens Google's Text to Speech on a worker. Google's 1.2.3 browser runtime
+/// has no cache directory option, so `cacheDirectory` is not sent.
 Future<TextToSpeechRunner> openWebTextToSpeech(
   TextToSpeechOptions options,
 ) async => _WebTextToSpeech(
@@ -36,7 +37,6 @@ Future<TextToSpeechRunner> openWebTextToSpeech(
     'defaultLocale': _optional(options.defaultLocale),
     'speakingRate': options.speakingRate,
     'targetBucket': options.targetBucket,
-    'cacheDirectory': _optional(options.cacheDirectory),
   }),
 );
 
