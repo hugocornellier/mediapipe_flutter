@@ -62,13 +62,14 @@ void main() {
     );
     expect(ios.supportedDelegates, both);
     expect(ios.runtimeVersion, '1.2.3');
-    // Android runs Google's vision library: GPU on arm64 phones, and CPU on
-    // the x86_64 emulator images.
+    // Android runs Google's vision library on the CPU: since 1.2.3 it needs
+    // the same LiteRT GPU plugin for the palm detector on arm64 phones, and
+    // the x86_64 emulator images have no GPU path.
     expect(
       handLandmarkerCapabilitiesForPlatform(
         platform('android', 'arm64'),
       ).supportedDelegates,
-      both,
+      {Delegate.cpu},
     );
     final emulator = handLandmarkerCapabilitiesForPlatform(
       platform('android', 'x64'),
@@ -323,11 +324,14 @@ void main() {
       'object detector': objectDetectorCapabilitiesForPlatform,
     };
     // Withdrawn on every Android GPU, phones included: Google's library lacks
-    // Face Detector's LiteRT GPU plugin, cannot open Holistic's face
-    // blendshapes model on the GPU, and aborts reading Image Segmenter's GPU
-    // mask.
+    // the LiteRT GPU plugin Face Detector's GPU and, since 1.2.3, the Hand,
+    // Gesture and Pose graphs need, cannot open Holistic's face blendshapes
+    // model on the GPU, and aborts reading Image Segmenter's GPU mask.
     const phoneCpuOnly = {
       'face detector',
+      'hand landmarker',
+      'pose landmarker',
+      'gesture recognizer',
       'holistic landmarker',
       'image segmenter',
     };
@@ -351,10 +355,12 @@ void main() {
     }
   });
 
-  test("Android phones offer Face Detector's and Holistic's CPU only", () {
+  test("Android phones offer the CPU only where Google's GPU graph fails", () {
     // Google's Android library lacks the LiteRT GPU plugin Face Detector's GPU
-    // needs, and cannot open Holistic's face blendshapes model on the GPU. Face
-    // Landmarker and the other tasks keep the GPU.
+    // needs, and since 1.2.3 the Hand, Gesture and Pose graphs too (a Pixel
+    // 8a fails to open their GPU graphs), and cannot open Holistic's face
+    // blendshapes model on the GPU. Face Landmarker and the other tasks keep
+    // the GPU.
     for (final gpu in [
       'Mali-G715 (ARM)',
       'Adreno (TM) 750 (Qualcomm)',
@@ -368,6 +374,12 @@ void main() {
       );
       for (final (claim, gap) in [
         (faceDetectorCapabilitiesForPlatform, 'LiteRT GPU plugin'),
+        (handLandmarkerCapabilitiesForPlatform, 'libLiteRtGpuAccelerator.so'),
+        (poseLandmarkerCapabilitiesForPlatform, 'libLiteRtGpuAccelerator.so'),
+        (
+          gestureRecognizerCapabilitiesForPlatform,
+          'libLiteRtGpuAccelerator.so',
+        ),
         (holisticLandmarkerCapabilitiesForPlatform, 'face blendshapes model'),
       ]) {
         final capabilities = claim(phone);
@@ -391,6 +403,9 @@ void main() {
     );
     for (final claim in [
       faceDetectorCapabilitiesForPlatform,
+      handLandmarkerCapabilitiesForPlatform,
+      poseLandmarkerCapabilitiesForPlatform,
+      gestureRecognizerCapabilitiesForPlatform,
       holisticLandmarkerCapabilitiesForPlatform,
     ]) {
       expect(

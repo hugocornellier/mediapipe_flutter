@@ -146,8 +146,8 @@ Foundation on Windows, GStreamer on Linux, and in browsers a `<video>` element
 stepped one frame at a time. The vision package decodes nothing.
 Switching back to **Camera** reopens the live stream task. Interactive Segmenter is image-only and uses its own editor.
 Windows exposes CPU only. Face and Hand Landmarker also expose GPU on
-iPhones (tested on an iPhone 15 Pro, iOS 27, with Google's 1.2.2 library),
-Android phones and web, and Face Landmarker on Linux.
+iPhones (tested on an iPhone 15 Pro, iOS 27, with Google's 1.2.2 library)
+and web, and Face Landmarker on Android phones and Linux.
 Web uses browser-native capture and transferable bitmaps while sharing these
 controls and the same overlay painter. Web GPU requires worker WebGL 2 support.
 
