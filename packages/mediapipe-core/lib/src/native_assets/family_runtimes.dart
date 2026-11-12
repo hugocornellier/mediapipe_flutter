@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:archive/archive.dart';
 import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
+import 'package:yaml/yaml.dart';
 
 import '../../native_assets.dart';
 
@@ -323,6 +325,7 @@ Future<void> bundleFamilyRuntime(
   BuildOutputBuilder output, {
   required String family,
 }) async {
+  checkFamilyRelease(input.packageName, input.packageRoot);
   final code = input.config.code;
   requireDynamicLinking(code);
   final target = buildTarget(code);
@@ -364,6 +367,83 @@ Future<void> bundleFamilyRuntime(
     ),
   );
 }
+
+/// The oldest release of each task family that reads this core's libraries:
+/// 0.3.0 moved to MediaPipe 1.2.3, whose `MpBaseOptions` grew from 72 to 80
+/// bytes, so every task's options after it moved by 8.
+const _minimumFamilyRelease = (0, 3, 0);
+
+/// Stops the build when [packageRoot] is a pub.dev release of [package]
+/// older than [_minimumFamilyRelease], which would pass this core's
+/// libraries options laid out for MediaPipe 1.2.2.
+///
+/// Only hosted releases are checked, where the version names the code. A path
+/// or git checkout passes, as does a pubspec without a plain version.
+///
+/// The error names core's version from the pubspec in [coreRoot], by default
+/// where `package:mediapipe_core/` resolves in the running hook.
+void checkFamilyRelease(String package, Uri packageRoot, {Uri? coreRoot}) {
+  final segments = packageRoot.pathSegments.where((s) => s.isNotEmpty);
+  final found = _pubspecVersion(packageRoot);
+  if (found == null ||
+      segments.length < 3 ||
+      segments.elementAt(segments.length - 3) != 'hosted' ||
+      segments.last != '$package-$found') {
+    return;
+  }
+  final release = _release(found);
+  if (release == null || _compare(release, _minimumFamilyRelease) >= 0) {
+    return;
+  }
+  final (major, minor, patch) = _minimumFamilyRelease;
+  final minimum = '$major.$minor.$patch';
+  final core = switch (coreRoot ?? _coreLibrary()?.resolve('../')) {
+    final root? => _pubspecVersion(root),
+    null => null,
+  };
+  throw UnsupportedError(
+    '$package $found does not work with '
+    '${core == null ? 'this mediapipe_core' : 'mediapipe_core $core'}, which '
+    "bundles Google's MediaPipe $familyRuntimeVersion: the task options "
+    'changed layout there, and $package reads the new layout from $minimum. '
+    'Upgrade $package to $minimum or later (flutter pub upgrade $package).',
+  );
+}
+
+/// Where `package:mediapipe_core/` resolves in the running hook, or null.
+Uri? _coreLibrary() {
+  try {
+    return Isolate.resolvePackageUriSync(Uri.parse('package:mediapipe_core/'));
+  } on Object {
+    return null;
+  }
+}
+
+/// The `version:` of the pubspec in [root], or null.
+String? _pubspecVersion(Uri root) {
+  final pubspec = File.fromUri(root.resolve('pubspec.yaml'));
+  if (!pubspec.existsSync()) return null;
+  try {
+    final version = (loadYaml(pubspec.readAsStringSync()) as Map)['version'];
+    return version is String ? version : null;
+  } on Object {
+    return null;
+  }
+}
+
+/// [version]'s major, minor and patch, ignoring any pre-release or build
+/// suffix, or null when it is not a plain version.
+(int, int, int)? _release(String version) {
+  final match = RegExp(r'^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$').firstMatch(version);
+  if (match == null) return null;
+  return (int.parse(match[1]!), int.parse(match[2]!), int.parse(match[3]!));
+}
+
+int _compare((int, int, int) a, (int, int, int) b) => a.$1 != b.$1
+    ? a.$1.compareTo(b.$1)
+    : a.$2 != b.$2
+    ? a.$2.compareTo(b.$2)
+    : a.$3.compareTo(b.$3);
 
 /// The arm64 binary from Google's framework zip for an iOS device or the
 /// Simulator.
