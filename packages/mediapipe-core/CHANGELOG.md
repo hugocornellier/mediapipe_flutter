@@ -1,3 +1,34 @@
+## 0.4.2
+
+- Upgrade every mediapipe package to 0.4.2 together. MediaPipe stays at
+  1.2.3 and its option structs keep their layout, so the build still
+  accepts family releases from 0.3.0.
+- The family packages' models now download from Google's LiteRT community
+  on Hugging Face (`huggingface.co/litert-community`), each pinned to a
+  fixed revision, instead of Google's
+  `storage.googleapis.com/mediapipe-models` bucket. Hugging Face redirects
+  downloads to its CDN, `*.hf.co`; the privacy and web setup docs list
+  both for firewalls and content security policies. Google's per-family
+  MediaPipe libraries still come from its release archive on
+  `storage.googleapis.com`.
+- The iOS code that keeps downloaded models out of iCloud backup moves to
+  its own file, imported only where `dart:ffi` exists, so build systems
+  that compile each conditional import on its own (Bazel's Dart rules)
+  can build core for the web. Nothing changes for Flutter apps.
+
+## 0.4.1
+
+- Upgrade every mediapipe package to 0.4.1 together. MediaPipe stays at
+  1.2.3 and its option structs keep their layout, so the build still
+  accepts family releases from 0.3.0.
+- `linuxArm64CpuOnly` now names the task rather than every task: Face
+  Landmarker, Image Classifier, Image Segmenter and Object Detector run on
+  the GPU on Linux arm64 in `mediapipe_vision` 0.4.1. The audio, decision
+  and retrieval tasks still give it as the reason they offer no GPU there.
+- CI checks the Linux arm64 GPU on GitHub's `ubuntu-24.04-arm` runners,
+  with Mesa's software renderer, against Google's aarch64 wheel. A
+  Raspberry Pi 5's GPU has not been tested.
+
 ## 0.4.0
 
 - Upgrade every mediapipe package to 0.4.0 together. Adds Linux arm64

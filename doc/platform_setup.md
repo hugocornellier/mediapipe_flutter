@@ -99,8 +99,9 @@ instead.
   Debian, Ubuntu or Raspberry Pi OS: `sudo apt-get install libegl1 libgles2`
   (Raspberry Pi OS Lite lacks them). Without them, task creation fails with
   that instruction.
-- GPU inference uses OpenGL ES on Linux x64 where the vision status table
-  lists it. Linux arm64 runs every task on the CPU.
+- GPU inference uses OpenGL ES on Linux x64 and arm64 where the vision
+  status table lists it. On arm64, CI checks it with Mesa's software renderer;
+  a Raspberry Pi 5's GPU has not been tested.
 - Google's Linux arm64 libraries need glibc 2.27 or later: Raspberry Pi OS
   Bullseye or later, Ubuntu 18.04 or later.
 - On Linux arm64, Google's libraries use Arm's LSE atomic and RCPC load
@@ -124,7 +125,8 @@ instead.
   default and check every file against its SHA-384 before running it, then
   load it from a `blob:` URL. Bundled models load from the app's own assets.
   Models downloaded at run time (`ModelStore.allowDownloads = true`) come from
-  `storage.googleapis.com` and are kept in Cache Storage.
+  `huggingface.co` (redirected to its CDN, `*.hf.co`) and are kept in Cache
+  Storage.
 - To serve the runtimes yourself (offline, an intranet, or a strict policy),
   run `dart run mediapipe_core:web_runtime web/mediapipe` from the app root
   and set `MediaPipeWebRuntime.baseUrl = 'mediapipe/';` before creating the
@@ -132,9 +134,10 @@ instead.
 - If the site sends a Content Security Policy, it has to allow what the
   loader does: `script-src` and `worker-src` for `'self'` and `blob:`,
   `'wasm-unsafe-eval'` for the WebAssembly runtime, and `connect-src` for
-  `'self'` (bundled models), `https://cdn.jsdelivr.net` (unless self-hosted)
-  and `https://storage.googleapis.com` (only for models downloaded at run
-  time). CI runs without a policy, so test yours in the browsers you support.
+  `'self'` (bundled models), `https://cdn.jsdelivr.net` (unless self-hosted),
+  and `https://huggingface.co` with its CDN `https://*.hf.co` (only for
+  models downloaded at run time). CI runs without a policy, so test yours in
+  the browsers you support.
 
 ## Build settings
 

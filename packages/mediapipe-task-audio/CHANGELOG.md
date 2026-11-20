@@ -1,3 +1,20 @@
+## 0.4.2
+
+- Upgrade every mediapipe package to 0.4.2 together, so this package now
+  requires `mediapipe_core` ^0.4.2. MediaPipe stays at 1.2.3.
+- YAMNet now download from Google's LiteRT community on Hugging Face
+  (`huggingface.co/litert-community`), each pinned to a fixed revision,
+  instead of Google's `storage.googleapis.com/mediapipe-models` bucket.
+  The file is byte-identical, so its SHA-256 pin is unchanged.
+
+## 0.4.1
+
+- Upgrade every mediapipe package to 0.4.1 together, so this package now
+  requires `mediapipe_core` ^0.4.1. MediaPipe stays at 1.2.3.
+- No change to this package's tasks. On Linux arm64 a GPU request for the
+  speech tasks fails with a reason that names the task rather than every
+  task, since four vision tasks now run on the GPU there.
+
 ## 0.4.0
 
 - Upgrade every mediapipe package to 0.4.0 together, so this package now

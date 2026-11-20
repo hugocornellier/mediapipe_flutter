@@ -1,3 +1,32 @@
+## 0.4.2
+
+- Upgrade every mediapipe package to 0.4.2 together, so this package now
+  requires `mediapipe_core` ^0.4.2. MediaPipe stays at 1.2.3.
+- Every vision model now downloads from Google's LiteRT community on
+  Hugging Face (`huggingface.co/litert-community`), each pinned to a fixed
+  revision, instead of Google's `storage.googleapis.com/mediapipe-models`
+  bucket. The files are byte-identical, so their SHA-256 pins are
+  unchanged. Hugging Face names two of them differently, so the Object
+  Detector and Image Classifier models download as
+  `efficientdet_lite0_float32.tflite` and
+  `efficientnet_lite0_float32.tflite`. The model store and bundles find
+  files by SHA-256, so apps need no change.
+
+## 0.4.1
+
+- Upgrade every mediapipe package to 0.4.1 together, so this package now
+  requires `mediapipe_core` ^0.4.1. MediaPipe stays at 1.2.3.
+- Face Landmarker, Image Classifier, Image Segmenter and Object Detector
+  offer the GPU on Linux arm64, through OpenGL ES, as they do on Linux
+  x64; EGL and a GPU driver are required. Their capability queries now
+  list it. The other vision tasks run on the CPU only there and give Linux
+  x64's reasons.
+- CI runs the four tasks' GPU suites, and the gallery's Face Landmarker
+  GPU demo, on GitHub's `ubuntu-24.04-arm` runners with Mesa's software
+  renderer renamed past Google's software-GPU check, and they match Google's
+  own GPU output from its aarch64 wheel. A Raspberry Pi 5's V3D GPU has
+  not been tested.
+
 ## 0.4.0
 
 - Upgrade every mediapipe package to 0.4.0 together, so this package now

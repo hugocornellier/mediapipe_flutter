@@ -2,7 +2,8 @@
 
 Does not change checked-in goldens, models, task code or test tolerances.
 The default creates an isolated Python environment from the host's checksum-pinned
-wheel (core's referenceWheels: Metal on macOS arm64, OpenGL ES on Linux x64).
+wheel (core's referenceWheels: Metal on macOS arm64, OpenGL ES on Linux x64
+and arm64).
 --python reuses an existing environment; the generators still verify its native
 library, runtime version, model digests and input fixture bytes.
 """
@@ -120,7 +121,7 @@ def test_root(destination, groups):
     if "object" in groups:
         folders.append("fixtures/object_detection")
         tests.append("object_detector_test.dart")
-        models.append("efficientdet_lite0.tflite")
+        models.append("efficientdet_lite0_float32.tflite")
         tasks.append("object_detector")
     if "hand" in groups or "landmark" in groups:
         folders.append("fixtures/landmark_tasks")
@@ -134,7 +135,7 @@ def test_root(destination, groups):
     if "image" in groups:
         folders.append("fixtures/image_tasks")
         tests.append("image_tasks_test.dart")
-        models += ["efficientnet_lite0.tflite", "mobilenet_v3_small.tflite"]
+        models += ["efficientnet_lite0_float32.tflite", "mobilenet_v3_small.tflite"]
         tasks += ["image_classifier", "image_embedder"]
     if "segmenter" in groups:
         folders.append("fixtures/segmenter_tasks")
@@ -220,9 +221,10 @@ def main():
     # Imported here: cpu_reference imports this module for difference().
     from cpu_reference import host_target, wheel_pin
     target = host_target()
-    if target not in ("macos/arm64", "linux/x64"):
-        raise SystemExit("GPU references require macOS arm64 or Linux x64.")
-    if args.test and groups - {"object"} and target != "linux/x64":
+    if target not in ("macos/arm64", "linux/x64", "linux/arm64"):
+        raise SystemExit("GPU references require macOS arm64, or Linux x64 or "
+                         "arm64.")
+    if args.test and groups - {"object"} and target == "macos/arm64":
         raise SystemExit("On macOS, run these tasks' suites with "
                          "tool/test_macos_references.py.")
     wheel_url, wheel_sha256, library_sha256, version = wheel_pin(target)
